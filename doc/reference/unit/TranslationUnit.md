@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-TranslationUnit(symbol_table symtab, node* items)
+TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 ```
 <!-- END AUTO: asr -->
 
@@ -16,7 +16,7 @@ _No documentation yet._
 
 <!-- BEGIN AUTO: verify -->
 * The `TranslationUnit::m_symtab` cannot be `nullptr`
-* The `TranslationUnit::m_symtab`->parent must be `nullptr`
+* The `TranslationUnit::m_symtab`->parent must be `nullptr` or the symbol table of another TranslationUnit
 * `TranslationUnit::m_symtab`->counter must be unique
 * The `TranslationUnit::m_symtab::asr_owner` must point to itself
 * The asr_owner invariant failed

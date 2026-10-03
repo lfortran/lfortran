@@ -65,16 +65,10 @@ public:
         r.append(" ");
         r.append(x.m_name);
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
-            if (i < x.n_use-1) r.append("\n");
-        }
-        r.append("\n");
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-            if (i < x.n_decl-1) r.append("\n");
+            if (i < x.n_items-1) r.append("\n");
         }
         r.append("\n");
         for (size_t i=0; i<x.n_contains; i++) {
@@ -91,18 +85,8 @@ public:
         std::string r = "program ";
         r.append(x.m_name);
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
             r.append("\n");
         }
@@ -131,18 +115,8 @@ public:
             r.append(")");
         }
         r.append("\n");
-        for (size_t i=0; i<x.n_use; i++) {
-            this->visit_unit_decl1(*x.m_use[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            this->visit_unit_decl2(*x.m_decl[i]);
-            r.append(s);
-            r.append("\n");
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_decl_stmt(*x.m_items[i]);
             r.append(s);
             r.append("\n");
         }
@@ -197,13 +171,18 @@ public:
             // The namelist statement is printed differently than other
             // atttributes
             r.append("namelist");
-            r.append(" /");
-            r += down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            r.append("/ ");
-            for (size_t i=0; i<x.n_syms; i++) {
-                visit_var_sym(x.m_syms[i]);
-                r += s;
-                if (i < x.n_syms-1) r.append(", ");
+            AttrNamelist_t *namelist = down_cast<AttrNamelist_t>(x.m_attributes[0]);
+            for (size_t j = 0; j < namelist->n_groups; j++) {
+                namelist_group_t &group = namelist->m_groups[j];
+                if (j > 0) r.append(" ");
+                r.append(" /");
+                r += group.m_name;
+                r.append("/ ");
+                for (size_t i = 0; i < group.n_objects; i++) {
+                    visit_var_sym(group.m_objects[i]);
+                    r += s;
+                    if (i < group.n_objects - 1) r.append(", ");
+                }
             }
         } else {
             if (x.m_vartype) {
@@ -441,6 +420,15 @@ public:
         r.append(s);
         s = r;
     }
+    void visit_InferAssignment(const InferAssignment_t &x) {
+        std::string r = "";
+        this->visit_expr(*x.m_target);
+        r.append(s);
+        r.append(" := ");
+        this->visit_expr(*x.m_value);
+        r.append(s);
+        s = r;
+    }
     void visit_Associate(const Associate_t &x) {
         std::string r = "";
         this->visit_expr(*x.m_target);
@@ -478,14 +466,14 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
+            this->visit_decl_stmt(*x.m_orelse[i]);
             if (i < x.n_orelse-1) s.append(" ");
         }
         s.append("]");
@@ -507,14 +495,14 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
+            this->visit_decl_stmt(*x.m_orelse[i]);
             if (i < x.n_orelse-1) s.append(" ");
         }
         s.append("]");
@@ -576,7 +564,7 @@ public:
         r.append("\n");
         indent_level += 4;
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             for (int i=0; i < indent_level; i++) r.append(" ");
             r.append(s);
             r.append("\n");
@@ -640,7 +628,7 @@ public:
         r.append("\n");
         indent_level += 4;
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             for (int i=0; i < indent_level; i++) r.append(" ");
             r.append(s);
             r.append("\n");
@@ -708,7 +696,7 @@ public:
         s.append(" ");
         s.append("[");
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            this->visit_decl_stmt(*x.m_body[i]);
             if (i < x.n_body-1) s.append(" ");
         }
         s.append("]");

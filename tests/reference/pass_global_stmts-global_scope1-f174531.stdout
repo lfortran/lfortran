@@ -22,7 +22,11 @@
                     ()
                     .false.
                     .false.
+                    NotMethod
+                    ()
+                    []
                 )
         })
     []
+    ()
 )

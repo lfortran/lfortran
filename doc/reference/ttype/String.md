@@ -22,10 +22,10 @@ The cases that this `String` type covers are:
   - `character(len=n) :: x` → `String(1, n, ExpressionLength, DescriptorString)`
 
 * Local variable or argument with constant length:
-  - `character(len=10) :: x` → `String(1, 10, ExpressionLength, FixedSizeString)`
+  - `character(len=10) :: x` → `String(1, 10, ExpressionLength, DescriptorString)`
 
-* ISO C binding C string:
-  - `character(len=n, kind=c_char) :: x` → `String(1, n, ExpressionLength, CString)`
+* String declared with ISO C binding `c_char` kind:
+  - `character(len=n, kind=c_char) :: x` → `String(1, n, ExpressionLength, DescriptorString)`
 
 ### Physical Type Correspondence
 
@@ -53,6 +53,7 @@ The String physical types mirror arrays:
 ## Verify
 
 <!-- BEGIN AUTO: verify -->
+* String kind must be 1 or 4, found [...]
 * String length must be of type INTEGER,found [...]
 * String length must be length >= 0 Current length is -> [...]
 * String of physical type [...] + existing length => must have length kind of `ExpressionLength`.

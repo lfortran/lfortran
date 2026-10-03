@@ -2,4 +2,4 @@ runtime error: Argument 1 of subroutine my is unallocated.
   --> tests/errors/array_bounds_check_13.f90:27:13
    |
 27 |     call my(my_array, i)
-   |             ^^^^^^^^^ 
+   |             ^^^^^^^^ This is unallocated

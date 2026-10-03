@@ -1,0 +1,5 @@
+warning: `rand` is an LFortran extension
+ --> tests/warnings/rand_01.f90:3:9
+  |
+3 |     x = rand()
+  |         ^^^^^^ Use `random_number` instead

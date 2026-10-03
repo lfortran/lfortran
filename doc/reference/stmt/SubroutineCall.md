@@ -19,4 +19,5 @@ _No documentation yet._
 * `SubroutineCall::m_name` '[...]' is a Variable, but does not point to Function
 * `SubroutineCall::m_name` '[...]' is a Variable, but the type is not FunctionType
 * `SubroutineCall::m_name` '[...]' must be a Function or StructMethodDeclaration.
+* `SubroutineCall::m_name` '[...]' was declared external with no interface; the call must reference the signature inferred at this call site.
 <!-- END AUTO: verify -->

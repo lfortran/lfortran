@@ -42,14 +42,10 @@ public:
         StatementWalkVisitor(al), pass_options(pass_options_) { }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop);
+        pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop, this->current_scope);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (pass_options.enable_gpu_offloading) {
-            // DoConcurrentLoop is handled in the MLIR backend
-            return;
-        }
         Vec<ASR::stmt_t*> body;body.reserve(al,1);
         for (int i = 0; i < static_cast<int>(x.n_body); i++) {
             body.push_back(al,x.m_body[i]);
@@ -61,7 +57,7 @@ public:
         }
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
         const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
-        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop);
+        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop, this->current_scope);
     }
 };
 

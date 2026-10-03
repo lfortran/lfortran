@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             line:
                                                 (Variable
@@ -53,6 +56,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f90_assert
@@ -70,6 +76,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 file)
@@ -140,6 +147,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -161,6 +171,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             fn:
                                                 (Variable
@@ -182,6 +195,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fn
@@ -199,6 +215,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)
@@ -218,8 +235,8 @@
                                     )]
                                     (Var 3 fn)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -387,7 +404,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

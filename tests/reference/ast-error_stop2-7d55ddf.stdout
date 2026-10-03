@@ -5,14 +5,10 @@
         []
         ()
         ()
-        []
-        []
-        []
-        []
         [(If
             0
             ()
-            (Logical .true.)
+            (Logical .true. ())
             [(ErrorStop
                 0
                 ()

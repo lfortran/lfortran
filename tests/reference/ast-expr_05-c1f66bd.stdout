@@ -8,12 +8,11 @@
             )]
             []
         )
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -69,8 +68,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             a
             3
@@ -471,12 +470,12 @@
                 )
                 Eqv
                 (BoolOp
-                    (Logical .true.)
+                    (Logical .true. ())
                     Or
                     (BoolOp
-                        (not (Logical .false.))
+                        (not (Logical .false. ()))
                         And
-                        (Logical .true.)
+                        (Logical .true. ())
                     )
                 )
             )

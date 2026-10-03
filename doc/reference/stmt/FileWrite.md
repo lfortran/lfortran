@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec)
+FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id, expr* values, expr? separator, expr? end, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec, expr? pos, expr? asynchronous, expr? decimal)
 ```
 <!-- END AUTO: asr -->
 

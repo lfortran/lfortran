@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -32,6 +33,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -47,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -58,6 +63,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -75,6 +83,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -86,6 +95,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -107,6 +119,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             j:
                                 (Variable
@@ -128,6 +143,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     arrays_01_real
@@ -159,6 +177,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 ()
+                                ()
                             )
                             ()
                             .false.
@@ -187,6 +206,7 @@
                                     11.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -217,6 +237,7 @@
                                     12.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -247,6 +268,7 @@
                                     13.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -283,6 +305,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 ()
+                                ()
                             )
                             ()
                             .false.
@@ -311,6 +334,7 @@
                                     11.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -341,6 +365,7 @@
                                     12.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -371,6 +396,7 @@
                                     13.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -401,6 +427,7 @@
                                     14.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -445,6 +472,7 @@
                                         10.000000
                                         (Real 8)
                                     )
+                                    ()
                                 )
                                 (Real 8)
                                 ()
@@ -476,6 +504,7 @@
                                     1.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -506,6 +535,7 @@
                                     2.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -536,6 +566,7 @@
                                     3.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -631,6 +662,7 @@
                                     17.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -684,6 +716,7 @@
                                     11.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -735,6 +768,7 @@
                                     IntegerToReal
                                     (Real 8)
                                     ()
+                                    ()
                                 )
                                 ()
                                 .false.
@@ -768,6 +802,7 @@
                                     12.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -801,6 +836,7 @@
                                     13.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -834,6 +870,7 @@
                                     13.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -867,6 +904,7 @@
                                     14.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -876,7 +914,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

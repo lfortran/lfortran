@@ -26,6 +26,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -37,6 +38,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -52,6 +56,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -63,6 +68,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -84,6 +92,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     copy_from_to
@@ -93,12 +104,14 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -111,6 +124,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)
@@ -153,8 +167,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             i:
@@ -177,6 +191,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             r:
                                 (Variable
@@ -198,6 +215,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             verify:
                                 (Function
@@ -218,6 +238,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -229,6 +250,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -244,6 +268,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -255,6 +280,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -276,6 +304,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -297,6 +328,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     verify
@@ -306,12 +340,14 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Logical 4)
                                         Source
@@ -324,6 +360,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 a)
@@ -388,8 +425,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             x:
@@ -406,6 +443,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -417,6 +455,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -432,6 +473,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -443,6 +485,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     arrays_08_func
@@ -487,6 +532,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         ))
@@ -499,6 +545,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         ))]
@@ -519,6 +566,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             ))
@@ -531,6 +579,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             ))]
@@ -565,7 +614,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -2,7 +2,6 @@
     [(Program
         array2
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeReal
                 []
@@ -255,7 +254,6 @@
                 (EndOfLine)]
             )
         )]
-        []
         []
     )]
 )

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-infer_first_assignment_conflict_01-a1c38bb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/infer_first_assignment_conflict_01.f90",
+    "infile_hash": "55571c5dde56eb57671e3a4a605a7f8951af2055b6117ca23ef90155",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-infer_first_assignment_conflict_01-a1c38bb.stderr",
+    "stderr_hash": "9e612580f04066b3aa8d1a88fbe3560dde89fff0e4b321a48b906209",
+    "returncode": 2
+}

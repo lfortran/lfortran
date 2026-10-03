@@ -49,16 +49,16 @@
                             f_string_cptr:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
-                                                        14
+                                                        16
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    14
+                                                                    16
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -76,18 +76,23 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s:
                                                                 (Variable
-                                                                    14
+                                                                    16
                                                                     s
                                                                     []
                                                                     In
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (CPtr)
-                                                                    ()
+                                                                    (CPtr
+                                                                        CPointer
+                                                                    )
+                                                                    2 c_ptr
                                                                     BindC
                                                                     Public
                                                                     Required
@@ -97,11 +102,16 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     c_strlen
                                                     (FunctionType
-                                                        [(CPtr)]
+                                                        [(CPtr
+                                                            CPointer
+                                                        )]
                                                         (Integer 8)
                                                         BindC
                                                         Interface
@@ -113,11 +123,12 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
-                                                    [(Var 14 s)]
+                                                    [(Var 16 s)]
                                                     []
-                                                    (Var 14 r)
+                                                    (Var 16 r)
                                                     Public
                                                     .false.
                                                     .false.
@@ -125,15 +136,17 @@
                                                 ),
                                             cptr:
                                                 (Variable
-                                                    13
+                                                    15
                                                     cptr
                                                     []
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -143,10 +156,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
-                                                    13
+                                                    15
                                                     lfortran_tmp
                                                     []
                                                     Local
@@ -164,10 +180,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
-                                                    13
+                                                    15
                                                     s
                                                     []
                                                     ReturnVar
@@ -187,11 +206,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string_cptr
                                     (FunctionType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
@@ -205,15 +229,16 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_string_cptr_n]
-                                    [(Var 13 cptr)]
+                                    [(Var 15 cptr)]
                                     [(Assignment
-                                        (Var 13 lfortran_tmp)
+                                        (Var 15 lfortran_tmp)
                                         (FunctionCall
-                                            13 c_strlen
+                                            15 c_strlen
                                             ()
-                                            [((Var 13 cptr))]
+                                            [((Var 15 cptr))]
                                             (Integer 8)
                                             ()
                                             ()
@@ -223,13 +248,13 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 13 s)
+                                        (Var 15 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
-                                            [((Var 13 cptr))
-                                            ((Var 13 lfortran_tmp))]
-                                            (String 1 (Var 13 lfortran_tmp) ExpressionLength DescriptorString)
+                                            [((Var 15 cptr))
+                                            ((Var 15 lfortran_tmp))]
+                                            (String 1 (Var 15 lfortran_tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )
@@ -237,7 +262,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 13 s)
+                                    (Var 15 s)
                                     Public
                                     .false.
                                     .false.
@@ -246,19 +271,21 @@
                             f_string_cptr_n:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        17
                                         {
                                             cptr:
                                                 (Variable
-                                                    15
+                                                    17
                                                     cptr
                                                     []
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
-                                                    ()
+                                                    (CPtr
+                                                        CPointer
+                                                    )
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -268,10 +295,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
-                                                    15
+                                                    17
                                                     n
                                                     []
                                                     In
@@ -289,17 +319,20 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
-                                                    15
+                                                    17
                                                     s
                                                     [n]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 15 n) ExpressionLength DescriptorString)
+                                                    (String 1 (Var 17 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -310,11 +343,16 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string_cptr_n
                                     (FunctionType
-                                        [(CPtr)
+                                        [(CPtr
+                                            CPointer
+                                        )
                                         (Integer 8)]
                                         (String 1 (FunctionParam
                                             1
@@ -331,25 +369,26 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 15 cptr)
-                                    (Var 15 n)]
+                                    [(Var 17 cptr)
+                                    (Var 17 n)]
                                     []
-                                    (Var 15 s)
+                                    (Var 17 s)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             c_string:
                                                 (Variable
-                                                    12
+                                                    14
                                                     c_string
                                                     []
                                                     In
@@ -361,6 +400,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -372,10 +412,13 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             f_string:
                                                 (Variable
-                                                    12
+                                                    14
                                                     f_string
                                                     []
                                                     ReturnVar
@@ -395,6 +438,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -404,6 +450,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
@@ -418,24 +465,25 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 12 c_string)]
+                                    [(Var 14 c_string)]
                                     []
-                                    (Var 12 f_string)
+                                    (Var 14 f_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             s:
                                                 (Variable
-                                                    11
+                                                    13
                                                     s
                                                     []
                                                     Local
@@ -455,6 +503,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     string_t
@@ -473,9 +524,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_strings
@@ -485,9 +538,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )

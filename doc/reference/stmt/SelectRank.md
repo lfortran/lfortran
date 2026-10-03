@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-SelectRank(expr selector, rank_stmt* body, stmt* default)
+SelectRank(identifier? name, expr selector, rank_stmt* body, stmt* default)
 ```
 <!-- END AUTO: asr -->
 

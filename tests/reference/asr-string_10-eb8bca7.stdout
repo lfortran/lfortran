@@ -33,6 +33,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             is_alpha:
                                 (Variable
@@ -54,6 +57,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             num:
                                 (Variable
@@ -75,6 +81,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     string_10
@@ -349,7 +358,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

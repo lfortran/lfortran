@@ -15,5 +15,6 @@ _No documentation yet._
 ## Verify
 
 <!-- BEGIN AUTO: verify -->
-None.
+* `Namelist::m_group_name` cannot be `nullptr`
+* Namelist '[...]' cannot have a null member
 <!-- END AUTO: verify -->

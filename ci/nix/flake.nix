@@ -1,7 +1,7 @@
 {
   description = "LFortran devShell";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
   outputs = { self, nixpkgs }: 
     let
@@ -66,17 +66,34 @@
             ];
           };
 
+          # nixpkgs provides xeus 5, but xeus-zmq 4 requires xeus 6.
+          xeus_6_0 = llvmPkgs.stdenv.mkDerivation rec {
+            pname = "xeus";
+            version = "6.0.5";
+
+            src = pkgs.fetchFromGitHub {
+              owner = "jupyter-xeus";
+              repo = "xeus";
+              rev = "${version}";
+              hash = "sha256-nbjq4dzrukVsZI6X3lWpr9oCZV5IUu/vkqSNKD7o3vo=";
+            };
+
+            nativeBuildInputs = with pkgs; [ cmake ];
+            buildInputs = with pkgs; [ libuuid ];
+            propagatedBuildInputs = with pkgs; [ nlohmann_json ];
+          };
+
           # nixpkgs version is 1.3.0, i.e. too old for us
           # this is largely copied from nixpkgs:
-          xeus_zmq_3_0 = llvmPkgs.stdenv.mkDerivation rec {
+          xeus_zmq_4_0 = llvmPkgs.stdenv.mkDerivation rec {
             pname = "xeus-zmq";
-            version = "3.0.0";
+            version = "4.0.0";
 
             src = pkgs.fetchFromGitHub {
               owner = "jupyter-xeus";
               repo = "xeus-zmq";
               rev = "${version}";
-              hash = "sha256-J9an+D1FLw99uJPCuux4YNRFcBMh24N3+GDoS/G/U28=";
+              hash = "sha256-Ux8klPh33XWFu9eu+GTk5ZcqIcoP/GM4/J1uaz9xRHI=";
             };
 
             nativeBuildInputs = with pkgs; [ cmake ];
@@ -85,10 +102,8 @@
               cppzmq
               libuuid
               openssl
-              xeus
-              xtl
               zeromq
-            ];
+            ] ++ [ xeus_6_0 ];
 
             propagatedBuildInputs = with pkgs; [ nlohmann_json ];
           };
@@ -127,8 +142,8 @@
             openssl
 
             pandoc
-            xeus
-            xeus_zmq_3_0
+            xeus_6_0
+            xeus_zmq_4_0
             nlohmann_json
 
             clang  # gcc env fails tests without clang available
@@ -155,4 +170,3 @@
       );
     };
 }
-

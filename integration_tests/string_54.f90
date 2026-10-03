@@ -14,7 +14,7 @@ module string_54_mod
     subroutine foo_sub(x, char)
       integer , intent(in) :: x 
       character(double(x)) :: char
-      ! if(len(char) /= 20) error stop ! >>>>>>>>>>>>>>>>>>>>>>>>>>> Uncomment after string is refactored(char should be of physicalType `DescriptorString`).
+      if(len(char) /= 20) error stop
     end subroutine
   
 end module
@@ -25,6 +25,7 @@ integer :: x
 character(10) :: char
 x = 10
 call foo_sub(x, char)
+if(len(char) /= 10) error stop
 end program 
   
   

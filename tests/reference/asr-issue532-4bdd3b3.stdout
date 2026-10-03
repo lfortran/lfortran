@@ -12,6 +12,7 @@
                     issue532
                     []
                     []
+                    ()
                 ),
             issue532_mod:
                 (Module
@@ -43,6 +44,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -64,6 +68,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -85,6 +92,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     imodulo
@@ -102,6 +112,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [sfloor]
                                     [(Var 4 x)
@@ -134,8 +145,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             sfloor:
@@ -163,6 +174,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -184,6 +198,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     sfloor
@@ -200,6 +217,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]
@@ -210,6 +228,7 @@
                                             RealToInteger
                                             (Integer 4)
                                             ()
+                                            ()
                                         )
                                         ()
                                         .false.
@@ -217,8 +236,8 @@
                                     )]
                                     (Var 3 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -228,7 +247,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

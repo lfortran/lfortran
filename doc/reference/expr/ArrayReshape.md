@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-ArrayReshape(expr array, expr shape, ttype type, expr? value)
+ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
 ```
 <!-- END AUTO: asr -->
 

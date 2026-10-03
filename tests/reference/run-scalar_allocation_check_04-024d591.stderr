@@ -2,4 +2,4 @@ runtime error: Argument 1 of subroutine ff is unallocated.
  --> tests/errors/scalar_allocation_check_04.f90:3:13
   |
 3 |     call ff(xx)
-  |             ^^^ 
+  |             ^^ This is unallocated

@@ -7,6 +7,78 @@
                     (SymbolTable
                         2
                         {
+                            __do_loop_inc:
+                                (Variable
+                                    2
+                                    __do_loop_inc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __do_loop_inc1:
+                                (Variable
+                                    2
+                                    __do_loop_inc1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __do_loop_inc2:
+                                (Variable
+                                    2
+                                    __do_loop_inc2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             i:
                                 (Variable
                                     2
@@ -27,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             j:
                                 (Variable
@@ -48,6 +123,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             k:
                                 (Variable
@@ -69,6 +147,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     doloop_04
@@ -88,11 +169,18 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_loop_inc)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_loop_inc)
                             (Integer 4)
                             ()
                         )
@@ -105,7 +193,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -116,7 +204,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc)
                                         (Integer 4)
                                         ()
                                     )
@@ -131,7 +219,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -142,7 +230,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc)
                                         (Integer 4)
                                         ()
                                     )
@@ -162,7 +250,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_loop_inc)
                                 (Integer 4)
                                 ()
                             )
@@ -229,11 +317,18 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_loop_inc1)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 10 (Integer 4) Decimal)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_loop_inc1)
                             (Integer 4)
                             ()
                         )
@@ -246,7 +341,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc1)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -257,7 +352,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc1)
                                         (Integer 4)
                                         ()
                                     )
@@ -272,7 +367,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc1)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -283,7 +378,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc1)
                                         (Integer 4)
                                         ()
                                     )
@@ -303,7 +398,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_loop_inc1)
                                 (Integer 4)
                                 ()
                             )
@@ -617,11 +712,18 @@
                         .false.
                     )
                     (Assignment
+                        (Var 2 __do_loop_inc2)
+                        (Var 2 k)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
                         (Var 2 i)
                         (IntegerBinOp
                             (IntegerConstant 1 (Integer 4) Decimal)
                             Sub
-                            (Var 2 k)
+                            (Var 2 __do_loop_inc2)
                             (Integer 4)
                             ()
                         )
@@ -634,7 +736,7 @@
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc2)
                                     Gt
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -645,7 +747,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc2)
                                         (Integer 4)
                                         ()
                                     )
@@ -660,7 +762,7 @@
                             Or
                             (LogicalBinOp
                                 (IntegerCompare
-                                    (Var 2 k)
+                                    (Var 2 __do_loop_inc2)
                                     LtE
                                     (IntegerConstant 0 (Integer 4) Decimal)
                                     (Logical 4)
@@ -671,7 +773,7 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Add
-                                        (Var 2 k)
+                                        (Var 2 __do_loop_inc2)
                                         (Integer 4)
                                         ()
                                     )
@@ -691,7 +793,7 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (Var 2 k)
+                                (Var 2 __do_loop_inc2)
                                 (Integer 4)
                                 ()
                             )
@@ -705,7 +807,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

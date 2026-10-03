@@ -1,0 +1,12 @@
+semantic error: Passing a scalar argument to an array dummy argument is not allowed. Use --legacy-array-sections to enable sequence association
+  --> tests/../integration_tests/subroutines_21.f90:21:17
+   |
+21 |   call sum_n(4, work(3), res)
+   |                 ^^^^^^^ scalar argument
+   |
+ 3 |    subroutine sum_n(n, x, s)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |    end subroutine
+   | ...^^^^^^^^^^^^^^ array dummy argument

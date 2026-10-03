@@ -7,6 +7,7 @@
 <!-- BEGIN AUTO: values -->
 * `Implementation`
 * `Interface`
+* `ImplicitInterface`
 <!-- END AUTO: values -->
 
 ## Documentation

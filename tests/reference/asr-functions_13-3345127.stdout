@@ -28,6 +28,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -138,8 +139,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -149,6 +150,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             test_scan_verify:
                 (Program
@@ -190,6 +192,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     test_verify_intrinsic
@@ -206,6 +211,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -396,8 +402,8 @@
                                     )]
                                     (Var 5 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -428,7 +434,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

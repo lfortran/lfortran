@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_namelist_01_mod:
                 (Module
@@ -58,13 +59,39 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             inner:
                                                 (Function
                                                     (SymbolTable
                                                         4
                                                         {
-                                                            
+                                                            lfortran_iomsg:
+                                                                (Variable
+                                                                    4
+                                                                    lfortran_iomsg
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
                                                         })
                                                     inner
                                                     (FunctionType
@@ -80,13 +107,14 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
                                                     [(FileWrite
                                                         0
-                                                        ()
-                                                        ()
+                                                        (IntegerConstant 6 (Integer 4) Decimal)
+                                                        (Var 4 lfortran_iomsg)
                                                         ()
                                                         ()
                                                         []
@@ -96,11 +124,14 @@
                                                         .false.
                                                         3 nml
                                                         ()
+                                                        ()
+                                                        ()
+                                                        ()
                                                     )]
                                                     ()
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             nml:
@@ -130,6 +161,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     outer
@@ -146,6 +180,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -175,8 +210,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -186,7 +221,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

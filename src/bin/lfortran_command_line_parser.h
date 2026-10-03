@@ -29,12 +29,15 @@ namespace LCompilers::CommandLineInterface {
         std::vector<std::string> arg_files;
         std::string arg_file;
         std::string arg_standard;
+        bool arg_infer = false;
         bool arg_version = false;
         // see parser.prescan function for what 'prescanning' does
         bool show_prescan = false;
         bool show_tokens = false;
         bool show_ast = false;
         bool show_asr = false;
+        bool from_asr = false;
+        bool verify_asr = false;
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
@@ -49,6 +52,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_asm = false;
         bool show_wat = false;
         bool show_julia = false;
+        bool show_gpu_kernel_source = false;
         bool show_fortran = false;
         bool static_link = false;
         bool shared_link = false;
@@ -58,6 +62,7 @@ namespace LCompilers::CommandLineInterface {
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;
+        bool print_c_include_dir = false;
         bool fixed_form_infer = false;
         bool cpp = false;
         bool cpp_infer = false;
@@ -110,6 +115,7 @@ namespace LCompilers::CommandLineInterface {
 #endif // WITH_LSP
 
         auto parse() -> void;
+
     private:
         int argc;
         const char *const *argv = nullptr;

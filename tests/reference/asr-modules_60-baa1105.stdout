@@ -39,7 +39,8 @@
                                 )
                         })
                     bobyqa_exmp
-                    [infnan_mod_1]
+                    [infnan_mod_1
+                    inf_mod_1]
                     [(SubroutineCall
                         6 is_finite_1
                         ()
@@ -47,6 +48,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             inf_mod_1:
                 (Module
@@ -81,14 +83,15 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -98,6 +101,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             infnan_mod_1:
                 (Module
@@ -139,6 +143,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     is_finite_1
@@ -155,6 +162,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)]
@@ -206,7 +214,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

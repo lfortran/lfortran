@@ -5,15 +5,16 @@ set -ex
 dest="$1"
 cmake -E make_directory $dest
 
-# Remove files we do not want
-cmake -E rm src/lfortran/parser/parser.output
-
 # Copy Directories:
 cmake -E copy_directory src $dest/src
 cmake -E copy_directory share $dest/share
 cmake -E copy_directory cmake $dest/cmake
 cmake -E copy_directory examples $dest/examples
 cmake -E copy_directory doc/man $dest/doc/man
+# tests/asr/check_docs.py reads the ASR node documentation, so the
+# tarball has to carry it for `ctest` to be able to run that test.
+cmake -E copy_directory doc/src/asr $dest/doc/src/asr
+cmake -E copy_directory tests/asr $dest/tests/asr
 
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest

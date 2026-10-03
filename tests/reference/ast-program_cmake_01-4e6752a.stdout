@@ -2,9 +2,6 @@
     [(Program
         TESTFortran
         ()
-        []
-        []
-        []
         [(Print
             0
             ()

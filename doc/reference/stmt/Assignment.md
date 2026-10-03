@@ -17,7 +17,4 @@ _No documentation yet._
 <!-- BEGIN AUTO: verify -->
 * Assignment target `[...]` with intent `IN` not allowed
 * Assignment target with [...] cannot be re-assigned.
-* Reallocation of non allocatable variable is not allowed
-* Move assignment target must be an allocatable array
-* Move assignment value must be an allocatable array
 <!-- END AUTO: verify -->

@@ -2,8 +2,6 @@
     [(Program
         implicit_program_lfortran
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -43,7 +41,6 @@
             ())]
             ()
         )]
-        []
         []
     )]
 )

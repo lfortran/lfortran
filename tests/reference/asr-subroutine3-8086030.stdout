@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     f
@@ -43,6 +46,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -55,10 +59,11 @@
                     )]
                     (Var 2 f)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

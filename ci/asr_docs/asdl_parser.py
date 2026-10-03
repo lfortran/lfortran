@@ -26,15 +26,15 @@ class ASDLParserVisitor(asdl.VisitorBase):
         self.visit(tp.value)
 
     def visitSum(self, sum_):
+        if all(not cons.fields for cons in sum_.types):
+            self.enums[self.current_type].extend(cons.name for cons in sum_.types)
+            return
         for cons in sum_.types:
             self.visit(cons)
 
     def visitConstructor(self, cons):
-        if cons.fields:
-            field_string = f"{cons.name}({', '.join(f'{f.type}' + ('*' if f.seq else '') + ('?' if f.opt else '') + ' ' + f.name for f in cons.fields)})"
-            self.nodes[self.current_type].append((cons.name, field_string))
-        else:
-            self.enums[self.current_type].append(cons.name)
+        field_string = f"{cons.name}({', '.join(f'{f.type}' + ('*' if f.seq else '') + ('?' if f.opt else '') + ' ' + f.name for f in cons.fields)})"
+        self.nodes[self.current_type].append((cons.name, field_string))
 
     def visitProduct(self, prod):
         field_string_list = []

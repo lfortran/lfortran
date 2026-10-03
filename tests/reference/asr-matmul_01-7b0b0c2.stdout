@@ -24,6 +24,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -36,6 +37,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -54,6 +58,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -66,6 +71,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -84,6 +92,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -96,6 +105,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             c2:
                                 (Variable
@@ -114,6 +126,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -126,6 +139,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             dp:
                                 (Variable
@@ -156,6 +172,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             err:
                                 (Variable
@@ -177,6 +196,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             fma_clock:
                                 (Variable
@@ -198,6 +220,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             freq:
                                 (Variable
@@ -219,6 +244,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             ghz:
                                 (Variable
@@ -240,6 +268,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -261,6 +292,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             iter:
                                 (Variable
@@ -282,6 +316,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             matmul1:
                                 (ExternalSymbol
@@ -323,6 +360,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -344,6 +384,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             percent_peak:
                                 (Variable
@@ -365,6 +408,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             t:
                                 (Variable
@@ -386,6 +432,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             t1:
                                 (Variable
@@ -407,6 +456,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             t2:
                                 (Variable
@@ -428,6 +480,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     matmul_01
@@ -496,6 +551,7 @@
                                             IntegerToReal
                                             (Real 8)
                                             ()
+                                            ()
                                         )
                                         (Real 8)
                                         ()
@@ -505,6 +561,7 @@
                                         (Var 6 n)
                                         IntegerToReal
                                         (Real 8)
+                                        ()
                                         ()
                                     )
                                     (Real 8)
@@ -525,6 +582,7 @@
                                         1048576.000000
                                         (Real 8)
                                     )
+                                    ()
                                 )
                                 (Real 8)
                                 ()
@@ -542,6 +600,7 @@
                         (Var 6 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 6 n))]
+                        []
                         ()
                         ()
                         ())
@@ -550,6 +609,7 @@
                         (Var 6 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 6 n))]
+                        []
                         ()
                         ()
                         ())
@@ -558,6 +618,7 @@
                         (Var 6 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 6 n))]
+                        []
                         ()
                         ()
                         ())
@@ -566,6 +627,7 @@
                         (Var 6 n))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 6 n))]
+                        []
                         ()
                         ()
                         ())]
@@ -607,15 +669,14 @@
                                 [(Var 6 a)
                                 (Var 6 b)]
                                 3
-                                (Allocatable
-                                    (Array
-                                        (Real 4)
-                                        [(()
-                                        ())
-                                        (()
-                                        ())]
-                                        DescriptorArray
-                                    )
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())
+                                    (()
+                                    ())]
+                                    DescriptorArray
+                                    Global
                                 )
                                 ()
                             )
@@ -645,6 +706,7 @@
                                 (Var 6 iter)
                                 IntegerToReal
                                 (Real 8)
+                                ()
                                 ()
                             )
                             (Real 8)
@@ -712,6 +774,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 ()
+                                ()
                             )
                             (Real 8)
                             ()
@@ -739,6 +802,7 @@
                                     100.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Real 8)
                             ()
@@ -886,6 +950,7 @@
                                         (()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 )]
@@ -897,6 +962,7 @@
                                     (()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -938,6 +1004,7 @@
                                 (Var 6 iter)
                                 IntegerToReal
                                 (Real 8)
+                                ()
                                 ()
                             )
                             (Real 8)
@@ -1005,6 +1072,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 ()
+                                ()
                             )
                             (Real 8)
                             ()
@@ -1032,6 +1100,7 @@
                                     100.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Real 8)
                             ()
@@ -1196,6 +1265,7 @@
                                         (()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 )]
@@ -1207,6 +1277,7 @@
                                     (()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -1248,6 +1319,7 @@
                                 (Var 6 iter)
                                 IntegerToReal
                                 (Real 8)
+                                ()
                                 ()
                             )
                             (Real 8)
@@ -1315,6 +1387,7 @@
                                 IntegerToReal
                                 (Real 8)
                                 ()
+                                ()
                             )
                             (Real 8)
                             ()
@@ -1342,6 +1415,7 @@
                                     100.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Real 8)
                             ()
@@ -1445,6 +1519,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             matmul_01_cpu:
                 (Module
@@ -1472,6 +1547,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1483,6 +1559,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a0:
                                                 (Variable
@@ -1498,6 +1577,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1509,6 +1589,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a1:
                                                 (Variable
@@ -1524,6 +1607,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1535,6 +1619,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a2:
                                                 (Variable
@@ -1550,6 +1637,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1561,6 +1649,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a3:
                                                 (Variable
@@ -1576,6 +1667,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1587,6 +1679,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a4:
                                                 (Variable
@@ -1602,6 +1697,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1613,6 +1709,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a5:
                                                 (Variable
@@ -1628,6 +1727,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1639,6 +1739,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -1656,6 +1759,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1667,6 +1771,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             c:
                                                 (Variable
@@ -1684,6 +1791,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1695,6 +1803,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i1:
                                                 (Variable
@@ -1716,6 +1827,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             k:
                                                 (Variable
@@ -1737,6 +1851,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s1:
                                                 (Variable
@@ -1758,6 +1875,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u00:
                                                 (Variable
@@ -1773,6 +1893,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1784,6 +1905,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u01:
                                                 (Variable
@@ -1799,6 +1923,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1810,6 +1935,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u10:
                                                 (Variable
@@ -1825,6 +1953,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1836,6 +1965,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u11:
                                                 (Variable
@@ -1851,6 +1983,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1862,6 +1995,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u20:
                                                 (Variable
@@ -1877,6 +2013,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1888,6 +2025,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u21:
                                                 (Variable
@@ -1903,6 +2043,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1914,6 +2055,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u30:
                                                 (Variable
@@ -1929,6 +2073,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1940,6 +2085,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u31:
                                                 (Variable
@@ -1955,6 +2103,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1966,6 +2115,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u40:
                                                 (Variable
@@ -1981,6 +2133,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1992,6 +2145,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u41:
                                                 (Variable
@@ -2007,6 +2163,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2018,6 +2175,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u50:
                                                 (Variable
@@ -2033,6 +2193,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2044,6 +2205,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u51:
                                                 (Variable
@@ -2059,6 +2223,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2070,6 +2235,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -2091,6 +2259,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -2112,6 +2283,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     kernel2
@@ -2123,6 +2297,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -2131,6 +2306,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -2139,6 +2315,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Integer 4)
@@ -2155,6 +2332,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 b)
@@ -2191,6 +2369,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2231,6 +2410,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2265,6 +2445,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2305,6 +2486,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2339,6 +2521,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2379,6 +2562,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2413,6 +2597,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2453,6 +2638,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2487,6 +2673,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2527,6 +2714,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2561,6 +2749,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2601,6 +2790,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2656,6 +2846,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -2664,6 +2855,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2674,6 +2866,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2708,6 +2901,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2716,6 +2910,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2724,6 +2919,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2764,6 +2960,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2772,6 +2969,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2780,6 +2978,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2817,6 +3016,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -2825,6 +3025,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2835,6 +3036,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2869,6 +3071,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2877,6 +3080,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2885,6 +3089,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2925,6 +3130,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2933,6 +3139,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2941,6 +3148,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2978,6 +3186,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -2986,6 +3195,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2996,6 +3206,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3030,6 +3241,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3038,6 +3250,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3046,6 +3259,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3086,6 +3300,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3094,6 +3309,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3102,6 +3318,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3139,6 +3356,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3147,6 +3365,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3157,6 +3376,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3191,6 +3411,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3199,6 +3420,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3207,6 +3429,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3247,6 +3470,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3255,6 +3479,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3263,6 +3488,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3300,6 +3526,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3308,6 +3535,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3318,6 +3546,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3352,6 +3581,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3360,6 +3590,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3368,6 +3599,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3408,6 +3640,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3416,6 +3649,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3424,6 +3658,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3461,6 +3696,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3469,6 +3705,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3479,6 +3716,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3513,6 +3751,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3521,6 +3760,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3529,6 +3769,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3569,6 +3810,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3577,6 +3819,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3585,6 +3828,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3620,6 +3864,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3660,6 +3905,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3694,6 +3940,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3734,6 +3981,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3768,6 +4016,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3808,6 +4057,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3842,6 +4092,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3882,6 +4133,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3916,6 +4168,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3956,6 +4209,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3990,6 +4244,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4030,6 +4285,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4040,8 +4296,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             matmul1:
@@ -4065,6 +4321,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4076,6 +4333,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -4093,6 +4353,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4104,6 +4365,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             c:
                                                 (Variable
@@ -4121,6 +4385,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4132,6 +4397,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -4153,6 +4421,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -4174,6 +4445,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             k:
                                                 (Variable
@@ -4195,6 +4469,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -4216,6 +4493,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     matmul1
@@ -4227,6 +4507,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4235,6 +4516,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4243,6 +4525,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -4255,6 +4538,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)
@@ -4283,6 +4567,7 @@
                                                     0.000000
                                                     (Real 4)
                                                 )
+                                                ()
                                             )
                                             (IntrinsicArrayFunction
                                                 Shape
@@ -4293,6 +4578,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -4303,6 +4589,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4399,8 +4686,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             matmul2:
@@ -4424,6 +4711,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4435,6 +4723,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -4452,6 +4743,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4463,6 +4755,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             c:
                                                 (Variable
@@ -4480,6 +4775,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4491,6 +4787,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i1:
                                                 (Variable
@@ -4512,6 +4811,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i2:
                                                 (Variable
@@ -4533,6 +4835,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i3:
                                                 (Variable
@@ -4554,6 +4859,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             n:
                                                 (Variable
@@ -4575,6 +4883,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s1:
                                                 (Variable
@@ -4596,6 +4907,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s2:
                                                 (Variable
@@ -4617,6 +4931,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s3:
                                                 (Variable
@@ -4638,6 +4955,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -4659,6 +4979,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -4680,6 +5003,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     matmul2
@@ -4691,6 +5017,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4699,6 +5026,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4707,6 +5035,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -4719,6 +5048,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [kernel2]
                                     [(Var 5 a)
@@ -4768,6 +5098,7 @@
                                                     0.000000
                                                     (Real 4)
                                                 )
+                                                ()
                                             )
                                             (IntrinsicArrayFunction
                                                 Shape
@@ -4778,6 +5109,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -4788,6 +5120,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4863,6 +5196,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -4877,6 +5211,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -4891,6 +5226,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -4913,8 +5249,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -4924,7 +5260,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

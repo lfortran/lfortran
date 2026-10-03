@@ -22,13 +22,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .true.
                                                         .false.
@@ -43,18 +43,21 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     finalize
                                     (FunctionType
                                         [(StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .true.
                                             .false.
@@ -70,14 +73,15 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 self)]
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_super_type:
@@ -105,6 +109,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     my_super_type
@@ -121,9 +128,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             my_type:
                                 (Struct
@@ -185,6 +194,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             unary:
                                                 (StructMethodDeclaration
@@ -217,6 +229,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ~add:
                                                 (CustomOperator
@@ -229,13 +244,13 @@
                                         })
                                     my_type
                                     (StructType
-                                        [(StructType
+                                        [(Integer 4)
+                                        (StructType
                                             [(Integer 4)]
                                             []
                                             .true.
                                             .false.
-                                        )
-                                        (Integer 4)]
+                                        )]
                                         []
                                         .true.
                                         .false.
@@ -243,14 +258,16 @@
                                     [my_super_type]
                                     [x
                                     super]
-                                    []
+                                    [finalize]
                                     Source
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             plus:
                                 (Function
@@ -267,13 +284,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .true.
                                                         .false.
@@ -288,6 +305,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -299,13 +319,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -320,30 +340,33 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     plus
                                     (FunctionType
                                         [(StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
                                         )]
                                         (StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .true.
                                             .false.
@@ -358,14 +381,15 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 self)]
                                     []
                                     (Var 9 plus)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             print_something:
@@ -383,13 +407,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -404,6 +428,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             str:
                                                 (Variable
@@ -425,18 +452,21 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     print_something
                                     (FunctionType
                                         [(StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -453,6 +483,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)
@@ -491,6 +522,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -502,13 +536,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -523,18 +557,21 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     say_something
                                     (FunctionType
                                         [(StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
@@ -551,6 +588,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 self)
@@ -579,13 +617,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -600,6 +638,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             unary:
                                                 (Variable
@@ -611,13 +652,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .true.
                                                         .false.
@@ -632,6 +673,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -643,13 +687,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(StructType
+                                                        [(Integer 4)
+                                                        (StructType
                                                             [(Integer 4)]
                                                             []
                                                             .true.
                                                             .false.
-                                                        )
-                                                        (Integer 4)]
+                                                        )]
                                                         []
                                                         .false.
                                                         .false.
@@ -664,42 +708,45 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     unary
                                     (FunctionType
                                         [(StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
                                         )
                                         (StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .false.
                                             .false.
                                         )]
                                         (StructType
-                                            [(StructType
+                                            [(Integer 4)
+                                            (StructType
                                                 [(Integer 4)]
                                                 []
                                                 .true.
                                                 .false.
-                                            )
-                                            (Integer 4)]
+                                            )]
                                             []
                                             .true.
                                             .false.
@@ -714,6 +761,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 self)
@@ -721,8 +769,8 @@
                                     []
                                     (Var 8 unary)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -732,7 +780,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

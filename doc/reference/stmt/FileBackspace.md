@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-FileBackspace(int label, expr? unit, expr? iostat, expr? err)
+FileBackspace(int label, expr? unit, expr? iostat, expr? iomsg, expr? err)
 ```
 <!-- END AUTO: asr -->
 

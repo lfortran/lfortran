@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in binary operation with operands '__libasr_
   --> tests/errors/array_bounds_check_09.f90:12:9
    |
 12 |     e = a + b + f(a)
-   |         ^ 
+   |         ^^^^^ LHS size is 3
+   |
+12 |     e = a + b + f(a)
+   |                 ^^^^ RHS size is 2

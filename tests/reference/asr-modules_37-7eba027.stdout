@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             modules_37_fpm_backend:
                 (Module
@@ -33,8 +34,8 @@
                                                     9
                                                     1_build_target_ptr_ptr
                                                     6 ptr
-                                                    build_target_ptr
-                                                    []
+                                                    modules_37_fpm_backend
+                                                    [build_target_ptr]
                                                     ptr
                                                     Public
                                                 ),
@@ -48,8 +49,8 @@
                                                                     12
                                                                     1_build_target_t_output_dir
                                                                     7 output_dir
-                                                                    build_target_t
-                                                                    []
+                                                                    modules_37_fpm_backend
+                                                                    [build_target_t]
                                                                     output_dir
                                                                     Public
                                                                 ),
@@ -58,8 +59,8 @@
                                                                     12
                                                                     1_string_t_s
                                                                     5 s
-                                                                    string_t
-                                                                    []
+                                                                    modules_37_fpm_backend
+                                                                    [string_t]
                                                                     s
                                                                     Public
                                                                 ),
@@ -92,6 +93,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     associate_block
@@ -159,20 +163,19 @@
                                                         (ArrayConstructor
                                                             [(Var 9 build_dirs)
                                                             (Var 9 temp)]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (StructType
-                                                                        [(Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
-                                                                    )
-                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                    ())]
-                                                                    DescriptorArray
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
                                                                 )
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                ())]
+                                                                DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                             ColMajor
@@ -205,6 +208,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 string_t
@@ -217,6 +221,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -238,6 +245,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -259,6 +269,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             model:
                                                 (Variable
@@ -285,6 +298,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             targets:
                                                 (Variable
@@ -312,6 +328,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 build_target_ptr
                                                     Source
@@ -323,6 +340,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             temp:
                                                 (Variable
@@ -351,6 +371,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             verbose:
                                                 (Variable
@@ -372,6 +395,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     build_package
@@ -393,6 +419,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (StructType
                                             []
@@ -412,6 +439,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 targets)
@@ -421,6 +449,7 @@
                                         [((Var 9 build_dirs)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 0 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -446,8 +475,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             build_target_ptr:
@@ -508,6 +537,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     build_target_ptr
@@ -531,9 +563,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             build_target_t:
                                 (Struct
@@ -562,6 +596,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     build_target_t
@@ -580,9 +617,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             cmd_build:
                                 (Function
@@ -594,8 +633,8 @@
                                                     10
                                                     1_fpm_cmd_settings_verbose
                                                     3 verbose
-                                                    fpm_cmd_settings
-                                                    []
+                                                    modules_37_fpm_backend
+                                                    [fpm_cmd_settings]
                                                     verbose
                                                     Public
                                                 ),
@@ -624,6 +663,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             settings:
                                                 (Variable
@@ -650,6 +692,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             targets:
                                                 (Variable
@@ -678,6 +723,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 build_target_ptr
@@ -690,6 +736,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     cmd_build
@@ -711,6 +760,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [build_package]
                                     [(Var 10 settings)]
@@ -730,8 +780,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fpm_build_settings:
@@ -755,9 +805,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     2 fpm_cmd_settings
+                                    []
                                 ),
                             fpm_cmd_settings:
                                 (Struct
@@ -778,7 +830,7 @@
                                                         .true.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -790,6 +842,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -806,9 +861,11 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             fpm_model_t:
                                 (Struct
@@ -831,9 +888,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             string_t:
                                 (Struct
@@ -862,6 +921,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     string_t
@@ -880,9 +942,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_37_fpm_backend
@@ -891,7 +955,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

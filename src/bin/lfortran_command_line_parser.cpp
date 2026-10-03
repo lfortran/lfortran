@@ -1,7 +1,11 @@
 #include <libasr/exception.h>
 #include <libasr/string_utils.h>
 
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include <lfortran/utils.h>
 
@@ -28,9 +32,186 @@ namespace LCompilers::CommandLineInterface {
         // empty
     }
 
+    static std::string to_lower(const std::string &s) {
+        std::string result = s;
+        std::transform(result.begin(), result.end(), result.begin(),
+            [](unsigned char c) { return std::tolower(c); });
+        return result;
+    }
+
+    static std::string group_key(const std::string &group_name) {
+        std::string key;
+        for (char c : group_name) {
+            if (c == ' ') break;
+            key += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return key;
+    }
+
+    static std::vector<std::string> get_groups(const CLI::App &app) {
+        std::vector<std::string> groups;
+        for (const auto *opt : app.get_options()) {
+            std::string g = opt->get_group();
+            if (g.empty() || g == "Options") continue;
+            if (std::find(groups.begin(), groups.end(), g) == groups.end()) {
+                groups.push_back(g);
+            }
+        }
+        return groups;
+    }
+
+    static std::string find_help_category_arg(int argc, const char *const *argv,
+                                              const std::vector<std::string> &args) {
+        if (argv != nullptr) {
+            for (int i = 1; i < argc; ++i) {
+                std::string arg = argv[i];
+                if (arg.rfind("--help=", 0) == 0) {
+                    return arg.substr(7);
+                }
+            }
+        } else {
+            for (const auto &arg : args) {
+                if (arg.rfind("--help=", 0) == 0) {
+                    return arg.substr(7);
+                }
+            }
+        }
+        return "";
+    }
+
+    static void handle_help_category(const CLI::App &app, const std::string &help_arg) {
+        std::string query = to_lower(help_arg);
+        std::vector<std::string> groups = get_groups(app);
+        for (const auto &group_name : groups) {
+            std::string key = group_key(group_name);
+            if (key == query || key.rfind(query, 0) == 0) {
+                std::cout << group_name << ":\n";
+                for (const auto *opt : app.get_options([&group_name](const CLI::Option *o) {
+                    return o->get_group() == group_name;
+                })) {
+                    std::cout << "  " << std::left << std::setw(30)
+                              << opt->get_name(false, true) << " "
+                              << opt->get_description() << "\n";
+                }
+                std::exit(0);
+            }
+        }
+        std::cerr << "Unknown help category: " << help_arg << "\n";
+        std::cerr << "Available categories: ";
+        bool first = true;
+        for (const auto &group_name : groups) {
+            if (!first) std::cerr << ", ";
+            std::cerr << group_key(group_name);
+            first = false;
+        }
+        std::cerr << "\n";
+        std::exit(1);
+    }
+
+    static void initialize_subcommands(LFortranCommandLineParser &parser) {
+        parser.fmt = parser.app.add_subcommand("fmt", "Format Fortran source files.");
+        parser.fmt->add_option("file", parser.opts.arg_fmt_file,
+            "Fortran source file to format")->required();
+        parser.fmt->add_flag("-i", parser.opts.arg_fmt_inplace,
+            "Modify <file> in-place (instead of writing to stdout)");
+        parser.fmt->add_option("--spaces", parser.opts.arg_fmt_indent,
+            "Number of spaces to use for indentation")->capture_default_str();
+        parser.fmt->add_flag("--indent-unit", parser.opts.arg_fmt_indent_unit,
+            "Indent contents of sub / fn / prog / mod");
+        parser.fmt->add_flag("--no-color", parser.opts.arg_fmt_no_color,
+            "Turn off color when writing to stdout");
+
+        parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
+        parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
+            "The kernel connection file")->required();
+
+        parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
+        parser.mod->add_option("file", parser.opts.arg_mod_file,
+            "Mod file (*.mod)")->required();
+        parser.mod->add_flag("--show-asr", parser.opts.arg_mod_show_asr,
+            "Show ASR for the module");
+        parser.mod->add_flag("--no-color", parser.opts.arg_mod_no_color,
+            "Turn off colored ASR");
+
+        parser.pywrap = parser.app.add_subcommand("pywrap", "Python wrapper generator");
+        parser.pywrap->add_option("file", parser.opts.arg_pywrap_file,
+            "Fortran source file (*.f90)")->required();
+        parser.pywrap->add_option("--array-order", parser.opts.arg_pywrap_array_order,
+            "Select array order (c, f)")->capture_default_str();
+
+#ifdef WITH_LSP
+        parser.server = parser.languageServerInterface.prepare(parser.app);
+#endif
+        parser.app.require_subcommand(0, 1);
+    }
+
+    static bool try_fast_compile_only_parse(int argc, const char *const *argv,
+                                            LFortranCommandLineParser &parser) {
+        if (argv == nullptr || argc <= 1) {
+            return false;
+        }
+
+        LFortranCommandLineOpts fast_opts = parser.opts;
+        CompilerOptions &compiler_options = fast_opts.compiler_options;
+        int positional_count = 0;
+
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "-c") {
+                fast_opts.arg_c = true;
+                continue;
+            }
+            if (arg == "-g") {
+                compiler_options.emit_debug_info = true;
+                continue;
+            }
+            if (arg == "--time-report") {
+                compiler_options.time_report = true;
+                continue;
+            }
+            if (arg == "-o") {
+                if (i + 1 >= argc) {
+                    return false;
+                }
+                compiler_options.arg_o = argv[++i];
+                continue;
+            }
+            if (arg.rfind("-o", 0) == 0 && arg.size() > 2) {
+                compiler_options.arg_o = arg.substr(2);
+                continue;
+            }
+            if (!arg.empty() && arg[0] != '-') {
+                fast_opts.arg_files.push_back(arg);
+                positional_count++;
+                continue;
+            }
+            return false;
+        }
+
+        if (!fast_opts.arg_c || positional_count != 1) {
+            return false;
+        }
+
+        fast_opts.arg_file = fast_opts.arg_files[0];
+        fast_opts.from_asr = endswith(fast_opts.arg_file, ".asr");
+        compiler_options.use_colors = true;
+        compiler_options.use_runtime_colors = false;
+        compiler_options.indent = true;
+        compiler_options.prescan = true;
+        compiler_options.c_preprocessor = false;
+        compiler_options.infer_mode = false;
+        compiler_options.po.openmp = compiler_options.openmp;
+        parser.opts = std::move(fast_opts);
+        initialize_subcommands(parser);
+        return true;
+    }
+
     auto LFortranCommandLineParser::parse() -> void {
         CompilerOptions &compiler_options = opts.compiler_options;
         compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        if (try_fast_compile_only_parse(argc, argv, *this)) {
+            return;
+        }
 
         std::string group_warning_options = "Warning Options";
         std::string group_language_options = "Language Options";
@@ -48,7 +229,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
-        bool old_classes = false;
+        std::string fpe_traps_str;
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
@@ -70,8 +251,9 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
+        app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
         // LFortran specific options
         // Warning-related flags
@@ -89,10 +271,13 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
+        app.add_flag("--infer", opts.arg_infer, "Enable infer mode")->group(group_language_options);
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
+        app.add_flag("--logical-short-circuit", compiler_options.po.logical_short_circuit, "Short-circuit evaluation of logical .and./.or. (permitted, not required, by the standard)")->group(group_language_options);
         app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required")->group(group_language_options);
+        app.add_flag("--coarray", compiler_options.po.coarray, "Enable coarray")->group(group_language_options);
 
         // Preprocessing-related flags
         app.add_flag("--cpp", opts.cpp, "Enable C preprocessing")->group(group_preprocessing_options);
@@ -105,6 +290,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-tokens", opts.show_tokens, "Show tokens for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-ast", opts.show_ast, "Show AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-asr", opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--from-asr", opts.from_asr,
+            "Parse the input file as ASR text")->group(group_output_debugging_options);
+        app.add_flag("--verify-asr", opts.verify_asr,
+            "Parse and verify standalone ASR text without running passes")->group(group_output_debugging_options);
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
@@ -112,7 +301,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
-        app.add_flag("--clojure", compiler_options.po.clojure, "Print ASR in clojure format")->group(group_output_debugging_options);
+        app.add_flag("--clojure", compiler_options.po.clojure,
+            "Print lossless ASR in canonical Clojure/EDN format")->group(group_output_debugging_options);
+        app.add_flag("--no-member-names", compiler_options.po.no_member_names,
+            "Omit ASR member names in Clojure/EDN output")->group(group_output_debugging_options);
         app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format")->group(group_output_debugging_options);
         app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization")->group(group_output_debugging_options);
         app.add_flag("--show-llvm", opts.show_llvm, "Show LLVM IR for the given file and exit")->group(group_output_debugging_options);
@@ -123,15 +315,17 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asm", opts.show_asm, "Show assembly for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-wat", opts.show_wat, "Show WAT (WebAssembly Text Format) and exit")->group(group_output_debugging_options);
         app.add_flag("--show-julia", opts.show_julia, "Show Julia translation source for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--show-gpu-kernel-source", opts.show_gpu_kernel_source, "Show the GPU kernel source for the backend selected by --gpu and exit")->group(group_output_debugging_options);
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
-        app.add_flag("--old-classes", old_classes, "Use the old design for OOPs (deprecated)")->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
         app.add_option("--pass", opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
         app.add_option("--skip-pass", opts.skip_pass, "Skip an ASR pass in default pipeline")->group(group_pass_transformation_options);
+        app.add_flag("--verify-all-passes", compiler_options.po.verify_all_passes,
+            "Verify ASR after every pass")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);
@@ -139,7 +333,6 @@ namespace LCompilers::CommandLineInterface {
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
-        app.add_flag("--target-offload", compiler_options.target_offload_enabled, "Enable Target Offloading")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
@@ -148,10 +341,17 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--linker", opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--march", compiler_options.march, "Generate code for the selected instruction-set architecture (`native` for the host)")->group(group_backend_codegen_options);
+        app.add_option("--mcpu", compiler_options.mcpu, "Generate and tune code for the selected CPU (`native` for the host)")->group(group_backend_codegen_options);
+        app.add_option("--mtune", compiler_options.mtune, "Tune code for the selected CPU without changing the instruction set (`native` for the host)")->group(group_backend_codegen_options);
         app.add_flag("--print-targets", opts.print_targets, "Print the registered targets")->group(group_backend_codegen_options);
+        app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
-        app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
+        app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), input/output, or stop on Metal) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -178,11 +378,13 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
+        app.add_flag("--no-fast-math", compiler_options.po.no_fast_math, "Disable fast-math optimizations (preserve NaN/Inf semantics)")->group(group_miscellaneous_options);
         app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
+        app.add_flag("--detect-leaks", compiler_options.detect_leaks, "Print a memory leak report")->group(group_miscellaneous_options);
         app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
@@ -195,37 +397,13 @@ namespace LCompilers::CommandLineInterface {
         * Subcommands:
         */
 
-        // fmt
-        fmt = app.add_subcommand("fmt", "Format Fortran source files.");
-        fmt->add_option("file", opts.arg_fmt_file, "Fortran source file to format")->required();
-        fmt->add_flag("-i", opts.arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
-        fmt->add_option("--spaces", opts.arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
-        fmt->add_flag("--indent-unit", opts.arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
-        fmt->add_flag("--no-color", opts.arg_fmt_no_color, "Turn off color when writing to stdout");
-
-        // kernel
-        kernel = app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-        kernel->add_option("-f", opts.arg_kernel_f, "The kernel connection file")->required();
-
-        // mod
-        mod = app.add_subcommand("mod", "Fortran mod file utilities.");
-        mod->add_option("file", opts.arg_mod_file, "Mod file (*.mod)")->required();
-        mod->add_flag("--show-asr", opts.arg_mod_show_asr, "Show ASR for the module");
-        mod->add_flag("--no-color", opts.arg_mod_no_color, "Turn off colored ASR");
-
-        // pywrap
-        pywrap = app.add_subcommand("pywrap", "Python wrapper generator");
-        pywrap->add_option("file", opts.arg_pywrap_file, "Fortran source file (*.f90)")->required();
-        pywrap->add_option("--array-order", opts.arg_pywrap_array_order,
-                "Select array order (c, f)")->capture_default_str();
-
-        #ifdef WITH_LSP
-            // server
-            server = languageServerInterface.prepare(app);
-        #endif
-
+        initialize_subcommands(*this);
         app.get_formatter()->column_width(25);
-        app.require_subcommand(0, 1);
+
+        std::string help_arg = find_help_category_arg(argc, argv, args);
+        if (!help_arg.empty()) {
+            handle_help_category(app, help_arg);
+        }
 
         if (argv != nullptr) {
             app.parse(argc, argv);
@@ -251,6 +429,10 @@ namespace LCompilers::CommandLineInterface {
                 std::cerr << "warning: `--generate-object-code` is deprecated and will be "
                           << "removed in a future release; use `--separate-compilation` instead.\n";
             }
+        }
+
+        if (opts.arg_infer && !opts.arg_standard.empty()) {
+            throw lc::LCompilersException("Cannot use --infer and --std at the same time");
         }
 
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
@@ -310,20 +492,46 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.realloc_lhs_arrays = false;
         }
 
-        if (old_classes) {
-            compiler_options.new_classes = false;
-        }
-
         compiler_options.use_colors = !opts.arg_no_color;
         compiler_options.use_runtime_colors = opts.arg_runtime_color;
         compiler_options.indent = !opts.arg_no_indent;
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+        // The passes need to know too: a module compiled into an object file
+        // of its own is defined there, so a translation unit that only uses
+        // it must not define anything of the module itself.
+        compiler_options.po.separate_compilation =
+            compiler_options.separate_compilation;
+
+        // set gpu offloading in pass options
+        if (compiler_options.gpu_backend == "metal") {
+            compiler_options.po.gpu_offload_metal = true;
+        } else if (compiler_options.gpu_backend == "cuda") {
+            compiler_options.po.gpu_offload_cuda = true;
+        } else if (compiler_options.gpu_backend == "cuda_cpu") {
+            // Same ASR pass and same device code generation as cuda; only the
+            // toolchain that compiles and runs the device code differs.
+            compiler_options.gpu_backend = "cuda";
+            compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.gpu_cpu_emulation = true;
+            if (compiler_options.device_compiler == "nvcc") {
+                // Not overridden by --device-compiler, so use a host
+                // compiler. The generated device code is C++, so the driver
+                // has to be the C++ one: `cc` is a C compiler on some
+                // toolchains and then has no C++ front end to call at all.
+                compiler_options.device_compiler = "c++";
+            }
+        } else if (!compiler_options.gpu_backend.empty()) {
+            throw lc::LCompilersException(
+                "The GPU backend `" + compiler_options.gpu_backend
+                + "` is not supported; supported values: metal, cuda, cuda_cpu"
+            );
+        }
 
         for (auto &f_flag : opts.f_flags) {
-            if (f_flag == "PIC") {
-                // Position Independent Code
+            if (f_flag == "PIC" || f_flag == "PIE") {
+                // Position Independent Code / Position Independent Executable
                 // We do this by default, so we ignore for now
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;
@@ -336,20 +544,80 @@ namespace LCompilers::CommandLineInterface {
             }
         }
 
-        // if it's the only file, then we use that file
-        // to set the compiler_options
-        if (opts.arg_files.size() > 0) {
-            opts.arg_file = opts.arg_files[0];
-            for (const auto& file : opts.arg_files) {
-                // if any Fortran file is present, use the first file to
-                // set compiler_options
-                if (endswith(file, ".f90") || endswith(file, ".f") ||
-                    endswith(file, ".F90") || endswith(file, ".F")) {
-                    opts.arg_file = file;
-                    break;
+        // Parse and validate --fpe-trap values, build bitmask
+        if (!fpe_traps_str.empty()) {
+            std::string token;
+            std::istringstream stream(fpe_traps_str);
+            while (std::getline(stream, token, ',')) {
+                // Trim whitespace
+                token.erase(0, token.find_first_not_of(" \t"));
+                token.erase(token.find_last_not_of(" \t") + 1);
+                if (token == "invalid")        compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INVALID;
+                else if (token == "zero")      compiler_options.fpe_traps |= lc::LCOMPILERS_FE_ZERO;
+                else if (token == "overflow")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_OVERFLOW;
+                else if (token == "underflow") compiler_options.fpe_traps |= lc::LCOMPILERS_FE_UNDERFLOW;
+                else if (token == "inexact")   compiler_options.fpe_traps |= lc::LCOMPILERS_FE_INEXACT;
+                else if (token == "denormal")  compiler_options.fpe_traps |= lc::LCOMPILERS_FE_DENORMAL;
+                else {
+                    throw lc::LCompilersException(
+                        "Invalid --fpe-trap value '" + token + "'. "
+                        "Valid values are: invalid, zero, overflow, underflow, inexact, denormal"
+                    );
                 }
             }
         }
+
+        // if it's the only file, then we use that file
+        // to set the compiler_options
+        if (opts.arg_files.size() > 0) {
+            auto is_fortran_source = [](const std::string &file) {
+                return endswith(file, ".f90") || endswith(file, ".f") ||
+                    endswith(file, ".F90") || endswith(file, ".F");
+            };
+            size_t asr_file_count = 0;
+            std::string asr_file;
+            for (const std::string &file : opts.arg_files) {
+                if (endswith(file, ".asr")) {
+                    asr_file_count++;
+                    asr_file = file;
+                }
+            }
+            if (opts.from_asr) {
+                opts.arg_file = opts.arg_files[0];
+                for (size_t i = 1; i < opts.arg_files.size(); i++) {
+                    if (is_fortran_source(opts.arg_files[i]) ||
+                            endswith(opts.arg_files[i], ".asr") ||
+                            endswith(opts.arg_files[i], ".ll")) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+            } else if (asr_file_count > 0) {
+                if (asr_file_count != 1) {
+                    throw lc::LCompilersException(
+                        "Exactly one ASR input file is supported");
+                }
+                for (const std::string &file : opts.arg_files) {
+                    if (file != asr_file &&
+                            (is_fortran_source(file) || endswith(file, ".ll"))) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+                opts.from_asr = true;
+                opts.arg_file = asr_file;
+            } else {
+                opts.arg_file = opts.arg_files[0];
+                for (const auto& file : opts.arg_files) {
+                    if (is_fortran_source(file)) {
+                        opts.arg_file = file;
+                        break;
+                    }
+                }
+            }
+        }
+
+        compiler_options.infer_mode = opts.arg_infer;
 
         if (opts.disable_style_suggestions && style_suggestions) {
             throw lc::LCompilersException("Cannot use --no-style-suggestions and --style-suggestions at the same time");

@@ -27,7 +27,7 @@
                                                         .false.
                                                         .true.
                                                     )
-                                                    3 ~unlimited_polymorphic_type
+                                                    2 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -37,31 +37,9 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            ~unlimited_polymorphic_type:
-                                                (Struct
-                                                    (SymbolTable
-                                                        4
-                                                        {
-                                                            
-                                                        })
-                                                    ~unlimited_polymorphic_type
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .false.
-                                                        .true.
-                                                    )
-                                                    []
-                                                    []
-                                                    []
-                                                    Source
-                                                    Public
-                                                    .false.
-                                                    .true.
-                                                    []
+                                                    NotMethod
                                                     ()
-                                                    ()
+                                                    []
                                                 )
                                         })
                                     subrout
@@ -83,15 +61,43 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)]
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
+                                ),
+                            ~unlimited_polymorphic_type:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    ~unlimited_polymorphic_type
+                                    (StructType
+                                        []
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
                                 )
                         })
                     abstract_type
@@ -100,6 +106,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_01:
                 (Program
@@ -111,7 +118,9 @@
                     derived_types_01
                     []
                     []
+                    ()
                 )
         })
     []
+    ()
 )

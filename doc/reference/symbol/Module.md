@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
+Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
 ```
 <!-- END AUTO: asr -->
 

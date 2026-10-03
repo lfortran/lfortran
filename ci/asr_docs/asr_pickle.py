@@ -6,7 +6,9 @@ Generates compact ASR "pickle" notation from Fortran code.
 This shows concrete ASR instances like: String(1, (), True, False, DescriptorString)
 
 Usage:
-    python -m ci.asr_docs.asr_pickle "character(len=*), intent(in) :: x"
+    python -m ci.asr_docs.asr_pickle "subroutine demo(x)
+    character(len=*), intent(in) :: x
+end subroutine"
     python -m ci.asr_docs.asr_pickle path/to/file.f90
 """
 

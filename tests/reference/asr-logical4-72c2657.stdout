@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -69,6 +75,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     logical4
@@ -79,6 +88,7 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                             IntegerToLogical
                             (Logical 4)
+                            ()
                             ()
                         )
                         ()
@@ -96,6 +106,7 @@
                             IntegerToLogical
                             (Logical 4)
                             ()
+                            ()
                         )
                         ()
                         .false.
@@ -107,6 +118,7 @@
                             (IntegerConstant 0 (Integer 4) Decimal)
                             IntegerToLogical
                             (Logical 4)
+                            ()
                             ()
                         )
                         ()
@@ -126,7 +138,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

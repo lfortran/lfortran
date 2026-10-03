@@ -37,6 +37,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -56,7 +59,7 @@
                         (IntegerConstant 0 (Integer 4) Decimal)
                         (SubroutineCall
                             5 logical_gets_integer@~assign
-                            5 ~assign
+                            5 logical_gets_integer@~assign
                             [((Var 5 tf))
                             ((IntegerConstant 0 (Integer 4) Decimal))]
                             ()
@@ -85,7 +88,7 @@
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (SubroutineCall
                             5 logical_gets_integer@~assign
-                            5 ~assign
+                            5 logical_gets_integer@~assign
                             [((Var 5 tf))
                             ((IntegerConstant 1 (Integer 4) Decimal))]
                             ()
@@ -109,6 +112,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             overload_assignment_m:
                 (Module
@@ -140,6 +144,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             tf:
                                                 (Variable
@@ -161,6 +168,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     logical_gets_integer
@@ -178,6 +188,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 tf)
@@ -197,8 +208,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             logical_gets_integer_use:
@@ -226,6 +237,19 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            logical_gets_integer:
+                                                (ExternalSymbol
+                                                    4
+                                                    logical_gets_integer
+                                                    2 logical_gets_integer
+                                                    overload_assignment_m
+                                                    []
+                                                    logical_gets_integer
+                                                    Public
                                                 ),
                                             tf:
                                                 (Variable
@@ -247,6 +271,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     logical_gets_integer_use
@@ -264,16 +291,17 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
-                                    [logical_gets_integer]
+                                    []
                                     [(Var 4 tf)
                                     (Var 4 i)]
                                     [(Assignment
                                         (Var 4 tf)
                                         (Var 4 i)
                                         (SubroutineCall
-                                            2 logical_gets_integer
-                                            2 ~assign
+                                            4 logical_gets_integer
+                                            4 logical_gets_integer
                                             [((Var 4 tf))
                                             ((Var 4 i))]
                                             ()
@@ -284,8 +312,8 @@
                                     )]
                                     ()
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~assign:
@@ -298,11 +326,13 @@
                         })
                     overload_assignment_m
                     ()
-                    []
+                    [overload_assignment_m]
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

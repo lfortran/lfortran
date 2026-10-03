@@ -74,5 +74,6 @@ program hashmap_derived_pointer_associated
     type(open_hashmap_type) :: map
 
     call init_open_map(map)
+    deallocate(map%cache)
 
 end program hashmap_derived_pointer_associated

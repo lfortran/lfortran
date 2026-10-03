@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     f
@@ -64,6 +70,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 x)]
@@ -76,8 +83,8 @@
                     )]
                     (Var 5 f)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             hinit853:
@@ -86,14 +93,52 @@
                         4
                         {
                             f:
+                                (Variable
+                                    4
+                                    f
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    4 ~implicit_interface_f_8
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            f~fpcast:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
-                                            f_arg_0:
+                                            f~arg_0:
                                                 (Variable
-                                                    8
-                                                    f_arg_0
+                                                    9
+                                                    f~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -110,11 +155,14 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
-                                            f_return_var_name:
+                                            f~result:
                                                 (Variable
-                                                    8
-                                                    f_return_var_name
+                                                    9
+                                                    f~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -131,9 +179,12 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
-                                    f
+                                    f~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         (Real 4)
@@ -147,15 +198,56 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 8 f_arg_0)]
+                                    [(Var 9 f~arg_0)]
                                     []
-                                    (Var 8 f_return_var_name)
+                                    (Var 9 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            f~fpcast_ptr:
+                                (Variable
+                                    4
+                                    f~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 4)]
+                                            (Real 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    4 f~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             hinit853:
                                 (Variable
@@ -177,11 +269,60 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            ~implicit_interface_f_8:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    ~implicit_interface_f_8
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     hinit853
                     (FunctionType
-                        [(Real 4)]
+                        [(FunctionType
+                            []
+                            (Real 4)
+                            BindC
+                            ImplicitInterface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                            Host
+                        )]
                         (Real 4)
                         Source
                         Implementation
@@ -193,13 +334,37 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 f)]
-                    [(Assignment
+                    [(Associate
+                        (Var 4 f~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 4 f)
+                            4 f~fpcast
+                            (FunctionType
+                                [(Real 4)]
+                                (Real 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
                         (Var 4 hinit853)
                         (FunctionCall
-                            4 f
+                            4 f~fpcast_ptr
                             ()
                             [((RealConstant
                                 3.000000
@@ -249,6 +414,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f
@@ -256,7 +424,7 @@
                                         []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -265,6 +433,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -285,6 +454,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             sub:
                 (Function
@@ -316,6 +486,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f
@@ -323,7 +496,7 @@
                                         []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -332,6 +505,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -362,6 +536,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     sub
@@ -370,7 +547,7 @@
                             []
                             (Real 4)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -379,6 +556,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -391,6 +569,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [hinit853]
                     [(Var 2 f)]
@@ -411,10 +590,11 @@
                     (Return)]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

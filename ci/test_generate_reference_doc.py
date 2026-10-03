@@ -34,6 +34,23 @@ from ci.asr_docs.doc_parser import parse_existing_doc
 from ci.asr_docs.utils import write_if_changed
 
 
+def test_parse_asdl_distinguishes_fieldless_nodes_and_enums():
+    """Fieldless constructors in a mixed sum are nodes, not enum values."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        asdl_file = Path(tmpdir) / "test.asdl"
+        asdl_file.write_text("""module Test {
+            stmt = Return() | Assign(int value)
+            storage = Default | Save
+        }
+        """)
+        nodes, enums, structs = parse_asdl(asdl_file)
+        assert nodes["stmt"] == [("Return", "Return()"), ("Assign", "Assign(int value)")]
+        assert "stmt" not in enums
+        assert enums["storage"] == ["Default", "Save"]
+        assert "storage" not in nodes
+        assert structs == {}
+
+
 def test_parse_existing_doc_preserves_documentation():
     """Test that human-written documentation is preserved."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -472,6 +489,7 @@ if __name__ == "__main__":
     import traceback
 
     tests = [
+        test_parse_asdl_distinguishes_fieldless_nodes_and_enums,
         test_parse_existing_doc_preserves_documentation,
         test_parse_existing_doc_ignores_placeholder,
         test_generate_node_content_includes_documentation,

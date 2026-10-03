@@ -5,16 +5,16 @@
             class_default_select_type:
                 (Module
                     (SymbolTable
-                        11
+                        12
                         {
                             enum_stat:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             fatal:
                                                 (Variable
-                                                    12
+                                                    13
                                                     fatal
                                                     []
                                                     Local
@@ -24,7 +24,7 @@
                                                         (IntegerConstant -1 (Integer 4) Decimal)
                                                     )
                                                     (IntegerConstant -1 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -36,16 +36,19 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             success:
                                                 (Variable
-                                                    12
+                                                    13
                                                     success
                                                     []
                                                     Local
                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -57,6 +60,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     enum_stat
@@ -75,18 +81,20 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             toml_stat:
                                 (Variable
-                                    11
+                                    12
                                     toml_stat
                                     []
                                     Local
                                     (StructConstant
-                                        11 enum_stat
+                                        12 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -98,7 +106,7 @@
                                         )
                                     )
                                     (StructConstant
-                                        11 enum_stat
+                                        12 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -117,7 +125,7 @@
                                         .true.
                                         .false.
                                     )
-                                    11 enum_stat
+                                    12 enum_stat
                                     Source
                                     Public
                                     Required
@@ -127,6 +135,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     class_default_select_type
@@ -135,6 +146,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user:
                 (Module
@@ -145,7 +157,7 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat
-                                    11 enum_stat
+                                    12 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -182,6 +194,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     check_table
@@ -204,6 +219,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 tab)]
@@ -224,16 +240,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_enum_stat_fatal:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_enum_stat_fatal
-                                                    12 fatal
-                                                    1_enum_stat
-                                                    []
-                                                    fatal
-                                                    Public
-                                                ),
                                             ptr:
                                                 (Variable
                                                     8
@@ -262,6 +268,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             stat:
                                                 (Variable
@@ -283,6 +292,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -310,6 +322,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             tmp:
                                                 (Variable
@@ -322,8 +337,8 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            [(Real 4)
-                                                            (Integer 4)]
+                                                            [(Integer 4)
+                                                            (Real 4)]
                                                             []
                                                             .false.
                                                             .false.
@@ -339,6 +354,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -349,9 +367,9 @@
                                                                 (ExternalSymbol
                                                                     9
                                                                     1_enum_stat_success
-                                                                    12 success
-                                                                    1_enum_stat
-                                                                    []
+                                                                    13 success
+                                                                    class_default_select_type
+                                                                    [enum_stat]
                                                                     success
                                                                     Public
                                                                 )
@@ -359,7 +377,21 @@
                                                     ~select_type_block_
                                                     [(Associate
                                                         (Var 8 ptr)
-                                                        (Var 8 tmp)
+                                                        (Cast
+                                                            (Var 8 tmp)
+                                                            ClassToStruct
+                                                            (Pointer
+                                                                (StructType
+                                                                    [(Logical 4)
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            )
+                                                            ()
+                                                            (Var 4 toml_table)
+                                                        )
                                                     )
                                                     (If
                                                         ()
@@ -377,6 +409,47 @@
                                                                 9 1_enum_stat_success
                                                                 (Integer 4)
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                    )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            1_enum_stat_fatal:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_enum_stat_fatal
+                                                                    13 fatal
+                                                                    class_default_select_type
+                                                                    [enum_stat]
+                                                                    fatal
+                                                                    Public
+                                                                )
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(If
+                                                        ()
+                                                        (IntrinsicElementalFunction
+                                                            Present
+                                                            [(Var 8 stat)]
+                                                            0
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 8 stat)
+                                                            (StructInstanceMember
+                                                                (Var 4 toml_stat)
+                                                                10 1_enum_stat_fatal
+                                                                (Integer 4)
+                                                                (IntegerConstant -1 (Integer 4) Decimal)
                                                             )
                                                             ()
                                                             .false.
@@ -416,6 +489,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [check_table]
                                     [(Var 8 table)
@@ -442,28 +516,9 @@
                                                     8 ~select_type_block_
                                                 )]
                                             )]
-                                            [(If
-                                                ()
-                                                (IntrinsicElementalFunction
-                                                    Present
-                                                    [(Var 8 stat)]
-                                                    0
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                [(Assignment
-                                                    (Var 8 stat)
-                                                    (StructInstanceMember
-                                                        (Var 4 toml_stat)
-                                                        8 1_enum_stat_fatal
-                                                        (Integer 4)
-                                                        (IntegerConstant -1 (Integer 4) Decimal)
-                                                    )
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                )]
-                                                []
+                                            [(BlockCall
+                                                -1
+                                                8 ~select_type_block_1
                                             )]
                                         )]
                                         [(SubroutineCall
@@ -476,15 +531,15 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_stat:
                                 (ExternalSymbol
                                     4
                                     toml_stat
-                                    11 toml_stat
+                                    12 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -509,7 +564,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -521,6 +576,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             inline:
                                                 (Variable
@@ -536,7 +594,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -548,6 +606,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_table
@@ -566,9 +627,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     4 toml_value
+                                    []
                                 ),
                             toml_value:
                                 (Struct
@@ -595,6 +658,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -616,12 +682,15 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_value
                                     (StructType
-                                        [(Real 4)
-                                        (Integer 4)]
+                                        [(Integer 4)
+                                        (Real 4)]
                                         []
                                         .true.
                                         .false.
@@ -634,9 +703,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     class_default_select_type_user
@@ -645,6 +716,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             class_default_select_type_user1:
                 (Module
@@ -655,7 +727,7 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_stat
-                                    11 enum_stat
+                                    12 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -685,7 +757,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_stat
-                                    11 toml_stat
+                                    12 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -714,15 +786,17 @@
                         })
                     class_default_select_type_user1
                     ()
-                    [class_default_select_type_user]
+                    [class_default_select_type_user
+                    class_default_select_type]
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             select_type4:
                 (Program
                     (SymbolTable
-                        13
+                        14
                         {
                             
                         })
@@ -734,7 +808,9 @@
                             (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

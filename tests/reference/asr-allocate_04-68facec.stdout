@@ -26,6 +26,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -38,6 +39,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             message:
                                 (Variable
@@ -61,6 +65,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             num:
                                 (Variable
@@ -82,6 +89,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             string:
                                 (Variable
@@ -105,6 +115,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     allocate_04
@@ -112,9 +125,10 @@
                     [(Allocate
                         [((Var 2 string)
                         []
+                        []
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -122,9 +136,10 @@
                     (Allocate
                         [((Var 2 message)
                         []
+                        []
                         (IntegerConstant 20 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -137,6 +152,7 @@
                         (IntegerConstant 3 (Integer 4) Decimal))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -257,7 +273,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

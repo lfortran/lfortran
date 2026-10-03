@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in assignment to 'a'. Tried to match size 2 
   --> tests/errors/array_shape_05.f90:10:5
    |
 10 |     a = temp(i:j)
-   |     ^ 
+   |     ^ LHS size is 2
+   |
+10 |     a = temp(i:j)
+   |         ^^^^^^^^^ RHS size is 1

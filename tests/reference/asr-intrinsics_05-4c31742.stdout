@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     intrinsics_05
@@ -121,7 +124,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -61,6 +61,7 @@
                     subroutines_06
                     [subroutines_06_bitset]
                     []
+                    ()
                 ),
             subroutines_06_bitset:
                 (Module
@@ -92,6 +93,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             set2:
                                                 (Variable
@@ -113,6 +117,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     assign_large
@@ -130,6 +137,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 set1)
@@ -138,7 +146,7 @@
                                     ()
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             assign_logint8_large:
@@ -160,6 +168,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -171,6 +180,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -192,6 +204,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     assign_logint8_large
@@ -202,6 +217,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -214,6 +230,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 self)
@@ -222,7 +239,7 @@
                                     ()
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             error_handler:
@@ -257,6 +274,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             message:
                                                 (Variable
@@ -278,6 +298,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             module:
                                                 (Variable
@@ -299,6 +322,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             procedure:
                                                 (Variable
@@ -320,6 +346,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             status:
                                                 (Variable
@@ -341,6 +370,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     error_handler~genericprocedure
@@ -361,6 +393,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 message)
@@ -401,7 +434,9 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 )
         })
     []
+    ()
 )

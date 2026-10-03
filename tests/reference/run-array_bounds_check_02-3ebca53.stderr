@@ -2,4 +2,7 @@ runtime error: Array shape mismatch in assignment to 'y'. Tried to match size 4 
   --> tests/errors/array_bounds_check_02.f90:11:9
    |
 11 |         y = [1, 2, 3]
-   |         ^ 
+   |         ^ LHS size is 4
+   |
+11 |         y = [1, 2, 3]
+   |             ^^^^^^^^^ RHS size is 3

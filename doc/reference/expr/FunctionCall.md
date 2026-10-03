@@ -19,4 +19,5 @@ _No documentation yet._
 * `FunctionCall::m_name` `[...]` cannot point outside of its symbol table
 * `FunctionCall::m_name` must be a Function or Variable with FunctionType
 * `FunctionCall::m_name` [...] must be returning a non-void value.
+* `FunctionCall::m_name` [...] was declared external with no interface; the call must reference the signature inferred at this call site.
 <!-- END AUTO: verify -->

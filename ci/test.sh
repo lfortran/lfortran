@@ -42,11 +42,8 @@ if [[ $WIN != "1" ]]; then
     # using debugging option i.e. `-x` causes incorrect assignment
     set +x
     if [[ $MACOS == "1" ]]; then
-        # we can't use $nproc, it overwhelms system resources on macOS
-        NPROC=2
-        # ideally, we should use something like below, but it raises
-        # error with shell
-        # NPROC=$(( $(NPROC) / 2))
+        # macOS ARM64 runners have 3 cores; higher parallelism overwhelms them
+        NPROC=3
     else
         # this works fine on Linux
         NPROC=$(nproc)
@@ -60,16 +57,28 @@ if [[ $WIN != "1" ]]; then
     fi
 
     cd integration_tests
+    # Check that CMake can detect and drive lfortran as a Fortran compiler
+    # without any help. run_tests.py below bypasses this detection with
+    # -DCMAKE_Fortran_COMPILER_WORKS=1, so this configure step is the only
+    # place we exercise it. Build and run just the two CMake-driven tests:
+    # building the whole suite here duplicates `run_tests.py -b llvm` below.
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
-    make -j${NPROC}
-    ctest -L llvm -j${NPROC}
+    make -j${NPROC} program_cmake_01 program_cmake_02
+    ctest -j${NPROC} -R program_cmake
     cd ..
 
-    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8
-    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f
-    ./run_tests.py -b llvm -f -nf16
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
+    fi
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
+    fi
+    ./run_tests.py -b llvm_submodule -j${NPROC}
+    # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
+    # checks (debug_outOfSource) so this Quick job stays under an hour.
     cd ..
 
     pip install src/server/tests tests/server

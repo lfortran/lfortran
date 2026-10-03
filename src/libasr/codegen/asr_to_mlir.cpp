@@ -119,6 +119,11 @@ public:
         return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        throw CodeGenError("conditional expressions are not supported by the MLIR backend",
+            x.base.base.loc);
+    }
+
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
         if (ASR::is_a<ASR::Var_t>(x) || ASR::is_a<ASR::ArrayItem_t>(x)) {
@@ -167,6 +172,9 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
         if (fnType->m_deftype == ASR::deftypeType::Interface) {
@@ -261,9 +269,19 @@ public:
             loc, builder->getI32Type(), builder->getI32IntegerAttr(0));
         builder->create<mlir::LLVM::ReturnOp>(loc, zero.getResult());
     }
-
+    void handle_string_variable(uint32_t h) { // Use i8* for now 
+        auto i8ptr = mlir::LLVM::LLVMPointerType::get(builder->getContext());
+        auto one = builder->create<mlir::LLVM::ConstantOp>(loc, builder->getI32Type(),
+            builder->getI64IntegerAttr(1));// Allocate pointer-sized slot 
+        mlir::Value ptr = builder->create<mlir::LLVM::AllocaOp>(loc, voidPtr, i8ptr, one);
+        mlir_symtab[h] = ptr;
+    }
     void visit_Variable(const ASR::Variable_t &x) {
         uint32_t h = get_hash((ASR::asr_t*) &x);
+        if (ASRUtils::is_character(*x.m_type)) {
+            handle_string_variable(h);
+            return;
+        }
         mlir::Value size = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI32Type(), builder->getI64IntegerAttr(1));
         mlir_symtab[h] = builder->create<mlir::LLVM::AllocaOp>(loc,
@@ -938,14 +956,27 @@ public:
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        if (!x.m_unit) {
-            LCOMPILERS_ASSERT(x.n_values == 1);
-            handle_Print(x.base.base.loc, x.m_values[0]);
-        } else {
-            throw CodeGenError("Only write(*, *) [...] is implemented for now",
-                    x.base.base.loc);
+        bool is_default_unit = false;
+        if (x.m_unit) {
+            int unit_value = -1;
+            if (ASRUtils::extract_value(x.m_unit, unit_value)) {
+                // In Fortran, default output unit is 6
+                if (unit_value == 6) {
+                    is_default_unit = true;
+                }
+            }
         }
+        if (!is_default_unit) {
+            throw CodeGenError(
+                "MLIR backend currently supports only write(*,*) "
+                "(default output unit)",
+                x.base.base.loc
+            );
+        }
+        LCOMPILERS_ASSERT(x.n_values == 1);
+        handle_Print(x.base.base.loc, x.m_values[0]);
     }
+
 
 };
 

@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -62,6 +65,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             r1:
                                 (Variable
@@ -83,6 +89,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             r2:
                                 (Variable
@@ -104,6 +113,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -125,6 +137,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     intrinsics_03
@@ -215,6 +230,7 @@
                                             0.490261
                                             (Real 8)
                                         )
+                                        ()
                                     )
                                     (Real 8)
                                     ()
@@ -235,6 +251,7 @@
                                     0.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -273,6 +290,7 @@
                                                     0.070737
                                                     (Real 8)
                                                 )
+                                                ()
                                             )
                                             Add
                                             (IntrinsicElementalFunction
@@ -313,6 +331,7 @@
                                             0.716404
                                             (Real 8)
                                         )
+                                        ()
                                     )
                                     (Real 8)
                                     ()
@@ -333,6 +352,7 @@
                                     0.000000
                                     (Real 8)
                                 )
+                                ()
                             )
                             (Logical 4)
                             ()
@@ -438,9 +458,11 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
+    ()
 )

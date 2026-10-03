@@ -15,9 +15,6 @@
         ()
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -77,8 +74,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             d2v
             (String "AB" ())

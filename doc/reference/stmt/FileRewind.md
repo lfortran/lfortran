@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-FileRewind(int label, expr? unit, expr? iostat, expr? err)
+FileRewind(int label, expr? unit, expr? iostat, expr? err, expr? iomsg)
 ```
 <!-- END AUTO: asr -->
 

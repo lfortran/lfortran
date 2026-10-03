@@ -1,0 +1,12 @@
+semantic error: Passing a scalar argument to an array dummy argument is not allowed. Use --legacy-array-sections to enable sequence association
+ --> tests/../integration_tests/arrays_107.f90:4:18
+  |
+4 |     call testsub(x(1, 1))
+  |                  ^^^^^^^ scalar argument
+  |
+9 |        subroutine testsub(x)
+  |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+12 |        end subroutine testsub
+  | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ array dummy argument

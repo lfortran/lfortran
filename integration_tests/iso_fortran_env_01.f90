@@ -1,5 +1,5 @@
 program iso_fortran_env_01
-    use iso_fortran_env, only: numeric_storage_size, character_storage_size, iostat_eor
+    use, intrinsic :: iso_fortran_env, only: numeric_storage_size, character_storage_size, iostat_eor
     print *, "numeric_storage_size: ", numeric_storage_size
     if (numeric_storage_size /= 32) error stop
 

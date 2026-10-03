@@ -31,5 +31,6 @@ program derived_types_61
 
     print *, map % inverse(inmap) % target % slot
     if (map % inverse(inmap) % target % slot /= 0) error stop
+    deallocate(map % inverse(1) % target)
     
 end program

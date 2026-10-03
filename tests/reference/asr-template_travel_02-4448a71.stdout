@@ -69,7 +69,9 @@
                                 )
                         })
                     template_travel_02
-                    [template_travel_02_m]
+                    [template_travel_02_m
+                    template_travel_02_math
+                    template_travel_02_travel]
                     [(SubroutineCall
                         26 test_template
                         ()
@@ -77,6 +79,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             template_travel_02_m:
                 (Module
@@ -143,6 +146,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -164,6 +170,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -185,6 +194,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -206,6 +218,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -227,6 +242,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     __asr_avg_s_from_t
@@ -246,6 +264,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 27 d1)
@@ -285,8 +304,8 @@
                                                     )]
                                                     (Var 27 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_real_s_from_s:
@@ -314,6 +333,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -335,6 +357,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -356,6 +381,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s1:
                                                                 (Variable
@@ -377,6 +405,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s2:
                                                                 (Variable
@@ -398,6 +429,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     avg_real_s_from_s
@@ -417,6 +451,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [__asr_avg_s_from_t]
                                                     [(Var 25 d1)
@@ -458,8 +493,8 @@
                                                     )]
                                                     (Var 25 avg)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s:
@@ -482,6 +517,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     test_template
@@ -498,6 +536,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -580,6 +619,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             template_travel_02_math:
                 (Module
@@ -611,6 +651,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -632,6 +675,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -653,6 +699,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     add_real
@@ -670,6 +719,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)
@@ -689,8 +739,8 @@
                                     )]
                                     (Var 3 total)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             slash_real:
@@ -718,6 +768,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -739,6 +792,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -760,6 +816,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     slash_real
@@ -777,6 +836,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)
@@ -796,8 +856,8 @@
                                     )]
                                     (Var 4 total)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -807,6 +867,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             template_travel_02_travel:
                 (Module
@@ -839,6 +900,8 @@
                                                     Default
                                                     (TypeParameter
                                                         d
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -850,6 +913,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             d_divided_by_s:
                                                 (Function
@@ -867,6 +933,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -878,6 +946,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -890,6 +961,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -901,6 +974,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -913,6 +989,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -924,18 +1002,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     d_divided_by_s
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -947,6 +1034,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 10 n)
@@ -954,8 +1042,8 @@
                                                     []
                                                     (Var 10 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d_divided_by_t:
@@ -974,6 +1062,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -985,6 +1075,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -997,6 +1090,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1008,6 +1103,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -1020,6 +1118,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1031,18 +1131,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     d_divided_by_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1054,6 +1163,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 9 n)
@@ -1061,8 +1171,8 @@
                                                     []
                                                     (Var 9 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_d:
@@ -1081,6 +1191,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1092,6 +1204,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1104,6 +1219,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1115,6 +1232,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1127,6 +1247,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1138,18 +1260,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     plus_d
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1161,6 +1292,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 7 l)
@@ -1168,8 +1300,8 @@
                                                     []
                                                     (Var 7 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -1188,6 +1320,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1199,6 +1333,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1211,6 +1348,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1222,6 +1361,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1234,6 +1376,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1245,18 +1389,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     plus_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1268,6 +1421,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 8 l)
@@ -1275,8 +1429,8 @@
                                                     []
                                                     (Var 8 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s:
@@ -1290,6 +1444,8 @@
                                                     Default
                                                     (TypeParameter
                                                         s
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1301,6 +1457,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             t:
                                                 (Variable
@@ -1313,6 +1472,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1324,6 +1485,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     operations
@@ -1367,6 +1531,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1378,6 +1544,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -1390,6 +1559,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1401,6 +1572,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -1413,6 +1587,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1424,6 +1600,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s1:
                                                                 (Variable
@@ -1436,6 +1615,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1447,6 +1628,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s2:
                                                                 (Variable
@@ -1459,6 +1643,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1470,24 +1656,37 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     avg_s_from_s
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1499,6 +1698,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [d_divided_by_s
                                                     avg_s_from_t]
@@ -1519,6 +1719,8 @@
                                                                 ((Var 17 s1))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
@@ -1531,12 +1733,16 @@
                                                                 ((Var 17 s2))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 s
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -1547,8 +1753,8 @@
                                                     )]
                                                     (Var 17 avg)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_s_from_t:
@@ -1567,6 +1773,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1578,6 +1786,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -1590,6 +1801,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1601,6 +1814,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -1613,6 +1829,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1624,6 +1842,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -1636,6 +1857,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1647,6 +1870,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -1659,6 +1885,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1670,24 +1898,37 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     avg_s_from_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1699,6 +1940,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [plus_d
                                                     plus_t
@@ -1719,6 +1961,8 @@
                                                                 ((Var 16 d2))]
                                                                 (TypeParameter
                                                                     d
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
@@ -1730,12 +1974,16 @@
                                                                 ((Var 16 t2))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 s
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -1746,8 +1994,8 @@
                                                     )]
                                                     (Var 16 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d:
@@ -1761,6 +2009,8 @@
                                                     Default
                                                     (TypeParameter
                                                         d
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -1772,6 +2022,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             d_divided_by_s:
                                                 (Function
@@ -1789,6 +2042,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1800,6 +2055,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1812,6 +2070,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1823,6 +2083,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -1835,6 +2098,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1846,18 +2111,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     d_divided_by_s
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1869,6 +2143,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 15 n)
@@ -1876,8 +2151,8 @@
                                                     []
                                                     (Var 15 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d_divided_by_t:
@@ -1896,6 +2171,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1907,6 +2184,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1919,6 +2199,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1930,6 +2212,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -1942,6 +2227,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         s
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -1953,18 +2240,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     d_divided_by_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             s
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -1976,6 +2272,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 14 n)
@@ -1983,8 +2280,8 @@
                                                     []
                                                     (Var 14 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_d:
@@ -2003,6 +2300,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2014,6 +2313,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -2026,6 +2328,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2037,6 +2341,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -2049,6 +2356,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         d
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2060,18 +2369,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     plus_d
                                                     (FunctionType
                                                         [(TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             d
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2083,6 +2401,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 12 l)
@@ -2090,8 +2409,8 @@
                                                     []
                                                     (Var 12 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -2110,6 +2429,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2121,6 +2442,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -2133,6 +2457,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2144,6 +2470,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -2156,6 +2485,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2167,18 +2498,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     plus_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2190,6 +2530,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 13 l)
@@ -2197,8 +2538,8 @@
                                                     []
                                                     (Var 13 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             s:
@@ -2212,6 +2553,8 @@
                                                     Default
                                                     (TypeParameter
                                                         s
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -2223,6 +2566,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             t:
                                                 (Variable
@@ -2235,6 +2581,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -2246,6 +2594,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     travel_tmpl
@@ -2288,6 +2639,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2299,6 +2652,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -2311,6 +2667,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2322,6 +2680,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -2334,6 +2695,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2345,6 +2708,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s1:
                                                                 (Variable
@@ -2357,6 +2723,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2368,6 +2736,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             s2:
                                                                 (Variable
@@ -2380,6 +2751,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2391,24 +2764,37 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     avg_s_from_s
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2420,6 +2806,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [div
                                                     avg_s_from_t]
@@ -2440,6 +2827,8 @@
                                                                 ((Var 21 s1))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
@@ -2452,12 +2841,16 @@
                                                                 ((Var 21 s2))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -2468,8 +2861,8 @@
                                                     )]
                                                     (Var 21 avg)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_s_from_t:
@@ -2488,6 +2881,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2499,6 +2894,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d1:
                                                                 (Variable
@@ -2511,6 +2909,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2522,6 +2922,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             d2:
                                                                 (Variable
@@ -2534,6 +2937,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2545,6 +2950,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t1:
                                                                 (Variable
@@ -2557,6 +2965,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2568,6 +2978,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             t2:
                                                                 (Variable
@@ -2580,6 +2993,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2591,24 +3006,37 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     avg_s_from_t
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2620,6 +3048,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [plus
                                                     div]
@@ -2639,6 +3068,8 @@
                                                                 ((Var 22 d2))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
@@ -2650,12 +3081,16 @@
                                                                 ((Var 22 t2))]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -2666,8 +3101,8 @@
                                                     )]
                                                     (Var 22 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             div:
@@ -2686,6 +3121,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2697,6 +3134,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -2709,6 +3149,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2720,6 +3162,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             quotient:
                                                                 (Variable
@@ -2732,6 +3177,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2743,18 +3190,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     div
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2766,6 +3222,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 20 n)
@@ -2773,8 +3230,8 @@
                                                     []
                                                     (Var 20 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus:
@@ -2793,6 +3250,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2804,6 +3263,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -2816,6 +3278,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2827,6 +3291,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -2839,6 +3306,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -2850,18 +3319,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     plus
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -2873,6 +3351,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 19 l)
@@ -2880,8 +3359,8 @@
                                                     []
                                                     (Var 19 total)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -2895,6 +3374,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -2906,6 +3387,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     travel_tmpl2
@@ -2927,7 +3411,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

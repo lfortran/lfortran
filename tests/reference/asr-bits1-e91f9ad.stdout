@@ -21,6 +21,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -32,6 +33,7 @@
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         ColMajor
                                     )
@@ -41,6 +43,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -52,6 +55,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bits1
@@ -70,6 +76,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -80,7 +87,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

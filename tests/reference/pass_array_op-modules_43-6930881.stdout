@@ -29,13 +29,13 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                [(Integer 8)
-                                                (Allocatable
+                                                [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
-                                                )]
+                                                )
+                                                (Integer 8)]
                                                 []
                                                 .true.
                                                 .false.
@@ -43,6 +43,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     5 srcfile_t
@@ -55,6 +56,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -73,6 +77,7 @@
                         [((Var 5 sources)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 1 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -87,6 +92,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_43_fpm_sources:
                 (Module
@@ -118,6 +124,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __1_t:
                                                 (Variable
@@ -139,6 +148,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             dir_sources:
                                                 (Variable
@@ -152,13 +164,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Integer 8)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                )
+                                                                (Integer 8)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -166,6 +178,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -178,6 +191,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -193,6 +209,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -204,6 +221,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             sources:
                                                 (Variable
@@ -217,13 +237,13 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                [(Integer 8)
-                                                                (Allocatable
+                                                                [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                )
+                                                                (Integer 8)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -231,6 +251,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -243,6 +264,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     add_sources_from_dir
@@ -250,13 +274,13 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    [(Integer 8)
-                                                    (Allocatable
+                                                    [(Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
-                                                    )]
+                                                    )
+                                                    (Integer 8)]
                                                     []
                                                     .true.
                                                     .false.
@@ -264,6 +288,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -277,6 +302,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 sources)]
@@ -284,6 +310,7 @@
                                         [((Var 4 dir_sources)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -317,6 +344,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -327,6 +355,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )]
@@ -334,13 +363,13 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            [(Integer 8)
-                                                            (Allocatable
+                                                            [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            )
+                                                            (Integer 8)]
                                                             []
                                                             .true.
                                                             .false.
@@ -348,6 +377,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -394,13 +424,13 @@
                                                     (Var 4 __1__libasr_index_)
                                                     ())]
                                                     (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
+                                                        [(Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
-                                                        )]
+                                                        )
+                                                        (Integer 8)]
                                                         []
                                                         .true.
                                                         .false.
@@ -414,13 +444,13 @@
                                                     (Var 4 __1_t)
                                                     ())]
                                                     (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
+                                                        [(Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
-                                                        )]
+                                                        )
+                                                        (Integer 8)]
                                                         []
                                                         .true.
                                                         .false.
@@ -467,6 +497,7 @@
                                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                                             FixedSizeArray
+                                                                            Global
                                                                         )
                                                                         ()
                                                                     )
@@ -477,6 +508,7 @@
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )]
@@ -484,13 +516,13 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            [(Integer 8)
-                                                                            (Allocatable
+                                                                            [(Allocatable
                                                                                 (String 1 () DeferredLength DescriptorString)
                                                                             )
                                                                             (Allocatable
                                                                                 (String 1 () DeferredLength DescriptorString)
-                                                                            )]
+                                                                            )
+                                                                            (Integer 8)]
                                                                             []
                                                                             .true.
                                                                             .false.
@@ -498,6 +530,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 ()
@@ -517,13 +550,13 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 (Array
                                                     (StructType
-                                                        [(Integer 8)
-                                                        (Allocatable
+                                                        [(Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
-                                                        )]
+                                                        )
+                                                        (Integer 8)]
                                                         []
                                                         .true.
                                                         .false.
@@ -536,6 +569,7 @@
                                                         ()
                                                     ))]
                                                     PointerArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -550,6 +584,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -560,6 +595,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )]
@@ -567,13 +603,13 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            [(Integer 8)
-                                                            (Allocatable
+                                                            [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
-                                                            )]
+                                                            )
+                                                            (Integer 8)]
                                                             []
                                                             .true.
                                                             .false.
@@ -581,6 +617,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -606,6 +643,7 @@
                                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                                     FixedSizeArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             )
@@ -616,6 +654,7 @@
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         )]
@@ -623,13 +662,13 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    [(Integer 8)
-                                                                    (Allocatable
+                                                                    [(Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
                                                                     )
                                                                     (Allocatable
                                                                         (String 1 () DeferredLength DescriptorString)
-                                                                    )]
+                                                                    )
+                                                                    (Integer 8)]
                                                                     []
                                                                     .true.
                                                                     .false.
@@ -637,6 +676,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         ()
@@ -655,8 +695,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             srcfile_t:
@@ -684,6 +724,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -707,6 +750,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_name:
                                                 (Variable
@@ -730,17 +776,20 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     srcfile_t
                                     (StructType
-                                        [(Integer 8)
-                                        (Allocatable
+                                        [(Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
-                                        )]
+                                        )
+                                        (Integer 8)]
                                         []
                                         .true.
                                         .false.
@@ -754,9 +803,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_43_fpm_sources
@@ -765,7 +816,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

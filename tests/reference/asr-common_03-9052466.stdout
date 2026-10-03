@@ -7,6 +7,16 @@
                     (SymbolTable
                         5
                         {
+                            1_b:
+                                (ExternalSymbol
+                                    5
+                                    1_b
+                                    6 b
+                                    file_common_block_b
+                                    []
+                                    b
+                                    Public
+                                ),
                             1_b_e:
                                 (ExternalSymbol
                                     5
@@ -79,6 +89,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                         )
@@ -90,6 +101,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -131,6 +143,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             file_common_block_b:
                 (Module
@@ -162,6 +175,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             e:
                                                 (Variable
@@ -183,6 +199,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             f:
                                                 (Variable
@@ -204,6 +223,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     b
@@ -222,9 +244,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_b:
                                 (Variable
@@ -251,6 +275,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     file_common_block_b
@@ -259,6 +286,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_blank#block:
                 (Module
@@ -290,6 +318,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             z2:
                                                 (Variable
@@ -311,6 +342,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     blank#block
@@ -328,9 +362,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_blank#block:
                                 (Variable
@@ -357,6 +393,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     file_common_block_blank#block
@@ -365,6 +404,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_c:
                 (Module
@@ -396,6 +436,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             g:
                                                 (Variable
@@ -417,6 +460,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             h:
                                                 (Variable
@@ -438,6 +484,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -459,6 +508,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     c
@@ -478,9 +530,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_c:
                                 (Variable
@@ -507,6 +561,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     file_common_block_c
@@ -515,6 +572,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             file_common_block_sample:
                 (Module
@@ -540,6 +598,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -551,6 +610,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -572,6 +634,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -587,6 +652,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -598,6 +664,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     sample
@@ -616,9 +685,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             struct_instance_sample:
                                 (Variable
@@ -645,6 +716,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     file_common_block_sample
@@ -653,6 +727,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             pass:
                 (Function
@@ -699,6 +774,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             sample:
                                 (ExternalSymbol
@@ -735,6 +813,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -753,6 +832,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -836,6 +916,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -861,4 +942,5 @@
                 )
         })
     []
+    ()
 )

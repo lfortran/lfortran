@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
@@ -69,6 +75,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -92,6 +101,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
@@ -115,6 +127,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
@@ -138,6 +153,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -171,6 +189,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_tmp:
                                 (Variable
@@ -194,6 +215,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             lfortran_tmp1:
                                 (Variable
@@ -217,6 +241,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             my_sub:
                                 (ExternalSymbol
@@ -388,6 +415,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             optional_03_m:
                 (Module
@@ -419,6 +447,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -442,6 +473,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -463,6 +497,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     f1
@@ -482,6 +519,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)
@@ -495,8 +533,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_sub:
@@ -524,6 +562,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     my_sub
@@ -540,6 +581,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)]
@@ -571,7 +613,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

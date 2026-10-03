@@ -15,6 +15,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             foo2:
                 (Module
@@ -42,6 +43,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -57,8 +59,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             y:
@@ -75,6 +77,7 @@
                                             2.000000
                                             (Real 4)
                                         )
+                                        ()
                                     )
                                     (RealConstant
                                         2.000000
@@ -92,6 +95,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     foo2
@@ -100,6 +106,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             test:
                 (Program
@@ -222,7 +229,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

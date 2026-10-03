@@ -15,5 +15,9 @@ _No documentation yet._
 ## Verify
 
 <!-- BEGIN AUTO: verify -->
-None.
+* IfExp condition must be logical
+* IfExp condition must be a scalar
+* IfExp arms must have the same type and kind, found [...] and [...]
+* IfExp arms must have the same rank
+* IfExp result must have the same rank as its arms
 <!-- END AUTO: verify -->

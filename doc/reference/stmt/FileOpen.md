@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg, expr? action, expr? delim, expr? recl, expr? position, expr? blank, expr? encoding, expr? sign)
+FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg, expr? action, expr? delim, expr? recl, expr? position, expr? blank, expr? encoding, expr? sign, expr? decimal, expr? round, expr? pad, expr? asynchronous)
 ```
 <!-- END AUTO: asr -->
 

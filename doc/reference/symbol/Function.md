@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, location start_name, location end_name)
+Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
 ```
 <!-- END AUTO: asr -->
 

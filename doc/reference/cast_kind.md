@@ -22,9 +22,11 @@
 * `ComplexToReal`
 * `ComplexToInteger`
 * `LogicalToInteger`
+* `LogicalToLogical`
 * `RealToString`
 * `IntegerToString`
 * `LogicalToString`
+* `StringToString`
 * `UnsignedIntegerToInteger`
 * `UnsignedIntegerToUnsignedInteger`
 * `UnsignedIntegerToReal`
@@ -37,6 +39,9 @@
 * `ListToArray`
 * `StringToArray`
 * `PointerToInteger`
+* `ClassToStruct`
+* `ClassToClass`
+* `ClassToIntrinsic`
 <!-- END AUTO: values -->
 
 ## Documentation

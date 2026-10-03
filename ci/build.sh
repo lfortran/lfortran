@@ -23,7 +23,7 @@ python src/libasr/intrinsic_func_registry_util_gen.py
 echo $(pwd)
 cd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && cd ../../..
 cd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && cd ../../..
-cd src/lfortran/parser && bison -Wall -d -r all parser.yy && cd ../../..
+cd src/lfortran/parser && bison -Wall -d parser.yy && cd ../../..
 
 # Generate the LSP sources
 python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
@@ -52,7 +52,7 @@ else # Linux or macOS
     BUILD_TYPE="Debug"
 fi
 
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
+cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE -DWITH_INTERNAL_ALLOC_CHECK=yes ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
@@ -61,8 +61,8 @@ cpack -V
 cd ../..
 
 jupyter kernelspec list --json
-#python ci/test_fortran_kernel.py -v
-#
+python ci/test_fortran_kernel.py -v
+
 cd share/lfortran/nb
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Demo1_out.ipynb Demo1.ipynb
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Demo2_out.ipynb Demo2.ipynb

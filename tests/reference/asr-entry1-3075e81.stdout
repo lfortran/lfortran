@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     entry1
@@ -41,6 +44,7 @@
                                 10.000000
                                 (Real 4)
                             )
+                            ()
                         )
                         ()
                         .false.
@@ -60,6 +64,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             x:
                 (Function
@@ -86,6 +91,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     x
@@ -102,6 +110,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 3 dummy)]
@@ -115,8 +124,8 @@
                     )]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             x_main__lcompilers:
@@ -144,6 +153,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -165,6 +177,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     x_main__lcompilers
@@ -182,6 +197,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 entry__lcompilers)
@@ -268,8 +284,8 @@
                     (Return)]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             y:
@@ -297,6 +313,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     y
@@ -313,6 +332,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [x_main__lcompilers]
                     [(Var 4 dummy)]
@@ -326,10 +346,11 @@
                     )]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

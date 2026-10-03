@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -58,6 +61,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             posit:
                                 (Variable
@@ -79,6 +85,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             title:
                                 (Variable
@@ -100,6 +109,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             verb:
                                 (Variable
@@ -121,6 +133,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     string_03
@@ -213,6 +228,7 @@
                     (Print
                         (Var 3 combined)
                     )]
+                    ()
                 ),
             string_03_mod:
                 (Module
@@ -245,6 +261,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     string_03_mod
@@ -253,7 +272,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

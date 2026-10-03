@@ -2,8 +2,6 @@
     [(Program
         program3
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -39,8 +37,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "5.0")
@@ -143,9 +141,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -190,8 +185,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 c
                 (+ a b)
@@ -232,9 +227,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -279,8 +271,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 c
                 (* a b)

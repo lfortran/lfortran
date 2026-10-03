@@ -57,6 +57,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             template_simple_02_m:
                 (Module
@@ -88,6 +89,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -109,6 +113,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     cast_integer
@@ -125,6 +132,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 arg)]
@@ -137,8 +145,8 @@
                                     )]
                                     (Var 7 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             cast_r:
@@ -171,6 +179,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -183,6 +194,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -194,6 +207,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     cast
@@ -201,6 +217,8 @@
                                                         [(Integer 4)]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -212,14 +230,15 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 arg)]
                                                     []
                                                     (Var 6 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -233,6 +252,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -244,6 +265,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     cast_r
@@ -276,6 +300,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -297,6 +324,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     cast_real
@@ -313,6 +343,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 arg)]
@@ -328,8 +359,8 @@
                                     )]
                                     (Var 8 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             generic_sum:
@@ -353,6 +384,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -364,6 +397,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -376,6 +412,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -387,6 +425,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -399,6 +440,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -410,18 +453,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     add
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -433,6 +485,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 10 lhs)
@@ -440,8 +493,8 @@
                                                     []
                                                     (Var 10 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             cast:
@@ -469,6 +522,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -481,6 +537,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -492,6 +550,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     cast
@@ -499,6 +560,8 @@
                                                         [(Integer 4)]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -510,14 +573,15 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 11 arg)]
                                                     []
                                                     (Var 11 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             generic_sum:
@@ -537,10 +601,13 @@
                                                                     (Array
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -552,6 +619,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -573,6 +643,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -594,6 +667,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -606,6 +682,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -617,6 +695,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     generic_sum
@@ -624,13 +705,18 @@
                                                         [(Array
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -642,6 +728,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast
                                                     add]
@@ -666,6 +753,8 @@
                                                             [((IntegerConstant 0 (Integer 4) Decimal))]
                                                             (TypeParameter
                                                                 t
+                                                                NonExtensible
+                                                                .false.
                                                             )
                                                             ()
                                                             ()
@@ -692,6 +781,8 @@
                                                                 ())]
                                                                 (TypeParameter
                                                                     t
+                                                                    NonExtensible
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -719,12 +810,16 @@
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
+                                                                            NonExtensible
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
                                                                     ))]
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     ()
@@ -739,8 +834,8 @@
                                                     )]
                                                     (Var 12 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -754,6 +849,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -765,6 +862,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     generic_sum
@@ -803,6 +903,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -814,6 +916,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -826,6 +931,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         v
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -837,6 +944,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -849,6 +959,8 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         u
+                                                                        NonExtensible
+                                                                        .false.
                                                                     )
                                                                     ()
                                                                     Source
@@ -860,18 +972,27 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     binary_func
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             u
+                                                            NonExtensible
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             v
+                                                            NonExtensible
+                                                            .false.
                                                         )
                                                         Source
                                                         Implementation
@@ -883,6 +1004,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 lhs)
@@ -890,8 +1012,8 @@
                                                     []
                                                     (Var 4 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -905,6 +1027,8 @@
                                                     Default
                                                     (TypeParameter
                                                         t
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -916,6 +1040,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             u:
                                                 (Variable
@@ -928,6 +1055,8 @@
                                                     Default
                                                     (TypeParameter
                                                         u
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -939,6 +1068,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             v:
                                                 (Variable
@@ -951,6 +1083,8 @@
                                                     Default
                                                     (TypeParameter
                                                         v
+                                                        NonExtensible
+                                                        .false.
                                                     )
                                                     ()
                                                     Source
@@ -962,6 +1096,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     operator_r
@@ -995,6 +1132,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1006,6 +1144,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1027,6 +1168,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1048,6 +1192,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -1069,6 +1216,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     __instantiated_generic_sum
@@ -1078,6 +1228,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Integer 4)
                                                         Source
@@ -1090,6 +1241,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_integer
                                                     ~add_intrinsic]
@@ -1179,8 +1331,8 @@
                                                     )]
                                                     (Var 16 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_generic_sum1:
@@ -1202,6 +1354,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1213,6 +1366,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1234,6 +1390,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1255,6 +1414,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -1276,6 +1438,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     __instantiated_generic_sum1
@@ -1285,6 +1450,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Real 4)
                                                         Source
@@ -1297,6 +1463,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_real
                                                     ~add_intrinsic1]
@@ -1386,18 +1553,18 @@
                                                     )]
                                                     (Var 18 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_generic_sum2:
                                                 (Function
                                                     (SymbolTable
-                                                        19
+                                                        20
                                                         {
                                                             arr:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     arr
                                                                     []
                                                                     In
@@ -1409,6 +1576,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1420,10 +1588,13 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             i:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     i
                                                                     []
                                                                     Local
@@ -1441,10 +1612,13 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             n:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     n
                                                                     []
                                                                     Local
@@ -1462,10 +1636,13 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             res:
                                                                 (Variable
-                                                                    19
+                                                                    20
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -1483,6 +1660,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     __instantiated_generic_sum2
@@ -1492,6 +1672,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Integer 4)
                                                         Source
@@ -1504,14 +1685,15 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_integer
-                                                    ~add_intrinsic]
-                                                    [(Var 19 arr)]
+                                                    ~add_intrinsic2]
+                                                    [(Var 20 arr)]
                                                     [(Assignment
-                                                        (Var 19 n)
+                                                        (Var 20 n)
                                                         (ArraySize
-                                                            (Var 19 arr)
+                                                            (Var 20 arr)
                                                             ()
                                                             (Integer 4)
                                                             ()
@@ -1521,7 +1703,7 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 19 res)
+                                                        (Var 20 res)
                                                         (FunctionCall
                                                             2 cast_integer
                                                             ()
@@ -1537,16 +1719,16 @@
                                                     (If
                                                         ()
                                                         (IntegerCompare
-                                                            (Var 19 n)
+                                                            (Var 20 n)
                                                             Gt
                                                             (IntegerConstant 0 (Integer 4) Decimal)
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Assignment
-                                                            (Var 19 res)
+                                                            (Var 20 res)
                                                             (ArrayItem
-                                                                (Var 19 arr)
+                                                                (Var 20 arr)
                                                                 [(()
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
@@ -1560,20 +1742,20 @@
                                                         )
                                                         (DoLoop
                                                             ()
-                                                            ((Var 19 i)
+                                                            ((Var 20 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
-                                                            (Var 19 n)
+                                                            (Var 20 n)
                                                             ())
                                                             [(Assignment
-                                                                (Var 19 res)
+                                                                (Var 20 res)
                                                                 (FunctionCall
-                                                                    13 ~add_intrinsic
+                                                                    13 ~add_intrinsic2
                                                                     ()
-                                                                    [((Var 19 res))
+                                                                    [((Var 20 res))
                                                                     ((ArrayItem
-                                                                        (Var 19 arr)
+                                                                        (Var 20 arr)
                                                                         [(()
-                                                                        (Var 19 i)
+                                                                        (Var 20 i)
                                                                         ())]
                                                                         (Integer 4)
                                                                         ColMajor
@@ -1591,10 +1773,10 @@
                                                         )]
                                                         []
                                                     )]
-                                                    (Var 19 res)
+                                                    (Var 20 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             a_i:
@@ -1611,6 +1793,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1622,6 +1805,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             a_r:
                                                 (Variable
@@ -1637,6 +1823,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1648,6 +1835,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -1669,6 +1859,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s_i:
                                                 (Variable
@@ -1690,6 +1883,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             s_r:
                                                 (Variable
@@ -1711,14 +1907,9 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            ~add:
-                                                (CustomOperator
-                                                    13
-                                                    ~add
-                                                    [13 ~add_intrinsic
-                                                    13 ~add_intrinsic1]
-                                                    Public
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ~add_intrinsic:
                                                 (Function
@@ -1745,6 +1936,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1766,6 +1960,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1787,6 +1984,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     ~add_intrinsic
@@ -1797,13 +1997,14 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 15 arg0)
@@ -1852,6 +2053,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1873,6 +2077,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1894,6 +2101,9 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
                                                                 )
                                                         })
                                                     ~add_intrinsic1
@@ -1904,13 +2114,14 @@
                                                         Source
                                                         Implementation
                                                         ()
-                                                        .false.
+                                                        .true.
                                                         .true.
                                                         .false.
                                                         .false.
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 17 arg0)
@@ -1933,6 +2144,123 @@
                                                     .false.
                                                     .true.
                                                     ()
+                                                ),
+                                            ~add_intrinsic2:
+                                                (Function
+                                                    (SymbolTable
+                                                        19
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    19
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    19
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            ret:
+                                                                (Variable
+                                                                    19
+                                                                    ret
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    ~add_intrinsic2
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .true.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 19 arg0)
+                                                    (Var 19 arg1)]
+                                                    [(Assignment
+                                                        (Var 19 ret)
+                                                        (IntegerBinOp
+                                                            (Var 19 arg0)
+                                                            Add
+                                                            (Var 19 arg1)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 19 ret)
+                                                    Public
+                                                    .false.
+                                                    .true.
+                                                    ()
                                                 )
                                         })
                                     test_template
@@ -1949,6 +2277,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -1993,6 +2322,7 @@
                                                 IntegerToReal
                                                 (Real 4)
                                                 ()
+                                                ()
                                             )
                                             ()
                                             .false.
@@ -2014,6 +2344,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -2039,6 +2370,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -2064,6 +2396,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -2110,7 +2443,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

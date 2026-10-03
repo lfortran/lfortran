@@ -13,9 +13,11 @@ program pointer_05
     type is (integer)
       print *, "Integer=", p
       if (p /= 42) error stop
+      p = 52
     type is (real)
       print *, "Real=", p
       if (abs(p - 5.5) > 1e-6) error stop
+      p = 6.5
     class default
       print *, "Unknown"
       error stop
@@ -26,11 +28,18 @@ program pointer_05
     type is (integer)
       print *, "Integer=", p
       if (p /= 42) error stop
+      p = 52
     type is (real)
       print *, "Real=", p
       if (abs(p - 5.5) > 1e-6) error stop
+      p = 6.5
     class default
       print *, "Unknown"
       error stop
   end select
+  
+  print *, r 
+  print *, i
+  if (abs(r - 6.5) > 1e-6) error stop
+  if (i /= 52) error stop
 end program pointer_05

@@ -10,6 +10,9 @@
 * `ReduceMul`
 * `ReduceMIN`
 * `ReduceMAX`
+* `ReduceIAND`
+* `ReduceIOR`
+* `ReduceIEOR`
 <!-- END AUTO: values -->
 
 ## Documentation

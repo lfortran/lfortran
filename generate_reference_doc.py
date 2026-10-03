@@ -5,15 +5,16 @@ ASR Reference Documentation Generator
 This script generates and maintains reference documentation for ASR nodes by:
 1. Parsing ASR.asdl for node definitions
 2. Parsing asr_verify.cpp for verification constraints
-3. Updating ONLY the auto-generated sections in markdown files
-4. Preserving all human-written documentation
+3. Regenerating syntax, values, fields, and verification sections
+4. Preserving the human-written ## Documentation section
 
 Auto-generated sections are marked with:
   <!-- BEGIN AUTO: section_name -->
   ... auto-generated content ...
   <!-- END AUTO: section_name -->
 
-Everything outside these markers is preserved across regeneration.
+The ## Documentation section, up to the next ## heading, is preserved
+across regeneration. Other sections are generated.
 
 Usage:
   python3 generate_reference_doc.py       # Check if docs are up-to-date (CI mode)

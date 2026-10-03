@@ -33,6 +33,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             all_zeros:
                                 (Variable
@@ -54,6 +57,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             bits_kind:
                                 (ExternalSymbol
@@ -92,6 +98,7 @@
                                         IntegerToInteger
                                         (Integer 4)
                                         (IntegerConstant 64 (Integer 4) Decimal)
+                                        ()
                                     )
                                     (IntegerConstant 64 (Integer 4) Decimal)
                                     Parameter
@@ -106,6 +113,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bits_02
@@ -143,9 +153,11 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env)
         })
     []
+    ()
 )

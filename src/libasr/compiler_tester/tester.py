@@ -12,7 +12,7 @@ import pprint
 import shutil
 import subprocess
 import sys
-import toml
+import tomli
 from typing import Any, Mapping, List, Union
 
 level = logging.DEBUG
@@ -141,6 +141,13 @@ def fixdir(s: bytes) -> bytes:
     local_dir = os.getcwd()
     return s.replace(local_dir.encode(), "$DIR".encode())
 
+def fix_datalayout(s: bytes) -> bytes:
+    return re.sub(
+        rb'target datalayout = "[^"]*"',
+        b'target datalayout = "..."',
+        s
+    )
+
 
 def unl_loop_del(b):
     return b.replace(bytes('\r\n', encoding='utf-8'),
@@ -180,6 +187,10 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if infile and not os.path.exists(infile):
         raise RunException("The input file %s does not exist" % (infile))
     outfile = os.path.join(out_dir, basename + "." + "out")
+    # An outfile left over from an earlier run must not be taken for one this
+    # command wrote.
+    if os.path.exists(outfile):
+        os.remove(outfile)
 
     infile = infile.replace("\\\\", "\\").replace("\\", "/")
 
@@ -192,13 +203,17 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     if not os.path.exists(outfile):
         outfile = None
     if len(r.stdout):
-        stdout_file = os.path.join(out_dir, basename + "." + "stdout")
-        open(stdout_file, "wb").write(fixdir(r.stdout))
+        if "--show-fortran" in cmd:
+            stdout_ext = ".f90"
+        else:
+            stdout_ext = ".stdout"
+        stdout_file = os.path.join(out_dir, basename + stdout_ext)
+        open(stdout_file, "wb").write(fix_datalayout(fixdir(r.stdout)))
     else:
         stdout_file = None
     if len(r.stderr):
         stderr_file = os.path.join(out_dir, basename + "." + "stderr")
-        open(stderr_file, "wb").write(fixdir(r.stderr))
+        open(stderr_file, "wb").write(fix_datalayout(fixdir(r.stderr)))
     else:
         stderr_file = None
 
@@ -571,7 +586,8 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     if not is_lcompilers_executable_installed:
         os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
             + os.pathsep + os.environ["PATH"]
-    test_data = toml.load(open(os.path.join(ROOT_DIR, "tests", "tests.toml")))
+    with open(os.path.join(ROOT_DIR, "tests", "tests.toml"), "rb") as f:
+         test_data = tomli.load(f)
     test_for_duplicates(test_data)
     filtered_tests = test_data["test"]
     if specific_tests:

@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-Cast(expr arg, cast_kind kind, ttype type, expr? value)
+Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
 ```
 <!-- END AUTO: asr -->
 

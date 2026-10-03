@@ -7,13 +7,13 @@
                     (SymbolTable
                         6
                         {
-                            1_circle_circle_print:
+                            1_circle_print:
                                 (ExternalSymbol
                                     6
-                                    1_circle_circle_print
+                                    1_circle_print
                                     3 print
-                                    circle
-                                    []
+                                    class_circle1
+                                    [circle]
                                     print
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     6
                                     1_circle_radius
                                     3 radius
-                                    circle
-                                    []
+                                    class_circle1
+                                    [circle]
                                     radius
                                     Public
                                 ),
@@ -52,6 +52,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -87,9 +90,9 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_circle_circle_print
+                        6 1_circle_print
                         ()
-                        []
+                        [((Var 6 c))]
                         (Var 6 c)
                         .false.
                     )
@@ -109,12 +112,13 @@
                         .false.
                     )
                     (SubroutineCall
-                        6 1_circle_circle_print
+                        6 1_circle_print
                         ()
-                        []
+                        [((Var 6 c))]
                         (Var 6 c)
                         .false.
                     )]
+                    ()
                 ),
             class_circle1:
                 (Module
@@ -168,6 +172,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle
@@ -184,9 +191,11 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             circle_area:
                                 (Function
@@ -198,8 +207,8 @@
                                                     4
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -223,6 +232,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -249,6 +261,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle_area
@@ -270,6 +285,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 this)]
@@ -299,8 +315,8 @@
                                     )]
                                     (Var 4 area)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             circle_print:
@@ -308,13 +324,13 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_circle_circle_area:
+                                            1_circle_area:
                                                 (ExternalSymbol
                                                     5
-                                                    1_circle_circle_area
+                                                    1_circle_area
                                                     3 area
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     area
                                                     Public
                                                 ),
@@ -323,8 +339,8 @@
                                                     5
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle1
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -348,6 +364,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -374,6 +393,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle_print
@@ -395,15 +417,16 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 this)]
                                     [(Assignment
                                         (Var 5 area)
                                         (FunctionCall
-                                            5 1_circle_circle_area
+                                            5 1_circle_area
                                             ()
-                                            []
+                                            [((Var 5 this))]
                                             (Real 4)
                                             ()
                                             (Var 5 this)
@@ -460,6 +483,7 @@
                                             3.141593
                                             (Real 4)
                                         )
+                                        ()
                                     )
                                     (RealConstant
                                         3.141593
@@ -477,6 +501,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     class_circle1
@@ -485,7 +512,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -1,0 +1,32 @@
+(TranslationUnit
+    [(Declaration
+        (AttrType
+            TypeInteger
+            []
+            ()
+            ()
+            None
+        )
+        []
+        [(x
+        []
+        []
+        ()
+        ()
+        None
+        ())]
+        ()
+    )
+    (Assignment
+        0
+        x
+        5
+        ()
+    )
+    (Print
+        0
+        ()
+        [x]
+        ()
+    )]
+)

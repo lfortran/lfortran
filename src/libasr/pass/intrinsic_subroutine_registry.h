@@ -33,6 +33,13 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(MoveAlloc)
         INTRINSIC_SUBROUTINE_NAME_CASE(Mvbits)
         INTRINSIC_SUBROUTINE_NAME_CASE(Abort)
+        INTRINSIC_SUBROUTINE_NAME_CASE(System)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Sleep)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CoSum)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CoMax)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CoMin)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CoBroadcast)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Exit)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -77,6 +84,20 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&Abort::instantiate_Abort, &Abort::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
             {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::System),
+            {&System::instantiate_System, &System::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Sleep),
+            {&Sleep::instantiate_Sleep, &Sleep::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CoSum),
+            {&CoSum::instantiate_CoSum, &CoSum::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CoMax),
+            {&CoMax::instantiate_CoMax, &CoMax::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CoMin),
+            {&CoMin::instantiate_CoMin, &CoMin::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CoBroadcast),
+            {&CoBroadcast::instantiate_CoBroadcast, &CoBroadcast::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Exit),
+            {&Exit::instantiate_Exit, &Exit::verify_args}},
         };
         return intrinsic_subroutine_by_id_db;
     }
@@ -91,6 +112,8 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                // Legacy F77 alias for get_command_argument.
+                {"getarg", &GetCommandArgument::create_GetCommandArgument},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
@@ -99,6 +122,13 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"move_alloc", &MoveAlloc::create_MoveAlloc},
                 {"mvbits", &Mvbits::create_Mvbits},
                 {"abort", &Abort::create_Abort},
+                {"system", &System::create_System},
+                {"sleep", &Sleep::create_Sleep},
+                {"co_sum", &CoSum::create_CoSum},
+                {"co_max", &CoMax::create_CoMax},
+                {"co_min", &CoMin::create_CoMin},
+                {"co_broadcast", &CoBroadcast::create_CoBroadcast},
+                {"exit", &Exit::create_Exit},
         };
         return intrinsic_subroutine_by_name_db;
     }
@@ -129,6 +159,45 @@ namespace IntrinsicImpureSubroutineRegistry {
     inline std::string get_intrinsic_subroutine_name_from_registry(int64_t id) {
         // Use switch statement instead of lazy map for zero runtime overhead
         return ASRUtils::get_intrinsic_subroutine_name(static_cast<int>(id));
+    }
+
+    // Whether `x` never defines its argument `x.m_args[i]`, because the
+    // argument is `intent(in)`. The positions are those of `x.m_args`, which
+    // some `create_*` functions compact by leaving absent optional arguments
+    // out. Where a position does not say which argument it holds, the
+    // argument is assumed to be defined.
+    static inline bool is_intent_in_argument(
+            const ASR::IntrinsicImpureSubroutine_t& x, size_t i) {
+        switch (static_cast<IntrinsicImpureSubroutines>(x.m_sub_intrinsic_id)) {
+            case IntrinsicImpureSubroutines::RandomInit:
+            case IntrinsicImpureSubroutines::Srand:
+            case IntrinsicImpureSubroutines::Abort:
+            case IntrinsicImpureSubroutines::System:
+            case IntrinsicImpureSubroutines::Sleep:
+            case IntrinsicImpureSubroutines::Exit:
+                return true;
+            case IntrinsicImpureSubroutines::RandomSeed:
+                // size, put, get
+                return i == 1;
+            case IntrinsicImpureSubroutines::GetCommandArgument:
+                // number, [value], [length], [status]
+                return i == 0;
+            case IntrinsicImpureSubroutines::GetEnvironmentVariable:
+                // name, [value], [length], [status], [trim_name]
+                return i == 0 ||
+                    ((x.m_overload_id & (1 << 3)) != 0 && i + 1 == x.n_args);
+            case IntrinsicImpureSubroutines::ExecuteCommandLine:
+                // command, wait, [exitstat], [cmdstat], [cmdmsg]
+                return i <= 1;
+            case IntrinsicImpureSubroutines::Mvbits:
+                // from, frompos, len, to, topos
+                return i != 3;
+            case IntrinsicImpureSubroutines::CoBroadcast:
+                // a, source_image, [stat], [errmsg]
+                return i == 1;
+            default:
+                return false;
+        }
     }
 
 } // namespace IntrinsicImpureSubroutineRegistry

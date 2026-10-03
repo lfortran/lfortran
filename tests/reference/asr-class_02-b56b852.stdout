@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             class_circle2:
                 (Module
@@ -80,6 +81,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle
@@ -96,9 +100,11 @@
                                     Private
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             circle_area:
                                 (Function
@@ -110,8 +116,8 @@
                                                     4
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -135,6 +141,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -161,6 +170,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle_area
@@ -182,6 +194,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 this)]
@@ -211,8 +224,8 @@
                                     )]
                                     (Var 4 circle_area)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             circle_print:
@@ -225,8 +238,8 @@
                                                     5
                                                     1_circle_circle_area
                                                     3 circle_area
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     circle_area
                                                     Public
                                                 ),
@@ -235,8 +248,8 @@
                                                     5
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -260,6 +273,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             this:
                                                 (Variable
@@ -286,6 +302,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     circle_print
@@ -307,6 +326,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 this)]
@@ -315,7 +335,7 @@
                                         (FunctionCall
                                             5 1_circle_circle_area
                                             ()
-                                            []
+                                            [((Var 5 this))]
                                             (Real 4)
                                             ()
                                             (Var 5 this)
@@ -365,8 +385,8 @@
                                                     6
                                                     1_circle_circle_print
                                                     3 circle_print
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     circle_print
                                                     Public
                                                 ),
@@ -375,8 +395,8 @@
                                                     6
                                                     1_circle_radius
                                                     3 radius
-                                                    circle
-                                                    []
+                                                    class_circle2
+                                                    [circle]
                                                     radius
                                                     Public
                                                 ),
@@ -405,6 +425,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     main
@@ -421,6 +444,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -462,14 +486,14 @@
                                     (SubroutineCall
                                         6 1_circle_circle_print
                                         ()
-                                        []
+                                        [((Var 6 c))]
                                         (Var 6 c)
                                         .false.
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             pi:
@@ -489,6 +513,7 @@
                                             3.141593
                                             (Real 4)
                                         )
+                                        ()
                                     )
                                     (RealConstant
                                         3.141593
@@ -506,6 +531,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     class_circle2
@@ -514,7 +542,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

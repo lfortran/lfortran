@@ -17,8 +17,8 @@
                                                     13
                                                     1_git_target_t_object
                                                     12 object
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     object
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     13
                                                     1_git_target_t_url
                                                     12 url
-                                                    git_target_t
-                                                    []
+                                                    fpm_git
+                                                    [git_target_t]
                                                     url
                                                     Public
                                                 ),
@@ -52,6 +52,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -83,6 +86,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -104,6 +110,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     git_target_branch
@@ -131,6 +140,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 url)
@@ -165,8 +175,8 @@
                                     )]
                                     (Var 13 self)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             git_target_t:
@@ -196,6 +206,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -219,6 +232,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     git_target_t
@@ -241,9 +257,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_git
@@ -252,6 +270,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_dependency:
                 (Module
@@ -295,6 +314,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             name:
                                                 (Variable
@@ -318,6 +340,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             path:
                                                 (Variable
@@ -341,11 +366,20 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     dependency_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (StructType
                                                 [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -357,12 +391,6 @@
                                                 .true.
                                                 .false.
                                             )
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         []
                                         .true.
@@ -377,9 +405,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -408,6 +438,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     error_t
@@ -426,9 +459,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             git_target_branch:
                                 (ExternalSymbol
@@ -468,6 +503,12 @@
                                                         (Array
                                                             (StructType
                                                                 [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
                                                                     (StructType
                                                                         [(Allocatable
                                                                             (String 1 () DeferredLength DescriptorString)
@@ -479,12 +520,6 @@
                                                                         .true.
                                                                         .false.
                                                                     )
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
                                                                 )]
                                                                 []
                                                                 .true.
@@ -493,6 +528,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     4 dependency_config_t
@@ -505,6 +541,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             error:
                                                 (Variable
@@ -535,6 +574,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             root:
                                                 (Variable
@@ -556,6 +598,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -582,6 +627,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     new_dependencies
@@ -590,6 +638,12 @@
                                             (Array
                                                 (StructType
                                                     [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
                                                         (StructType
                                                             [(Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
@@ -601,12 +655,6 @@
                                                             .true.
                                                             .false.
                                                         )
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
                                                     )]
                                                     []
                                                     .true.
@@ -615,6 +663,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (StructType
@@ -645,6 +694,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 deps)
@@ -654,8 +704,8 @@
                                     []
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_dependency:
@@ -668,8 +718,8 @@
                                                     9
                                                     1_dependency_config_t_git
                                                     5 git
-                                                    dependency_config_t
-                                                    []
+                                                    fpm_manifest_dependency
+                                                    [dependency_config_t]
                                                     git
                                                     Public
                                                 ),
@@ -695,6 +745,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -707,6 +760,12 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (StructType
                                                                 [(Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
@@ -718,12 +777,6 @@
                                                                 .true.
                                                                 .false.
                                                             )
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
                                                         )]
                                                         []
                                                         .true.
@@ -739,6 +792,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             url:
                                                 (Variable
@@ -762,12 +818,21 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     new_dependency
                                     (FunctionType
                                         [(StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (StructType
                                                     [(Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
@@ -779,12 +844,6 @@
                                                     .true.
                                                     .false.
                                                 )
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
                                             )]
                                             []
                                             .true.
@@ -801,6 +860,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 self)]
@@ -853,6 +913,7 @@
                                                 )
                                                 ()
                                             )
+                                            []
                                             []
                                             ()
                                             ()
@@ -907,8 +968,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_table:
@@ -930,7 +991,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -942,6 +1003,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_table
@@ -958,9 +1022,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     fpm_manifest_dependency
@@ -969,6 +1035,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_28:
                 (Program
@@ -1047,14 +1114,17 @@
                                 )
                         })
                     modules_28
-                    [fpm_manifest_dependency]
+                    [fpm_manifest_dependency
+                    fpm_git]
                     [(Print
                         (StringConstant
                             "running modules_28 program"
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

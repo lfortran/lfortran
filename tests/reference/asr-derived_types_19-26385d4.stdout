@@ -39,6 +39,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ptr:
                                                 (Variable
@@ -69,6 +72,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -80,8 +86,8 @@
                                                                     8
                                                                     1_child_value_ok
                                                                     5 ok
-                                                                    child_value
-                                                                    []
+                                                                    derived_types_module_19
+                                                                    [child_value]
                                                                     ok
                                                                     Public
                                                                 )
@@ -90,14 +96,40 @@
                                                     [(If
                                                         ()
                                                         (StructInstanceMember
-                                                            (Var 7 ptr)
+                                                            (Cast
+                                                                (Var 7 ptr)
+                                                                ClassToStruct
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                ()
+                                                                (Var 4 child_value)
+                                                            )
                                                             8 1_child_value_ok
                                                             (Logical 4)
                                                             ()
                                                         )
                                                         [(Associate
                                                             (Var 7 array)
-                                                            (Var 7 ptr)
+                                                            (Cast
+                                                                (Var 7 ptr)
+                                                                ClassToStruct
+                                                                (Pointer
+                                                                    (StructType
+                                                                        [(Logical 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                ()
+                                                                (Var 4 child_value)
+                                                            )
                                                         )]
                                                         [(SubroutineCall
                                                             4 not_ok
@@ -108,6 +140,23 @@
                                                         )
                                                         (Return)]
                                                     )]
+                                                ),
+                                            ~select_type_block_1:
+                                                (Block
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            
+                                                        })
+                                                    ~select_type_block_1
+                                                    [(SubroutineCall
+                                                        4 default_class
+                                                        ()
+                                                        []
+                                                        ()
+                                                        .false.
+                                                    )
+                                                    (Return)]
                                                 )
                                         })
                                     check_proc
@@ -124,6 +173,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [not_ok
                                     default_class]
@@ -146,21 +196,17 @@
                                                     7 ~select_type_block_
                                                 )]
                                             )]
-                                            [(SubroutineCall
-                                                4 default_class
-                                                ()
-                                                []
-                                                ()
-                                                .false.
-                                            )
-                                            (Return)]
+                                            [(BlockCall
+                                                -1
+                                                7 ~select_type_block_1
+                                            )]
                                         )]
                                         []
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             child_value:
@@ -188,6 +234,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     child_value
@@ -204,14 +253,16 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     4 toml_value
+                                    []
                                 ),
                             default_class:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             
                                         })
@@ -229,6 +280,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -254,7 +306,7 @@
                             not_ok:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             
                                         })
@@ -272,6 +324,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -314,6 +367,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     toml_value
@@ -332,9 +388,11 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     derived_types_module_19
@@ -343,6 +401,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_module_19_1:
                 (Module
@@ -352,7 +411,7 @@
                             check_here:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             
                                         })
@@ -370,6 +429,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -382,8 +442,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             check_proc:
@@ -403,11 +463,12 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             main:
                 (Program
                     (SymbolTable
-                        12
+                        13
                         {
                             
                         })
@@ -419,7 +480,9 @@
                             (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

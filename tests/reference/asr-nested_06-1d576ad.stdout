@@ -30,6 +30,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_06_a:
                 (Module
@@ -62,6 +63,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -113,6 +115,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     b
@@ -129,6 +134,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]
@@ -158,7 +164,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

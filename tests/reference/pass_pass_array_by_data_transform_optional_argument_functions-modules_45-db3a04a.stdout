@@ -29,6 +29,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -80,6 +83,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             os_valid:
                                 (Variable
@@ -101,6 +107,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             profile_config_t:
                                 (ExternalSymbol
@@ -134,6 +143,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             profiles:
                                 (Variable
@@ -153,6 +165,16 @@
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -167,19 +189,10 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Logical 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Integer 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )]
+                                                (Logical 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -187,6 +200,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     7 profile_config_t
@@ -199,6 +213,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             profindex:
                                 (Variable
@@ -220,6 +237,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     modules_45
@@ -227,9 +247,10 @@
                     [(Allocate
                         [((Var 7 profile_name)
                         []
+                        []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -237,9 +258,10 @@
                     (Allocate
                         [((Var 7 compiler_name)
                         []
+                        []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
-                        ())]
+                        (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
                         ()
                         ()
                         ()
@@ -248,6 +270,7 @@
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]
@@ -267,6 +290,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             modules_45_fpm_manifest_profile:
                 (Module
@@ -294,9 +318,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 ),
                             get_flags:
                                 (Function
@@ -323,6 +349,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_dummy_variable_1:
                                                 (Variable
@@ -344,6 +373,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_dummy_variable_2:
                                                 (Variable
@@ -365,6 +397,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_dummy_variable_3:
                                                 (Variable
@@ -386,6 +421,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_dummy_variable_4:
                                                 (Variable
@@ -406,6 +444,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -417,6 +456,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_:
                                                 (Variable
@@ -438,6 +480,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_pointer_:
                                                 (Variable
@@ -461,6 +506,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_pointer_1:
                                                 (Variable
@@ -484,6 +532,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_pointer_2:
                                                 (Variable
@@ -507,6 +558,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_pointer_3:
                                                 (Variable
@@ -530,6 +584,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_created_variable_pointer_4:
                                                 (Variable
@@ -551,6 +608,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -563,6 +621,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -586,6 +647,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             compiler_name:
                                                 (Variable
@@ -609,6 +673,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -632,6 +699,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             err_message:
                                                 (Variable
@@ -655,6 +725,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_flags:
                                                 (Variable
@@ -678,6 +751,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_name:
                                                 (Variable
@@ -701,6 +777,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -722,6 +801,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -734,6 +814,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             flags:
                                                 (Variable
@@ -757,6 +840,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ifile:
                                                 (Variable
@@ -778,6 +864,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ikey:
                                                 (Variable
@@ -799,6 +888,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -820,6 +912,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             key_name:
                                                 (Variable
@@ -843,6 +938,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -866,6 +964,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             os_type:
                                                 (Variable
@@ -887,6 +988,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -908,6 +1012,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -931,6 +1038,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profiles:
                                                 (Variable
@@ -950,6 +1060,16 @@
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
                                                                 (Allocatable
                                                                     (String 1 () DeferredLength DescriptorString)
                                                                 )
@@ -964,19 +1084,10 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                (Logical 4)
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                (Integer 4)
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
+                                                                (Logical 4)]
                                                                 []
                                                                 .true.
                                                                 .false.
@@ -984,6 +1095,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 profile_config_t
@@ -996,6 +1108,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profindex:
                                                 (Variable
@@ -1017,6 +1132,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             stat:
                                                 (Variable
@@ -1038,6 +1156,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     get_flags
@@ -1058,6 +1179,16 @@
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
@@ -1072,19 +1203,10 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    (Logical 4)
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    (Integer 4)
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )]
+                                                    (Logical 4)]
                                                     []
                                                     .true.
                                                     .false.
@@ -1092,6 +1214,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Integer 4)
@@ -1107,6 +1230,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [new_profile]
                                     [(Var 6 profile_name)
@@ -1218,6 +1342,16 @@
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1232,19 +1366,10 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Logical 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Integer 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )]
+                                                (Logical 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -1355,6 +1480,16 @@
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1369,19 +1504,10 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Logical 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (Integer 4)
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )]
+                                                (Logical 4)]
                                                 []
                                                 .true.
                                                 .false.
@@ -1408,8 +1534,8 @@
                                     )]
                                     ()
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             new_profile:
@@ -1437,6 +1563,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_is_present_cxx_flags:
                                                 (Variable
@@ -1458,6 +1587,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_is_present_file_scope_flags:
                                                 (Variable
@@ -1479,6 +1611,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_is_present_flags:
                                                 (Variable
@@ -1500,6 +1635,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_is_present_is_built_in:
                                                 (Variable
@@ -1521,6 +1659,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             __libasr_is_present_link_time_flags:
                                                 (Variable
@@ -1542,6 +1683,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -1563,6 +1707,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1584,6 +1731,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1605,6 +1755,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1625,6 +1778,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -1636,6 +1790,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             flags:
                                                 (Variable
@@ -1657,6 +1814,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1678,6 +1838,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1699,6 +1862,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1720,6 +1886,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profile:
                                                 (Variable
@@ -1732,6 +1901,16 @@
                                                     Default
                                                     (StructType
                                                         [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         (Allocatable
@@ -1751,19 +1930,10 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Logical 4)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Integer 4)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
+                                                        (Logical 4)]
                                                         []
                                                         .true.
                                                         .false.
@@ -1778,6 +1948,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1799,6 +1972,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     new_profile
@@ -1824,12 +2000,23 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Logical 4)
                                         (Logical 4)
                                         (Logical 4)]
                                         (StructType
                                             [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             (Allocatable
@@ -1849,19 +2036,10 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Logical 4)
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )
-                                            (Integer 4)
-                                            (Allocatable
-                                                (String 1 () DeferredLength DescriptorString)
-                                            )]
+                                            (Logical 4)]
                                             []
                                             .true.
                                             .false.
@@ -1876,6 +2054,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 profile_name)
@@ -1896,8 +2075,8 @@
                                     []
                                     (Var 5 profile)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             profile_config_t:
@@ -1927,6 +2106,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1950,6 +2132,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1973,6 +2158,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1994,6 +2182,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -2006,6 +2195,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             flags:
                                                 (Variable
@@ -2029,6 +2221,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -2050,6 +2245,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -2073,6 +2271,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             os_type:
                                                 (Variable
@@ -2094,6 +2295,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -2117,11 +2321,24 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     profile_config_t
                                     (StructType
                                         [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Integer 4)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
@@ -2141,19 +2358,10 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Logical 4)
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )
-                                        (Integer 4)
-                                        (Allocatable
-                                            (String 1 () DeferredLength DescriptorString)
-                                        )]
+                                        (Logical 4)]
                                         []
                                         .true.
                                         .false.
@@ -2173,9 +2381,11 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
+                                    []
                                 )
                         })
                     modules_45_fpm_manifest_profile
@@ -2184,7 +2394,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

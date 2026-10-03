@@ -27,6 +27,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             k:
                                 (Variable
@@ -48,6 +51,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             m:
                                 (Variable
@@ -69,6 +75,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -90,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -105,6 +117,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -116,6 +129,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -131,6 +147,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -142,6 +159,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -163,6 +183,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     a
@@ -182,6 +205,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 n)
@@ -198,6 +222,7 @@
                                 5.000000
                                 (Real 4)
                             )
+                            ()
                         )
                         ()
                         .false.
@@ -213,6 +238,7 @@
                                 8.000000
                                 (Real 4)
                             )
+                            ()
                         )
                         ()
                         .false.
@@ -231,6 +257,7 @@
                                 9.230000
                                 (Real 8)
                             )
+                            ()
                         )
                         ()
                         .false.
@@ -246,6 +273,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -277,10 +305,11 @@
                     )]
                     (Var 2 a)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })
     []
+    ()
 )

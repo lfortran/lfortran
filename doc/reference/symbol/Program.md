@@ -4,7 +4,7 @@
 
 <!-- BEGIN AUTO: asr -->
 ```
-Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
+Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
 ```
 <!-- END AUTO: asr -->
 

@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -53,6 +56,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     test_case
@@ -69,6 +75,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 c)]
@@ -403,7 +410,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

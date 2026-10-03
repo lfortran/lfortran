@@ -2,7 +2,6 @@
     [(Program
         stop1
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -12,8 +11,8 @@
                     "! AST only(Syntax check)"
                 )]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -52,8 +51,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(If
+        )
+        (If
             0
             ()
             (/= stop 15)
@@ -159,7 +158,7 @@
             [(Stop
                 0
                 ()
-                (Logical .true.)
+                (Logical .true. ())
                 ()
             )]
             [(If
@@ -169,7 +168,7 @@
                 [(ErrorStop
                     0
                     ()
-                    (Logical .true.)
+                    (Logical .true. ())
                     ()
                 )]
                 []
@@ -192,7 +191,7 @@
             [(Stop
                 0
                 1
-                (Logical .false.)
+                (Logical .false. ())
                 ()
             )]
             [(If
@@ -202,7 +201,7 @@
                 [(ErrorStop
                     0
                     1
-                    (Logical .false.)
+                    (Logical .false. ())
                     ()
                 )]
                 []

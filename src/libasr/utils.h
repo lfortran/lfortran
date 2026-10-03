@@ -25,6 +25,10 @@ std::string get_unique_ID();
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
 std::string generate_visualize_html(std::string &astr_data_json);
 
+namespace diag {
+    struct Diagnostics;
+}
+
 struct PassOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
@@ -38,13 +42,19 @@ struct PassOptions {
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
     int64_t unroll_factor = 32; // for loop_unroll pass
     bool fast = false; // is fast flag enabled.
+    bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
     bool verbose = false; // For developer debugging
     bool dump_all_passes = false; // For developer debugging
     bool dump_fortran = false; // For developer debugging
     bool pass_cumulative = false; // Apply passes cumulatively
+    bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
     bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
+    // Each module is compiled into an object file of its own, so a module
+    // read back from a `.mod` file is defined elsewhere and this translation
+    // unit only refers to it.
+    bool separate_compilation = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
     bool intrinsic_module_name_mangling = false;
@@ -57,6 +67,7 @@ struct PassOptions {
     bool mangle_underscore_external = false;
     bool json = false;
     bool clojure = false;
+    bool no_member_names = false;
     bool no_loc = false;
     bool visualize = false;
     bool tree = false;
@@ -65,13 +76,33 @@ struct PassOptions {
     bool enable_cpython = false;
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
-    bool enable_gpu_offloading = false;
+    bool gpu_offload_metal = false;
+    bool gpu_offload_cuda = false;
+    // `!$omp parallel do` asks for host threads. Offloading one onto a device
+    // is a choice the user has to make, so it is off unless asked for.
+    bool gpu_offload_omp_loops = false;
+    // A parallel loop that uses a construct on the unsupported list of the
+    // selected device (see gpu_unsupported_check.h) runs on the CPU with a
+    // warning instead of being a compile-time error. It never affects a
+    // loop the offloading pipeline fails on.
+    bool gpu_allow_cpu_fallback = false;
+    // The device kernels are only being shown, not built. A loop that uses a
+    // construct on the unsupported list then runs on the CPU with a warning,
+    // so that the kernels of the other loops are still produced.
+    bool gpu_kernel_source_only = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
+    // Short-circuit evaluation of logical .and./.or. (the standard permits
+    // but does not require it); off by default.
+    bool logical_short_circuit = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
+    bool coarray = false;
     std::vector<std::string> vector_of_time_report;
+    // Set by the pass manager so that a pass can report a diagnostic. It is
+    // null when the passes are run outside the pass manager.
+    diag::Diagnostics *diagnostics = nullptr;
 };
 
 struct CompilerOptions {
@@ -96,7 +127,14 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
-    bool target_offload_enabled = false;
+    std::string gpu_backend = "";
+    std::string gpu_metal_source = "";
+    std::string gpu_cuda_source = "";
+    // Compile the generated device code as ordinary host code and run the
+    // kernels on the CPU, so the GPU path is testable without a GPU.
+    bool gpu_cpu_emulation = false;
+    // Toolchain driver used to compile and link GPU device code.
+    std::string device_compiler = "nvcc";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -129,10 +167,14 @@ struct CompilerOptions {
     bool implicit_typing = false;
     bool implicit_interface = false;
     bool implicit_argument_casting = false;
+    bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
     bool use_loop_variable_after_loop = false;
     std::string target = "";
+    std::string march = "";
+    std::string mcpu = "";
+    std::string mtune = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
     bool enable_cpython = false;
@@ -142,12 +184,15 @@ struct CompilerOptions {
     bool legacy_array_sections = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
+    bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;
     bool time_report = false;
+    int32_t fpe_traps = 0; // Bitmask of LCOMPILERS_FE_* flags
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
+    bool detect_leaks = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };
@@ -155,6 +200,14 @@ struct CompilerOptions {
 bool present(Vec<char*> &v, const char* name);
 bool present(char** const v, size_t n, const std::string name);
 int initialize();
+
+// Floating point exception trap flags (bitmask)
+const int32_t LCOMPILERS_FE_INVALID   = 1;
+const int32_t LCOMPILERS_FE_ZERO      = 2;
+const int32_t LCOMPILERS_FE_OVERFLOW  = 4;
+const int32_t LCOMPILERS_FE_UNDERFLOW = 8;
+const int32_t LCOMPILERS_FE_INEXACT   = 16;
+const int32_t LCOMPILERS_FE_DENORMAL  = 32;
 
 } // namespace LCompilers
 

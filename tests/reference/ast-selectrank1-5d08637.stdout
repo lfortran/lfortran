@@ -9,9 +9,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -31,8 +28,8 @@
             None
             ())]
             ()
-        )]
-        [(SelectRank
+        )
+        (SelectRank
             0
             ()
             ()
@@ -150,9 +147,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -199,8 +193,8 @@
             None
             ())]
             ()
-        )]
-        [(SelectRank
+        )
+        (SelectRank
             0
             ()
             ()

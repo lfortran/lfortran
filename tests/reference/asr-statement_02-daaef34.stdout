@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    2 fpoint
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -32,6 +32,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -53,6 +56,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     fpoint
@@ -63,12 +69,13 @@
                                         Implementation
                                         ()
                                         .false.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 i)]
@@ -79,6 +86,7 @@
                                             IntegerToReal
                                             (Real 4)
                                             ()
+                                            ()
                                         )
                                         ()
                                         .false.
@@ -87,7 +95,7 @@
                                     (Var 4 fpoint_return_var_name)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -105,14 +113,15 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
                     []
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             statement_02:
@@ -131,7 +140,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

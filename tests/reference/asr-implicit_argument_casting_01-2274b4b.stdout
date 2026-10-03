@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -32,6 +33,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             dp:
                                 (Variable
@@ -62,6 +66,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -83,6 +90,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     idz_realcomp
@@ -97,6 +107,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -109,6 +120,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 n)
@@ -129,6 +141,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -137,6 +150,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 2 n))]
                                 PointerArray
+                                Global
                             )
                             ()
                         )
@@ -146,8 +160,8 @@
                     )]
                     ()
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             main:
@@ -184,6 +198,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             idzp_svd:
                                 (Function
@@ -210,6 +227,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             ls:
                                                 (Variable
@@ -231,6 +251,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             w:
                                                 (Variable
@@ -246,6 +269,7 @@
                                                         [(()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -257,6 +281,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 ),
                                             w_cast:
                                                 (Variable
@@ -273,6 +300,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -285,6 +313,9 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                 )
                                         })
                                     idzp_svd
@@ -295,6 +326,7 @@
                                             [(()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -307,6 +339,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [idz_realcomp]
                                     [(Var 4 ls)
@@ -335,7 +368,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPtrUnspecified
+                                            )
                                             ()
                                         )
                                         (Var 4 w_cast)
@@ -347,6 +382,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -372,6 +408,7 @@
                                                     [(()
                                                     ())]
                                                     PointerArray
+                                                    Global
                                                 )
                                             )
                                             ()
@@ -443,6 +480,7 @@
                                                     0.000000
                                                     (Real 8)
                                                 )
+                                                ()
                                             )
                                             (Logical 4)
                                             ()
@@ -472,6 +510,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -483,6 +522,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     main
@@ -500,13 +542,16 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 UnboundedPointerArray
+                                Global
                             )
                             ()
                         ))]
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

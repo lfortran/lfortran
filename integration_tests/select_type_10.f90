@@ -24,16 +24,21 @@ program select_type_10
   use select_type_10_mod
   implicit none
 
-  class(base), pointer :: val
-
+  class(base), pointer :: val, save_val
+  type(int_val), target :: int_ptr
+  int_ptr%key = 100
   allocate(int_val :: val)
+  save_val => val
   select type(val)
   type is(int_val)
       call check(val)
       if (val%key /= 10) error stop
       call check2(val)
       if (val%key /= 20) error stop
+      val => int_ptr
+      if (val%key /= 100) error stop
   class default
     error stop
   end select
+  deallocate(save_val)
 end program select_type_10

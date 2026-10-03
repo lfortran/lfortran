@@ -7,6 +7,78 @@
                     (SymbolTable
                         2
                         {
+                            lfortran_iomsg:
+                                (Variable
+                                    2
+                                    lfortran_iomsg
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            lfortran_iomsg1:
+                                (Variable
+                                    2
+                                    lfortran_iomsg1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            lfortran_iomsg2:
+                                (Variable
+                                    2
+                                    lfortran_iomsg2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             line:
                                 (Variable
                                     2
@@ -27,6 +99,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             u:
                                 (Variable
@@ -48,6 +123,9 @@
                                     ()
                                     .false.
                                     .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     test_backspace_01
@@ -77,6 +155,10 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileRead
                         0
@@ -96,11 +178,13 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileWrite
                         0
-                        ()
-                        ()
+                        (IntegerConstant 6 (Integer 4) Decimal)
+                        (Var 2 lfortran_iomsg)
                         ()
                         ()
                         [(StringFormat
@@ -121,10 +205,14 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileBackspace
                         0
                         (Var 2 u)
+                        ()
                         ()
                         ()
                     )
@@ -146,11 +234,13 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileWrite
                         0
-                        ()
-                        ()
+                        (IntegerConstant 6 (Integer 4) Decimal)
+                        (Var 2 lfortran_iomsg1)
                         ()
                         ()
                         [(StringFormat
@@ -174,11 +264,14 @@
                         .true.
                         ()
                         ()
+                        ()
+                        ()
+                        ()
                     )
                     (FileWrite
                         0
-                        ()
-                        ()
+                        (IntegerConstant 6 (Integer 4) Decimal)
+                        (Var 2 lfortran_iomsg2)
                         ()
                         ()
                         [(StringFormat
@@ -197,6 +290,9 @@
                         ()
                         ()
                         .true.
+                        ()
+                        ()
+                        ()
                         ()
                         ()
                     )
@@ -225,7 +321,9 @@
                         ()
                         ()
                     )]
+                    ()
                 )
         })
     []
+    ()
 )
