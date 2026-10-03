@@ -7,6 +7,7 @@ implicit none
 integer :: a(0), b(3), i, j, u
 integer, allocatable :: c(:)
 character(len=3) :: s(0)
+character(len=20) :: str
 
 b = [1, 2, 3]
 allocate(c(0))
@@ -32,6 +33,15 @@ call check_record(u, "ab")
 call check_record(u, " 5")
 call check_record(u, " x")
 close(u, status="delete")
+
+! Internal list-directed writes start with the blank as well.
+str = "?"
+write(str, *) 5
+if (str(1:1) /= " ") error stop "internal write must start with a blank"
+if (adjustl(str) /= "5") error stop "wrong internal item"
+str = "?"
+write(str, *) a
+if (str /= "") error stop "internal record must be blank"
 
 print *, a
 print *, (i, i = 1, 0)
