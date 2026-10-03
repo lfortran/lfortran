@@ -2097,3 +2097,17 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+subroutine intent_list_assignment_error(x, y)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
+
+subroutine intent_list_non_dummy_error(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+end subroutine intent_list_non_dummy_error
+
