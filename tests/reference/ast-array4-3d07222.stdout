@@ -2,7 +2,6 @@
     [(Program
         array4
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,8 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -32,8 +31,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             i
             a [(some_array

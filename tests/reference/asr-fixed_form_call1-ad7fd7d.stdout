@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             m:
                                 (Variable
@@ -53,7 +53,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -77,17 +77,49 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             prinf:
                                 (Function
                                     (SymbolTable
                                         3
                                         {
-                                            prinf_arg_0:
+                                            
+                                        })
+                                    prinf
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            prinf~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            prinf~arg_0:
                                                 (Variable
-                                                    3
-                                                    prinf_arg_0
+                                                    4
+                                                    prinf~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -106,12 +138,12 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
-                                            prinf_arg_1:
+                                            prinf~arg_1:
                                                 (Variable
-                                                    3
-                                                    prinf_arg_1
+                                                    4
+                                                    prinf~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -130,12 +162,12 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
-                                            prinf_arg_2:
+                                            prinf~arg_2:
                                                 (Variable
-                                                    3
-                                                    prinf_arg_2
+                                                    4
+                                                    prinf~arg_2
                                                     []
                                                     Unspecified
                                                     ()
@@ -154,10 +186,10 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
-                                    prinf
+                                    prinf~fpcast
                                     (FunctionType
                                         [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         (Integer 4)
@@ -173,17 +205,60 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 3 prinf_arg_0)
-                                    (Var 3 prinf_arg_1)
-                                    (Var 3 prinf_arg_2)]
+                                    [(Var 4 prinf~arg_0)
+                                    (Var 4 prinf~arg_1)
+                                    (Var 4 prinf~arg_2)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            prinf~fpcast_ptr:
+                                (Variable
+                                    2
+                                    prinf~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (Integer 4)
+                                            (Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 prinf~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             w:
                                 (Variable
@@ -207,7 +282,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -231,7 +306,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -255,7 +330,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     idd_frm
@@ -276,6 +351,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 m)
@@ -283,9 +359,34 @@
                     (Var 2 w)
                     (Var 2 x)
                     (Var 2 y)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 prinf~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 prinf)
+                            2 prinf~fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (Integer 4)
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 prinf~fpcast_ptr
                         2 prinf
-                        ()
                         [((StringConstant
                             "lw = *"
                             (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -295,9 +396,34 @@
                         ()
                         .false.
                     )
+                    (Associate
+                        (Var 2 prinf~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 prinf)
+                            2 prinf~fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (Integer 4)
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (SubroutineCall
+                        2 prinf~fpcast_ptr
                         2 prinf
-                        ()
                         [((StringConstant
                             "16m+70 = *"
                             (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -328,4 +454,5 @@
                 )
         })
     []
+    ()
 )

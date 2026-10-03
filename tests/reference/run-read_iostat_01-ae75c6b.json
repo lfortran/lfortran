@@ -1,0 +1,13 @@
+{
+    "basename": "run-read_iostat_01-ae75c6b",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/read_iostat_01.f90",
+    "infile_hash": "f299c78910f8b44b45d5ddb7d07873369187743b0be9f7ee35351229",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-read_iostat_01-ae75c6b.stdout",
+    "stdout_hash": "c38f4fc83c196af9d03fb3d4eb4c61e811fc8e2da2a8f8ccc0a2a3fe",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

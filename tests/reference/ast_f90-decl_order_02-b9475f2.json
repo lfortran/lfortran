@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-decl_order_02-b9475f2",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/decl_order_02.f90",
+    "infile_hash": "3812f13c23831b97146abc6dee47a8f8eae170133be50edd6327e630",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-decl_order_02-b9475f2.stdout",
+    "stdout_hash": "21749be63d5ce5ce101fbfb35880177cff69af753d2892abbc78643d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

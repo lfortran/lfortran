@@ -20,7 +20,7 @@
                                                     Local
                                                     (IntegerConstant 102 (Integer 4) Decimal)
                                                     (IntegerConstant 102 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             datetime:
                                                 (Variable
@@ -44,7 +44,7 @@
                                                     Local
                                                     (IntegerConstant 105 (Integer 4) Decimal)
                                                     (IntegerConstant 105 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -58,7 +58,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             float:
                                                 (Variable
@@ -68,7 +68,7 @@
                                                     Local
                                                     (IntegerConstant 104 (Integer 4) Decimal)
                                                     (IntegerConstant 104 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -82,7 +82,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             int:
                                                 (Variable
@@ -92,7 +92,7 @@
                                                     Local
                                                     (IntegerConstant 103 (Integer 4) Decimal)
                                                     (IntegerConstant 103 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -106,7 +106,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             invalid:
                                                 (Variable
@@ -116,7 +116,7 @@
                                                     Local
                                                     (IntegerConstant 100 (Integer 4) Decimal)
                                                     (IntegerConstant 100 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -130,7 +130,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             string:
                                                 (Variable
@@ -140,7 +140,7 @@
                                                     Local
                                                     (IntegerConstant 101 (Integer 4) Decimal)
                                                     (IntegerConstant 101 (Integer 4) Decimal)
-                                                    Save
+                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -154,7 +154,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     enum_type
@@ -179,6 +179,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -256,7 +257,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     derived_types_14_module
@@ -265,6 +266,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             derived_types_14_module1:
                 (Module
@@ -298,7 +300,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             res:
                                                 (Variable
@@ -322,7 +324,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     check
@@ -339,6 +341,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 raw)]
@@ -378,8 +381,8 @@
                                                     6
                                                     1_enum_type_boolean
                                                     5 boolean
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     boolean
                                                     Public
                                                 ),
@@ -388,8 +391,8 @@
                                                     6
                                                     1_enum_type_datetime
                                                     5 datetime
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     datetime
                                                     Public
                                                 ),
@@ -398,8 +401,8 @@
                                                     6
                                                     1_enum_type_float
                                                     5 float
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     float
                                                     Public
                                                 ),
@@ -408,8 +411,8 @@
                                                     6
                                                     1_enum_type_int
                                                     5 int
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     int
                                                     Public
                                                 ),
@@ -418,8 +421,8 @@
                                                     6
                                                     1_enum_type_invalid
                                                     5 invalid
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     invalid
                                                     Public
                                                 ),
@@ -428,8 +431,8 @@
                                                     6
                                                     1_enum_type_string
                                                     5 string
-                                                    enum_type
-                                                    []
+                                                    derived_types_14_module
+                                                    [enum_type]
                                                     string
                                                     Public
                                                 ),
@@ -455,7 +458,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             vtype:
                                                 (Variable
@@ -479,7 +482,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_get_value_type
@@ -496,6 +499,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [check]
                                     [(Var 6 raw)]
@@ -660,6 +664,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             main:
                 (Program
@@ -676,7 +681,9 @@
                             (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

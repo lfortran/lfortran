@@ -2,8 +2,6 @@
     [(Program
         pragma2
         ()
-        []
-        []
         [(DeclarationPragma
             LFortranPragma
             "attributes simd :: A"
@@ -28,8 +26,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             A
             1

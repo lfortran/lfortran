@@ -1,73 +1,59 @@
 # IntegerCompare
 
-Integer comparison `expr` ASR node.
+A comparison of two integers.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-IntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+```text
+IntegerCompare(expr left, cmpop op, expr right, ttype type,
+    expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`left`      | left side of the comparison operand |
-|`right` | right side of the comparison operand |
-|`op` | comparison operator |
-|`type` | table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the comparison; see [cmpop](../enum_nodes/cmpop.md). |
+| `right` | the right operand. |
+| `type` | the logical type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the IntegerCompare represents.
+The value of the expression.
 
 ## Description
 
-**IntegerCompare** represents integer comparison operation.
-
-Comparison operation can be:
-
-1. Less than
-2. Greater than
-3. Less than or equal to
-4. Greater than or equal to
-5. Equal to
-
-## Types
-
-Only accepts integers.
+The operands are of the same integer type and the result is logical, so the
+type of the node is a [Logical](../type_nodes/Logical.md), not an integer.
 
 ## Examples
 
-```fortran
-2 > 1
+```clojure
+(IntegerCompare
+  :left (Var
+    :v (SymbolRef 1 "i")
+  )
+  :op :Lt
+  :right (Var
+    :v (SymbolRef 1 "j")
+  )
+  :type (Logical
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(IntegerCompare
-        (IntegerConstant 2 (Integer 4 []))
-        Gt
-        (IntegerConstant 1 (Integer 4 []))
-        (Logical 4 [])
-        (LogicalConstant
-            .true.
-            (Logical 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/integer_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[cmpop](../enum_nodes/cmpop.md), [RealCompare](RealCompare.md), [IntegerBinOp](IntegerBinOp.md)

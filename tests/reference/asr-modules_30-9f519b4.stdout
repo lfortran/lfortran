@@ -17,8 +17,8 @@
                                                     9
                                                     1_executable_config_main
                                                     8 main
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     main
                                                     Public
                                                 ),
@@ -27,8 +27,8 @@
                                                     9
                                                     1_executable_config_name
                                                     8 name
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     name
                                                     Public
                                                 ),
@@ -37,8 +37,8 @@
                                                     9
                                                     1_executable_config_source_dir
                                                     8 source_dir
-                                                    executable_config
-                                                    []
+                                                    fpm_manifest_executable_modules_30
+                                                    [executable_config]
                                                     source_dir
                                                     Public
                                                 ),
@@ -64,7 +64,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -101,7 +101,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     default_executable
@@ -132,6 +132,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 self)
@@ -219,7 +220,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             name:
                                                 (Variable
@@ -245,7 +246,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -271,7 +272,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     executable_config
@@ -298,6 +299,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -310,6 +312,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_modules_30:
                 (Module
@@ -346,8 +349,8 @@
                                                     10
                                                     1_package_config_t_executable
                                                     5 executable
-                                                    package_config_t
-                                                    []
+                                                    fpm_manifest_package_modules_30
+                                                    [package_config_t]
                                                     executable
                                                     Public
                                                 ),
@@ -356,8 +359,8 @@
                                                     10
                                                     1_package_config_t_name
                                                     5 name
-                                                    package_config_t
-                                                    []
+                                                    fpm_manifest_package_modules_30
+                                                    [package_config_t]
                                                     name
                                                     Public
                                                 ),
@@ -393,6 +396,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -411,7 +415,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             root:
                                                 (Variable
@@ -435,7 +439,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     package_defaults
@@ -463,6 +467,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -481,6 +486,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 10 package)
@@ -508,12 +514,14 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -547,6 +555,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -596,6 +605,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             fpm_manifest_package_modules_30:
                 (Module
@@ -645,6 +655,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     4 executable_config
@@ -659,7 +670,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             name:
                                                 (Variable
@@ -685,7 +696,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     package_config_t
@@ -712,6 +723,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -726,6 +738,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -738,6 +751,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             modules_30:
                 (Program
@@ -754,7 +768,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

@@ -1,1 +1,1 @@
-Error: Invalid input for int64_t from file.
+Error: Invalid int64_t input from file (EOF).

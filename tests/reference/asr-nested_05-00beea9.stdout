@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_05_a:
                 (Module
@@ -59,6 +60,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -129,7 +131,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -153,7 +155,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     b
@@ -170,6 +172,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -254,7 +257,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

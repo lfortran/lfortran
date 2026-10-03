@@ -2,12 +2,11 @@
     [(Program
         do6
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        [(Declaration
+        )
+        (Declaration
             (AttrType
                 TypeInteger
                 []
@@ -60,8 +59,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             correct
             0
@@ -146,10 +145,6 @@
                     k
                     (+ k 1)
                     ()
-                )
-                (Continue
-                    35
-                    ()
                 )]
                 ()
                 ()
@@ -194,10 +189,6 @@
                 k
                 (+ k 1)
                 ()
-            )
-            (Continue
-                40
-                ()
             )]
             ()
             ()
@@ -238,10 +229,6 @@
                 0
                 k
                 (+ k 1)
-                ()
-            )
-            (Continue
-                45
                 ()
             )]
             ()
@@ -419,10 +406,6 @@
                     k
                     (+ k 2)
                     ()
-                )
-                (Continue
-                    65
-                    ()
                 )]
                 ()
                 ()
@@ -544,10 +527,6 @@
                     0
                     k
                     (+ k 2)
-                    ()
-                )
-                (Continue
-                    75
                     ()
                 )]
                 ()

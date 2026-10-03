@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             solver:
                                 (ExternalSymbol
@@ -94,6 +94,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             recursion_03:
                 (Module
@@ -132,7 +133,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     f
@@ -149,6 +150,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -181,7 +183,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             iter:
                                                 (Variable
@@ -205,7 +207,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             solver:
                                                 (Variable
@@ -229,7 +231,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     solver
@@ -247,6 +249,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )
                                         (Integer 4)]
                                         (Integer 4)
@@ -260,6 +263,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [sub1]
                                     [(Var 5 f)
@@ -381,7 +385,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     f
@@ -398,6 +402,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -430,7 +435,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             solver_caller:
                                                 (Variable
@@ -454,7 +459,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     solver_caller
@@ -472,6 +477,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )
                                         (Integer 4)]
                                         (Integer 4)
@@ -485,6 +491,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [solver]
                                     [(Var 3 f)
@@ -542,7 +549,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     getx
@@ -559,6 +566,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     []
@@ -612,7 +620,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             sub1:
                                                 (Variable
@@ -636,7 +644,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             tmp:
                                                 (Variable
@@ -660,7 +668,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -684,7 +692,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             y:
                                                 (Variable
@@ -708,7 +716,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     sub1
@@ -726,6 +734,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [solver_caller]
                                     [(Var 7 y)
@@ -804,7 +813,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -23,9 +23,6 @@
         []
         ()
         ()
-        []
-        []
-        []
         [(Declaration
             (AttrType
                 TypeDoublePrecision
@@ -506,8 +503,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             epmach
             (FuncCallOrArray
@@ -2136,10 +2133,6 @@
                 ()
                 ()
                 ()
-            )
-            (Continue
-                60
-                ()
             )]
             ()
             ()
@@ -2172,10 +2165,6 @@
                     []
                     []
                 ))
-                ()
-            )
-            (Continue
-                80
                 ()
             )]
             ()

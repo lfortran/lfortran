@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_LLVM_ARR_UTILS_H
 #define LFORTRAN_LLVM_ARR_UTILS_H
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -330,7 +331,8 @@ namespace LCompilers {
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-                                llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type) = 0;
+                                llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
+                                bool reset_lower_bound) = 0;
 
                 virtual
                 void copy_array_data_only(llvm::Value* src, llvm::Value* dest,
@@ -360,6 +362,12 @@ namespace LCompilers {
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, llvm::Value* rank,
+                    llvm::Value* num_elements, llvm::Module* module) = 0;
+
                 /*
                 * Copies contiguous data into a potentially-strided descriptor array.
                 * The inverse of create_contiguous_copy_from_descriptor.
@@ -370,6 +378,18 @@ namespace LCompilers {
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
+
+                /*
+                * Calls `body` for each element of a potentially-strided
+                * descriptor array, in array element order, with the
+                * element's 0-based position in that order and a pointer
+                * to the element (respecting the descriptor's strides).
+                */
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body) = 0;
 
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
@@ -386,6 +406,12 @@ namespace LCompilers {
                     llvm::Type* internal_type,
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size) = 0;
+
+                virtual
+                void push_data_array_args(
+                    ASR::ttype_t* val_type, ASR::expr_t* val_expr,
+                    llvm::Value* data_ptr, llvm::Value* n_elems,
+                    llvm::Value* stride, std::vector<llvm::Value*>& args) = 0;
 
                 virtual
                 void push_descriptor_array_args(
@@ -609,7 +635,8 @@ namespace LCompilers {
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-                                llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type);
+                                llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
+                                bool reset_lower_bound);
 
                 virtual
                 void copy_array_data_only(llvm::Value* src, llvm::Value* dest,
@@ -627,10 +654,22 @@ namespace LCompilers {
                     llvm::Type* elem_type, int rank, llvm::Module* module);
 
                 virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, llvm::Value* rank,
+                    llvm::Value* num_elements, llvm::Module* module);
+
+                virtual
                 void copy_contiguous_data_to_descriptor(
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body);
 
                 // CFI field indices (C-interop layout, no offset field)
                 static constexpr int CFI_FIELD_BASE_ADDR   = 0;
@@ -660,11 +699,14 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size);
                 
+                void push_data_array_args(
+                    ASR::ttype_t* val_type, ASR::expr_t* val_expr,
+                    llvm::Value* data_ptr, llvm::Value* n_elems,
+                    llvm::Value* stride, std::vector<llvm::Value*>& args);
+
                 /*
                  * Extracts descriptor fields from a DescriptorArray and appends
-                 * { is_descriptor_array=1, type_code, data_ptr, n_elems, stride }
-                 * to `args`.  Used by formatted read codegen for
-                 * descriptor-unwrapping logic.
+                 * the descriptor-array formatted-read protocol to `args`.
                  */
                 void push_descriptor_array_args(
                     ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,

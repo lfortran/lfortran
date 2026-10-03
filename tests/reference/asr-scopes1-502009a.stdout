@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f
@@ -51,6 +51,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 b)]
@@ -95,7 +96,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             j:
                                 (Variable
@@ -119,7 +120,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     scopes1
@@ -138,7 +139,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

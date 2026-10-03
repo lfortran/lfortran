@@ -45,7 +45,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     finalize
@@ -73,6 +73,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 self)]
@@ -110,7 +111,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     my_super_type
@@ -125,6 +126,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -194,7 +196,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             unary:
                                                 (StructMethodDeclaration
@@ -229,7 +231,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             ~add:
                                                 (CustomOperator
@@ -259,6 +261,7 @@
                                     [finalize]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -304,7 +307,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -339,7 +342,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     plus
@@ -378,6 +381,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 self)]
@@ -426,7 +430,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             str:
                                                 (Variable
@@ -450,7 +454,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     print_something
@@ -479,6 +483,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)
@@ -519,7 +524,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             self:
                                                 (Variable
@@ -554,7 +559,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     say_something
@@ -583,6 +588,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 self)
@@ -634,7 +640,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             unary:
                                                 (Variable
@@ -669,7 +675,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -704,7 +710,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     unary
@@ -755,6 +761,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 self)
@@ -773,7 +780,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -27,6 +27,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -41,7 +42,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -73,7 +74,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -134,6 +135,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -147,6 +149,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 input)]
@@ -187,6 +190,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_de:
                 (Module
@@ -230,6 +234,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -243,7 +248,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             error:
                                                 (Variable
@@ -277,7 +282,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -309,7 +314,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_parse_string
@@ -328,6 +333,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Allocatable
                                             (StructType
@@ -351,6 +357,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 table)
@@ -400,7 +407,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             table:
                                                 (Variable
@@ -432,7 +439,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             unit:
                                                 (Variable
@@ -456,7 +463,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_parse_unit
@@ -493,6 +500,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 table)
@@ -523,6 +531,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_error:
                 (Module
@@ -558,7 +567,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             stat:
                                                 (Variable
@@ -582,7 +591,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_error
@@ -603,6 +612,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -615,6 +625,7 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 ),
             module_52_tomlf_type:
                 (Module
@@ -640,7 +651,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -654,7 +665,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             inline:
                                                 (Variable
@@ -670,7 +681,7 @@
                                                         .false.
                                                         (Logical 4)
                                                     )
-                                                    Save
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -684,7 +695,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     toml_table
@@ -703,6 +714,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -715,7 +727,9 @@
                     .true.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -15,6 +15,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             functions_08:
                 (Program
@@ -43,7 +44,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -67,7 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -91,7 +92,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             f:
                                 (Function
@@ -120,7 +121,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -144,7 +145,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             x:
                                                 (Variable
@@ -168,7 +169,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f
@@ -185,6 +186,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_real]
                                     [(Var 4 a)]
@@ -260,7 +262,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -284,7 +286,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     f_real
@@ -301,6 +303,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f]
                                     [(Var 5 a)]
@@ -390,7 +393,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             q:
                                 (Variable
@@ -414,7 +417,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -450,7 +453,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -474,7 +477,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     functions_08
@@ -529,7 +532,9 @@
                             ()
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

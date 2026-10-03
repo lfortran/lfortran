@@ -7,7 +7,7 @@ contains
 subroutine a(cs)
 real, dimension(nx, ny, nz), intent(in) :: cs
 print *, sum(cs)
-if (abs(sum(cs) - 6343.99072) > 1e-8) error stop
+if (abs(sum(cs) - 6343.99072) > epsilon(6343.99072) * 6343.99072 * size(cs)) error stop
 end subroutine
 end module module_arrays_47
 

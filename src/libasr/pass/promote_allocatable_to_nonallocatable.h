@@ -9,6 +9,9 @@ namespace LCompilers {
     void pass_promote_allocatable_to_nonallocatable(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
 
+    void pass_promote_device_allocatable(Allocator &al, ASR::TranslationUnit_t &unit,
+                                const PassOptions &pass_options);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_PROMOTE_ALLOCATABLE_TO_NONALLOCATABLE_H

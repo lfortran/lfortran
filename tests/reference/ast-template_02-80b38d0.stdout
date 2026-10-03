@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -14,11 +13,11 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Requirement
+        )
+        (Requirement
             eq
-            [t
-            ne]
+            [(t)
+            (ne)]
             [(DerivedType
                 t
                 []
@@ -28,67 +27,70 @@
                 )]
                 []
                 []
-            )]
-            [(Function
-                ne
-                [(lhs)
-                (rhs)]
-                []
+            )
+            (Interface
+                (DeferredInterfaceHeader)
                 ()
-                ()
-                ()
-                []
-                []
-                []
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        t
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(lhs
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())
-                    (rhs
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeLogical
+                [(InterfaceProc
+                    (Function
+                        ne
+                        [(lhs)
+                        (rhs)]
                         []
                         ()
                         ()
-                        None
+                        ()
+                        [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                t
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )]
+                            [(lhs
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())
+                            (rhs
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
+                            (AttrType
+                                TypeLogical
+                                []
+                                ()
+                                ()
+                                None
+                            )
+                            []
+                            [(ne
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )]
+                        []
+                        []
                     )
-                    []
-                    [(ne
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
                 )]
-                []
-                []
-                []
             )]
+            []
         )
         (Template
             change_positions_tmpl
@@ -97,10 +99,10 @@
             [(Require
                 [(UnitRequire
                     eq
-                    [(AttrNamelist
+                    [(AttrName
                         t
                     )
-                    (AttrNamelist
+                    (AttrName
                         ne
                     )]
                 )]
@@ -134,9 +136,6 @@
                 mask
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -221,8 +220,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     n
                     (FuncCallOrArray
@@ -436,7 +435,6 @@
             )]
         )]
         []
-        []
     )
     (Program
         template_02
@@ -447,12 +445,12 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Instantiate
+        )
+        (Instantiate
             change_positions_tmpl
             [(AttrType
                 TypeInteger
@@ -485,8 +483,8 @@
                 change_positions_t
                 change_positions_chr
             )]
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(FuncCallOrArray

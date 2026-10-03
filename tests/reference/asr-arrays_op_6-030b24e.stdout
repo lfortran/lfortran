@@ -25,6 +25,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -38,7 +39,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             asquare:
                                 (Function
@@ -63,6 +64,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -76,7 +78,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             b:
                                                 (Variable
@@ -96,6 +98,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -109,7 +112,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             c:
                                                 (Variable
@@ -129,6 +132,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -142,7 +146,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             d:
                                                 (Variable
@@ -162,6 +166,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -175,7 +180,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     asquare
@@ -189,6 +194,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -199,6 +205,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -209,6 +216,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Array
                                             (Real 4)
@@ -219,6 +227,7 @@
                                             ((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 2 (Integer 4) Decimal))]
                                             FixedSizeArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -230,6 +239,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)
@@ -251,6 +261,7 @@
                                                     (()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -265,6 +276,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -296,6 +308,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -309,7 +322,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -329,6 +342,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -342,7 +356,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             check:
                                 (Function
@@ -367,6 +381,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -380,7 +395,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             i:
                                                 (Variable
@@ -404,7 +419,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             j:
                                                 (Variable
@@ -428,7 +443,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             k:
                                                 (Variable
@@ -452,7 +467,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     check
@@ -466,6 +481,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -478,6 +494,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 c)]
@@ -617,6 +634,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -630,7 +648,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             i:
                                 (Variable
@@ -654,7 +672,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             j:
                                 (Variable
@@ -678,7 +696,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             k:
                                 (Variable
@@ -702,7 +720,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     array_op_5
@@ -899,6 +917,7 @@
                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             ))
@@ -915,6 +934,7 @@
                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             ))
@@ -931,6 +951,7 @@
                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             ))]
@@ -943,6 +964,7 @@
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ()
                             ()
@@ -967,13 +989,16 @@
                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                 DescriptorArray
+                                Global
                             )
                             ()
                         ))]
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

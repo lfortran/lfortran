@@ -12,8 +12,8 @@
                                     7
                                     1_t_1_i
                                     3 i
-                                    t_1
-                                    []
+                                    associate_08_module_1
+                                    [t_1]
                                     i
                                     Public
                                 ),
@@ -22,8 +22,8 @@
                                     7
                                     1_t_2_type_2
                                     4 type_2
-                                    t_2
-                                    []
+                                    associate_08_module_1
+                                    [t_2]
                                     type_2
                                     Public
                                 ),
@@ -90,6 +90,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )]
                                                 []
@@ -99,6 +100,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     7 t_2
@@ -113,7 +115,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             type_1:
                                 (Variable
@@ -136,6 +138,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -154,7 +157,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     associate2
@@ -186,6 +189,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         ()
@@ -235,6 +239,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         ()
@@ -277,11 +282,13 @@
                                     [(()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                             )
                             ()
                         )]
                     )]
+                    ()
                 ),
             associate_08_module_1:
                 (Module
@@ -298,8 +305,8 @@
                                                     5
                                                     1_t_1_i
                                                     3 i
-                                                    t_1
-                                                    []
+                                                    associate_08_module_1
+                                                    [t_1]
                                                     i
                                                     Public
                                                 ),
@@ -308,8 +315,8 @@
                                                     5
                                                     1_t_2_type_2
                                                     4 type_2
-                                                    t_2
-                                                    []
+                                                    associate_08_module_1
+                                                    [t_2]
                                                     type_2
                                                     Public
                                                 ),
@@ -342,7 +349,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     associate_block
@@ -364,6 +371,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -415,7 +423,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             type_1:
                                                 (Variable
@@ -438,6 +446,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )]
                                                         []
@@ -456,7 +465,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     sub_1
@@ -473,6 +482,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )]
                                             []
@@ -491,6 +501,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 type_1)
@@ -510,12 +521,14 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -542,8 +555,8 @@
                                                     6
                                                     1_t_2_type_2
                                                     4 type_2
-                                                    t_2
-                                                    []
+                                                    associate_08_module_1
+                                                    [t_2]
                                                     type_2
                                                     Public
                                                 ),
@@ -557,8 +570,8 @@
                                                                     9
                                                                     1_t_1_i
                                                                     3 i
-                                                                    t_1
-                                                                    []
+                                                                    associate_08_module_1
+                                                                    [t_1]
                                                                     i
                                                                     Public
                                                                 ),
@@ -567,8 +580,8 @@
                                                                     9
                                                                     1_t_2_type_2
                                                                     4 type_2
-                                                                    t_2
-                                                                    []
+                                                                    associate_08_module_1
+                                                                    [t_2]
                                                                     type_2
                                                                     Public
                                                                 ),
@@ -594,6 +607,7 @@
                                                                                     [(()
                                                                                     ())]
                                                                                     DescriptorArray
+                                                                                    Global
                                                                                 )
                                                                             )]
                                                                             []
@@ -613,7 +627,7 @@
                                                                     .false.
                                                                     NotMethod
                                                                     ()
-                                                                    0
+                                                                    []
                                                                 )
                                                         })
                                                     associate_block
@@ -636,6 +650,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )]
                                                                 []
@@ -663,6 +678,7 @@
                                                                             [(()
                                                                             ())]
                                                                             DescriptorArray
+                                                                            Global
                                                                         )
                                                                     )
                                                                     ()
@@ -712,6 +728,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )]
                                                                 []
@@ -721,6 +738,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 t_2
@@ -735,7 +753,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     sub_2
@@ -754,6 +772,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )]
                                                     []
@@ -763,6 +782,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -776,6 +796,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 progress)]
@@ -783,6 +804,7 @@
                                         [((Var 6 progress)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -809,6 +831,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )]
                                                     []
@@ -830,12 +853,14 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        []
                                         ()
                                         ()
                                         ())]
@@ -879,7 +904,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     t_1
@@ -894,6 +919,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -926,6 +952,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 t_1
@@ -940,7 +967,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     t_2
@@ -956,6 +983,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         []
@@ -967,6 +995,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -981,7 +1010,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -35,7 +35,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             zero:
                                 (Variable
@@ -65,7 +65,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     a
@@ -82,6 +82,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [b]
                     []
@@ -160,7 +161,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     b
@@ -177,6 +178,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 factor)]
@@ -217,7 +219,9 @@
                         ()
                         .false.
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

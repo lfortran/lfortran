@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     a
@@ -46,6 +46,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -83,7 +84,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     b
@@ -100,6 +101,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -137,7 +139,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     c
@@ -154,6 +156,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -191,7 +194,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     d
@@ -208,6 +211,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -245,7 +249,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     e
@@ -262,6 +266,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -299,7 +304,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     f
@@ -316,6 +321,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     []
@@ -328,4 +334,5 @@
                 )
         })
     []
+    ()
 )

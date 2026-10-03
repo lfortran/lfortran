@@ -34,7 +34,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     sub
@@ -51,6 +51,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)]
@@ -103,6 +104,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -116,7 +118,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -132,6 +134,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -145,7 +148,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     uppercase1
@@ -154,7 +157,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

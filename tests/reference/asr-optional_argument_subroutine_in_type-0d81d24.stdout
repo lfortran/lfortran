@@ -12,8 +12,8 @@
                                     5
                                     1_test_type_test_subroutine
                                     3 test_subroutine
-                                    test_type
-                                    []
+                                    test_module
+                                    [test_type]
                                     test_subroutine
                                     Public
                                 ),
@@ -64,7 +64,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     main
@@ -76,6 +76,7 @@
                         (Var 5 test_type_instance)
                         .false.
                     )]
+                    ()
                 ),
             test_module:
                 (Module
@@ -109,7 +110,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     test_subroutine
@@ -126,6 +127,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)]
@@ -168,7 +170,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             test_subroutine:
                                                 (StructMethodDeclaration
@@ -196,6 +198,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .false.
                                     []
                                     ()
                                     ()
@@ -208,7 +211,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

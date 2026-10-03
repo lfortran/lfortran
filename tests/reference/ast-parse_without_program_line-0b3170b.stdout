@@ -2,8 +2,6 @@
     [(Program
         __xx_main
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeInteger
@@ -49,8 +47,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Allocate
+        )
+        (Allocate
             0
             [(()
             (FuncCallOrArray
@@ -205,9 +203,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -229,8 +224,8 @@
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-            )]
-            [(DoLoop
+            )
+            (DoLoop
                 0
                 ()
                 0

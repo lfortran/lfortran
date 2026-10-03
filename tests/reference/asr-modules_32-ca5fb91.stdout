@@ -76,7 +76,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     build_target_ptr
@@ -98,6 +98,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -134,7 +135,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             version:
                                                 (Variable
@@ -160,7 +161,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     build_target_t
@@ -181,6 +182,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     .false.
                                     []
@@ -227,7 +229,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     func
@@ -256,6 +258,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -291,6 +294,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             modules_32:
                 (Program
@@ -307,7 +311,9 @@
                             (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

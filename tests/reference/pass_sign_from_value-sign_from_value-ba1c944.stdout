@@ -29,7 +29,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             arr:
                                 (Variable
@@ -45,6 +45,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -58,7 +59,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             b:
                                 (Variable
@@ -86,7 +87,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             c:
                                 (Variable
@@ -110,7 +111,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             epsidp:
                                 (Variable
@@ -140,7 +141,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             epsisp:
                                 (Variable
@@ -164,7 +165,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             epsrdp:
                                 (Variable
@@ -203,7 +204,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             epsrsp:
                                 (Variable
@@ -233,7 +234,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             ixdp:
                                 (Variable
@@ -263,7 +264,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             ixsp:
                                 (Variable
@@ -287,7 +288,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             rxdp:
                                 (Variable
@@ -326,7 +327,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             rxsp:
                                 (Variable
@@ -356,7 +357,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -396,7 +397,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -436,7 +437,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             z:
                                 (Variable
@@ -460,7 +461,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     flip_sign
@@ -898,6 +899,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )
@@ -975,7 +977,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

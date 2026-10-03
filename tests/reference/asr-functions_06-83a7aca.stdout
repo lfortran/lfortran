@@ -55,7 +55,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             trim_wrapper:
                                 (ExternalSymbol
@@ -100,6 +100,7 @@
                                         ()
                                     ))]
                                     PointerArray
+                                    Global
                                 )
                                 ()
                                 ()
@@ -127,6 +128,7 @@
                                         ()
                                     ))]
                                     PointerArray
+                                    Global
                                 )
                                 ()
                                 ()
@@ -138,6 +140,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             functions_06_m:
                 (Module
@@ -171,7 +174,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -191,6 +194,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -204,7 +208,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
@@ -228,7 +232,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     int_return
@@ -247,6 +251,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -258,6 +263,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 s)]
@@ -321,7 +327,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             r:
                                                 (Variable
@@ -341,6 +347,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -354,7 +361,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
@@ -378,7 +385,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     real_return
@@ -397,6 +404,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -408,6 +416,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 s)]
@@ -478,7 +487,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             s:
                                                 (Variable
@@ -502,7 +511,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     trim_wrapper
@@ -527,6 +536,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 s)]
@@ -558,7 +568,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

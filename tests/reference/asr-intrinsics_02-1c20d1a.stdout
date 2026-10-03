@@ -44,7 +44,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             y:
                                 (Variable
@@ -68,7 +68,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 )
                         })
                     intrinsics_02
@@ -310,7 +310,7 @@
                                     )
                                     (Real 4)
                                     (RealConstant
-                                        -0.000000
+                                        0.000000
                                         (Real 4)
                                     )
                                 )]
@@ -429,7 +429,9 @@
                         )]
                         []
                     )]
+                    ()
                 )
         })
     []
+    ()
 )

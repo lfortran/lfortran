@@ -45,7 +45,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -85,7 +85,7 @@
                                     .false.
                                     NotMethod
                                     ()
-                                    0
+                                    []
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -350,6 +350,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             operator_overloading_01_overload_asterisk_m:
                 (Module
@@ -383,7 +384,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             log1:
                                                 (Variable
@@ -407,7 +408,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             log2:
                                                 (Variable
@@ -431,7 +432,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     bin_add
@@ -449,6 +450,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 log1)
@@ -535,7 +537,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             log2:
                                                 (Variable
@@ -559,7 +561,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -583,7 +585,7 @@
                                                     .false.
                                                     NotMethod
                                                     ()
-                                                    0
+                                                    []
                                                 )
                                         })
                                     logical_and
@@ -601,6 +603,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 log1)
@@ -645,7 +648,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )
