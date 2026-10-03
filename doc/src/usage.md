@@ -200,6 +200,29 @@ compilation options, output options, link options and so on.
 * `-o <value>`, Specify the file to place the compiler's output into
 * `--static`, Create a static executable
 
+### WebAssembly output
+
+Linking for `--target=wasm32-wasi` needs a WASI SDK (`WASI_SDK_PATH`).
+Linking for `--target=wasm32-unknown-emscripten` needs an `emcc` driver
+from an emsdk checkout (`EMSDK_PATH`).
+
+LFortran passes fixed Emscripten settings to `emcc`
+(`-sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb`). Additional `-s` settings can
+be given with `-s` (repeatable); they are passed to `emcc` after the
+defaults, so they can override them. The `-sKEY=VALUE`, `-s KEY=VALUE` and
+`-s=KEY=VALUE` spellings are equivalent; settings are only applied for
+`--target=wasm32-unknown-emscripten` with the LLVM-based link (otherwise
+LFortran warns and ignores them). Settings travel through the shell, so
+values containing spaces or quotes need escaping.
+
+Example — produce an ES module that exports a factory function, as needed
+when running in a browser worker:
+
+```sh
+lfortran --target=wasm32-unknown-emscripten app.f -o app.mjs \
+    -sMODULARIZE -sEXPORT_ES6
+```
+
 ### Compiler debugging
 
 A number of command-line options select various text outputs useful

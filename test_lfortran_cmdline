@@ -115,4 +115,28 @@ cd $(mktemp -d)
 echo "Testing invalid command-line usage"
 ! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"
 
+if [[ "$(basename "$FC")" == "lfortran" ]]; then
+    # -s Emscripten settings must not swallow following arguments (#12603):
+    # flags-first order is the one a greedy option parser would break.
+    # On a native target the settings are ignored with a warning - assert
+    # the warning too so an unexpected stderr from elsewhere cannot slip in.
+    cd $(mktemp -d)
+    $FC -sMODULARIZE -sEXPORT_ES6 $f -o a.out 2> s_err.txt
+    [ -f "a.out" ]
+    [ -x "a.out" ]
+    grep "only used when linking with --target=wasm32-unknown-emscripten" s_err.txt
+    ./a.out
+
+    # The space-separated value form (`-s VALUE` immediately before the
+    # source file) is the spelling emcc users write, and precisely the one
+    # `allow_extra_args(false)` protects; without it the parser eats the
+    # file name as a second -s value and drops into the REPL instead.
+    cd $(mktemp -d)
+    $FC -s MODULARIZE $f -o a.out 2> s_err.txt
+    [ -f "a.out" ]
+    [ -x "a.out" ]
+    grep "only used when linking with --target=wasm32-unknown-emscripten" s_err.txt
+    ./a.out
+fi
+
 echo "All tests succeeded"
