@@ -1315,43 +1315,33 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int sign_width = is_negative ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && !is_negative); // Positive sign
     // sign_width = 0
-    double integer_part = trunc(val);
-    int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
-    // integer_part = 11230000128, integer_length = 11
     // width = 10, digits = 2
 
     #define MAX_SIZE 512
+    // The significant digits of |val| and its decimal exponent are taken from
+    // the scientific notation. The exponent is then that of the printed
+    // digits: log10 of a value just below a power of ten, such as
+    // 999999999999999.0, rounds up to that power and gives one too many.
     char val_str[MAX_SIZE] = "";
-    int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
-    sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
-    // val_str = "11230000128.00..."
-    int i = strlen(val_str) - 1;
+    int decimal_exponent = 0;
     if (val != 0.0) {
-        while (val_str[i] == '0') {
+        char sci_str[MAX_SIZE + 16];
+        snprintf(sci_str, sizeof(sci_str), "%.*e", MAX_SIZE - 4, fabs(val));
+        // sci_str = "1.12300001280000000000...e+10"
+        char* e_pos = strchr(sci_str, 'e');
+        decimal_exponent = atoi(e_pos + 1);
+        *e_pos = '\0';
+        val_str[0] = sci_str[0];
+        strcpy(val_str + 1, sci_str + 2);
+        int i = strlen(val_str) - 1;
+        while (i > 0 && val_str[i] == '0') {
             val_str[i] = '\0';
             i--;
         }
     }
-    // val_str = "11230000128."
-
-    char* ptr = strchr(val_str, '.');
-    if (ptr != NULL) {
-        memmove(ptr, ptr + 1, strlen(ptr));
-    }
-    // val_str = "11230000128"
-
-    if (is_negative) {
-        // removes `-` (negative) sign
-        memmove(val_str, val_str + 1, strlen(val_str));
-    }
-
-    int decimal = 1;
-    while (val_str[0] == '0') {
-        // Used for the case: 1.123e-10
-        memmove(val_str, val_str + 1, strlen(val_str));
-        decimal--;
-        // loop end: decimal = -9
-    }
+    // val_str = "1123000128", decimal_exponent = 10
+    int integer_length = (fabs(val) >= 1.0) ? decimal_exponent + 1 : 1;
+    // integer_length = 11
     bool is_s_format = false;
     if (tolower(format[1]) == 's') {
         is_s_format = true;
@@ -1364,15 +1354,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
-        // Compute exponent based on decimal (stripped zeros) or integer_length
-        // This is more accurate than log10 for values near powers of 10
-        // For val >= 1: exponent = integer_length - scale
-        // For val < 1:  exponent = decimal - scale
-        if (fabs(val) >= 1.0) {
-            exponent_value = integer_length - scale;
-        } else {
-            exponent_value = decimal - scale;
-        }
+        exponent_value = decimal_exponent + 1 - scale;
     }
 
     // For ES format with 0 decimal places, we need to round properly
