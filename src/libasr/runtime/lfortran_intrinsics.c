@@ -2138,6 +2138,11 @@ typedef enum primitive_types{
     FLOAT_80_TYPE = 19,
 } Primitive_Types;
 
+typedef struct lfortran_string_descriptor {
+    char *data;
+    int64_t length;
+} LFortranStringDescriptor;
+
 static inline bool is_logical_type(Primitive_Types t) {
     return t == LOGICAL_8_TYPE || t == LOGICAL_16_TYPE ||
            t == LOGICAL_32_TYPE || t == LOGICAL_64_TYPE;
@@ -2598,7 +2603,8 @@ void set_string_length(Serialization_Info* s_info){
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 
-                *(int64_t*)((char*)s_info->current_arg_info.current_arg + sizeof(char*)); // Get string len.
+                *(int64_t*)((char*)s_info->current_arg_info.current_arg +
+                    offsetof(LFortranStringDescriptor, length)); // Get string len.
     }
 }
 // Deserialize to know the physical type of string
@@ -2664,7 +2670,7 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         {sizeof(int64_t), sizeof(int32_t), sizeof(int16_t),
         sizeof(int8_t) , sizeof(double), sizeof(float), 
         sizeof(char*), sizeof(int8_t), sizeof(void*), 0 /*Important to be zero*/,
-        sizeof(char*) + sizeof(int64_t)/*String Descriptor*/,
+        sizeof(LFortranStringDescriptor)/*String Descriptor*/,
         sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
@@ -5382,25 +5388,23 @@ LFORTRAN_API int32_t _lpython_bit_length8(int64_t num)
     return res;
 }
 
-//repeat str for n time
-LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char** s, int32_t n, char** dest)
+// Repeat the counted string `s` of length `s_len` `n` times. `s` is Fortran
+// character storage and is not guaranteed to be NUL-terminated.
+LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char* s, int64_t s_len, int32_t n, char** dest)
 {
-    int cntr = 0;
-    char trmn = '\0';
-    int s_len = strlen(*s);
-    int trmn_size = sizeof(trmn);
-    int f_len = s_len*n;
+    int64_t f_len = s_len * n;
     if (f_len < 0)
         f_len = 0;
-    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len+trmn_size);
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < s_len; j++) {
-            dest_char[cntr] = (*s)[j];
-            cntr++;
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len + 1);
+    int64_t cntr = 0;
+    if (s_len > 0) {
+        for (int32_t i = 0; i < n; i++) {
+            memcpy(dest_char + cntr, s, s_len);
+            cntr += s_len;
         }
     }
-    dest_char[cntr] = trmn;
-    *dest = &(dest_char[0]);
+    dest_char[cntr] = '\0';
+    *dest = dest_char;
 }
 
 LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n)

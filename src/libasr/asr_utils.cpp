@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <set>
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -2819,6 +2820,107 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
     return false;
 }
 
+// `visited` guards against a malformed cyclic type or parent chain.
+static bool struct_needs_finalization_util(ASR::Struct_t* st,
+        std::set<ASR::Struct_t*>& visited) {
+    for (ASR::Struct_t* level = st; level != nullptr; ) {
+        if (visited.find(level) != visited.end()) {
+            return false;
+        }
+        visited.insert(level);
+        if (level->n_member_functions > 0) {
+            return true;
+        }
+        for (auto& m : level->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(m.second);
+            if (ASRUtils::is_array(m_var->m_type) ||
+                    ASRUtils::is_allocatable(m_var->m_type) ||
+                    ASRUtils::is_pointer(m_var->m_type) ||
+                    ASRUtils::is_class_type(m_var->m_type) ||
+                    !ASR::is_a<ASR::StructType_t>(*m_var->m_type) ||
+                    m_var->m_type_declaration == nullptr) {
+                continue;
+            }
+            ASR::symbol_t* m_struct = ASRUtils::symbol_get_past_external(
+                m_var->m_type_declaration);
+            if (ASR::is_a<ASR::Struct_t>(*m_struct) &&
+                    struct_needs_finalization_util(
+                        ASR::down_cast<ASR::Struct_t>(m_struct), visited)) {
+                return true;
+            }
+        }
+        if (level->m_parent == nullptr) {
+            break;
+        }
+        ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+            level->m_parent);
+        level = ASR::is_a<ASR::Struct_t>(*parent)
+            ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+    }
+    return false;
+}
+
+bool struct_needs_finalization(ASR::symbol_t* struct_sym) {
+    if (struct_sym == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return struct_needs_finalization_util(ASR::down_cast<ASR::Struct_t>(sym),
+        visited);
+}
+
+bool is_finalizable_function_result(ASR::ttype_t* type,
+        ASR::symbol_t* struct_sym) {
+    if (type == nullptr || ASRUtils::is_array(type) ||
+            ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ||
+            !ASR::is_a<ASR::StructType_t>(*type) ||
+            ASRUtils::is_class_type(type)) {
+        return false;
+    }
+    return struct_needs_finalization(struct_sym);
+}
+
+bool is_finalizable_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    expr = ASRUtils::get_past_array_physical_cast(expr);
+    if (!ASR::is_a<ASR::FunctionCall_t>(*expr)) {
+        return false;
+    }
+    return is_finalizable_function_result(ASRUtils::expr_type(expr),
+        ASRUtils::get_struct_sym_from_struct_expr(expr));
+}
+
+class ContainsFinalizableFunctionReference:
+    public ASR::BaseWalkVisitor<ContainsFinalizableFunctionReference> {
+public:
+    bool found = false;
+    void visit_expr(const ASR::expr_t &x) {
+        if (found) return;
+        if (is_finalizable_function_reference(const_cast<ASR::expr_t*>(&x))) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<ContainsFinalizableFunctionReference>::visit_expr(x);
+    }
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+bool contains_finalizable_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    ContainsFinalizableFunctionReference check;
+    check.visit_expr(*expr);
+    return check.found;
+}
+
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
     ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
@@ -2992,7 +3094,7 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(args[0]));
+    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[0]));
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
     ASR::expr_t* expr_dt = nullptr;
@@ -4446,14 +4548,6 @@ void append_error(diag::Diagnostics& diag, const std::string& msg,
 
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
     return ASRUtils::get_fixed_size_of_array(x->m_type);
-}
-
-void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &indices) {
-    for (size_t i = 0; i < arr_sec->n_args; i++) {
-        if (arr_sec->m_args[i].m_step != nullptr) {
-            indices.push_back(i + 1);
-        }
-    }
 }
 
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {

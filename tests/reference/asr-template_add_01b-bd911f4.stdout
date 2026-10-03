@@ -1023,11 +1023,7 @@
                                                             (Var 11 x)
                                                             Add
                                                             (Var 11 y)
-                                                            (TypeParameter
-                                                                t
-                                                                NonExtensible
-                                                                .false.
-                                                            )
+                                                            (Integer 4)
                                                             ()
                                                             (FunctionCall
                                                                 2 func_arg_int
@@ -1180,11 +1176,7 @@
                                                                 (Var 12 x)
                                                                 Add
                                                                 (Var 12 y)
-                                                                (TypeParameter
-                                                                    t
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
+                                                                (Integer 4)
                                                                 ()
                                                                 (FunctionCall
                                                                     2 func_arg_int
@@ -1198,11 +1190,7 @@
                                                             )
                                                             Add
                                                             (Var 12 z)
-                                                            (TypeParameter
-                                                                t
-                                                                NonExtensible
-                                                                .false.
-                                                            )
+                                                            (Integer 4)
                                                             ()
                                                             (FunctionCall
                                                                 2 func_arg_int
@@ -1211,11 +1199,7 @@
                                                                     (Var 12 x)
                                                                     Add
                                                                     (Var 12 y)
-                                                                    (TypeParameter
-                                                                        t
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
+                                                                    (Integer 4)
                                                                     ()
                                                                     (FunctionCall
                                                                         2 func_arg_int

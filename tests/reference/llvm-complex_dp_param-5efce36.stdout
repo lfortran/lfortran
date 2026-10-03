@@ -4,7 +4,7 @@ target datalayout = "..."
 
 %complex_4 = type <{ float, float }>
 %complex_8 = type <{ double, double }>
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @complex_dp_param.u = internal global %complex_4 zeroinitializer
 @complex_dp_param.v = internal global %complex_8 zeroinitializer

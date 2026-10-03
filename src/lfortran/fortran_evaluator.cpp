@@ -1,5 +1,3 @@
-#include <array>
-#include <cstring>
 #include <fstream>
 #include <set>
 
@@ -46,23 +44,23 @@ namespace LCompilers {
 namespace LCompilers {
 
 class StringDescriptor {
-    std::array<unsigned char, sizeof(char *) + sizeof(int64_t)> storage{};
+    struct Storage {
+        char *data;
+        int64_t length;
+    };
+    Storage storage{};
 
 public:
     void *pointer() {
-        return storage.data();
+        return &storage;
     }
 
     char *data() const {
-        char *data;
-        std::memcpy(&data, storage.data(), sizeof(data));
-        return data;
+        return storage.data;
     }
 
     int64_t length() const {
-        int64_t length;
-        std::memcpy(&length, storage.data() + sizeof(char *), sizeof(length));
-        return length;
+        return storage.length;
     }
 };
 
@@ -1017,7 +1015,13 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         if (!pass_manager.has_user_defined_passes()) {
             pass_manager.use_fortran_passes();
         }
+        // A pass reports a hard error by adding it to the diagnostics, and
+        // then there is no program to print.
+        bool had_error_before_passes = diagnostics.has_error();
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
+        if (!had_error_before_passes && diagnostics.has_error()) {
+            return Error();
+        }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())

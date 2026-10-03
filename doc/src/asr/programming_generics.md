@@ -134,7 +134,7 @@ instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 ```
 
-First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions would have to be defined prior to the instantiation for them to be passed as symbol arguments to a template:
+First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions must be accessible in the instantiating scope. They may be defined later in that scope's `contains` section; their completed interfaces are checked against the template's requirements before lowering. A contained procedure also takes precedence over a host-associated procedure or intrinsic of the same name:
 
 ```fortran
 function add_element_integer(x, y) result(z)
@@ -148,6 +148,20 @@ function set_to_zero_integer() result(z)
   z = 0
 end function
 ```
+
+The actual procedure's declarations use its complete host specification part,
+including declarations after the `instantiate` statement. Instantiation does
+not change host association in an ordinary call to that procedure. Types
+introduced by the instantiation remain available to subsequent declarations
+and to the contained procedure's local variables.
+The contained specific procedure may share its name with a generic interface;
+completing that declaration preserves the procedure selected by instantiation.
+A bare templated function or subroutine is not a concrete procedure actual.
+A nearer templated declaration is diagnosed at the actual argument rather
+than bypassed in favor of a host procedure or intrinsic of the same name.
+With `--continue-compilation`, a failed requirement is diagnosed without
+constructing the rejected instantiation's procedure bodies; independent code
+is still checked.
 
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
 
@@ -207,6 +221,14 @@ end function
 ```
 
 The first difference is that the template parameters are now included as the function's generic symbol parameters enclosed by braces `{T, add_element, set_to_zero}`. Since we still need to identify these generic symbols a requirement, the require statement is moved into the generic function itself. The rest of the function is the same as the generic function inside the template.
+
+For both `template function` and `template subroutine`, every name in braces
+must have a deferred declaration in the subprogram's specification, directly
+or through `require`. A deferred integer constant is declared with
+`deferred integer, parameter :: n`. A host-associated constant does not
+declare a deferred argument. A type declaration such as `integer :: n` or
+`integer, parameter :: n = 7` does not either: it is reported as an error that
+names the deferred spelling, as in a `template` construct.
 
 This is merely a syntax sugar for the original templated function. Inside the compiler this generic function is treated as the following template:
 

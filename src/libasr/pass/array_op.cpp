@@ -701,6 +701,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         pass_result.reserve(al, 0);
     }
 
+    void visit_Template(const ASR::Template_t& /*x*/) {
+        // Scalarize concrete specializations, not deferred-type definitions.
+    }
+
     void visit_Variable(const ASR::Variable_t& /*x*/) {
         // Do nothing
     }
