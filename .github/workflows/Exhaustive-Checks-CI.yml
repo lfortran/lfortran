@@ -127,18 +127,32 @@ jobs:
         run: |
             shell ci/test_cpp_version.sh
 
-      - name: Test Moved Installation
+      - name: Test Moved Build and Installation
         shell: bash -e -l {0}
         run: |
+          cp src/integration_tests/expr_02.f90 .
+          cp src/integration_tests/assumed_type_02.f90 .
+          cp src/integration_tests/assumed_type_02.c .
+          mv builddir builddir.moved
           mv inst inst.moved
-          cp src/examples/expr2.f90 expr2.F90
           rm -rf src
-          inst.moved/bin/lfortran expr2.F90 -o expr2
-          ./expr2
-          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-          ./expr2b
-          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-          ./expr2c
+          for compiler in builddir.moved/src/bin/lfortran inst.moved/bin/lfortran; do
+            "$compiler" expr_02.f90 -o expr_llvm
+            ./expr_llvm
+            "$compiler" --backend=c expr_02.f90 -o expr_c
+            ./expr_c
+            # Use separate C++ compilation until #13898 is fixed.
+            "$compiler" --openmp --backend=cpp -c expr_02.f90 -o expr_cpp.o
+            "$compiler" --openmp --backend=cpp expr_cpp.o -o expr_cpp
+            ./expr_cpp
+            include_dir=$("$compiler" --print-c-include-dir)
+            test -f "$include_dir/ISO_Fortran_binding.h"
+            cc -I"$include_dir" -c assumed_type_02.c -o assumed_type_02.o
+            "$compiler" assumed_type_02.f90 assumed_type_02.o -o assumed_type_02
+            ./assumed_type_02
+          done
+          inst.moved/bin/lfortran --openmp --backend=cpp expr_02.f90 -o expr_cpp
+          ./expr_cpp
 
   release:
     name: Check Release build
