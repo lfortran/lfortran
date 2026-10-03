@@ -835,7 +835,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' && github.repository == 'lfortran/lfortran' }}
           tags: ${{ steps.image-tags.outputs.tags }}
 
   build_xlfortran_jupyterlite:
