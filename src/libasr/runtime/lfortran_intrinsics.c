@@ -4539,6 +4539,69 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
+// complex**integer by repeated multiplication (binary exponentiation); a
+// negative exponent gives 1/z**(-n). The compiler folds constants and unrolls
+// constant exponents with the same algorithm, so all give identical results.
+LFORTRAN_API void _lfortran_complex_pow_int_32(struct _lfortran_complex_32* a,
+        int64_t n, struct _lfortran_complex_32 *result)
+{
+    struct _lfortran_complex_32 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_32(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_32 one = {1, 0};
+        _lfortran_complex_div_32(&one, &res, &res);
+    }
+    *result = res;
+}
+
+LFORTRAN_API void _lfortran_complex_pow_int_64(struct _lfortran_complex_64* a,
+        int64_t n, struct _lfortran_complex_64 *result)
+{
+    struct _lfortran_complex_64 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_64(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_64 one = {1, 0};
+        _lfortran_complex_div_64(&one, &res, &res);
+    }
+    *result = res;
+}
+
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
