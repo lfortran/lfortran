@@ -2697,7 +2697,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 std::string mangled_name = subrout_name + "@~assign";
                 matched_subrout_name = mangled_name;
             }
-            ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
             if( a_name == nullptr ) {
                 a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
