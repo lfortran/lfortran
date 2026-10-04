@@ -241,7 +241,7 @@ public:
     std::string convert_variable_decl(const ASR::Variable_t &v,
         DeclarationOptions* decl_options=nullptr)
     {
-        if (v.m_storage == ASR::storage_typeType::Threadprivate) {
+        if (v.m_storage == ASR::storage_typeType::ThreadPrivate) {
             throw CodeGenError("threadprivate variables are not supported by the c backend",
                 v.base.base.loc);
         }

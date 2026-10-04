@@ -3385,6 +3385,7 @@ c = true
 [[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
+options = "--openmp"
 
 [[test]]
 filename = "errors/conditional_expr_syntax_1.f90"
@@ -6259,3 +6260,7 @@ options = "--gpu=metal"
 [[test]]
 filename = "../integration_tests/string_122.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/openmp_threadprivate_tls_mod.f90"
+asr_openmp = true

@@ -2517,7 +2517,7 @@ public:
                     Level::Error, Stage::Semantic, { Label("", {loc}) }));
                 throw SemanticAbort();
             }
-            var->m_storage = ASR::storage_typeType::Threadprivate;
+            var->m_storage = ASR::storage_typeType::ThreadPrivate;
         }
     }
 

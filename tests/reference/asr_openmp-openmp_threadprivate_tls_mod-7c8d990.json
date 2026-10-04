@@ -1,0 +1,13 @@
+{
+    "basename": "asr_openmp-openmp_threadprivate_tls_mod-7c8d990",
+    "cmd": "lfortran --show-asr --no-color --openmp {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/openmp_threadprivate_tls_mod.f90",
+    "infile_hash": "ad05fc282b2283060461296b15ebae437e2a651a60d53b903e8f825b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_openmp-openmp_threadprivate_tls_mod-7c8d990.stdout",
+    "stdout_hash": "46a46a30280d809b3d96de5fe73c17bbec73d885345751fc18a54120",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

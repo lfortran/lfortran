@@ -22,6 +22,12 @@ tokenizer error: Zero is not a valid statement label
 1191 |     0 print *, "unreachable"  ! {Error} Zero is not a valid statement label
      |     ^ 
 
+syntax error: executable statement is not allowed in a module
+    --> tests/errors/continue_compilation_1.f90:2157:1
+     |
+2157 | !$omp parallel
+     | ^^^^^^^^^^^^^^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
@@ -891,6 +897,66 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
      |
 2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: malformed `!$omp threadprivate(...)` directive: variable list missing or empty
+    --> tests/errors/continue_compilation_1.f90:2105:1
+     |
+2105 | !$omp threadprivate
+     | ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: malformed `!$omp threadprivate(...)` directive: variable list missing or empty
+    --> tests/errors/continue_compilation_1.f90:2110:1
+     |
+2110 | !$omp threadprivate()
+     | ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: malformed `!$omp threadprivate(...)` directive: variable list missing or empty
+    --> tests/errors/continue_compilation_1.f90:2115:1
+     |
+2115 | !$omp threadprivate(x
+     | ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: malformed `!$omp threadprivate(...)` directive: unexpected text after variable list
+    --> tests/errors/continue_compilation_1.f90:2120:1
+     |
+2120 | !$omp threadprivate(x) extra
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: malformed `!$omp threadprivate(...)` directive: empty variable name in list
+    --> tests/errors/continue_compilation_1.f90:2125:1
+     |
+2125 | !$omp threadprivate(x,)
+     | ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `!$omp threadprivate(...)` common blocks are not supported yet
+    --> tests/errors/continue_compilation_1.f90:2130:1
+     |
+2130 | !$omp threadprivate(/x/)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: symbol `y` named in `!$omp threadprivate(...)` is not declared in this scope
+    --> tests/errors/continue_compilation_1.f90:2135:1
+     |
+2135 | !$omp threadprivate(y)
+     | ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: symbol `t` named in `!$omp threadprivate(...)` is not a variable
+    --> tests/errors/continue_compilation_1.f90:2142:1
+     |
+2142 | !$omp threadprivate(t)
+     | ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: symbol `x` named in `!$omp threadprivate(...)` cannot have the parameter attribute
+    --> tests/errors/continue_compilation_1.f90:2147:1
+     |
+2147 | !$omp threadprivate(x)
+     | ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: symbol `x` named in `!$omp threadprivate(...)` must be a module variable
+    --> tests/errors/continue_compilation_1.f90:2152:1
+     |
+2152 | !$omp threadprivate(x)
+     | ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
