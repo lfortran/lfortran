@@ -15,5 +15,5 @@ _No documentation yet._
 ## Verify
 
 <!-- BEGIN AUTO: verify -->
-None.
+* `StringFormat::m_fmt` must be nil for FormatFortranLeadingBlank
 <!-- END AUTO: verify -->

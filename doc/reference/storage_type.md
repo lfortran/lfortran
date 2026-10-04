@@ -8,6 +8,7 @@
 * `Default`
 * `Save`
 * `Parameter`
+* `Threadprivate`
 <!-- END AUTO: values -->
 
 ## Documentation

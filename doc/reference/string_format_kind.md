@@ -6,6 +6,7 @@
 
 <!-- BEGIN AUTO: values -->
 * `FormatFortran`
+* `FormatFortranLeadingBlank`
 * `FormatC`
 * `FormatPythonPercent`
 * `FormatPythonFString`
