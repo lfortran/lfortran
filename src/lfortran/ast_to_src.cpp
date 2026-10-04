@@ -2630,8 +2630,7 @@ public:
         // The body already printed the label if it ends with the labelled
         // statement that terminates the loop (`10 a(i) = 0`) or with an
         // inner loop sharing it (`do 10 j = ...` / `do 10 i = ...`)
-        if (x.m_do_label != 0 && printed_labels.count(x.m_do_label) == 0) {
-            printed_labels.insert(x.m_do_label);
+        if (x.m_do_label != 0 && printed_labels.insert(x.m_do_label).second) {
             r += std::to_string(x.m_do_label);
             r += " ";
         }
