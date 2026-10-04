@@ -322,7 +322,7 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -682,6 +682,16 @@ class ASRToLLVMVisitor;
                 ASR::String_t* dest_str_type, ASR::String_t* src_str_type,
                 bool is_dest_allocatable);
 
+            /*
+                Copies every element of a fixed-size `PointerArray` array of
+                strings (one string descriptor whose data holds all elements
+                back to back) from src into dest. Other layouts of arrays of strings
+                are not supported (CodeGenError).
+            */
+            void copy_fixed_size_array_of_strings(
+                llvm::Value* dest, llvm::Value* src,
+                ASR::ttype_t* dest_type, ASR::ttype_t* src_type);
+
 
             /*
                 *String copying src into destination,
@@ -749,12 +759,13 @@ class ASRToLLVMVisitor;
             UpolyWrapperFields extract_upoly_wrapper(
                 llvm::Value* wrapper, llvm::Type* wrapper_type);
 
-            // Initialize an unlimited-polymorphic array wrapper from a
-            // mold wrapper: copies vptr, allocates data, and if the mold
-            // is a string type, initializes string descriptors.
+            // Initialize an unlimited-polymorphic array wrapper from a mold.
+            // If mold_is_static_vptr, mold_vptr_or_wrapper is already a vptr;
+            // otherwise it's a live runtime wrapper {vptr, data*} to read from.
             void init_mold_upoly_array_data(
-                llvm::Value* wrapper, llvm::Value* mold_wrapper,
-                llvm::Type* class_type, llvm::Value* num_elements);
+                llvm::Value* wrapper, llvm::Value* mold_vptr_or_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements,
+                bool mold_is_static_vptr = false);
 
             // Initialize string descriptors in a pre-allocated data buffer.
             // Allocates contiguous char data (filled with spaces) and sets
@@ -2920,6 +2931,14 @@ class ASRToLLVMVisitor;
             llvm::Function* define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module);
 
             void fill_intrinsic_type_allocate_body(ASR::ttype_t* type, llvm::Function* func, llvm::Module* module);
+
+            // Allocate the member storage owned by the struct at `ptr` (array
+            // descriptors, fixed-size character array buffers, ...), as done
+            // for every newly created struct instance.
+            void allocate_struct_members(ASR::Struct_t* struct_t, llvm::Value* ptr,
+                ASR::ttype_t* struct_type) {
+                allocate_struct_array_members(struct_t, ptr, struct_type, false);
+            }
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,

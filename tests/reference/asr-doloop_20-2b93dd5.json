@@ -1,0 +1,13 @@
+{
+    "basename": "asr-doloop_20-2b93dd5",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/doloop_20.f90",
+    "infile_hash": "be55fd5a7e550d46b8786a0437ded55049d121d4b3e38e8601aa2d6a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

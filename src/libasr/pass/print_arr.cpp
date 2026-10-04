@@ -90,7 +90,7 @@ public:
                 ASR::stmt_t* print_stmt = nullptr;
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
-                    format->m_fmt, print_args.p, print_args.size(), ASR::string_format_kindType::FormatFortran,
+                    format->m_fmt, print_args.p, print_args.size(), format->m_kind,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);
@@ -166,7 +166,7 @@ public:
             body.push_back(al, print_body[j]);
         }
         ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
-        format->m_fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+        format->m_fmt, body.p, body.size(), format->m_kind,
         format->m_type, nullptr));
         Vec<ASR::expr_t*> print_args;
         print_args.reserve(al, 1);
@@ -346,7 +346,7 @@ public:
                 ASR::stmt_t* write_stmt = nullptr;
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
-                    format->m_fmt, print_args.p, print_args.size(), ASR::string_format_kindType::FormatFortran,
+                    format->m_fmt, print_args.p, print_args.size(), format->m_kind,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);

@@ -45,15 +45,15 @@ end interface
 
 end module
 
-module thread_data_module
+module bindc_02_thread_data_module
     use, intrinsic :: iso_c_binding
     type, bind(C) :: thread_data
         integer(c_int) :: n, ctr
     end type thread_data
-end module thread_data_module
+end module bindc_02_thread_data_module
 
 subroutine lcompilers_increment_ctr(data) bind(C)
-use thread_data_module
+use bindc_02_thread_data_module
 use iso_c_binding
 use module_openmp_bindc_02
 implicit none
@@ -101,7 +101,7 @@ call GOMP_atomic_end()
 end subroutine
 
 subroutine increment_ctr(n, ctr)
-use thread_data_module
+use bindc_02_thread_data_module
 use module_openmp_bindc_02
 implicit none
 
@@ -131,7 +131,7 @@ end subroutine
 
 program openmp_bindc_02
 use module_openmp_bindc_02
-use thread_data_module
+use bindc_02_thread_data_module
 implicit none
 
 integer(c_int) :: n = 1000000, ctr
