@@ -4,12 +4,10 @@
 #include <libasr/exception.h>
 
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -680,7 +678,6 @@ bool write_runtime_debug_map(const std::string &binary_path,
   struct DebugMapEntry {
     uint64_t address;
     uint64_t line;
-    uint64_t file_id;
   };
 
   auto binary_or_err = llvm::object::createBinary(binary_path);
@@ -692,13 +689,12 @@ bool write_runtime_debug_map(const std::string &binary_path,
   llvm::object::Binary *binary = binary_or_err->getBinary();
   auto *obj_file = llvm::dyn_cast<llvm::object::ObjectFile>(binary);
   if (!obj_file) {
-    error_message = "Debug map generation expects an object/executable file: " + binary_path;
+    error_message = "'" + binary_path + "' is not an object or executable file";
     return false;
   }
 
   std::unique_ptr<llvm::DWARFContext> dwarf_context = llvm::DWARFContext::create(*obj_file);
   std::vector<DebugMapEntry> entries;
-  std::unordered_map<std::string, uint64_t> file_to_id;
 
   for (const auto &unit : dwarf_context->compile_units()) {
     const llvm::DWARFDebugLine::LineTable *line_table =
@@ -707,47 +703,17 @@ bool write_runtime_debug_map(const std::string &binary_path,
       continue;
     }
 
-    const char *comp_dir = unit->getCompilationDir();
-    if (comp_dir == nullptr) {
-      comp_dir = "";
-    }
-
     for (const llvm::DWARFDebugLine::Row &row : line_table->Rows) {
-      if (row.EndSequence || row.Line == 0 || !line_table->hasFileAtIndex(row.File)) {
+      if (row.EndSequence || row.Line == 0) {
         continue;
       }
-
-      std::string filename;
-      if (!line_table->getFileNameByIndex(row.File, comp_dir,
-              llvm::DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, filename)) {
-        continue;
-      }
-
-      if (!filename.empty() && filename[0] != '/') {
-        filename = std::filesystem::absolute(filename).string();
-      }
-
-      uint64_t file_id = 0;
-      auto it = file_to_id.find(filename);
-      if (it == file_to_id.end()) {
-        file_id = file_to_id.size();
-        file_to_id[filename] = file_id;
-      } else {
-        file_id = it->second;
-      }
-
 #if LLVM_VERSION_MAJOR >= 10
       uint64_t row_address = row.Address.Address;
 #else
       uint64_t row_address = row.Address;
 #endif
-      entries.push_back({row_address, row.Line, file_id});
+      entries.push_back({row_address, row.Line});
     }
-  }
-
-  if (entries.empty()) {
-    error_message = "No DWARF line entries found in: " + binary_path;
-    return false;
   }
 
   std::stable_sort(entries.begin(), entries.end(),
@@ -755,19 +721,21 @@ bool write_runtime_debug_map(const std::string &binary_path,
       return a.address < b.address;
     });
 
+  // An empty map is valid: a binary linked from objects without debug
+  // info has no line rows, and the runtime then prints raw addresses.
   std::ofstream out(map_path, std::ios::binary | std::ios::trunc);
   if (!out.is_open()) {
-    error_message = "Cannot open debug map output file: " + map_path;
+    error_message = "cannot open '" + map_path + "' for writing";
     return false;
   }
 
   for (const DebugMapEntry &entry : entries) {
-    uint64_t triple[3] = {entry.address, entry.line, entry.file_id};
+    uint64_t triple[3] = {entry.address, entry.line, 0};
     out.write(reinterpret_cast<const char *>(triple), sizeof(triple));
   }
 
   if (!out.good()) {
-    error_message = "Failed while writing debug map output file: " + map_path;
+    error_message = "failed while writing '" + map_path + "'";
     return false;
   }
 

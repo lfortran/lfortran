@@ -14371,7 +14371,7 @@ uint32_t get_file_size(int64_t fp) {
 /*
  * Fills in the `addresses` and `line_numbers` from the packed binary
  * debug-map file (`*_lines.dat`), where each entry is:
- *     (address:uint64, line:uint64, file_id:uint64)
+ *     (address:uint64, line:uint64, reserved:uint64)
  */
 void get_local_info_debug_map(struct Stacktrace *d) {
     d->stack_size = 0;
