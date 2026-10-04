@@ -2698,6 +2698,15 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
+            if( a_name == nullptr && matched_subrout_name == subrout_name &&
+                    !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
+                                     ASR::is_a<ASR::Struct_t>(*proc_owner))) ) {
+                // An ExternalSymbol can only refer into a module or a struct,
+                // so a procedure host associated from another scope (such as
+                // a template) is referenced through its host symbol.
+                a_name = resolved;
+            }
             if( a_name == nullptr ) {
                 a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
@@ -4088,6 +4097,54 @@ static T perform_binop(T left_value, T right_value, ASR::binopType op) {
     return result;
 }
 
+// `(re, im)**n` by repeated multiplication (binary exponentiation), with a
+// negative `n` giving `1/(re, im)**(-n)`. The backends compute complex**integer
+// with the same algorithm, so that a folded constant equals the value computed
+// at run time.
+template<typename T>
+static std::complex<double> complex_integer_pow(T re, T im, int64_t n) {
+    if (n == 0) {
+        return std::complex<double>(1, 0);
+    }
+    auto mul = [](T &p, T &q, T r, T s) {
+        T re_ = p*r - q*s;
+        T im_ = p*s + q*r;
+        p = re_;
+        q = im_;
+    };
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    T base_re = re, base_im = im;
+    while ((u & 1) == 0) {
+        mul(base_re, base_im, base_re, base_im);
+        u >>= 1;
+    }
+    T res_re = base_re, res_im = base_im;
+    u >>= 1;
+    while (u != 0) {
+        mul(base_re, base_im, base_re, base_im);
+        if (u & 1) {
+            mul(res_re, res_im, base_re, base_im);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        // 1/(r + s i) by Smith's algorithm, as complex division is lowered
+        T p = 1, q = 0, r = res_re, s = res_im;
+        if (std::fabs(r) >= std::fabs(s)) {
+            T ratio = s / r;
+            T denom = r + s * ratio;
+            res_re = (p + q * ratio) / denom;
+            res_im = (q - p * ratio) / denom;
+        } else {
+            T ratio = r / s;
+            T denom = s + r * ratio;
+            res_re = (p * ratio + q) / denom;
+            res_im = (q * ratio - p) / denom;
+        }
+    }
+    return std::complex<double>(res_re, res_im);
+}
+
 ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         ASR::expr_t* right, ASR::binopType op, const Location& loc,
         ASR::ttype_t* dest_type, bool &division_by_zero) {
@@ -4181,6 +4238,19 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         std::complex<double> left_value_(left_value->m_re, left_value->m_im);
         std::complex<double> right_value_(right_value->m_re, right_value->m_im);
         std::complex<double> result = perform_binop(left_value_, right_value_, op);
+        return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
+                std::real(result), std::imag(result), dest_type));
+    } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+        ASR::ComplexConstant_t *lc = ASR::down_cast<ASR::ComplexConstant_t>(left);
+        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        std::complex<double> result;
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            // Evaluate in single precision, as the program would.
+            result = complex_integer_pow<float>(lc->m_re, lc->m_im, n);
+        } else {
+            result = complex_integer_pow<double>(lc->m_re, lc->m_im, n);
+        }
         return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
                 std::real(result), std::imag(result), dest_type));
     }
