@@ -3703,6 +3703,7 @@ public:
             }
         }
         s = "";
+        // 9 is the precedence of a unary minus (see visit_UnaryOp)
         if (left_precedence == 9 && x.m_op != operatorType::Add
                 && x.m_op != operatorType::Sub) {
             // A leading sign applies to the whole product that follows it:
