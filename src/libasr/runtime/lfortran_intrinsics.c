@@ -5990,15 +5990,16 @@ static double _lfortran_seconds_since_midnight() {
 #endif
 }
 
-// SECNDS(X): seconds since midnight minus X; like GFortran, X is taken modulo
-// 86400 and a result that would not be positive wraps past midnight
+// SECNDS(X): seconds since midnight minus X, in single precision as GFortran
+// computes it: X is reduced with fmod (keeping its sign) and a negative
+// result wraps past midnight
 LFORTRAN_API float _lfortran_secnds(float x) {
-    double t = _lfortran_seconds_since_midnight();
-    double x0 = fmod((double) x, 86400.0);
-    if (t - x0 <= 0.0) {
-        x0 -= 86400.0;
+    float t = (float) _lfortran_seconds_since_midnight();
+    float x0 = (float) fmod((double) x, 86400.0);
+    if (t - x0 < 0.0f) {
+        x0 -= 86400.0f;
     }
-    return (float) (t - x0);
+    return t - x0;
 }
 
 LFORTRAN_API float _lfortran_sp_rand_num() {
