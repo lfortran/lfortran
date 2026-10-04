@@ -930,12 +930,13 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     val = val * pow(10, scale);
 
     int width = 0, decimal_digits = 0;
-    bool is_negative = (val < 0);
+    // signbit() keeps the minus sign of a negative zero
+    bool is_negative = signbit(val);
     double integer_part = floor(fabs(val));
     double decimal_part = fabs(val) - integer_part;
 
-    int sign_width = (val < 0) ? 1 : 0; // Negative sign
-    bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
+    int sign_width = is_negative ? 1 : 0; // Negative sign
+    bool sign_plus_exist = (use_sign_plus && !is_negative); // Positive sign
 
     // parsing the format
     char* dot_pos = strchr(format, '.');
@@ -1003,7 +1004,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     if(sign_plus_exist){
         strcat(formatted_value, "+");
     }
-    if (val < 0) {
+    if (is_negative) {
         strcat(formatted_value, "-");
     }
     if (integer_part == 0.0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
@@ -1070,7 +1071,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     if (exp_digits == 0) exp_digits = 2;
     else if (exp_digits == -1) exp_digits = 2;
 
-    bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
+    bool sign_plus_exist = (is_signed_plus && !signbit(val)); // SP specifier
 
     char formatted_value[256];
     double abs_val = fabs(val);
@@ -1312,9 +1313,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     int digits = decimal_digits;
-    int sign_width = (val < 0) ? 1 : 0;
-    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
-    bool is_negative = (val < 0);
+    // signbit() keeps the minus sign of a negative zero
+    bool is_negative = signbit(val);
+    int sign_width = is_negative ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && !is_negative); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -1341,7 +1343,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
     // val_str = "11230000128"
 
-    if (val < 0) {
+    if (is_negative) {
         // removes `-` (negative) sign
         memmove(val_str, val_str + 1, strlen(val_str));
     }
@@ -2924,7 +2926,7 @@ static void format_float_fortran(char* result, float val) {
     float abs_val = fabsf(val);
     
     if (abs_val == 0.0f) {
-        sprintf(result, "0.00000000");
+        sprintf(result, signbit(val) ? "-0.00000000" : "0.00000000");
         return;
     }
     if (abs_val < 0.1f || abs_val >= 1.0e8f) {
@@ -2953,7 +2955,7 @@ static void format_double_fortran(char* result, double val) {
     double abs_val = fabs(val);
     
     if (abs_val == 0.0) {
-        sprintf(result, "0.0000000000000000");
+        sprintf(result, signbit(val) ? "-0.0000000000000000" : "0.0000000000000000");
         return;
     }
 
@@ -2989,7 +2991,7 @@ static void format_long_double_fortran(char* result, long double val) {
     long double abs_val = fabsl(val);
     
     if (abs_val == 0.0L) {
-        sprintf(result, "0.000000000000000000000");
+        sprintf(result, signbit(val) ? "-0.000000000000000000000" : "0.000000000000000000000");
         return;
     }
 
@@ -4542,6 +4544,69 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
+// complex**integer by repeated multiplication (binary exponentiation); a
+// negative exponent gives 1/z**(-n). The compiler folds constants and unrolls
+// constant exponents with the same algorithm, so all give identical results.
+LFORTRAN_API void _lfortran_complex_pow_int_32(struct _lfortran_complex_32* a,
+        int64_t n, struct _lfortran_complex_32 *result)
+{
+    struct _lfortran_complex_32 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_32(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_32 one = {1, 0};
+        _lfortran_complex_div_32(&one, &res, &res);
+    }
+    *result = res;
+}
+
+LFORTRAN_API void _lfortran_complex_pow_int_64(struct _lfortran_complex_64* a,
+        int64_t n, struct _lfortran_complex_64 *result)
+{
+    struct _lfortran_complex_64 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_64(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_64 one = {1, 0};
+        _lfortran_complex_div_64(&one, &res, &res);
+    }
+    *result = res;
+}
+
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
@@ -5919,17 +5984,43 @@ LFORTRAN_API int64_t _lfortran_int64_rand_num() {
 }
 
 static int32_t _lfortran_seed_buffer[8] = {0};
+static bool _lfortran_seed_initialized = false;
 
 static void _lfortran_seed_buffer_init_repeatable(void) {
     for (int i = 0; i < 8; i++) {
         _lfortran_seed_buffer[i] = 0;
     }
+    _lfortran_seed_initialized = true;
 }
 
 static void _lfortran_seed_buffer_init_random(void) {
     for (int i = 0; i < 8; i++) {
         _lfortran_seed_buffer[i] = rand();
     }
+    _lfortran_seed_initialized = true;
+}
+
+// Seeds `srand()` from a mix of the current time and a call counter, then
+// (re)fills `_lfortran_seed_buffer` with fresh values. Used both by
+// `_lfortran_random_init(.false., ...)` and to lazily initialize the seed
+// buffer the first time it is read (e.g. `random_seed(get=...)` called
+// before any prior `put`/bare `random_seed()`), so a GET never observes the
+// buffer's initial all-zero state.
+static void _lfortran_seed_buffer_seed_from_time(void) {
+    static unsigned int call_count = 0;
+    unsigned int seed;
+#if defined(_WIN32)
+    seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
+    } else {
+        seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
+    }
+#endif
+    srand(seed);
+    _lfortran_seed_buffer_init_random();
 }
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
@@ -5937,20 +6028,7 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
         srand(0);
         _lfortran_seed_buffer_init_repeatable();
     } else {
-        static unsigned int call_count = 0;
-        unsigned int seed;
-#if defined(_WIN32)
-        seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
-#else
-        struct timespec ts;
-        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-            seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
-        } else {
-            seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
-        }
-#endif
-        srand(seed);
-        _lfortran_seed_buffer_init_random();
+        _lfortran_seed_buffer_seed_from_time();
     }
     return false;
 }
@@ -5971,10 +6049,14 @@ LFORTRAN_API void _lfortran_random_seed_put_i32(int32_t value, int32_t index)
     if (index == 1) {
         srand((unsigned)value);
     }
+    _lfortran_seed_initialized = true;
 }
 
 LFORTRAN_API int32_t _lfortran_random_seed_get_i32(int32_t index)
 {
+    if (!_lfortran_seed_initialized) {
+        _lfortran_seed_buffer_seed_from_time();
+    }
     if (index >= 1 && index <= 8) {
         return _lfortran_seed_buffer[index - 1];
     }

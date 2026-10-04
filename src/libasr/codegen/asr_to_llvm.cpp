@@ -2635,15 +2635,15 @@ public:
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                         llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                     }
-                    // Check if this is a mold-based allocation for unlimited polymorphic arrays.
-                    // When the mold is also unlimited polymorphic (class(*)),
-                    // we need to allocate a zeroed wrapper first, then patch it
-                    // with type info from the mold at runtime.
-                    bool is_mold_unlimited_poly = m_source && curr_arg.m_type
-                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)
-                        && ASR::down_cast<ASR::StructType_t>(curr_arg.m_type)->m_is_unlimited_polymorphic
+                    // Check if this is a mold-based allocation for an unlimited
+                    // polymorphic array (the target is class(*); the mold itself need
+                    // not be). We allocate a zeroed wrapper first, then patch it with
+                    // type info from the mold below.
+                    bool is_mold_unlimited_poly = m_source
                         && ASRUtils::is_unlimited_polymorphic_type(
-                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
+                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
+                        && curr_arg.m_type
+                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type);
                     // For the mold case, pass nullptr as alloc_type so
                     // fill_malloc_array_details creates a zeroed wrapper.
                     ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
@@ -2672,15 +2672,6 @@ public:
                             class_type->getPointerTo(),
                             llvm_utils->create_gep2(type, desc, 0));
 
-                        // Visit the mold expression to get mold's wrapper pointer
-                        int saved = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*m_source);
-                        llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
-                            class_type->getPointerTo(), tmp);
-                        tmp = nullptr;
-                        ptr_loads = saved;
-
                         // Compute total number of elements from dimensions
                         llvm::Value* num_elements = llvm::ConstantInt::get(
                             llvm::Type::getInt64Ty(context), 1);
@@ -2694,14 +2685,48 @@ public:
                             num_elements = builder->CreateMul(num_elements, dim_size);
                         }
 
-                        llvm_utils->init_mold_upoly_array_data(
-                            wrapper, mold_wrapper, class_type, num_elements);
+                        // MOLD= is legal on an unallocated variable, so use the
+                        // mold's static vtable when its type is known at compile
+                        // time, instead of dereferencing a possibly-null wrapper.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)
+                                && ASR::is_a<ASR::StructType_t>(*mold_ttype)) {
+                            ASR::symbol_t* mold_struct_sym = ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(m_source));
+                            llvm::Constant* mold_vptr = struct_api->get_pointer_to_method(
+                                mold_struct_sym, module.get());
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_vptr, class_type, num_elements, true);
+                        } else {
+                            // Visit the mold expression to get mold's wrapper pointer
+                            int saved = ptr_loads;
+                            ptr_loads = 0;
+                            this->visit_expr(*m_source);
+                            llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
+                                class_type->getPointerTo(), tmp);
+                            tmp = nullptr;
+                            ptr_loads = saved;
+
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_wrapper, class_type, num_elements, false);
+                        }
                     }
                     ASR::Struct_t* allocated_subclass = nullptr;
                     if (curr_arg.m_sym_subclass
                             && ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                         allocated_subclass = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass));
+                    } else if (is_mold_unlimited_poly) {
+                        // Same as above: default-initialize using the mold's
+                        // static type, when known.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)) {
+                            allocated_subclass = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(
+                                    ASRUtils::get_struct_sym_from_struct_expr(m_source)));
+                        }
                     }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                         && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || allocated_subclass) ) {
@@ -2728,6 +2753,7 @@ public:
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         visit_AllocateUtil(x, x.m_stat, false, x.m_source);
     }
 
@@ -17237,6 +17263,73 @@ public:
         }
     }
 
+    // complex**integer by repeated multiplication (binary exponentiation),
+    // a negative exponent giving 1/z**(-n). A constant exponent is unrolled
+    // here, otherwise the runtime is called. Both use the algorithm of
+    // ASRUtils::fold_binop_constants, so they give identical results.
+    llvm::Value* lfortran_complex_integer_pow(llvm::Value* base,
+            llvm::Value* exponent, ASR::expr_t* exponent_value, int a_kind,
+            llvm::Type* complex_type) {
+        base = convert_complex_vector_to_struct(base, complex_type);
+        int64_t n = 0;
+        if (exponent_value == nullptr ||
+                !ASRUtils::extract_value(exponent_value, n)) {
+            std::string fn_name = (a_kind == 4) ?
+                "_lfortran_complex_pow_int_32" : "_lfortran_complex_pow_int_64";
+            llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+            llvm::Function *fn = module->getFunction(fn_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            complex_type->getPointerTo(), i64_ty,
+                            complex_type->getPointerTo()
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, fn_name, module.get());
+            }
+            llvm::AllocaInst *pbase = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateStore(base, pbase);
+            llvm::AllocaInst *presult = llvm_utils->CreateAlloca(complex_type);
+            builder->CreateCall(fn, {pbase,
+                llvm_utils->convert_kind(exponent, i64_ty), presult});
+            return llvm_utils->CreateLoad2(complex_type, presult);
+        }
+        llvm::Type* real_type = llvm_utils->getFPType(a_kind);
+        auto make_complex = [&](double re, double im) -> llvm::Value* {
+            llvm::Value* c = llvm::UndefValue::get(complex_type);
+            c = builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, re), {0});
+            return builder->CreateInsertValue(c,
+                llvm::ConstantFP::get(real_type, im), {1});
+        };
+        if (n == 0) {
+            return make_complex(1.0, 0.0);
+        }
+        std::string mul_name = (a_kind == 4) ?
+            "_lfortran_complex_mul_32" : "_lfortran_complex_mul_64";
+        uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+        while ((u & 1) == 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            u >>= 1;
+        }
+        llvm::Value* result = base;
+        u >>= 1;
+        while (u != 0) {
+            base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
+            if (u & 1) {
+                result = lfortran_complex_bin_op(result, base, mul_name,
+                    complex_type);
+            }
+            u >>= 1;
+        }
+        if (n < 0) {
+            result = lfortran_complex_bin_op(make_complex(1.0, 0.0), result,
+                (a_kind == 4) ? "_lfortran_complex_div_32"
+                              : "_lfortran_complex_div_64", complex_type);
+        }
+        return result;
+    }
+
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -17259,6 +17352,12 @@ public:
             ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
+        if (x.m_op == ASR::binopType::Pow &&
+                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_right))) {
+            tmp = lfortran_complex_integer_pow(left_val, right_val,
+                ASRUtils::expr_value(x.m_right), a_kind, type);
+            return;
+        }
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
