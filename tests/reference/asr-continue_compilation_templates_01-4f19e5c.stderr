@@ -1475,3 +1475,57 @@ semantic error: no specific procedure of the defined operator '.minus.' matches 
      |
 2451 |         print *, defop_applyr{operator(.minus.)}(9.0, 2.0)  ! {Error} no specific procedure of the defined operator '.minus.' matches the interface of 'op'
      |                               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2470:9
+     |
+2470 |         z%re = x  ! {Error} type mismatch (real and t)
+     |         ^^^^   ^ type mismatch (real and t)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_templates_01.f90:2477:9
+     |
+2477 |         z%im = x  ! {Error} type mismatch (real and t)
+     |         ^^^^   ^ type mismatch (real and t)
+
+semantic error: start expression in DO loop must be integer, not t
+    --> tests/errors/continue_compilation_templates_01.f90:2492:16
+     |
+2492 |         do i = x, 2  ! {Error} start expression in DO loop must be integer, not t
+     |                ^ 
+
+semantic error: end expression in DO loop must be integer, not t
+    --> tests/errors/continue_compilation_templates_01.f90:2500:19
+     |
+2500 |         do i = 1, x  ! {Error} end expression in DO loop must be integer, not t
+     |                   ^ 
+
+semantic error: step expression in DO loop must be integer, not t
+    --> tests/errors/continue_compilation_templates_01.f90:2508:22
+     |
+2508 |         do i = 1, 2, x  ! {Error} step expression in DO loop must be integer, not t
+     |                      ^ 
+
+semantic error: DO variable must be integer, not t
+    --> tests/errors/continue_compilation_templates_01.f90:2515:12
+     |
+2515 |         do x = 1, 2  ! {Error} DO variable must be integer, not t
+     |            ^ 
+
+semantic error: Operator `+` undefined for the types in the expression `t + integer`
+    --> tests/errors/continue_compilation_templates_01.f90:2531:13
+     |
+2531 |         y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+     |             ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `real * t`
+    --> tests/errors/continue_compilation_templates_01.f90:2538:13
+     |
+2538 |         y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+     |             ^^^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `t ** integer`
+    --> tests/errors/continue_compilation_templates_01.f90:2545:13
+     |
+2545 |         y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+     |             ^^^^^^ 

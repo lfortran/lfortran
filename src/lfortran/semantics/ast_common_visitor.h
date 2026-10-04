@@ -21662,11 +21662,36 @@ public:
         ASR::ttype_t *dest_type = right_type;
 
         if( overloaded == nullptr ) {
-          if(!ASRUtils::is_type_parameter(*left_type) && !ASRUtils::is_type_parameter(*right_type)){
-              ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                      right_type, conversion_cand,
-                                                      &source_type, &dest_type);
-          }
+            // A deferred type of a template has no intrinsic arithmetic and
+            // no implicit conversion; only an operator from a requirement
+            // (resolved as `overloaded` above) applies to it.
+            if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add):
+                        break;
+                    case (ASR::Sub):
+                        op_str = "-";
+                        break;
+                    case (ASR::Mul):
+                        op_str = "*";
+                        break;
+                    case (ASR::Div):
+                        op_str = "/";
+                        break;
+                    case (ASR::Pow):
+                        op_str = "**";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                                                    right_type, conversion_cand,
+                                                    &source_type, &dest_type);
             // Fortran standard: real(dp)*complex(sp) produces complex(dp).
             // When mixing real and complex, use max(real_kind, complex_kind).
             {
@@ -21779,32 +21804,6 @@ public:
                                 {x.base.base.loc},
                                 "help: use '//' for string concatenation"
                             );
-                throw SemanticAbort();
-            }
-        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
-            // if overloaded is not found, then reject
-            if (overloaded == nullptr) {
-                std::string op_str = "+";
-                switch (op) {
-                    case (ASR::Add):
-                        break;
-                    case (ASR::Sub):
-                        op_str = "-";
-                        break;
-                    case (ASR::Mul):
-                        op_str = "*";
-                        break;
-                    case (ASR::Div):
-                        op_str = "/";
-                        break;
-                    case (ASR::Pow):
-                        op_str = "**";
-                        break;
-                    default:
-                        LCOMPILERS_ASSERT(false);
-                }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
-                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {
