@@ -187,6 +187,9 @@ public:
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::decl_stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    // The enclosing DO loops that have a `do_label`, outermost first, and
+    // whether the loop shares its terminal statement with a loop nested in it
+    std::vector<std::pair<int64_t, bool>> enclosing_do_labels;
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
@@ -1020,6 +1023,7 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {diag_loc})}));
                     throw SemanticAbort();
                 }
+                check_branch_to_shared_do_termination(err_label, x.base.base.loc);
             } else if (m_arg_str == std::string("decimal")) {
                 if (a_decimal != nullptr) {
                     diag.add(Diagnostic(
@@ -1582,8 +1586,28 @@ public:
             body.p, body.size(), nullptr, 0));
     }
 
+    // The terminal statement shared by nested nonblock DO loops belongs to the
+    // innermost of them, and a branch to it is only permitted from within the
+    // range of that loop (F2008 8.1.6.4 p2). A branch from one of the outer
+    // loops is compiled as a jump into the innermost loop.
+    void check_branch_to_shared_do_termination(int64_t label, const Location &loc) {
+        for (auto it = enclosing_do_labels.rbegin(); it != enclosing_do_labels.rend(); ++it) {
+            if (it->first != label) continue;
+            if (it->second) {
+                diag.semantic_warning_label(
+                    "Branch to the shared DO termination label " + std::to_string(label)
+                    + " from outside the innermost DO loop that it terminates",
+                    {loc},
+                    "help: terminate each loop with its own statement"
+                );
+            }
+            return;
+        }
+    }
+
     void collect_labels() {
         labels.clear();
+        enclosing_do_labels.clear();
         if (starting_m_body == nullptr) return;
 
         auto collect_labels_in_stmts = [&](AST::decl_stmt_t** body, size_t n_body,
@@ -1741,6 +1765,7 @@ public:
             if (!compiler_options.continue_compilation) throw SemanticAbort();
             return false;
         }
+        check_branch_to_shared_do_termination(label, loc);
         return true;
     }
 
@@ -9184,6 +9209,7 @@ public:
                 Vec<ASR::stmt_t*> if_body;
                 if_body.reserve(al, 1);
                 int64_t label = alt_return_labels[i];
+                check_branch_to_shared_do_termination(label, x.base.base.loc);
                 ASR::stmt_t *go_to = ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc,
                     label, s2c(al, std::to_string(label))));
                 if_body.push_back(al, go_to);
@@ -9500,6 +9526,9 @@ public:
             test_gt = ASRUtils::EXPR(ASR::make_RealCompare_t(al, test_int->base.loc,
                 test_int, ASR::cmpopType::Gt, right, type, value));
         }
+        for (int64_t label : std::set<int64_t>{x.m_lt_label, x.m_eq_label, x.m_gt_label}) {
+            check_branch_to_shared_do_termination(label, x.base.base.loc);
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         body.push_back(al, ASRUtils::STMT(
@@ -9720,8 +9749,17 @@ public:
             nesting_lvl_inside_pragma++;
             do_in_pragma=true;
         }
+        if (x.m_do_label != 0) {
+            bool shares_termination = false;
+            if (x.n_body > 0 && x.m_body[x.n_body - 1]->type == AST::decl_stmtType::DoLoop) {
+                shares_termination = AST::down_cast<AST::DoLoop_t>(
+                    x.m_body[x.n_body - 1])->m_do_label == x.m_do_label;
+            }
+            enclosing_do_labels.push_back({x.m_do_label, shares_termination});
+        }
         transform_stmts(body, x.n_body, x.m_body);
         if (x.m_do_label != 0) {
+            enclosing_do_labels.pop_back();
             // Legacy `DO <label> ... <label> CONTINUE` (and the equivalent
             // `DO ... <label> END DO`) are normalised at the AST level to
             // a DoLoop carrying `do_label = <label>` with the trailing
@@ -10136,6 +10174,7 @@ public:
                         throw SemanticAbort();
                     }
                 }
+                check_branch_to_shared_do_termination(goto_label, x.base.base.loc);
                 tmp = ASR::make_GoTo_t(al, x.base.base.loc, goto_label,
                         s2c(al, std::to_string(goto_label)));
             } else {
@@ -10159,6 +10198,7 @@ public:
                         throw SemanticAbort();
                     } else {
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]); // l->m_n gets the target -> if l->m_n == (i+1) ...
+                        check_branch_to_shared_do_termination(l->m_n, x.m_labels[i]->base.loc);
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
                         body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));
@@ -10231,6 +10271,7 @@ public:
                         throw SemanticAbort();
                     } else {
                         auto l = AST::down_cast<AST::Num_t>(x.m_labels[i]);
+                        check_branch_to_shared_do_termination(l->m_n, x.m_labels[i]->base.loc);
                         Vec<ASR::stmt_t*> body;
                         body.reserve(al, 1);
                         body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, l->m_n, s2c(al, std::to_string(l->m_n)))));

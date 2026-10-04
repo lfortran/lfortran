@@ -5133,6 +5133,15 @@ filename = "warnings/doloop_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/doloop_shared_term_branch_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "warnings/doloop_shared_term_branch_02.f"
+semantics_only_cc = true
+options = "--fixed-form"
+
+[[test]]
 filename = "warnings/rand_01.f90"
 asr = true
 
