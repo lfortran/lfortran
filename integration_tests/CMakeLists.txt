@@ -1883,6 +1883,7 @@ RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
 RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
 RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
+RUN(NAME intrinsics_481 LABELS gfortran llvm c) # sign on real(4)/real(8) with negative zero, C backend RealCopySign (#13918)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
@@ -2175,6 +2176,7 @@ RUN(NAME forall_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-typing)
 RUN(NAME forall_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_04 LABELS gfortran llvm)
+RUN(NAME forall_05 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
@@ -3503,6 +3505,7 @@ RUN(NAME class_150 LABELS gfortran llvm)
 RUN(NAME class_151 LABELS gfortran llvm)
 RUN(NAME class_152 LABELS gfortran llvm)
 RUN(NAME class_153 LABELS gfortran llvm)
+RUN(NAME class_154 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -3731,6 +3734,7 @@ RUN(NAME template_instantiate_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_order_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_own_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_only_op_01 LABELS llvm)
+RUN(NAME template_instantiate_op_01 LABELS llvm)
 RUN(NAME template_instantiate_scope_01 LABELS llvm)
 RUN(NAME template_instantiate_scope_02 LABELS llvm)
 RUN(NAME template_instantiate_scope_03 LABELS llvm)
@@ -4692,6 +4696,7 @@ RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_16 LABELS gfortran llvm llvm_omp)
 RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
+RUN(NAME do_concurrent_18 LABELS gfortran llvm)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4792,6 +4797,7 @@ RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm
 RUN(NAME polymorphic_arguments_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME polymorphic_arguments_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocatable_polymorphic_mold_01 LABELS gfortran llvm fortran)
+RUN(NAME allocatable_polymorphic_mold_02 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_01 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_assign_03 LABELS gfortran llvm)
