@@ -2218,6 +2218,21 @@ public:
         this->visit_expr(*x.m_test);
         r += s;
         r += ") ";
+        if (x.m_single) {
+            // Logical IF statement: the action statement on the same line
+            std::string if_indent = indent;
+            indent = "";
+            this->visit_decl_stmt(*x.m_body[0]);
+            indent = if_indent;
+            r += s;
+            if (x.m_trivia) {
+                // The comment after the action statement, before its newline
+                r.pop_back();
+                r += print_trivia_after(*x.m_trivia);
+            }
+            s = r;
+            return;
+        }
         r += syn(gr::Conditional);
         r += "then";
         r += syn();
@@ -2268,6 +2283,7 @@ public:
         r += syn(gr::Conditional);
         r += "end if";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2341,6 +2357,7 @@ public:
         r += syn(gr::Repeat);
         r += "end where";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2904,6 +2921,7 @@ public:
         r += syn(gr::Repeat);
         r.append("end do");
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -3172,6 +3190,7 @@ public:
         r += syn(gr::Repeat);
         r += "end do";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4434,6 +4453,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4634,6 +4654,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {

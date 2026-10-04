@@ -60,6 +60,7 @@
                     [(String "Good evening" ())]
                     ()
                 )]
+                .false.
                 .true.
                 ()
                 (TriviaNode
@@ -72,6 +73,7 @@
                 )
                 ()
             )]
+            .false.
             .false.
             (TriviaNode
                 []

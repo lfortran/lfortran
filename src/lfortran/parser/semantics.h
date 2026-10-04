@@ -2033,7 +2033,8 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ IFSTMTS(p.m_a, body), \
         /*n_body*/ 1, \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, /*else_if*/ false, nullptr, nullptr, nullptr)
+        /*n_orelse*/ 0, /*single*/ true, /*else_if*/ false, nullptr, nullptr, \
+        nullptr)
 
 #define IFARITHMETIC(cond, lt_label, eq_label, gt_label, l) \
         make_IfArithmetic_t(p.m_a, l, 0, nullptr, \
@@ -2047,14 +2048,16 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, /*else_if*/ false, trivia_cast(trivia), nullptr, nullptr)
+        /*n_orelse*/ 0, /*single*/ false, /*else_if*/ false, \
+        trivia_cast(trivia), nullptr, nullptr)
 
 #define IF2(cond, trivia, body, orelse, l) make_If_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ STMTS(orelse), \
-        /*n_orelse*/ orelse.size(), /*else_if*/ false, nullptr, \
+        /*n_orelse*/ orelse.size(), /*single*/ false, /*else_if*/ false, \
+        nullptr, \
         trivia_cast(trivia), nullptr)
 
 #define IF3(cond, trivia, body, ifblock, l) make_If_t(p.m_a, l, 0, nullptr, \
@@ -2062,7 +2065,8 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ IFSTMTS(p.m_a, ELSE_IF(ifblock)), \
-        /*n_orelse*/ 1, /*else_if*/ false, trivia_cast(trivia), nullptr, nullptr)
+        /*n_orelse*/ 1, /*single*/ false, /*else_if*/ false, \
+        trivia_cast(trivia), nullptr, nullptr)
 
 #define WHERESINGLE(cond, body, l) make_Where_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
