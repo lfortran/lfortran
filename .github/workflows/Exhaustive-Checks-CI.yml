@@ -130,6 +130,9 @@ jobs:
       - name: Test Moved Installation
         shell: bash -e -l {0}
         run: |
+          python3 src/ci/test_runtime_headers.py \
+            --source-dir src --build-dir builddir --install-prefix inst \
+            --kokkos-dir "$CONDA_PREFIX" --relocate
           mv inst inst.moved
           cp src/examples/expr2.f90 expr2.F90
           rm -rf src
@@ -212,6 +215,13 @@ jobs:
             test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
+
+      - name: Test Moved Build and Installation
+        shell: bash -e -l {0}
+        run: |
+            python3 ci/test_runtime_headers.py \
+              --source-dir . --build-dir . --install-prefix inst \
+              --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
 
 # Commented out to save CI runners:
@@ -512,14 +522,8 @@ jobs:
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh
 
-      # Only where the build above left runtime stacktraces off. Caffeine
-      # links with -g, and with -DWITH_RUNTIME_STACKTRACE=yes that sends
-      # every link through dwarf_convert.py, which fails without
-      # llvm-dwarfdump. Those are the same entries that run the other
-      # third-party tests, for the same reason.
       - name: Test coarray runtime with Caffeine
         shell: bash -e -l {0}
-        if: ${{ matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos') }}
         run: ci/test_caffeine.sh --verify-all-passes
 
   test_llvm_wasm:
@@ -835,7 +839,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' && github.repository == 'lfortran/lfortran' }}
           tags: ${{ steps.image-tags.outputs.tags }}
 
   build_xlfortran_jupyterlite:
