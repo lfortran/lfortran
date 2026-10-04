@@ -2174,6 +2174,7 @@ RUN(NAME forall_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-typing)
 RUN(NAME forall_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_04 LABELS gfortran llvm)
+RUN(NAME forall_05 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
@@ -4692,6 +4693,7 @@ RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_16 LABELS gfortran llvm llvm_omp)
 RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
+RUN(NAME do_concurrent_18 LABELS gfortran llvm)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4792,6 +4794,7 @@ RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm
 RUN(NAME polymorphic_arguments_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME polymorphic_arguments_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocatable_polymorphic_mold_01 LABELS gfortran llvm fortran)
+RUN(NAME allocatable_polymorphic_mold_02 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_01 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_assign_03 LABELS gfortran llvm)

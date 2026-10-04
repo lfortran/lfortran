@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -1715,7 +1715,6 @@ subroutine associated_null_target_in_continue_compilation_1()
     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
 end subroutine
 
-
 ! Fortran 2023 10.1.11: a specification expression is a restricted expression.
 ! An object designator is a permitted primary only when its base object is a
 ! dummy argument, is in a common block, or is made accessible by use or host
@@ -2091,8 +2090,17 @@ subroutine parameter_nonconstant_init()
     print *, pnc_y1, pnc_y2
 end subroutine
 
+subroutine allocate_func_target_01()
+    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+end subroutine allocate_func_target_01
+
+function func_alloc_target_01() result(res) bind(c)
+    character(:), pointer :: res
+end function func_alloc_target_01
+
 subroutine non_dummy_intent_statement(x)
     implicit none
     integer :: x, y
     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
 end subroutine non_dummy_intent_statement
+

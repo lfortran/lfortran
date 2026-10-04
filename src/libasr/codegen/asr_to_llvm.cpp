@@ -2112,6 +2112,10 @@ public:
         }
         prototype_only = false;
 
+        if (compiler_options.interactive) {
+            emit_interactive_global_setup();
+        }
+
         // Then the main program
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Program_t>(*item.second)) {
@@ -2141,6 +2145,44 @@ public:
         llvm::Function *init_fn = module->getFunction(x.m_global_init);
         if (init_fn == nullptr) return;
         llvm::appendToGlobalCtors(*module, init_fn, 65535);
+    }
+
+    // Set up, at the builder's insertion point, the members of the derived
+    // type globals `visit_Variable` queued because no static initializer
+    // describes them.
+    void emit_global_struct_members_setup() {
+        for(auto& st : allocatable_struct_array_members_details) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
+                st.second, ASRUtils::symbol_type(st.first), false, true);
+        }
+        allocatable_struct_array_members_details.clear();
+        for(struct_array_global& st : struct_array_global_members_details) {
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+        }
+        struct_array_global_members_details.clear();
+    }
+
+    // In interactive mode the members of the derived type globals a cell
+    // declares are set up when that cell runs, whether or not it has a
+    // program, and never again: a later cell only declares them (see
+    // `is_earlier_cell_global`). The evaluator calls this before anything
+    // else of the cell. The JIT runs no static constructors, so it cannot be
+    // one.
+    void emit_interactive_global_setup() {
+        if (allocatable_struct_array_members_details.empty()
+                && struct_array_global_members_details.empty()) {
+            return;
+        }
+        llvm::FunctionType *function_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {}, false);
+        llvm::Function *F = llvm::Function::Create(function_type,
+            llvm::Function::ExternalLinkage,
+            compiler_options.po.run_fun + "_setup", module.get());
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
+        builder->SetCurrentDebugLocation(nullptr);
+        emit_global_struct_members_setup();
+        builder->CreateRetVoid();
+        builder->ClearInsertionPoint();
     }
 
     void emit_gpu_metal_source_registration(const ASR::TranslationUnit_t &x) {
@@ -2661,15 +2703,15 @@ public:
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                         llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                     }
-                    // Check if this is a mold-based allocation for unlimited polymorphic arrays.
-                    // When the mold is also unlimited polymorphic (class(*)),
-                    // we need to allocate a zeroed wrapper first, then patch it
-                    // with type info from the mold at runtime.
-                    bool is_mold_unlimited_poly = m_source && curr_arg.m_type
-                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)
-                        && ASR::down_cast<ASR::StructType_t>(curr_arg.m_type)->m_is_unlimited_polymorphic
+                    // Check if this is a mold-based allocation for an unlimited
+                    // polymorphic array (the target is class(*); the mold itself need
+                    // not be). We allocate a zeroed wrapper first, then patch it with
+                    // type info from the mold below.
+                    bool is_mold_unlimited_poly = m_source
                         && ASRUtils::is_unlimited_polymorphic_type(
-                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
+                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
+                        && curr_arg.m_type
+                        && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type);
                     // For the mold case, pass nullptr as alloc_type so
                     // fill_malloc_array_details creates a zeroed wrapper.
                     ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
@@ -2698,15 +2740,6 @@ public:
                             class_type->getPointerTo(),
                             llvm_utils->create_gep2(type, desc, 0));
 
-                        // Visit the mold expression to get mold's wrapper pointer
-                        int saved = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*m_source);
-                        llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
-                            class_type->getPointerTo(), tmp);
-                        tmp = nullptr;
-                        ptr_loads = saved;
-
                         // Compute total number of elements from dimensions
                         llvm::Value* num_elements = llvm::ConstantInt::get(
                             llvm::Type::getInt64Ty(context), 1);
@@ -2720,14 +2753,48 @@ public:
                             num_elements = builder->CreateMul(num_elements, dim_size);
                         }
 
-                        llvm_utils->init_mold_upoly_array_data(
-                            wrapper, mold_wrapper, class_type, num_elements);
+                        // MOLD= is legal on an unallocated variable, so use the
+                        // mold's static vtable when its type is known at compile
+                        // time, instead of dereferencing a possibly-null wrapper.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)
+                                && ASR::is_a<ASR::StructType_t>(*mold_ttype)) {
+                            ASR::symbol_t* mold_struct_sym = ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(m_source));
+                            llvm::Constant* mold_vptr = struct_api->get_pointer_to_method(
+                                mold_struct_sym, module.get());
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_vptr, class_type, num_elements, true);
+                        } else {
+                            // Visit the mold expression to get mold's wrapper pointer
+                            int saved = ptr_loads;
+                            ptr_loads = 0;
+                            this->visit_expr(*m_source);
+                            llvm::Value* mold_wrapper = llvm_utils->CreateLoad2(
+                                class_type->getPointerTo(), tmp);
+                            tmp = nullptr;
+                            ptr_loads = saved;
+
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_wrapper, class_type, num_elements, false);
+                        }
                     }
                     ASR::Struct_t* allocated_subclass = nullptr;
                     if (curr_arg.m_sym_subclass
                             && ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                         allocated_subclass = ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass));
+                    } else if (is_mold_unlimited_poly) {
+                        // Same as above: default-initialize using the mold's
+                        // static type, when known.
+                        ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)) {
+                            allocated_subclass = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(
+                                    ASRUtils::get_struct_sym_from_struct_expr(m_source)));
+                        }
                     }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                         && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || allocated_subclass) ) {
@@ -6427,6 +6494,14 @@ public:
         }
     }
 
+    // In interactive mode, a global of an earlier cell. That cell defined it
+    // and set up its members when it ran; this one only declares it, and
+    // setting it up again would overwrite whatever it holds by now.
+    bool is_earlier_cell_global(const ASR::Variable_t &x) {
+        return compiler_options.interactive
+            && x.m_abi == ASR::abiType::ExternalUndefined;
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -6649,7 +6724,8 @@ public:
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
             // the broadcast constructor above.
-            if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
+            if (x.m_symbolic_value == nullptr && x.m_value == nullptr
+                    && !is_earlier_cell_global(x)) {
                 ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                     x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
                 if (ASRUtils::needs_struct_array_member_init(var_expr, x.m_type)) {
@@ -6806,7 +6882,7 @@ public:
                     skip_runtime_struct_init = true;
                 }
             }
-            if (!skip_runtime_struct_init) {
+            if (!skip_runtime_struct_init && !is_earlier_cell_global(x)) {
                 allocatable_struct_array_members_details.push_back(std::make_pair(
                     ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
             }
@@ -7383,15 +7459,7 @@ public:
             fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
                 true, true, false, array.var_type);
         }
-        for(auto& st : allocatable_struct_array_members_details) {
-            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
-                st.second, ASRUtils::symbol_type(st.first), false, true);
-        }
-        allocatable_struct_array_members_details.clear();
-        for(struct_array_global& st : struct_array_global_members_details) {
-            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
-        }
-        struct_array_global_members_details.clear();
+        emit_global_struct_members_setup();
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
