@@ -102,14 +102,27 @@ public:
         else s.append(" ");
         s.append("[");
         int kind;
-        if(ASRUtils::is_character(*x.m_type)){
+        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(x.m_type);
+        bool pointer_backed_constant =
+            ASR::is_a<ASR::StructType_t>(*element_type) ||
+            ASR::is_a<ASR::CPtr_t>(*element_type);
+        if (pointer_backed_constant) {
+            kind = 1;
+        } else if(ASRUtils::is_character(*x.m_type)){
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(
-                ASRUtils::type_get_past_array(x.m_type));
+                element_type);
             if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
         } else {
             kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         }
-        int size = x.m_n_data / kind;
+        // m_n_data is the byte size of the data, so dividing by the element
+        // size gives the element count, except for a pointer-backed constant
+        // (kind is a sentinel, not a real size) or an array of zero-length
+        // strings (`t = ''`, kind <= 0): take the count from the type
+        // instead of dividing by a size that isn't a real byte size.
+        int size = (pointer_backed_constant || kind <= 0)
+            ? ASRUtils::get_fixed_size_of_array(x.m_type)
+            : x.m_n_data / kind;
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {

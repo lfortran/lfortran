@@ -36,6 +36,44 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// The first local of the scope of `local` that its initializer references
+// and that is not defined when the initializer is evaluated, on entry: a
+// local that is neither a parameter nor itself initialized on entry. An
+// inquiry about the bounds or the length of a local does not reference its
+// value.
+class EntryInitializerReference : public BaseWalkVisitor<EntryInitializerReference>
+{
+public:
+    const Variable_t &local;
+    const Variable_t *undefined = nullptr;
+
+    EntryInitializerReference(const Variable_t &local_) : local(local_) {}
+
+    void visit_Var(const Var_t &x) {
+        symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (undefined != nullptr || !is_a<Variable_t>(*sym)) return;
+        const Variable_t *v = down_cast<Variable_t>(sym);
+        if (v->m_parent_symtab == local.m_parent_symtab &&
+                v->m_intent == intentType::Local &&
+                v->m_storage != storage_typeType::Parameter &&
+                !ASRUtils::is_entry_initialized_local(*v)) {
+            undefined = v;
+        }
+    }
+
+    void visit_ArraySize(const ArraySize_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArrayBound(const ArrayBound_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_StringLen(const StringLen_t & /*x*/) {}
+
+    void visit_TypeInquiry(const TypeInquiry_t & /*x*/) {}
+};
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -65,6 +103,10 @@ private:
     bool _inside_array_physical_cast_type = false;
     bool _processing_assumed_rank_array = false;
     bool _processing_unbounded_pointer_array = false;
+    // True while the symbols of a template are visited. A named constant of a
+    // template whose initializer reads a deferred constant has no compile-time
+    // value until the template is instantiated.
+    bool _inside_template = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -119,6 +161,25 @@ public:
         return false;
     }
 
+    // The initializer a Module, a Program or the TranslationUnit names must
+    // be a real, argument-less procedure of that owner's own scope, so that a
+    // backend can lower the link without searching or guessing.
+    void verify_global_init(const char *global_init, SymbolTable *scope,
+            const std::string &owner, const Location &loc) {
+        if (global_init == nullptr) return;
+        ASR::symbol_t *sym = scope->get_symbol(global_init);
+        ASRUtils::require_impl(sym != nullptr,
+            owner + "::m_global_init must name a symbol of " + owner +
+            "'s own symbol table, but " + std::string(global_init) +
+            " is not in it", loc, diagnostics);
+        ASRUtils::require_impl(sym != nullptr && ASR::is_a<ASR::Function_t>(*sym),
+            owner + "::m_global_init must name a Function", loc, diagnostics);
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASRUtils::require_impl(fn->n_args == 0 && fn->m_return_var == nullptr,
+            owner + "::m_global_init must name a subroutine taking no "
+            "arguments", loc, diagnostics);
+    }
+
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
@@ -138,6 +199,8 @@ public:
         require(down_cast2<TranslationUnit_t>(current_symtab->asr_owner)->m_symtab == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "TranslationUnit",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -192,6 +255,8 @@ public:
             std::string(x.m_name) + "::m_dependencies is required");
         }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Program",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -348,9 +413,12 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        bool inside_template = _inside_template;
+        _inside_template = true;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        _inside_template = inside_template;
         current_symtab = parent_symtab;
     }
 
@@ -405,6 +473,8 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        verify_global_init(x.m_global_init, x.m_symtab, "Module",
+            x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -1206,6 +1276,20 @@ public:
                     || x.m_type == nullptr) {
                 continue;
             }
+            bool scalar_struct_initializer =
+                ASR::is_a<ASR::StructConstant_t>(*initial)
+                || ASR::is_a<ASR::StructConstructor_t>(*initial);
+            if (ASRUtils::is_array(x.m_type)
+                    && !ASRUtils::is_array(initial_type)
+                    && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(x.m_type))
+                    && scalar_struct_initializer) {
+                require_id(false,
+                    "asr.verify.variable.array_struct_initializer_is_array",
+                    "Variable '" + std::string(x.m_name) +
+                        "' is an array of derived type, so its initializer "
+                        "must be an array expression");
+            }
             ASR::ttype_t *declared = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(x.m_type));
             ASR::ttype_t *actual = ASRUtils::type_get_past_array(
@@ -1278,16 +1362,30 @@ public:
                 for (size_t j = 0; j < array_construct->n_args; j++) {
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])),
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])) ||
+                            (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
+                                ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                             "Initialisation of " + std::string(x.m_name) +
                             " must reduce to a compile time constant.");
                 }
             } else {
                 require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)) ||
+                        ASRUtils::is_entry_initialized_local(x) ||
+                        (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
+                            ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant.");
+                if (ASRUtils::is_entry_initialized_local(x)) {
+                    EntryInitializerReference reference(x);
+                    reference.visit_expr(*x.m_symbolic_value);
+                    require(reference.undefined == nullptr,
+                        "The initializer of " + std::string(x.m_name) +
+                        ", evaluated on entry, references the local " +
+                        (reference.undefined ? std::string(reference.undefined->m_name) : "") +
+                        ", which is not defined on entry");
+                }
             }
         }
         if(ASRUtils::is_character(*x.m_type)){
@@ -1680,9 +1778,32 @@ public:
 
     void visit_ArrayItem(const ArrayItem_t &x) {
         if( check_external ) {
+            // Selecting an element of an array component of an array, as in
+            // `w%u(2)`, reads one element of the component out of every
+            // element of the base, so the reference is an array shaped like
+            // that base even though every subscript is scalar.
+            ASR::expr_t *shape_base = ASRUtils::struct_base_lending_shape(
+                const_cast<ArrayItem_t*>(&x));
             if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
                 require(ASRUtils::is_array(x.m_type),
                     "ArrayItem::m_type with array indices must be an array.")
+            } else if( shape_base != nullptr ) {
+                size_t base_rank = ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(shape_base));
+                require_id(ASRUtils::is_array(x.m_type),
+                    "asr.verify.array_item.array_base",
+                    "selecting an element of a component of an array is an "
+                    "array, but its type is not an array");
+                if (ASRUtils::is_array(x.m_type)) {
+                    require_id(
+                        (size_t) ASRUtils::extract_n_dims_from_ttype(x.m_type)
+                            == base_rank,
+                        "asr.verify.array_item.array_base_rank",
+                        "selecting an element of a component of an array of "
+                        "rank " + std::to_string(base_rank) + " has rank " +
+                        std::to_string(
+                            ASRUtils::extract_n_dims_from_ttype(x.m_type)));
+                }
             } else {
                 require(!ASRUtils::is_array(x.m_type),
                     "ArrayItem::m_type cannot be array.")
@@ -1922,8 +2043,11 @@ public:
     // looking for a field the type does not have.
     void visit_StructInstanceMember(const StructInstanceMember_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_StructInstanceMember(x);
-        if (!check_external || x.m_m == nullptr || x.m_v == nullptr ||
-                diagnostics.has_error()) {
+        if (x.m_m == nullptr || x.m_v == nullptr || diagnostics.has_error()) {
+            return;
+        }
+        verify_struct_member_shape(x);
+        if (!check_external || diagnostics.has_error()) {
             return;
         }
         ASR::symbol_t *struct_sym = get_struct_from_dt_expr(x.m_v);
@@ -1943,6 +2067,60 @@ public:
             "asr.verify.struct_member.belongs_to_struct",
             "'" + std::string(struct_type->m_name) +
             "' has no member named '" + member_name + "'");
+    }
+
+    // Reading a scalar component of an array base yields an array of the
+    // base's shape. A reference left with the component's scalar declared
+    // type is malformed ASR that survives semantics and only fails much
+    // later, deep inside a pass or the backend (issue #13296).
+    void verify_struct_member_shape(const StructInstanceMember_t &x) {
+        ASR::symbol_t *member_sym = ASRUtils::symbol_get_past_external(x.m_m);
+        if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+            return;
+        }
+        ASR::ttype_t *member_type =
+            ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+        ASR::ttype_t *base_type = ASRUtils::expr_type(x.m_v);
+        if (member_type == nullptr || base_type == nullptr ||
+                x.m_type == nullptr) {
+            return;
+        }
+        if (!ASRUtils::is_array(base_type) || ASRUtils::is_array(member_type)) {
+            return;
+        }
+        // A `pointer` or `allocatable` component read from an array base
+        // denotes an array of indirections, which this type representation
+        // cannot express. Fortran forbids such a reference (C919) and
+        // LFortran does not diagnose it yet, so the scalar declared type is
+        // what survives semantics. Do not claim it is malformed until there
+        // is a type that could replace it.
+        if (ASR::is_a<ASR::Allocatable_t>(*member_type) ||
+                ASR::is_a<ASR::Pointer_t>(*member_type)) {
+            return;
+        }
+        // A zero-size base has no element to read, so the reference denotes
+        // nothing and its shape is not observable. A scalar structure
+        // constructor for such a component is deliberately left unspread
+        // for that reason, which leaves the component's own scalar type in
+        // place. That is degenerate, not malformed.
+        if (ASRUtils::get_fixed_size_of_array(base_type) == 0) {
+            return;
+        }
+        require_id(ASRUtils::is_array(x.m_type),
+            "asr.verify.struct_member.array_base",
+            "reading component '" + std::string(ASRUtils::symbol_name(x.m_m)) +
+            "' of an array is an array, but its type is not an array");
+        if (!ASRUtils::is_array(x.m_type)) {
+            return;
+        }
+        require_id(ASRUtils::extract_n_dims_from_ttype(x.m_type) ==
+                ASRUtils::extract_n_dims_from_ttype(base_type),
+            "asr.verify.struct_member.array_base_rank",
+            "reading component '" + std::string(ASRUtils::symbol_name(x.m_m)) +
+            "' of an array of rank " +
+            std::to_string(ASRUtils::extract_n_dims_from_ttype(base_type)) +
+            " has rank " +
+            std::to_string(ASRUtils::extract_n_dims_from_ttype(x.m_type)));
     }
 
     static ASR::FunctionType_t* as_procedure_type(ASR::ttype_t *t) {
@@ -2998,19 +3176,12 @@ public:
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
-        int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* inner = ASRUtils::type_get_past_array(x.m_type);
-        if (ASRUtils::is_character(*x.m_type)) {
-            ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
+        if (ASRUtils::is_character(*inner)) {
             int64_t len;
-            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*inner)) {
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
-        } else if (ASR::is_a<ASR::CPtr_t>(*inner)) {
-          // C_PTR and C_FUNPTR have no fortran kind parameter.
-          n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(void*);
+            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(inner)->m_len, len), "Constant array of strings should have constant string length");
         }
+        int64_t n_data = ASRUtils::get_ArrayConstant_data_size(x.m_type);
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
     }

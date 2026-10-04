@@ -1267,8 +1267,19 @@ namespace StorageSize {
             
         } else if (ASR::is_a<ASR::StructType_t>(*type) ||
                    ASR::is_a<ASR::CPtr_t>(*type)) {
-            auto [size_bytes, _align] = ASRUtils::compute_type_size_align(type);
-            (void)_align;
+            int64_t size_bytes = -1;
+            if (ASR::is_a<ASR::StructType_t>(*type)) {
+                // The type alone lists only the components the derived type
+                // declares itself, so for an extended type it leaves out the
+                // inherited ones. Go through the declared type symbol, which
+                // is what the backends build the layout from.
+                size_bytes = ASRUtils::get_struct_expr_byte_size(args[0]);
+            }
+            if (size_bytes <= 0) {
+                auto [type_size_bytes, _align] = ASRUtils::compute_type_size_align(type);
+                (void)_align;
+                size_bytes = type_size_bytes;
+            }
             if (size_bytes > 0) {
                 return make_ConstantWithType(make_IntegerConstant_t, size_bytes * 8, t1, loc);
             }
@@ -4464,7 +4475,21 @@ namespace Merge {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
 
         ASR::ttype_t *tsource_type = nullptr, *fsource_type = nullptr, *mask_type = nullptr;
-        std::string new_name = "_lcompilers_merge_" + get_type_code(ASRUtils::extract_type(arg_types[0]))
+        ASR::symbol_t *type_decl = nullptr;
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            type_decl = ASRUtils::get_struct_sym_from_struct_expr(new_args[0].m_value);
+            if (!type_decl) {
+                type_decl = ASRUtils::get_struct_sym_from_struct_expr(new_args[1].m_value);
+            }
+            LCOMPILERS_ASSERT_MSG(type_decl != nullptr,
+                "Failed to resolve type declaration for StructType argument in instantiate_Merge");
+        }
+
+        std::string type_name = is_struct_type_arg
+            ? ASRUtils::symbol_name(type_decl)
+            : get_type_code(ASRUtils::extract_type(arg_types[0]));
+        std::string new_name = "_lcompilers_merge_" + type_name
             + "_" + get_type_code(ASRUtils::extract_type(arg_types[2]));
         declare_basic_variables(new_name);
         
@@ -4491,13 +4516,22 @@ namespace Merge {
             return b.Call(s, new_args, expr_type(f->m_return_var), nullptr);
         }
 
-        auto tsource_arg = declare("tsource", tsource_type, In);
+        ASR::expr_t *tsource_arg = nullptr;
+        ASR::expr_t *fsource_arg = nullptr;
+        ASR::expr_t *result = nullptr;
+        if (is_struct_type_arg) {
+            tsource_arg = b.Variable(fn_symtab, "tsource", tsource_type, ASR::intentType::In, type_decl);
+            fsource_arg = b.Variable(fn_symtab, "fsource", fsource_type, ASR::intentType::In, type_decl);
+            result = b.Variable(fn_symtab, "merge", return_type, ASR::intentType::ReturnVar, type_decl);
+        } else {
+            tsource_arg = declare("tsource", tsource_type, In);
+            fsource_arg = declare("fsource", fsource_type, In);
+            result = declare("merge", return_type, ReturnVar);
+        }
         args.push_back(al, tsource_arg);
-        auto fsource_arg = declare("fsource", fsource_type, In);
         args.push_back(al, fsource_arg);
         auto mask_arg = declare("mask", mask_type, In);
         args.push_back(al, mask_arg);
-        auto result = declare("merge", return_type, ReturnVar);
 
         {
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
@@ -6102,9 +6136,9 @@ namespace StringConcat {
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arr_arg)));
                 ASR::ttype_t* result_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type, arr_t->m_memory_space));
-                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
-                    al, loc, n * result_elem_len, (void*)result_buf,
-                    result_arr_type, ASR::arraystorageType::ColMajor));
+                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+                    al, loc, (void*)result_buf, result_arr_type,
+                    ASR::arraystorageType::ColMajor));
             }
         } else {
             // Fall back to computing return type from argument types

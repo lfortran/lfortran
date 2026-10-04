@@ -498,6 +498,11 @@ namespace LCompilers::CommandLineInterface {
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+        // The passes need to know too: a module compiled into an object file
+        // of its own is defined there, so a translation unit that only uses
+        // it must not define anything of the module itself.
+        compiler_options.po.separate_compilation =
+            compiler_options.separate_compilation;
 
         // set gpu offloading in pass options
         if (compiler_options.gpu_backend == "metal") {

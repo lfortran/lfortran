@@ -97,8 +97,10 @@
             :gt_label 100
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @real_dp_param.u = internal global float 0x3FF0CCCCC0000000
 @real_dp_param.v = internal global double 0x3FF0CCCCC0000000

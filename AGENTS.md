@@ -30,11 +30,18 @@ Available skills:
 
 | Skill | Purpose |
 | --- | --- |
+| `classify-issue` | Triage issues with evidence-based, additive labels and optional frequency-first prioritization |
 | `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, open a PR from a fork, review, and iterate until CI is green |
+
+`classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
+enhancements, new features, and maintenance or internal-correctness work. It
+uses the live label catalog, preserves existing labels, and asks about
+uncertain cases. GitHub changes require a labeling request; recommendation
+and local-priority requests stay read-only.
 
 ### The reproduce → reduce → fix loop
 
@@ -62,9 +69,10 @@ until the original issue is fixed. It then opens a draft PR from the user's
 fork and iterates on CI failures and `pr-review` findings until the PR is
 ready for review.
 
-Skills assume `build/src/bin` is first on `PATH` (so `lfortran` is the in-tree
-build) and that a reference compiler — `gfortran`, matching the `gfortran`
-integration-test label — is available for differential testing.
+The reproduction and fix skills assume `build/src/bin` is first on `PATH`
+(so `lfortran` is the in-tree build) and that a reference compiler — `gfortran`,
+matching the `gfortran` integration-test label — is available for differential
+testing. Issue classification requires authenticated `gh`, not a compiler build.
 
 ## Prerequisites
 - Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang/MSVC.
@@ -152,7 +160,7 @@ only once, redirect to a log file and then examine the log file.
     - Build: `bash ci/build.sh`
     - Quick integration run (LLVM):
       - `bash ci/test.sh` (runs a CMake+CTest LLVM pass and runner passes)
-      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16 &> log`
+      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f &> log`
   - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran &> log`
   - Other backends as in CI:
     - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma &> log && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f &> log`
@@ -162,7 +170,7 @@ only once, redirect to a log file and then examine the log file.
 
 - Minimal local (without micromamba):
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
-  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f -nf16 &> log`
+  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f &> log`
 - If builds fail with messages about missing debug info:
   - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
     `apt install llvm`, or `conda install -c conda-forge llvm-tools`).

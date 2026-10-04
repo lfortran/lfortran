@@ -1,0 +1,166 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "p" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "pz" (Variable
+              :parent_symtab 1
+              :name "pz"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (StructConstant
+                  :dt_sym (SymbolRef 1 "t")
+                  :args [
+                    (call_arg
+                      :value (IntegerConstant
+                        :n 4
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                    )
+                  ]
+                  :type (StructType
+                    :data_member_types [
+                      (Integer
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct true
+                    :is_unlimited_polymorphic false
+                  )
+                )
+              :value nil
+              :storage :Parameter
+              :type (Array
+                :type (StructType
+                  :data_member_types [
+                    (Integer
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct true
+                  :is_unlimited_polymorphic false
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration (SymbolRef 1 "t")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "t" (Struct
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "h" (Variable
+                    :parent_symtab 2
+                    :name "h"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Save
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "t"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct true
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "h"
+              ]
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+          }
+        )
+        :name "p"
+        :dependencies []
+        :body []
+        :global_init nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)
