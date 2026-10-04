@@ -292,10 +292,22 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
+#if defined(__aarch64__) && defined(__linux__)
+        // On Linux/AArch64 the JIT function returns complex_4 as <2 x float>
+        // in V0 (see get_function_type() in llvm_utils.cpp), while
+        // std::complex<float> follows the HFA convention (S0+S1), so the
+        // imaginary part came back as garbage. Read the vector lanes.
+        typedef float v2f32 __attribute__((vector_size(8)));
+        v2f32 r = e.execfn<v2f32>(run_fn);
+        result.type = EvalResult::complex4;
+        result.c32.re = r[0];
+        result.c32.im = r[1];
+#else
         std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
+#endif
     } else if (return_type == "complex8") {
         std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;

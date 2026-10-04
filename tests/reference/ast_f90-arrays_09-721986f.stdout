@@ -2,7 +2,5 @@ program arrays_09
 implicit none
 character(len=10) :: a(1)
 a(1) = "Substring"
-if (a(1)(4:9) /= "string") then
-    error stop
-end if
+if (a(1)(4:9) /= "string") error stop
 end program arrays_09
