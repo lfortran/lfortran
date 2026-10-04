@@ -1,5 +1,6 @@
 #include <string>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <unordered_set>
@@ -7045,6 +7046,62 @@ public:
         }
     }
 
+    // A real literal without a kind designator is single precision. Assigning
+    // it to a double precision variable keeps the single precision value,
+    // which is not the value the literal has in double precision unless it is
+    // exactly representable in single precision (e.g. `x = 1.3` warns, but
+    // `x = 1.5` does not).
+    void warn_single_precision_literal(const AST::expr_t &ast_value,
+            ASR::expr_t *value, ASR::ttype_t *target_type) {
+        if (!AST::is_a<AST::Real_t>(ast_value) ||
+                !ASR::is_a<ASR::RealConstant_t>(*value)) {
+            return;
+        }
+        std::string literal = AST::down_cast<AST::Real_t>(&ast_value)->m_n;
+        ASR::ttype_t *target_real = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(target_type));
+        if (literal.find('_') != std::string::npos ||
+                !ASR::is_a<ASR::Real_t>(*target_real) ||
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value)) != 4 ||
+                ASRUtils::extract_kind_from_ttype_t(target_real) != 8) {
+            return;
+        }
+        float single_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+        double double_val = ASRUtils::extract_real_8(literal.c_str());
+        if (single_val == double_val) {
+            return;
+        }
+        // Suggest a named constant in scope that is a double precision kind,
+        // e.g. `dp`, and fall back to the kind value itself.
+        std::string kind_name = "8";
+        for (SymbolTable *scope = current_scope; scope && kind_name == "8";
+                scope = scope->parent) {
+            for (auto &item : scope->get_scope()) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(item.second);
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    continue;
+                }
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (var->m_storage == ASR::storage_typeType::Parameter &&
+                        var->m_value &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*var->m_value) &&
+                        ASR::down_cast<ASR::IntegerConstant_t>(var->m_value)->m_n == 8) {
+                    kind_name = item.first;
+                    break;
+                }
+            }
+        }
+        // 17 significant digits print a double precision value exactly
+        char single_str[32], double_str[32];
+        snprintf(single_str, sizeof(single_str), "%.16e", (double) single_val);
+        snprintf(double_str, sizeof(double_str), "%.16e", double_val);
+        diag.semantic_warning_label(
+            "this implies single precision, use a kind designator to make it explicit",
+            {value->base.loc},
+            "hint: " + literal + " is equal to " + single_str + ", use " +
+            literal + "_" + kind_name + " to make it equal to " + double_str);
+    }
+
     void visit_Assignment(const AST::Assignment_t &x) {
         if (is_statement_function(x)) {
             create_statement_function(x);
@@ -7471,6 +7528,7 @@ public:
                             array_reshape->m_type = ASRUtils::duplicate_type(al, array_reshape->m_type, &array_reshape_dims, ASR::array_physical_typeType::DescriptorArray,true);
                         }
                     }
+                    warn_single_precision_literal(*x.m_value, value, target_type);
                     if (ASRUtils::is_logical(*value_type) && ASRUtils::is_integer(*target_type)) {
                         if (!compiler_options.logical_casting) {
                             diag.add(Diagnostic(
