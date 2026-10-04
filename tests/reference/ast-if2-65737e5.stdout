@@ -62,6 +62,7 @@
                     [(String "Good evening" ())]
                     ()
                 )]
+                .false.
                 ()
                 (TriviaNode
                     [(EOLComment
@@ -73,6 +74,7 @@
                 )
                 ()
             )]
+            .false.
             (TriviaNode
                 []
                 [(EOLComment

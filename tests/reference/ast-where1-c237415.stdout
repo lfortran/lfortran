@@ -148,6 +148,7 @@
                 [(String "fail" ())]
                 ()
             )]
+            .false.
             ()
             ()
             (TriviaNode
@@ -253,6 +254,7 @@
                 [(String "fail" ())]
                 ()
             )]
+            .false.
             ()
             ()
             ()

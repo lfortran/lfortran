@@ -587,6 +587,19 @@ contains
         res = x + y
     end function
 end module pure_intent_check_mod
+module io_function_name_mod
+contains
+    integer function f()
+        f = 1
+    end function
+    subroutine s()
+        procedure(f), pointer :: p
+        print *, f
+        write(*,*) f
+        read(*,*) f
+        print *, p
+    end subroutine
+end module io_function_name_mod
 ! Test for a duplicate statement label on end-if
 subroutine duplicate_end_if_label()
     integer :: i

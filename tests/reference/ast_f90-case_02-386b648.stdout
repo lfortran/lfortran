@@ -38,9 +38,7 @@ select case (marks)
 end select
 print *, "Your marks are ", marks
 
-if (out /= 1) then
-    error stop
-end if
+if (out /= 1) error stop
 
 ! case default at the top
 select case (marks)

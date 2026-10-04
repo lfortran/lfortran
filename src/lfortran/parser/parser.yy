@@ -893,6 +893,7 @@ instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
     | KW_OPERATOR "(" operator_type ")" { $$ = DECL_OP($3, @$); }
     | KW_OPERATOR "(" "/)" { $$ = DECL_OP(OPERATOR(DIV, @$), @$); }
+    | KW_OPERATOR "(" TK_DEF_OP ")" { $$ = DECL_DEFOP($3, @$); }
     | expr %dprec 1 { $$ = instantiate_arg_expr(p.m_a, $1, @$); }
 
 end_type
