@@ -470,14 +470,9 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Integration tests include EXTRA_ARGS -g (e.g. derived_types_123),
-            # which needs runtime stacktraces. Third-party jobs (LLVM 11/19 and
-            # macOS) must not enable it: Caffeine passes -g at link time and
-            # dwarf_convert.py then fails without llvm-dwarfdump.
-            STACKTRACE_FLAG=""
-            if [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
-                STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
-            fi
+            # Runtime stacktraces are on everywhere: integration tests use -g
+            # (e.g. derived_types_123), and third-party codes and Caffeine
+            # link with -g, which exercises the in-process debug-map writer.
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
@@ -485,7 +480,7 @@ jobs:
               -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-              ${STACKTRACE_FLAG} \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
