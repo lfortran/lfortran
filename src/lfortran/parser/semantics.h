@@ -2299,8 +2299,8 @@ static inline LCompilers::LFortran::AST::ast_t* nonblock_do(
         DoLoop_t *inner = (DoLoop_t*)last;
         d->m_nonblock = inner->m_nonblock
             && inner->m_do_label == d->m_do_label;
-    } else if (decl_stmt_kind(*last) == DeclStmtKind::Statement) {
-        d->m_nonblock = ((Print_t*)last)->m_label == d->m_do_label;
+    } else {
+        d->m_nonblock = stmt_label(*last) == d->m_do_label;
     }
     return a;
 }
