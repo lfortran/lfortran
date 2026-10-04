@@ -2208,7 +2208,7 @@ public:
     void visit_If(const If_t &x) {
         // An `else if (...) then` part is printed by the enclosing If,
         // after its `else`, and ends with it
-        std::string r = x.m_else_if ? "" : indent;
+        std::string r = x.m_is_else_if ? "" : indent;
         r += print_label(x);
         r += print_stmt_name(x);
         r += syn(gr::Conditional);
@@ -2250,7 +2250,7 @@ public:
         }
         dec_indent();
         if (x.n_orelse == 1 && is_a<If_t>(*x.m_orelse[0])
-                && down_cast<If_t>(x.m_orelse[0])->m_else_if) {
+                && down_cast<If_t>(x.m_orelse[0])->m_is_else_if) {
             r += indent;
             r += syn(gr::Conditional);
             r += "else";
@@ -2275,7 +2275,7 @@ public:
             }
             dec_indent();
         }
-        if (x.m_else_if) {
+        if (x.m_is_else_if) {
             s = r;
             return;
         }
