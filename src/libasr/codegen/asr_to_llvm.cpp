@@ -11360,6 +11360,32 @@ public:
         int value_rank = array_section->n_args, target_rank = 0;
         llvm::Value *target = arr_descr->create_descriptor_alloca(
             target_type, "array_section_descriptor");
+        // A class(*) pointer array owns a heap wrapper, which is freed when
+        // the pointer is finalized. A section of a class array gets its own
+        // {vptr, data} wrapper, so copy it into the wrapper the pointer
+        // already owns, or into new storage if it has none yet.
+        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
+        bool own_section_wrapper =
+            ASRUtils::is_unlimited_polymorphic_type(target_elem_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(value_array_type));
+        llvm::Type* wrapper_llvm_type = nullptr;
+        llvm::Value* owned_wrapper = nullptr;
+        if (own_section_wrapper) {
+            wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_target, target_elem_type, module.get());
+            llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+            owned_wrapper = llvm_utils->CreateAlloca(wrapper_ptr_type, nullptr,
+                "section_owned_wrapper");
+            builder->CreateStore(llvm::ConstantPointerNull::get(wrapper_ptr_type),
+                owned_wrapper);
+            llvm::Value* prev_desc = llvm_utils->CreateLoad2(
+                target_type->getPointerTo(), target_desc);
+            llvm_utils->create_if_else(builder->CreateIsNotNull(prev_desc), [&]() {
+                llvm::Value* prev_wrapper = llvm_utils->CreateLoad2(wrapper_ptr_type,
+                    arr_descr->get_pointer_to_data(target_type, prev_desc));
+                builder->CreateStore(prev_wrapper, owned_wrapper);
+            }, []() {});
+        }
         if( ASRUtils::is_character(*expr_type(x.m_target))){
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
@@ -11501,6 +11527,25 @@ public:
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank, location_manager);
+        }
+        if (own_section_wrapper) {
+            llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+            llvm_utils->create_if_else(builder->CreateIsNull(
+                    llvm_utils->CreateLoad2(wrapper_ptr_type, owned_wrapper)), [&]() {
+                llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target,
+                    target_elem_type, llvm_utils->getIntType(4),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                builder->CreateStore(allocate_class_wrapper_storage(
+                    x.m_target, wrapper_llvm_type, wrapper_size), owned_wrapper);
+            }, []() {});
+            llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(wrapper_ptr_type,
+                owned_wrapper);
+            llvm::Value* data_field = arr_descr->get_pointer_to_data(target_type, target);
+            llvm::Value* section_wrapper = llvm_utils->CreateLoad2(
+                wrapper_llvm_type->getPointerTo(), data_field);
+            builder->CreateStore(llvm_utils->CreateLoad2(wrapper_llvm_type,
+                section_wrapper), wrapper_ptr);
+            builder->CreateStore(wrapper_ptr, data_field);
         }
         builder->CreateStore(target, target_desc);
     }

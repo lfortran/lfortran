@@ -1883,6 +1883,7 @@ RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
 RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
 RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
+RUN(NAME intrinsics_481 LABELS gfortran llvm c) # sign on real(4)/real(8) with negative zero, C backend RealCopySign (#13918)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
@@ -3503,6 +3504,7 @@ RUN(NAME class_150 LABELS gfortran llvm)
 RUN(NAME class_151 LABELS gfortran llvm)
 RUN(NAME class_152 LABELS gfortran llvm)
 RUN(NAME class_153 LABELS gfortran llvm)
+RUN(NAME class_154 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -3775,6 +3777,7 @@ RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_defined_assignment_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
