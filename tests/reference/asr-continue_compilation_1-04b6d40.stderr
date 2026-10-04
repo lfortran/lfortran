@@ -893,27 +893,27 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Explicit shaped array with nonconstant bounds
-    --> tests/errors/continue_compilation_1.f90:2097:22
+    --> tests/errors/continue_compilation_1.f90:2105:22
      |
-2097 |         integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
+2105 |         integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
      |                      ^^^ 
 
 semantic error: Type parameter 't' is not specified in any requirements
-    --> tests/errors/continue_compilation_1.f90:2099:5
+    --> tests/errors/continue_compilation_1.f90:2107:5
      |
-2099 |     type(t) :: x
+2107 |     type(t) :: x
      |     ^^^^^^^^^^^^ 
 
 semantic error: Explicit shaped array with nonconstant bounds
-    --> tests/errors/continue_compilation_1.f90:2108:22
+    --> tests/errors/continue_compilation_1.f90:2116:22
      |
-2108 |         integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
+2116 |         integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
      |                      ^^^ 
 
 semantic error: Type parameter 't' is not specified in any requirements
-    --> tests/errors/continue_compilation_1.f90:2110:5
+    --> tests/errors/continue_compilation_1.f90:2118:5
      |
-2110 |     type(t) :: x
+2118 |     type(t) :: x
      |     ^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3078,13 +3078,13 @@ semantic error: Unapplicable types for intrinsic function max
      |                     ^^^ 
 
 semantic error: Variable 'x' not declared
-    --> tests/errors/continue_compilation_1.f90:2101:19
+    --> tests/errors/continue_compilation_1.f90:2109:19
      |
-2101 |     print *, size(x%b)
+2109 |     print *, size(x%b)
      |                   ^^^ 
 
 semantic error: Variable 'x' not declared
-    --> tests/errors/continue_compilation_1.f90:2111:19
+    --> tests/errors/continue_compilation_1.f90:2119:19
      |
-2111 |     print *, size(x%c)
+2119 |     print *, size(x%c)
      |                   ^^^ 
