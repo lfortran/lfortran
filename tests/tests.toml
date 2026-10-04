@@ -3020,6 +3020,10 @@ filename = "../integration_tests/doloop_21.f90"
 ast_f90 = true
 
 [[test]]
+filename = "doloop_shared_label_goto.f90"
+ast_f90 = true
+
+[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
