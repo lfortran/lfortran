@@ -1134,6 +1134,9 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     // one has to carry the instance id too.
     if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
         fn->setName(unique_stem + "_program");
+    // And for the set up of the globals it declares.
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_setup"))
+        fn->setName(unique_stem + "_setup");
 
     // Symbols qualified by their cell (__cell<N>_...) are named per session,
     // so two executors in one process emit the same names. The wasm dynamic
