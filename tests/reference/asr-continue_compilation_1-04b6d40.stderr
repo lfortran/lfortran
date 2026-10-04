@@ -6548,6 +6548,12 @@ semantic error: The label 300 does not point to any format statement
 5287 |     read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid label in this statement
 
+semantic error: 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+    --> tests/errors/continue_compilation_1.f90:5313:9
+     |
+5313 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+     |         ^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
