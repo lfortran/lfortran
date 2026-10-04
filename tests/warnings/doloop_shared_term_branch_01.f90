@@ -54,7 +54,7 @@ do 70 i = 1, 2
         n = n + 1
 70 continue
 
-! ERR= and END= specifiers: warnings
+! ERR= and END= specifiers: one warning per statement
 do 80 i = 1, 2
     open(u, file="doloop_shared_term_branch_01.txt", err=80)
     read(u, *, end=80, err=80) k
@@ -62,5 +62,20 @@ do 80 i = 1, 2
         n = n + 1
 80 continue
 
+! alternate returns: one warning per statement
+do 90 i = 1, 2
+    call alt(i, *90, *90)
+    do 90 j = 1, 2
+        n = n + 1
+90 continue
+
 print *, n
+
+contains
+
+subroutine alt(i, *, *)
+    integer, intent(in) :: i
+    return i
+end subroutine
+
 end program

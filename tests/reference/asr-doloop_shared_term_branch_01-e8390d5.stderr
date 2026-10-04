@@ -40,8 +40,8 @@ warning: Branch to the shared DO termination label 80 from outside the innermost
 60 |     read(u, *, end=80, err=80) k
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
 
-warning: Branch to the shared DO termination label 80 from outside the innermost DO loop that it terminates
-  --> tests/warnings/doloop_shared_term_branch_01.f90:60:5
+warning: Branch to the shared DO termination label 90 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:67:5
    |
-60 |     read(u, *, end=80, err=80) k
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
+67 |     call alt(i, *90, *90)
+   |     ^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement

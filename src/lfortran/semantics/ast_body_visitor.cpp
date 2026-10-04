@@ -1770,7 +1770,6 @@ public:
             if (!compiler_options.continue_compilation) throw SemanticAbort();
             return false;
         }
-        check_branch_to_shared_do_termination(label, loc);
         return true;
     }
 
@@ -2464,6 +2463,10 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        // END= and ERR= may name the same label: warn about it once
+        for (int64_t label : std::set<int64_t>{end_label, err_label}) {
+            if (label != -1) check_branch_to_shared_do_termination(label, loc);
         }
         if (a_rec && a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
             diag.add(Diagnostic(
@@ -9225,6 +9228,10 @@ public:
             ASR::expr_t *alt_ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_ret_local));
             ASR::ttype_t* int_type = ASRUtils::expr_type(alt_ret_var);
             ASR::ttype_t* log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+            for (int64_t label : std::set<int64_t>(alt_return_labels.begin(),
+                    alt_return_labels.end())) {
+                check_branch_to_shared_do_termination(label, x.base.base.loc);
+            }
             for (size_t i = 0; i < alt_return_labels.size(); i++) {
                 ASR::expr_t *idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                     (int64_t)(i + 1), int_type));
@@ -9233,7 +9240,6 @@ public:
                 Vec<ASR::stmt_t*> if_body;
                 if_body.reserve(al, 1);
                 int64_t label = alt_return_labels[i];
-                check_branch_to_shared_do_termination(label, x.base.base.loc);
                 ASR::stmt_t *go_to = ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc,
                     label, s2c(al, std::to_string(label))));
                 if_body.push_back(al, go_to);
