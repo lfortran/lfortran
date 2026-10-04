@@ -14517,10 +14517,16 @@ void get_local_info_debug_map(struct Stacktrace *d) {
         if (entry[1] == 0) {
             continue;
         }
+        if (entry[1] > UINT32_MAX || (d->stack_size > 0 &&
+                entry[0] < d->addresses[d->stack_size - 1])) {
+            d->stack_size = 0;
+            break;
+        }
         d->addresses[d->stack_size] = entry[0];
         d->line_numbers[d->stack_size] = entry[1];
         d->stack_size++;
     }
+    if (ferror(fp)) d->stack_size = 0;
     fclose(fp);
 }
 
