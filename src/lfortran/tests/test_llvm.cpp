@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -18,6 +19,8 @@
 #include <libasr/pickle.h>
 #include <libasr/modfile.h>
 #include <libasr/utils.h>
+#include <libasr/config.h>
+#include <libasr/stacktrace.h>
 #include <lfortran/utils.h>
 
 #include <llvm/Config/llvm-config.h>
@@ -577,6 +580,30 @@ end function)";
     e.add_module(std::move(m));
     CHECK(e.execfn<int32_t>("f") == 4);
 }
+
+#ifdef HAVE_RUNTIME_STACKTRACE
+TEST_CASE("runtime debug map of a binary without line info") {
+    std::string obj = "test_llvm_debug_map_nodebug.o";
+    std::string map = "test_llvm_debug_map_nodebug_lines.dat";
+    LCompilers::LLVMEvaluator e;
+    e.create_empty_object_file(obj);
+    {
+        std::ofstream stale(map, std::ios::binary);
+        stale << "stale contents";
+    }
+
+    std::string error_message;
+    CHECK(LCompilers::write_runtime_debug_map(obj, map, error_message));
+    CHECK(std::filesystem::file_size(map) == 0);
+
+    CHECK(!LCompilers::write_runtime_debug_map(obj + ".missing", map,
+        error_message));
+    CHECK(!error_message.empty());
+
+    std::filesystem::remove(obj);
+    std::filesystem::remove(map);
+}
+#endif
 
 #endif // __EMSCRIPTEN__
 
