@@ -28400,7 +28400,8 @@ public:
         // TODO: Handle some things at compile time if possible:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
         // if (fmt_value) ...
-        if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
+        if (x.m_kind == ASR::string_format_kindType::FormatFortran ||
+                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank) {
             std::vector<llvm::Value *> args;
             // Push fmt string.
             if(x.m_fmt == nullptr){ // default formatting
@@ -28601,7 +28602,8 @@ public:
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
-            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode);
+            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode,
+                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank);
             // Free contiguous copies that were heap-allocated
             for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
                 llvm_utils->lfortran_free(copy_ptr);

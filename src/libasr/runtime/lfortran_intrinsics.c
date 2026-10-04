@@ -3061,10 +3061,9 @@ static void apply_decimal_edit_mode(char* buf, int decimal_mode) {
 //
 // Used for list-directed (`print *, ...` / `write(*,*) ...`) output. Each
 // value is emitted with Flang-style minimal width: no fixed Gw.d field
-// padding, no leading whitespace. The single explicit leading space that
-// some users expect is opt-in via `--print-leading-space` (injected at the
-// semantics layer) and is not produced here. Items are separated by a
-// single space in `default_formatting`.
+// padding, no leading whitespace. Items are separated by a single space in
+// `default_formatting`, which also writes the leading blank of the record
+// when asked to.
 int64_t print_into_string(Serialization_Info* s_info,  char* result, int decimal_mode){
     void* arg = s_info->current_arg_info.current_arg;
     switch (s_info->current_element_type){
@@ -3230,9 +3229,12 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
     }
 }
 
-void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode){
+// With `leading_blank`, a blank is written before the first item, so that
+// output with no items stays empty.
+void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode, bool leading_blank){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
+    int64_t items_start = 0;
     const int default_spacing_len = 1;
     const char* default_spacing = " ";
     ASSERT(default_spacing_len == strlen(default_spacing));
@@ -3265,7 +3267,14 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
             }
         }
         if(result_capacity != old_capacity){*result = (char*)ALLOCATOR_REALLOC(al, *result, result_capacity + 1);}
-        if(result_size > 0 && !(prev_is_char && curr_is_char)){
+        if(leading_blank && result_size == 0){
+            // The separator space reserved in `size_to_allocate` is not
+            // needed before the first item and holds the blank instead.
+            (*result)[result_size] = ' ';
+            result_size += 1;
+            items_start = 1;
+        }
+        if(result_size > items_start && !(prev_is_char && curr_is_char)){
             if (prev_is_logical || curr_is_logical) {
                 (*result)[result_size] = ' ';
                 result_size += 1;
@@ -3326,10 +3335,10 @@ static inline char* write_to_result_at_pos(lfortran_allocator_t* al,
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode, int *pad_mode);
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
-    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, ...)
+    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank, ...)
 {
     va_list args;
-    va_start(args, round_mode);
+    va_start(args, leading_blank);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
     result[0] = '\0';
     (*result_size) = 0;
@@ -3370,7 +3379,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
     if(format == NULL){
-        default_formatting(al, &result, result_size, &s_info, decimal_mode);
+        default_formatting(al, &result, result_size, &s_info, decimal_mode, leading_blank != 0);
         free_serialization_info(&s_info);
         return result;
     }

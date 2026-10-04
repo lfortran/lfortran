@@ -2451,18 +2451,11 @@ public:
                 }));
             throw SemanticAbort();
         }
-        if (_type == AST::decl_stmtType::Write && a_fmt == nullptr
-                && compiler_options.print_leading_space && formatted
-                && n_values > 0) {
-            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
-            ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
-            file_write->m_id = a_id;
-            file_write->m_iomsg = a_iomsg;
-            file_write->m_iostat = a_iostat;
-            file_write->m_unit = a_unit;
-            file_write->m_label = m_label;
-            tmp_vec.push_back(file_write_asr_t);
-        } else if (_type == AST::decl_stmtType::Write) {
+        // List-directed output starts with a blank when at least one item is
+        // written, which is only known at run time.
+        bool list_directed_leading_blank = _type == AST::decl_stmtType::Write
+            && a_fmt == nullptr && compiler_options.print_leading_space && formatted;
+        if (_type == AST::decl_stmtType::Write) {
             a_fmt_constant = a_fmt;
         }
         std::vector<ASR::stmt_t*> post_stmts;
@@ -2855,6 +2848,11 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
+        // A user-defined derived-type output procedure, or a single
+        // character item written directly, bypasses the StringFormat, so
+        // the leading blank is then written by a statement of its own.
+        bool separate_leading_blank = list_directed_leading_blank
+            && overloaded_stmt != nullptr;
         // Don't use stringFormat with single character argument. An implied
         // do loop is a list of output items rather than a single character
         // value, even when all its items happen to be of character type, so
@@ -2864,6 +2862,7 @@ public:
             && a_values_vec.size() == 1
             && !ASR::is_a<ASR::ImpliedDoLoop_t>(*a_values_vec[0])
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
+            separate_leading_blank = list_directed_leading_blank;
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
             a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous, a_decimal);
@@ -2874,8 +2873,12 @@ public:
                         al, loc, 1, nullptr,
                         ASR::string_length_kindType::DeferredLength,
                         ASR::string_physical_typeType::DescriptorString))));
+                ASR::string_format_kindType kind =
+                    list_directed_leading_blank && !separate_leading_blank
+                    ? ASR::string_format_kindType::FormatFortranLeadingBlank
+                    : ASR::string_format_kindType::FormatFortran;
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
-                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
+                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), kind,
                     type, nullptr));
                 a_values_vec.reserve(al, 1);
                 a_values_vec.push_back(al, string_format);
@@ -2895,6 +2898,16 @@ public:
                a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad, a_decimal);
         }
 
+        if (separate_leading_blank) {
+            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
+            ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
+            file_write->m_id = a_id;
+            file_write->m_iomsg = a_iomsg;
+            file_write->m_iostat = a_iostat;
+            file_write->m_unit = a_unit;
+            file_write->m_label = m_label;
+            tmp_vec.push_back(file_write_asr_t);
+        }
         tmp_vec.push_back(tmp);
         if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
             emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
@@ -9317,11 +9330,10 @@ public:
                 std::string fmt_str = std::string(fmt_const->m_s);
                 validate_format_string(fmt_str, fmt->base.loc, diag);
             }
-        } else {
-            if (compiler_options.print_leading_space && x.n_values > 0) {
-                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
-            }
         }
+        // List-directed output starts with a blank when at least one item is
+        // written, which is only known at run time.
+        bool list_directed_leading_blank = !fmt && compiler_options.print_leading_space;
 
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
@@ -9401,6 +9413,11 @@ public:
                         && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
                         && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])
                         ) {
+            // A single character item is printed directly, not through a
+            // StringFormat, so the leading blank is printed on its own.
+            if (list_directed_leading_blank) {
+                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
+            }
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
@@ -9408,8 +9425,11 @@ public:
                     al, x.base.base.loc, 1, nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
+            ASR::string_format_kindType kind = list_directed_leading_blank
+                ? ASR::string_format_kindType::FormatFortranLeadingBlank
+                : ASR::string_format_kindType::FormatFortran;
             ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt?fmt->base.loc:x.base.base.loc,
-                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                fmt, body.p, body.size(), kind,
                 type, nullptr));
 
             Vec<ASR::expr_t*> print_args;
