@@ -22,12 +22,6 @@ tokenizer error: Zero is not a valid statement label
 1191 |     0 print *, "unreachable"  ! {Error} Zero is not a valid statement label
      |     ^ 
 
-syntax error: Token '<' is unexpected here
-    --> tests/errors/continue_compilation_1.f90:2093:1
-     |
-2093 | <<<<<<< HEAD
-     | ^ 
-
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
