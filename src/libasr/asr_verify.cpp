@@ -3293,6 +3293,13 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
+    void visit_StringFormat(const StringFormat_t& x) {
+        require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
+                || x.m_fmt == nullptr,
+            "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
+    }
+
     void visit_ArrayConstant(const ArrayConstant_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");

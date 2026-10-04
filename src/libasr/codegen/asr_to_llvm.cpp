@@ -6965,6 +6965,11 @@ public:
         } else {
             throw CodeGenError("Variable type not supported " + ASRUtils::type_to_str_python_symbol(x.m_type, x.m_type_declaration), x.base.base.loc);
         }
+        if (x.m_storage == ASR::storage_typeType::Threadprivate) {
+            if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
+                gv->setThreadLocalMode(llvm::GlobalValue::GeneralDynamicTLSModel);
+            }
+        }
         if (!external && is_translation_unit_private(x.m_parent_symtab, x.m_access)) {
             if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
                 gv->setLinkage(llvm::GlobalValue::InternalLinkage);
@@ -11589,6 +11594,32 @@ public:
         int value_rank = array_section->n_args, target_rank = 0;
         llvm::Value *target = arr_descr->create_descriptor_alloca(
             target_type, "array_section_descriptor");
+        // A class(*) pointer array owns a heap wrapper, which is freed when
+        // the pointer is finalized. A section of a class array gets its own
+        // {vptr, data} wrapper, so copy it into the wrapper the pointer
+        // already owns, or into new storage if it has none yet.
+        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
+        bool own_section_wrapper =
+            ASRUtils::is_unlimited_polymorphic_type(target_elem_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(value_array_type));
+        llvm::Type* wrapper_llvm_type = nullptr;
+        llvm::Value* owned_wrapper = nullptr;
+        if (own_section_wrapper) {
+            wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_target, target_elem_type, module.get());
+            llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+            owned_wrapper = llvm_utils->CreateAlloca(wrapper_ptr_type, nullptr,
+                "section_owned_wrapper");
+            builder->CreateStore(llvm::ConstantPointerNull::get(wrapper_ptr_type),
+                owned_wrapper);
+            llvm::Value* prev_desc = llvm_utils->CreateLoad2(
+                target_type->getPointerTo(), target_desc);
+            llvm_utils->create_if_else(builder->CreateIsNotNull(prev_desc), [&]() {
+                llvm::Value* prev_wrapper = llvm_utils->CreateLoad2(wrapper_ptr_type,
+                    arr_descr->get_pointer_to_data(target_type, prev_desc));
+                builder->CreateStore(prev_wrapper, owned_wrapper);
+            }, []() {});
+        }
         if( ASRUtils::is_character(*expr_type(x.m_target))){
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
@@ -11730,6 +11761,25 @@ public:
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank, location_manager);
+        }
+        if (own_section_wrapper) {
+            llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+            llvm_utils->create_if_else(builder->CreateIsNull(
+                    llvm_utils->CreateLoad2(wrapper_ptr_type, owned_wrapper)), [&]() {
+                llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target,
+                    target_elem_type, llvm_utils->getIntType(4),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                builder->CreateStore(allocate_class_wrapper_storage(
+                    x.m_target, wrapper_llvm_type, wrapper_size), owned_wrapper);
+            }, []() {});
+            llvm::Value* wrapper_ptr = llvm_utils->CreateLoad2(wrapper_ptr_type,
+                owned_wrapper);
+            llvm::Value* data_field = arr_descr->get_pointer_to_data(target_type, target);
+            llvm::Value* section_wrapper = llvm_utils->CreateLoad2(
+                wrapper_llvm_type->getPointerTo(), data_field);
+            builder->CreateStore(llvm_utils->CreateLoad2(wrapper_llvm_type,
+                section_wrapper), wrapper_ptr);
+            builder->CreateStore(wrapper_ptr, data_field);
         }
         builder->CreateStore(target, target_desc);
     }
@@ -24051,45 +24101,48 @@ public:
         walked_size_known = true;
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
-        if (ASR::is_a<ASR::Integer_t>(*type)) {
-            res += "I";
-            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
-            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
-        } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
-            res += "U";
-            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
-            walked_size = ASRUtils::extract_kind_from_ttype_t(type);
-        } else if (ASR::is_a<ASR::Real_t>(*type)) {
-            int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-            res += "R";
-            res += std::to_string(a_kind);
-            // A real(10) is walked with `sizeof(long double)`, which the
-            // compiler cannot reproduce from the LLVM type.
-            if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
-                walked_size = a_kind;
-            } else {
-                walked_size_known = false;
+        std::string scalar_code = ASRUtils::get_format_type_code(type);
+        if (!scalar_code.empty()) {
+            res += scalar_code;
+            switch (type->type) {
+                case ASR::ttypeType::Integer:
+                case ASR::ttypeType::UnsignedInteger:
+                case ASR::ttypeType::Logical: {
+                    walked_size = ASRUtils::extract_kind_from_ttype_t(type);
+                    break;
+                }
+                case ASR::ttypeType::Real: {
+                    int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                    // A real(10) is walked with `sizeof(long double)`, which
+                    // the compiler cannot reproduce from the LLVM type.
+                    if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
+                        walked_size = a_kind;
+                    } else {
+                        walked_size_known = false;
+                    }
+                    break;
+                }
+                case ASR::ttypeType::Complex: {
+                    walked_size = 2 * (int64_t) ASRUtils::extract_kind_from_ttype_t(type);
+                    break;
+                }
+                case ASR::ttypeType::String: {
+                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+                    walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
+                        (int64_t) module->getDataLayout().getTypeAllocSize(
+                            llvm_utils->string_descriptor) : pointer_size;
+                    int len;
+                    if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
+                    break;
+                }
+                case ASR::ttypeType::CPtr: {
+                    walked_size = pointer_size;
+                    break;
+                }
+                default: {
+                    LCOMPILERS_ASSERT(false);
+                }
             }
-        } else if (ASR::is_a<ASR::String_t>(*type)) {
-            res += "S-";
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
-            if(str_type->m_physical_type == ASR::DescriptorString) res += "DESC";
-            else if(str_type->m_physical_type == ASR::CChar) res +="CCHAR";
-            else throw LCompilersException("Unhandled string physical type");
-            // The character kind tells the runtime how many bytes one character
-            // occupies, so that it can transcode a kind 4 value to UTF-8 and
-            // count field widths in characters rather than bytes.
-            res += "-K" + std::to_string(str_type->m_kind);
-            walked_size = (str_type->m_physical_type == ASR::DescriptorString) ?
-                (int64_t) module->getDataLayout().getTypeAllocSize(
-                    llvm_utils->string_descriptor) : pointer_size;
-            int len;
-            if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
-        } else if (ASR::is_a<ASR::Complex_t>(*type)){
-            res += "{R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
-                    ",R" + std::to_string(ASRUtils::extract_kind_from_ttype_t(type))+
-                    "}";
-            walked_size = 2 * (int64_t) ASRUtils::extract_kind_from_ttype_t(type);
         } else if (ASR::is_a<ASR::Array_t>(*type)) {
             // push array size only if it's not a struct member.
             if(in_struct && ASRUtils::is_fixed_size_array(type)){
@@ -24126,13 +24179,6 @@ public:
                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)),
                 walked_size, walked_size_known);
             res += ")";
-        } else if (ASR::is_a<ASR::Logical_t>(*type)) {
-            int a_kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-            res += "L" + std::to_string(a_kind * 8);
-            walked_size = a_kind;
-        } else if(ASR::is_a<ASR::CPtr_t>(*type)){
-            res += "CPtr";
-            walked_size = pointer_size;
         } else {
             throw CodeGenError("Printing support is not available for `" +
                 ASRUtils::type_to_str_fortran_expr(type, expr) + "` type.");
@@ -28630,7 +28676,8 @@ public:
         // TODO: Handle some things at compile time if possible:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
         // if (fmt_value) ...
-        if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
+        if (x.m_kind == ASR::string_format_kindType::FormatFortran ||
+                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank) {
             std::vector<llvm::Value *> args;
             // Push fmt string.
             if(x.m_fmt == nullptr){ // default formatting
@@ -28831,7 +28878,8 @@ public:
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
-            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode);
+            tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode,
+                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank);
             // Free contiguous copies that were heap-allocated
             for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
                 llvm_utils->lfortran_free(copy_ptr);

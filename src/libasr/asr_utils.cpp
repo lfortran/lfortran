@@ -2713,6 +2713,15 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
+            if( a_name == nullptr && matched_subrout_name == subrout_name &&
+                    !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
+                                     ASR::is_a<ASR::Struct_t>(*proc_owner))) ) {
+                // An ExternalSymbol can only refer into a module or a struct,
+                // so a procedure host associated from another scope (such as
+                // a template) is referenced through its host symbol.
+                a_name = resolved;
+            }
             if( a_name == nullptr ) {
                 a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
@@ -5765,6 +5774,50 @@ InterfaceMismatch binding_override_mismatch(
     // The passed-object dummy argument is declared with the type it is bound
     // to, so the two deliberately differ there.
     return interface_mismatch(what, proc, base, self_index, use_expr_context);
+}
+
+std::string get_format_type_code(ASR::ttype_t* type) {
+    type = type_get_past_allocatable(type_get_past_pointer(type));
+    switch (type->type) {
+        case ASR::ttypeType::Integer: {
+            return "I" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            return "U" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Real: {
+            return "R" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Complex: {
+            std::string real = "R" + std::to_string(extract_kind_from_ttype_t(type));
+            return "{" + real + "," + real + "}";
+        }
+        case ASR::ttypeType::Logical: {
+            return "L" + std::to_string(
+                ASR::down_cast<ASR::Logical_t>(type)->m_kind * 8);
+        }
+        case ASR::ttypeType::String: {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            std::string res = "S-";
+            if (str_type->m_physical_type == ASR::DescriptorString) {
+                res += "DESC";
+            } else if (str_type->m_physical_type == ASR::CChar) {
+                res += "CCHAR";
+            } else {
+                throw LCompilersException("Unhandled string physical type");
+            }
+            // The character kind tells the runtime how many bytes one
+            // character occupies, so that it can transcode a kind 4 value to
+            // UTF-8 and count field widths in characters rather than bytes.
+            return res + "-K" + std::to_string(str_type->m_kind);
+        }
+        case ASR::ttypeType::CPtr: {
+            return "CPtr";
+        }
+        default: {
+            return "";
+        }
+    }
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance

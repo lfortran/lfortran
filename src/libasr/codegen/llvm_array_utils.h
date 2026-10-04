@@ -474,6 +474,17 @@ namespace LCompilers {
                     llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
                     int n_args, bool check_for_bounds, LocationManager& lm, bool is_unbounded_pointer_to_data = false, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
 
+                /*
+                * Returns the base address for an array section starting at
+                * element `offset` of `data`. Class arrays, both class(t) and
+                * class(*), hold a single {vptr, data} wrapper, so a new
+                * wrapper addressing the offset element (element size taken
+                * from the vtable) is created instead of indexing wrappers.
+                */
+                llvm::Value* get_array_section_base(
+                    llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* data, llvm::Value* offset);
+
             public:
 
                 SimpleCMODescriptor(llvm::LLVMContext& _context,

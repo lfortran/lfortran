@@ -255,7 +255,7 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter
+storage_type = Default | Save | Parameter | Threadprivate
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface | ImplicitInterface
@@ -297,7 +297,7 @@ cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
-string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
+string_format_kind = FormatFortran | FormatFortranLeadingBlank | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
 
 omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Atomic | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | TeamsDistribute | DistributeParallelDo | Target | TargetData
 omp_clause

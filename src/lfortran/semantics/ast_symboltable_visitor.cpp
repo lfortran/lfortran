@@ -3260,6 +3260,27 @@ public:
                 throw SemanticAbort();
             }
 
+        } else if (x.m_type == AST::OMPPragma) {
+            if (!compiler_options.openmp) {
+                // Sentinel outside --openmp is silenced at tokenizer level;
+                // if one reaches here without the flag, treat as a no-op.
+                return;
+            }
+            std::string text = x.m_text;
+            // Only the threadprivate declarative directive is meaningful in a
+            // specification part. Other OMP directives in this position are
+            // either data-environment directives we do not support yet or a
+            // user error; keep them rejected.
+            if (is_omp_threadprivate_directive(text)) {
+                mark_omp_threadprivate_vars(text, x.base.base.loc);
+                return;
+            }
+            diag.add(diag::Diagnostic(
+                "openmp directive `" + text + "` is not supported in a "
+                "specification part",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         } else {
             diag.add(diag::Diagnostic(
                 "The pragma type not supported yet",
@@ -6153,6 +6174,9 @@ public:
             ext_overloaded_op_procs[proc.first] = proc.second;
         }
         overloaded_op_procs.clear();
+        std::vector<std::pair<std::string, Location>> ext_assgn_proc_names_locations
+            = assgn_proc_names_locations;
+        assgn_proc_names_locations.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -6212,10 +6236,16 @@ public:
 
         add_overloaded_procedures();
         add_class_procedures();
+        try {
+            add_assignment_procedures();
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw;
+        }
 
         for (auto &proc: ext_overloaded_op_procs) {
             overloaded_op_procs[proc.first] = proc.second;
         }
+        assgn_proc_names_locations = ext_assgn_proc_names_locations;
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
