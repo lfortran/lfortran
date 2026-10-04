@@ -2698,6 +2698,15 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
+            if( a_name == nullptr && matched_subrout_name == subrout_name &&
+                    !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
+                                     ASR::is_a<ASR::Struct_t>(*proc_owner))) ) {
+                // An ExternalSymbol can only refer into a module or a struct,
+                // so a procedure host associated from another scope (such as
+                // a template) is referenced through its host symbol.
+                a_name = resolved;
+            }
             if( a_name == nullptr ) {
                 a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, curr_scope, s2c(al, matched_subrout_name), proc,

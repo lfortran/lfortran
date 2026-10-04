@@ -2540,6 +2540,65 @@ TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
         != std::string::npos);
 }
 
+TEST_CASE("FortranEvaluator a module's derived type globals across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The members of a derived type global that no static initializer can
+    // describe are set up by executable code. That has to run once, when the
+    // cell declaring the global runs: the cell below has no program, and a
+    // later program must not set the global up again, which would reset
+    // whatever the cells in between assigned to it.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(module rm3
+implicit none
+type :: t
+integer :: z = 7
+integer, allocatable :: a(:)
+end type
+type :: u
+integer :: z = 7
+end type
+type(t) :: arr(3)
+type(t) :: s
+type(u) :: su
+integer :: seen = 0
+end module
+)");
+    CHECK(r.ok);
+    CHECK(e.evaluate2("use rm3\n").ok);
+    r = e.evaluate2("arr(3)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 7);
+    CHECK(e.evaluate2("arr(1)%z = 99\n").ok);
+    CHECK(e.evaluate2("s%z = 98\n").ok);
+    CHECK(e.evaluate2("su%z = 97\n").ok);
+    r = e.evaluate2("arr(1)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    CHECK(e.evaluate2(R"(program p
+use rm3
+implicit none
+seen = arr(1)%z
+end program
+)").ok);
+    r = e.evaluate2("seen\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    r = e.evaluate2("arr(1)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    r = e.evaluate2("s%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 98);
+    r = e.evaluate2("su%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 97);
+    r = e.evaluate2("arr(2)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 7);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;
