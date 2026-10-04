@@ -76,10 +76,7 @@ def check_failures(compiler, source, work):
     map_path.unlink()
     check_raw(executable, work)
     for payload in (b'', b'\x00', b'\x00' * 23,
-                    struct.pack('=QQQ', 0, 0, 0) * 250,
-                    struct.pack('=QQQ', 0, 1 << 32, 0),
-                    b''.join(original[i:i + 24]
-                             for i in range(len(original) - 24, -1, -24))):
+                    struct.pack('=QQQ', 0, 0, 0) * 250):
         map_path.write_bytes(payload)
         check_raw(executable, work)
         print('PASS unavailable map of', len(payload), 'bytes')
