@@ -1845,6 +1845,10 @@ namespace Secnds {
     }
 
     static inline ASR::asr_t* create_Secnds(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            append_error(diag, "Intrinsic secnds function accepts exactly 1 argument", loc);
+            return nullptr;
+        }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
         if (!ASRUtils::is_real(*arg_type) || ASRUtils::is_array(arg_type)
                 || ASRUtils::extract_kind_from_ttype_t(arg_type) != 4) {
