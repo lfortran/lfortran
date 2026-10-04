@@ -20,6 +20,16 @@ endif ()
 # a public include directory below.
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+    foreach(header IN ITEMS lfortran_intrinsics.h ISO_Fortran_binding.h)
+        configure_file(
+            "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${header}"
+            "${CMAKE_CURRENT_BINARY_DIR}/runtime/${header}"
+            COPYONLY
+        )
+    endforeach()
+endif()
+
 set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
