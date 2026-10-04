@@ -322,7 +322,7 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -759,12 +759,13 @@ class ASRToLLVMVisitor;
             UpolyWrapperFields extract_upoly_wrapper(
                 llvm::Value* wrapper, llvm::Type* wrapper_type);
 
-            // Initialize an unlimited-polymorphic array wrapper from a
-            // mold wrapper: copies vptr, allocates data, and if the mold
-            // is a string type, initializes string descriptors.
+            // Initialize an unlimited-polymorphic array wrapper from a mold.
+            // If mold_is_static_vptr, mold_vptr_or_wrapper is already a vptr;
+            // otherwise it's a live runtime wrapper {vptr, data*} to read from.
             void init_mold_upoly_array_data(
-                llvm::Value* wrapper, llvm::Value* mold_wrapper,
-                llvm::Type* class_type, llvm::Value* num_elements);
+                llvm::Value* wrapper, llvm::Value* mold_vptr_or_wrapper,
+                llvm::Type* class_type, llvm::Value* num_elements,
+                bool mold_is_static_vptr = false);
 
             // Initialize string descriptors in a pre-allocated data buffer.
             // Allocates contiguous char data (filled with spaces) and sets
