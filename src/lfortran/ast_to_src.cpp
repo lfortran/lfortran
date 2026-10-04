@@ -2216,6 +2216,21 @@ public:
         this->visit_expr(*x.m_test);
         r += s;
         r += ") ";
+        if (x.m_single) {
+            // Logical IF statement: the action statement on the same line
+            std::string if_indent = indent;
+            indent = "";
+            this->visit_decl_stmt(*x.m_body[0]);
+            indent = if_indent;
+            r += s;
+            if (x.m_trivia) {
+                // The comment after the action statement, before its newline
+                r.pop_back();
+                r += print_trivia_after(*x.m_trivia);
+            }
+            s = r;
+            return;
+        }
         r += syn(gr::Conditional);
         r += "then";
         r += syn();
@@ -2253,6 +2268,7 @@ public:
         r += syn(gr::Conditional);
         r += "end if";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2326,6 +2342,7 @@ public:
         r += syn(gr::Repeat);
         r += "end where";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2889,6 +2906,7 @@ public:
         r += syn(gr::Repeat);
         r.append("end do");
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -3157,6 +3175,7 @@ public:
         r += syn(gr::Repeat);
         r += "end do";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -3705,16 +3724,18 @@ public:
         s +=  op2str(x.m_op);
         if (right_precedence == 9) {
             s += "(" + right + ")";
-        } else if (x.m_op != operatorType::Pow) {
-            // Left-associative, and floating-point `+` and `*` are not
-            // associative: `a*(b*c)` must not be printed as `a*b*c`
-            if (right_precedence > last_expr_precedence) {
+        } else if (x.m_op == operatorType::Pow) {
+            // `**` is right-associative: `a**(b**c)` is printed as `a**b**c`
+            if (right_precedence >= last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
             }
         } else {
-            if (right_precedence >= last_expr_precedence) {
+            // `+`, `-`, `*` and `/` are left-associative: `a-b-c` is
+            // `(a-b)-c`, so a right operand of the same precedence keeps
+            // the parentheses it has in the AST, as in `a-(b-c)` or `a*(b*c)`
+            if (right_precedence > last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
@@ -4430,6 +4451,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4630,6 +4652,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
