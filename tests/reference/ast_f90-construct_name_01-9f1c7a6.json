@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-construct_name_01-9f1c7a6",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/construct_name_01.f90",
+    "infile_hash": "d8ecd55700901969c42912dc25e8fd3534f85b1f1c9950a7fd240667",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-construct_name_01-9f1c7a6.stdout",
+    "stdout_hash": "03ddd4d45e9230da391885986e9aa5079e1ff4c33234fbdf736b84e0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -8,22 +8,12 @@ a = 1.0
 b = 2.0
 c = 3.0
 x = (a*b) + c
-if (x /= 5.0) then
-    error stop
-end if
+if (x /= 5.0) error stop
 x = (a/b)*c
-if (x /= 1.5) then
-    error stop
-end if
+if (x /= 1.5) error stop
 x = ((a + b))
-if (x /= 3.0) then
-    error stop
-end if
+if (x /= 3.0) error stop
 x = c - (a*b)
-if (x /= 1.0) then
-    error stop
-end if
-if ((a + b) > c) then
-    error stop
-end if
+if (x /= 1.0) error stop
+if ((a + b) > c) error stop
 end program expr_25

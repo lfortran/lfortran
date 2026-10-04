@@ -115,7 +115,12 @@ public:
         } else {
             kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         }
-        int size = pointer_backed_constant
+        // m_n_data is the byte size of the data, so dividing by the element
+        // size gives the element count, except for a pointer-backed constant
+        // (kind is a sentinel, not a real size) or an array of zero-length
+        // strings (`t = ''`, kind <= 0): take the count from the type
+        // instead of dividing by a size that isn't a real byte size.
+        int size = (pointer_backed_constant || kind <= 0)
             ? ASRUtils::get_fixed_size_of_array(x.m_type)
             : x.m_n_data / kind;
         int curr = 0;
