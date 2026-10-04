@@ -255,8 +255,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
             string2 = (kind "_")? "'" ("''"|[^'\x00])* "'";
             omp_kw = "!$" [oO][mM][pP];
-            omp = omp_kw [^\n\x00]*;
-            omp_end = omp_kw whitespace+ [eE][nN][dD] [^\n\x00]*;
+            omp_body = ([^\n\x00]* "&" whitespace? newline whitespace? omp_kw)* [^\n\x00]*;
+            omp = omp_kw omp_body;
+            omp_end = omp_kw whitespace+ [eE][nN][dD] omp_body;
             pragma_decl = "!LF$" [^\n\x00]*;
             comment = "!" [^\n\x00]*;
             ws_comment = whitespace? comment? newline;
