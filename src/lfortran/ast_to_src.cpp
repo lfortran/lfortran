@@ -3703,6 +3703,7 @@ public:
             }
         }
         s = "";
+        // 9 is the precedence of a unary minus (see visit_UnaryOp)
         if (left_precedence == 9) {
             s += "(" + left + ")";
         } else if (x.m_op == operatorType::Pow) {
