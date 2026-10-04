@@ -2599,6 +2599,64 @@ end program
     CHECK(r.result.i32 == 7);
 }
 
+TEST_CASE("FortranEvaluator a module's allocatable array across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The descriptor of an allocatable or pointer module array is set up once,
+    // when the module's cell runs. A program allocating the array must leave
+    // it valid after the program returns, and a later program must not set it
+    // up again, which would drop the allocation.
+    CHECK(e.evaluate2(R"(module ram1
+implicit none
+integer, allocatable :: x(:)
+character(len=5), allocatable :: c(:)
+integer, pointer :: q(:)
+integer :: n = 0, s = 0, k = 0
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p1
+use ram1
+implicit none
+allocate(x(3))
+x = 5
+allocate(c(2))
+c = 'abc'
+allocate(q(4))
+q = 2
+end program
+)").ok);
+    CHECK(e.evaluate2("use ram1\n").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("sum(x)\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 15);
+    CHECK(e.evaluate2(R"(program p2
+use ram1
+implicit none
+if (allocated(x)) then
+    n = size(x)
+    s = sum(x)
+end if
+if (allocated(c)) k = size(c) * 10 + len_trim(c(2))
+if (c(1) /= 'abc') k = -1
+k = k + sum(q) * 100
+end program
+)").ok);
+    r = e.evaluate2("n\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 3);
+    r = e.evaluate2("s\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 15);
+    r = e.evaluate2("size(x)\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 3);
+    r = e.evaluate2("k\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 823);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;
