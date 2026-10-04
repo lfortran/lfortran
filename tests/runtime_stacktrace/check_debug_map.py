@@ -1,5 +1,6 @@
 """Exercise debug-map generation and runtime lookup through the compiler CLI."""
 import argparse
+import os
 import pathlib
 import re
 import struct
@@ -139,11 +140,30 @@ def check_nodebug(compiler, source, work):
     print('PASS no-DWARF objects link with -g and replace the stale map')
 
 
+def check_external_denial(compiler, source, work):
+    tools = work / 'denied-tools'
+    tools.mkdir()
+    marker = work / 'external-tool-used'
+    for name in ('llvm-dwarfdump', 'python', 'python3'):
+        stub = tools / name
+        stub.write_text('#!/bin/sh\n: > "' + str(marker) + '"\nexit 127\n')
+        stub.chmod(0o755)
+    environment = os.environ.copy()
+    environment['PATH'] = str(tools) + os.pathsep + environment['PATH']
+    result = subprocess.run([compiler, '-g', '--no-color', str(source),
+                             '-o', 'program'], cwd=work, env=environment,
+                            capture_output=True, text=True, timeout=60)
+    require(result.returncode == 0, result.stdout + result.stderr)
+    require(not marker.exists(), 'external DWARF/Python tool was invoked')
+    check_frames(work / 'program', work)
+    print('PASS debug link and exact source frames with DWARF/Python tools denied')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--lfortran', required=True)
     parser.add_argument('--case', choices=('paths', 'large_map', 'failures',
-                                          'deep_stack', 'nodebug'),
+                                          'deep_stack', 'nodebug', 'external_denial'),
                         required=True)
     args = parser.parse_args()
     compiler = str(pathlib.Path(args.lfortran).resolve())
