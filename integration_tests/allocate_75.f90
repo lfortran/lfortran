@@ -72,11 +72,11 @@ subroutine fresh_scope()
   if (qbh /= 2) error stop
 end subroutine fresh_scope
 
-program allocate_74
+program allocate_75
   implicit none
   call attr_before_decl(3)
   call dim_then_alloc(4)
   call char_elem(2)
   call fresh_scope()
   print *, "ok"
-end program allocate_74
+end program allocate_75
