@@ -2618,6 +2618,8 @@ public:
         } else {
             r.append("\n");
         }
+        // Only a label printed within the body of this loop counts: the
+        // same label may have been printed in an earlier program unit
         printed_labels.erase(x.m_do_label);
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
