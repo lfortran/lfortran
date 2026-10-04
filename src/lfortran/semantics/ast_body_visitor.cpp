@@ -7264,6 +7264,23 @@ public:
                 }) ) {
             overloaded_stmt = ASRUtils::STMT(asr);
         }
+        // The value assigned to a complex part (`z%re = y`) is converted to
+        // the real type of that part. A deferred type of a template has no
+        // such conversion, so report the type mismatch instead.
+        const Location complex_part_loc = target->base.loc;
+        auto convert_to_complex_part = [&](ASR::expr_t *&y, ASR::ttype_t *real_type) {
+            if (ASRUtils::is_type_parameter(*ASRUtils::expr_type(y))) {
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {complex_part_loc, y->base.loc},
+                    "type mismatch (" + ASRUtils::type_to_str_fortran_expr(real_type, nullptr)
+                        + " and " + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(y), y) + ")"
+                );
+                throw SemanticAbort();
+            }
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y,
+                ASRUtils::expr_type(y), real_type, diag);
+        };
         if (ASR::is_a<ASR::Cast_t>(*target)) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
             if (cast->m_kind == ASR::cast_kindType::ComplexToReal) {
@@ -7279,8 +7296,7 @@ public:
 
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
-                ImplicitCastRules::set_converted_value(al, loc, &y,
-                    ASRUtils::expr_type(y), real_type, diag);
+                convert_to_complex_part(y, real_type);
                 ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                     val, real_type, nullptr));
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -7301,8 +7317,7 @@ public:
 
             ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
-            ImplicitCastRules::set_converted_value(al, loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+            convert_to_complex_part(y, real_type);
             ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                 val, real_type, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -7320,8 +7335,7 @@ public:
             const Location& loc = x.base.base.loc;
             ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target))));
-            ImplicitCastRules::set_converted_value(al, loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+            convert_to_complex_part(y, real_type);
             ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
                 ASR::cast_kindType::ComplexToReal, real_type, nullptr, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
@@ -9651,9 +9665,28 @@ public:
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
         }
+        // A deferred type of a template has no conversion to or from the
+        // integer type of the loop control, so reject it before the loop
+        // control expressions are converted to the type of the DO variable.
+        auto check_loop_control_type = [&](ASR::expr_t *e, const std::string &what) {
+            ASR::ttype_t *e_type = ASRUtils::expr_type(e);
+            if (ASRUtils::is_type_parameter(*e_type)) {
+                diag.semantic_error_label(
+                    what + " must be integer, not "
+                        + ASRUtils::type_to_str_fortran_expr(e_type, e),
+                    {e->base.loc}, "");
+                all_loops_blocks_nesting -= 1;
+                all_blocks_nesting--;
+                throw SemanticAbort();
+            }
+        };
+        if (var) {
+            check_loop_control_type(var, "DO variable");
+        }
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
+            check_loop_control_type(start, "start expression in DO loop");
             type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(start));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
@@ -9668,6 +9701,7 @@ public:
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
+            check_loop_control_type(end, "end expression in DO loop");
             type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(end));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
@@ -9684,6 +9718,7 @@ public:
         if (x.m_increment) {
             visit_expr(*x.m_increment);
             increment = ASRUtils::EXPR(tmp);
+            check_loop_control_type(increment, "step expression in DO loop");
             // Check that the increment is not zero
             if (ASR::is_a<ASR::IntegerConstant_t>(*increment)) {
                 ASR::IntegerConstant_t* inc = ASR::down_cast<ASR::IntegerConstant_t>(increment);
