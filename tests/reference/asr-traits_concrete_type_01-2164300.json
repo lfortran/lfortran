@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_concrete_type_01-2164300",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_concrete_type_01.f90",
+    "infile_hash": "53b7e630ee730a65e51dc2f092f789ca0d332ea9d70d0ed9df0f811a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_concrete_type_01-2164300.stderr",
+    "stderr_hash": "bb501c05a885567387e9227ad045023feb2f950b72158b7bc7768765",
+    "returncode": 1
+}

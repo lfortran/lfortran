@@ -1,0 +1,59 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/traits_wrong_return_kind_rank_01.f90:4:5 - 9:1
+  |
+4 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |    
+  | ...^ LFortran extension
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got real(4)
+  --> tests/errors/traits_wrong_return_kind_rank_01.f90:14:5 - 17:1
+   |
+14 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |    
+   | ...^ 
+
+semantic error: argument 'value' does not match trait method 'consume': expected integer(4), got real(4)
+  --> tests/errors/traits_wrong_return_kind_rank_01.f90:37:5 - 39:19
+   |
+37 |        implements IConsume :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+39 |        end implements
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: rank of argument 'value' does not match trait method 'consume': expected rank 0, got rank 1
+  --> tests/errors/traits_wrong_return_kind_rank_01.f90:57:5 - 59:19
+   |
+57 |        implements IConsume :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+59 |        end implements
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got integer(8)
+  --> tests/errors/traits_wrong_return_kind_rank_01.f90:77:5 - 79:19
+   |
+77 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+79 |        end implements
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result rank does not match trait method 'get_value': expected rank 0, got rank 1
+   --> tests/errors/traits_wrong_return_kind_rank_01.f90:98:5 - 100:19
+    |
+ 98 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+100 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 

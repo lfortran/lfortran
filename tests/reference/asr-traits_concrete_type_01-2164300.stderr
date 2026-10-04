@@ -1,0 +1,15 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/traits_concrete_type_01.f90:3:5 - 7:18
+  |
+3 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+7 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+ --> tests/errors/traits_concrete_type_01.f90:8:5
+  |
+8 |     type(IValue) :: object
+  |     ^^^^^^^^^^^^^^^^^^^^^^ 

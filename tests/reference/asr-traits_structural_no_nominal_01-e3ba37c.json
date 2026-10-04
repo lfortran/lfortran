@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_structural_no_nominal_01-e3ba37c",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_structural_no_nominal_01.f90",
+    "infile_hash": "5b317e7ee21794cb2b2e74023821a454a81b76a929f5bf7b3a4683d3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_structural_no_nominal_01-e3ba37c.stderr",
+    "stderr_hash": "ef4b6a115ff5a90c9432ac0e8f7605d2587e822d90d158f73db3933d",
+    "returncode": 1
+}

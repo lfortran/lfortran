@@ -1,0 +1,19 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/traits_function_subroutine_mismatch_01.f90:4:5 - 9:1
+  |
+4 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |    
+  | ...^ LFortran extension
+
+semantic error: function or subroutine category does not match trait method 'get_value'
+  --> tests/errors/traits_function_subroutine_mismatch_01.f90:14:5 - 17:1
+   |
+14 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |    
+   | ...^ 

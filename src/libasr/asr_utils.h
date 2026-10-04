@@ -836,10 +836,13 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::CustomOperator: return "CustomOperator";
         case ASR::symbolType::ExternalSymbol: return "ExternalSymbol";
         case ASR::symbolType::Struct: return "Struct";
+        case ASR::symbolType::Trait: return "Trait";
         case ASR::symbolType::Enum: return "Enum";
         case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
         case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
+        case ASR::symbolType::TraitConstraint: return "TraitConstraint";
+        case ASR::symbolType::TraitImplementation: return "TraitImplementation";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -1047,6 +1050,19 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             res += "end interface";
             return res;
         }
+        case ASR::symbolType::Trait: {
+            const ASR::Trait_t *tr = ASR::down_cast<ASR::Trait_t>(&s);
+            std::string res = "! trait " + std::string(tr->m_name);
+            if (tr->n_parents > 0) {
+                res += " extends(";
+                for (size_t i = 0; i < tr->n_parents; i++) {
+                    if (i > 0) res += ", ";
+                    res += ASRUtils::symbol_name(tr->m_parents[i]);
+                }
+                res += ")";
+            }
+            return res;
+        }
         case ASR::symbolType::CustomOperator: {
             const ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(&s);
             std::string res = "interface operator(" + std::string(co->m_name) + ")\n";
@@ -1060,6 +1076,22 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
         case ASR::symbolType::StructMethodDeclaration: {
             const ASR::StructMethodDeclaration_t *cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(&s);
             return "procedure " + std::string(cp->m_name) + "  ! class-bound";
+        }
+        case ASR::symbolType::TraitConstraint: {
+            const ASR::TraitConstraint_t *tc = ASR::down_cast<ASR::TraitConstraint_t>(&s);
+            std::string res = "! trait constraint " + std::string(tc->m_name);
+            res += " for ";
+            res += ASRUtils::symbol_name(tc->m_trait);
+            return res;
+        }
+        case ASR::symbolType::TraitImplementation: {
+            const ASR::TraitImplementation_t *ti = ASR::down_cast<ASR::TraitImplementation_t>(&s);
+            std::string res = "! trait implementation " + std::string(ti->m_name);
+            res += " for ";
+            res += type_to_str_fortran_symbol(ti->m_implementing_type, ti->m_type_declaration, true);
+            res += " => ";
+            res += ASRUtils::symbol_name(ti->m_trait);
+            return res;
         }
         case ASR::symbolType::AssociateBlock: {
             const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
@@ -1191,6 +1223,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_name;
         }
+        case ASR::symbolType::Trait: {
+            return ASR::down_cast<ASR::Trait_t>(f)->m_name;
+        }
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_name;
         }
@@ -1205,6 +1240,12 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::StructMethodDeclaration: {
             return ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitConstraint: {
+            return ASR::down_cast<ASR::TraitConstraint_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitImplementation: {
+            return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -1662,6 +1703,11 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Union_t* sym = ASR::down_cast<ASR::Union_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
+        case ASR::symbolType::Trait:
+        case ASR::symbolType::TraitConstraint:
+        case ASR::symbolType::TraitImplementation:
+            // Runtime dependencies belong to the specialized procedures.
+            return std::make_pair(nullptr, size_t(0));
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1695,6 +1741,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_symtab->parent;
         }
+        case ASR::symbolType::Trait: {
+            return ASR::down_cast<ASR::Trait_t>(f)->m_symtab->parent;
+        }
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab->parent;
         }
@@ -1709,6 +1758,12 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::StructMethodDeclaration: {
             return ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_parent_symtab;
+        }
+        case ASR::symbolType::TraitConstraint: {
+            return ASR::down_cast<ASR::TraitConstraint_t>(f)->m_parent_symtab;
+        }
+        case ASR::symbolType::TraitImplementation: {
+            return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_parent_symtab;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
@@ -1753,6 +1808,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_symtab;
         }
+        case ASR::symbolType::Trait: {
+            return ASR::down_cast<ASR::Trait_t>(f)->m_symtab;
+        }
         case ASR::symbolType::Enum: {
             return ASR::down_cast<ASR::Enum_t>(f)->m_symtab;
         }
@@ -1770,6 +1828,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::StructMethodDeclaration: {
             return nullptr;
             //throw LCompilersException("StructMethodDeclaration does not have a symtab");
+        }
+        case ASR::symbolType::TraitConstraint: {
+            return nullptr;
+        }
+        case ASR::symbolType::TraitImplementation: {
+            return nullptr;
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;

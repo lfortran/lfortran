@@ -1,0 +1,1473 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            traits_static_01:
+                (Program
+                    (SymbolTable
+                        12
+                        {
+                            __implements_largebox_ivalue:
+                                (ExternalSymbol
+                                    12
+                                    __implements_largebox_ivalue
+                                    2 __implements_largebox_ivalue
+                                    traits_static_01_m
+                                    []
+                                    __implements_largebox_ivalue
+                                    Public
+                                ),
+                            __implements_smallbox_ivalue:
+                                (ExternalSymbol
+                                    12
+                                    __implements_smallbox_ivalue
+                                    2 __implements_smallbox_ivalue
+                                    traits_static_01_m
+                                    []
+                                    __implements_smallbox_ivalue
+                                    Public
+                                ),
+                            __instantiated_read_value:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            res:
+                                                (Variable
+                                                    14
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            t:
+                                                (Variable
+                                                    14
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 smallbox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    14
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 smallbox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __instantiated_read_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [__trait_adapter]
+                                    [(Var 14 x)]
+                                    [(Assignment
+                                        (Var 14 res)
+                                        (FunctionCall
+                                            12 __trait_adapter
+                                            ()
+                                            [((Var 14 x))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 14 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __instantiated_read_value1:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            res:
+                                                (Variable
+                                                    16
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            t:
+                                                (Variable
+                                                    16
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 largebox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    16
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 largebox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __instantiated_read_value1
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [__trait_adapter1]
+                                    [(Var 16 x)]
+                                    [(Assignment
+                                        (Var 16 res)
+                                        (FunctionCall
+                                            12 __trait_adapter1
+                                            ()
+                                            [((Var 16 x))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 16 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __trait_adapter:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            res:
+                                                (Variable
+                                                    13
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    13
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 smallbox
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __trait_adapter
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 13 self)]
+                                    [(Assignment
+                                        (Var 13 res)
+                                        (FunctionCall
+                                            12 small_value
+                                            ()
+                                            [((Var 13 self))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 13 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __trait_adapter1:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            res:
+                                                (Variable
+                                                    15
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    15
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    12 largebox
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __trait_adapter1
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 15 self)]
+                                    [(Assignment
+                                        (Var 15 res)
+                                        (FunctionCall
+                                            12 large_value
+                                            ()
+                                            [((Var 15 self))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 15 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ivalue:
+                                (ExternalSymbol
+                                    12
+                                    ivalue
+                                    2 ivalue
+                                    traits_static_01_m
+                                    []
+                                    ivalue
+                                    Public
+                                ),
+                            large_value:
+                                (ExternalSymbol
+                                    12
+                                    large_value
+                                    2 large_value
+                                    traits_static_01_m
+                                    []
+                                    large_value
+                                    Public
+                                ),
+                            largebox:
+                                (ExternalSymbol
+                                    12
+                                    largebox
+                                    2 largebox
+                                    traits_static_01_m
+                                    []
+                                    largebox
+                                    Public
+                                ),
+                            left:
+                                (Variable
+                                    12
+                                    left
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    12 smallbox
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            read_value:
+                                (ExternalSymbol
+                                    12
+                                    read_value
+                                    2 read_value
+                                    traits_static_01_m
+                                    []
+                                    read_value
+                                    Public
+                                ),
+                            right:
+                                (Variable
+                                    12
+                                    right
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    12 largebox
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            small_value:
+                                (ExternalSymbol
+                                    12
+                                    small_value
+                                    2 small_value
+                                    traits_static_01_m
+                                    []
+                                    small_value
+                                    Public
+                                ),
+                            smallbox:
+                                (ExternalSymbol
+                                    12
+                                    smallbox
+                                    2 smallbox
+                                    traits_static_01_m
+                                    []
+                                    smallbox
+                                    Public
+                                )
+                        })
+                    traits_static_01
+                    [traits_static_01_m]
+                    [(Assignment
+                        (Var 12 left)
+                        (StructConstructor
+                            12 smallbox
+                            [((IntegerConstant 7 (Integer 4) Decimal))]
+                            (StructType
+                                [(Integer 4)]
+                                []
+                                .true.
+                                .false.
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 12 right)
+                        (StructConstructor
+                            12 largebox
+                            [((IntegerConstant 11 (Integer 4) Decimal))]
+                            (StructType
+                                [(Integer 4)]
+                                []
+                                .true.
+                                .false.
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                12 __instantiated_read_value
+                                ()
+                                [((Var 12 left))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                12 __instantiated_read_value1
+                                ()
+                                [((Var 12 right))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 22 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                12 __instantiated_read_value
+                                ()
+                                [((Var 12 left))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                12 __instantiated_read_value1
+                                ()
+                                [((Var 12 right))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 22 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                    ()
+                ),
+            traits_static_01_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            __implements_largebox_ivalue:
+                                (TraitImplementation
+                                    2
+                                    __implements_largebox_ivalue
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 largebox
+                                    2 ivalue
+                                    [(2 __trait_member_ivalue_get_value1
+                                    2 large_value
+                                    self
+                                    .false.)]
+                                    Public
+                                ),
+                            __implements_smallbox_ivalue:
+                                (TraitImplementation
+                                    2
+                                    __implements_smallbox_ivalue
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 smallbox
+                                    2 ivalue
+                                    [(2 __trait_member_ivalue_get_value
+                                    2 small_value
+                                    self
+                                    .false.)]
+                                    Public
+                                ),
+                            __trait_member_ivalue_get_value:
+                                (ExternalSymbol
+                                    2
+                                    __trait_member_ivalue_get_value
+                                    3 get_value
+                                    traits_static_01_m
+                                    [ivalue]
+                                    get_value
+                                    Private
+                                ),
+                            __trait_member_ivalue_get_value1:
+                                (ExternalSymbol
+                                    2
+                                    __trait_member_ivalue_get_value1
+                                    3 get_value
+                                    traits_static_01_m
+                                    [ivalue]
+                                    get_value
+                                    Private
+                                ),
+                            ivalue:
+                                (Trait
+                                    (SymbolTable
+                                        3
+                                        {
+                                            get_value:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    4
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    get_value
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    []
+                                                    []
+                                                    (Var 4 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    ivalue
+                                    []
+                                    Public
+                                ),
+                            large_value:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_largebox_value:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_largebox_value
+                                                    6 value
+                                                    traits_static_01_m
+                                                    [largebox]
+                                                    value
+                                                    Public
+                                                ),
+                                            res:
+                                                (Variable
+                                                    8
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    8
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 largebox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    large_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 self)]
+                                    [(Assignment
+                                        (Var 8 res)
+                                        (IntegerBinOp
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            Mul
+                                            (StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_largebox_value
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 8 res)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            largebox:
+                                (Struct
+                                    (SymbolTable
+                                        6
+                                        {
+                                            value:
+                                                (Variable
+                                                    6
+                                                    value
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    largebox
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [value]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            read_value:
+                                (Template
+                                    (SymbolTable
+                                        9
+                                        {
+                                            __constraint_t:
+                                                (TraitConstraint
+                                                    9
+                                                    __constraint_t
+                                                    9 t
+                                                    2 ivalue
+                                                    [(9 __trait_member_ivalue_get_value
+                                                    9 __trait_t_get_value)]
+                                                ),
+                                            __trait_member_ivalue_get_value:
+                                                (ExternalSymbol
+                                                    9
+                                                    __trait_member_ivalue_get_value
+                                                    3 get_value
+                                                    traits_static_01_m
+                                                    [ivalue]
+                                                    get_value
+                                                    Private
+                                                ),
+                                            __trait_t_get_value:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    11
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    11
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __trait_t_get_value
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 11 self)]
+                                                    []
+                                                    (Var 11 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            read_value:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    10
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    10
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    10
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    read_value
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [__trait_t_get_value]
+                                                    [(Var 10 x)]
+                                                    [(Assignment
+                                                        (Var 10 res)
+                                                        (FunctionCall
+                                                            9 __trait_t_get_value
+                                                            ()
+                                                            [((Var 10 x))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 10 res)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    9
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    read_value
+                                    [t]
+                                    []
+                                ),
+                            small_value:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            1_smallbox_value:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_smallbox_value
+                                                    5 value
+                                                    traits_static_01_m
+                                                    [smallbox]
+                                                    value
+                                                    Public
+                                                ),
+                                            res:
+                                                (Variable
+                                                    7
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    7
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 smallbox
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    small_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 self)]
+                                    [(Assignment
+                                        (Var 7 res)
+                                        (StructInstanceMember
+                                            (Var 7 self)
+                                            7 1_smallbox_value
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 7 res)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            smallbox:
+                                (Struct
+                                    (SymbolTable
+                                        5
+                                        {
+                                            value:
+                                                (Variable
+                                                    5
+                                                    value
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    smallbox
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [value]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                )
+                        })
+                    traits_static_01_m
+                    ()
+                    [traits_static_01_m]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

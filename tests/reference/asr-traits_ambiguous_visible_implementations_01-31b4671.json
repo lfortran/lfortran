@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_ambiguous_visible_implementations_01-31b4671",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_ambiguous_visible_implementations_01.f90",
+    "infile_hash": "aacb006c1b57631bbe8370ef5b80a373983b5e794f692b107b9b557e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_ambiguous_visible_implementations_01-31b4671.stderr",
+    "stderr_hash": "b17c78287dd052e33beac3cd09c0f427d556ed7c1a2a88805b1ba06b",
+    "returncode": 1
+}

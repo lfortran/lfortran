@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_explicit_type_arg_conflict_01-59f5960",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_explicit_type_arg_conflict_01.f90",
+    "infile_hash": "6a9e1a59cadf9a32c9d36b07c77258ed5c24ccb85ecbb981763efb0c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_explicit_type_arg_conflict_01-59f5960.stderr",
+    "stderr_hash": "b52c676502018cba4218d2b29af7400a1a2118040502002480832519",
+    "returncode": 1
+}

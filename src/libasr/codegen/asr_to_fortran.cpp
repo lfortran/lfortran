@@ -546,6 +546,15 @@ public:
 
             }
         }
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Trait_t>(*item.second) ||
+                    is_a<ASR::TraitConstraint_t>(*item.second) ||
+                    is_a<ASR::TraitImplementation_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+                r += "\n";
+            }
+        }
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
@@ -809,6 +818,13 @@ public:
                 }
             }
         }
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::TraitConstraint_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+                r += "\n";
+            }
+        }
 
         visit_body(x, r, false);
 
@@ -898,6 +914,81 @@ public:
         r += "end interface ";
         r.append(x.m_name);
         r += "\n";
+        src = r;
+    }
+
+    void visit_Trait(const ASR::Trait_t &x) {
+        std::string r = indent;
+        r += "! trait ";
+        r += x.m_name;
+        if (x.n_parents > 0) {
+            r += " extends(";
+            for (size_t i = 0; i < x.n_parents; i++) {
+                if (i > 0) r += ", ";
+                r += ASRUtils::symbol_name(x.m_parents[i]);
+            }
+            r += ")";
+        }
+        r += "\n";
+        inc_indent();
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)) {
+                r += indent + "!   member ";
+                r += ASRUtils::symbol_name(item.second);
+                r += "\n";
+            }
+        }
+        dec_indent();
+        src = r;
+    }
+
+    void visit_TraitConstraint(const ASR::TraitConstraint_t &x) {
+        std::string r = indent;
+        r += "! trait constraint ";
+        r += x.m_name;
+        r += " parameter=";
+        r += ASRUtils::symbol_name(x.m_parameter);
+        r += " trait=";
+        r += ASRUtils::symbol_name(x.m_trait);
+        r += "\n";
+        inc_indent();
+        for (size_t i = 0; i < x.n_requirements; i++) {
+            r += indent + "!   ";
+            r += ASRUtils::symbol_name(x.m_requirements[i].m_member);
+            r += " => ";
+            r += ASRUtils::symbol_name(x.m_requirements[i].m_procedure);
+            r += "\n";
+        }
+        dec_indent();
+        src = r;
+    }
+
+    void visit_TraitImplementation(const ASR::TraitImplementation_t &x) {
+        std::string r = indent;
+        r += "! trait implementation ";
+        r += x.m_name;
+        r += " type=";
+        r += ASRUtils::type_to_str_fortran_symbol(
+            x.m_implementing_type, x.m_type_declaration, true);
+        r += " trait=";
+        r += ASRUtils::symbol_name(x.m_trait);
+        r += "\n";
+        inc_indent();
+        for (size_t i = 0; i < x.n_bindings; i++) {
+            r += indent + "!   ";
+            r += ASRUtils::symbol_name(x.m_bindings[i].m_member);
+            r += " => ";
+            r += ASRUtils::symbol_name(x.m_bindings[i].m_procedure);
+            if (x.m_bindings[i].m_self_argument) {
+                r += " self=";
+                r += x.m_bindings[i].m_self_argument;
+            }
+            if (x.m_bindings[i].m_is_nopass) {
+                r += " nopass";
+            }
+            r += "\n";
+        }
+        dec_indent();
         src = r;
     }
 

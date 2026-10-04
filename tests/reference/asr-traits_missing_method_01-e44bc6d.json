@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_missing_method_01-e44bc6d",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_missing_method_01.f90",
+    "infile_hash": "f706f867bd26f255349fafab8a18b5085984a5fdecdb61200098d662",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_missing_method_01-e44bc6d.stderr",
+    "stderr_hash": "9304a0a7cac2c4f85687b545ad756366188b221f9074b6c952744e88",
+    "returncode": 1
+}

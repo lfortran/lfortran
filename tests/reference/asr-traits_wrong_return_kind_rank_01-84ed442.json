@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_wrong_return_kind_rank_01-84ed442",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_wrong_return_kind_rank_01.f90",
+    "infile_hash": "67652ca82704e1632b52367a6819ca03c7bc03afe199bbb0fe4951e6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_wrong_return_kind_rank_01-84ed442.stderr",
+    "stderr_hash": "dd1429eddf84450ab7902aeff244af93c74b1af7162e61121acc3cca",
+    "returncode": 1
+}
