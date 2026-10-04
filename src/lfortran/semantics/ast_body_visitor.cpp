@@ -187,9 +187,14 @@ public:
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::decl_stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
-    // The enclosing DO loops that have a `do_label`, outermost first, and
-    // whether the loop shares its terminal statement with a loop nested in it
-    std::vector<std::pair<int64_t, bool>> enclosing_do_labels;
+    // A DO loop that has a `do_label`, and whether it shares its terminal
+    // statement with a loop nested in it
+    struct LabelledDoLoop {
+        int64_t label;
+        bool shares_termination;
+    };
+    // The enclosing DO loops that have a `do_label`, outermost first
+    std::vector<LabelledDoLoop> enclosing_do_labels;
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
@@ -1592,8 +1597,8 @@ public:
     // loops is compiled as a jump into the innermost loop.
     void check_branch_to_shared_do_termination(int64_t label, const Location &loc) {
         for (auto it = enclosing_do_labels.rbegin(); it != enclosing_do_labels.rend(); ++it) {
-            if (it->first != label) continue;
-            if (it->second) {
+            if (it->label != label) continue;
+            if (it->shares_termination) {
                 diag.semantic_warning_label(
                     "Branch to the shared DO termination label " + std::to_string(label)
                     + " from outside the innermost DO loop that it terminates",
