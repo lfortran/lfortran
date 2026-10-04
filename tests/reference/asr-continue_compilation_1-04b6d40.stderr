@@ -1932,7 +1932,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3053,56 +3053,62 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
-semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:2102:9
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+    --> tests/errors/continue_compilation_1.f90:2094:34
      |
-2102 |         expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:2110:9
+     |
+2110 |         expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
      |         ^^^^^^^^ 
      |
-2101 |     associate (expr_arr => assoc_arr + 1)
+2109 |     associate (expr_arr => assoc_arr + 1)
      |                            ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:2103:9
+    --> tests/errors/continue_compilation_1.f90:2111:9
      |
-2103 |         expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+2111 |         expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
      |         ^^^^^^^^^^^ 
      |
-2101 |     associate (expr_arr => assoc_arr + 1)
+2109 |     associate (expr_arr => assoc_arr + 1)
      |                            ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
-    --> tests/errors/continue_compilation_1.f90:2104:20
+    --> tests/errors/continue_compilation_1.f90:2112:20
      |
-2104 |         read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
+2112 |         read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
      |                    ^^^^^^^^ 
      |
-2101 |     associate (expr_arr => assoc_arr + 1)
+2109 |     associate (expr_arr => assoc_arr + 1)
      |                            ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
-    --> tests/errors/continue_compilation_1.f90:2107:12
+    --> tests/errors/continue_compilation_1.f90:2115:12
      |
-2107 |         do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
+2115 |         do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
      |            ^^^^^^^^^ 
      |
-2106 |     associate (expr_size => size(assoc_arr))
+2114 |     associate (expr_size => size(assoc_arr))
      |                             ~~~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:2111:9
+    --> tests/errors/continue_compilation_1.f90:2119:9
      |
-2111 |         expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
+2119 |         expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
      |         ^^^^^^^^^ 
      |
-2110 |     associate (expr_call => associate_expr_value())
+2118 |     associate (expr_call => associate_expr_value())
      |                             ~~~~~~~~~~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:2116:13
+    --> tests/errors/continue_compilation_1.f90:2124:13
      |
-2116 |             expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
+2124 |             expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
      |             ^^^^^^^^^^ 
      |
-2115 |         associate (expr_inner => expr_outer)
+2123 |         associate (expr_inner => expr_outer)
      |                                  ~~~~~~~~~~ associated with an expression here
