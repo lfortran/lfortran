@@ -5,6 +5,9 @@ with LFortran and a reference compiler (GFortran by default).
 
 Each kernel checks its own result and stops with an error if it is wrong.
 Every timing is the best of --repeat runs.
+
+With --compare, the times are also compared against an earlier --json run,
+and the script fails if any of them got slower by more than --threshold.
 """
 
 import argparse
@@ -50,6 +53,29 @@ def bench(kernel, compiler, exe, flags, repeat):
             "compile_time": compile_time, "run_time": run_time}
 
 
+def compare(results, baseline, threshold, min_diff):
+    """Print the change against baseline and return the number of
+    regressions: times slower by more than threshold percent and min_diff
+    seconds. The absolute floor keeps noise in short runs from failing."""
+    base = {(r["kernel"], r["compiler"]): r for r in baseline["results"]}
+    print("\n%-16s %-9s %-8s %10s %10s %8s" % ("kernel", "compiler",
+        "time", "baseline", "current", "change"))
+    regressions = 0
+    for r in results:
+        b = base.get((r["kernel"], r["compiler"]))
+        if b is None:
+            continue
+        for what in ("compile", "run"):
+            old, new = b[what + "_time"], r[what + "_time"]
+            change = 100 * (new - old) / old
+            slower = change > threshold and new - old > min_diff
+            regressions += slower
+            print("%-16s %-9s %-8s %9.3fs %9.3fs %+7.1f%%%s" % (r["kernel"],
+                r["compiler"], what, old, new, change,
+                "  REGRESSION" if slower else ""))
+    return regressions
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -69,6 +95,14 @@ def main():
         help="runs per measurement, the best is kept (default: %(default)s)")
     parser.add_argument("--json", metavar="FILE",
         help="also write the results to FILE as JSON")
+    parser.add_argument("--compare", metavar="FILE",
+        help="compare against the results in FILE, written by --json")
+    parser.add_argument("--threshold", type=float, default=10,
+        help="percent slowdown that counts as a regression "
+            "(default: %(default)s)")
+    parser.add_argument("--min-diff", type=float, default=0.02,
+        help="seconds of slowdown below which a change is ignored as noise "
+            "(default: %(default)s)")
     args = parser.parse_args()
 
     if args.kernels:
@@ -114,6 +148,14 @@ def main():
         with open(args.json, "w") as f:
             json.dump({"compilers": {n: {"exe": e, "flags": fl}
                 for n, e, fl in compilers}, "results": results}, f, indent=2)
+
+    if args.compare:
+        with open(args.compare) as f:
+            baseline = json.load(f)
+        regressions = compare(results, baseline, args.threshold, args.min_diff)
+        if regressions:
+            sys.exit("%d time(s) regressed by more than %g%%"
+                % (regressions, args.threshold))
 
 
 if __name__ == "__main__":

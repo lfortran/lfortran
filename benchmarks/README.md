@@ -34,6 +34,20 @@ LFortran/GFortran ratio. Useful options:
 - `--json FILE`: also write the results as JSON
 - `--no-gfortran`: only run LFortran
 
+## Checking for regressions
+
+To check a change, save the results of a build without it and compare:
+
+```
+benchmarks/run_benchmarks.py --no-gfortran --lfortran main/bin/lfortran --json base.json
+benchmarks/run_benchmarks.py --no-gfortran --lfortran build/src/bin/lfortran --compare base.json
+```
+
+The second command fails if any time got more than 10% and more than 0.02 s
+slower (`--threshold` and `--min-diff`). The `Check performance against main`
+job in `Exhaustive-Checks-CI.yml` does this for every PR labeled
+`Tests::Run-Exhaustive`, building the PR and its base on the same runner.
+
 ## Adding a kernel
 
 Add a self-contained `.f90` program here that runs for at least a tenth of a
