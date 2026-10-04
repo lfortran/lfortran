@@ -4,17 +4,13 @@ integer :: iam
 real :: x[*]
 iam = this_image()
 
-if (iam == 1) then
-    x = 1.0
-end if
+if (iam == 1) x = 1.0
 sync memory
 
 call external_sync()
 sync memory(stat = status)
 
-if (iam == 2) then
-    write(*, *) x[1]
-end if
+if (iam == 2) write(*, *) x[1]
 
 if (this_image() == 1) then
     sync images(*)
