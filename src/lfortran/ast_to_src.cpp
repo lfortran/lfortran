@@ -3705,7 +3705,10 @@ public:
         s = "";
         if (left_precedence == 9 && x.m_op != operatorType::Add
                 && x.m_op != operatorType::Sub) {
-            // `-a + b` is `(-a) + b`, but `-a*b` is `-(a*b)`
+            // A leading sign applies to the whole product that follows it:
+            // `-a*b` is `-(a*b)` (F2018 R705, R706), so a signed left operand
+            // of `*`, `/` or `**` keeps its parentheses, as in `(-a)*b`.
+            // It needs none before `+` and `-`: `-a + b` is `(-a) + b`.
             s += "(" + left + ")";
         } else if (x.m_op == operatorType::Pow) {
             // `**` is right-associative: `(a**b)**c` needs its parentheses
