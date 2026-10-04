@@ -151,7 +151,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
         if (WITH_RUNTIME_STACKTRACE AND NOT WIN32 AND NOT EMSCRIPTEN)
-            foreach(debug_map_case paths failures nodebug)
+            foreach(debug_map_case paths large_map failures nodebug)
                 add_test(
                     NAME test_runtime_debug_map_${debug_map_case}
                     COMMAND ${LFORTRAN_TEST_PYTHON}

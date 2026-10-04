@@ -268,8 +268,8 @@ struct Stacktrace {
     char *binary_filename[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     uint64_t local_pc_size;
 
-    uint64_t addresses[LCOMPILERS_MAX_STACKTRACE_LENGTH];
-    uint64_t line_numbers[LCOMPILERS_MAX_STACKTRACE_LENGTH];
+    uint64_t *addresses;
+    uint64_t *line_numbers;
     uint64_t stack_size;
 };
 
@@ -14457,6 +14457,8 @@ uint32_t get_file_size(int64_t fp) {
  */
 void get_local_info_debug_map(struct Stacktrace *d) {
     d->stack_size = 0;
+    d->addresses = NULL;
+    d->line_numbers = NULL;
     // Use the binary executable path instead of source_filename to avoid
     // Ninja preprocessed filename mismatches (e.g. *.f90-pp.f90).
     const char *exe_path = binary_executable_path;
@@ -14486,8 +14488,30 @@ void get_local_info_debug_map(struct Stacktrace *d) {
         return;
     }
 
+    // Debug-map rows and stack frames have independent sizes.
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return;
+    }
+    long file_size = ftell(fp);
+    if (file_size < (long)(3 * sizeof(uint64_t)) || fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        return;
+    }
+    size_t entries = (size_t)file_size / (3 * sizeof(uint64_t));
+    d->addresses = internal_malloc(entries * sizeof(uint64_t));
+    d->line_numbers = internal_malloc(entries * sizeof(uint64_t));
+    if (d->addresses == NULL || d->line_numbers == NULL) {
+        internal_free(d->addresses);
+        internal_free(d->line_numbers);
+        d->addresses = NULL;
+        d->line_numbers = NULL;
+        fclose(fp);
+        return;
+    }
+
     uint64_t entry[3];
-    while (d->stack_size < LCOMPILERS_MAX_STACKTRACE_LENGTH &&
+    while (d->stack_size < entries &&
             fread(entry, sizeof(uint64_t), 3, fp) == 3) {
         if (entry[1] == 0) {
             continue;
@@ -14577,6 +14601,8 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     get_local_info_debug_map(&d);
     if (d.stack_size == 0) {
         print_stacktrace_raw_addresses(&d, use_colors);
+        internal_free(d.addresses);
+        internal_free(d.line_numbers);
         return;
     }
 
@@ -14618,6 +14644,8 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #else
     }
 #endif
+    internal_free(d.addresses);
+    internal_free(d.line_numbers);
 #endif // HAVE_RUNTIME_STACKTRACE
 }
 

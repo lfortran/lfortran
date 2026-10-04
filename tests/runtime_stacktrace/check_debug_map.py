@@ -48,6 +48,22 @@ def check_paths(compiler, source, work):
         print('PASS output path', name)
 
 
+def check_large_map(compiler, source, work):
+    compile_program(compiler, source, 'program', work)
+    executable = work / 'program'
+    map_path = work / 'program_lines.dat'
+    original = map_path.read_bytes()
+    require(original and len(original) % 24 == 0, 'expected complete map rows')
+    rows = len(original) // 24
+    for count in (0, max(0, 199 - rows), max(0, 200 - rows),
+                  max(0, 201 - rows), 1000, 50000):
+        # Lower addresses cannot replace any fixture row. Every frame must
+        # still resolve to its original source line past the old 200-row cap.
+        map_path.write_bytes(struct.pack('=QQQ', 0, 3, 0) * count + original)
+        check_frames(executable, work)
+        print('PASS map with', count + rows, 'rows')
+
+
 def check_failures(compiler, source, work):
     compile_program(compiler, source, 'program', work)
     executable = work / 'program'
@@ -98,7 +114,7 @@ def check_nodebug(compiler, source, work):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--lfortran', required=True)
-    parser.add_argument('--case', choices=('paths', 'failures', 'nodebug'),
+    parser.add_argument('--case', choices=('paths', 'large_map', 'failures', 'nodebug'),
                         required=True)
     args = parser.parse_args()
     compiler = str(pathlib.Path(args.lfortran).resolve())
