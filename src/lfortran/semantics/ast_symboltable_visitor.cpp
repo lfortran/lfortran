@@ -713,10 +713,24 @@ public:
         // it (F2018 8.6.1), so apply it before visiting any declaration, the
         // same way `use` and `implicit` statements are processed above.
         // Otherwise a variable, derived type or interface declared ahead of
-        // the statement would take the initial (public) default.
+        // the statement would take the initial (public) default. Only one
+        // such statement is permitted in a module (F2018 C869).
+        const AST::decl_stmt_t *first_bare_access = nullptr;
         for (size_t i=0; i<x.n_items; i++) {
             const AST::SimpleAttribute_t *sa = bare_access_stmt(*x.m_items[i]);
-            if (sa && sa->m_attr == AST::simple_attributeType::AttrPrivate) {
+            if (!sa) continue;
+            if (first_bare_access) {
+                diag.add(diag::Diagnostic(
+                    "Only one PRIVATE or PUBLIC statement without an access-id-list "
+                    "is permitted in a module",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_items[i]->base.loc}),
+                        diag::Label("first one here", {first_bare_access->base.loc}, false)}));
+                if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                continue;
+            }
+            first_bare_access = x.m_items[i];
+            if (sa->m_attr == AST::simple_attributeType::AttrPrivate) {
                 dflt_access = ASR::accessType::Private;
             }
         }

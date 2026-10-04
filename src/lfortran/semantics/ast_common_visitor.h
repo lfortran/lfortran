@@ -6550,8 +6550,9 @@ public:
                             dflt_access = ASR::accessType::Private;
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrPublic) {
-                            // Do nothing (public access is the default)
-                            LCOMPILERS_ASSERT(dflt_access == ASR::accessType::Public);
+                            // Do nothing (public access is the default, and a
+                            // second bare access statement in a module is
+                            // diagnosed before its declarations are visited)
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSave) {
                             if (in_module && !in_Subroutine) {
