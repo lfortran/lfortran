@@ -1166,7 +1166,7 @@ static inline reduce_opType convert_id_to_reduce_type(
 // higher precedence than `*` and `/`, so that the extension `a*-b*c` groups
 // as `(a*(-b))*c` like in GFortran; a sign that starts the left operand of
 // `*` or `/` (and is not inside parentheses) is moved over the product here.
-static inline ast_t* mul_operation(Allocator &al, const Location &l,
+static inline ast_t* mul_div_operation(Allocator &al, const Location &l,
         expr_t *x, operatorType op, expr_t *y) {
     if (x->type == exprType::UnaryOp && x->base.loc.first == l.first) {
         UnaryOp_t *sign = down_cast<UnaryOp_t>(x);
@@ -1189,8 +1189,8 @@ static inline ast_t* mul_operation(Allocator &al, const Location &l,
 
 #define ADD(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Add, EXPR(y))
 #define SUB(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Sub, EXPR(y))
-#define MUL(x, y, l) mul_operation(p.m_a, l, EXPR(x), operatorType::Mul, EXPR(y))
-#define DIV(x, y, l) mul_operation(p.m_a, l, EXPR(x), operatorType::Div, EXPR(y))
+#define MUL(x, y, l) mul_div_operation(p.m_a, l, EXPR(x), operatorType::Mul, EXPR(y))
+#define DIV(x, y, l) mul_div_operation(p.m_a, l, EXPR(x), operatorType::Div, EXPR(y))
 #define POW(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Pow, EXPR(y))
 #define UNARY_MINUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::USub, EXPR(x))
 #define UNARY_PLUS(x, l) make_UnaryOp_t(p.m_a, l, unaryopType::UAdd, EXPR(x))
