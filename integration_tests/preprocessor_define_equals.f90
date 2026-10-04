@@ -1,6 +1,6 @@
 module wrapped
 #define WRAPPED=1
-#include "../tests/preprocessor24_generic.F90"
+#include "preprocessor_define_equals_generic.F90"
 end module wrapped
 
 program preprocessor_define_equals
