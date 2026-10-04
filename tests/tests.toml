@@ -2714,7 +2714,7 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "if3.f90"
+filename = "../integration_tests/if_08.f90"
 ast = true
 ast_f90 = true
 asr = true

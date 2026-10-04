@@ -1,0 +1,13 @@
+{
+    "basename": "asr-if_08-9b4fd10",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/if_08.f90",
+    "infile_hash": "8769564b527544558ac2c7af917aaea4a989d5d988acbe93df49ca15",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-if_08-9b4fd10.stdout",
+    "stdout_hash": "c8fea193332b8d284b948b2cbe3884a0055c65a8aeb4d23e6fc1c739",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

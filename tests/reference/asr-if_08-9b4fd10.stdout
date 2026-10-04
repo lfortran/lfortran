@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            if3:
+            if_08:
                 (Program
                     (SymbolTable
                         2
@@ -32,7 +32,7 @@
                                     []
                                 )
                         })
-                    if3
+                    if_08
                     []
                     [(Assignment
                         (Var 2 i)
@@ -78,6 +78,66 @@
                         ()
                         (IntegerCompare
                             (Var 2 i)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            Eq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoToTarget
+                            91
+                            91
+                        )]
+                        [(GoTo
+                            91
+                            91
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
                             Eq
                             (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
@@ -99,7 +159,7 @@
                             (IntegerCompare
                                 (Var 2 i)
                                 Eq
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
@@ -122,6 +182,26 @@
                                 .false.
                             )]
                         )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
                     )]
                     ()
                 )
