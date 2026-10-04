@@ -5805,3 +5805,5 @@ RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
 
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
+
+RUN(NAME present_optional_procedure LABELS gfortran llvm)

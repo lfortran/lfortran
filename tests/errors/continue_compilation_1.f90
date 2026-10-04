@@ -2097,3 +2097,13 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+! PRESENT requires an optional dummy argument, including procedures (#9445).
+subroutine present_nondummy_function()
+    implicit none
+    print *, present(not_a_dummy_function)
+contains
+    integer function not_a_dummy_function()
+        not_a_dummy_function = 1
+    end function
+end subroutine
