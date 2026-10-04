@@ -2456,6 +2456,96 @@ contains
     end subroutine
 end module
 
+! A deferred type has no implicit conversion to the real type of a complex
+! part, so assigning a value of a deferred type to `z%re` or `z%im` inside a
+! template is a type mismatch (#13678). This used to fail an assertion in the
+! implicit-cast rules.
+module continue_compilation_templates_01_complex_part_deferred
+    implicit none
+contains
+    template subroutine set_re{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        complex :: z
+        z%re = x  ! {Error} type mismatch (real and t)
+    end subroutine
+
+    template subroutine set_im{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        complex :: z(3)
+        z%im = x  ! {Error} type mismatch (real and t)
+    end subroutine
+end module
+
+! A deferred type has no conversion to the integer type of a DO loop control,
+! so using a value of a deferred type as a DO variable or as a loop control
+! expression inside a template is an error (#13678). This used to fail an
+! assertion in the implicit-cast rules.
+module continue_compilation_templates_01_do_deferred
+    implicit none
+contains
+    template subroutine do_start{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = x, 2  ! {Error} start expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_end{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = 1, x  ! {Error} end expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_step{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = 1, 2, x  ! {Error} step expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_var{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        do x = 1, 2  ! {Error} DO variable must be integer, not t
+        end do
+    end subroutine
+end module
+
+! A deferred type has no intrinsic arithmetic and no implicit conversion, so
+! an arithmetic operator between a deferred type and an intrinsic type inside a
+! template is undefined unless a requirement provides it (#13678). This used to
+! fail an assertion in the implicit-cast rules.
+module continue_compilation_templates_01_arith_deferred
+    implicit none
+contains
+    template subroutine add_int{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+    end subroutine
+
+    template subroutine mul_real_left{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        real :: y
+        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+    end subroutine
+
+    template subroutine pow_int{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+    end subroutine
+end module
+
 module continue_compilation_templates_01_defasgn
     implicit none
 
