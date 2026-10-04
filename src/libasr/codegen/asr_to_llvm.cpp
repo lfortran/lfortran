@@ -3183,8 +3183,13 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
-                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
-                        if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
+                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3).
+                        // A polymorphic entity is finalized as its dynamic type
+                        // by finalize_before_deallocate, through the finalizer in
+                        // its vtable, so the final procedures of the declared
+                        // type are not called here as well.
+                        if (struct_sym != nullptr && struct_sym->n_member_functions > 0 &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                             for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
                                 std::string final_proc_name = struct_sym->m_member_functions[fi];
                                 ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
@@ -3193,16 +3198,7 @@ public:
                                     uint32_t fh = get_hash((ASR::asr_t*)final_sym);
                                     if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
                                         llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                        // Finalizers take type(T), not class(T). For class
-                                        // variables, load the concrete data pointer (field 1)
-                                        // from the class wrapper {vptr, data*}.
-                                        llvm::Value* final_arg = tmp;
-                                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                                            llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                                            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-                                            final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
-                                        }
-                                        builder->CreateCall(final_fn, {final_arg});
+                                        builder->CreateCall(final_fn, {tmp});
                                     }
                                 }
                             }

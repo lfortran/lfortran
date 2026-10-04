@@ -1431,9 +1431,18 @@ class ASRToLLVMVisitor;
             (void)ptr; (void)t; (void) struct_sym;
         }
 
-        void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+        /**
+         * @param array_element The struct is an element of an array that is
+         * being finalized, rather than a scalar entity of its own. The parent
+         * component of an array is itself an array (F2018 7.5.6.2 step 3), so
+         * a final subroutine of the parent type applies to the element only
+         * if it is elemental.
+         */
+        void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
+                const bool array_element = false){
             verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
-            const std::string cache_key = get_type_key(t, struct_sym);
+            const std::string cache_key = get_type_key(t, struct_sym)
+                + (array_element ? "__array_element" : "");
             if(is_cached(cache_key)){
                 builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
                 return;
@@ -1539,14 +1548,17 @@ class ASRToLLVMVisitor;
                 check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
             }
 
-            // Finalize Parent
+            // Finalize Parent (F2018 7.5.6.2 step 3): the parent component is
+            // finalized as an entity of the parent type, which starts with
+            // the final subroutine of the parent type.
             if(struct_sym->m_parent){
                 ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
                 if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct, false)) {
                     insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
                     llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
                         llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
-                        finalize(parent_ptr, parent_struct->m_struct_signature, parent_struct, true);
+                    call_scalar_final_procedure(parent_ptr, parent_struct, array_element);
+                    finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct, array_element);
                 }
                 /// Parent is inlined -- Not allocated separately.
             }
@@ -1947,8 +1959,9 @@ class ASRToLLVMVisitor;
                     auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
                     struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 }
-                finalize(struct_element, &struct_t->base, struct_sym, false);
-
+                if (is_finalizable_type(&struct_t->base, struct_sym, false)) {
+                    finalize_struct(struct_element, &struct_t->base, struct_sym, /*array_element=*/true);
+                }
             };
             
             llvm_utils_->create_loop("Finalize_array_of_structs", cond_fn , body_fn);
@@ -2576,6 +2589,57 @@ class ASRToLLVMVisitor;
     public:
 
 /*>>>>>>>>>>>>>>>>>>>>> Entry <<<<<<<<<<<<<<<<<<<<<<< */
+
+        /**
+         * Call the final subroutine of `struct_sym` whose dummy argument is a
+         * scalar, if the type has one, on the scalar struct at `ptr`. This is
+         * step 1 of finalizing a scalar entity of that type (F2018 7.5.6.2).
+         * Only the type's own final subroutines are considered: those of its
+         * parent type apply to the parent component.
+         *
+         * With `array_element`, the struct is an element of an array being
+         * finalized. An array is finalized by a final subroutine of its rank
+         * or else by an elemental one, so the subroutine is called on the
+         * element only when it is elemental and the type has no final
+         * subroutine for an array.
+         */
+        void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym,
+                const bool array_element = false) {
+            if (array_element) {
+                for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
+                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
+                        struct_sym->m_member_functions[i]);
+                    LCOMPILERS_ASSERT(final_sym != nullptr);
+                    ASR::Function_t* final_fn = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(final_sym));
+                    if (final_fn->n_args == 1 && ASRUtils::is_array(
+                            ASRUtils::expr_type(final_fn->m_args[0]))) {
+                        return;
+                    }
+                }
+            }
+            for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
+                ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
+                    struct_sym->m_member_functions[i]);
+                LCOMPILERS_ASSERT(final_sym != nullptr);
+                final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                ASR::Function_t* final_fn = ASR::down_cast<ASR::Function_t>(final_sym);
+                if (final_fn->n_args != 1 || ASRUtils::is_array(
+                        ASRUtils::expr_type(final_fn->m_args[0]))) {
+                    continue;
+                }
+                if (array_element && !ASRUtils::is_elemental(final_sym)) {
+                    return;
+                }
+                uint32_t fh = get_hash((ASR::asr_t*)final_sym);
+                if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                    llvm::Function* const fn = llvm_symtab_fn_[fh];
+                    builder_->CreateCall(fn, {builder_->CreateBitCast(ptr,
+                        fn->getFunctionType()->getParamType(0))});
+                }
+                return;
+            }
+        }
 
         /**
          * Finalize a temporary expression value (e.g. a TupleConstant temp
