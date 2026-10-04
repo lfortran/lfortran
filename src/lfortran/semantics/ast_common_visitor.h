@@ -2389,6 +2389,138 @@ public:
         return sub;
     }
 
+    std::string trim_omp_directive_part(const std::string &text) {
+        size_t b = text.find_first_not_of(" \t\r\n");
+        if (b == std::string::npos) {
+            return "";
+        }
+        size_t e = text.find_last_not_of(" \t\r\n");
+        return text.substr(b, e - b + 1);
+    }
+
+    std::string omp_directive_body(const std::string &text) {
+        std::string trimmed = trim_omp_directive_part(text);
+        std::string lower_text = LCompilers::to_lower(trimmed);
+        if (LCompilers::startswith(lower_text, "!$omp")) {
+            return trim_omp_directive_part(trimmed.substr(5));
+        }
+        return trimmed;
+    }
+
+    bool is_omp_threadprivate_directive(const std::string &text) {
+        const std::string directive = "threadprivate";
+        std::string trimmed = omp_directive_body(text);
+        std::string lower_text = LCompilers::to_lower(trimmed);
+        if (!LCompilers::startswith(lower_text, directive)) {
+            return false;
+        }
+        if (lower_text.size() == directive.size()) {
+            return true;
+        }
+        char next = lower_text[directive.size()];
+        return next == '(' || next == ' ' || next == '\t';
+    }
+
+    void parse_omp_threadprivate_vars(const std::string &text,
+            const Location &loc, std::vector<std::string> &names) {
+        const std::string directive = "threadprivate";
+        std::string trimmed = omp_directive_body(text);
+        size_t pos = directive.size();
+        while (pos < trimmed.size() &&
+                (trimmed[pos] == ' ' || trimmed[pos] == '\t')) {
+            pos++;
+        }
+        if (pos >= trimmed.size() || trimmed[pos] != '(') {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "variable list missing or empty",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        size_t lp = pos;
+        size_t rp = trimmed.rfind(')');
+        if (rp == std::string::npos || rp <= lp + 1) {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "variable list missing or empty",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        if (trim_omp_directive_part(trimmed.substr(rp + 1)) != "") {
+            diag.add(Diagnostic(
+                "malformed `!$omp threadprivate(...)` directive: "
+                "unexpected text after variable list",
+                Level::Error, Stage::Semantic, { Label("", {loc}) }));
+            throw SemanticAbort();
+        }
+        std::string inner = trimmed.substr(lp + 1, rp - lp - 1);
+        size_t start = 0;
+        while (start <= inner.size()) {
+            size_t comma = inner.find(',', start);
+            size_t len = (comma == std::string::npos)
+                ? std::string::npos : comma - start;
+            std::string name = inner.substr(start, len);
+            name = trim_omp_directive_part(name);
+            if (name == "") {
+                diag.add(Diagnostic(
+                    "malformed `!$omp threadprivate(...)` directive: "
+                    "empty variable name in list",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            if (name.find('/') != std::string::npos) {
+                diag.add(Diagnostic(
+                    "`!$omp threadprivate(...)` common blocks are not "
+                    "supported yet",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            names.push_back(LCompilers::to_lower(name));
+            if (comma == std::string::npos) break;
+            start = comma + 1;
+        }
+    }
+
+    void mark_omp_threadprivate_vars(const std::string &text, const Location &loc) {
+        std::vector<std::string> names;
+        parse_omp_threadprivate_vars(text, loc, names);
+        for (const std::string &name: names) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+            if (!sym) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "is not declared in this scope",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
+            if (!ASR::is_a<ASR::Variable_t>(*resolved)) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "is not a variable",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(resolved);
+            if (var->m_storage == ASR::storage_typeType::Parameter) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "cannot have the parameter attribute",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(resolved);
+            if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+                diag.add(Diagnostic(
+                    "symbol `" + name + "` named in `!$omp threadprivate(...)` "
+                    "must be a module variable",
+                    Level::Error, Stage::Semantic, { Label("", {loc}) }));
+                throw SemanticAbort();
+            }
+            var->m_storage = ASR::storage_typeType::Threadprivate;
+        }
+    }
+
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent, ASR::expr_t* value = nullptr) {
         ASR::ttype_t *type = nullptr;
@@ -20701,6 +20833,15 @@ public:
         ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
         ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
+        if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
+            this->diag.semantic_error_label(
+                "Arguments to the 'shifta' intrinsic must be of type INTEGER",
+                { loc },
+                "help: check the variable types passed to shifta"
+            );
+            throw SemanticAbort();
+        }
+
         ASR::ttype_t* cast_target_for_w = base_n;
 
         if (ASRUtils::is_array(type_w)) {
@@ -20713,8 +20854,8 @@ public:
         if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
                 w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
-                                   ASR::cast_kindType::IntegerToInteger, 
-                                   cast_target_for_w, nullptr, nullptr));
+                                 ASR::cast_kindType::IntegerToInteger, 
+                                 cast_target_for_w, nullptr, nullptr));
             }
         }
 
@@ -21639,11 +21780,36 @@ public:
         ASR::ttype_t *dest_type = right_type;
 
         if( overloaded == nullptr ) {
-          if(!ASRUtils::is_type_parameter(*left_type) && !ASRUtils::is_type_parameter(*right_type)){
-              ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                      right_type, conversion_cand,
-                                                      &source_type, &dest_type);
-          }
+            // A deferred type of a template has no intrinsic arithmetic and
+            // no implicit conversion; only an operator from a requirement
+            // (resolved as `overloaded` above) applies to it.
+            if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add):
+                        break;
+                    case (ASR::Sub):
+                        op_str = "-";
+                        break;
+                    case (ASR::Mul):
+                        op_str = "*";
+                        break;
+                    case (ASR::Div):
+                        op_str = "/";
+                        break;
+                    case (ASR::Pow):
+                        op_str = "**";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                                                    right_type, conversion_cand,
+                                                    &source_type, &dest_type);
             // Fortran standard: real(dp)*complex(sp) produces complex(dp).
             // When mixing real and complex, use max(real_kind, complex_kind).
             {
@@ -21666,7 +21832,7 @@ public:
                 }
             }
             if((op == ASR::binopType::Pow) &&
-                ASRUtils::is_real(*dest_type) &&
+                (ASRUtils::is_real(*dest_type) || ASRUtils::is_complex(*dest_type)) &&
                 ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
                 // Do nothing.
             } else {
@@ -21691,7 +21857,7 @@ public:
             }
         }
         if((op == ASR::binopType::Pow) &&
-            ASRUtils::is_real(*dest_type) &&
+            (ASRUtils::is_real(*dest_type) || ASRUtils::is_complex(*dest_type)) &&
             ASRUtils::is_integer(*right_type)) {
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
@@ -21756,32 +21922,6 @@ public:
                                 {x.base.base.loc},
                                 "help: use '//' for string concatenation"
                             );
-                throw SemanticAbort();
-            }
-        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
-            // if overloaded is not found, then reject
-            if (overloaded == nullptr) {
-                std::string op_str = "+";
-                switch (op) {
-                    case (ASR::Add):
-                        break;
-                    case (ASR::Sub):
-                        op_str = "-";
-                        break;
-                    case (ASR::Mul):
-                        op_str = "*";
-                        break;
-                    case (ASR::Div):
-                        op_str = "/";
-                        break;
-                    case (ASR::Pow):
-                        op_str = "**";
-                        break;
-                    default:
-                        LCOMPILERS_ASSERT(false);
-                }
-            diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
-                                + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         } else if( overloaded == nullptr ) {

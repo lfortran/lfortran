@@ -2024,7 +2024,7 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ IFSTMTS(p.m_a, body), \
         /*n_body*/ 1, \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, nullptr, nullptr, nullptr)
+        /*n_orelse*/ 0, /*single*/ true, nullptr, nullptr, nullptr)
 
 #define IFARITHMETIC(cond, lt_label, eq_label, gt_label, l) \
         make_IfArithmetic_t(p.m_a, l, 0, nullptr, \
@@ -2038,21 +2038,22 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ nullptr, \
-        /*n_orelse*/ 0, trivia_cast(trivia), nullptr, nullptr)
+        /*n_orelse*/ 0, /*single*/ false, trivia_cast(trivia), nullptr, nullptr)
 
 #define IF2(cond, trivia, body, orelse, l) make_If_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ STMTS(orelse), \
-        /*n_orelse*/ orelse.size(), nullptr, trivia_cast(trivia), nullptr)
+        /*n_orelse*/ orelse.size(), /*single*/ false, nullptr, \
+        trivia_cast(trivia), nullptr)
 
 #define IF3(cond, trivia, body, ifblock, l) make_If_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ IFSTMTS(p.m_a, ifblock), \
-        /*n_orelse*/ 1, trivia_cast(trivia), nullptr, nullptr)
+        /*n_orelse*/ 1, /*single*/ false, trivia_cast(trivia), nullptr, nullptr)
 
 #define WHERESINGLE(cond, body, l) make_Where_t(p.m_a, l, 0, nullptr, \
         /*test*/ EXPR(cond), \
@@ -2121,6 +2122,22 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
 
 static inline ast_t* OMP_PRAGMA2(Allocator &al,
         Location &loc, std::string omp_str) {
+    std::string lower_text = LCompilers::to_lower(omp_str);
+    size_t start = lower_text.find_first_not_of(" \t\r\n");
+    if (start != std::string::npos && lower_text.compare(start, 5, "!$omp") == 0) {
+        start = lower_text.find_first_not_of(" \t\r\n", start + 5);
+        std::string directive = start == std::string::npos ? "" : lower_text.substr(start);
+        const std::string keyword = "threadprivate";
+        if (LCompilers::startswith(directive, keyword) &&
+                (directive.size() == keyword.size() ||
+                 directive[keyword.size()] == '(' ||
+                 directive[keyword.size()] == ' ' ||
+                 directive[keyword.size()] == '\t')) {
+            return make_DeclarationPragma_t(al, loc,
+                LCompilers::LFortran::AST::OMPPragma,
+                LCompilers::s2c(al, omp_str), nullptr);
+        }
+    }
     std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(omp_str);
     size_t i = 1;
     bool m_end = false;
@@ -3149,6 +3166,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Inquire)
         TRIVIA_SET(Nullify)
         TRIVIA_SET(Pragma)
+        TRIVIA_SET(DeclarationPragma)
         TRIVIA_SET(Open)
         TRIVIA_SET(Return)
         TRIVIA_SET(Print)

@@ -3247,6 +3247,27 @@ public:
                 throw SemanticAbort();
             }
 
+        } else if (x.m_type == AST::OMPPragma) {
+            if (!compiler_options.openmp) {
+                // Sentinel outside --openmp is silenced at tokenizer level;
+                // if one reaches here without the flag, treat as a no-op.
+                return;
+            }
+            std::string text = x.m_text;
+            // Only the threadprivate declarative directive is meaningful in a
+            // specification part. Other OMP directives in this position are
+            // either data-environment directives we do not support yet or a
+            // user error; keep them rejected.
+            if (is_omp_threadprivate_directive(text)) {
+                mark_omp_threadprivate_vars(text, x.base.base.loc);
+                return;
+            }
+            diag.add(diag::Diagnostic(
+                "openmp directive `" + text + "` is not supported in a "
+                "specification part",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         } else {
             diag.add(diag::Diagnostic(
                 "The pragma type not supported yet",
@@ -6140,6 +6161,9 @@ public:
             ext_overloaded_op_procs[proc.first] = proc.second;
         }
         overloaded_op_procs.clear();
+        std::vector<std::pair<std::string, Location>> ext_assgn_proc_names_locations
+            = assgn_proc_names_locations;
+        assgn_proc_names_locations.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -6199,10 +6223,16 @@ public:
 
         add_overloaded_procedures();
         add_class_procedures();
+        try {
+            add_assignment_procedures();
+        } catch (SemanticAbort &e) {
+            if (!compiler_options.continue_compilation) throw;
+        }
 
         for (auto &proc: ext_overloaded_op_procs) {
             overloaded_op_procs[proc.first] = proc.second;
         }
+        assgn_proc_names_locations = ext_assgn_proc_names_locations;
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
@@ -6269,6 +6299,24 @@ public:
         }
     }
 
+    // A generic spec of a template can be instantiated when it is an
+    // interface block of the template's own procedures.
+    bool is_instantiable_generic_spec(ASR::symbol_t *generic,
+            ASR::Template_t *temp) {
+        if (!ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+            return false;
+        }
+        ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(generic);
+        for (size_t j = 0; j < op->n_procs; j++) {
+            if (!ASR::is_a<ASR::Function_t>(*op->m_procs[j])
+                    || ASRUtils::symbol_parent_symtab(op->m_procs[j])
+                        != temp->m_symtab) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     // The only-list of an INSTANTIATE statement may name a generic spec
     // (operator, assignment or defined input/output) as well as a name. The
     // template must define a generic spec that is named, as an interface
@@ -6304,17 +6352,7 @@ public:
                             + spec + " to instantiate", {item->base.loc})}));
                 throw SemanticAbort();
             }
-            bool supported = ASR::is_a<ASR::CustomOperator_t>(*generic);
-            if (supported) {
-                ASR::CustomOperator_t *op =
-                    ASR::down_cast<ASR::CustomOperator_t>(generic);
-                for (size_t j = 0; j < op->n_procs && supported; j++) {
-                    supported = ASR::is_a<ASR::Function_t>(*op->m_procs[j])
-                        && ASRUtils::symbol_parent_symtab(op->m_procs[j])
-                            == temp->m_symtab;
-                }
-            }
-            if (!supported) {
+            if (!is_instantiable_generic_spec(generic, temp)) {
                 diag.add(diag::Diagnostic(
                     "importing " + spec + " from an instantiation of template '"
                     + template_name + "' is not supported yet",
@@ -6325,11 +6363,11 @@ public:
         }
     }
 
-    // Instantiate a generic spec named in the only-list of an INSTANTIATE
-    // statement. Its specific procedures are instantiated, reusing the
-    // instances of those the only-list also names, and the generic is added
-    // to the instantiating scope, extending a generic of the same name
-    // already accessible there, including by host association.
+    // Instantiate a generic spec of an INSTANTIATE statement, named in its
+    // only-list or, without one, any of the template. Its specific procedures
+    // are instantiated, reusing the instances already made, and the generic
+    // is added to the instantiating scope, extending a generic of the same
+    // name already accessible there, including by host association.
     void instantiate_generic_spec(ASR::Template_t *temp,
             const std::string &remote_sym, const std::string &local_sym,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
@@ -6841,6 +6879,15 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
                         diag);
+                }
+            }
+            // Generic specs last, so that they reuse the instances of their
+            // specific procedures.
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                if (is_instantiable_generic_spec(sym_pair.second, temp)) {
+                    instantiate_generic_spec(temp, sym_pair.first,
+                        sym_pair.first, type_subs, symbol_subs,
+                        x.base.base.loc);
                 }
             }
         } else {
