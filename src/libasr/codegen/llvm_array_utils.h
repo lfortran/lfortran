@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_LLVM_ARR_UTILS_H
 #define LFORTRAN_LLVM_ARR_UTILS_H
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -378,6 +379,18 @@ namespace LCompilers {
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                /*
+                * Calls `body` for each element of a potentially-strided
+                * descriptor array, in array element order, with the
+                * element's 0-based position in that order and a pointer
+                * to the element (respecting the descriptor's strides).
+                */
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body) = 0;
+
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
                 llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims) = 0;
@@ -449,6 +462,17 @@ namespace LCompilers {
                 llvm::Value* cmo_convertor_single_element_data_only(
                     llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
                     int n_args, bool check_for_bounds, LocationManager& lm, bool is_unbounded_pointer_to_data = false, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
+
+                /*
+                * Returns the base address for an array section starting at
+                * element `offset` of `data`. Class arrays, both class(t) and
+                * class(*), hold a single {vptr, data} wrapper, so a new
+                * wrapper addressing the offset element (element size taken
+                * from the vtable) is created instead of indexing wrappers.
+                */
+                llvm::Value* get_array_section_base(
+                    llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* data, llvm::Value* offset);
 
             public:
 
@@ -651,6 +675,12 @@ namespace LCompilers {
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                void for_each_element_of_descriptor(
+                    llvm::Type* desc_llvm_type, llvm::Value* desc,
+                    llvm::Type* elem_type, int rank, const std::string& loop_name,
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body);
 
                 // CFI field indices (C-interop layout, no offset field)
                 static constexpr int CFI_FIELD_BASE_ADDR   = 0;

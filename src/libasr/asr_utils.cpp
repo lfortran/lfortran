@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <set>
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -2697,6 +2698,15 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
+            if( a_name == nullptr && matched_subrout_name == subrout_name &&
+                    !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
+                                     ASR::is_a<ASR::Struct_t>(*proc_owner))) ) {
+                // An ExternalSymbol can only refer into a module or a struct,
+                // so a procedure host associated from another scope (such as
+                // a template) is referenced through its host symbol.
+                a_name = resolved;
+            }
             if( a_name == nullptr ) {
                 a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                             al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
@@ -2817,6 +2827,107 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
         }
     }
     return false;
+}
+
+// `visited` guards against a malformed cyclic type or parent chain.
+static bool struct_needs_finalization_util(ASR::Struct_t* st,
+        std::set<ASR::Struct_t*>& visited) {
+    for (ASR::Struct_t* level = st; level != nullptr; ) {
+        if (visited.find(level) != visited.end()) {
+            return false;
+        }
+        visited.insert(level);
+        if (level->n_member_functions > 0) {
+            return true;
+        }
+        for (auto& m : level->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(m.second);
+            if (ASRUtils::is_array(m_var->m_type) ||
+                    ASRUtils::is_allocatable(m_var->m_type) ||
+                    ASRUtils::is_pointer(m_var->m_type) ||
+                    ASRUtils::is_class_type(m_var->m_type) ||
+                    !ASR::is_a<ASR::StructType_t>(*m_var->m_type) ||
+                    m_var->m_type_declaration == nullptr) {
+                continue;
+            }
+            ASR::symbol_t* m_struct = ASRUtils::symbol_get_past_external(
+                m_var->m_type_declaration);
+            if (ASR::is_a<ASR::Struct_t>(*m_struct) &&
+                    struct_needs_finalization_util(
+                        ASR::down_cast<ASR::Struct_t>(m_struct), visited)) {
+                return true;
+            }
+        }
+        if (level->m_parent == nullptr) {
+            break;
+        }
+        ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+            level->m_parent);
+        level = ASR::is_a<ASR::Struct_t>(*parent)
+            ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+    }
+    return false;
+}
+
+bool struct_needs_finalization(ASR::symbol_t* struct_sym) {
+    if (struct_sym == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) {
+        return false;
+    }
+    std::set<ASR::Struct_t*> visited;
+    return struct_needs_finalization_util(ASR::down_cast<ASR::Struct_t>(sym),
+        visited);
+}
+
+bool is_finalizable_function_result(ASR::ttype_t* type,
+        ASR::symbol_t* struct_sym) {
+    if (type == nullptr || ASRUtils::is_array(type) ||
+            ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ||
+            !ASR::is_a<ASR::StructType_t>(*type) ||
+            ASRUtils::is_class_type(type)) {
+        return false;
+    }
+    return struct_needs_finalization(struct_sym);
+}
+
+bool is_finalizable_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    expr = ASRUtils::get_past_array_physical_cast(expr);
+    if (!ASR::is_a<ASR::FunctionCall_t>(*expr)) {
+        return false;
+    }
+    return is_finalizable_function_result(ASRUtils::expr_type(expr),
+        ASRUtils::get_struct_sym_from_struct_expr(expr));
+}
+
+class ContainsFinalizableFunctionReference:
+    public ASR::BaseWalkVisitor<ContainsFinalizableFunctionReference> {
+public:
+    bool found = false;
+    void visit_expr(const ASR::expr_t &x) {
+        if (found) return;
+        if (is_finalizable_function_reference(const_cast<ASR::expr_t*>(&x))) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<ContainsFinalizableFunctionReference>::visit_expr(x);
+    }
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+bool contains_finalizable_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    ContainsFinalizableFunctionReference check;
+    check.visit_expr(*expr);
+    return check.found;
 }
 
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
@@ -2992,7 +3103,7 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(args[0]));
+    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[0]));
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
     ASR::expr_t* expr_dt = nullptr;
@@ -3986,6 +4097,54 @@ static T perform_binop(T left_value, T right_value, ASR::binopType op) {
     return result;
 }
 
+// `(re, im)**n` by repeated multiplication (binary exponentiation), with a
+// negative `n` giving `1/(re, im)**(-n)`. The backends compute complex**integer
+// with the same algorithm, so that a folded constant equals the value computed
+// at run time.
+template<typename T>
+static std::complex<double> complex_integer_pow(T re, T im, int64_t n) {
+    if (n == 0) {
+        return std::complex<double>(1, 0);
+    }
+    auto mul = [](T &p, T &q, T r, T s) {
+        T re_ = p*r - q*s;
+        T im_ = p*s + q*r;
+        p = re_;
+        q = im_;
+    };
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    T base_re = re, base_im = im;
+    while ((u & 1) == 0) {
+        mul(base_re, base_im, base_re, base_im);
+        u >>= 1;
+    }
+    T res_re = base_re, res_im = base_im;
+    u >>= 1;
+    while (u != 0) {
+        mul(base_re, base_im, base_re, base_im);
+        if (u & 1) {
+            mul(res_re, res_im, base_re, base_im);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        // 1/(r + s i) by Smith's algorithm, as complex division is lowered
+        T p = 1, q = 0, r = res_re, s = res_im;
+        if (std::fabs(r) >= std::fabs(s)) {
+            T ratio = s / r;
+            T denom = r + s * ratio;
+            res_re = (p + q * ratio) / denom;
+            res_im = (q - p * ratio) / denom;
+        } else {
+            T ratio = r / s;
+            T denom = s + r * ratio;
+            res_re = (p * ratio + q) / denom;
+            res_im = (q * ratio - p) / denom;
+        }
+    }
+    return std::complex<double>(res_re, res_im);
+}
+
 ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         ASR::expr_t* right, ASR::binopType op, const Location& loc,
         ASR::ttype_t* dest_type, bool &division_by_zero) {
@@ -4079,6 +4238,19 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         std::complex<double> left_value_(left_value->m_re, left_value->m_im);
         std::complex<double> right_value_(right_value->m_re, right_value->m_im);
         std::complex<double> result = perform_binop(left_value_, right_value_, op);
+        return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
+                std::real(result), std::imag(result), dest_type));
+    } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+        LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+        ASR::ComplexConstant_t *lc = ASR::down_cast<ASR::ComplexConstant_t>(left);
+        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        std::complex<double> result;
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
+            // Evaluate in single precision, as the program would.
+            result = complex_integer_pow<float>(lc->m_re, lc->m_im, n);
+        } else {
+            result = complex_integer_pow<double>(lc->m_re, lc->m_im, n);
+        }
         return ASRUtils::EXPR( ASR::make_ComplexConstant_t(al, loc,
                 std::real(result), std::imag(result), dest_type));
     }
@@ -4446,14 +4618,6 @@ void append_error(diag::Diagnostics& diag, const std::string& msg,
 
 size_t get_constant_ArrayConstant_size(ASR::ArrayConstant_t* x) {
     return ASRUtils::get_fixed_size_of_array(x->m_type);
-}
-
-void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &indices) {
-    for (size_t i = 0; i < arr_sec->n_args; i++) {
-        if (arr_sec->m_args[i].m_step != nullptr) {
-            indices.push_back(i + 1);
-        }
-    }
 }
 
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
@@ -5595,6 +5759,50 @@ InterfaceMismatch binding_override_mismatch(
     // The passed-object dummy argument is declared with the type it is bound
     // to, so the two deliberately differ there.
     return interface_mismatch(what, proc, base, self_index, use_expr_context);
+}
+
+std::string get_format_type_code(ASR::ttype_t* type) {
+    type = type_get_past_allocatable(type_get_past_pointer(type));
+    switch (type->type) {
+        case ASR::ttypeType::Integer: {
+            return "I" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::UnsignedInteger: {
+            return "U" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Real: {
+            return "R" + std::to_string(extract_kind_from_ttype_t(type));
+        }
+        case ASR::ttypeType::Complex: {
+            std::string real = "R" + std::to_string(extract_kind_from_ttype_t(type));
+            return "{" + real + "," + real + "}";
+        }
+        case ASR::ttypeType::Logical: {
+            return "L" + std::to_string(
+                ASR::down_cast<ASR::Logical_t>(type)->m_kind * 8);
+        }
+        case ASR::ttypeType::String: {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            std::string res = "S-";
+            if (str_type->m_physical_type == ASR::DescriptorString) {
+                res += "DESC";
+            } else if (str_type->m_physical_type == ASR::CChar) {
+                res += "CCHAR";
+            } else {
+                throw LCompilersException("Unhandled string physical type");
+            }
+            // The character kind tells the runtime how many bytes one
+            // character occupies, so that it can transcode a kind 4 value to
+            // UTF-8 and count field widths in characters rather than bytes.
+            return res + "-K" + std::to_string(str_type->m_kind);
+        }
+        case ASR::ttypeType::CPtr: {
+            return "CPtr";
+        }
+        default: {
+            return "";
+        }
+    }
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance

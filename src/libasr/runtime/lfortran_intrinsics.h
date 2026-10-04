@@ -132,6 +132,10 @@ LFORTRAN_API void _lfortran_complex_div_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
 LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
         struct _lfortran_complex_64* b, struct _lfortran_complex_64 *result);
+LFORTRAN_API void _lfortran_complex_pow_int_32(struct _lfortran_complex_32* a,
+        int64_t n, struct _lfortran_complex_32 *result);
+LFORTRAN_API void _lfortran_complex_pow_int_64(struct _lfortran_complex_64* a,
+        int64_t n, struct _lfortran_complex_64 *result);
 LFORTRAN_API void _lfortran_complex_aimag_32(struct _lfortran_complex_32 *x, float *res);
 LFORTRAN_API void _lfortran_complex_aimag_64(struct _lfortran_complex_64 *x, double *res);
 LFORTRAN_API float_complex_t _lfortran_csqrt(float_complex_t x);
@@ -224,7 +228,7 @@ LFORTRAN_API int32_t _lpython_bit_length1(int8_t num);
 LFORTRAN_API int32_t _lpython_bit_length2(int16_t num);
 LFORTRAN_API int32_t _lpython_bit_length4(int32_t num);
 LFORTRAN_API int32_t _lpython_bit_length8(int64_t num);
-LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char** s, int32_t n, char** dest);
+LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char* s, int64_t s_len, int32_t n, char** dest);
 LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n);
 LFORTRAN_API char* _lfortran_strcat_alloc(lfortran_allocator_t* al, char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_strcpy_alloc(lfortran_allocator_t* al, char** lhs, int64_t* lhs_len, bool is_lhs_allocatable, bool is_lhs_deferred, char* rhs, int64_t rhs_len, int32_t char_kind);
@@ -501,7 +505,7 @@ LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *lab
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, int32_t round_mode, ...);
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, int32_t round_mode, int32_t leading_blank, ...);
 LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size);
 void lfortran_error(const char *message);
 

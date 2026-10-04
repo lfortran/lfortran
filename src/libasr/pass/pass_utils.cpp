@@ -197,10 +197,8 @@ namespace LCompilers {
                 ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(arr_expr);
                 if( ASRUtils::is_array(item->m_type) &&
                     ASRUtils::struct_base_lending_shape(item) != nullptr ) {
-                    ASR::expr_t* base = item->m_v;
-                    while( ASR::is_a<ASR::StructInstanceMember_t>(*base) ) {
-                        base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
-                    }
+                    ASR::expr_t* base =
+                        ASRUtils::get_struct_member_chain_array_part(item->m_v);
                     ASR::expr_t* member = rebuild_struct_member_chain(al, item->m_v,
                         base, create_array_ref(base, idx_vars, al, current_scope,
                             false, cast_kind, nullptr));
@@ -1779,6 +1777,39 @@ namespace LCompilers {
                 ASR::stmt_t* assign = b.Assignment(res, curr_init);
                 result_vec->push_back(al, assign);
             }
+        }
+
+        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
+            ASR::stmt_t* assign) {
+            // Only an allocatable object can be unallocated; any other
+            // data source is a value and is assigned as is.
+            if( !(ASR::is_a<ASR::Var_t>(*source) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*source)) ||
+                    !ASRUtils::is_allocatable(ASRUtils::expr_type(source)) ) {
+                return assign;
+            }
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, expr_duplicator.duplicate_expr(source));
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(al, loc,
+                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    allocated_args.p, allocated_args.n, 0,
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, assign);
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, component);
+            Vec<ASR::stmt_t*> else_body;
+            else_body.reserve(al, 1);
+            else_body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.n)));
+            return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, is_allocated,
+                if_body.p, if_body.n, else_body.p, else_body.n));
         }
 
         void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,

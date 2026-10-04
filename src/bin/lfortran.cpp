@@ -871,7 +871,14 @@ int verify_asr_input(const std::string &infile,
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
 
+    // What was reported so far is printed already; a pass reports a hard
+    // error by adding it, and then there is no ASR to print.
+    diagnostics.diagnostics.clear();
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
+    if (diagnostics.has_error()) {
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 1;
+    }
     if (compiler_options.po.tree) {
         std::cout << LCompilers::pickle_tree(*asr,
             compiler_options.use_colors, compiler_options.po.with_intrinsic_mods) << std::endl;
@@ -2421,7 +2428,7 @@ int link_executable(const std::vector<std::string> &infiles,
         run_cmd = outfile;
     } else if (LCompilers::startswith(t, "wasm")) {
         if (LCompilers::endswith(t, "wasi")) {
-            run_cmd = "wasmtime " + outfile + " --dir=.";
+            run_cmd = "wasmtime --dir=. " + outfile;
         } else if (LCompilers::endswith(t, "emscripten")) {
             run_cmd = "node " + outfile +
                 (compiler_options.wasm_html ? ".js" : "");
@@ -2865,7 +2872,11 @@ int main_app(int argc, char *argv[]) {
     } else if (opts.show_julia) {
         outfile = basename.replace_extension(".jl").string();
     } else {
-        outfile = basename.replace_extension(".out").string();
+        #ifdef _WIN32
+            outfile = basename.replace_extension(".exe").string();
+        #else
+            outfile = basename.replace_extension(".out").string();
+        #endif
     }
 
     lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
