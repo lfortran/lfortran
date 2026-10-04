@@ -338,6 +338,36 @@
                                     NotMethod
                                     ()
                                     []
+                                ),
+                            zv:
+                                (Variable
+                                    2
+                                    zv
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 2)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 12 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     bindc4
@@ -407,6 +437,31 @@
                             )
                             ()
                         )
+                    )
+                    (Assignment
+                        (Var 2 queries)
+                        (PointerToCPtr
+                            (GetPointer
+                                (Var 2 zv)
+                                (Pointer
+                                    (Array
+                                        (Integer 2)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                )
+                                ()
+                            )
+                            (CPtr
+                                CPointer
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -495,6 +550,42 @@
                         (Var 2 x)
                         (Var 2 newshape)
                         ()
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 x)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 x)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         (StringFormat
@@ -624,6 +715,42 @@
                             ColMajor
                         )
                         ()
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 x)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 x)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         (StringFormat
@@ -824,6 +951,23 @@
                         (PointerAssociated
                             (Var 2 queries2)
                             ()
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (PointerAssociated
+                                (Var 2 queries)
+                                ()
+                                (Logical 4)
+                                ()
+                            )
                             (Logical 4)
                             ()
                         )
