@@ -1,0 +1,24 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            exit_nonstandard_call_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    exit_nonstandard_call_01
+                    []
+                    [(IntrinsicImpureSubroutine
+                        Exit
+                        [(IntegerConstant 1 (Integer 4) Decimal)]
+                        0
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)
