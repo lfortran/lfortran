@@ -420,7 +420,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: krystophny/liric
-          ref: 1c01cb8e952e63a0704b73021bd42bd7867944d2
+          ref: f3e68156448b92a8ff9bc49789085b2dfdb950e3
           path: deps/liric
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
@@ -446,7 +446,7 @@ jobs:
           LFORTRAN_WITH_LIRIC=1 LFORTRAN_DIR="$PWD" \
             LFORTRAN_BUILD_DIR="$PWD/build-liric" \
             LIRIC_CLANG="$(command -v clang)" \
-            LIRIC_RUNTIME_ROOTS="_lfortran_dsinh,_lcompilers_print_error,_lfortran_internal_alloc_finalize,_lpython_call_initial_functions" \
+            LIRIC_RUNTIME_ROOTS="_lfortran_dsinh,_lcompilers_print_error,_lfortran_internal_alloc_finalize,_lpython_call_initial_functions,_lfortran_get_default_allocator,_lcompilers_snprintf_alloc,_lcompilers_runtime_error" \
             bash deps/liric/tools/lfortran_mass/prepare_liric_runtime.sh
           unset LIRIC_RUNTIME_BC LIRIC_RUNTIME_LIB
           export LIRIC_RUNTIME_ARCHIVE="$PWD/build-liric/liric_runtime.lrarch"
@@ -454,4 +454,8 @@ jobs:
           lfortran --backend=liric integration_tests/liric_compat_runtime.f90 \
             -o /tmp/liric-compat-runtime
           /tmp/liric-compat-runtime
+          cat integration_tests/openmp_threadprivate_tls_mod.f90 \
+            integration_tests/openmp_threadprivate_tls.f90 > /tmp/liric-tls.f90
+          lfortran --backend=liric --openmp /tmp/liric-tls.f90 -o /tmp/liric-tls
+          /tmp/liric-tls
           python integration_tests/run_tests.py -b liric -j2
