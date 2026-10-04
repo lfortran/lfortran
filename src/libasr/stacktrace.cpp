@@ -734,6 +734,7 @@ bool write_runtime_debug_map(const std::string &binary_path,
     out.write(reinterpret_cast<const char *>(triple), sizeof(triple));
   }
 
+  out.close();
   if (!out.good()) {
     error_message = "failed while writing '" + map_path + "'";
     return false;
