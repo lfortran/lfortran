@@ -9,6 +9,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/global_init.h>
 
 
 namespace LCompilers {
@@ -375,6 +376,20 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         // Pre-declare all functions first, then generate code
         // Otherwise some function might not be found.
         std::string unit_src = "// Forward declarations\n";
+        // The unit's own variables, such as the state of its startup
+        // initializer, which its functions below refer to.
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                std::string decl = convert_variable_decl(*v);
+                if (decl.empty()) continue;
+                if (is_translation_unit_private(v->m_parent_symtab, v->m_access)
+                        && !startswith(decl, "static ")) {
+                    decl = "static " + decl;
+                }
+                unit_src += decl + ";\n";
+            }
+        }
         unit_src += declare_all_functions(*x.m_symtab);
         // Now pre-declare all functions from modules and programs
         for (auto &item : x.m_symtab->get_scope()) {
@@ -434,6 +449,8 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 unit_src += src;
             }
         }
+
+        unit_src += global_init_records(x);
 
         src = get_final_combined_src(head, unit_src);
         current_scope = current_scope_copy;
@@ -724,6 +741,11 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     int64_t default_lower_bound)
 {
     co.po.always_run = true;
+    // The same lowering of declaration initializers the C backend gets, so
+    // that startup work reaches this backend through the shared initializers
+    // and their records rather than through a declaration it cannot run.
+    pass_global_init(al, asr, co.po);
+    pass_global_init_wire(al, asr, co.po);
     pass_unused_functions(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {

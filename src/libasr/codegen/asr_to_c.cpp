@@ -659,6 +659,11 @@ R"(
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 unit_src_tmp = convert_variable_decl(*v);
+                if (is_translation_unit_private(v->m_parent_symtab, v->m_access)
+                        && !unit_src_tmp.empty()
+                        && !startswith(unit_src_tmp, "static ")) {
+                    unit_src_tmp = "static " + unit_src_tmp;
+                }
                 unit_src += unit_src_tmp;
                 if(unit_src_tmp.size() > 0) {
                     unit_src += ";\n";
@@ -745,6 +750,8 @@ R"(
                 unit_src += src;
             }
         }
+
+        unit_src += global_init_records(x);
 
         forward_decl_functions += "\n\n";
         src = get_final_combined_src(head, unit_src);
@@ -911,7 +918,7 @@ R"(    // Initialise Numpy
 
         src = contains
                 + "int main(int argc, char* argv[])\n{\n"
-                + indent1 + "_lpython_set_argv(argc, argv);\n"
+                + indent1 + "_lpython_call_initial_functions(argc, argv);\n"
                 + decl + body
                 + indent1 + "return 0;\n}\n";
         indentation_level -= 2;
@@ -1215,10 +1222,13 @@ R"(    // Initialise Numpy
             const std::string &indent, const std::string &result_data,
             const std::string &result_len, const std::string &decimal_mode,
             const std::string &sign_mode, const std::string &round_mode) {
-        if (x.m_kind != ASR::string_format_kindType::FormatFortran) {
+        if (x.m_kind != ASR::string_format_kindType::FormatFortran
+                && x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank) {
             throw CodeGenError("only Fortran formatting is supported by the C backend",
                 x.base.base.loc);
         }
+        std::string leading_blank =
+            x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank ? "1" : "0";
         std::string out;
         std::string fmt_data = "NULL", fmt_len = "0";
         if (x.m_fmt) {
@@ -1285,7 +1295,7 @@ R"(    // Initialise Numpy
         out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
             "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
             + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
-            + sign_mode + ", " + round_mode + item_ptrs + ");\n";
+            + sign_mode + ", " + round_mode + ", " + leading_blank + item_ptrs + ");\n";
         return out;
     }
 

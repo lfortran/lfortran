@@ -22,6 +22,8 @@
 #include <libasr/pickle.h>
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
+#include <libasr/pass/global_init.h>
+#include <libasr/pass/unique_symbols.h>
 
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -80,7 +82,22 @@ FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
 {
 }
 
-FortranEvaluator::~FortranEvaluator() = default;
+FortranEvaluator::~FortranEvaluator()
+{
+#ifdef HAVE_LFORTRAN_LLVM
+    // The runtime's startup set outlives this evaluator, and every batch of
+    // records it was given points into code the executor below owns. Take
+    // them out, newest first, while that code is still there.
+    for (auto it = startup_shutdown_fns.rbegin();
+            it != startup_shutdown_fns.rend(); ++it) {
+#ifdef __EMSCRIPTEN__
+        if (wasm_exec) wasm_exec->execfn<void>(*it);
+#else
+        if (e) e->execfn<void>(*it);
+#endif
+    }
+#endif
+}
 
 #ifdef HAVE_LFORTRAN_LLVM
 LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
@@ -241,11 +258,24 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // silently produces no output at all.
     std::string program_fn = run_fn + "_program";
     bool has_program = (m->get_return_type(program_fn) == "void");
-    // The globals the cell declares that need executable code to set up are
-    // set up in `run_fn + "_setup"` (see emit_interactive_global_setup),
-    // which has to run before anything of the cell can use them.
-    std::string setup_fn = run_fn + "_setup";
-    bool has_setup = (m->get_return_type(setup_fn) == "void");
+    // A cell that defines startup initializers -- a module's, say -- gets an
+    // entry that hands their records to the runtime and runs the startup
+    // engine, the collective phase included when one of them needs it. Code
+    // generated in memory is not an image the native discovery can see, so
+    // this is how the cell's records join the startup set, and it runs before
+    // anything of the cell can observe that state.
+    std::string startup_fn = run_fn + "_startup";
+    bool has_startup = (m->get_return_type(startup_fn) == "void");
+    // Its counterpart tears down what the cell's initializers set up and
+    // takes the records back out; see ~FortranEvaluator().
+    std::string shutdown_fn = run_fn + "_shutdown";
+    bool has_shutdown = (m->get_return_type(shutdown_fn) == "void");
+    // A table published without a way to take it back would outlive the
+    // code it points into.
+    if (has_startup != has_shutdown) {
+        throw LCompilersException("FortranEvaluator::evaluate(): the cell's "
+            "startup entry and its shutdown entry have to come together");
+    }
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
@@ -277,8 +307,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
-    if (has_setup) {
-        e.execfn<void>(setup_fn);
+    if (has_startup) {
+        // Recorded first, so that the table is taken out again however the
+        // publication ends.
+        startup_shutdown_fns.push_back(shutdown_fn);
+        e.execfn<void>(startup_fn);
     }
     if (has_program) {
         e.execfn<void>(program_fn);
@@ -500,8 +533,12 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
     // session. Adding a second definition of a symbol the JIT already holds is
     // an error, and the existing definition is equivalent, so keep the
     // declaration and drop the body.
+    //
+    // A function with local linkage is not one of those: it belongs to this
+    // module alone, whatever an earlier cell's function of the same name was
+    // (a finalizer of a type, say), so its body stays.
     for (llvm::Function &fn : *m.m_m) {
-        if (fn.isDeclaration()) continue;
+        if (fn.isDeclaration() || fn.hasLocalLinkage()) continue;
         std::string name = fn.getName().str();
         if (!defined_symbols.insert(name).second) {
             fn.deleteBody();
@@ -645,7 +682,8 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
     SymbolTable *parent, const Location &loc)
 {
     SymbolTable* copy = al.make_new<SymbolTable>(parent);
-    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0, nullptr);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0, nullptr,
+        nullptr, false, nullptr);
     copy->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
     for (auto &item : scope->get_scope()) {
@@ -1004,6 +1042,23 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
         pass_manager.use_default_passes();
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
             compiler_options.po, diagnostics);
+        // This backend emits no startup records, so its startup set has to
+        // be exactly the initializers the unit defines: a closed world,
+        // which a module compiled separately would break.
+        ASR::TranslationUnit_t &unit = *(ASR::TranslationUnit_t *)&asr;
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*item.second)) continue;
+            ASR::Function_t *init = ASRUtils::get_global_init(
+                (ASR::asr_t*)item.second);
+            if (init && !ASRUtils::global_init_defined_here(init)) {
+                diagnostics.add(diag::Diagnostic("the MLIR backend needs "
+                    "every module in the unit it compiles, but module '"
+                    + item.first + "' is compiled separately",
+                    diag::Level::Error, diag::Stage::CodeGen));
+                return Error();
+            }
+        }
+        ASRUtils::expand_closed_world_dispatch(al, unit);
     }
     Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al,
         (ASR::asr_t &)asr, diagnostics);
@@ -1042,6 +1097,18 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         if (!had_error_before_passes && diagnostics.has_error()) {
             return Error();
         }
+        // Fortran source is compiled on its own, by any compiler and without
+        // the LCompilers runtime, so it is a closed world: whatever startup
+        // the passes introduced becomes ordinary calls of the initializers
+        // it defines, guarded in plain Fortran.
+        ASRUtils::expand_closed_world_dispatch(al, *asr.result);
+        // A Fortran name starts with a letter, and what the passes create --
+        // an initializer, its state, the index of a loop they wrote -- often
+        // does not. Rename exactly those, the way `--apply-fortran-mangling`
+        // does, so that the source is valid Fortran whatever the passes were.
+        PassOptions fortran_names;
+        fortran_names.fortran_mangling = true;
+        pass_unique_symbols(al, *asr.result, fortran_names);
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())

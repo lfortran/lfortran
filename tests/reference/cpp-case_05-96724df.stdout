@@ -26,6 +26,7 @@ namespace {
 
 void main2() {
     static std::string grade="B";
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     if (grade == "A") {
 std::cout<< "Excellent!"<<std::endl;
     }

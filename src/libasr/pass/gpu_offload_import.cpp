@@ -84,7 +84,8 @@ void GpuOffloadVisitor::load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
         dep_mod->m_symtab->parent = tu.m_symtab;
         dep_mod->m_loaded_from_mod = true;
         // As `load_module` does: with separate compilation the module's own
-        // object file defines its procedures and variables, so this
+        // object file defines its procedures and variables, its startup
+        // initializer and that initializer's state among them, so this
         // translation unit must only declare them.
         if (pass_options.separate_compilation &&
                 !startswith(dep_mod->m_name, "lfortran_intrinsic")) {

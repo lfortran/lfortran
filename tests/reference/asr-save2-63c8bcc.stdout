@@ -5,11 +5,11 @@
             main:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             a:
                                 (Variable
-                                    7
+                                    8
                                     a
                                     []
                                     Local
@@ -39,7 +39,7 @@
                                 ),
                             b:
                                 (Variable
-                                    7
+                                    8
                                     b
                                     []
                                     Local
@@ -71,7 +71,7 @@
                                 ),
                             x:
                                 (Variable
-                                    7
+                                    8
                                     x
                                     []
                                     Local
@@ -107,7 +107,7 @@
                                 ),
                             y:
                                 (Variable
-                                    7
+                                    8
                                     y
                                     []
                                     Local
@@ -143,7 +143,7 @@
                                 ),
                             z:
                                 (Variable
-                                    7
+                                    8
                                     z
                                     []
                                     Local
@@ -169,6 +169,7 @@
                     main
                     []
                     []
+                    ()
                     ()
                 ),
             save_fun:
@@ -389,6 +390,62 @@
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_save_module_2:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_save_module_2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_save_module_2:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_save_module_2
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a:
                                 (Variable
                                     4
@@ -956,7 +1013,9 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_save_module_2
+                    4 __lcompilers_global_init_state_save_module_2
+                    .false.
                 ),
             save_sub:
                 (Function
@@ -1149,5 +1208,8 @@
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

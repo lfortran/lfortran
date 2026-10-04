@@ -15,11 +15,11 @@
             derived_types_01:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             1_x_i:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     1_x_i
                                     3 i
                                     derived_types_01_m_01
@@ -29,7 +29,7 @@
                                 ),
                             1_x_r:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     1_x_r
                                     3 r
                                     derived_types_01_m_01
@@ -39,7 +39,7 @@
                                 ),
                             1_y_d:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     1_y_d
                                     4 d
                                     derived_types_01_m_01
@@ -49,9 +49,9 @@
                                 ),
                             1_z_k:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     1_z_k
-                                    7 k
+                                    8 k
                                     derived_types_01_m_02
                                     [z]
                                     k
@@ -59,9 +59,9 @@
                                 ),
                             1_z_l:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     1_z_l
-                                    7 l
+                                    8 l
                                     derived_types_01_m_02
                                     [z]
                                     l
@@ -69,7 +69,7 @@
                                 ),
                             b:
                                 (Variable
-                                    8
+                                    10
                                     b
                                     []
                                     Local
@@ -83,7 +83,7 @@
                                         .true.
                                         .false.
                                     )
-                                    8 x
+                                    10 x
                                     Source
                                     Public
                                     Required
@@ -99,7 +99,7 @@
                                 ),
                             c:
                                 (Variable
-                                    8
+                                    10
                                     c
                                     []
                                     Local
@@ -125,7 +125,7 @@
                                         .true.
                                         .false.
                                     )
-                                    8 z
+                                    10 z
                                     Source
                                     Public
                                     Required
@@ -141,7 +141,7 @@
                                 ),
                             set:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     set
                                     2 set
                                     derived_types_01_m_01
@@ -151,7 +151,7 @@
                                 ),
                             x:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     x
                                     2 x
                                     derived_types_01_m_01
@@ -161,9 +161,9 @@
                                 ),
                             z:
                                 (ExternalSymbol
-                                    8
+                                    10
                                     z
-                                    6 z
+                                    7 z
                                     derived_types_01_m_02
                                     []
                                     z
@@ -175,8 +175,8 @@
                     derived_types_01_m_01]
                     [(Assignment
                         (StructInstanceMember
-                            (Var 8 b)
-                            8 1_x_i
+                            (Var 10 b)
+                            10 1_x_i
                             (Integer 4)
                             ()
                         )
@@ -187,8 +187,8 @@
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 8 b)
-                            8 1_x_r
+                            (Var 10 b)
+                            10 1_x_r
                             (Real 4)
                             ()
                         )
@@ -204,14 +204,14 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 8 b)
-                                8 1_x_i
+                                (Var 10 b)
+                                10 1_x_i
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 b)
-                                8 1_x_r
+                                (Var 10 b)
+                                10 1_x_r
                                 (Real 4)
                                 ()
                             )]
@@ -223,9 +223,9 @@
                         )
                     )
                     (SubroutineCall
-                        8 set
+                        10 set
                         ()
-                        [((Var 8 b))]
+                        [((Var 10 b))]
                         ()
                         .false.
                     )
@@ -233,14 +233,14 @@
                         (StringFormat
                             ()
                             [(StructInstanceMember
-                                (Var 8 b)
-                                8 1_x_i
+                                (Var 10 b)
+                                10 1_x_i
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 b)
-                                8 1_x_r
+                                (Var 10 b)
+                                10 1_x_r
                                 (Real 4)
                                 ()
                             )]
@@ -255,8 +255,8 @@
                         (StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember
-                                    (Var 8 c)
-                                    8 1_z_l
+                                    (Var 10 c)
+                                    10 1_z_l
                                     (StructType
                                         [(Complex 4)
                                         (StructType
@@ -272,7 +272,7 @@
                                     )
                                     ()
                                 )
-                                8 1_y_d
+                                10 1_y_d
                                 (StructType
                                     [(Real 4)
                                     (Integer 4)]
@@ -282,7 +282,7 @@
                                 )
                                 ()
                             )
-                            8 1_x_r
+                            10 1_x_r
                             (Real 4)
                             ()
                         )
@@ -298,8 +298,8 @@
                         (StructInstanceMember
                             (StructInstanceMember
                                 (StructInstanceMember
-                                    (Var 8 c)
-                                    8 1_z_l
+                                    (Var 10 c)
+                                    10 1_z_l
                                     (StructType
                                         [(Complex 4)
                                         (StructType
@@ -315,7 +315,7 @@
                                     )
                                     ()
                                 )
-                                8 1_y_d
+                                10 1_y_d
                                 (StructType
                                     [(Real 4)
                                     (Integer 4)]
@@ -325,7 +325,7 @@
                                 )
                                 ()
                             )
-                            8 1_x_i
+                            10 1_x_i
                             (Integer 4)
                             ()
                         )
@@ -336,8 +336,8 @@
                     )
                     (Assignment
                         (StructInstanceMember
-                            (Var 8 c)
-                            8 1_z_k
+                            (Var 10 c)
+                            10 1_z_k
                             (Complex 4)
                             ()
                         )
@@ -367,8 +367,8 @@
                             [(StructInstanceMember
                                 (StructInstanceMember
                                     (StructInstanceMember
-                                        (Var 8 c)
-                                        8 1_z_l
+                                        (Var 10 c)
+                                        10 1_z_l
                                         (StructType
                                             [(Complex 4)
                                             (StructType
@@ -384,7 +384,7 @@
                                         )
                                         ()
                                     )
-                                    8 1_y_d
+                                    10 1_y_d
                                     (StructType
                                         [(Real 4)
                                         (Integer 4)]
@@ -394,15 +394,15 @@
                                     )
                                     ()
                                 )
-                                8 1_x_r
+                                10 1_x_r
                                 (Real 4)
                                 ()
                             )
                             (StructInstanceMember
                                 (StructInstanceMember
                                     (StructInstanceMember
-                                        (Var 8 c)
-                                        8 1_z_l
+                                        (Var 10 c)
+                                        10 1_z_l
                                         (StructType
                                             [(Complex 4)
                                             (StructType
@@ -418,7 +418,7 @@
                                         )
                                         ()
                                     )
-                                    8 1_y_d
+                                    10 1_y_d
                                     (StructType
                                         [(Real 4)
                                         (Integer 4)]
@@ -428,13 +428,13 @@
                                     )
                                     ()
                                 )
-                                8 1_x_i
+                                10 1_x_i
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 c)
-                                8 1_z_k
+                                (Var 10 c)
+                                10 1_z_k
                                 (Complex 4)
                                 ()
                             )]
@@ -446,12 +446,12 @@
                         )
                     )
                     (SubroutineCall
-                        8 set
+                        10 set
                         ()
                         [((StructInstanceMember
                             (StructInstanceMember
-                                (Var 8 c)
-                                8 1_z_l
+                                (Var 10 c)
+                                10 1_z_l
                                 (StructType
                                     [(Complex 4)
                                     (StructType
@@ -467,7 +467,7 @@
                                 )
                                 ()
                             )
-                            8 1_y_d
+                            10 1_y_d
                             (StructType
                                 [(Real 4)
                                 (Integer 4)]
@@ -486,8 +486,8 @@
                             [(StructInstanceMember
                                 (StructInstanceMember
                                     (StructInstanceMember
-                                        (Var 8 c)
-                                        8 1_z_l
+                                        (Var 10 c)
+                                        10 1_z_l
                                         (StructType
                                             [(Complex 4)
                                             (StructType
@@ -503,7 +503,7 @@
                                         )
                                         ()
                                     )
-                                    8 1_y_d
+                                    10 1_y_d
                                     (StructType
                                         [(Real 4)
                                         (Integer 4)]
@@ -513,15 +513,15 @@
                                     )
                                     ()
                                 )
-                                8 1_x_r
+                                10 1_x_r
                                 (Real 4)
                                 ()
                             )
                             (StructInstanceMember
                                 (StructInstanceMember
                                     (StructInstanceMember
-                                        (Var 8 c)
-                                        8 1_z_l
+                                        (Var 10 c)
+                                        10 1_z_l
                                         (StructType
                                             [(Complex 4)
                                             (StructType
@@ -537,7 +537,7 @@
                                         )
                                         ()
                                     )
-                                    8 1_y_d
+                                    10 1_y_d
                                     (StructType
                                         [(Real 4)
                                         (Integer 4)]
@@ -547,13 +547,13 @@
                                     )
                                     ()
                                 )
-                                8 1_x_i
+                                10 1_x_i
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
-                                (Var 8 c)
-                                8 1_z_k
+                                (Var 10 c)
+                                10 1_z_k
                                 (Complex 4)
                                 ()
                             )]
@@ -565,12 +565,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             derived_types_01_m_01:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_01_m_01:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_01_m_01
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_01_m_01:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_01_m_01
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             set:
                                 (Function
                                     (SymbolTable
@@ -855,16 +912,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_derived_types_01_m_01
+                    2 __lcompilers_global_init_state_derived_types_01_m_01
+                    .false.
                 ),
             derived_types_01_m_02:
                 (Module
                     (SymbolTable
-                        6
+                        7
                         {
+                            __lcompilers_global_init_derived_types_01_m_02:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_01_m_02
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_01_m_02:
+                                (Variable
+                                    7
+                                    __lcompilers_global_init_state_derived_types_01_m_02
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             y:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     y
                                     2 y
                                     derived_types_01_m_01
@@ -875,11 +990,11 @@
                             z:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             k:
                                                 (Variable
-                                                    7
+                                                    8
                                                     k
                                                     []
                                                     Local
@@ -903,7 +1018,7 @@
                                                 ),
                                             l:
                                                 (Variable
-                                                    7
+                                                    8
                                                     l
                                                     []
                                                     Local
@@ -923,7 +1038,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 y
+                                                    7 y
                                                     Source
                                                     Public
                                                     Required
@@ -979,9 +1094,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    7 __lcompilers_global_init_derived_types_01_m_02
+                    7 __lcompilers_global_init_state_derived_types_01_m_02
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

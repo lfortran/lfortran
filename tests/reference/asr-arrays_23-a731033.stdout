@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_arrays_23:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_arrays_23
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_arrays_23:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_arrays_23
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             add_context:
                                 (Function
                                     (SymbolTable
@@ -480,16 +536,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_arrays_23
+                    2 __lcompilers_global_init_state_arrays_23
+                    .false.
                 ),
             main:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             add_context:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     add_context
                                     2 add_context
                                     arrays_23
@@ -499,7 +557,7 @@
                                 ),
                             toml_context:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     toml_context
                                     2 toml_context
                                     arrays_23
@@ -517,8 +575,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

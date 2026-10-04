@@ -5,11 +5,11 @@
             template_add_02:
                 (Program
                     (SymbolTable
-                        13
+                        14
                         {
                             add_t:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     add_t
                                     2 add_t
                                     template_add_02_m
@@ -19,7 +19,7 @@
                                 ),
                             func_arg_real:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     func_arg_real
                                     2 func_arg_real
                                     template_add_02_m
@@ -29,7 +29,7 @@
                                 ),
                             r:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     r
                                     2 r
                                     template_add_02_m
@@ -39,7 +39,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     test_template
                                     2 test_template
                                     template_add_02_m
@@ -49,7 +49,7 @@
                                 ),
                             ~add:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     ~add
                                     2 ~add
                                     template_add_02_m
@@ -61,12 +61,13 @@
                     template_add_02
                     [template_add_02_m]
                     [(SubroutineCall
-                        13 test_template
+                        14 test_template
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_add_02_m:
@@ -74,6 +75,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_add_02_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_add_02_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_add_02_m:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_add_02_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             add_t:
                                 (Template
                                     (SymbolTable
@@ -1206,9 +1263,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_add_02_m
+                    2 __lcompilers_global_init_state_template_add_02_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

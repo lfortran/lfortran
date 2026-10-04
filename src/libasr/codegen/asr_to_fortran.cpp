@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/codegen/asr_to_c_cpp.h>
@@ -58,6 +59,35 @@ public:
 
     // True while emitting component declarations inside a derived type definition.
     bool in_struct_member_declaration = false;
+
+    // Declarations of the translation unit's own scope -- derived types,
+    // named constants and interfaces a pass put there for the procedures of
+    // the unit to share -- in the order they can be declared. Fortran has no
+    // declaration outside a program unit, so each is printed in the program
+    // units that use it; see `tu_declarations_for`.
+    std::vector<ASR::symbol_t*> tu_declarations;
+    // What the next external procedure's specification part declares of
+    // them, taken by the first `visit_Function` that prints one.
+    std::vector<ASR::symbol_t*> pending_tu_declarations;
+    // Derived types several external procedures use that are neither
+    // `bind(c)` nor `sequence`: definitions of one in several procedures
+    // would be different types, so such a type is printed once, outside
+    // them, as it always was.
+    std::set<ASR::symbol_t*> unshareable_tu_types;
+    // What the program declares of them, for itself and the external
+    // procedures it contains.
+    std::vector<ASR::symbol_t*> program_tu_declarations;
+    // Whether the external procedures are printed on their own, without a
+    // program to contain them, and so need explicit interfaces for the
+    // `bind(c)` procedures they call.
+    bool external_procedures_standalone = false;
+    // Set while a procedure is printed as the body of an interface block:
+    // only what declares its interface is printed.
+    bool interface_body_only = false;
+
+    // The local name under which the scope being emitted binds the entry of
+    // the startup engine, for the `GlobalInitDispatch` statements of its body.
+    std::string init_dispatch_name;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -149,6 +179,74 @@ public:
         }
     }
 
+    // A program whose body enters the startup engine binds that entry
+    // explicitly, so the output names nothing it does not declare. Source
+    // meant to be compiled on its own never gets here: its startup is
+    // expanded into calls of the initializers it defines first (see
+    // `ASRUtils::expand_closed_world_dispatch`), and what is left is the
+    // open-world form a dump of the passes shows.
+    template <typename T>
+    std::string init_dispatch_interface(const T &x) {
+        bool dispatches = false;
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (ASR::is_a<ASR::GlobalInitDispatch_t>(*x.m_body[i])) {
+                dispatches = true;
+                break;
+            }
+        }
+        if (!dispatches) return "";
+        std::string name = "lcompilers_init_dispatch";
+        while (x.m_symtab->resolve_symbol(name) != nullptr) name += "_";
+        init_dispatch_name = name;
+        std::string r;
+        r += indent + "interface\n";
+        inc_indent();
+        r += indent + "subroutine " + name
+            + "(phase) bind(c, name = \"_lcompilers_init_dispatch\")\n";
+        inc_indent();
+        r += indent + "integer(4), value :: phase\n";
+        dec_indent();
+        r += indent + "end subroutine " + name + "\n";
+        dec_indent();
+        r += indent + "end interface\n";
+        return r;
+    }
+
+    // The interfaces of the runtime functions the guard of initializer `x`
+    // calls, declared where they are used. Like the dispatch above, this is
+    // only reached by the open-world form of a dump of the passes.
+    std::string init_runtime_interfaces(const ASR::Function_t &x) {
+        if (!ASRUtils::is_owner_global_init(&x) || x.n_body == 0) return "";
+        SymbolTable *global = x.m_symtab;
+        while (global->parent != nullptr) global = global->parent;
+        std::string r;
+        for (auto &item : global->get_scope()) {
+            if (!ASRUtils::is_init_runtime_function(item.second)) continue;
+            is_interface = true;
+            r += indent + "interface\n";
+            inc_indent();
+            visit_symbol(*item.second);
+            r += src;
+            dec_indent();
+            r += indent + "end interface\n";
+            is_interface = false;
+        }
+        return r;
+    }
+
+    // Every user module owns a startup initializer and its state word from
+    // the moment it is created. While that initializer has no statements,
+    // neither is part of what the source describes -- nothing calls it --
+    // so neither is printed.
+    bool is_idle_global_init_symbol(ASR::symbol_t *sym) {
+        ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(sym)->asr_owner;
+        if (owner == nullptr) return false;
+        ASR::Function_t *init = ASRUtils::get_global_init(owner);
+        if (init == nullptr || init->n_body != 0) return false;
+        return sym == &init->base
+            || sym == (ASR::symbol_t*)ASRUtils::get_global_init_state(owner);
+    }
+
     // The name a call spells for procedure `sym`: an import's local name,
     // which is what the scope of the call declares (`use m, only: g => f`
     // calls `g`), and the procedure's own name otherwise.
@@ -160,6 +258,157 @@ public:
             if (local.find('@') == std::string::npos) return local;
         }
         return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
+    }
+
+    // Every symbol `unit` names, however deeply: variables, the types they
+    // are declared with, procedures it calls. The symbol an import stands
+    // for, not the import.
+    class ReferencedSymbols : public ASR::BaseWalkVisitor<ReferencedSymbols> {
+    public:
+        std::set<ASR::symbol_t*> symbols;
+        void add(ASR::symbol_t *sym) {
+            if (sym) symbols.insert(ASRUtils::symbol_get_past_external(sym));
+        }
+        void visit_Var(const ASR::Var_t &x) { add(x.m_v); }
+        void visit_Variable(const ASR::Variable_t &x) {
+            add(x.m_type_declaration);
+            ASR::BaseWalkVisitor<ReferencedSymbols>::visit_Variable(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            add(x.m_name);
+            ASR::BaseWalkVisitor<ReferencedSymbols>::visit_FunctionCall(x);
+        }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            add(x.m_name);
+            ASR::BaseWalkVisitor<ReferencedSymbols>::visit_SubroutineCall(x);
+        }
+        void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+            add(x.m_dt_sym);
+            ASR::BaseWalkVisitor<ReferencedSymbols>::visit_StructConstructor(x);
+        }
+        void visit_Struct(const ASR::Struct_t &x) {
+            add(x.m_parent);
+            ASR::BaseWalkVisitor<ReferencedSymbols>::visit_Struct(x);
+        }
+    };
+
+    // The declarations of `tu_declarations` that `units` use, directly or
+    // through another of them, in declaration order.
+    std::vector<ASR::symbol_t*> tu_declarations_for(
+            const std::vector<ASR::symbol_t*> &units) {
+        std::set<ASR::symbol_t*> wanted(tu_declarations.begin(),
+            tu_declarations.end());
+        std::set<ASR::symbol_t*> used;
+        std::vector<ASR::symbol_t*> work(units.begin(), units.end());
+        while (!work.empty()) {
+            ASR::symbol_t *sym = work.back();
+            work.pop_back();
+            ReferencedSymbols refs;
+            refs.visit_symbol(*sym);
+            for (ASR::symbol_t *r : refs.symbols) {
+                if (wanted.count(r) > 0 && used.insert(r).second) {
+                    work.push_back(r);
+                }
+            }
+        }
+        std::vector<ASR::symbol_t*> result;
+        for (ASR::symbol_t *d : tu_declarations) {
+            if (used.count(d) > 0) result.push_back(d);
+        }
+        return result;
+    }
+
+    // Whether a dummy or the result of `f` is declared with type `type`,
+    // or, for a dummy procedure, one of its interface's is.
+    static bool declares_with(ASR::Function_t *f, ASR::symbol_t *type, int depth=0) {
+        std::vector<ASR::expr_t*> decls(f->m_args, f->m_args + f->n_args);
+        if (f->m_return_var) decls.push_back(f->m_return_var);
+        for (ASR::expr_t *e : decls) {
+            if (!ASR::is_a<ASR::Var_t>(*e)) continue;
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*v)) continue;
+            ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(v)->m_type_declaration;
+            if (decl == nullptr) continue;
+            decl = ASRUtils::symbol_get_past_external(decl);
+            if (decl == type) return true;
+            if (depth == 0 && ASR::is_a<ASR::Function_t>(*decl)
+                    && declares_with(ASR::down_cast<ASR::Function_t>(decl), type, 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The `bind(c)` procedure among `procedures` whose dummies or result are
+    // declared with type `type`; see `declares_with`. Or nullptr.
+    static ASR::Function_t* bindc_procedure_declaring(
+            const std::vector<ASR::symbol_t*> &procedures, ASR::symbol_t *type) {
+        for (ASR::symbol_t *sym : procedures) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            if (ASRUtils::get_FunctionType(f)->m_abi != ASR::abiType::BindC) continue;
+            if (declares_with(f, type)) return f;
+        }
+        return nullptr;
+    }
+
+    // Interface blocks for the external `bind(c)` procedures `x` calls that
+    // its own scope does not declare, as the implementation a `bind(c)` entry
+    // forwards to: a reference to a `bind(c)` procedure needs an explicit
+    // interface, and an external procedure printed on its own has no host to
+    // provide one.
+    std::string external_bindc_interfaces(const ASR::Function_t &x) {
+        if (!external_procedures_standalone || x.m_symtab->parent == nullptr
+                || x.m_symtab->parent->parent != nullptr) {
+            return "";
+        }
+        ReferencedSymbols refs;
+        for (size_t i = 0; i < x.n_body; i++) refs.visit_stmt(*x.m_body[i]);
+        std::string r;
+        for (ASR::symbol_t *sym : refs.symbols) {
+            if (sym == (ASR::symbol_t*)&x || !ASR::is_a<ASR::Function_t>(*sym)) continue;
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::FunctionType_t *type = ASRUtils::get_FunctionType(f);
+            if (f->m_symtab->parent != x.m_symtab->parent
+                    || type->m_abi != ASR::abiType::BindC
+                    || type->m_deftype != ASR::deftypeType::Implementation
+                    || x.m_symtab->get_symbol(f->m_name) != nullptr) {
+                continue;
+            }
+            r += indent + "interface\n";
+            inc_indent();
+            bool interface_body_only_copy = interface_body_only;
+            interface_body_only = true;
+            pending_tu_declarations = tu_declarations_for({sym});
+            visit_symbol(*sym);
+            pending_tu_declarations.clear();
+            interface_body_only = interface_body_only_copy;
+            r += src;
+            dec_indent();
+            r += indent + "end interface\n";
+        }
+        return r;
+    }
+
+    // `decls` as declarations of the specification part being printed.
+    std::string print_tu_declarations(const std::vector<ASR::symbol_t*> &decls) {
+        std::string r;
+        for (ASR::symbol_t *d : decls) {
+            if (ASR::is_a<ASR::Function_t>(*d)) {
+                is_interface = true;
+                r += indent + "interface\n";
+                inc_indent();
+                visit_symbol(*d);
+                r += src;
+                dec_indent();
+                r += indent + "end interface\n";
+                is_interface = false;
+            } else {
+                visit_symbol(*d);
+                r += src;
+            }
+        }
+        return r;
     }
 
     template <typename T>
@@ -369,25 +618,120 @@ public:
         std::string r = "";
         std::vector<std::string> build_order
             = ASRUtils::determine_module_dependencies(x);
+        // A module can be listed more than once; it is printed once.
+        std::set<std::string> printed_modules;
         for (auto &item : build_order) {
             LCOMPILERS_ASSERT(x.m_symtab->get_symbol(item)
                 != nullptr);
+            if (!printed_modules.insert(item).second) continue;
             ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
             visit_symbol(*mod);
             r += src;
             r += "\n";
         }
 
-        tu_functions = "";
+        // The declarations of the translation unit's scope, in the order they
+        // can be declared: named constants, types, then interfaces.
+        tu_declarations.clear();
+        for (auto &name : ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
+            ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+            if (sym && ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                        == ASR::storage_typeType::Parameter) {
+                tu_declarations.push_back(sym);
+            }
+        }
+        {
+            std::map<std::string, std::vector<std::string>> deps;
+            for (auto &item : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                        ASR::is_a<ASR::Enum_t>(*item.second) ||
+                        ASR::is_a<ASR::Union_t>(*item.second)) {
+                    std::vector<std::string> v;
+                    std::pair<char**, size_t> d = ASRUtils::symbol_dependencies(item.second);
+                    for (size_t i = 0; i < d.second; i++) v.push_back(d.first[i]);
+                    deps[item.first] = v;
+                }
+            }
+            for (auto &name : ASRUtils::order_deps(deps)) {
+                ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+                if (sym) tu_declarations.push_back(sym);
+            }
+        }
+        std::vector<ASR::symbol_t*> tu_procedures;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
-                visit_symbol(*item.second);
-                tu_functions += src;
-                tu_functions += "\n";
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            if (ASRUtils::is_init_runtime_function(item.second)) continue;
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(item.second);
+            if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface
+                    && !ASRUtils::is_bare_implicit_interface(*f)) {
+                tu_declarations.push_back(item.second);
+            } else if (!is_idle_global_init_symbol(item.second)) {
+                tu_procedures.push_back(item.second);
+            }
+        }
+        ASR::symbol_t *program = nullptr;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Program_t>(*item.second)) program = item.second;
+        }
+        // With a program, the external procedures are printed in it and see
+        // what it declares by host association; without one, each declares
+        // what it uses itself.
+        std::vector<ASR::symbol_t*> program_units = tu_procedures;
+        if (program) program_units.push_back(program);
+        std::vector<ASR::symbol_t*> used = tu_declarations_for(program_units);
+        std::set<ASR::symbol_t*> used_set(used.begin(), used.end());
+        program_tu_declarations = program ? used : std::vector<ASR::symbol_t*>();
+
+        unshareable_tu_types.clear();
+        external_procedures_standalone = (program == nullptr);
+        if (!program) {
+            std::map<ASR::symbol_t*, int> users;
+            for (ASR::symbol_t *sym : tu_procedures) {
+                for (ASR::symbol_t *d : tu_declarations_for({sym})) users[d]++;
+            }
+            for (auto &u : users) {
+                if (u.second < 2 || !ASR::is_a<ASR::Struct_t>(*u.first)) continue;
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(u.first);
+                if (st->m_abi != ASR::abiType::BindC && !st->m_is_sequence) {
+                    // The declaration of a `bind(c)` procedure's dummy is
+                    // what a type is shared for; such a dummy has to be
+                    // interoperable, so a type that is not is source the
+                    // standard does not allow, and it cannot be printed.
+                    if (ASR::Function_t *f = bindc_procedure_declaring(
+                            tu_procedures, u.first)) {
+                        throw CodeGenError("the derived type '"
+                            + std::string(st->m_name) + "' used by a dummy "
+                            "argument of the bind(c) procedure '"
+                            + std::string(f->m_name) + "' is not interoperable, "
+                            "so it cannot be written as Fortran source; declare "
+                            "it with bind(c)",
+                            f->base.base.loc);
+                    }
+                    unshareable_tu_types.insert(u.first);
+                    used_set.erase(u.first);
+                }
             }
         }
 
+        tu_functions = "";
+        for (ASR::symbol_t *sym : tu_procedures) {
+            if (!program) {
+                pending_tu_declarations.clear();
+                for (ASR::symbol_t *d : tu_declarations_for({sym})) {
+                    if (unshareable_tu_types.count(d) == 0) {
+                        pending_tu_declarations.push_back(d);
+                    }
+                }
+            }
+            visit_symbol(*sym);
+            pending_tu_declarations.clear();
+            tu_functions += src;
+            tu_functions += "\n";
+        }
+
         // Emit Struct/Enum/Union definitions from Translational Unit scope
+        // that no program unit uses, where they have always been.
         std::map<std::string, std::vector<std::string>> struct_deps;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
@@ -405,6 +749,7 @@ public:
             std::vector<std::string> tu_struct_deps = ASRUtils::order_deps(struct_deps);
             for (auto &item : tu_struct_deps) {
                 ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+                if (used_set.count(struct_sym) > 0) continue;
                 visit_symbol(*struct_sym);
                 r += src;
                 r += "\n";
@@ -444,6 +789,7 @@ public:
         }
         r += indent + "implicit none";
         r += "\n";
+        r += print_tu_declarations(program_tu_declarations);
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
@@ -467,7 +813,8 @@ public:
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
+            if (is_a<ASR::Variable_t>(*var_sym)
+                    && !is_idle_global_init_symbol(var_sym)) {
                 visit_symbol(*var_sym);
                 r += src;
             }
@@ -482,6 +829,7 @@ public:
                 r += src;
             }
         }
+        r += init_dispatch_interface(x);
 
         visit_body(x, r, false);
 
@@ -492,7 +840,8 @@ public:
                         *down_cast<ASR::Function_t>(item.second))) {
                 continue;
             }
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    && !is_idle_global_init_symbol(item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -569,7 +918,8 @@ public:
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
+            if (is_a<ASR::Variable_t>(*var_sym)
+                    && !is_idle_global_init_symbol(var_sym)) {
                 visit_symbol(*var_sym);
                 r += src;
             }
@@ -578,7 +928,8 @@ public:
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    && !is_idle_global_init_symbol(item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
                 if (ASRUtils::is_device_kernel(item.second)) {
                     func_name.push_back(item.first);
@@ -731,7 +1082,13 @@ public:
         }
         if (type->m_abi == ASR::abiType::BindC) {
             r += " bind(c";
-            if (type->m_bindc_name) {
+            // An internal procedure cannot have a binding label in Fortran
+            // source; nothing outside the output calls it by one.
+            ASR::asr_t *host = x.m_symtab->parent->asr_owner;
+            bool internal = host && ASR::is_a<ASR::symbol_t>(*host)
+                && (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(host))
+                    || ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(host)));
+            if (type->m_bindc_name && !internal) {
                 r += ", name = \"";
                 r += type->m_bindc_name;
                 r += "\"";
@@ -754,12 +1111,27 @@ public:
                 r += src;
             }
         }
+        if (!pending_tu_declarations.empty()) {
+            std::vector<ASR::symbol_t*> decls;
+            decls.swap(pending_tu_declarations);
+            r += print_tu_declarations(decls);
+        }
+        if (!interface_body_only) {
+            r += external_bindc_interfaces(x);
+        }
         {
             std::string variable_declaration;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
                 if (is_return_var_declared && item == return_var) continue;
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+                if (interface_body_only && is_a<ASR::Variable_t>(*var_sym)) {
+                    ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
+                    if (!ASRUtils::is_arg_dummy(v->m_intent)
+                            && v->m_intent != ASR::intentType::ReturnVar) {
+                        continue;
+                    }
+                }
                 if (is_a<ASR::Variable_t>(*var_sym)) {
                     visit_symbol(*var_sym);
                     variable_declaration += src;
@@ -786,6 +1158,7 @@ public:
         // Interface
         std::vector<std::string> internal_proc_name;
         for (auto &item : x.m_symtab->get_scope()) {
+            if (interface_body_only) break;
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
                 if (ASRUtils::is_bare_implicit_interface(*f)) {
@@ -809,8 +1182,10 @@ public:
                 }
             }
         }
-
-        visit_body(x, r, false);
+        if (!interface_body_only) {
+            r += init_runtime_interfaces(x);
+            visit_body(x, r, false);
+        }
 
         if (internal_proc_name.size() > 0) {
             r += indent;
@@ -906,6 +1281,20 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         // Ensure no stale output leaks when this symbol does not emit a use line.
         src.clear();
+        // An import of an idle startup initializer or its state, which a
+        // submodule sees of its parent, is not printed either, since neither
+        // is. An initializer defined in another file only looks idle here,
+        // because only its declaration is here, and is imported as usual.
+        {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+                (ASR::symbol_t*)&x);
+            ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(target)->asr_owner;
+            ASR::Function_t *init = owner ? ASRUtils::get_global_init(owner) : nullptr;
+            if (init && ASRUtils::global_init_defined_here(init)
+                    && is_idle_global_init_symbol(target)) {
+                return;
+            }
+        }
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if (std::string(x.m_name).find('@') != std::string::npos ||
             std::string(x.m_original_name).find('@') != std::string::npos) {
@@ -1451,6 +1840,27 @@ public:
         }
         r += "\n";
         src = r;
+    }
+
+    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &/*x*/) {
+        LCOMPILERS_ASSERT(!init_dispatch_name.empty());
+        // The engine's number of the collective phase.
+        src = indent + "call " + init_dispatch_name + "(1)\n";
+    }
+
+    void visit_GlobalInitStorage(const ASR::GlobalInitStorage_t &x) {
+        // Establishing storage stores no value and is target specific, so
+        // Fortran source has no statement for it; say where it happens.
+        if (x.n_targets == 0) {
+            src = "";
+            return;
+        }
+        std::string r = indent + "! run-time storage established:";
+        for (size_t i = 0; i < x.n_targets; i++) {
+            visit_expr(*x.m_targets[i]);
+            r += (i == 0 ? " " : ", ") + src;
+        }
+        src = r + "\n";
     }
 
     void visit_ErrorStop(const ASR::ErrorStop_t &/*x*/) {

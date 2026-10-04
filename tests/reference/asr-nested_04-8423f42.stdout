@@ -5,11 +5,11 @@
             nested_04:
                 (Program
                     (SymbolTable
-                        5
+                        6
                         {
                             b:
                                 (ExternalSymbol
-                                    5
+                                    6
                                     b
                                     2 b
                                     nested_04_a
@@ -19,7 +19,7 @@
                                 ),
                             test:
                                 (Variable
-                                    5
+                                    6
                                     test
                                     []
                                     Local
@@ -45,9 +45,9 @@
                     nested_04
                     [nested_04_a]
                     [(Assignment
-                        (Var 5 test)
+                        (Var 6 test)
                         (FunctionCall
-                            5 b
+                            6 b
                             ()
                             [((IntegerConstant 5 (Integer 4) Decimal))]
                             (Integer 4)
@@ -59,12 +59,69 @@
                         .false.
                     )]
                     ()
+                    ()
                 ),
             nested_04_a:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_nested_04_a:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_nested_04_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_nested_04_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_nested_04_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             b:
                                 (Function
                                     (SymbolTable
@@ -353,9 +410,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_nested_04_a
+                    2 __lcompilers_global_init_state_nested_04_a
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

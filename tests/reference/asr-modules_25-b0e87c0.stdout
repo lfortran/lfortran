@@ -27,20 +27,77 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             tomlf_de_character:
                 (Module
                     (SymbolTable
                         4
                         {
-                            next_token:
+                            __lcompilers_global_init_state_tomlf_de_character:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_tomlf_de_character
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_de_character:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_de_character
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            next_token:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
                                             de:
                                                 (Variable
-                                                    6
+                                                    7
                                                     de
                                                     []
                                                     InOut
@@ -71,7 +128,7 @@
                                                 ),
                                             dot_is_token:
                                                 (Variable
-                                                    6
+                                                    7
                                                     dot_is_token
                                                     []
                                                     In
@@ -119,8 +176,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 de)
-                                    (Var 6 dot_is_token)]
+                                    [(Var 7 de)
+                                    (Var 7 dot_is_token)]
                                     []
                                     ()
                                     Private
@@ -197,7 +254,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_table
-                                    8 toml_table
+                                    9 toml_table
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_table
@@ -207,7 +264,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_tokenizer
-                                    8 toml_tokenizer
+                                    9 toml_tokenizer
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer
@@ -217,7 +274,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_tokenizer_
-                                    8 toml_tokenizer_
+                                    9 toml_tokenizer_
                                     tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer_
@@ -230,21 +287,79 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_tomlf_de_character
+                    4 __lcompilers_global_init_state_tomlf_de_character
+                    .false.
                 ),
             tomlf_de_tokenizer_25:
                 (Module
                     (SymbolTable
-                        8
+                        9
                         {
+                            __lcompilers_global_init_state_tomlf_de_tokenizer_25:
+                                (Variable
+                                    9
+                                    __lcompilers_global_init_state_tomlf_de_tokenizer_25
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_de_tokenizer_25:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_de_tokenizer_25
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             next_token:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             de:
                                                 (Variable
-                                                    12
+                                                    14
                                                     de
                                                     []
                                                     InOut
@@ -264,7 +379,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    8 toml_tokenizer
+                                                    9 toml_tokenizer
                                                     Source
                                                     Private
                                                     Required
@@ -280,7 +395,7 @@
                                                 ),
                                             dot_is_token:
                                                 (Variable
-                                                    12
+                                                    14
                                                     dot_is_token
                                                     []
                                                     In
@@ -333,8 +448,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 de)
-                                    (Var 12 dot_is_token)]
+                                    [(Var 14 de)
+                                    (Var 14 dot_is_token)]
                                     []
                                     ()
                                     Private
@@ -345,13 +460,13 @@
                             parse_select:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             1_toml_tokenizer_current:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_toml_tokenizer_current
-                                                    10 current
+                                                    11 current
                                                     tomlf_de_tokenizer_25
                                                     [toml_tokenizer]
                                                     current
@@ -359,7 +474,7 @@
                                                 ),
                                             de:
                                                 (Variable
-                                                    13
+                                                    15
                                                     de
                                                     []
                                                     InOut
@@ -379,7 +494,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    8 toml_tokenizer
+                                                    9 toml_tokenizer
                                                     Source
                                                     Private
                                                     Required
@@ -395,7 +510,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    13
+                                                    15
                                                     table
                                                     []
                                                     Local
@@ -410,7 +525,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    8 toml_table
+                                                    9 toml_table
                                                     Source
                                                     Private
                                                     Required
@@ -454,14 +569,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 de)]
+                                    [(Var 15 de)]
                                     [(Nullify
-                                        [(Var 13 table)]
+                                        [(Var 15 table)]
                                     )
                                     (Associate
                                         (StructInstanceMember
-                                            (Var 13 de)
-                                            13 1_toml_tokenizer_current
+                                            (Var 15 de)
+                                            15 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
                                                     [(Logical 4)]
@@ -472,7 +587,7 @@
                                             )
                                             ()
                                         )
-                                        (Var 13 table)
+                                        (Var 15 table)
                                     )]
                                     ()
                                     Private
@@ -483,11 +598,11 @@
                             toml_table:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             inline:
                                                 (Variable
-                                                    9
+                                                    10
                                                     inline
                                                     []
                                                     Local
@@ -539,11 +654,11 @@
                             toml_tokenizer:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             current:
                                                 (Variable
-                                                    10
+                                                    11
                                                     current
                                                     []
                                                     Local
@@ -556,7 +671,7 @@
                                                                 .false.
                                                             )
                                                         )
-                                                        (Var 10 current)
+                                                        (Var 11 current)
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
@@ -567,7 +682,7 @@
                                                                 .false.
                                                             )
                                                         )
-                                                        (Var 10 current)
+                                                        (Var 11 current)
                                                     )
                                                     Default
                                                     (Pointer
@@ -578,7 +693,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    8 toml_table
+                                                    9 toml_table
                                                     Source
                                                     Private
                                                     Required
@@ -594,11 +709,11 @@
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     next_token
                                                     ()
                                                     next_token
-                                                    8 next_token
+                                                    9 next_token
                                                     Source
                                                     .true.
                                                     .false.
@@ -634,7 +749,7 @@
                             toml_tokenizer_:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             
                                         })
@@ -655,7 +770,7 @@
                                     .false.
                                     []
                                     ()
-                                    8 toml_tokenizer
+                                    9 toml_tokenizer
                                     []
                                 )
                         })
@@ -665,9 +780,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    9 __lcompilers_global_init_tomlf_de_tokenizer_25
+                    9 __lcompilers_global_init_state_tomlf_de_tokenizer_25
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

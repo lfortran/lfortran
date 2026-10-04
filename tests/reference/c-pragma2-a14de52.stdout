@@ -36,7 +36,7 @@ struct r32
 // Implementations
 int main(int argc, char* argv[])
 {
-    _lpython_set_argv(argc, argv);
+    _lpython_call_initial_functions(argc, argv);
     const struct i32 __libasr_created__array_constant__value;
     struct i32* __libasr_created__array_constant_ = &__libasr_created__array_constant__value;
     int32_t __libasr_created__array_constant__data[1];
@@ -47,6 +47,7 @@ int main(int argc, char* argv[])
     __libasr_created__array_constant_->dims[0].length = 1;
     __libasr_created__array_constant_->dims[0].stride = 1;
     float a __attribute__ (( vector_size(sizeof(float) * 8) ));
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     a = (float __attribute__ (( vector_size(sizeof(float) * 8) ))) {(float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1)};
     return 0;
 }

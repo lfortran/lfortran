@@ -11,6 +11,7 @@
  * for both C and C++ code generation.
  */
 
+#include <algorithm>
 #include <memory>
 #include <set>
 
@@ -24,6 +25,8 @@
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
+#include <libasr/pass/global_init.h>
+#include <libasr/runtime/lcompilers_init_abi.h>
 
 
 #include <map>
@@ -218,15 +221,6 @@ public:
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
-        // A translation unit initializer has to run before main, which only
-        // a target with a startup hook of its own can arrange. Nothing that
-        // reaches this backend sets one today — it comes from a saved coarray
-        // of an external procedure — so say so rather than quietly dropping
-        // the initialization on the floor.
-        if (x.m_global_init != nullptr) {
-            throw CodeGenError("a startup initializer of the translation unit "
-                "is not supported by this backend");
-        }
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -324,7 +318,9 @@ R"(#include <stdio.h>
                     contains += decl + "\n";
                     continue;
                 }
-                if (v->m_value) {
+                // A scalar's declaration already carries its initializer.
+                if (v->m_value && !(v->m_symbolic_value
+                        && !ASRUtils::is_array(v->m_type))) {
                     self().visit_expr(*v->m_value);
                     decl += " = " + src;
                 }
@@ -523,6 +519,16 @@ R"(#include <stdio.h>
     }
 
     // Returns the declaration, no semi colon at the end
+    // A symbol the translation unit's own scope declares Private is reachable
+    // from this translation unit only -- a startup initializer of the unit
+    // and its state, for instance -- so it has internal linkage and another
+    // translation unit's symbol of the same name cannot clash with it.
+    static bool is_translation_unit_private(const SymbolTable *parent_symtab,
+            ASR::accessType access) {
+        return access == ASR::accessType::Private
+            && parent_symtab->parent == nullptr;
+    }
+
     std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
         template_for_Kokkos.clear();
         template_number = 0;
@@ -535,6 +541,13 @@ R"(#include <stdio.h>
             inl = "inline __attribute__((always_inline)) ";
         }
         if( ASRUtils::get_FunctionType(x)->m_static && !is_pointer) {
+            static_attr = "static ";
+        }
+        if (!is_pointer && is_translation_unit_private(x.m_symtab->parent,
+                x.m_access)
+                && ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Source
+                && ASRUtils::get_FunctionType(x)->m_deftype
+                    == ASR::deftypeType::Implementation) {
             static_attr = "static ";
         }
         if (x.m_return_var) {
@@ -695,6 +708,7 @@ R"(#include <stdio.h>
         std::string code, t;
         for (auto &item : scope.get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                if (ASRUtils::is_init_runtime_function(item.second)) continue;
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 t = declare_all_functions(*s->m_symtab);
                 bool has_typevar = false;
@@ -734,6 +748,12 @@ R"(#include <stdio.h>
 
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
+        // The guard of a startup initializer calls into the runtime engine,
+        // which lcompilers_init.h declares with the linkage it has.
+        if (ASRUtils::is_init_runtime_function((const ASR::symbol_t*)&x)) {
+            src = "";
             return;
         }
         std::string sub = "";
@@ -1086,7 +1106,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     *ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(m_args[i].m_value)->m_v))) {
                 ASR::Variable_t* param = ASRUtils::EXPR2VAR(f->m_args[i]);
-                if( (is_c && (param->m_intent == ASRUtils::intent_inout
+                // The guard of a startup initializer calls the runtime
+                // engine, whose C interface takes the state by address in
+                // C++ output as well.
+                bool c_interface = is_c || ASRUtils::is_init_runtime_function(
+                    (const ASR::symbol_t*)f);
+                if( (c_interface && (param->m_intent == ASRUtils::intent_inout
                     || param->m_intent == ASRUtils::intent_out)
                     && !ASRUtils::is_aggregate_type(param->m_type))) {
                     args += "&" + src;
@@ -2930,6 +2955,232 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     void visit_SyncAll(const ASR::SyncAll_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         src = indent + "// SYNC ALL\n";
+    }
+
+    // The collective startup boundary of a main program.
+    void visit_GlobalInitDispatch(const ASR::GlobalInitDispatch_t &/*x*/) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        src = indent + "_lcompilers_init_dispatch("
+            "lcompilers_init_dispatch_collective);\n";
+    }
+
+    // Whether the declaration this backend emits for variable `v` of a module
+    // or of the translation unit already is all of its storage, statically
+    // allocated before any code runs. Only then does establishing that
+    // storage at run time have nothing to do.
+    bool declaration_supplies_storage(const ASR::Variable_t &v) {
+        ASR::ttype_t *t = v.m_type;
+        if (ASRUtils::is_array(t) || ASRUtils::is_allocatable(t)
+                || ASRUtils::is_pointer(t)) {
+            return false;
+        }
+        if (ASRUtils::is_integer(*t) || ASRUtils::is_unsigned_integer(*t)
+                || ASRUtils::is_real(*t) || ASRUtils::is_complex(*t)
+                || ASRUtils::is_logical(*t) || ASR::is_a<ASR::CPtr_t>(*t)
+                || ASR::is_a<ASR::EnumType_t>(*t)) {
+            return true;
+        }
+        if (!is_c) {
+            // A C++ string or object is constructed by the C++ runtime's own
+            // initialization, in an order this translation unit does not
+            // control, so it cannot be taken as already constructed.
+            return false;
+        }
+        if (ASRUtils::is_character(*t)) {
+            // A C string is a pointer, null until assigned; assignment
+            // allocates its buffer.
+            return true;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*t) && v.m_type_declaration) {
+            // A C structure is a static value the declared pointer points
+            // to, which is all its storage when every member's is.
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v.m_type_declaration));
+            for (auto &item : st->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                        !declaration_supplies_storage(
+                            *ASR::down_cast<ASR::Variable_t>(item.second))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void visit_GlobalInitStorage(const ASR::GlobalInitStorage_t &x) {
+        for (size_t i = 0; i < x.n_targets; i++) {
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_targets[i]);
+            if (!declaration_supplies_storage(*v)) {
+                throw CodeGenError("run-time storage of '"
+                    + std::string(v->m_name) + "' is not supported by the "
+                    + std::string(is_c ? "C" : "C++") + " backend",
+                    x.m_targets[i]->base.loc);
+            }
+        }
+        src = "";
+    }
+
+    // The startup records of the initializers this translation unit defines,
+    // in the encoding of the object format the output is compiled for, and
+    // the constructor through which its object file enters the engine. See
+    // lcompilers_init_abi.h; the section and note names come from there.
+    std::string global_init_records(const ASR::TranslationUnit_t &x) {
+        std::vector<ASRUtils::GlobalInitRoot> roots = ASRUtils::global_init_roots(
+            const_cast<ASR::TranslationUnit_t&>(x));
+        if (roots.empty()) return "";
+        std::string r = "\n// Startup records\n";
+        r += "static const lcompilers_init_record __lcompilers_init_records[] = {\n";
+        for (auto &root : roots) {
+            if (root.bootstrap) {
+                // A collective bootstrap has no state and no teardown: the
+                // engine runs it once, outside every guard.
+                r += "    {\"" + root.stable_id + "\", &"
+                    + std::string(root.ensure->m_name)
+                    + ", NULL, NULL, lcompilers_init_bootstrap, 0},\n";
+                continue;
+            }
+            r += "    {\"" + root.stable_id + "\", &" + std::string(root.ensure->m_name)
+                + ", NULL, &" + std::string(root.state->m_name) + ", "
+                + (root.collective ? "lcompilers_init_collective" : "0")
+                + ", 0},\n";
+        }
+        r += "};\n";
+        // The word through which the engine tells this mapping of the
+        // object's image from a later one at the same address.
+        r += "static uint32_t __lcompilers_init_instance = 0;\n";
+        std::string table = "{lcompilers_init_abi_version, "
+            + std::to_string(roots.size())
+            + ", __lcompilers_init_records, &__lcompilers_init_instance}";
+        // A name of this object file's own, after what it defines, which no
+        // other object file of a link defines.
+        std::vector<std::string> defined;
+        for (auto &item : x.m_symtab->get_scope()) {
+            ASR::symbol_t *s = item.second;
+            if (ASR::is_a<ASR::Program_t>(*s)
+                    || (ASR::is_a<ASR::Module_t>(*s)
+                        && !ASR::down_cast<ASR::Module_t>(s)->m_loaded_from_mod)
+                    || (ASR::is_a<ASR::Function_t>(*s)
+                        && ASRUtils::get_FunctionType(
+                            ASR::down_cast<ASR::Function_t>(s))->m_deftype
+                            == ASR::deftypeType::Implementation)) {
+                defined.push_back(item.first);
+            }
+        }
+        for (auto &root : roots) defined.push_back(root.stable_id);
+        std::sort(defined.begin(), defined.end());
+        std::string object_name = stable_hash_hex(join(",", defined));
+        bool coff = false;
+        switch (ASRUtils::init_object_format(platform)) {
+            case ASRUtils::InitObjectFormat::MachO: {
+                r += "static const lcompilers_init_table __lcompilers_init_table\n"
+                    "    __attribute__((used, section(\""
+                    + std::string(lcompilers_init_macho_segment) + ","
+                    + std::string(lcompilers_init_macho_section)
+                    + ",regular,no_dead_strip\"), aligned(8))) = " + table + ";\n";
+                break;
+            }
+            case ASRUtils::InitObjectFormat::COFF: {
+                // The output may be compiled by MSVC as well as by a GNU
+                // compatible compiler, which spell a section, a retained
+                // symbol and a constructor differently. MSVC runs what
+                // `.CRT$XCU` points to and has no destructor attribute; the
+                // CRT's `atexit` of a DLL runs when it is unloaded. The
+                // pointer is external, so that `/include` keeps it however
+                // the objects are optimized, and named after what this
+                // object defines, which no other object of a link defines.
+                std::string ctor_ptr = "__lcompilers_init_ctor_" + object_name;
+                std::string ext = is_c ? "" : "extern \"C\" ";
+                r += "#if defined(_MSC_VER)\n"
+                    "#pragma section(\"" + std::string(lcompilers_init_coff_section)
+                    + "\", read)\n"
+                    "__declspec(allocate(\"" + std::string(lcompilers_init_coff_section)
+                    + "\")) static const lcompilers_init_table __lcompilers_init_table = "
+                    + table + ";\n"
+                    "static void __lcompilers_init_unload(void)\n"
+                    "{\n    _lcompilers_init_unload(&__lcompilers_init_table);\n}\n"
+                    "static void __cdecl __lcompilers_init_trigger(void)\n"
+                    "{\n    atexit(__lcompilers_init_unload);\n"
+                    "    _lcompilers_init_ctor(&__lcompilers_init_table);\n}\n"
+                    "#pragma section(\".CRT$XCU\", read)\n"
+                    + ext + "__declspec(allocate(\".CRT$XCU\")) void (__cdecl *"
+                    + ctor_ptr + ")(void) = __lcompilers_init_trigger;\n"
+                    "#if defined(_M_IX86)\n"
+                    "#pragma comment(linker, \"/include:_" + ctor_ptr + "\")\n"
+                    "#else\n"
+                    "#pragma comment(linker, \"/include:" + ctor_ptr + "\")\n"
+                    "#endif\n"
+                    "#else\n"
+                    "static const lcompilers_init_table __lcompilers_init_table\n"
+                    "    __attribute__((used, section(\""
+                    + std::string(lcompilers_init_coff_section)
+                    + "\"), aligned(8))) = " + table + ";\n";
+                coff = true;
+                break;
+            }
+            case ASRUtils::InitObjectFormat::ELF: {
+                // An allocated, read-only note, which every ELF loader maps
+                // and exposes through the program headers, naming the table
+                // by its offset from the note. The linker
+                // resolves that offset, which C cannot spell as a constant,
+                // so the note is spelled in assembler directives, with the
+                // table under an assembler name of this object's own; a C
+                // section attribute would also give it the flags of
+                // relocated data. Notes are 4-byte aligned. The table is
+                // not `static`: link-time optimization can put the assembler
+                // and the table into different partitions, where a local
+                // symbol is not defined for the assembler. Hidden, it is
+                // still resolved at link time, needing no dynamic
+                // relocation, and its name is not exported from the image.
+                std::string table_name = "__lcompilers_init_table_" + object_name;
+                r += std::string(is_c ? "" : "extern \"C\" ")
+                    + "__attribute__((visibility(\"hidden\"))) "
+                    "const lcompilers_init_table __lcompilers_init_table\n"
+                    "    __asm__(\"" + table_name + "\") __attribute__((used)) = "
+                    + table + ";\n";
+                std::string owner = lcompilers_init_elf_note_owner;
+                for (int bytes : {8, 4}) {
+                    r += std::string(bytes == 8 ? "#if" : "#elif")
+                        + " __SIZEOF_POINTER__ == " + std::to_string(bytes) + "\n";
+                    r += "__asm__(\".pushsection "
+                        + std::string(lcompilers_init_elf_note_section)
+                        + ",\\\"a\\\",%note\\n\"\n"
+                        "    \".balign 4\\n\"\n"
+                        "    \"1: .long " + std::to_string(owner.size() + 1) + ", "
+                        + std::to_string(bytes) + ", "
+                        + std::to_string(lcompilers_init_elf_note_type) + "\\n\"\n"
+                        "    \".asciz \\\"" + owner + "\\\"\\n\"\n"
+                        "    \"" + (bytes == 8 ? ".quad " : ".long ") + table_name
+                        + " - 1b\\n\"\n"
+                        "    \".popsection\");\n";
+                }
+                r += "#else\n"
+                    "#error \"the startup initialization note needs a pointer "
+                    "size of 4 or 8 bytes\"\n"
+                    "#endif\n";
+                break;
+            }
+            case ASRUtils::InitObjectFormat::Wasm: {
+                // wasm-ld collects no section into a table, so the object
+                // publishes its table from a constructor that runs before any
+                // other, and thus before anything can dispatch.
+                r += "static const lcompilers_init_table __lcompilers_init_table = "
+                    + table + ";\n";
+                r += "__attribute__((constructor("
+                    + std::to_string(lcompilers_init_wasm_publish_priority)
+                    + "))) static void __lcompilers_init_publish(void)\n"
+                    "{\n    _lcompilers_init_add_records(&__lcompilers_init_table);\n}\n";
+                break;
+            }
+        }
+        r += "__attribute__((constructor)) static void __lcompilers_init_trigger(void)\n"
+            "{\n    _lcompilers_init_ctor(&__lcompilers_init_table);\n}\n";
+        // Takes this object's records out of the engine before its image
+        // goes away, tearing down those that are ready.
+        r += "__attribute__((destructor)) static void __lcompilers_init_unload(void)\n"
+            "{\n    _lcompilers_init_unload(&__lcompilers_init_table);\n}\n";
+        if (coff) r += "#endif\n";
+        return r;
     }
 
     void visit_SyncMemory(const ASR::SyncMemory_t & /* x */) {

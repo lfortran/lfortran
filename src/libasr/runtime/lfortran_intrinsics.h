@@ -2,6 +2,7 @@
 #define LFORTRAN_INTRINSICS_H
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <complex.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -217,7 +218,7 @@ LFORTRAN_API float _lfortran_sfix(float x);
 LFORTRAN_API double _lfortran_dfix(double x);
 LFORTRAN_API float _lfortran_cphase(float_complex_t x);
 LFORTRAN_API double _lfortran_zphase(double_complex_t x);
-int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
+LFORTRAN_API int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
 LFORTRAN_API char* _lfortran_float_to_str8_alloc(lfortran_allocator_t* al, double num);
 LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num);
 LFORTRAN_API char* _lfortran_int_to_str1_alloc(lfortran_allocator_t* al, int8_t num);
@@ -536,5 +537,7 @@ __lfortran_dynamic_cast(const void* static_ptr,
 #ifdef __cplusplus
 }
 #endif
+
+#include "lcompilers_init.h"
 
 #endif

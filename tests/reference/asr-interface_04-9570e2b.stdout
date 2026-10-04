@@ -5,18 +5,18 @@
             interface_04:
                 (Program
                     (SymbolTable
-                        5
+                        7
                         {
                             a:
                                 (GenericProcedure
-                                    5
+                                    7
                                     a
-                                    [5 a1@a]
+                                    [7 a1@a]
                                     Public
                                 ),
                             a1@a:
                                 (ExternalSymbol
-                                    5
+                                    7
                                     a1@a
                                     2 a1
                                     interface_04_mod1
@@ -26,7 +26,7 @@
                                 ),
                             i:
                                 (Variable
-                                    5
+                                    7
                                     i
                                     []
                                     Local
@@ -53,23 +53,23 @@
                     [interface_04_mod2
                     interface_04_mod1]
                     [(Assignment
-                        (Var 5 i)
+                        (Var 7 i)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (SubroutineCall
-                        5 a1@a
-                        5 a
-                        [((Var 5 i))]
+                        7 a1@a
+                        7 a
+                        [((Var 7 i))]
                         ()
                         .false.
                     )
                     (If
                         ()
                         (IntegerCompare
-                            (Var 5 i)
+                            (Var 7 i)
                             NotEq
                             (IntegerConstant 6 (Integer 4) Decimal)
                             (Logical 4)
@@ -81,12 +81,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             interface_04_mod1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_interface_04_mod1:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_interface_04_mod1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_interface_04_mod1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_interface_04_mod1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a:
                                 (GenericProcedure
                                     2
@@ -168,16 +225,74 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_interface_04_mod1
+                    2 __lcompilers_global_init_state_interface_04_mod1
+                    .false.
                 ),
             interface_04_mod2:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
+                            __lcompilers_global_init_interface_04_mod2:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_interface_04_mod2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_interface_04_mod2:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_interface_04_mod2
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     a
                                     2 a
                                     interface_04_mod1
@@ -187,7 +302,7 @@
                                 ),
                             a1:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     a1
                                     2 a1
                                     interface_04_mod1
@@ -202,9 +317,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    5 __lcompilers_global_init_interface_04_mod2
+                    5 __lcompilers_global_init_state_interface_04_mod2
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

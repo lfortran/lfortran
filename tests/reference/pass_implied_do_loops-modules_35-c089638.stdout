@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_m_cli2_21:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_m_cli2_21
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_m_cli2_21:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_m_cli2_21
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             get_args_fixed_length_a_array:
                                 (Function
                                     (SymbolTable
@@ -445,16 +501,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_m_cli2_21
+                    2 __lcompilers_global_init_state_m_cli2_21
+                    .false.
                 ),
             modules_35:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             get_args_fixed_length_a_array:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     get_args_fixed_length_a_array
                                     2 get_args_fixed_length_a_array
                                     m_cli2_21
@@ -464,7 +522,7 @@
                                 ),
                             string:
                                 (Variable
-                                    4
+                                    5
                                     string
                                     []
                                     Local
@@ -498,7 +556,7 @@
                     modules_35
                     [m_cli2_21]
                     [(Allocate
-                        [((Var 4 string)
+                        [((Var 5 string)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal))]
                         []
@@ -516,15 +574,19 @@
                         )
                     )
                     (SubroutineCall
-                        4 get_args_fixed_length_a_array
+                        5 get_args_fixed_length_a_array
                         ()
-                        [((Var 4 string))]
+                        [((Var 5 string))]
                         ()
                         .false.
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

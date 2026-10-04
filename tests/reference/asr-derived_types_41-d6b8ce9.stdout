@@ -5,11 +5,11 @@
             derived_types_41:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             1_mytype_a:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     1_mytype_a
                                     3 a
                                     derived_types_41_mod
@@ -19,7 +19,7 @@
                                 ),
                             1_mytype_b:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     1_mytype_b
                                     3 b
                                     derived_types_41_mod
@@ -29,7 +29,7 @@
                                 ),
                             1_mytype_c:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     1_mytype_c
                                     3 c
                                     derived_types_41_mod
@@ -39,7 +39,7 @@
                                 ),
                             mytype:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     mytype
                                     2 mytype
                                     derived_types_41_mod
@@ -49,7 +49,7 @@
                                 ),
                             mytype_instance:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     mytype_instance
                                     2 mytype_instance
                                     derived_types_41_mod
@@ -67,8 +67,8 @@
                             [(ArrayPhysicalCast
                                 (IntegerCompare
                                     (StructInstanceMember
-                                        (Var 4 mytype_instance)
-                                        4 1_mytype_a
+                                        (Var 5 mytype_instance)
+                                        5 1_mytype_a
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
@@ -124,8 +124,8 @@
                         ()
                         (IntegerCompare
                             (StructInstanceMember
-                                (Var 4 mytype_instance)
-                                4 1_mytype_b
+                                (Var 5 mytype_instance)
+                                5 1_mytype_b
                                 (Integer 4)
                                 ()
                             )
@@ -146,8 +146,8 @@
                             [(ArrayPhysicalCast
                                 (IntegerCompare
                                     (StructInstanceMember
-                                        (Var 4 mytype_instance)
-                                        4 1_mytype_c
+                                        (Var 5 mytype_instance)
+                                        5 1_mytype_c
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
@@ -200,12 +200,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             derived_types_41_mod:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_41_mod:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_41_mod
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_41_mod:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_41_mod
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             mytype:
                                 (Struct
                                     (SymbolTable
@@ -476,9 +533,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_derived_types_41_mod
+                    2 __lcompilers_global_init_state_derived_types_41_mod
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

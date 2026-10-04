@@ -1,0 +1,13 @@
+{
+    "basename": "wat-modules_01-47cb7ac",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/modules_01.f90",
+    "infile_hash": "592921c14763dae70e205b1eaf8b9fd0b69df11eccc0a66d109e11b8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-modules_01-47cb7ac.stdout",
+    "stdout_hash": "ad2fbb31cba0887ab98e99dab9e7cf31faa4308077fd4a79d7af2c11",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -50,6 +50,7 @@ define i32 @main(i32 %0, i8** %1) {
   %b = alloca i32, align 4
   store i32 2, i32* %b, align 4
   %marks = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 94, i32* %marks, align 4
   %3 = load i32, i32* %marks, align 4
   %4 = icmp sle i32 42, %3
@@ -164,6 +165,8 @@ FINALIZE_SYMTABLE_case03:                         ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 

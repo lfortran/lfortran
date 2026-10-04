@@ -21,7 +21,8 @@ endif ()
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-    foreach(header IN ITEMS lfortran_intrinsics.h ISO_Fortran_binding.h)
+    foreach(header IN ITEMS lfortran_intrinsics.h ISO_Fortran_binding.h
+            lcompilers_init.h lcompilers_init_abi.h)
         configure_file(
             "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${header}"
             "${CMAKE_CURRENT_BINARY_DIR}/runtime/${header}"

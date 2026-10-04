@@ -2,14 +2,148 @@
     (SymbolTable
         1
         {
+            _lcompilers_init_begin:
+                (Function
+                    (SymbolTable
+                        11
+                        {
+                            run:
+                                (Variable
+                                    11
+                                    run
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            state:
+                                (Variable
+                                    11
+                                    state
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    _lcompilers_init_begin
+                    (FunctionType
+                        [(Integer 4)]
+                        (Integer 4)
+                        BindC
+                        Interface
+                        "_lcompilers_init_begin"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 11 state)]
+                    []
+                    (Var 11 run)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_init_end:
+                (Function
+                    (SymbolTable
+                        10
+                        {
+                            state:
+                                (Variable
+                                    10
+                                    state
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    _lcompilers_init_end
+                    (FunctionType
+                        [(Integer 4)]
+                        ()
+                        BindC
+                        Interface
+                        "_lcompilers_init_end"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 10 state)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
             global_init_01:
                 (Program
                     (SymbolTable
-                        6
+                        8
                         {
                             1_leaf_h:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     1_leaf_h
                                     3 h
                                     global_init_01_a
@@ -19,7 +153,7 @@
                                 ),
                             1_leaf_tag:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     1_leaf_tag
                                     3 tag
                                     global_init_01_a
@@ -27,63 +161,14 @@
                                     tag
                                     Public
                                 ),
-                            __lfortran_global_init_global_init_01:
+                            __lcompilers_global_init_global_init_01:
                                 (Function
                                     (SymbolTable
                                         9
                                         {
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    9
-                                                    __lfortran_global_init_done
-                                                    []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            __lfortran_global_init_global_init_01_a:
-                                                (ExternalSymbol
-                                                    9
-                                                    __lfortran_global_init_global_init_01_a
-                                                    2 __lfortran_global_init_global_init_01_a
-                                                    global_init_01_a
-                                                    []
-                                                    __lfortran_global_init_global_init_01_a
-                                                    Private
-                                                ),
-                                            __lfortran_global_init_global_init_01_b:
-                                                (ExternalSymbol
-                                                    9
-                                                    __lfortran_global_init_global_init_01_b
-                                                    4 __lfortran_global_init_global_init_01_b
-                                                    global_init_01_b
-                                                    []
-                                                    __lfortran_global_init_global_init_01_b
-                                                    Private
-                                                )
+                                            
                                         })
-                                    __lfortran_global_init_global_init_01
+                                    __lcompilers_global_init_global_init_01
                                     (FunctionType
                                         []
                                         ()
@@ -99,44 +184,33 @@
                                         .false.
                                         Host
                                     )
-                                    []
+                                    [_lcompilers_init_begin
+                                    _lcompilers_init_end]
                                     []
                                     [(If
                                         ()
-                                        (LogicalNot
-                                            (Var 9 __lfortran_global_init_done)
+                                        (IntegerCompare
+                                            (FunctionCall
+                                                1 _lcompilers_init_begin
+                                                1 _lcompilers_init_begin
+                                                [((Var 8 __lcompilers_global_init_state_global_init_01))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
-                                        [(Assignment
-                                            (Var 9 __lfortran_global_init_done)
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
-                                        )
-                                        (SubroutineCall
-                                            9 __lfortran_global_init_global_init_01_a
-                                            9 __lfortran_global_init_global_init_01_a
+                                        [(GlobalInitStorage
                                             []
-                                            ()
-                                            .false.
-                                        )
-                                        (SubroutineCall
-                                            9 __lfortran_global_init_global_init_01_b
-                                            9 __lfortran_global_init_global_init_01_b
-                                            []
-                                            ()
-                                            .false.
                                         )
                                         (Assignment
-                                            (Var 6 p_arr)
+                                            (Var 8 p_arr)
                                             (ArrayBroadcast
                                                 (StructConstant
-                                                    6 leaf
+                                                    8 leaf
                                                     [((IntegerConstant 13 (Integer 4) Decimal))
                                                     ((StringConstant
                                                         "ppp"
@@ -180,18 +254,49 @@
                                             ()
                                             .false.
                                             .false.
+                                        )
+                                        (SubroutineCall
+                                            1 _lcompilers_init_end
+                                            1 _lcompilers_init_end
+                                            [((Var 8 __lcompilers_global_init_state_global_init_01))]
+                                            ()
+                                            .false.
                                         )]
                                         []
                                     )]
                                     ()
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            __lcompilers_global_init_state_global_init_01:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_global_init_01
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a_arr:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     a_arr
                                     2 a_arr
                                     global_init_01_a
@@ -201,9 +306,9 @@
                                 ),
                             b_arr:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     b_arr
-                                    4 b_arr
+                                    5 b_arr
                                     global_init_01_b
                                     []
                                     b_arr
@@ -211,9 +316,9 @@
                                 ),
                             check_a:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     check_a
-                                    4 check_a
+                                    5 check_a
                                     global_init_01_b
                                     []
                                     check_a
@@ -221,7 +326,7 @@
                                 ),
                             i:
                                 (Variable
-                                    6
+                                    8
                                     i
                                     []
                                     Local
@@ -245,7 +350,7 @@
                                 ),
                             leaf:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     leaf
                                     2 leaf
                                     global_init_01_a
@@ -255,7 +360,7 @@
                                 ),
                             p_arr:
                                 (Variable
-                                    6
+                                    8
                                     p_arr
                                     []
                                     Local
@@ -275,7 +380,7 @@
                                         FixedSizeArray
                                         Global
                                     )
-                                    6 leaf
+                                    8 leaf
                                     Source
                                     Public
                                     Required
@@ -293,15 +398,16 @@
                     global_init_01
                     [global_init_01_b
                     global_init_01_a]
-                    [(SubroutineCall
-                        6 __lfortran_global_init_global_init_01
-                        6 __lfortran_global_init_global_init_01
+                    [(GlobalInitDispatch)
+                    (SubroutineCall
+                        8 __lcompilers_global_init_global_init_01
+                        8 __lcompilers_global_init_global_init_01
                         []
                         ()
                         .false.
                     )
                     (SubroutineCall
-                        6 check_a
+                        8 check_a
                         ()
                         []
                         ()
@@ -309,7 +415,7 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 6 i)
+                        ((Var 8 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ())
@@ -318,9 +424,9 @@
                             (IntegerCompare
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 b_arr)
+                                        (Var 8 b_arr)
                                         [(()
-                                        (Var 6 i)
+                                        (Var 8 i)
                                         ())]
                                         (StructType
                                             [(Integer 4)
@@ -332,7 +438,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_leaf_h
+                                    8 1_leaf_h
                                     (Integer 4)
                                     ()
                                 )
@@ -351,9 +457,9 @@
                             (StringCompare
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 b_arr)
+                                        (Var 8 b_arr)
                                         [(()
-                                        (Var 6 i)
+                                        (Var 8 i)
                                         ())]
                                         (StructType
                                             [(Integer 4)
@@ -365,7 +471,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_leaf_tag
+                                    8 1_leaf_tag
                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                 )
@@ -386,7 +492,7 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 6 i)
+                        ((Var 8 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ())
@@ -395,9 +501,9 @@
                             (IntegerCompare
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 p_arr)
+                                        (Var 8 p_arr)
                                         [(()
-                                        (Var 6 i)
+                                        (Var 8 i)
                                         ())]
                                         (StructType
                                             [(Integer 4)
@@ -409,7 +515,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_leaf_h
+                                    8 1_leaf_h
                                     (Integer 4)
                                     ()
                                 )
@@ -428,9 +534,9 @@
                             (StringCompare
                                 (StructInstanceMember
                                     (ArrayItem
-                                        (Var 6 p_arr)
+                                        (Var 8 p_arr)
                                         [(()
-                                        (Var 6 i)
+                                        (Var 8 i)
                                         ())]
                                         (StructType
                                             [(Integer 4)
@@ -442,7 +548,7 @@
                                         ColMajor
                                         ()
                                     )
-                                    6 1_leaf_tag
+                                    8 1_leaf_tag
                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                 )
@@ -464,7 +570,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 6 a_arr)
+                                (Var 8 a_arr)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -478,7 +584,7 @@
                                 ColMajor
                                 ()
                             )
-                            6 1_leaf_h
+                            8 1_leaf_h
                             (Integer 4)
                             ()
                         )
@@ -490,7 +596,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 6 a_arr)
+                                (Var 8 a_arr)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -504,7 +610,7 @@
                                 ColMajor
                                 ()
                             )
-                            6 1_leaf_tag
+                            8 1_leaf_tag
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ()
                         )
@@ -521,7 +627,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 6 a_arr)
+                                    (Var 8 a_arr)
                                     [(()
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
@@ -535,7 +641,7 @@
                                     ColMajor
                                     ()
                                 )
-                                6 1_leaf_h
+                                8 1_leaf_h
                                 (Integer 4)
                                 ()
                             )
@@ -554,7 +660,7 @@
                         (StringCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 6 a_arr)
+                                    (Var 8 a_arr)
                                     [(()
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
@@ -568,7 +674,7 @@
                                     ColMajor
                                     ()
                                 )
-                                6 1_leaf_tag
+                                8 1_leaf_tag
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ()
                             )
@@ -588,7 +694,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 6 b_arr)
+                                (Var 8 b_arr)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -602,7 +708,7 @@
                                 ColMajor
                                 ()
                             )
-                            6 1_leaf_h
+                            8 1_leaf_h
                             (Integer 4)
                             ()
                         )
@@ -616,7 +722,7 @@
                         (IntegerCompare
                             (StructInstanceMember
                                 (ArrayItem
-                                    (Var 6 b_arr)
+                                    (Var 8 b_arr)
                                     [(()
                                     (IntegerConstant 2 (Integer 4) Decimal)
                                     ())]
@@ -630,7 +736,7 @@
                                     ColMajor
                                     ()
                                 )
-                                6 1_leaf_h
+                                8 1_leaf_h
                                 (Integer 4)
                                 ()
                             )
@@ -650,50 +756,22 @@
                             (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
-                    __lfortran_global_init_global_init_01
+                    8 __lcompilers_global_init_global_init_01
+                    8 __lcompilers_global_init_state_global_init_01
                 ),
             global_init_01_a:
                 (Module
                     (SymbolTable
                         2
                         {
-                            __lfortran_global_init_global_init_01_a:
+                            __lcompilers_global_init_global_init_01_a:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        4
                                         {
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    7
-                                                    __lfortran_global_init_done
-                                                    []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
+                                            
                                         })
-                                    __lfortran_global_init_global_init_01_a
+                                    __lcompilers_global_init_global_init_01_a
                                     (FunctionType
                                         []
                                         ()
@@ -702,31 +780,34 @@
                                         ()
                                         .false.
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         []
                                         .false.
                                         Host
                                     )
-                                    []
+                                    [_lcompilers_init_begin
+                                    _lcompilers_init_end]
                                     []
                                     [(If
                                         ()
-                                        (LogicalNot
-                                            (Var 7 __lfortran_global_init_done)
+                                        (IntegerCompare
+                                            (FunctionCall
+                                                1 _lcompilers_init_begin
+                                                1 _lcompilers_init_begin
+                                                [((Var 2 __lcompilers_global_init_state_global_init_01_a))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
-                                        [(Assignment
-                                            (Var 7 __lfortran_global_init_done)
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
+                                        [(GlobalInitStorage
+                                            [(Var 2 a_arr)]
                                         )
                                         (Assignment
                                             (Var 2 a_arr)
@@ -776,14 +857,45 @@
                                             ()
                                             .false.
                                             .false.
+                                        )
+                                        (SubroutineCall
+                                            1 _lcompilers_init_end
+                                            1 _lcompilers_init_end
+                                            [((Var 2 __lcompilers_global_init_state_global_init_01_a))]
+                                            ()
+                                            .false.
                                         )]
                                         []
                                     )]
                                     ()
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            __lcompilers_global_init_state_global_init_01_a:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_global_init_01_a
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             a_arr:
                                 (Variable
@@ -910,50 +1022,32 @@
                     .false.
                     .false.
                     .false.
-                    __lfortran_global_init_global_init_01_a
+                    2 __lcompilers_global_init_global_init_01_a
+                    2 __lcompilers_global_init_state_global_init_01_a
+                    .false.
                 ),
             global_init_01_b:
                 (Module
                     (SymbolTable
-                        4
+                        5
                         {
-                            __lfortran_global_init_global_init_01_b:
+                            __lcompilers_global_init_global_init_01_b:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        7
                                         {
-                                            __lfortran_global_init_done:
-                                                (Variable
-                                                    8
-                                                    __lfortran_global_init_done
+                                            __lcompilers_global_init_global_init_01_a:
+                                                (ExternalSymbol
+                                                    7
+                                                    __lcompilers_global_init_global_init_01_a
+                                                    2 __lcompilers_global_init_global_init_01_a
+                                                    global_init_01_a
                                                     []
-                                                    Local
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    (LogicalConstant
-                                                        .false.
-                                                        (Logical 4)
-                                                    )
-                                                    Save
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
+                                                    __lcompilers_global_init_global_init_01_a
                                                     Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 )
                                         })
-                                    __lfortran_global_init_global_init_01_b
+                                    __lcompilers_global_init_global_init_01_b
                                     (FunctionType
                                         []
                                         ()
@@ -962,37 +1056,47 @@
                                         ()
                                         .false.
                                         .false.
-                                        .true.
+                                        .false.
                                         .false.
                                         .false.
                                         []
                                         .false.
                                         Host
                                     )
-                                    []
+                                    [_lcompilers_init_begin
+                                    _lcompilers_init_end]
                                     []
                                     [(If
                                         ()
-                                        (LogicalNot
-                                            (Var 8 __lfortran_global_init_done)
+                                        (IntegerCompare
+                                            (FunctionCall
+                                                1 _lcompilers_init_begin
+                                                1 _lcompilers_init_begin
+                                                [((Var 5 __lcompilers_global_init_state_global_init_01_b))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
-                                        [(Assignment
-                                            (Var 8 __lfortran_global_init_done)
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )
+                                        [(SubroutineCall
+                                            7 __lcompilers_global_init_global_init_01_a
+                                            7 __lcompilers_global_init_global_init_01_a
+                                            []
                                             ()
                                             .false.
-                                            .false.
+                                        )
+                                        (GlobalInitStorage
+                                            [(Var 5 b_arr)]
                                         )
                                         (Assignment
-                                            (Var 4 b_arr)
+                                            (Var 5 b_arr)
                                             (ArrayBroadcast
                                                 (StructConstant
-                                                    4 leaf
+                                                    5 leaf
                                                     [((IntegerConstant 11 (Integer 4) Decimal))
                                                     ((StringConstant
                                                         "bbb"
@@ -1036,18 +1140,49 @@
                                             ()
                                             .false.
                                             .false.
+                                        )
+                                        (SubroutineCall
+                                            1 _lcompilers_init_end
+                                            1 _lcompilers_init_end
+                                            [((Var 5 __lcompilers_global_init_state_global_init_01_b))]
+                                            ()
+                                            .false.
                                         )]
                                         []
                                     )]
                                     ()
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            __lcompilers_global_init_state_global_init_01_b:
+                                (Variable
+                                    5
+                                    __lcompilers_global_init_state_global_init_01_b
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a_arr:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     a_arr
                                     2 a_arr
                                     global_init_01_a
@@ -1057,7 +1192,7 @@
                                 ),
                             b_arr:
                                 (Variable
-                                    4
+                                    5
                                     b_arr
                                     []
                                     Local
@@ -1077,7 +1212,7 @@
                                         FixedSizeArray
                                         Global
                                     )
-                                    4 leaf
+                                    5 leaf
                                     Source
                                     Public
                                     Required
@@ -1094,11 +1229,11 @@
                             check_a:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             1_leaf_h:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_leaf_h
                                                     3 h
                                                     global_init_01_a
@@ -1108,7 +1243,7 @@
                                                 ),
                                             1_leaf_tag:
                                                 (ExternalSymbol
-                                                    5
+                                                    6
                                                     1_leaf_tag
                                                     3 tag
                                                     global_init_01_a
@@ -1118,7 +1253,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    5
+                                                    6
                                                     i
                                                     []
                                                     Local
@@ -1161,7 +1296,7 @@
                                     []
                                     [(DoLoop
                                         ()
-                                        ((Var 5 i)
+                                        ((Var 6 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal)
                                         ())
@@ -1170,9 +1305,9 @@
                                             (IntegerCompare
                                                 (StructInstanceMember
                                                     (ArrayItem
-                                                        (Var 4 a_arr)
+                                                        (Var 5 a_arr)
                                                         [(()
-                                                        (Var 5 i)
+                                                        (Var 6 i)
                                                         ())]
                                                         (StructType
                                                             [(Integer 4)
@@ -1184,7 +1319,7 @@
                                                         ColMajor
                                                         ()
                                                     )
-                                                    5 1_leaf_h
+                                                    6 1_leaf_h
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1203,9 +1338,9 @@
                                             (StringCompare
                                                 (StructInstanceMember
                                                     (ArrayItem
-                                                        (Var 4 a_arr)
+                                                        (Var 5 a_arr)
                                                         [(()
-                                                        (Var 5 i)
+                                                        (Var 6 i)
                                                         ())]
                                                         (StructType
                                                             [(Integer 4)
@@ -1217,7 +1352,7 @@
                                                         ColMajor
                                                         ()
                                                     )
-                                                    5 1_leaf_tag
+                                                    6 1_leaf_tag
                                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                 )
@@ -1244,7 +1379,7 @@
                                 ),
                             leaf:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     leaf
                                     2 leaf
                                     global_init_01_a
@@ -1259,9 +1394,14 @@
                     .false.
                     .false.
                     .false.
-                    __lfortran_global_init_global_init_01_b
+                    5 __lcompilers_global_init_global_init_01_b
+                    5 __lcompilers_global_init_state_global_init_01_b
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

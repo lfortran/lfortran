@@ -7,7 +7,62 @@
                     (SymbolTable
                         2
                         {
-                            
+                            __lcompilers_global_init_foo1:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_foo1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_foo1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_foo1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
                         })
                     foo1
                     ()
@@ -15,17 +70,75 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_foo1
+                    2 __lcompilers_global_init_state_foo1
+                    .false.
                 ),
             foo2:
                 (Module
                     (SymbolTable
-                        3
+                        4
                         {
+                            __lcompilers_global_init_foo2:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_foo2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_foo2:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_foo2
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        5
                                         {
                                             
                                         })
@@ -48,7 +161,7 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 3 y)
+                                        (Var 4 y)
                                         (RealConstant
                                             3.000000
                                             (Real 4)
@@ -65,7 +178,7 @@
                                 ),
                             y:
                                 (Variable
-                                    3
+                                    4
                                     y
                                     []
                                     Local
@@ -106,18 +219,20 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_foo2
+                    4 __lcompilers_global_init_state_foo2
+                    .false.
                 ),
             test:
                 (Program
                     (SymbolTable
-                        5
+                        7
                         {
                             f:
                                 (ExternalSymbol
-                                    5
+                                    7
                                     f
-                                    3 f
+                                    4 f
                                     foo2
                                     []
                                     f
@@ -125,9 +240,9 @@
                                 ),
                             y:
                                 (ExternalSymbol
-                                    5
+                                    7
                                     y
-                                    3 y
+                                    4 y
                                     foo2
                                     []
                                     y
@@ -139,7 +254,7 @@
                     [(Print
                         (StringFormat
                             ()
-                            [(Var 5 y)]
+                            [(Var 7 y)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -153,7 +268,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 5 y)
+                                    (Var 7 y)
                                     Sub
                                     (RealConstant
                                         2.000000
@@ -180,7 +295,7 @@
                         []
                     )
                     (SubroutineCall
-                        5 f
+                        7 f
                         ()
                         []
                         ()
@@ -189,7 +304,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 5 y)]
+                            [(Var 7 y)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -203,7 +318,7 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (Var 5 y)
+                                    (Var 7 y)
                                     Sub
                                     (RealConstant
                                         3.000000
@@ -230,8 +345,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

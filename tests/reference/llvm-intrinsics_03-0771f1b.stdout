@@ -49,6 +49,7 @@ define i32 @main(i32 %0, i8** %1) {
   %r1 = alloca double, align 8
   %r2 = alloca double, align 8
   %x = alloca float, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store double 4.200000e+00, double* %a, align 8
   store float 0xBFEFE8D5A0000000, float* %x, align 4
   %3 = load float, float* %x, align 4
@@ -181,6 +182,8 @@ FINALIZE_SYMTABLE_intrinsics_03:                  ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 ; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.fabs.f32(float) #0

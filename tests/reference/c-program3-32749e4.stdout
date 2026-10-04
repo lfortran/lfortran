@@ -28,10 +28,11 @@ float func1(float a, float b)
 
 int main(int argc, char* argv[])
 {
-    _lpython_set_argv(argc, argv);
+    _lpython_call_initial_functions(argc, argv);
     float x;
     float y;
     float z;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     x =   5.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = x*y;

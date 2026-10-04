@@ -5,18 +5,74 @@
             fpm_manifest_executable_modules_30:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
+                            __lcompilers_global_init_fpm_manifest_executable_modules_30:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_executable_modules_30
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_executable_modules_30:
+                                (Variable
+                                    8
+                                    __lcompilers_global_init_state_fpm_manifest_executable_modules_30
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             default_executable:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        11
                                         {
                                             1_executable_config_main:
                                                 (ExternalSymbol
-                                                    9
+                                                    11
                                                     1_executable_config_main
-                                                    8 main
+                                                    9 main
                                                     fpm_manifest_executable_modules_30
                                                     [executable_config]
                                                     main
@@ -24,9 +80,9 @@
                                                 ),
                                             1_executable_config_name:
                                                 (ExternalSymbol
-                                                    9
+                                                    11
                                                     1_executable_config_name
-                                                    8 name
+                                                    9 name
                                                     fpm_manifest_executable_modules_30
                                                     [executable_config]
                                                     name
@@ -34,9 +90,9 @@
                                                 ),
                                             1_executable_config_source_dir:
                                                 (ExternalSymbol
-                                                    9
+                                                    11
                                                     1_executable_config_source_dir
-                                                    8 source_dir
+                                                    9 source_dir
                                                     fpm_manifest_executable_modules_30
                                                     [executable_config]
                                                     source_dir
@@ -44,7 +100,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    9
+                                                    11
                                                     name
                                                     []
                                                     InOut
@@ -68,7 +124,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    9
+                                                    11
                                                     self
                                                     []
                                                     Out
@@ -89,7 +145,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 executable_config
+                                                    8 executable_config
                                                     Source
                                                     Public
                                                     Required
@@ -135,26 +191,26 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 self)
-                                    (Var 9 name)]
+                                    [(Var 11 self)
+                                    (Var 11 name)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            9 1_executable_config_name
+                                            (Var 11 self)
+                                            11 1_executable_config_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 9 name)
+                                        (Var 11 name)
                                         ()
                                         .false.
                                         .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            9 1_executable_config_source_dir
+                                            (Var 11 self)
+                                            11 1_executable_config_source_dir
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -170,8 +226,8 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            9 1_executable_config_main
+                                            (Var 11 self)
+                                            11 1_executable_config_main
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -194,11 +250,11 @@
                             executable_config:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             main:
                                                 (Variable
-                                                    8
+                                                    9
                                                     main
                                                     []
                                                     Local
@@ -224,7 +280,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    8
+                                                    9
                                                     name
                                                     []
                                                     Local
@@ -250,7 +306,7 @@
                                                 ),
                                             source_dir:
                                                 (Variable
-                                                    8
+                                                    9
                                                     source_dir
                                                     []
                                                     Local
@@ -312,18 +368,76 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    8 __lcompilers_global_init_fpm_manifest_executable_modules_30
+                    8 __lcompilers_global_init_state_fpm_manifest_executable_modules_30
+                    .false.
                 ),
             fpm_manifest_modules_30:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_fpm_manifest_modules_30:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_modules_30
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_modules_30:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_fpm_manifest_modules_30
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             default_executable:
                                 (ExternalSymbol
                                     2
                                     default_executable
-                                    7 default_executable
+                                    8 default_executable
                                     fpm_manifest_executable_modules_30
                                     []
                                     default_executable
@@ -342,11 +456,11 @@
                             package_defaults:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             1_package_config_t_executable:
                                                 (ExternalSymbol
-                                                    10
+                                                    12
                                                     1_package_config_t_executable
                                                     5 executable
                                                     fpm_manifest_package_modules_30
@@ -356,7 +470,7 @@
                                                 ),
                                             1_package_config_t_name:
                                                 (ExternalSymbol
-                                                    10
+                                                    12
                                                     1_package_config_t_name
                                                     5 name
                                                     fpm_manifest_package_modules_30
@@ -366,7 +480,7 @@
                                                 ),
                                             package:
                                                 (Variable
-                                                    10
+                                                    12
                                                     package
                                                     []
                                                     InOut
@@ -419,7 +533,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    10
+                                                    12
                                                     root
                                                     []
                                                     In
@@ -489,12 +603,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 package)
-                                    (Var 10 root)]
+                                    [(Var 12 package)
+                                    (Var 12 root)]
                                     [(Allocate
                                         [((StructInstanceMember
-                                            (Var 10 package)
-                                            10 1_package_config_t_executable
+                                            (Var 12 package)
+                                            12 1_package_config_t_executable
                                             (Allocatable
                                                 (Array
                                                     (StructType
@@ -534,8 +648,8 @@
                                         ()
                                         [((ArrayItem
                                             (StructInstanceMember
-                                                (Var 10 package)
-                                                10 1_package_config_t_executable
+                                                (Var 12 package)
+                                                12 1_package_config_t_executable
                                                 (Allocatable
                                                     (Array
                                                         (StructType
@@ -581,8 +695,8 @@
                                             ()
                                         ))
                                         ((StructInstanceMember
-                                            (Var 10 package)
-                                            10 1_package_config_t_name
+                                            (Var 12 package)
+                                            12 1_package_config_t_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -605,18 +719,76 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_fpm_manifest_modules_30
+                    2 __lcompilers_global_init_state_fpm_manifest_modules_30
+                    .false.
                 ),
             fpm_manifest_package_modules_30:
                 (Module
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_fpm_manifest_package_modules_30:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_fpm_manifest_package_modules_30
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_fpm_manifest_package_modules_30:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_fpm_manifest_package_modules_30
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             executable_config:
                                 (ExternalSymbol
                                     4
                                     executable_config
-                                    7 executable_config
+                                    8 executable_config
                                     fpm_manifest_executable_modules_30
                                     []
                                     executable_config
@@ -751,12 +923,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_fpm_manifest_package_modules_30
+                    4 __lcompilers_global_init_state_fpm_manifest_package_modules_30
+                    .false.
                 ),
             modules_30:
                 (Program
                     (SymbolTable
-                        11
+                        14
                         {
                             
                         })
@@ -769,8 +943,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

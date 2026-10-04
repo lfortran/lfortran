@@ -177,6 +177,7 @@ define i32 @main(i32 %0, i8** %1) {
   %c = alloca [4 x double], align 8
   %i = alloca i32, align 4
   %j = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 0, i32* %i, align 4
   br label %loop.head
 
@@ -1684,6 +1685,8 @@ FINALIZE_SYMTABLE_arrays_01_real:                 ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 

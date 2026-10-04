@@ -26,6 +26,7 @@ namespace {
 
 void main2() {
     float r;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     r =   1.00000000000000000e+00;
     r =   1.50000000000000000e+00;
     r =   1.00000000000000000e+00;

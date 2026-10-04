@@ -27,6 +27,7 @@ namespace {
 void main2() {
     int32_t i;
     float r;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     r = (float)(2);
     i = 2;
     if (i < i) {

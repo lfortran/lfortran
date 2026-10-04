@@ -209,6 +209,7 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             file_common_block_arrblock:
                 (Module
@@ -370,6 +371,8 @@
                     .false.
                     .false.
                     ()
+                    ()
+                    .false.
                 ),
             file_common_block_myblock:
                 (Module
@@ -508,6 +511,8 @@
                     .false.
                     .false.
                     ()
+                    ()
+                    .false.
                 ),
             myarr:
                 (Variable
@@ -619,5 +624,8 @@
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

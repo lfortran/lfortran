@@ -5,6 +5,7 @@
 #include <libasr/utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/global_init.h>
 
 #include <set>
 
@@ -161,22 +162,40 @@ public:
         return false;
     }
 
-    // The initializer a Module, a Program or the TranslationUnit names must
-    // be a real, argument-less procedure of that owner's own scope, so that a
-    // backend can lower the link without searching or guessing.
-    void verify_global_init(const char *global_init, SymbolTable *scope,
-            const std::string &owner, const Location &loc) {
+    // Whether `sym` is the symbol `scope` itself holds under its name, and
+    // not a copy, a symbol of another scope or one that was removed.
+    bool is_symbol_of_scope(ASR::symbol_t *sym, SymbolTable *scope) {
+        return ASRUtils::symbol_parent_symtab(sym) == scope
+            && scope->get_symbol(ASRUtils::symbol_name(sym)) == sym;
+    }
+
+    // The initializer of a Module, a Program or the TranslationUnit must be
+    // a real, argument-less procedure of that owner's own scope, and its
+    // state a variable of it, so that a backend can lower the link as it is.
+    void verify_global_init(ASR::symbol_t *global_init, ASR::symbol_t *state,
+            SymbolTable *scope, const std::string &owner, const Location &loc) {
+        if (state != nullptr) {
+            ASRUtils::require_impl(is_symbol_of_scope(state, scope),
+                owner + "::m_global_init_state must be a symbol of " + owner
+                + "'s own symbol table", loc, diagnostics);
+            ASRUtils::require_impl(ASR::is_a<ASR::Variable_t>(*state)
+                && ASRUtils::is_integer(*ASR::down_cast<ASR::Variable_t>(state)->m_type),
+                owner + "::m_global_init_state must be an integer variable",
+                loc, diagnostics);
+        }
+        ASRUtils::require_impl((global_init == nullptr) == (state == nullptr),
+            owner + "::m_global_init and " + owner + "::m_global_init_state "
+            "must be given together", loc, diagnostics);
         if (global_init == nullptr) return;
-        ASR::symbol_t *sym = scope->get_symbol(global_init);
-        ASRUtils::require_impl(sym != nullptr,
-            owner + "::m_global_init must name a symbol of " + owner +
-            "'s own symbol table, but " + std::string(global_init) +
+        ASRUtils::require_impl(is_symbol_of_scope(global_init, scope),
+            owner + "::m_global_init must be a symbol of " + owner +
+            "'s own symbol table, but " + ASRUtils::symbol_name(global_init) +
             " is not in it", loc, diagnostics);
-        ASRUtils::require_impl(sym != nullptr && ASR::is_a<ASR::Function_t>(*sym),
-            owner + "::m_global_init must name a Function", loc, diagnostics);
-        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        ASRUtils::require_impl(ASR::is_a<ASR::Function_t>(*global_init),
+            owner + "::m_global_init must be a Function", loc, diagnostics);
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(global_init);
         ASRUtils::require_impl(fn->n_args == 0 && fn->m_return_var == nullptr,
-            owner + "::m_global_init must name a subroutine taking no "
+            owner + "::m_global_init must be a subroutine taking no "
             "arguments", loc, diagnostics);
     }
 
@@ -199,8 +218,22 @@ public:
         require(down_cast2<TranslationUnit_t>(current_symtab->asr_owner)->m_symtab == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        verify_global_init(x.m_global_init, x.m_symtab, "TranslationUnit",
+        verify_global_init(x.m_global_init, x.m_global_init_state, x.m_symtab, "TranslationUnit",
             x.base.base.loc);
+        require(x.m_global_init != nullptr || !x.m_global_init_collective,
+            "TranslationUnit::m_global_init_collective is about the initializer in "
+            "TranslationUnit::m_global_init, so it cannot be set without one");
+        if (x.m_global_init_bootstrap != nullptr) {
+            ASR::symbol_t *b = x.m_global_init_bootstrap;
+            require(is_symbol_of_scope(b, x.m_symtab)
+                    && ASR::is_a<ASR::Function_t>(*b)
+                    && ASR::down_cast<ASR::Function_t>(b)->n_args == 0
+                    && ASR::down_cast<ASR::Function_t>(b)->m_return_var == nullptr
+                    && !ASRUtils::is_owner_global_init(ASR::down_cast<ASR::Function_t>(b)),
+                "TranslationUnit::m_global_init_bootstrap must be a subroutine "
+                "of the translation unit's own symbol table taking no arguments, "
+                "and not an initializer");
+        }
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -255,15 +288,17 @@ public:
             std::string(x.m_name) + "::m_dependencies is required");
         }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        verify_global_init(x.m_global_init, x.m_symtab, "Program",
+        verify_global_init(x.m_global_init, x.m_global_init_state, x.m_symtab, "Program",
             x.base.base.loc);
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        size_t dispatches_before = global_init_dispatches;
         for (size_t i=0; i<x.n_body; i++) {
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
+        verify_dispatch_placement(x.m_body, x.n_body, dispatches_before, x.base.base.loc);
         current_symtab = parent_symtab;
     }
 
@@ -473,8 +508,13 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        verify_global_init(x.m_global_init, x.m_symtab, "Module",
-            x.base.base.loc);
+        verify_global_init(x.m_global_init, x.m_global_init_state, x.m_symtab,
+            "Module", x.base.base.loc);
+        require(x.m_global_init != nullptr || !x.m_global_init_collective,
+            "Module::m_global_init_collective is about the initializer in "
+            "Module::m_global_init, so it cannot be set without one");
+        require(!x.m_intrinsic || x.m_global_init == nullptr,
+            "An intrinsic module has no startup initializer");
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
@@ -847,6 +887,83 @@ public:
         }
     }
 
+    // The function whose body `current_symtab` belongs to, or nullptr.
+    const ASR::Function_t* enclosing_function() {
+        for (SymbolTable *s = current_symtab; s != nullptr; s = s->parent) {
+            if (s->asr_owner != nullptr && s->asr_owner->type == ASR::asrType::symbol
+                    && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                return ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(s->asr_owner));
+            }
+        }
+        return nullptr;
+    }
+
+    size_t global_init_dispatches = 0;
+
+    // The main program is the one place generated code enters the startup
+    // engine, before its first statement; a host without one calls
+    // `lfortran_initialize` instead. So the dispatch is a statement of a
+    // program's own body, at most once.
+    void verify_dispatch_placement(ASR::stmt_t **body, size_t n_body,
+            size_t dispatches_before, const Location &loc) {
+        size_t top_level = 0;
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::GlobalInitDispatch_t>(*body[i])) top_level++;
+        }
+        ASRUtils::require_impl(top_level <= 1
+                && global_init_dispatches - dispatches_before == top_level,
+            "GlobalInitDispatch can only be a statement of a program's own "
+            "body, at most once", loc, diagnostics);
+    }
+
+    void visit_GlobalInitDispatch(const GlobalInitDispatch_t &/*x*/) {
+        global_init_dispatches++;
+    }
+
+    void visit_GlobalInitStorage(const GlobalInitStorage_t &x) {
+        const ASR::Function_t *fn = enclosing_function();
+        require(fn != nullptr && ASRUtils::is_owner_global_init(fn),
+            "GlobalInitStorage can only appear in the startup initializer of "
+            "the unit whose storage it sets up");
+        SymbolTable *owner_scope = fn == nullptr ? nullptr
+            : ASRUtils::global_init_owner_scope(fn);
+        for (size_t i = 0; i < x.n_targets; i++) {
+            ASR::expr_t *t = x.m_targets[i];
+            ASR::symbol_t *target_sym = ASR::is_a<ASR::Var_t>(*t)
+                ? ASR::down_cast<ASR::Var_t>(t)->m_v : nullptr;
+            bool imported = target_sym != nullptr
+                && ASR::is_a<ASR::ExternalSymbol_t>(*target_sym);
+            if (imported) {
+                target_sym = ASRUtils::symbol_get_past_external(target_sym);
+            }
+            bool ok = target_sym != nullptr
+                && ASR::is_a<ASR::Variable_t>(*target_sym);
+            if (ok) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(target_sym);
+                // The translation unit's initializer also sets up, through
+                // an import, the storage of a module that has none of its
+                // own, COMMON above all.
+                bool module_without_initializer = false;
+                if (imported && owner_scope != nullptr
+                        && ASRUtils::is_tu_scope(owner_scope)
+                        && v->m_parent_symtab->asr_owner != nullptr
+                        && v->m_parent_symtab->asr_owner->type == ASR::asrType::symbol
+                        && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                            v->m_parent_symtab->asr_owner))) {
+                    module_without_initializer = ASR::down_cast<ASR::Module_t>(
+                        ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner))
+                            ->m_global_init == nullptr;
+                }
+                ok = ((!imported && v->m_parent_symtab == owner_scope)
+                        || module_without_initializer)
+                    && v->m_abi != ASR::abiType::BindC;
+            }
+            require(ok, "GlobalInitStorage::m_targets must be variables of the "
+                "scope that owns the initializer, none with a binding label");
+            visit_expr(*t);
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -879,10 +996,14 @@ public:
                 "dummy argument " + std::to_string(i + 1));
             visit_expr(*x.m_args[i]);
         }
+        size_t dispatches_before = global_init_dispatches;
         for (size_t i=0; i<x.n_body; i++) {
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
+        require(global_init_dispatches == dispatches_before,
+            "GlobalInitDispatch can only be a statement of a program's own "
+            "body, at most once");
         if (x.m_return_var) {
             require_own_symbol(x.m_return_var, func_name, "result variable");
             visit_expr(*x.m_return_var);

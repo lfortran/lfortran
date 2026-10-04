@@ -350,6 +350,7 @@
           )
         ]
         nil
+        nil
       )
       "my_module" (Module
         (SymbolTable
@@ -645,9 +646,14 @@
         false
         false
         nil
+        nil
+        false
       )
     }
   )
   []
+  nil
+  nil
+  false
   nil
 )

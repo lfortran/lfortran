@@ -32,6 +32,21 @@ std::string to_lower(const std::string &s) {
     return res;
 }
 
+std::string stable_hash_hex(const std::string &s) {
+    uint64_t h = 14695981039346656037ULL;
+    for (unsigned char c : s) {
+        h ^= c;
+        h *= 1099511628211ULL;
+    }
+    static const char digits[] = "0123456789abcdef";
+    std::string hex(16, '0');
+    for (int i = 15; i >= 0; i--) {
+        hex[i] = digits[h & 0xf];
+        h >>= 4;
+    }
+    return hex;
+}
+
 char *s2c(Allocator &al, const std::string &s) {
     Str x; x.from_str_view(s);
     return x.c_str(al);

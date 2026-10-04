@@ -4,6 +4,7 @@ target datalayout = "..."
 
 %derived_types_45_mod.myint.3 = type { i32 }
 
+@__module_derived_types_45_mod___lcompilers_global_init_state_derived_types_45_mod = global i32 0
 @0 = private unnamed_addr constant [4 x i8] c"ins\00", align 1
 @1 = private unnamed_addr constant [48 x i8] c"tests/../integration_tests/derived_types_45.f90\00", align 1
 @2 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
@@ -11,6 +12,40 @@ target datalayout = "..."
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__lcompilers_init_id = private constant [23 x i8] c"m:derived_types_45_mod\00"
+@__lcompilers_init_records = internal constant [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([23 x i8], [23 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__module_derived_types_45_mod___lcompilers_global_init_derived_types_45_mod, void ()* null, i32* @__module_derived_types_45_mod___lcompilers_global_init_state_derived_types_45_mod, i32 0, i32 0 }]
+@__lcompilers_init_instance = internal global i32 0
+@__lcompilers_init_table = internal constant { i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* } { i32 3, i32 1, { i8*, void ()*, void ()*, i32*, i32, i32 }* getelementptr inbounds ([1 x { i8*, void ()*, void ()*, i32*, i32, i32 }], [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }]* @__lcompilers_init_records, i32 0, i32 0), i32* @__lcompilers_init_instance }, align 8
+@llvm.used = appending global [1 x i8*] [i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*)], section "llvm.metadata"
+@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_trigger, i8* null }]
+@llvm.global_dtors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_unload, i8* null }]
+
+declare i32 @_lcompilers_init_begin(i32*)
+
+declare void @_lcompilers_init_end(i32*)
+
+define void @__module_derived_types_45_mod___lcompilers_global_init_derived_types_45_mod() {
+.entry:
+  %0 = call i32 @_lcompilers_init_begin(i32* @__module_derived_types_45_mod___lcompilers_global_init_state_derived_types_45_mod)
+  %1 = icmp ne i32 %0, 0
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  call void @_lcompilers_init_end(i32* @__module_derived_types_45_mod___lcompilers_global_init_state_derived_types_45_mod)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE___lcompilers_global_init_derived_types_45_mod
+
+FINALIZE_SYMTABLE___lcompilers_global_init_derived_types_45_mod: ; preds = %return
+  ret void
+}
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -20,6 +55,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %derived_types_45_mod.myint.3* null, %derived_types_45_mod.myint.3** %ins, align 8
   %temp_struct_var__ = alloca %derived_types_45_mod.myint.3, align 8
   %3 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %temp_struct_var__, i32 0, i32 0
+  call void @_lcompilers_init_dispatch(i32 1)
   %4 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %temp_struct_var__, i32 0, i32 0
   store i32 44, i32* %4, align 4
   %5 = load %derived_types_45_mod.myint.3*, %derived_types_45_mod.myint.3** %ins, align 8
@@ -122,6 +158,8 @@ Finalize_Variable_ins:                            ; preds = %FINALIZE_SYMTABLE_d
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare void @_lcompilers_init_dispatch(i32)
+
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
@@ -158,5 +196,21 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
 }
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lcompilers_init_ctor(i8*)
+
+define internal void @__lcompilers_init_trigger() {
+.entry:
+  call void @_lcompilers_init_ctor(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}
+
+declare void @_lcompilers_init_unload(i8*)
+
+define internal void @__lcompilers_init_unload() {
+.entry:
+  call void @_lcompilers_init_unload(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }

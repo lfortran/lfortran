@@ -7,13 +7,69 @@
             omp_lib:
                 (Module
                     (SymbolTable
-                        8
+                        9
                         {
+                            __lcompilers_global_init_omp_lib:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_omp_lib
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_omp_lib:
+                                (Variable
+                                    9
+                                    __lcompilers_global_init_state_omp_lib
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             c_bool:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     c_bool
-                                    43 c_bool
+                                    45 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -21,9 +77,9 @@
                                 ),
                             c_funptr:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     c_funptr
-                                    43 c_funptr
+                                    45 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -31,9 +87,9 @@
                                 ),
                             c_int:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     c_int
-                                    43 c_int
+                                    45 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -41,9 +97,9 @@
                                 ),
                             c_long:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     c_long
-                                    43 c_long
+                                    45 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -51,9 +107,9 @@
                                 ),
                             c_ptr:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     c_ptr
-                                    43 c_ptr
+                                    45 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -62,7 +118,7 @@
                             gomp_atomic_end:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        11
                                         {
                                             
                                         })
@@ -94,7 +150,7 @@
                             gomp_atomic_start:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             
                                         })
@@ -126,7 +182,7 @@
                             gomp_barrier:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             
                                         })
@@ -158,7 +214,7 @@
                             gomp_critical_end:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             
                                         })
@@ -190,7 +246,7 @@
                             gomp_critical_start:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             
                                         })
@@ -222,11 +278,11 @@
                             gomp_loop_auto_next:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        16
                                         {
                                             gomp_loop_auto_next:
                                                 (Variable
-                                                    14
+                                                    16
                                                     gomp_loop_auto_next
                                                     []
                                                     ReturnVar
@@ -250,7 +306,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    14
+                                                    16
                                                     iend
                                                     []
                                                     Unspecified
@@ -274,7 +330,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    14
+                                                    16
                                                     istart
                                                     []
                                                     Unspecified
@@ -315,10 +371,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 istart)
-                                    (Var 14 iend)]
+                                    [(Var 16 istart)
+                                    (Var 16 iend)]
                                     []
-                                    (Var 14 gomp_loop_auto_next)
+                                    (Var 16 gomp_loop_auto_next)
                                     Public
                                     .false.
                                     .false.
@@ -327,11 +383,11 @@
                             gomp_loop_auto_start:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        17
                                         {
                                             end:
                                                 (Variable
-                                                    15
+                                                    17
                                                     end
                                                     []
                                                     Unspecified
@@ -355,7 +411,7 @@
                                                 ),
                                             gomp_loop_auto_start:
                                                 (Variable
-                                                    15
+                                                    17
                                                     gomp_loop_auto_start
                                                     []
                                                     ReturnVar
@@ -379,7 +435,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    15
+                                                    17
                                                     iend
                                                     []
                                                     Unspecified
@@ -403,7 +459,7 @@
                                                 ),
                                             incr:
                                                 (Variable
-                                                    15
+                                                    17
                                                     incr
                                                     []
                                                     Unspecified
@@ -427,7 +483,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    15
+                                                    17
                                                     istart
                                                     []
                                                     Unspecified
@@ -451,7 +507,7 @@
                                                 ),
                                             start:
                                                 (Variable
-                                                    15
+                                                    17
                                                     start
                                                     []
                                                     Unspecified
@@ -495,13 +551,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 start)
-                                    (Var 15 end)
-                                    (Var 15 incr)
-                                    (Var 15 istart)
-                                    (Var 15 iend)]
+                                    [(Var 17 start)
+                                    (Var 17 end)
+                                    (Var 17 incr)
+                                    (Var 17 istart)
+                                    (Var 17 iend)]
                                     []
-                                    (Var 15 gomp_loop_auto_start)
+                                    (Var 17 gomp_loop_auto_start)
                                     Public
                                     .false.
                                     .false.
@@ -510,11 +566,11 @@
                             gomp_loop_dynamic_next:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        18
                                         {
                                             gomp_loop_dynamic_next:
                                                 (Variable
-                                                    16
+                                                    18
                                                     gomp_loop_dynamic_next
                                                     []
                                                     ReturnVar
@@ -538,7 +594,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    16
+                                                    18
                                                     iend
                                                     []
                                                     Unspecified
@@ -562,7 +618,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    16
+                                                    18
                                                     istart
                                                     []
                                                     Unspecified
@@ -603,10 +659,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 16 istart)
-                                    (Var 16 iend)]
+                                    [(Var 18 istart)
+                                    (Var 18 iend)]
                                     []
-                                    (Var 16 gomp_loop_dynamic_next)
+                                    (Var 18 gomp_loop_dynamic_next)
                                     Public
                                     .false.
                                     .false.
@@ -615,11 +671,11 @@
                             gomp_loop_dynamic_start:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        19
                                         {
                                             chunk:
                                                 (Variable
-                                                    17
+                                                    19
                                                     chunk
                                                     []
                                                     Unspecified
@@ -643,7 +699,7 @@
                                                 ),
                                             end:
                                                 (Variable
-                                                    17
+                                                    19
                                                     end
                                                     []
                                                     Unspecified
@@ -667,7 +723,7 @@
                                                 ),
                                             gomp_loop_dynamic_start:
                                                 (Variable
-                                                    17
+                                                    19
                                                     gomp_loop_dynamic_start
                                                     []
                                                     ReturnVar
@@ -691,7 +747,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    17
+                                                    19
                                                     iend
                                                     []
                                                     Unspecified
@@ -715,7 +771,7 @@
                                                 ),
                                             incr:
                                                 (Variable
-                                                    17
+                                                    19
                                                     incr
                                                     []
                                                     Unspecified
@@ -739,7 +795,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    17
+                                                    19
                                                     istart
                                                     []
                                                     Unspecified
@@ -763,7 +819,7 @@
                                                 ),
                                             start:
                                                 (Variable
-                                                    17
+                                                    19
                                                     start
                                                     []
                                                     Unspecified
@@ -808,14 +864,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 start)
-                                    (Var 17 end)
-                                    (Var 17 incr)
-                                    (Var 17 chunk)
-                                    (Var 17 istart)
-                                    (Var 17 iend)]
+                                    [(Var 19 start)
+                                    (Var 19 end)
+                                    (Var 19 incr)
+                                    (Var 19 chunk)
+                                    (Var 19 istart)
+                                    (Var 19 iend)]
                                     []
-                                    (Var 17 gomp_loop_dynamic_start)
+                                    (Var 19 gomp_loop_dynamic_start)
                                     Public
                                     .false.
                                     .false.
@@ -824,7 +880,7 @@
                             gomp_loop_end:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        20
                                         {
                                             
                                         })
@@ -856,7 +912,7 @@
                             gomp_loop_end_nowait:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        21
                                         {
                                             
                                         })
@@ -888,11 +944,11 @@
                             gomp_loop_guided_next:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        22
                                         {
                                             gomp_loop_guided_next:
                                                 (Variable
-                                                    20
+                                                    22
                                                     gomp_loop_guided_next
                                                     []
                                                     ReturnVar
@@ -916,7 +972,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    20
+                                                    22
                                                     iend
                                                     []
                                                     Unspecified
@@ -940,7 +996,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    20
+                                                    22
                                                     istart
                                                     []
                                                     Unspecified
@@ -981,10 +1037,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 20 istart)
-                                    (Var 20 iend)]
+                                    [(Var 22 istart)
+                                    (Var 22 iend)]
                                     []
-                                    (Var 20 gomp_loop_guided_next)
+                                    (Var 22 gomp_loop_guided_next)
                                     Public
                                     .false.
                                     .false.
@@ -993,11 +1049,11 @@
                             gomp_loop_guided_start:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        23
                                         {
                                             chunk:
                                                 (Variable
-                                                    21
+                                                    23
                                                     chunk
                                                     []
                                                     Unspecified
@@ -1021,7 +1077,7 @@
                                                 ),
                                             end:
                                                 (Variable
-                                                    21
+                                                    23
                                                     end
                                                     []
                                                     Unspecified
@@ -1045,7 +1101,7 @@
                                                 ),
                                             gomp_loop_guided_start:
                                                 (Variable
-                                                    21
+                                                    23
                                                     gomp_loop_guided_start
                                                     []
                                                     ReturnVar
@@ -1069,7 +1125,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    21
+                                                    23
                                                     iend
                                                     []
                                                     Unspecified
@@ -1093,7 +1149,7 @@
                                                 ),
                                             incr:
                                                 (Variable
-                                                    21
+                                                    23
                                                     incr
                                                     []
                                                     Unspecified
@@ -1117,7 +1173,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    21
+                                                    23
                                                     istart
                                                     []
                                                     Unspecified
@@ -1141,7 +1197,7 @@
                                                 ),
                                             start:
                                                 (Variable
-                                                    21
+                                                    23
                                                     start
                                                     []
                                                     Unspecified
@@ -1186,14 +1242,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 21 start)
-                                    (Var 21 end)
-                                    (Var 21 incr)
-                                    (Var 21 chunk)
-                                    (Var 21 istart)
-                                    (Var 21 iend)]
+                                    [(Var 23 start)
+                                    (Var 23 end)
+                                    (Var 23 incr)
+                                    (Var 23 chunk)
+                                    (Var 23 istart)
+                                    (Var 23 iend)]
                                     []
-                                    (Var 21 gomp_loop_guided_start)
+                                    (Var 23 gomp_loop_guided_start)
                                     Public
                                     .false.
                                     .false.
@@ -1202,11 +1258,11 @@
                             gomp_loop_runtime_next:
                                 (Function
                                     (SymbolTable
-                                        22
+                                        24
                                         {
                                             gomp_loop_runtime_next:
                                                 (Variable
-                                                    22
+                                                    24
                                                     gomp_loop_runtime_next
                                                     []
                                                     ReturnVar
@@ -1230,7 +1286,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    22
+                                                    24
                                                     iend
                                                     []
                                                     Unspecified
@@ -1254,7 +1310,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    22
+                                                    24
                                                     istart
                                                     []
                                                     Unspecified
@@ -1295,10 +1351,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 22 istart)
-                                    (Var 22 iend)]
+                                    [(Var 24 istart)
+                                    (Var 24 iend)]
                                     []
-                                    (Var 22 gomp_loop_runtime_next)
+                                    (Var 24 gomp_loop_runtime_next)
                                     Public
                                     .false.
                                     .false.
@@ -1307,11 +1363,11 @@
                             gomp_loop_runtime_start:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        25
                                         {
                                             end:
                                                 (Variable
-                                                    23
+                                                    25
                                                     end
                                                     []
                                                     Unspecified
@@ -1335,7 +1391,7 @@
                                                 ),
                                             gomp_loop_runtime_start:
                                                 (Variable
-                                                    23
+                                                    25
                                                     gomp_loop_runtime_start
                                                     []
                                                     ReturnVar
@@ -1359,7 +1415,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    23
+                                                    25
                                                     iend
                                                     []
                                                     Unspecified
@@ -1383,7 +1439,7 @@
                                                 ),
                                             incr:
                                                 (Variable
-                                                    23
+                                                    25
                                                     incr
                                                     []
                                                     Unspecified
@@ -1407,7 +1463,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    23
+                                                    25
                                                     istart
                                                     []
                                                     Unspecified
@@ -1431,7 +1487,7 @@
                                                 ),
                                             start:
                                                 (Variable
-                                                    23
+                                                    25
                                                     start
                                                     []
                                                     Unspecified
@@ -1475,13 +1531,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 23 start)
-                                    (Var 23 end)
-                                    (Var 23 incr)
-                                    (Var 23 istart)
-                                    (Var 23 iend)]
+                                    [(Var 25 start)
+                                    (Var 25 end)
+                                    (Var 25 incr)
+                                    (Var 25 istart)
+                                    (Var 25 iend)]
                                     []
-                                    (Var 23 gomp_loop_runtime_start)
+                                    (Var 25 gomp_loop_runtime_start)
                                     Public
                                     .false.
                                     .false.
@@ -1490,11 +1546,11 @@
                             gomp_loop_static_next:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        26
                                         {
                                             gomp_loop_static_next:
                                                 (Variable
-                                                    24
+                                                    26
                                                     gomp_loop_static_next
                                                     []
                                                     ReturnVar
@@ -1518,7 +1574,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    24
+                                                    26
                                                     iend
                                                     []
                                                     Unspecified
@@ -1542,7 +1598,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    24
+                                                    26
                                                     istart
                                                     []
                                                     Unspecified
@@ -1583,10 +1639,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 24 istart)
-                                    (Var 24 iend)]
+                                    [(Var 26 istart)
+                                    (Var 26 iend)]
                                     []
-                                    (Var 24 gomp_loop_static_next)
+                                    (Var 26 gomp_loop_static_next)
                                     Public
                                     .false.
                                     .false.
@@ -1595,11 +1651,11 @@
                             gomp_loop_static_start:
                                 (Function
                                     (SymbolTable
-                                        25
+                                        27
                                         {
                                             chunk:
                                                 (Variable
-                                                    25
+                                                    27
                                                     chunk
                                                     []
                                                     Unspecified
@@ -1623,7 +1679,7 @@
                                                 ),
                                             end:
                                                 (Variable
-                                                    25
+                                                    27
                                                     end
                                                     []
                                                     Unspecified
@@ -1647,7 +1703,7 @@
                                                 ),
                                             gomp_loop_static_start:
                                                 (Variable
-                                                    25
+                                                    27
                                                     gomp_loop_static_start
                                                     []
                                                     ReturnVar
@@ -1671,7 +1727,7 @@
                                                 ),
                                             iend:
                                                 (Variable
-                                                    25
+                                                    27
                                                     iend
                                                     []
                                                     Unspecified
@@ -1695,7 +1751,7 @@
                                                 ),
                                             incr:
                                                 (Variable
-                                                    25
+                                                    27
                                                     incr
                                                     []
                                                     Unspecified
@@ -1719,7 +1775,7 @@
                                                 ),
                                             istart:
                                                 (Variable
-                                                    25
+                                                    27
                                                     istart
                                                     []
                                                     Unspecified
@@ -1743,7 +1799,7 @@
                                                 ),
                                             start:
                                                 (Variable
-                                                    25
+                                                    27
                                                     start
                                                     []
                                                     Unspecified
@@ -1788,14 +1844,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 25 start)
-                                    (Var 25 end)
-                                    (Var 25 incr)
-                                    (Var 25 chunk)
-                                    (Var 25 istart)
-                                    (Var 25 iend)]
+                                    [(Var 27 start)
+                                    (Var 27 end)
+                                    (Var 27 incr)
+                                    (Var 27 chunk)
+                                    (Var 27 istart)
+                                    (Var 27 iend)]
                                     []
-                                    (Var 25 gomp_loop_static_start)
+                                    (Var 27 gomp_loop_static_start)
                                     Public
                                     .false.
                                     .false.
@@ -1804,11 +1860,11 @@
                             gomp_parallel:
                                 (Function
                                     (SymbolTable
-                                        26
+                                        28
                                         {
                                             data:
                                                 (Variable
-                                                    26
+                                                    28
                                                     data
                                                     []
                                                     Unspecified
@@ -1818,7 +1874,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1834,7 +1890,7 @@
                                                 ),
                                             flags:
                                                 (Variable
-                                                    26
+                                                    28
                                                     flags
                                                     []
                                                     Unspecified
@@ -1858,7 +1914,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    26
+                                                    28
                                                     fn
                                                     []
                                                     Unspecified
@@ -1868,7 +1924,7 @@
                                                     (CPtr
                                                         CFunPointer
                                                     )
-                                                    8 c_funptr
+                                                    9 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1884,7 +1940,7 @@
                                                 ),
                                             num_threads:
                                                 (Variable
-                                                    26
+                                                    28
                                                     num_threads
                                                     []
                                                     Unspecified
@@ -1931,10 +1987,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 26 fn)
-                                    (Var 26 data)
-                                    (Var 26 num_threads)
-                                    (Var 26 flags)]
+                                    [(Var 28 fn)
+                                    (Var 28 data)
+                                    (Var 28 num_threads)
+                                    (Var 28 flags)]
                                     []
                                     ()
                                     Public
@@ -1945,7 +2001,7 @@
                             gomp_sections_end:
                                 (Function
                                     (SymbolTable
-                                        27
+                                        29
                                         {
                                             
                                         })
@@ -1977,11 +2033,11 @@
                             gomp_sections_next:
                                 (Function
                                     (SymbolTable
-                                        28
+                                        30
                                         {
                                             gomp_sections_next:
                                                 (Variable
-                                                    28
+                                                    30
                                                     gomp_sections_next
                                                     []
                                                     ReturnVar
@@ -2023,7 +2079,7 @@
                                     []
                                     []
                                     []
-                                    (Var 28 gomp_sections_next)
+                                    (Var 30 gomp_sections_next)
                                     Public
                                     .false.
                                     .false.
@@ -2032,11 +2088,11 @@
                             gomp_sections_start:
                                 (Function
                                     (SymbolTable
-                                        29
+                                        31
                                         {
                                             count:
                                                 (Variable
-                                                    29
+                                                    31
                                                     count
                                                     []
                                                     Unspecified
@@ -2060,7 +2116,7 @@
                                                 ),
                                             gomp_sections_start:
                                                 (Variable
-                                                    29
+                                                    31
                                                     gomp_sections_start
                                                     []
                                                     ReturnVar
@@ -2100,9 +2156,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 29 count)]
+                                    [(Var 31 count)]
                                     []
-                                    (Var 29 gomp_sections_start)
+                                    (Var 31 gomp_sections_start)
                                     Public
                                     .false.
                                     .false.
@@ -2111,11 +2167,11 @@
                             gomp_task:
                                 (Function
                                     (SymbolTable
-                                        30
+                                        32
                                         {
                                             arg_align:
                                                 (Variable
-                                                    30
+                                                    32
                                                     arg_align
                                                     []
                                                     Unspecified
@@ -2139,7 +2195,7 @@
                                                 ),
                                             arg_size:
                                                 (Variable
-                                                    30
+                                                    32
                                                     arg_size
                                                     []
                                                     Unspecified
@@ -2163,7 +2219,7 @@
                                                 ),
                                             cpyfn:
                                                 (Variable
-                                                    30
+                                                    32
                                                     cpyfn
                                                     []
                                                     Unspecified
@@ -2173,7 +2229,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2189,7 +2245,7 @@
                                                 ),
                                             data:
                                                 (Variable
-                                                    30
+                                                    32
                                                     data
                                                     []
                                                     Unspecified
@@ -2199,7 +2255,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2215,7 +2271,7 @@
                                                 ),
                                             depend:
                                                 (Variable
-                                                    30
+                                                    32
                                                     depend
                                                     []
                                                     Unspecified
@@ -2225,7 +2281,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2241,7 +2297,7 @@
                                                 ),
                                             flags:
                                                 (Variable
-                                                    30
+                                                    32
                                                     flags
                                                     []
                                                     Unspecified
@@ -2265,7 +2321,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    30
+                                                    32
                                                     fn
                                                     []
                                                     Unspecified
@@ -2275,7 +2331,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2291,7 +2347,7 @@
                                                 ),
                                             if_clause:
                                                 (Variable
-                                                    30
+                                                    32
                                                     if_clause
                                                     []
                                                     Unspecified
@@ -2346,14 +2402,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 30 fn)
-                                    (Var 30 data)
-                                    (Var 30 cpyfn)
-                                    (Var 30 arg_size)
-                                    (Var 30 arg_align)
-                                    (Var 30 if_clause)
-                                    (Var 30 flags)
-                                    (Var 30 depend)]
+                                    [(Var 32 fn)
+                                    (Var 32 data)
+                                    (Var 32 cpyfn)
+                                    (Var 32 arg_size)
+                                    (Var 32 arg_align)
+                                    (Var 32 if_clause)
+                                    (Var 32 flags)
+                                    (Var 32 depend)]
                                     []
                                     ()
                                     Public
@@ -2364,7 +2420,7 @@
                             gomp_taskwait:
                                 (Function
                                     (SymbolTable
-                                        31
+                                        33
                                         {
                                             
                                         })
@@ -2396,11 +2452,11 @@
                             gomp_teams:
                                 (Function
                                     (SymbolTable
-                                        32
+                                        34
                                         {
                                             data:
                                                 (Variable
-                                                    32
+                                                    34
                                                     data
                                                     []
                                                     Unspecified
@@ -2410,7 +2466,7 @@
                                                     (CPtr
                                                         CPointer
                                                     )
-                                                    8 c_ptr
+                                                    9 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2426,7 +2482,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    32
+                                                    34
                                                     fn
                                                     []
                                                     Unspecified
@@ -2436,7 +2492,7 @@
                                                     (CPtr
                                                         CFunPointer
                                                     )
-                                                    8 c_funptr
+                                                    9 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2452,7 +2508,7 @@
                                                 ),
                                             num_teams:
                                                 (Variable
-                                                    32
+                                                    34
                                                     num_teams
                                                     []
                                                     Unspecified
@@ -2476,7 +2532,7 @@
                                                 ),
                                             thread_limit:
                                                 (Variable
-                                                    32
+                                                    34
                                                     thread_limit
                                                     []
                                                     Unspecified
@@ -2523,10 +2579,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 32 fn)
-                                    (Var 32 data)
-                                    (Var 32 num_teams)
-                                    (Var 32 thread_limit)]
+                                    [(Var 34 fn)
+                                    (Var 34 data)
+                                    (Var 34 num_teams)
+                                    (Var 34 thread_limit)]
                                     []
                                     ()
                                     Public
@@ -2537,11 +2593,11 @@
                             omp_get_max_threads:
                                 (Function
                                     (SymbolTable
-                                        33
+                                        35
                                         {
                                             omp_get_max_threads:
                                                 (Variable
-                                                    33
+                                                    35
                                                     omp_get_max_threads
                                                     []
                                                     ReturnVar
@@ -2583,7 +2639,7 @@
                                     []
                                     []
                                     []
-                                    (Var 33 omp_get_max_threads)
+                                    (Var 35 omp_get_max_threads)
                                     Public
                                     .false.
                                     .false.
@@ -2592,11 +2648,11 @@
                             omp_get_num_procs:
                                 (Function
                                     (SymbolTable
-                                        34
+                                        36
                                         {
                                             omp_get_num_procs:
                                                 (Variable
-                                                    34
+                                                    36
                                                     omp_get_num_procs
                                                     []
                                                     ReturnVar
@@ -2638,7 +2694,7 @@
                                     []
                                     []
                                     []
-                                    (Var 34 omp_get_num_procs)
+                                    (Var 36 omp_get_num_procs)
                                     Public
                                     .false.
                                     .false.
@@ -2647,11 +2703,11 @@
                             omp_get_num_teams:
                                 (Function
                                     (SymbolTable
-                                        35
+                                        37
                                         {
                                             omp_get_num_teams:
                                                 (Variable
-                                                    35
+                                                    37
                                                     omp_get_num_teams
                                                     []
                                                     ReturnVar
@@ -2693,7 +2749,7 @@
                                     []
                                     []
                                     []
-                                    (Var 35 omp_get_num_teams)
+                                    (Var 37 omp_get_num_teams)
                                     Public
                                     .false.
                                     .false.
@@ -2702,11 +2758,11 @@
                             omp_get_num_threads:
                                 (Function
                                     (SymbolTable
-                                        36
+                                        38
                                         {
                                             omp_get_num_threads:
                                                 (Variable
-                                                    36
+                                                    38
                                                     omp_get_num_threads
                                                     []
                                                     ReturnVar
@@ -2748,7 +2804,7 @@
                                     []
                                     []
                                     []
-                                    (Var 36 omp_get_num_threads)
+                                    (Var 38 omp_get_num_threads)
                                     Public
                                     .false.
                                     .false.
@@ -2757,11 +2813,11 @@
                             omp_get_team_num:
                                 (Function
                                     (SymbolTable
-                                        37
+                                        39
                                         {
                                             omp_get_team_num:
                                                 (Variable
-                                                    37
+                                                    39
                                                     omp_get_team_num
                                                     []
                                                     ReturnVar
@@ -2803,7 +2859,7 @@
                                     []
                                     []
                                     []
-                                    (Var 37 omp_get_team_num)
+                                    (Var 39 omp_get_team_num)
                                     Public
                                     .false.
                                     .false.
@@ -2812,11 +2868,11 @@
                             omp_get_team_size:
                                 (Function
                                     (SymbolTable
-                                        38
+                                        40
                                         {
                                             level:
                                                 (Variable
-                                                    38
+                                                    40
                                                     level
                                                     []
                                                     Unspecified
@@ -2840,7 +2896,7 @@
                                                 ),
                                             omp_get_team_size:
                                                 (Variable
-                                                    38
+                                                    40
                                                     omp_get_team_size
                                                     []
                                                     ReturnVar
@@ -2880,9 +2936,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 38 level)]
+                                    [(Var 40 level)]
                                     []
-                                    (Var 38 omp_get_team_size)
+                                    (Var 40 omp_get_team_size)
                                     Public
                                     .false.
                                     .false.
@@ -2891,11 +2947,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        39
+                                        41
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    39
+                                                    41
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -2937,7 +2993,7 @@
                                     []
                                     []
                                     []
-                                    (Var 39 omp_get_thread_num)
+                                    (Var 41 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -2946,11 +3002,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        40
+                                        42
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    40
+                                                    42
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -2992,7 +3048,7 @@
                                     []
                                     []
                                     []
-                                    (Var 40 omp_get_wtime)
+                                    (Var 42 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -3001,11 +3057,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        41
+                                        43
                                         {
                                             n:
                                                 (Variable
-                                                    41
+                                                    43
                                                     n
                                                     []
                                                     Unspecified
@@ -3045,7 +3101,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 41 n)]
+                                    [(Var 43 n)]
                                     []
                                     ()
                                     Public
@@ -3060,18 +3116,20 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    9 __lcompilers_global_init_omp_lib
+                    9 __lcompilers_global_init_state_omp_lib
+                    .false.
                 ),
             openmp_44:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             c_bool:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     c_bool
-                                    43 c_bool
+                                    45 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -3079,9 +3137,9 @@
                                 ),
                             c_funptr:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     c_funptr
-                                    43 c_funptr
+                                    45 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -3089,9 +3147,9 @@
                                 ),
                             c_int:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     c_int
-                                    43 c_int
+                                    45 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -3099,9 +3157,9 @@
                                 ),
                             c_long:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     c_long
-                                    43 c_long
+                                    45 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -3109,9 +3167,9 @@
                                 ),
                             c_ptr:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     c_ptr
-                                    43 c_ptr
+                                    45 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -3119,7 +3177,7 @@
                                 ),
                             compute_a:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     compute_a
                                     2 compute_a
                                     openmp_44_parallel_sections
@@ -3129,7 +3187,7 @@
                                 ),
                             compute_b:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     compute_b
                                     2 compute_b
                                     openmp_44_parallel_sections
@@ -3139,7 +3197,7 @@
                                 ),
                             compute_c:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     compute_c
                                     2 compute_c
                                     openmp_44_parallel_sections
@@ -3149,9 +3207,9 @@
                                 ),
                             gomp_atomic_end:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_atomic_end
-                                    8 gomp_atomic_end
+                                    9 gomp_atomic_end
                                     omp_lib
                                     []
                                     gomp_atomic_end
@@ -3159,9 +3217,9 @@
                                 ),
                             gomp_atomic_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_atomic_start
-                                    8 gomp_atomic_start
+                                    9 gomp_atomic_start
                                     omp_lib
                                     []
                                     gomp_atomic_start
@@ -3169,9 +3227,9 @@
                                 ),
                             gomp_barrier:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_barrier
-                                    8 gomp_barrier
+                                    9 gomp_barrier
                                     omp_lib
                                     []
                                     gomp_barrier
@@ -3179,9 +3237,9 @@
                                 ),
                             gomp_critical_end:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_critical_end
-                                    8 gomp_critical_end
+                                    9 gomp_critical_end
                                     omp_lib
                                     []
                                     gomp_critical_end
@@ -3189,9 +3247,9 @@
                                 ),
                             gomp_critical_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_critical_start
-                                    8 gomp_critical_start
+                                    9 gomp_critical_start
                                     omp_lib
                                     []
                                     gomp_critical_start
@@ -3199,9 +3257,9 @@
                                 ),
                             gomp_loop_auto_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_auto_next
-                                    8 gomp_loop_auto_next
+                                    9 gomp_loop_auto_next
                                     omp_lib
                                     []
                                     gomp_loop_auto_next
@@ -3209,9 +3267,9 @@
                                 ),
                             gomp_loop_auto_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_auto_start
-                                    8 gomp_loop_auto_start
+                                    9 gomp_loop_auto_start
                                     omp_lib
                                     []
                                     gomp_loop_auto_start
@@ -3219,9 +3277,9 @@
                                 ),
                             gomp_loop_dynamic_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_dynamic_next
-                                    8 gomp_loop_dynamic_next
+                                    9 gomp_loop_dynamic_next
                                     omp_lib
                                     []
                                     gomp_loop_dynamic_next
@@ -3229,9 +3287,9 @@
                                 ),
                             gomp_loop_dynamic_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_dynamic_start
-                                    8 gomp_loop_dynamic_start
+                                    9 gomp_loop_dynamic_start
                                     omp_lib
                                     []
                                     gomp_loop_dynamic_start
@@ -3239,9 +3297,9 @@
                                 ),
                             gomp_loop_end:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_end
-                                    8 gomp_loop_end
+                                    9 gomp_loop_end
                                     omp_lib
                                     []
                                     gomp_loop_end
@@ -3249,9 +3307,9 @@
                                 ),
                             gomp_loop_end_nowait:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_end_nowait
-                                    8 gomp_loop_end_nowait
+                                    9 gomp_loop_end_nowait
                                     omp_lib
                                     []
                                     gomp_loop_end_nowait
@@ -3259,9 +3317,9 @@
                                 ),
                             gomp_loop_guided_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_guided_next
-                                    8 gomp_loop_guided_next
+                                    9 gomp_loop_guided_next
                                     omp_lib
                                     []
                                     gomp_loop_guided_next
@@ -3269,9 +3327,9 @@
                                 ),
                             gomp_loop_guided_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_guided_start
-                                    8 gomp_loop_guided_start
+                                    9 gomp_loop_guided_start
                                     omp_lib
                                     []
                                     gomp_loop_guided_start
@@ -3279,9 +3337,9 @@
                                 ),
                             gomp_loop_runtime_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_runtime_next
-                                    8 gomp_loop_runtime_next
+                                    9 gomp_loop_runtime_next
                                     omp_lib
                                     []
                                     gomp_loop_runtime_next
@@ -3289,9 +3347,9 @@
                                 ),
                             gomp_loop_runtime_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_runtime_start
-                                    8 gomp_loop_runtime_start
+                                    9 gomp_loop_runtime_start
                                     omp_lib
                                     []
                                     gomp_loop_runtime_start
@@ -3299,9 +3357,9 @@
                                 ),
                             gomp_loop_static_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_static_next
-                                    8 gomp_loop_static_next
+                                    9 gomp_loop_static_next
                                     omp_lib
                                     []
                                     gomp_loop_static_next
@@ -3309,9 +3367,9 @@
                                 ),
                             gomp_loop_static_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_loop_static_start
-                                    8 gomp_loop_static_start
+                                    9 gomp_loop_static_start
                                     omp_lib
                                     []
                                     gomp_loop_static_start
@@ -3319,9 +3377,9 @@
                                 ),
                             gomp_parallel:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_parallel
-                                    8 gomp_parallel
+                                    9 gomp_parallel
                                     omp_lib
                                     []
                                     gomp_parallel
@@ -3329,9 +3387,9 @@
                                 ),
                             gomp_sections_end:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_sections_end
-                                    8 gomp_sections_end
+                                    9 gomp_sections_end
                                     omp_lib
                                     []
                                     gomp_sections_end
@@ -3339,9 +3397,9 @@
                                 ),
                             gomp_sections_next:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_sections_next
-                                    8 gomp_sections_next
+                                    9 gomp_sections_next
                                     omp_lib
                                     []
                                     gomp_sections_next
@@ -3349,9 +3407,9 @@
                                 ),
                             gomp_sections_start:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_sections_start
-                                    8 gomp_sections_start
+                                    9 gomp_sections_start
                                     omp_lib
                                     []
                                     gomp_sections_start
@@ -3359,9 +3417,9 @@
                                 ),
                             gomp_task:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_task
-                                    8 gomp_task
+                                    9 gomp_task
                                     omp_lib
                                     []
                                     gomp_task
@@ -3369,9 +3427,9 @@
                                 ),
                             gomp_taskwait:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_taskwait
-                                    8 gomp_taskwait
+                                    9 gomp_taskwait
                                     omp_lib
                                     []
                                     gomp_taskwait
@@ -3379,9 +3437,9 @@
                                 ),
                             gomp_teams:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     gomp_teams
-                                    8 gomp_teams
+                                    9 gomp_teams
                                     omp_lib
                                     []
                                     gomp_teams
@@ -3389,9 +3447,9 @@
                                 ),
                             omp_get_max_threads:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_max_threads
-                                    8 omp_get_max_threads
+                                    9 omp_get_max_threads
                                     omp_lib
                                     []
                                     omp_get_max_threads
@@ -3399,9 +3457,9 @@
                                 ),
                             omp_get_num_procs:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_num_procs
-                                    8 omp_get_num_procs
+                                    9 omp_get_num_procs
                                     omp_lib
                                     []
                                     omp_get_num_procs
@@ -3409,9 +3467,9 @@
                                 ),
                             omp_get_num_teams:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_num_teams
-                                    8 omp_get_num_teams
+                                    9 omp_get_num_teams
                                     omp_lib
                                     []
                                     omp_get_num_teams
@@ -3419,9 +3477,9 @@
                                 ),
                             omp_get_num_threads:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_num_threads
-                                    8 omp_get_num_threads
+                                    9 omp_get_num_threads
                                     omp_lib
                                     []
                                     omp_get_num_threads
@@ -3429,9 +3487,9 @@
                                 ),
                             omp_get_team_num:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_team_num
-                                    8 omp_get_team_num
+                                    9 omp_get_team_num
                                     omp_lib
                                     []
                                     omp_get_team_num
@@ -3439,9 +3497,9 @@
                                 ),
                             omp_get_team_size:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_team_size
-                                    8 omp_get_team_size
+                                    9 omp_get_team_size
                                     omp_lib
                                     []
                                     omp_get_team_size
@@ -3449,9 +3507,9 @@
                                 ),
                             omp_get_thread_num:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_thread_num
-                                    8 omp_get_thread_num
+                                    9 omp_get_thread_num
                                     omp_lib
                                     []
                                     omp_get_thread_num
@@ -3459,9 +3517,9 @@
                                 ),
                             omp_get_wtime:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_get_wtime
-                                    8 omp_get_wtime
+                                    9 omp_get_wtime
                                     omp_lib
                                     []
                                     omp_get_wtime
@@ -3469,9 +3527,9 @@
                                 ),
                             omp_set_num_threads:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     omp_set_num_threads
-                                    8 omp_set_num_threads
+                                    9 omp_set_num_threads
                                     omp_lib
                                     []
                                     omp_set_num_threads
@@ -3479,7 +3537,7 @@
                                 ),
                             tid:
                                 (Variable
-                                    6
+                                    7
                                     tid
                                     []
                                     Local
@@ -3509,25 +3567,25 @@
                         ParallelSections
                         [(OMPReduction
                             ReduceAdd
-                            [(Var 6 tid)]
+                            [(Var 7 tid)]
                         )]
                         [(OMPRegion
                             Section
                             []
                             [(SubroutineCall
-                                6 compute_a
+                                7 compute_a
                                 ()
                                 []
                                 ()
                                 .false.
                             )
                             (Assignment
-                                (Var 6 tid)
+                                (Var 7 tid)
                                 (IntegerBinOp
-                                    (Var 6 tid)
+                                    (Var 7 tid)
                                     Add
                                     (FunctionCall
-                                        6 omp_get_thread_num
+                                        7 omp_get_thread_num
                                         ()
                                         []
                                         (Integer 4)
@@ -3548,7 +3606,7 @@
                                         "Thread ID:"
                                         (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
-                                    (Var 6 tid)]
+                                    (Var 7 tid)]
                                     FormatFortran
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
@@ -3562,19 +3620,19 @@
                             Section
                             []
                             [(SubroutineCall
-                                6 compute_b
+                                7 compute_b
                                 ()
                                 []
                                 ()
                                 .false.
                             )
                             (Assignment
-                                (Var 6 tid)
+                                (Var 7 tid)
                                 (IntegerBinOp
-                                    (Var 6 tid)
+                                    (Var 7 tid)
                                     Add
                                     (FunctionCall
-                                        6 omp_get_thread_num
+                                        7 omp_get_thread_num
                                         ()
                                         []
                                         (Integer 4)
@@ -3595,7 +3653,7 @@
                                         "Thread ID:"
                                         (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
-                                    (Var 6 tid)]
+                                    (Var 7 tid)]
                                     FormatFortran
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
@@ -3609,19 +3667,19 @@
                             Section
                             []
                             [(SubroutineCall
-                                6 compute_c
+                                7 compute_c
                                 ()
                                 []
                                 ()
                                 .false.
                             )
                             (Assignment
-                                (Var 6 tid)
+                                (Var 7 tid)
                                 (IntegerBinOp
-                                    (Var 6 tid)
+                                    (Var 7 tid)
                                     Add
                                     (FunctionCall
-                                        6 omp_get_thread_num
+                                        7 omp_get_thread_num
                                         ()
                                         []
                                         (Integer 4)
@@ -3642,7 +3700,7 @@
                                         "Thread ID:"
                                         (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
-                                    (Var 6 tid)]
+                                    (Var 7 tid)]
                                     FormatFortran
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
@@ -3661,7 +3719,7 @@
                                 "Final Thread ID:"
                                 (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 6 tid)]
+                            (Var 7 tid)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -3670,12 +3728,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             openmp_44_parallel_sections:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_openmp_44_parallel_sections:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_openmp_44_parallel_sections
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_openmp_44_parallel_sections:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_openmp_44_parallel_sections
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             compute_a:
                                 (Function
                                     (SymbolTable
@@ -3794,9 +3909,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_openmp_44_parallel_sections
+                    2 __lcompilers_global_init_state_openmp_44_parallel_sections
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

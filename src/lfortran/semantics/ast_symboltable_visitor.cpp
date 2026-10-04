@@ -18,6 +18,7 @@
 #include <lfortran/utils.h>
 #include <libasr/utils.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/pass/global_init.h>
 
 namespace LCompilers::LFortran {
 
@@ -374,7 +375,7 @@ public:
         // ASRUtils::get_tu_symtab() can be used, which has an assert
         // for asr_owner.
         ASR::asr_t *tmp0 = ASR::make_TranslationUnit_t(al, x.base.base.loc,
-            current_scope, nullptr, 0, nullptr);
+            current_scope, nullptr, 0, nullptr, nullptr, false, nullptr);
 
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
@@ -619,7 +620,7 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false, nullptr, nullptr, false);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -666,7 +667,7 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false, nullptr, nullptr, false);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {
@@ -776,6 +777,11 @@ public:
         } catch (SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw;
         }
+
+        // Every module owns its startup initializer from here on, whatever
+        // it lowers to, so that the module file carries it for every unit
+        // that depends on the module.
+        ASRUtils::create_module_global_init(al, ASR::down_cast2<ASR::Module_t>(tmp0));
 
         tmp = tmp0;
         // Add module dependencies
@@ -1053,6 +1059,7 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_global_init */ nullptr,
+            /* a_global_init_state */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
@@ -2041,11 +2048,14 @@ public:
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            // An internal procedure resets it when it is done.
+            ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_procedure_abi_type = current_procedure_abi_type_copy;
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
@@ -2969,11 +2979,14 @@ public:
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            // An internal procedure resets it when it is done.
+            ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+            current_procedure_abi_type = current_procedure_abi_type_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
@@ -5530,7 +5543,7 @@ public:
                 ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
                 ASR::TranslationUnit_t *tu
                     = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, x.base.base.loc,
-                        tu_symtab, nullptr, 0, nullptr));
+                        tu_symtab, nullptr, 0, nullptr, nullptr, false, nullptr));
 
                 // Fix all external symbols and update dependencies
                 ASRUtils::fix_translation_unit(al, tu, tu_symtab, true);

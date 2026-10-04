@@ -5,11 +5,11 @@
             save_03:
                 (Program
                     (SymbolTable
-                        13
+                        14
                         {
                             i:
                                 (Variable
-                                    13
+                                    14
                                     i
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             j:
                                 (Variable
-                                    13
+                                    14
                                     j
                                     []
                                     Local
@@ -57,7 +57,7 @@
                                 ),
                             k:
                                 (Variable
-                                    13
+                                    14
                                     k
                                     []
                                     Local
@@ -81,7 +81,7 @@
                                 ),
                             l:
                                 (Variable
-                                    13
+                                    14
                                     l
                                     []
                                     Local
@@ -105,7 +105,7 @@
                                 ),
                             m:
                                 (Variable
-                                    13
+                                    14
                                     m
                                     []
                                     Local
@@ -135,7 +135,7 @@
                                 ),
                             n:
                                 (Variable
-                                    13
+                                    14
                                     n
                                     []
                                     Local
@@ -167,7 +167,7 @@
                                 ),
                             o:
                                 (Variable
-                                    13
+                                    14
                                     o
                                     []
                                     Local
@@ -203,6 +203,7 @@
                     save_03
                     []
                     []
+                    ()
                     ()
                 ),
             save_func:
@@ -457,6 +458,62 @@
                     (SymbolTable
                         10
                         {
+                            __lcompilers_global_init_save_module_03:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_save_module_03
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_save_module_03:
+                                (Variable
+                                    10
+                                    __lcompilers_global_init_state_save_module_03
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             i:
                                 (Variable
                                     10
@@ -1030,7 +1087,9 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    10 __lcompilers_global_init_save_module_03
+                    10 __lcompilers_global_init_state_save_module_03
+                    .false.
                 ),
             save_nested_func:
                 (Function
@@ -2187,5 +2246,8 @@
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

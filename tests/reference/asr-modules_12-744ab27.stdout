@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_module_12:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_module_12
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_module_12:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_module_12
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             a:
                                 (Variable
                                     2
@@ -44,16 +100,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_module_12
+                    2 __lcompilers_global_init_state_module_12
+                    .false.
                 ),
             prog_module_12:
                 (Program
                     (SymbolTable
-                        3
+                        4
                         {
                             a:
                                 (ExternalSymbol
-                                    3
+                                    4
                                     a
                                     2 a
                                     module_12
@@ -66,7 +124,7 @@
                     [module_12]
                     [(Assignment
                         (ArrayItem
-                            (Var 3 a)
+                            (Var 4 a)
                             [(()
                             (IntegerConstant 5 (Integer 4) Decimal)
                             ())]
@@ -83,7 +141,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (Var 3 a)
+                                (Var 4 a)
                                 [(()
                                 (IntegerConstant 5 (Integer 4) Decimal)
                                 ())]
@@ -102,8 +160,12 @@
                         []
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

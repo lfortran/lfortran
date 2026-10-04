@@ -28,6 +28,7 @@ void main2() {
     int32_t a=1;
     int32_t b=2;
     int32_t marks;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     marks = 94;
     if (marks >= 40 + b) {
 std::cout<< "Pass!"<<std::endl;

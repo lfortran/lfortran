@@ -32,6 +32,7 @@ define i32 @main(i32 %0, i8** %1) {
   %var = alloca %"~unlimited_polymorphic_type"*, align 8
   store %"~unlimited_polymorphic_type"* null, %"~unlimited_polymorphic_type"** %var, align 8
   %x = alloca i64, align 8
+  call void @_lcompilers_init_dispatch(i32 1)
   store i64 10, i64* %x, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 8)
@@ -160,6 +161,8 @@ Finalize_Variable_var:                            ; preds = %FINALIZE_SYMTABLE_u
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 

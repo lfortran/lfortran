@@ -7,6 +7,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_commutative_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_commutative_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_commutative_m:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_commutative_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             alt_commutative_prop:
                                 (Template
                                     (SymbolTable
@@ -1213,16 +1269,18 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_commutative_m
+                    2 __lcompilers_global_init_state_template_commutative_m
+                    .false.
                 ),
             test_template_commutative_p:
                 (Program
                     (SymbolTable
-                        14
+                        15
                         {
                             alt_commutative_prop:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     alt_commutative_prop
                                     2 alt_commutative_prop
                                     template_commutative_m
@@ -1232,7 +1290,7 @@
                                 ),
                             commutative_prop:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     commutative_prop
                                     2 commutative_prop
                                     template_commutative_m
@@ -1243,11 +1301,11 @@
                             int_minus_comm:
                                 (Function
                                     (SymbolTable
-                                        26
+                                        27
                                         {
                                             prop:
                                                 (Variable
-                                                    26
+                                                    27
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1271,7 +1329,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    26
+                                                    27
                                                     x
                                                     []
                                                     In
@@ -1295,7 +1353,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    26
+                                                    27
                                                     y
                                                     []
                                                     In
@@ -1337,26 +1395,26 @@
                                     )
                                     [~sub_intrinsic1
                                     ~eq_intrinsic3]
-                                    [(Var 26 x)
-                                    (Var 26 y)]
+                                    [(Var 27 x)
+                                    (Var 27 y)]
                                     [(Assignment
-                                        (Var 26 prop)
+                                        (Var 27 prop)
                                         (OverloadedCompare
                                             (FunctionCall
-                                                14 ~sub_intrinsic1
+                                                15 ~sub_intrinsic1
                                                 ()
-                                                [((Var 26 x))
-                                                ((Var 26 y))]
+                                                [((Var 27 x))
+                                                ((Var 27 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             Eq
                                             (FunctionCall
-                                                14 ~sub_intrinsic1
+                                                15 ~sub_intrinsic1
                                                 ()
-                                                [((Var 26 y))
-                                                ((Var 26 x))]
+                                                [((Var 27 y))
+                                                ((Var 27 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1364,22 +1422,22 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic3
+                                                15 ~eq_intrinsic3
                                                 6 ~eq
                                                 [((FunctionCall
-                                                    14 ~sub_intrinsic1
+                                                    15 ~sub_intrinsic1
                                                     ()
-                                                    [((Var 26 x))
-                                                    ((Var 26 y))]
+                                                    [((Var 27 x))
+                                                    ((Var 27 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))
                                                 ((FunctionCall
-                                                    14 ~sub_intrinsic1
+                                                    15 ~sub_intrinsic1
                                                     ()
-                                                    [((Var 26 y))
-                                                    ((Var 26 x))]
+                                                    [((Var 27 y))
+                                                    ((Var 27 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1393,7 +1451,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 26 prop)
+                                    (Var 27 prop)
                                     Public
                                     .true.
                                     .true.
@@ -1402,11 +1460,11 @@
                             int_plus_comm:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        21
                                         {
                                             prop:
                                                 (Variable
-                                                    20
+                                                    21
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1430,7 +1488,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    20
+                                                    21
                                                     x
                                                     []
                                                     In
@@ -1454,7 +1512,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    20
+                                                    21
                                                     y
                                                     []
                                                     In
@@ -1496,26 +1554,26 @@
                                     )
                                     [~add_intrinsic1
                                     ~eq_intrinsic1]
-                                    [(Var 20 x)
-                                    (Var 20 y)]
+                                    [(Var 21 x)
+                                    (Var 21 y)]
                                     [(Assignment
-                                        (Var 20 prop)
+                                        (Var 21 prop)
                                         (OverloadedCompare
                                             (FunctionCall
-                                                14 ~add_intrinsic1
+                                                15 ~add_intrinsic1
                                                 ()
-                                                [((Var 20 x))
-                                                ((Var 20 y))]
+                                                [((Var 21 x))
+                                                ((Var 21 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             Eq
                                             (FunctionCall
-                                                14 ~add_intrinsic1
+                                                15 ~add_intrinsic1
                                                 ()
-                                                [((Var 20 y))
-                                                ((Var 20 x))]
+                                                [((Var 21 y))
+                                                ((Var 21 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1523,22 +1581,22 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic1
+                                                15 ~eq_intrinsic1
                                                 6 ~eq
                                                 [((FunctionCall
-                                                    14 ~add_intrinsic1
+                                                    15 ~add_intrinsic1
                                                     ()
-                                                    [((Var 20 x))
-                                                    ((Var 20 y))]
+                                                    [((Var 21 x))
+                                                    ((Var 21 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))
                                                 ((FunctionCall
-                                                    14 ~add_intrinsic1
+                                                    15 ~add_intrinsic1
                                                     ()
-                                                    [((Var 20 y))
-                                                    ((Var 20 x))]
+                                                    [((Var 21 y))
+                                                    ((Var 21 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1552,7 +1610,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 20 prop)
+                                    (Var 21 prop)
                                     Public
                                     .true.
                                     .true.
@@ -1560,7 +1618,7 @@
                                 ),
                             magma_r:
                                 (ExternalSymbol
-                                    14
+                                    15
                                     magma_r
                                     2 magma_r
                                     template_commutative_m
@@ -1571,11 +1629,11 @@
                             minus_comm:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        24
                                         {
                                             prop:
                                                 (Variable
-                                                    23
+                                                    24
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1599,7 +1657,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    23
+                                                    24
                                                     x
                                                     []
                                                     In
@@ -1623,7 +1681,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    23
+                                                    24
                                                     y
                                                     []
                                                     In
@@ -1665,26 +1723,26 @@
                                     )
                                     [~sub_intrinsic
                                     ~eq_intrinsic2]
-                                    [(Var 23 x)
-                                    (Var 23 y)]
+                                    [(Var 24 x)
+                                    (Var 24 y)]
                                     [(Assignment
-                                        (Var 23 prop)
+                                        (Var 24 prop)
                                         (OverloadedCompare
                                             (FunctionCall
-                                                14 ~sub_intrinsic
+                                                15 ~sub_intrinsic
                                                 ()
-                                                [((Var 23 x))
-                                                ((Var 23 y))]
+                                                [((Var 24 x))
+                                                ((Var 24 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             Eq
                                             (FunctionCall
-                                                14 ~sub_intrinsic
+                                                15 ~sub_intrinsic
                                                 ()
-                                                [((Var 23 y))
-                                                ((Var 23 x))]
+                                                [((Var 24 y))
+                                                ((Var 24 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1692,22 +1750,22 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic2
+                                                15 ~eq_intrinsic2
                                                 10 ~eq
                                                 [((FunctionCall
-                                                    14 ~sub_intrinsic
+                                                    15 ~sub_intrinsic
                                                     ()
-                                                    [((Var 23 x))
-                                                    ((Var 23 y))]
+                                                    [((Var 24 x))
+                                                    ((Var 24 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))
                                                 ((FunctionCall
-                                                    14 ~sub_intrinsic
+                                                    15 ~sub_intrinsic
                                                     ()
-                                                    [((Var 23 y))
-                                                    ((Var 23 x))]
+                                                    [((Var 24 y))
+                                                    ((Var 24 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1721,7 +1779,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 23 prop)
+                                    (Var 24 prop)
                                     Public
                                     .true.
                                     .true.
@@ -1730,11 +1788,11 @@
                             plus_comm:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        18
                                         {
                                             prop:
                                                 (Variable
-                                                    17
+                                                    18
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1758,7 +1816,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    17
+                                                    18
                                                     x
                                                     []
                                                     In
@@ -1782,7 +1840,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    17
+                                                    18
                                                     y
                                                     []
                                                     In
@@ -1824,26 +1882,26 @@
                                     )
                                     [~add_intrinsic
                                     ~eq_intrinsic]
-                                    [(Var 17 x)
-                                    (Var 17 y)]
+                                    [(Var 18 x)
+                                    (Var 18 y)]
                                     [(Assignment
-                                        (Var 17 prop)
+                                        (Var 18 prop)
                                         (OverloadedCompare
                                             (FunctionCall
-                                                14 ~add_intrinsic
+                                                15 ~add_intrinsic
                                                 ()
-                                                [((Var 17 x))
-                                                ((Var 17 y))]
+                                                [((Var 18 x))
+                                                ((Var 18 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             Eq
                                             (FunctionCall
-                                                14 ~add_intrinsic
+                                                15 ~add_intrinsic
                                                 ()
-                                                [((Var 17 y))
-                                                ((Var 17 x))]
+                                                [((Var 18 y))
+                                                ((Var 18 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1851,22 +1909,22 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic
+                                                15 ~eq_intrinsic
                                                 10 ~eq
                                                 [((FunctionCall
-                                                    14 ~add_intrinsic
+                                                    15 ~add_intrinsic
                                                     ()
-                                                    [((Var 17 x))
-                                                    ((Var 17 y))]
+                                                    [((Var 18 x))
+                                                    ((Var 18 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))
                                                 ((FunctionCall
-                                                    14 ~add_intrinsic
+                                                    15 ~add_intrinsic
                                                     ()
-                                                    [((Var 17 y))
-                                                    ((Var 17 x))]
+                                                    [((Var 18 y))
+                                                    ((Var 18 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1880,247 +1938,13 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 17 prop)
+                                    (Var 18 prop)
                                     Public
                                     .true.
                                     .true.
                                     ()
                                 ),
                             ~add_intrinsic:
-                                (Function
-                                    (SymbolTable
-                                        15
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    15
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    15
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    15
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    ~add_intrinsic
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Integer 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .true.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 15 arg0)
-                                    (Var 15 arg1)]
-                                    [(Assignment
-                                        (Var 15 ret)
-                                        (IntegerBinOp
-                                            (Var 15 arg0)
-                                            Add
-                                            (Var 15 arg1)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 15 ret)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            ~add_intrinsic1:
-                                (Function
-                                    (SymbolTable
-                                        18
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    18
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    18
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    18
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    ~add_intrinsic1
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Integer 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .true.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 18 arg0)
-                                    (Var 18 arg1)]
-                                    [(Assignment
-                                        (Var 18 ret)
-                                        (IntegerBinOp
-                                            (Var 18 arg0)
-                                            Add
-                                            (Var 18 arg1)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 18 ret)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            ~eq_intrinsic:
                                 (Function
                                     (SymbolTable
                                         16
@@ -2182,7 +2006,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4)
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2198,11 +2022,11 @@
                                                     []
                                                 )
                                         })
-                                    ~eq_intrinsic
+                                    ~add_intrinsic
                                     (FunctionType
                                         [(Integer 4)
                                         (Integer 4)]
-                                        (Logical 4)
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -2220,11 +2044,11 @@
                                     (Var 16 arg1)]
                                     [(Assignment
                                         (Var 16 ret)
-                                        (IntegerCompare
+                                        (IntegerBinOp
                                             (Var 16 arg0)
-                                            Eq
+                                            Add
                                             (Var 16 arg1)
-                                            (Logical 4)
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -2237,7 +2061,7 @@
                                     .true.
                                     ()
                                 ),
-                            ~eq_intrinsic1:
+                            ~add_intrinsic1:
                                 (Function
                                     (SymbolTable
                                         19
@@ -2299,6 +2123,240 @@
                                                     ()
                                                     ()
                                                     Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ~add_intrinsic1
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .true.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 19 arg0)
+                                    (Var 19 arg1)]
+                                    [(Assignment
+                                        (Var 19 ret)
+                                        (IntegerBinOp
+                                            (Var 19 arg0)
+                                            Add
+                                            (Var 19 arg1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 19 ret)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            ~eq_intrinsic:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    17
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    17
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    17
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ~eq_intrinsic
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .true.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 arg0)
+                                    (Var 17 arg1)]
+                                    [(Assignment
+                                        (Var 17 ret)
+                                        (IntegerCompare
+                                            (Var 17 arg0)
+                                            Eq
+                                            (Var 17 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 17 ret)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            ~eq_intrinsic1:
+                                (Function
+                                    (SymbolTable
+                                        20
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    20
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    20
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    20
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
                                                     (Logical 4)
                                                     ()
                                                     Source
@@ -2333,14 +2391,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 19 arg0)
-                                    (Var 19 arg1)]
+                                    [(Var 20 arg0)
+                                    (Var 20 arg1)]
                                     [(Assignment
-                                        (Var 19 ret)
+                                        (Var 20 ret)
                                         (IntegerCompare
-                                            (Var 19 arg0)
+                                            (Var 20 arg0)
                                             Eq
-                                            (Var 19 arg1)
+                                            (Var 20 arg1)
                                             (Logical 4)
                                             ()
                                         )
@@ -2348,13 +2406,247 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 19 ret)
+                                    (Var 20 ret)
                                     Public
                                     .true.
                                     .true.
                                     ()
                                 ),
                             ~eq_intrinsic2:
+                                (Function
+                                    (SymbolTable
+                                        23
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    23
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    23
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    23
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ~eq_intrinsic2
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .true.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 23 arg0)
+                                    (Var 23 arg1)]
+                                    [(Assignment
+                                        (Var 23 ret)
+                                        (IntegerCompare
+                                            (Var 23 arg0)
+                                            Eq
+                                            (Var 23 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 23 ret)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            ~eq_intrinsic3:
+                                (Function
+                                    (SymbolTable
+                                        26
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    26
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    26
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    26
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ~eq_intrinsic3
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .true.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 26 arg0)
+                                    (Var 26 arg1)]
+                                    [(Assignment
+                                        (Var 26 ret)
+                                        (IntegerCompare
+                                            (Var 26 arg0)
+                                            Eq
+                                            (Var 26 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 26 ret)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            ~sub_intrinsic:
                                 (Function
                                     (SymbolTable
                                         22
@@ -2416,7 +2708,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4)
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2432,11 +2724,11 @@
                                                     []
                                                 )
                                         })
-                                    ~eq_intrinsic2
+                                    ~sub_intrinsic
                                     (FunctionType
                                         [(Integer 4)
                                         (Integer 4)]
-                                        (Logical 4)
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -2454,11 +2746,11 @@
                                     (Var 22 arg1)]
                                     [(Assignment
                                         (Var 22 ret)
-                                        (IntegerCompare
+                                        (IntegerBinOp
                                             (Var 22 arg0)
-                                            Eq
+                                            Sub
                                             (Var 22 arg1)
-                                            (Logical 4)
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -2471,7 +2763,7 @@
                                     .true.
                                     ()
                                 ),
-                            ~eq_intrinsic3:
+                            ~sub_intrinsic1:
                                 (Function
                                     (SymbolTable
                                         25
@@ -2533,240 +2825,6 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    ~eq_intrinsic3
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Logical 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .true.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 25 arg0)
-                                    (Var 25 arg1)]
-                                    [(Assignment
-                                        (Var 25 ret)
-                                        (IntegerCompare
-                                            (Var 25 arg0)
-                                            Eq
-                                            (Var 25 arg1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 25 ret)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            ~sub_intrinsic:
-                                (Function
-                                    (SymbolTable
-                                        21
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    21
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    21
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    21
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    ~sub_intrinsic
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Integer 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .true.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 21 arg0)
-                                    (Var 21 arg1)]
-                                    [(Assignment
-                                        (Var 21 ret)
-                                        (IntegerBinOp
-                                            (Var 21 arg0)
-                                            Sub
-                                            (Var 21 arg1)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 21 ret)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            ~sub_intrinsic1:
-                                (Function
-                                    (SymbolTable
-                                        24
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    24
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    24
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    24
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
                                                     (Integer 4)
                                                     ()
                                                     Source
@@ -2801,14 +2859,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 24 arg0)
-                                    (Var 24 arg1)]
+                                    [(Var 25 arg0)
+                                    (Var 25 arg1)]
                                     [(Assignment
-                                        (Var 24 ret)
+                                        (Var 25 ret)
                                         (IntegerBinOp
-                                            (Var 24 arg0)
+                                            (Var 25 arg0)
                                             Sub
-                                            (Var 24 arg1)
+                                            (Var 25 arg1)
                                             (Integer 4)
                                             ()
                                         )
@@ -2816,7 +2874,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 24 ret)
+                                    (Var 25 ret)
                                     Public
                                     .true.
                                     .true.
@@ -2839,7 +2897,7 @@
                                 (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
-                                14 plus_comm
+                                15 plus_comm
                                 ()
                                 [((IntegerConstant 3 (Integer 4) Decimal))
                                 ((IntegerConstant 4 (Integer 4) Decimal))]
@@ -2862,7 +2920,7 @@
                                 (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
-                                14 int_plus_comm
+                                15 int_plus_comm
                                 ()
                                 [((IntegerConstant 3 (Integer 4) Decimal))
                                 ((IntegerConstant 4 (Integer 4) Decimal))]
@@ -2885,7 +2943,7 @@
                                 (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
-                                14 minus_comm
+                                15 minus_comm
                                 ()
                                 [((IntegerConstant 3 (Integer 4) Decimal))
                                 ((IntegerConstant 4 (Integer 4) Decimal))]
@@ -2908,7 +2966,7 @@
                                 (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
-                                14 int_minus_comm
+                                15 int_minus_comm
                                 ()
                                 [((IntegerConstant 3 (Integer 4) Decimal))
                                 ((IntegerConstant 4 (Integer 4) Decimal))]
@@ -2924,8 +2982,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

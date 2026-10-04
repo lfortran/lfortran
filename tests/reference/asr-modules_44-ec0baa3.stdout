@@ -5,11 +5,11 @@
             modules_44:
                 (Program
                     (SymbolTable
-                        9
+                        11
                         {
                             cmd_new:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     cmd_new
                                     2 cmd_new
                                     modules_44_fpm_cmd_new
@@ -19,7 +19,7 @@
                                 ),
                             fpm_cmd_settings:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     fpm_cmd_settings
                                     2 fpm_cmd_settings
                                     modules_44_fpm_cmd_new
@@ -29,7 +29,7 @@
                                 ),
                             fpm_new_settings:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     fpm_new_settings
                                     2 fpm_new_settings
                                     modules_44_fpm_cmd_new
@@ -39,7 +39,7 @@
                                 ),
                             settings:
                                 (Variable
-                                    9
+                                    11
                                     settings
                                     []
                                     Local
@@ -54,7 +54,7 @@
                                         .true.
                                         .false.
                                     )
-                                    9 fpm_new_settings
+                                    11 fpm_new_settings
                                     Source
                                     Public
                                     Required
@@ -70,7 +70,7 @@
                                 ),
                             warnwrite:
                                 (ExternalSymbol
-                                    9
+                                    11
                                     warnwrite
                                     4 warnwrite
                                     modules_44_module_fpm_filesystem
@@ -83,12 +83,13 @@
                     [modules_44_fpm_cmd_new
                     modules_44_module_fpm_filesystem]
                     [(SubroutineCall
-                        9 cmd_new
+                        11 cmd_new
                         ()
-                        [((Var 9 settings))]
+                        [((Var 11 settings))]
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             modules_44_fpm_cmd_new:
@@ -96,16 +97,72 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_44_fpm_cmd_new:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_44_fpm_cmd_new
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_44_fpm_cmd_new:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_44_fpm_cmd_new
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             cmd_new:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             1_fpm_new_settings_name:
                                                 (ExternalSymbol
-                                                    8
+                                                    9
                                                     1_fpm_new_settings_name
-                                                    7 name
+                                                    8 name
                                                     modules_44_fpm_cmd_new
                                                     [fpm_new_settings]
                                                     name
@@ -113,7 +170,7 @@
                                                 ),
                                             littlefile:
                                                 (Variable
-                                                    8
+                                                    9
                                                     littlefile
                                                     []
                                                     Local
@@ -145,7 +202,7 @@
                                                 ),
                                             settings:
                                                 (Variable
-                                                    8
+                                                    9
                                                     settings
                                                     []
                                                     In
@@ -199,9 +256,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 settings)]
+                                    [(Var 9 settings)]
                                     [(Assignment
-                                        (Var 8 littlefile)
+                                        (Var 9 littlefile)
                                         (ArrayConstant
                                             160
                                             ["#                                                                               ", "My cool new project!                                                            "]
@@ -222,14 +279,14 @@
                                         2 warnwrite
                                         ()
                                         [((StructInstanceMember
-                                            (Var 8 settings)
-                                            8 1_fpm_new_settings_name
+                                            (Var 9 settings)
+                                            9 1_fpm_new_settings_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         ))
-                                        ((Var 8 littlefile))]
+                                        ((Var 9 littlefile))]
                                         ()
                                         .false.
                                     )]
@@ -242,11 +299,11 @@
                             fpm_cmd_settings:
                                 (Struct
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             working_dir:
                                                 (Variable
-                                                    6
+                                                    7
                                                     working_dir
                                                     []
                                                     Local
@@ -296,11 +353,11 @@
                             fpm_new_settings:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             name:
                                                 (Variable
-                                                    7
+                                                    8
                                                     name
                                                     []
                                                     Local
@@ -364,21 +421,79 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_modules_44_fpm_cmd_new
+                    2 __lcompilers_global_init_state_modules_44_fpm_cmd_new
+                    .false.
                 ),
             modules_44_module_fpm_filesystem:
                 (Module
                     (SymbolTable
                         4
                         {
-                            warnwrite:
+                            __lcompilers_global_init_modules_44_module_fpm_filesystem:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_44_module_fpm_filesystem
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_44_module_fpm_filesystem:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_modules_44_module_fpm_filesystem
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            warnwrite:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
                                             data:
                                                 (Variable
-                                                    5
+                                                    6
                                                     data
                                                     []
                                                     In
@@ -408,7 +523,7 @@
                                                 ),
                                             fname:
                                                 (Variable
-                                                    5
+                                                    6
                                                     fname
                                                     []
                                                     In
@@ -455,8 +570,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 fname)
-                                    (Var 5 data)]
+                                    [(Var 6 fname)
+                                    (Var 6 data)]
                                     []
                                     ()
                                     Public
@@ -471,9 +586,14 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_modules_44_module_fpm_filesystem
+                    4 __lcompilers_global_init_state_modules_44_module_fpm_filesystem
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

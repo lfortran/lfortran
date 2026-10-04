@@ -41,6 +41,8 @@ FormTeam
 GoTo
 GoToTarget
 GpuKernelLaunch
+GlobalInitDispatch
+GlobalInitStorage
 GpuSync
 If
 IfArithmetic

@@ -5,7 +5,7 @@
             functions_16:
                 (Program
                     (SymbolTable
-                        9
+                        10
                         {
                             
                         })
@@ -18,12 +18,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             tomlf_utils_sort:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_tomlf_utils_sort:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_tomlf_utils_sort
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_tomlf_utils_sort:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_tomlf_utils_sort
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             compare_keys_less:
                                 (Function
                                     (SymbolTable
@@ -1670,9 +1727,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_tomlf_utils_sort
+                    2 __lcompilers_global_init_state_tomlf_utils_sort
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

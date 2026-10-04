@@ -30,6 +30,7 @@ void main2() {
     int32_t c;
     bool l;
     int32_t x;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     a = 3;
     b = 4;
     c = 5;

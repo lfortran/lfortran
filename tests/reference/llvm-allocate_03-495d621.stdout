@@ -266,6 +266,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %array.3* %arr_desc, %array.3** %c, align 8
   %r = alloca i32, align 4
   %stat = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 1, i32* %stat, align 4
   store i32 0, i32* %stat, align 4
   %19 = load %array.3*, %array.3** %c, align 8
@@ -3212,6 +3213,8 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 define internal void @finalize_allocatable__Array_3_i32(%array.3* %0) {
 entry:

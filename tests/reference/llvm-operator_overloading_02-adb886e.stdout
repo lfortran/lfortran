@@ -4,6 +4,7 @@ target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
 
+@__module_overload_assignment_m___lcompilers_global_init_state_overload_assignment_m = global i32 0
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [16 x i8] c"S-DESC-K1-5,L32\00", align 1
 @string_const_data = private constant [5 x i8] c"tf=0:"
@@ -14,6 +15,40 @@ target datalayout = "..."
 @string_const_data.2 = private constant [5 x i8] c"tf=1:"
 @string_const.3 = private global %string_descriptor { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @string_const_data.2, i32 0, i32 0), i64 5 }
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__lcompilers_init_id = private constant [24 x i8] c"m:overload_assignment_m\00"
+@__lcompilers_init_records = internal constant [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }] [{ i8*, void ()*, void ()*, i32*, i32, i32 } { i8* getelementptr inbounds ([24 x i8], [24 x i8]* @__lcompilers_init_id, i32 0, i32 0), void ()* @__module_overload_assignment_m___lcompilers_global_init_overload_assignment_m, void ()* null, i32* @__module_overload_assignment_m___lcompilers_global_init_state_overload_assignment_m, i32 0, i32 0 }]
+@__lcompilers_init_instance = internal global i32 0
+@__lcompilers_init_table = internal constant { i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* } { i32 3, i32 1, { i8*, void ()*, void ()*, i32*, i32, i32 }* getelementptr inbounds ([1 x { i8*, void ()*, void ()*, i32*, i32, i32 }], [1 x { i8*, void ()*, void ()*, i32*, i32, i32 }]* @__lcompilers_init_records, i32 0, i32 0), i32* @__lcompilers_init_instance }, align 8
+@llvm.used = appending global [1 x i8*] [i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*)], section "llvm.metadata"
+@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_trigger, i8* null }]
+@llvm.global_dtors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lcompilers_init_unload, i8* null }]
+
+declare i32 @_lcompilers_init_begin(i32*)
+
+declare void @_lcompilers_init_end(i32*)
+
+define void @__module_overload_assignment_m___lcompilers_global_init_overload_assignment_m() {
+.entry:
+  %0 = call i32 @_lcompilers_init_begin(i32* @__module_overload_assignment_m___lcompilers_global_init_state_overload_assignment_m)
+  %1 = icmp ne i32 %0, 0
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  call void @_lcompilers_init_end(i32* @__module_overload_assignment_m___lcompilers_global_init_state_overload_assignment_m)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE___lcompilers_global_init_overload_assignment_m
+
+FINALIZE_SYMTABLE___lcompilers_global_init_overload_assignment_m: ; preds = %return
+  ret void
+}
 
 define void @__module_overload_assignment_m_logical_gets_integer(i32* %tf, i32* %i) {
 .entry:
@@ -38,6 +73,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %tf = alloca i32, align 4
+  call void @_lcompilers_init_dispatch(i32 1)
   store i32 0, i32* %call_arg_value, align 4
   call void @__module_overload_assignment_m_logical_gets_integer(i32* %tf, i32* %call_arg_value)
   %3 = alloca i64, align 8
@@ -96,6 +132,8 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare void @_lcompilers_init_dispatch(i32)
+
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...)
 
 declare i8* @_lfortran_get_default_allocator()
@@ -105,3 +143,19 @@ declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 declare void @_lfortran_free_alloc(i8*, i8*)
 
 declare void @_lfortran_internal_alloc_finalize()
+
+declare void @_lcompilers_init_ctor(i8*)
+
+define internal void @__lcompilers_init_trigger() {
+.entry:
+  call void @_lcompilers_init_ctor(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}
+
+declare void @_lcompilers_init_unload(i8*)
+
+define internal void @__lcompilers_init_unload() {
+.entry:
+  call void @_lcompilers_init_unload(i8* bitcast ({ i32, i32, { i8*, void ()*, void ()*, i32*, i32, i32 }*, i32* }* @__lcompilers_init_table to i8*))
+  ret void
+}

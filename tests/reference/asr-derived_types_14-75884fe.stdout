@@ -7,6 +7,62 @@
                     (SymbolTable
                         4
                         {
+                            __lcompilers_global_init_derived_types_14_module:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_14_module
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_14_module:
+                                (Variable
+                                    4
+                                    __lcompilers_global_init_state_derived_types_14_module
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             enum_type:
                                 (Struct
                                     (SymbolTable
@@ -266,21 +322,79 @@
                     .true.
                     .false.
                     .false.
-                    ()
+                    4 __lcompilers_global_init_derived_types_14_module
+                    4 __lcompilers_global_init_state_derived_types_14_module
+                    .false.
                 ),
             derived_types_14_module1:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_14_module1:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_14_module1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_14_module1:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_14_module1
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             check:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             raw:
                                                 (Variable
-                                                    7
+                                                    8
                                                     raw
                                                     []
                                                     In
@@ -304,7 +418,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    7
+                                                    8
                                                     res
                                                     []
                                                     ReturnVar
@@ -344,9 +458,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 raw)]
+                                    [(Var 8 raw)]
                                     [(Assignment
-                                        (Var 7 res)
+                                        (Var 8 res)
                                         (LogicalConstant
                                             .true.
                                             (Logical 4)
@@ -355,7 +469,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 7 res)
+                                    (Var 8 res)
                                     Public
                                     .true.
                                     .true.
@@ -374,11 +488,11 @@
                             toml_get_value_type:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             1_enum_type_boolean:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_boolean
                                                     5 boolean
                                                     derived_types_14_module
@@ -388,7 +502,7 @@
                                                 ),
                                             1_enum_type_datetime:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_datetime
                                                     5 datetime
                                                     derived_types_14_module
@@ -398,7 +512,7 @@
                                                 ),
                                             1_enum_type_float:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_float
                                                     5 float
                                                     derived_types_14_module
@@ -408,7 +522,7 @@
                                                 ),
                                             1_enum_type_int:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_int
                                                     5 int
                                                     derived_types_14_module
@@ -418,7 +532,7 @@
                                                 ),
                                             1_enum_type_invalid:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_invalid
                                                     5 invalid
                                                     derived_types_14_module
@@ -428,7 +542,7 @@
                                                 ),
                                             1_enum_type_string:
                                                 (ExternalSymbol
-                                                    6
+                                                    7
                                                     1_enum_type_string
                                                     5 string
                                                     derived_types_14_module
@@ -438,7 +552,7 @@
                                                 ),
                                             raw:
                                                 (Variable
-                                                    6
+                                                    7
                                                     raw
                                                     []
                                                     In
@@ -462,7 +576,7 @@
                                                 ),
                                             vtype:
                                                 (Variable
-                                                    6
+                                                    7
                                                     vtype
                                                     []
                                                     ReturnVar
@@ -502,22 +616,22 @@
                                         Host
                                     )
                                     [check]
-                                    [(Var 6 raw)]
+                                    [(Var 7 raw)]
                                     [(If
                                         ()
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_string
+                                                7 1_enum_type_string
                                                 (Integer 4)
                                                 (IntegerConstant 101 (Integer 4) Decimal)
                                             )
@@ -533,16 +647,16 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_boolean
+                                                7 1_enum_type_boolean
                                                 (Integer 4)
                                                 (IntegerConstant 102 (Integer 4) Decimal)
                                             )
@@ -558,16 +672,16 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_int
+                                                7 1_enum_type_int
                                                 (Integer 4)
                                                 (IntegerConstant 103 (Integer 4) Decimal)
                                             )
@@ -583,16 +697,16 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_float
+                                                7 1_enum_type_float
                                                 (Integer 4)
                                                 (IntegerConstant 104 (Integer 4) Decimal)
                                             )
@@ -608,16 +722,16 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_datetime
+                                                7 1_enum_type_datetime
                                                 (Integer 4)
                                                 (IntegerConstant 105 (Integer 4) Decimal)
                                             )
@@ -629,10 +743,10 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 6 vtype)
+                                        (Var 7 vtype)
                                         (StructInstanceMember
                                             (Var 2 toml_type)
-                                            6 1_enum_type_invalid
+                                            7 1_enum_type_invalid
                                             (Integer 4)
                                             (IntegerConstant 100 (Integer 4) Decimal)
                                         )
@@ -640,7 +754,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 6 vtype)
+                                    (Var 7 vtype)
                                     Public
                                     .true.
                                     .true.
@@ -664,12 +778,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_derived_types_14_module1
+                    2 __lcompilers_global_init_state_derived_types_14_module1
+                    .false.
                 ),
             main:
                 (Program
                     (SymbolTable
-                        8
+                        10
                         {
                             
                         })
@@ -682,8 +798,12 @@
                         )
                     )]
                     ()
+                    ()
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

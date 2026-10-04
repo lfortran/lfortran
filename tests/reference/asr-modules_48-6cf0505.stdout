@@ -5,11 +5,11 @@
             modules_48:
                 (Program
                     (SymbolTable
-                        8
+                        9
                         {
                             1_string_t_s:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     1_string_t_s
                                     3 s
                                     modules_48_fpm_strings
@@ -19,7 +19,7 @@
                                 ),
                             cat_str_alloc:
                                 (Variable
-                                    8
+                                    9
                                     cat_str_alloc
                                     []
                                     Local
@@ -45,7 +45,7 @@
                                 ),
                             char_str:
                                 (Variable
-                                    8
+                                    9
                                     char_str
                                     []
                                     Local
@@ -69,7 +69,7 @@
                                 ),
                             char_str_alloc:
                                 (Variable
-                                    8
+                                    9
                                     char_str_alloc
                                     []
                                     Local
@@ -95,7 +95,7 @@
                                 ),
                             char_str_hash1:
                                 (Variable
-                                    8
+                                    9
                                     char_str_hash1
                                     []
                                     Local
@@ -119,7 +119,7 @@
                                 ),
                             char_str_hash2:
                                 (Variable
-                                    8
+                                    9
                                     char_str_hash2
                                     []
                                     Local
@@ -143,7 +143,7 @@
                                 ),
                             char_str_hash3:
                                 (Variable
-                                    8
+                                    9
                                     char_str_hash3
                                     []
                                     Local
@@ -167,7 +167,7 @@
                                 ),
                             char_str_hash4:
                                 (Variable
-                                    8
+                                    9
                                     char_str_hash4
                                     []
                                     Local
@@ -191,7 +191,7 @@
                                 ),
                             fnv_1a:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     fnv_1a
                                     2 fnv_1a
                                     modules_48_fpm_strings
@@ -201,7 +201,7 @@
                                 ),
                             fnv_1a@fnv_1a_char:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     fnv_1a@fnv_1a_char
                                     2 fnv_1a_char
                                     modules_48_fpm_strings
@@ -211,7 +211,7 @@
                                 ),
                             fnv_1a_char:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     fnv_1a_char
                                     2 fnv_1a_char
                                     modules_48_fpm_strings
@@ -221,7 +221,7 @@
                                 ),
                             fnv_1a_string_t:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     fnv_1a_string_t
                                     2 fnv_1a_string_t
                                     modules_48_fpm_strings
@@ -231,7 +231,7 @@
                                 ),
                             is_fortran_name:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     is_fortran_name
                                     2 is_fortran_name
                                     modules_48_fpm_strings
@@ -241,7 +241,7 @@
                                 ),
                             string_cat:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     string_cat
                                     2 string_cat
                                     modules_48_fpm_strings
@@ -251,7 +251,7 @@
                                 ),
                             string_t:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     string_t
                                     2 string_t
                                     modules_48_fpm_strings
@@ -261,7 +261,7 @@
                                 ),
                             string_var:
                                 (Variable
-                                    8
+                                    9
                                     string_var
                                     []
                                     Local
@@ -282,7 +282,7 @@
                                         FixedSizeArray
                                         Global
                                     )
-                                    8 string_t
+                                    9 string_t
                                     Source
                                     Public
                                     Required
@@ -300,7 +300,7 @@
                     modules_48
                     [modules_48_fpm_strings]
                     [(Allocate
-                        [((Var 8 char_str_alloc)
+                        [((Var 9 char_str_alloc)
                         []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
@@ -311,7 +311,7 @@
                         ()
                     )
                     (Assignment
-                        (Var 8 char_str_alloc)
+                        (Var 9 char_str_alloc)
                         (StringConstant
                             "runningmodules_48_1"
                             (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -323,7 +323,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -338,19 +338,19 @@
                                 ColMajor
                                 ()
                             )
-                            8 1_string_t_s
+                            9 1_string_t_s
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                         )
-                        (Var 8 char_str_alloc)
+                        (Var 9 char_str_alloc)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 8 char_str)
+                        (Var 9 char_str)
                         (StringConstant
                             "runningmodules_48_2"
                             (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -362,7 +362,7 @@
                     (Assignment
                         (StructInstanceMember
                             (ArrayItem
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
@@ -377,23 +377,23 @@
                                 ColMajor
                                 ()
                             )
-                            8 1_string_t_s
+                            9 1_string_t_s
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                         )
-                        (Var 8 char_str)
+                        (Var 9 char_str)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (Var 8 char_str_hash1)
+                        (Var 9 char_str_hash1)
                         (FunctionCall
-                            8 fnv_1a@fnv_1a_char
-                            8 fnv_1a
-                            [((Var 8 char_str))
+                            9 fnv_1a@fnv_1a_char
+                            9 fnv_1a
+                            [((Var 9 char_str))
                             ((IntegerConstant 2166136261 (Integer 8) Decimal))]
                             (Integer 8)
                             ()
@@ -404,11 +404,11 @@
                         .false.
                     )
                     (Assignment
-                        (Var 8 char_str_hash2)
+                        (Var 9 char_str_hash2)
                         (FunctionCall
-                            8 fnv_1a@fnv_1a_char
-                            8 fnv_1a
-                            [((Var 8 char_str))
+                            9 fnv_1a@fnv_1a_char
+                            9 fnv_1a
+                            [((Var 9 char_str))
                             (())]
                             (Integer 8)
                             ()
@@ -421,8 +421,8 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 char_str_hash1)
-                            (Var 8 char_str_hash2)]
+                            [(Var 9 char_str_hash1)
+                            (Var 9 char_str_hash2)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -433,9 +433,9 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 8 char_str_hash1)
+                            (Var 9 char_str_hash1)
                             NotEq
-                            (Var 8 char_str_hash2)
+                            (Var 9 char_str_hash2)
                             (Logical 4)
                             ()
                         )
@@ -445,12 +445,12 @@
                         []
                     )
                     (Assignment
-                        (Var 8 char_str_hash3)
+                        (Var 9 char_str_hash3)
                         (FunctionCall
-                            8 fnv_1a_string_t
+                            9 fnv_1a_string_t
                             ()
                             [((ArrayPhysicalCast
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
@@ -479,12 +479,12 @@
                         .false.
                     )
                     (Assignment
-                        (Var 8 char_str_hash4)
+                        (Var 9 char_str_hash4)
                         (FunctionCall
-                            8 fnv_1a_string_t
+                            9 fnv_1a_string_t
                             ()
                             [((ArrayPhysicalCast
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
@@ -515,8 +515,8 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 char_str_hash3)
-                            (Var 8 char_str_hash4)]
+                            [(Var 9 char_str_hash3)
+                            (Var 9 char_str_hash4)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -527,9 +527,9 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 8 char_str_hash3)
+                            (Var 9 char_str_hash3)
                             NotEq
-                            (Var 8 char_str_hash4)
+                            (Var 9 char_str_hash4)
                             (Logical 4)
                             ()
                         )
@@ -539,12 +539,12 @@
                         []
                     )
                     (Assignment
-                        (Var 8 cat_str_alloc)
+                        (Var 9 cat_str_alloc)
                         (FunctionCall
-                            8 string_cat
+                            9 string_cat
                             ()
                             [((ArrayPhysicalCast
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
@@ -580,11 +580,11 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 cat_str_alloc)
+                            [(Var 9 cat_str_alloc)
                             (FunctionCall
-                                8 is_fortran_name
+                                9 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((Var 9 cat_str_alloc))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -599,7 +599,7 @@
                     (If
                         ()
                         (StringCompare
-                            (Var 8 cat_str_alloc)
+                            (Var 9 cat_str_alloc)
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1:runningmodules_48_2"
@@ -616,9 +616,9 @@
                     (If
                         ()
                         (FunctionCall
-                            8 is_fortran_name
+                            9 is_fortran_name
                             ()
-                            [((Var 8 cat_str_alloc))]
+                            [((Var 9 cat_str_alloc))]
                             (Logical 4)
                             ()
                             ()
@@ -629,12 +629,12 @@
                         []
                     )
                     (Assignment
-                        (Var 8 cat_str_alloc)
+                        (Var 9 cat_str_alloc)
                         (FunctionCall
-                            8 string_cat
+                            9 string_cat
                             ()
                             [((ArrayPhysicalCast
-                                (Var 8 string_var)
+                                (Var 9 string_var)
                                 FixedSizeArray
                                 DescriptorArray
                                 (Array
@@ -667,11 +667,11 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 8 cat_str_alloc)
+                            [(Var 9 cat_str_alloc)
                             (FunctionCall
-                                8 is_fortran_name
+                                9 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((Var 9 cat_str_alloc))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -686,7 +686,7 @@
                     (If
                         ()
                         (StringCompare
-                            (Var 8 cat_str_alloc)
+                            (Var 9 cat_str_alloc)
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1runningmodules_48_2"
@@ -704,9 +704,9 @@
                         ()
                         (LogicalNot
                             (FunctionCall
-                                8 is_fortran_name
+                                9 is_fortran_name
                                 ()
-                                [((Var 8 cat_str_alloc))]
+                                [((Var 9 cat_str_alloc))]
                                 (Logical 4)
                                 ()
                                 ()
@@ -720,12 +720,69 @@
                         []
                     )]
                     ()
+                    ()
                 ),
             modules_48_fpm_strings:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_48_fpm_strings:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_48_fpm_strings
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_48_fpm_strings:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_48_fpm_strings
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             fnv_1a:
                                 (GenericProcedure
                                     2
@@ -2008,9 +2065,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_modules_48_fpm_strings
+                    2 __lcompilers_global_init_state_modules_48_fpm_strings
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

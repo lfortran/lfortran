@@ -138,6 +138,7 @@ void main2() {
     g3->dims[1].length = 3;
     g3->dims[2].lower_bound = 1;
     g3->dims[2].length = 2;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
 }
 
 }

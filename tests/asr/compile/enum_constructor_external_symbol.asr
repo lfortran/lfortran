@@ -109,6 +109,8 @@
         false
         false
         nil
+        nil
+        false
       )
       "main" (Program
         (SymbolTable
@@ -226,9 +228,13 @@
           )
         ]
         nil
+        nil
       )
     }
   )
   []
+  nil
+  nil
+  false
   nil
 )

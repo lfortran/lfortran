@@ -1,12 +1,12 @@
 #include <stdint.h>
 
-__device__ inline float f_gpu_9(float x) {
+__device__ inline float f_gpu_11(float x) {
     float f;
     f = (x +   3.00000000000000000e+00f);
     return f;
 }
 
-__device__ inline float second_gpu_10(float x) {
+__device__ inline float second_gpu_12(float x) {
     float f;
     f = (  1.00000000000000000e+01f * x);
     return f;
@@ -22,6 +22,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    result[((int)(i) - (1))] = (f_gpu_9(((float)i)) + second_gpu_10(((float)i)));
+    result[((int)(i) - (1))] = (f_gpu_11(((float)i)) + second_gpu_12(((float)i)));
 }
 

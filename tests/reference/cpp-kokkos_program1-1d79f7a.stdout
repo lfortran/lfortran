@@ -25,6 +25,7 @@ namespace {
 namespace {
 
 void main2() {
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
 }
 
 }

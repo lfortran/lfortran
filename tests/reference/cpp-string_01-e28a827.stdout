@@ -26,6 +26,7 @@ namespace {
 
 void main2() {
     static std::string my_name="Dominic";
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     std::cout << "My name is " << " " << my_name << std::endl;
 }
 

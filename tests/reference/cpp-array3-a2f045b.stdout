@@ -50,6 +50,7 @@ void main2() {
     f32_3_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 3;
+    _lcompilers_init_dispatch(lcompilers_init_dispatch_collective);
     a->data = &r;
     b->data = &r;
 }

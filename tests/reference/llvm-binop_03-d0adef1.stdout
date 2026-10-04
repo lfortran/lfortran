@@ -24,6 +24,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %x = alloca i64, align 8
   %y = alloca double, align 8
+  call void @_lcompilers_init_dispatch(i32 1)
   store i64 665663010, i64* %x, align 8
   %3 = load i64, i64* %x, align 8
   %simplified_pow_operation = mul i64 %3, %3
@@ -115,6 +116,8 @@ FINALIZE_SYMTABLE_binop_03:                       ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...)
 

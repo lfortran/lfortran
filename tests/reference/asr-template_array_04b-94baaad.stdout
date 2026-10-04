@@ -5,11 +5,11 @@
             template_array_04b:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             default_behavior:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     default_behavior
                                     2 default_behavior
                                     template_array_04b_m
@@ -19,7 +19,7 @@
                                 ),
                             swap:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     swap
                                     2 swap
                                     template_array_04b_m
@@ -29,7 +29,7 @@
                                 ),
                             test_reverse:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     test_reverse
                                     2 test_reverse
                                     template_array_04b_m
@@ -41,12 +41,13 @@
                     template_array_04b
                     [template_array_04b_m]
                     [(SubroutineCall
-                        7 test_reverse
+                        8 test_reverse
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             template_array_04b_m:
@@ -54,6 +55,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_state_template_array_04b_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_template_array_04b_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            __lcompilers_global_init_template_array_04b_m:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_template_array_04b_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             default_behavior:
                                 (Requirement
                                     (SymbolTable
@@ -286,11 +343,11 @@
                                             __instantiated_swap:
                                                 (Function
                                                     (SymbolTable
-                                                        8
+                                                        9
                                                         {
                                                             tmp:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     tmp
                                                                     []
                                                                     Local
@@ -314,7 +371,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     x
                                                                     []
                                                                     InOut
@@ -338,7 +395,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    8
+                                                                    9
                                                                     y
                                                                     []
                                                                     InOut
@@ -379,25 +436,25 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 8 x)
-                                                    (Var 8 y)]
+                                                    [(Var 9 x)
+                                                    (Var 9 y)]
                                                     [(Assignment
-                                                        (Var 8 tmp)
-                                                        (Var 8 x)
+                                                        (Var 9 tmp)
+                                                        (Var 9 x)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 8 x)
-                                                        (Var 8 y)
+                                                        (Var 9 x)
+                                                        (Var 9 y)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 8 y)
-                                                        (Var 8 tmp)
+                                                        (Var 9 y)
+                                                        (Var 9 tmp)
                                                         ()
                                                         .false.
                                                         .false.
@@ -534,9 +591,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_template_array_04b_m
+                    2 __lcompilers_global_init_state_template_array_04b_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

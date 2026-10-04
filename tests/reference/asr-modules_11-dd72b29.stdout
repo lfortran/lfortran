@@ -5,11 +5,11 @@
             access_externally:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
                             access_internally:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     access_internally
                                     2 access_internally
                                     modules_11_module11
@@ -19,7 +19,7 @@
                                 ),
                             i:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     i
                                     2 i
                                     modules_11_module11
@@ -29,7 +29,7 @@
                                 ),
                             j:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     j
                                     2 j
                                     modules_11_module11
@@ -47,7 +47,7 @@
                                 "j = "
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (Var 4 j)]
+                            (Var 5 j)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
@@ -56,12 +56,13 @@
                         )
                     )
                     (SubroutineCall
-                        4 access_internally
+                        5 access_internally
                         ()
                         []
                         ()
                         .false.
                     )]
+                    ()
                     ()
                 ),
             modules_11_module11:
@@ -69,6 +70,62 @@
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_modules_11_module11:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_modules_11_module11
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_modules_11_module11:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_modules_11_module11
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             access_internally:
                                 (Function
                                     (SymbolTable
@@ -170,9 +227,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_modules_11_module11
+                    2 __lcompilers_global_init_state_modules_11_module11
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

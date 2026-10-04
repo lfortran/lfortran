@@ -5,11 +5,11 @@
             operator_overloading_01:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
                             f:
                                 (Variable
-                                    6
+                                    7
                                     f
                                     []
                                     Local
@@ -39,7 +39,7 @@
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     greater_than_inverse
                                     2 greater_than_inverse
                                     operator_overloading_01_overload_comp_m
@@ -49,7 +49,7 @@
                                 ),
                             less_than_inverse:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     less_than_inverse
                                     2 less_than_inverse
                                     operator_overloading_01_overload_comp_m
@@ -59,7 +59,7 @@
                                 ),
                             less_than_overload_use:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     less_than_overload_use
                                     2 less_than_overload_use
                                     operator_overloading_01_overload_comp_m
@@ -69,7 +69,7 @@
                                 ),
                             t:
                                 (Variable
-                                    6
+                                    7
                                     t
                                     []
                                     Local
@@ -99,7 +99,7 @@
                                 ),
                             ~gt:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     ~gt
                                     2 ~gt
                                     operator_overloading_01_overload_comp_m
@@ -109,7 +109,7 @@
                                 ),
                             ~lt:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     ~lt
                                     2 ~lt
                                     operator_overloading_01_overload_comp_m
@@ -128,16 +128,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 t)
+                                (Var 7 t)
                                 Gt
-                                (Var 6 t)
+                                (Var 7 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 greater_than_inverse
-                                    6 ~gt
-                                    [((Var 6 t))
-                                    ((Var 6 t))]
+                                    7 greater_than_inverse
+                                    7 ~gt
+                                    [((Var 7 t))
+                                    ((Var 7 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -158,16 +158,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 t)
+                                (Var 7 t)
                                 Gt
-                                (Var 6 f)
+                                (Var 7 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 greater_than_inverse
-                                    6 ~gt
-                                    [((Var 6 t))
-                                    ((Var 6 f))]
+                                    7 greater_than_inverse
+                                    7 ~gt
+                                    [((Var 7 t))
+                                    ((Var 7 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -188,16 +188,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 f)
+                                (Var 7 f)
                                 Gt
-                                (Var 6 t)
+                                (Var 7 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 greater_than_inverse
-                                    6 ~gt
-                                    [((Var 6 f))
-                                    ((Var 6 t))]
+                                    7 greater_than_inverse
+                                    7 ~gt
+                                    [((Var 7 f))
+                                    ((Var 7 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -218,16 +218,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 f)
+                                (Var 7 f)
                                 Gt
-                                (Var 6 f)
+                                (Var 7 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 greater_than_inverse
-                                    6 ~gt
-                                    [((Var 6 f))
-                                    ((Var 6 f))]
+                                    7 greater_than_inverse
+                                    7 ~gt
+                                    [((Var 7 f))
+                                    ((Var 7 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -248,16 +248,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 t)
+                                (Var 7 t)
                                 Lt
-                                (Var 6 t)
+                                (Var 7 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 less_than_inverse
-                                    6 ~lt
-                                    [((Var 6 t))
-                                    ((Var 6 t))]
+                                    7 less_than_inverse
+                                    7 ~lt
+                                    [((Var 7 t))
+                                    ((Var 7 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -278,16 +278,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 t)
+                                (Var 7 t)
                                 Lt
-                                (Var 6 f)
+                                (Var 7 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 less_than_inverse
-                                    6 ~lt
-                                    [((Var 6 t))
-                                    ((Var 6 f))]
+                                    7 less_than_inverse
+                                    7 ~lt
+                                    [((Var 7 t))
+                                    ((Var 7 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -308,16 +308,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 f)
+                                (Var 7 f)
                                 Lt
-                                (Var 6 t)
+                                (Var 7 t)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 less_than_inverse
-                                    6 ~lt
-                                    [((Var 6 f))
-                                    ((Var 6 t))]
+                                    7 less_than_inverse
+                                    7 ~lt
+                                    [((Var 7 f))
+                                    ((Var 7 t))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -338,16 +338,16 @@
                                 (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
-                                (Var 6 f)
+                                (Var 7 f)
                                 Lt
-                                (Var 6 f)
+                                (Var 7 f)
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    6 less_than_inverse
-                                    6 ~lt
-                                    [((Var 6 f))
-                                    ((Var 6 f))]
+                                    7 less_than_inverse
+                                    7 ~lt
+                                    [((Var 7 f))
+                                    ((Var 7 f))]
                                     (Logical 4)
                                     ()
                                     ()
@@ -361,12 +361,69 @@
                         )
                     )]
                     ()
+                    ()
                 ),
             operator_overloading_01_overload_comp_m:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_operator_overloading_01_overload_comp_m:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_operator_overloading_01_overload_comp_m
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_operator_overloading_01_overload_comp_m:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_operator_overloading_01_overload_comp_m
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             greater_than_inverse:
                                 (Function
                                     (SymbolTable
@@ -818,9 +875,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    2 __lcompilers_global_init_operator_overloading_01_overload_comp_m
+                    2 __lcompilers_global_init_state_operator_overloading_01_overload_comp_m
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )

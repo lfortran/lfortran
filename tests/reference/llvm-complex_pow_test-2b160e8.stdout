@@ -20,6 +20,7 @@ define i32 @main(i32 %0, i8** %1) {
   %x = alloca %complex_4, align 8
   %y = alloca %complex_4, align 8
   %z = alloca %complex_4, align 8
+  call void @_lcompilers_init_dispatch(i32 1)
   store %complex_4 <{ float 3.000000e+00, float 4.000000e+00 }>, %complex_4* %x, align 1
   store %complex_4 <{ float 3.000000e+00, float 2.000000e+00 }>, %complex_4* %y, align 1
   %6 = load %complex_4, %complex_4* %x, align 1
@@ -65,6 +66,8 @@ FINALIZE_SYMTABLE_complex2:                       ; preds = %return
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lcompilers_init_dispatch(i32)
 
 declare void @_lfortran_complex_pow_32(%complex_4*, %complex_4*, %complex_4*)
 

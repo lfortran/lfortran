@@ -25,6 +25,11 @@ std::vector<std::string> slice(const std::vector<std::string> &v,
         int start=0, int end=-1);
 char *s2c(Allocator &al, const std::string &s);
 
+// The 64-bit FNV-1a hash of `s` in 16 lowercase hexadecimal digits. Unlike
+// `std::hash`, it is the same with every toolchain and in every compilation,
+// so a name derived from it agrees between separately compiled files.
+std::string stable_hash_hex(const std::string &s);
+
 // Replaces all occurrences of `regex` (a regular expression, must escape
 // special characters) with `replace`
 std::string replace(const std::string &s,

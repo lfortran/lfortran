@@ -5,7 +5,7 @@
             derived_type_05:
                 (Program
                     (SymbolTable
-                        13
+                        15
                         {
                             
                         })
@@ -13,12 +13,69 @@
                     []
                     []
                     ()
+                    ()
                 ),
             derived_types_05_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
                         {
+                            __lcompilers_global_init_derived_types_05_stdlib_string_type:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_05_stdlib_string_type
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_05_stdlib_string_type:
+                                (Variable
+                                    2
+                                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             new_string:
                                 (Function
                                     (SymbolTable
@@ -462,21 +519,99 @@
                     .false.
                     .false.
                     .true.
-                    ()
+                    2 __lcompilers_global_init_derived_types_05_stdlib_string_type
+                    2 __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                    .false.
                 ),
             stdlib_string_type_constructor:
                 (Module
                     (SymbolTable
-                        8
+                        9
                         {
+                            __lcompilers_global_init_derived_types_05_stdlib_string_type:
+                                (ExternalSymbol
+                                    9
+                                    __lcompilers_global_init_derived_types_05_stdlib_string_type
+                                    2 __lcompilers_global_init_derived_types_05_stdlib_string_type
+                                    derived_types_05_stdlib_string_type
+                                    []
+                                    __lcompilers_global_init_derived_types_05_stdlib_string_type
+                                    Public
+                                ),
+                            __lcompilers_global_init_derived_types_05_stdlib_string_type_stdlib_string_type_constructor:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    __lcompilers_global_init_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lcompilers_global_init_state_derived_types_05_stdlib_string_type:
+                                (ExternalSymbol
+                                    9
+                                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                                    2 __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                                    derived_types_05_stdlib_string_type
+                                    []
+                                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type
+                                    Public
+                                ),
+                            __lcompilers_global_init_state_derived_types_05_stdlib_string_type_stdlib_string_type_constructor:
+                                (Variable
+                                    9
+                                    __lcompilers_global_init_state_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Save
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             new_string:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             new:
                                                 (Variable
-                                                    9
+                                                    10
                                                     new
                                                     []
                                                     ReturnVar
@@ -491,7 +626,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    8 string_type
+                                                    9 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -507,7 +642,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    9
+                                                    10
                                                     string
                                                     []
                                                     In
@@ -554,9 +689,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 string)]
+                                    [(Var 10 string)]
                                     []
-                                    (Var 9 new)
+                                    (Var 10 new)
                                     Public
                                     .true.
                                     .true.
@@ -565,11 +700,11 @@
                             new_string_from_integer_int32:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             new:
                                                 (Variable
-                                                    10
+                                                    11
                                                     new
                                                     []
                                                     ReturnVar
@@ -584,7 +719,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    8 string_type
+                                                    9 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -600,7 +735,7 @@
                                                 ),
                                             val:
                                                 (Variable
-                                                    10
+                                                    11
                                                     val
                                                     []
                                                     In
@@ -647,9 +782,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 val)]
+                                    [(Var 11 val)]
                                     []
-                                    (Var 10 new)
+                                    (Var 11 new)
                                     Public
                                     .true.
                                     .true.
@@ -658,11 +793,11 @@
                             new_string_from_integer_int64:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             new:
                                                 (Variable
-                                                    11
+                                                    12
                                                     new
                                                     []
                                                     ReturnVar
@@ -677,7 +812,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    8 string_type
+                                                    9 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -693,7 +828,7 @@
                                                 ),
                                             val:
                                                 (Variable
-                                                    11
+                                                    12
                                                     val
                                                     []
                                                     In
@@ -740,9 +875,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 11 val)]
+                                    [(Var 12 val)]
                                     []
-                                    (Var 11 new)
+                                    (Var 12 new)
                                     Public
                                     .true.
                                     .true.
@@ -751,11 +886,11 @@
                             new_string_from_logical_lk:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             new:
                                                 (Variable
-                                                    12
+                                                    13
                                                     new
                                                     []
                                                     ReturnVar
@@ -770,7 +905,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    8 string_type
+                                                    9 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -786,7 +921,7 @@
                                                 ),
                                             val:
                                                 (Variable
-                                                    12
+                                                    13
                                                     val
                                                     []
                                                     In
@@ -833,9 +968,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 val)]
+                                    [(Var 13 val)]
                                     []
-                                    (Var 12 new)
+                                    (Var 13 new)
                                     Public
                                     .true.
                                     .true.
@@ -843,7 +978,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     string_type
                                     2 string_type
                                     derived_types_05_stdlib_string_type
@@ -853,7 +988,7 @@
                                 ),
                             ~string_type:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     ~string_type
                                     2 ~string_type
                                     derived_types_05_stdlib_string_type
@@ -868,9 +1003,14 @@
                     .false.
                     .false.
                     .false.
-                    ()
+                    9 __lcompilers_global_init_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                    9 __lcompilers_global_init_state_derived_types_05_stdlib_string_type_stdlib_string_type_constructor
+                    .false.
                 )
         })
     []
+    ()
+    ()
+    .false.
     ()
 )
