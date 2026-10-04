@@ -2089,3 +2089,24 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+subroutine derived_type_local_bound_01()
+    implicit none
+    integer :: k
+    type :: t
+        integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+    type(t) :: x
+    k = 1
+    print *, size(x%b)
+end subroutine
+
+subroutine derived_type_local_bound_02(n)
+    implicit none
+    integer, intent(in) :: n
+    type :: t
+        integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+    type(t) :: x
+    print *, size(x%c)
+end subroutine

@@ -1,5 +1,0 @@
-semantic error: Explicit shaped array with nonconstant bounds
- --> tests/errors/derived_type_local_bound_01.f90:8:26
-  |
-8 |             integer :: b(k*2)
-  |                          ^^^ 
