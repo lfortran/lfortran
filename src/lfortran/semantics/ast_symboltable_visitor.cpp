@@ -583,6 +583,20 @@ public:
         }
     }
 
+    // The access-spec of a bare `private` or `public` statement (one without
+    // an access-id-list), or nullptr if `item` is not such a statement.
+    static const AST::SimpleAttribute_t *bare_access_stmt(const AST::decl_stmt_t &item) {
+        if (!AST::is_a<AST::Declaration_t>(item)) return nullptr;
+        const AST::Declaration_t &d = *AST::down_cast<AST::Declaration_t>(&item);
+        if (d.m_vartype != nullptr || d.n_syms != 0 || d.n_attributes != 1
+                || !AST::is_a<AST::SimpleAttribute_t>(*d.m_attributes[0])) return nullptr;
+        const AST::SimpleAttribute_t *sa =
+            AST::down_cast<AST::SimpleAttribute_t>(d.m_attributes[0]);
+        if (sa->m_attr != AST::simple_attributeType::AttrPrivate
+                && sa->m_attr != AST::simple_attributeType::AttrPublic) return nullptr;
+        return sa;
+    }
+
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
         ScopingUnitScope scoping_unit_scope(*this,
@@ -701,12 +715,8 @@ public:
         // Otherwise a variable, derived type or interface declared ahead of
         // the statement would take the initial (public) default.
         for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
-            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-            if (d->m_vartype != nullptr || d->n_syms != 0 || d->n_attributes != 1
-                    || !AST::is_a<AST::SimpleAttribute_t>(*d->m_attributes[0])) continue;
-            AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(d->m_attributes[0]);
-            if (sa->m_attr == AST::simple_attributeType::AttrPrivate) {
+            const AST::SimpleAttribute_t *sa = bare_access_stmt(*x.m_items[i]);
+            if (sa && sa->m_attr == AST::simple_attributeType::AttrPrivate) {
                 dflt_access = ASR::accessType::Private;
             }
         }
