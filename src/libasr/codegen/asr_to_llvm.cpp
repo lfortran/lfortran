@@ -66,7 +66,6 @@
 #include <libasr/codegen/llvm_compat.h>
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_cuda.h>
-#include <libasr/codegen/codegen_asr_utils.h>
 namespace LCompilers {
 
 using ASR::is_a;
@@ -83,9 +82,7 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
-// Backend-neutral ASR classification now lives in codegen_asr_utils.h so
-// the Liric backend can share one definition.
-using CodeGen::is_external_interface_function;
+using ASRUtils::is_external_interface_function;
 
 // Helper functions for LLVM function name mangling
 namespace {
