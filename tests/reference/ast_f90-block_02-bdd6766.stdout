@@ -4,9 +4,7 @@ A = 10
 1 loop: block
     integer :: B
     A = A + 5
-    if (A == 15) then
-        go to 1
-    end if
+    if (A == 15) go to 1
     B = A/2
     call Square(B)
 end block loop
