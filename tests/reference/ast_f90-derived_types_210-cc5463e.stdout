@@ -42,18 +42,10 @@ r(2)%q(2,3)%v = 0
 r(2)%q(2,3)%v(2, 3) = 5
 n = 2
 k = 3
-if (r(2)%q(n,k)%v(n, k) /= 5) then
-    error stop
-end if
+if (r(2)%q(n,k)%v(n, k) /= 5) error stop
 c(1,2)%v = 1
-if (c(1,2)%total(2, 3) /= 6) then
-    error stop
-end if
-if (c(1,2)%v(n, k) /= 1) then
-    error stop
-end if
+if (c(1,2)%total(2, 3) /= 6) error stop
+if (c(1,2)%v(n, k) /= 1) error stop
 call c(1,2)%bump(1.0)
-if (c(1,2)%v(n, k) /= 2) then
-    error stop
-end if
+if (c(1,2)%v(n, k) /= 2) error stop
 end program derived_types_210
