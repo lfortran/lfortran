@@ -6,7 +6,7 @@ type :: __module_prif_prif_team_type
     type(__module_prif_prif_dummy_team_descriptor), pointer :: info
 end type __module_prif_prif_team_type
 
-type :: prif_coarray_handle
+type, bind(c) :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 

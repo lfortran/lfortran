@@ -4773,6 +4773,104 @@ public:
         }
     }
 
+    /*
+        Whether `x` assigns the result of `reshape` of an array of structs
+        that `visit_ArrayReshape` built as deep copies of the source
+        elements. The assignment copies these elements bitwise, which moves
+        the storage they own (string buffers, allocatable components) into
+        the target elements.
+    */
+    bool is_struct_array_moved_from_reshape(const ASR::Assignment_t& x) {
+        if (!ASR::is_a<ASR::Var_t>(*x.m_target) ||
+                !ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
+            return false;
+        }
+        ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(x.m_value);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(reshape->m_type);
+        if (reshape->m_value != nullptr || reshape->m_order != nullptr ||
+                !ASR::is_a<ASR::StructType_t>(*elem_type) ||
+                ASRUtils::is_class_type(elem_type)) {
+            return false;
+        }
+        switch (ASRUtils::extract_physical_type(ASRUtils::expr_type(reshape->m_array))) {
+            case ASR::array_physical_typeType::FixedSizeArray:
+            case ASR::array_physical_typeType::DescriptorArray:
+                return true;
+            case ASR::array_physical_typeType::PointerArray:
+                return ASRUtils::extract_physical_type(reshape->m_type) ==
+                    ASR::array_physical_typeType::DescriptorArray;
+            default:
+                return false;
+        }
+    }
+
+    /*
+        Frees the storage owned by the elements of the array variable
+        `target_expr` (whose LLVM value is `target`), keeping the elements
+        themselves, before an assignment overwrites them.
+    */
+    void finalize_array_elements_of_target(ASR::expr_t* target_expr, llvm::Value* target) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target_expr);
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(target_type);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(target_type);
+        ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(target_expr)));
+        llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
+            target_expr, elem_type, module.get());
+        llvm::Type* array_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            target_expr, array_type, module.get());
+        switch (ASRUtils::extract_physical_type(target_type)) {
+            case ASR::array_physical_typeType::FixedSizeArray: {
+                llvm_symtab_finalizer.finalize_array_elements(
+                    llvm_utils->create_gep2(array_llvm_type, target, 0),
+                    llvm_utils->get_array_size(target, array_llvm_type,
+                        array_type, this),
+                    elem_type, struct_sym);
+                break;
+            }
+            case ASR::array_physical_typeType::PointerArray: {
+                llvm_symtab_finalizer.finalize_array_elements(target,
+                    llvm_utils->get_array_size(target, array_llvm_type,
+                        array_type, this),
+                    elem_type, struct_sym);
+                break;
+            }
+            case ASR::array_physical_typeType::DescriptorArray: {
+                llvm::Value* desc = target;
+                if (LLVM::is_llvm_pointer(*target_type)) {
+                    desc = llvm_utils->CreateLoad2(
+                        array_llvm_type->getPointerTo(), target);
+                }
+                if (ASRUtils::is_pointer(target_type)) {
+                    // A pointer may be associated with a strided section.
+                    arr_descr->for_each_element_of_descriptor(array_llvm_type,
+                        desc, elem_llvm_type, ASRUtils::extract_n_dims_from_ttype(array_type),
+                        "finalize_strided_elements",
+                        [&](llvm::Value* /*iter*/, llvm::Value* elem) {
+                            llvm_symtab_finalizer.finalize_array_elements(elem,
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 1),
+                                elem_type, struct_sym);
+                        });
+                    break;
+                }
+                llvm::Value* data = llvm_utils->CreateLoad2(elem_llvm_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(array_llvm_type, desc));
+                llvm::Value* is_allocated = builder->CreateICmpNE(data,
+                    llvm::ConstantPointerNull::get(elem_llvm_type->getPointerTo()));
+                llvm_utils->create_if_else(is_allocated, [&]() {
+                    llvm_symtab_finalizer.finalize_array_elements(data,
+                        llvm_utils->get_array_size(desc, array_llvm_type,
+                            array_type, this),
+                        elem_type, struct_sym);
+                }, []() {});
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
@@ -4858,6 +4956,27 @@ public:
                     builder->CreateMemSet(target_,
                         llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                         llvm_total_bytes, llvm::MaybeAlign());
+                    // Give each element the member storage a struct owns
+                    // (e.g. fixed-size character array buffers), which
+                    // deepcopy copies into.
+                    ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_array)));
+                    llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* elem_idx = llvm_utils->CreateAlloca(*builder, i64_ty);
+                    builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), elem_idx);
+                    llvm_utils->create_loop("reshape_allocate_members", [&]() {
+                        return builder->CreateICmpSLT(
+                            llvm_utils->CreateLoad2(i64_ty, elem_idx),
+                            llvm::ConstantInt::get(i64_ty, target_size));
+                    }, [&]() {
+                        llvm::Value* idx_val = llvm_utils->CreateLoad2(i64_ty, elem_idx);
+                        allocate_array_members_of_struct(struct_sym,
+                            builder->CreateInBoundsGEP(llvm_data_type, target_, idx_val),
+                            element_type);
+                        builder->CreateStore(builder->CreateAdd(idx_val,
+                            llvm::ConstantInt::get(i64_ty, 1)), elem_idx);
+                    });
                     for (int64_t i = 0; i < copy_size; i++) {
                         llvm::Value* src_elem = llvm_utils->create_gep2(
                             src_target_type, array, i);
@@ -13706,6 +13825,9 @@ public:
             if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
                 llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
                 generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
+            }
+            if( is_struct_array_moved_from_reshape(x) ) {
+                finalize_array_elements_of_target(x.m_target, target);
             }
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
                 ASR::dimension_t* asr_dims = nullptr;
@@ -24659,46 +24781,47 @@ public:
                 tmp = inline_char_member_as_string_descriptor(
                     x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
-                if (orig_arg_intent == ASR::intentType::In ||
-                    orig_arg_intent == ASR::intentType::InOut ||
-                    orig_arg_intent == ASR::intentType::Out) {
-                    /*
-                        For the cases where argument intent is In or InOut or Out, we
-                        cannot pass the evaluated value of expression directly to it. Currently
-                        the value of `value` is the evaluated value of expression and this is because
-                        for every expression we visit, we have a check to prefer the evaluated value.
-
-                        To avoid this problem, we manually set the expr value to nullptr.
-                        For example, refer integration_tests/intent_03.f90
-                    */
-                    // TODO: this is possible in other cases as well, support those.
-                    if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ) {
-                        ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
-                        arr_item->m_value = nullptr;
-                        this->visit_expr_wrapper((ASR::expr_t*)arr_item);
-                        value = tmp;
-                    } else if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
-                                ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
-                        bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
-                        ASR::expr_t* complex_elem_expr = is_re
-                            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
-                            : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
-                        int ptr_loads_copy = ptr_loads;
-                        ptr_loads = 0;
-                        this->visit_expr(*complex_elem_expr);
-                        ptr_loads = ptr_loads_copy;
-                        llvm::Value* complex_ptr = tmp;
-                        if (!complex_ptr->getType()->isPointerTy()) {
-                            llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
-                            builder->CreateStore(complex_ptr, alloc);
-                            complex_ptr = alloc;
-                        }
-                        int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
-                            ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
-                        llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
-                        value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
-                    }
+                /*
+                
+                Handle cases where a compile-time value (register value) shouldn't
+                be used, but rather a reference-memory value.
+                As all Fortran functions are lowered to ones accepting reference-value arguments.
+                For example, refer integration_tests/intent_03.f90
+                TODO: Introduce a solid fix to handle all cases.
+                */
+            if(ASRUtils::expr_value(x.m_args[i].m_value) != nullptr){
+                LCOMPILERS_ASSERT(orig_arg_intent != ASR::intentType::Out &&
+                                  orig_arg_intent != ASR::intentType::InOut);
+                if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
+                    arr_item->m_value = nullptr;
+                    this->visit_expr_wrapper((ASR::expr_t*)arr_item);
+                    value = tmp;
                 }
+            }
+            // Force revisit to handle the register/reference issue, plus,
+            // [TODO] We don't properly visit those even if no compile-time value exist -- Example complex_38.90
+            if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
+                  ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
+                bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
+                ASR::expr_t* complex_elem_expr = is_re
+                    ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
+                    : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*complex_elem_expr);
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* complex_ptr = tmp;
+                if (!complex_ptr->getType()->isPointerTy()) {
+                    llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
+                    builder->CreateStore(complex_ptr, alloc);
+                    complex_ptr = alloc;
+                }
+                int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
+                llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
+                value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
+            }
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
                 llvm::Type *target_type = nullptr;
