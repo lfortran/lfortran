@@ -44,6 +44,10 @@ def check_paths(compiler, source, work):
     for name in ('plain', './relative', 'out.dir/program',
                  'out.dir/program.exe', '.hidden', '.hidden.exe'):
         compile_program(compiler, source, name, work)
+        output_path = work / name
+        expected_map = output_path.with_suffix('').with_name(
+            output_path.stem + '_lines.dat')
+        require(expected_map.is_file(), 'missing map: ' + str(expected_map))
         check_frames((work / name).resolve(), work)
         print('PASS output path', name)
 

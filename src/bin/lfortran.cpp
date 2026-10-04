@@ -2019,10 +2019,7 @@ int link_executable(const std::vector<std::string> &infiles,
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
 
-    std::string basename = std::filesystem::path(outfile).filename().string();
-    size_t dot_index = basename.find_last_of(".");
-    std::string file_name = dot_index == std::string::npos ? outfile
-        : outfile.substr(0, outfile.size() - basename.size() + dot_index);
+    std::string file_name = std::filesystem::path(outfile).replace_extension().string();
     std::string extra_linker_flags;
     if (!linker_flags.empty()) {
         for (auto &s: linker_flags) {

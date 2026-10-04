@@ -14316,7 +14316,7 @@ char *get_base_name(char *filename) {
     char *slash_idx_ptr = strrchr(filename, '/');
     const char *base_start = slash_idx_ptr ? (slash_idx_ptr + 1) : filename;
     const char *dot_idx_ptr = strrchr(base_start, '.');
-    size_t base_len = dot_idx_ptr == NULL ? strlen(base_start)
+    size_t base_len = dot_idx_ptr == NULL || dot_idx_ptr == base_start ? strlen(base_start)
                                           : (size_t)(dot_idx_ptr - base_start);
     if (base_len == 0) {
         return NULL;
@@ -14478,7 +14478,7 @@ void get_local_info_debug_map(struct Stacktrace *d) {
     const char *base = strrchr(exe_path, '/');
     base = base ? (base + 1) : exe_path;
     const char *dot = strrchr(base, '.');
-    size_t stem_len = dot ? (size_t)(dot - exe_path) : strlen(exe_path);
+    size_t stem_len = dot && dot != base ? (size_t)(dot - exe_path) : strlen(exe_path);
     char filename[4096];
     if (snprintf(filename, sizeof(filename), "%.*s_lines.dat",
                  (int)stem_len, exe_path) >= (int)sizeof(filename)) {
