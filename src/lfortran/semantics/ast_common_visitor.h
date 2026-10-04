@@ -21666,7 +21666,7 @@ public:
                 }
             }
             if((op == ASR::binopType::Pow) &&
-                ASRUtils::is_real(*dest_type) &&
+                (ASRUtils::is_real(*dest_type) || ASRUtils::is_complex(*dest_type)) &&
                 ASRUtils::is_integer(*right_type)){ // Don't cast exponent to preserve precision.
                 // Do nothing.
             } else {
@@ -21691,7 +21691,7 @@ public:
             }
         }
         if((op == ASR::binopType::Pow) &&
-            ASRUtils::is_real(*dest_type) &&
+            (ASRUtils::is_real(*dest_type) || ASRUtils::is_complex(*dest_type)) &&
             ASRUtils::is_integer(*right_type)) {
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
