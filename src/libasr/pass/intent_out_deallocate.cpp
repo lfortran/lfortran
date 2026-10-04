@@ -11,6 +11,25 @@
 
 
 namespace LCompilers {
+ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
+    if (st == nullptr) return nullptr;
+    ASR::Function_t *elemental = nullptr;
+    for (size_t i = 0; i < st->n_member_functions; i++) {
+        ASR::symbol_t *sym = st->m_symtab->parent->get_symbol(
+            st->m_member_functions[i]);
+        // A final subroutine that has the name of a generic interface is
+        // not found under its own name (#14018).
+        if (sym == nullptr) continue;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Function_t>(*sym)) continue;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        if (ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(fn->m_args[0])) == rank) return fn;
+        if (ASRUtils::is_elemental(sym)) elemental = fn;
+    }
+    return elemental;
+}
+
 // Deallocate allocatable `intent(out)` dummy arguments at function entry.
 //
 // Notes / limitations:
