@@ -24,13 +24,15 @@ As we can see here, we need to define the functions associated with the deferred
 ```fortran
 requirement number_type {T, add_element, set_to_zero}
   deferred type :: T
-  function add_element(x, y) result(z)
-    type(T), intent(in) :: x, y
-    type(T) :: z
-  end function
-  function set_to_zero() result(z)
-    type(T) :: z
-  end function
+  deferred interface
+    function add_element(x, y) result(z)
+      type(T), intent(in) :: x, y
+      type(T) :: z
+    end function
+    function set_to_zero() result(z)
+      type(T) :: z
+    end function
+  end interface
 end requirement
 ```
 
@@ -48,7 +50,7 @@ Having defined the necessary requirement to use the deferred type `T`, we can pr
 A template works as a closure for a generic function. A template takes as parameters symbols that would replace the generic symbols inside a generic function.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   ...
   public :: array_sum
 contains
@@ -71,7 +73,7 @@ end template
 Then to connect the parameters with the functions defined in the requirement, we use a `require` statement.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
@@ -96,7 +98,7 @@ end template
 A template can also contains multiple functions that may depend on each other.
 
 ```fortran
-template array_t(T, add_element, set_to_zero)
+template array_t {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: array_sum
 contains
@@ -132,7 +134,7 @@ instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 ```
 
-First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions would have to be defined prior to the instantiation for them to be passed as symbol arguments to a template:
+First we pass the concrete symbols to the template in the form of a template call `array_t(integer, add_element_integer, set_to_zero_integer)`. We are replacing the deferred type `T` with a concrete type `integer`, `add_element` with a function that computes addition between two integers `add_element_integer`, and `set_to_zero` with a function that returns a zero integer value `set_to_zero_integer`. These functions must be accessible in the instantiating scope. They may be defined later in that scope's `contains` section; their completed interfaces are checked against the template's requirements before lowering. A contained procedure also takes precedence over a host-associated procedure or intrinsic of the same name:
 
 ```fortran
 function add_element_integer(x, y) result(z)
@@ -147,7 +149,26 @@ function set_to_zero_integer() result(z)
 end function
 ```
 
+The actual procedure's declarations use its complete host specification part,
+including declarations after the `instantiate` statement. Instantiation does
+not change host association in an ordinary call to that procedure. Types
+introduced by the instantiation remain available to subsequent declarations
+and to the contained procedure's local variables.
+The contained specific procedure may share its name with a generic interface;
+completing that declaration preserves the procedure selected by instantiation.
+A bare templated function or subroutine is not a concrete procedure actual.
+A nearer templated declaration is diagnosed at the actual argument rather
+than bypassed in favor of a host procedure or intrinsic of the same name.
+With `--continue-compilation`, a failed requirement is diagnosed without
+constructing the rejected instantiation's procedure bodies; independent code
+is still checked.
+
 After `only: ` we decide which function inside in the template we want to instantiate, in this case `array_sum`, and give the new instantiated function a new name `array_sum_integer`.
+
+Renaming a function in an instantiation does not rename its local result
+variable. Without a `result(...)` clause, assignments to the original function
+name inside its body still set the result of the instantiated function.
+An explicit result variable also keeps its declared name.
 
 After instantiation, we can then use the instantiated function similar to ordinary functions:
 
@@ -183,7 +204,7 @@ instantiate array_t {real, add_element_real, set_to_zero_real}, &
 The template notation can be cumbersome for defining a single generic function. To alleviate this, LFortran also supports a simpler syntax for declaring generic functions without having to declare an enclosing template. For example, our running `array_sum` example can be written as follows in the simpler syntax:
 
 ```fortran
-function generic_sum {T, add_element, set_to_zero} (arr) result(r)
+template function generic_sum {T, add_element, set_to_zero} (arr) result(r)
   require :: number_type {T, add_element, set_to_zero}
   type(T), intent(in) :: arr(:)
   type(T) :: r
@@ -201,10 +222,18 @@ end function
 
 The first difference is that the template parameters are now included as the function's generic symbol parameters enclosed by braces `{T, add_element, set_to_zero}`. Since we still need to identify these generic symbols a requirement, the require statement is moved into the generic function itself. The rest of the function is the same as the generic function inside the template.
 
+For both `template function` and `template subroutine`, every name in braces
+must have a deferred declaration in the subprogram's specification, directly
+or through `require`. A deferred integer constant is declared with
+`deferred integer, parameter :: n`. A host-associated constant does not
+declare a deferred argument. A type declaration such as `integer :: n` or
+`integer, parameter :: n = 7` does not either: it is reported as an error that
+names the deferred spelling, as in a `template` construct.
+
 This is merely a syntax sugar for the original templated function. Inside the compiler this generic function is treated as the following template:
 
 ```fortran
-template generic_sum(T, add_element, set_to_zero)
+template generic_sum {T, add_element, set_to_zero}
   require :: number_type {T, add_element, set_to_zero}
   public :: generic_sum
 contains
@@ -257,7 +286,7 @@ Doing so would generate the function `array_sum` and `array_avg` without any ren
 LFortran also supports generic derived types. Let's say we want a generic tuple. We can define a derived type for tuples as usual inside a template:
 
 ```fortran
-template derived_type_t(T)
+template derived_type_t {T}
     ! for brevity we have the deferred type
     ! declared directly inside the template
     deferred type :: T
@@ -273,7 +302,7 @@ end template
 We can also define generic functions accessing this generic tuple as:
 
 ```fortran
-template derived_type_t(T)
+template derived_type_t {T}
     deferred type :: T
     public :: tuple
 

@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ i8*, i64 }>
+%string_descriptor = type { i8*, i64 }
 
 @__module___lcompilers_created__nested_context__nested_05_a__b__x = global i32 0
 @__module___lcompilers_created__nested_context__nested_05_a__b__y = global float 0.000000e+00

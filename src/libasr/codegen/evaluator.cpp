@@ -526,7 +526,6 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
 {
     const llvm::Target *target = get_llvm_target(config.triple);
     llvm::TargetOptions options;
-#if LLVM_VERSION_MAJOR >= 8
     llvm::Triple triple(config.triple);
     // WebAssembly objects are linked into static executables (wasm-ld for
     // WASI, emcc for Emscripten), which do not need position independent
@@ -559,17 +558,6 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
             + config.triple + "'");
     }
     return std::unique_ptr<llvm::TargetMachine>(machine);
-#else
-    llvm::EngineBuilder builder;
-    builder.setEngineKind(llvm::EngineKind::JIT);
-    builder.setRelocationModel(llvm::Reloc::Model::PIC_);
-    llvm::TargetMachine *machine = builder.selectTarget();
-    if (!machine) {
-        throw LCompilersException("could not create target machine for '"
-            + config.triple + "'");
-    }
-    return std::unique_ptr<llvm::TargetMachine>(machine);
-#endif
 }
 
 LLVMTargetConfig resolve_target_only(const std::string &target)
@@ -1146,6 +1134,9 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     // one has to carry the instance id too.
     if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
         fn->setName(unique_stem + "_program");
+    // And for the set up of the globals it declares.
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_setup"))
+        fn->setName(unique_stem + "_setup");
 
     // Symbols qualified by their cell (__cell<N>_...) are named per session,
     // so two executors in one process emit the same names. The wasm dynamic

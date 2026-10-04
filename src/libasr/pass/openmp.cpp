@@ -8,6 +8,9 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/function_result_scope.h>
+
+#include <algorithm>
 
 namespace LCompilers {
 
@@ -110,6 +113,11 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
             replacer.current_scope = current_scope;
             replacer.array_variables = array_variables;
             replacer.replace_expr(*current_expr);
+        }
+
+        // A BLOCK's statements live in the Block symbol, not in the body.
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            visit_symbol(*x.m_m);
         }
 };
 
@@ -581,7 +589,7 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al,
                 "lcompilers_user_defined_functions"));
             ASR::symbol_t* module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al,
                 fn->base.base.loc, module_scope, module_name, nullptr, nullptr, 0,
-                false, false, false));
+                false, false, false, nullptr));
             tu_scope->add_symbol(module_name, module);
             module_scope->add_symbol(fn->m_name, moved);
             // Recorded before the copy's body is visited, which can refer to
@@ -1774,7 +1782,7 @@ class ParallelRegionVisitor :
             
             ASR::symbol_t* thread_data_module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al, loc,
                                                 current_scope, s2c(al, thread_data_module_name), nullptr,
-                                                module_dependencies.p, module_dependencies.n, false, false, false));
+                                                module_dependencies.p, module_dependencies.n, false, false, false, nullptr));
             current_scope->parent->add_symbol(thread_data_module_name, thread_data_module);
             current_scope = current_scope_copy;
             return {thread_data_module_name, thread_data_struct};
@@ -2688,6 +2696,7 @@ class ParallelRegionVisitor :
                     current_stmt = do_loop->m_body[0]; // Move to the next nested loop
                 }
             }
+            ASR::stmt_t* bounds_block = evaluate_result_bounds_once(heads, loc);
             if (!private_copies.empty()) {
                 AssociateVarResolverVisitor private_copy_replacer(al, private_copies);
                 for (size_t i = 0; i < innermost_loop->n_body; i++) {
@@ -2703,6 +2712,7 @@ class ParallelRegionVisitor :
                 // Keep existing manual partitioning logic for default case
                 handle_default_loop_partitioning(heads, innermost_loop, loc);
             }
+            end_result_bounds_scope(bounds_block);
 
             // Each thread combines its copy before the implicit barrier at the
             // end of the construct, so the value is final once all threads
@@ -2894,6 +2904,58 @@ class ParallelRegionVisitor :
                     while_body.p, while_body.n, nullptr, 0));
                 
                 nested_lowered_body.push_back(while_stmt);
+        }
+
+        // The partitioning of the iterations uses each bound of the loop
+        // several times. A bound that references a function whose result is
+        // finalized (F2018 7.5.6.3 p5) is evaluated once, into a variable of
+        // the thread, at the start of a BLOCK whose statement is appended to
+        // nested_lowered_body and returned (nullptr if there is no such
+        // bound). end_result_bounds_scope then moves what the thread does
+        // for the loop into the BLOCK, so that the results are finalized
+        // after the thread has executed its part of the loop.
+        ASR::stmt_t* evaluate_result_bounds_once(
+                std::vector<ASR::do_loop_head_t> &heads, const Location &loc) {
+            std::vector<ASR::expr_t**> header;
+            for (auto &head : heads) {
+                for (ASR::expr_t** bound : {&head.m_start, &head.m_end,
+                        &head.m_increment}) {
+                    if (*bound != nullptr &&
+                            references_function_results(*bound)) {
+                        header.push_back(bound);
+                    }
+                }
+            }
+            ASR::stmt_t* block = make_function_result_header_block(al,
+                current_scope, loc, header, {});
+            if (block != nullptr) {
+                nested_lowered_body.push_back(block);
+            }
+            return block;
+        }
+
+        // Moves the statements of nested_lowered_body that follow `block`,
+        // made by evaluate_result_bounds_once, to the end of the BLOCK.
+        void end_result_bounds_scope(ASR::stmt_t* block) {
+            if (block == nullptr) {
+                return;
+            }
+            auto it = std::find(nested_lowered_body.begin(),
+                nested_lowered_body.end(), block);
+            LCOMPILERS_ASSERT(it != nested_lowered_body.end());
+            ASR::Block_t* b = ASR::down_cast<ASR::Block_t>(
+                ASR::down_cast<ASR::BlockCall_t>(block)->m_m);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, b->n_body + (nested_lowered_body.end() - it));
+            for (size_t i = 0; i < b->n_body; i++) {
+                body.push_back(al, b->m_body[i]);
+            }
+            for (auto stmt = it + 1; stmt != nested_lowered_body.end(); stmt++) {
+                body.push_back(al, *stmt);
+            }
+            b->m_body = body.p;
+            b->n_body = body.size();
+            nested_lowered_body.erase(it + 1, nested_lowered_body.end());
         }
 
         void handle_default_loop_partitioning(const std::vector<ASR::do_loop_head_t> &heads, ASR::DoLoop_t* innermost_loop, const Location &loc) {
@@ -3802,9 +3864,12 @@ class ParallelRegionVisitor :
         // nested_lowered_body and the loop is returned. The original loop
         // variables, which the loop body assigns, are appended to loop_vars.
         // Unless lower_body is set, nested constructs in the loop body are
-        // left for the caller to lower.
+        // left for the caller to lower. The caller passes bounds_block to
+        // end_result_bounds_scope once it has appended what the team does
+        // for the loop.
         ASR::stmt_t* create_distributed_loop(const ASR::OMPRegion_t &x,
-                bool lower_body, std::vector<ASR::expr_t*> &loop_vars) {
+                bool lower_body, std::vector<ASR::expr_t*> &loop_vars,
+                ASR::stmt_t* &bounds_block) {
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             
@@ -3858,6 +3923,7 @@ class ParallelRegionVisitor :
                     current_stmt = do_loop->m_body[0];
                 }
             }
+            bounds_block = evaluate_result_bounds_once(heads, loc);
             
             // Calculate total iterations
             ASR::expr_t* total_iterations = b.i32(1);
@@ -3977,8 +4043,11 @@ class ParallelRegionVisitor :
         void visit_OMPDistribute(const ASR::OMPRegion_t &x) {
             nested_lowered_body = {};
             std::vector<ASR::expr_t*> loop_vars;
-            ASR::stmt_t* team_loop = create_distributed_loop(x, true, loop_vars);
+            ASR::stmt_t* bounds_block = nullptr;
+            ASR::stmt_t* team_loop = create_distributed_loop(x, true, loop_vars,
+                bounds_block);
             nested_lowered_body.push_back(team_loop);
+            end_result_bounds_scope(bounds_block);
         }
 
         // Each team takes its part of the iterations, as with distribute, and
@@ -3990,7 +4059,9 @@ class ParallelRegionVisitor :
             nested_lowered_body = {};
             Location loc = x.base.base.loc;
             std::vector<ASR::expr_t*> loop_vars;
-            ASR::stmt_t* team_loop = create_distributed_loop(x, false, loop_vars);
+            ASR::stmt_t* bounds_block = nullptr;
+            ASR::stmt_t* team_loop = create_distributed_loop(x, false, loop_vars,
+                bounds_block);
 
             Vec<ASR::omp_clause_t*> clauses;
             clauses.reserve(al, x.n_clauses + 1);
@@ -4015,6 +4086,7 @@ class ParallelRegionVisitor :
                     ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
                     body.p, body.n, x.m_exec_target)));
             visit_OMPParallelDo(*parallel_do);
+            end_result_bounds_scope(bounds_block);
         }
 
         void visit_OMPTeamsDistribute(const ASR::OMPRegion_t &x) {

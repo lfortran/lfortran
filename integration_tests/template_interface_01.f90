@@ -6,23 +6,28 @@ module template_interface_01_m
         deferred type :: T
         deferred type :: U
         deferred type :: V
-        pure elemental function binary_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(U), intent(in) :: rhs
-            type(V) :: res
-        end function
+        deferred interface
+            pure elemental function binary_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(U), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
     requirement cast_r {T, cast}
         deferred type :: T
-        pure elemental function cast(arg) result(res)
-            integer, intent(in) :: arg
-            type(T) :: res
-        end function
+        deferred interface
+            pure elemental function cast(arg) result(res)
+                integer, intent(in) :: arg
+                type(T) :: res
+            end function
+        end interface
     end requirement
 
-    template sum_t(T, add, cast)
-        require :: operator_r {T, T, T, add}, cast_r {T, cast}
+    template sum_t {T, add, cast}
+        require :: operator_r {T, T, T, add}
+        require :: cast_r {T, cast}
         private
         public :: generic_sum
 
@@ -59,8 +64,9 @@ contains
         res = 0.0
     end function
 
-    pure function simple_generic_sum {T, add, cast} (arr) result(res)
-        require :: operator_r {T, T, T, add}, cast_r {T, cast}
+    pure template function simple_generic_sum {T, add, cast} (arr) result(res)
+        require :: operator_r {T, T, T, add}
+        require :: cast_r {T, cast}
         interface operator(+)
             procedure add
         end interface

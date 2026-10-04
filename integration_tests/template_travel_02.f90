@@ -32,30 +32,32 @@ module template_travel_02_travel
         deferred type :: T
         deferred type :: S
 
-        pure function plus_D(l, r) result(total)
-            type(D), intent(in) :: l, R
-            type(D) :: total
-        end function
+        deferred interface
+            pure function plus_D(l, r) result(total)
+                type(D), intent(in) :: l, R
+                type(D) :: total
+            end function
 
-        pure function plus_T(l, r) result(total)
-            type(T), intent(in) :: l, R
-            type(T) :: total
-        end function
+            pure function plus_T(l, r) result(total)
+                type(T), intent(in) :: l, R
+                type(T) :: total
+            end function
 
-        pure function D_divided_by_T(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(T), intent(in) :: d
-            type(S) :: quotient
-        end function
+            pure function D_divided_by_T(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(T), intent(in) :: d
+                type(S) :: quotient
+            end function
 
-        pure function D_divided_by_S(n, d) result(quotient)
-            type(D), intent(in) :: n
-            type(S), intent(in) :: d
-            type(T) :: quotient
-        end function
+            pure function D_divided_by_S(n, d) result(quotient)
+                type(D), intent(in) :: n
+                type(S), intent(in) :: d
+                type(T) :: quotient
+            end function
+        end interface
     end requirement
 
-    template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
+    template travel_tmpl {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         require :: operations {D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S}
         private
         public :: avg_S_from_T
@@ -75,7 +77,7 @@ module template_travel_02_travel
         end function
     end template
 
-    template travel_tmpl2(T, plus, div)
+    template travel_tmpl2 {T, plus, div}
         require :: operations {T, T, T, plus, plus, div, div}
         instantiate travel_tmpl {T, T, T, plus, plus, div, div}
     end template

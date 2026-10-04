@@ -86,6 +86,7 @@
                             ()
                         )
                     )]
+                    ()
                 ),
             stdlib_quadrature_simps:
                 (Module
@@ -299,7 +300,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

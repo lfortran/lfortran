@@ -1,5 +1,3 @@
-#include <array>
-#include <cstring>
 #include <fstream>
 #include <set>
 
@@ -46,23 +44,23 @@ namespace LCompilers {
 namespace LCompilers {
 
 class StringDescriptor {
-    std::array<unsigned char, sizeof(char *) + sizeof(int64_t)> storage{};
+    struct Storage {
+        char *data;
+        int64_t length;
+    };
+    Storage storage{};
 
 public:
     void *pointer() {
-        return storage.data();
+        return &storage;
     }
 
     char *data() const {
-        char *data;
-        std::memcpy(&data, storage.data(), sizeof(data));
-        return data;
+        return storage.data;
     }
 
     int64_t length() const {
-        int64_t length;
-        std::memcpy(&length, storage.data() + sizeof(char *), sizeof(length));
-        return length;
+        return storage.length;
     }
 };
 
@@ -243,6 +241,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // silently produces no output at all.
     std::string program_fn = run_fn + "_program";
     bool has_program = (m->get_return_type(program_fn) == "void");
+    // The globals the cell declares that need executable code to set up are
+    // set up in `run_fn + "_setup"` (see emit_interactive_global_setup),
+    // which has to run before anything of the cell can use them.
+    std::string setup_fn = run_fn + "_setup";
+    bool has_setup = (m->get_return_type(setup_fn) == "void");
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
@@ -274,6 +277,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
+    if (has_setup) {
+        e.execfn<void>(setup_fn);
+    }
     if (has_program) {
         e.execfn<void>(program_fn);
     }
@@ -294,10 +300,22 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
+#if defined(__aarch64__) && defined(__linux__)
+        // On Linux/AArch64 the JIT function returns complex_4 as <2 x float>
+        // in V0 (see get_function_type() in llvm_utils.cpp), while
+        // std::complex<float> follows the HFA convention (S0+S1), so the
+        // imaginary part came back as garbage. Read the vector lanes.
+        typedef float v2f32 __attribute__((vector_size(8)));
+        v2f32 r = e.execfn<v2f32>(run_fn);
+        result.type = EvalResult::complex4;
+        result.c32.re = r[0];
+        result.c32.im = r[1];
+#else
         std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
         result.type = EvalResult::complex4;
         result.c32.re = r.real();
         result.c32.im = r.imag();
+#endif
     } else if (return_type == "complex8") {
         std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
@@ -627,7 +645,7 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
     SymbolTable *parent, const Location &loc)
 {
     SymbolTable* copy = al.make_new<SymbolTable>(parent);
-    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0, nullptr);
     copy->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
     for (auto &item : scope->get_scope()) {
@@ -1017,7 +1035,13 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         if (!pass_manager.has_user_defined_passes()) {
             pass_manager.use_fortran_passes();
         }
+        // A pass reports a hard error by adding it to the diagnostics, and
+        // then there is no program to print.
+        bool had_error_before_passes = diagnostics.has_error();
         pass_manager.apply_passes(al, asr.result, compiler_options.po, diagnostics);
+        if (!had_error_before_passes && diagnostics.has_error()) {
+            return Error();
+        }
         return asr_to_fortran(*asr.result, diagnostics, false, 4);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())

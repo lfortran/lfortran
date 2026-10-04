@@ -8,6 +8,8 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/intent_out_deallocate.h>
+#include <unordered_map>
 
 namespace LCompilers {
 
@@ -59,12 +61,17 @@ public:
             
             /* Transform This Function Into Subroutine IF NEEDED */
             bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
-            if(transform_success) {Function__TO__ReturnType_MAP_[x_ptr] = return_type;}
+            if(transform_success) {
+                Function__TO__ReturnType_MAP_[x_ptr] = return_type;
+                handle_finalizable_result(*x_ptr);
+            }
 
             /* Visit Functions In Current SymTable */
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
                 }
             }
 
@@ -76,11 +83,36 @@ public:
             }
         }
 
+        // The result became the last dummy argument, with intent(out). A
+        // result that is finalized after the statement that references the
+        // function (F2018 7.5.6.3 p5) must not be finalized on entry as well,
+        // which intent(out) does, so it is given intent(inout) and the rest of
+        // what intent(out) does on entry instead. Every call finalizes what it
+        // passes for the result before the call when that is not a new
+        // result variable (see finalize_result_argument).
+        void handle_finalizable_result(ASR::Function_t &x) {
+            LCOMPILERS_ASSERT(x.n_args > 0);
+            ASR::expr_t* result = x.m_args[x.n_args - 1];
+            ASR::Variable_t* result_var = ASRUtils::EXPR2VAR(result);
+            if (result_var->m_intent != ASR::intentType::Out ||
+                    !ASRUtils::is_finalizable_function_result(
+                        result_var->m_type, result_var->m_type_declaration)) {
+                return;
+            }
+            result_var->m_intent = ASR::intentType::InOut;
+            if (ASRUtils::get_FunctionType(x)->m_deftype ==
+                    ASR::deftypeType::Implementation) {
+                initialize_function_result_on_entry(al, x, result);
+            }
+        }
+
         void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
             /* Visit Functions In Current SymTable */
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
+                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
                 }
             }
             for (auto &str_sym_pair : x.m_symtab->get_scope()) {
@@ -95,10 +127,31 @@ public:
             for (auto &a : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Function_t>(*a.second)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(a.second));
+                } else if (ASR::is_a<ASR::Template_t>(*a.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(a.second));
                 }
             }
             for (auto &a : x.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Variable_t>(*a.second) && 
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+                }
+            }
+        }
+
+        // The procedures of a template are transformed like any others:
+        // ReplaceFunctionCallWithSubroutineCallVisitor rewrites the calls in
+        // their bodies too, so the callees must take the new signature.
+        void visit_Template(const ASR::Template_t &x) {
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*a.second)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(a.second));
+                } else if (ASR::is_a<ASR::Template_t>(*a.second)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(a.second));
+                }
+            }
+            for (auto &a : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*a.second) &&
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
                     this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
                 }
@@ -412,6 +465,42 @@ public :
 
 
 
+// `result` is passed for the result of a function whose result is finalized
+// after the statement that references the function (see
+// handle_finalizable_result), and it is not a new variable made for that
+// result: an element of a temporary that a pass made for the statement (an
+// array constructor, an elemental reference), a variable of the procedure,
+// or the target of an assignment made by a pass. Append to `out` what the
+// intent(out) result dummy used to do to it when the function was invoked:
+// its finalization (F2018 7.5.6.3 p7), unless it is an unallocated
+// allocatable.
+static void finalize_result_argument(Allocator &al, ASR::expr_t* result,
+        SymbolTable* scope, Vec<ASR::stmt_t*> &out) {
+    Vec<ASR::stmt_t*> finalization;
+    finalization.reserve(al, 1);
+    finalize_entity(al, result, scope, finalization);
+    if (finalization.empty()) {
+        return;
+    }
+    if (!ASRUtils::is_allocatable(ASRUtils::expr_type(result))) {
+        for (size_t i = 0; i < finalization.size(); i++) {
+            out.push_back(al, finalization[i]);
+        }
+        return;
+    }
+    const Location &loc = result->base.loc;
+    Vec<ASR::expr_t*> allocated_args;
+    allocated_args.reserve(al, 1);
+    allocated_args.push_back(al, result);
+    ASR::expr_t* is_allocated = ASRUtils::EXPR(
+        ASR::make_IntrinsicImpureFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+            allocated_args.p, allocated_args.n, 0,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+    out.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+        is_allocated, finalization.p, finalization.n, nullptr, 0)));
+}
+
 class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 
 
@@ -537,6 +626,55 @@ private :
 
 public :
 
+    // Whether `fc` calls a function turned into a subroutine whose result is
+    // finalized after the statement that references it (F2018 7.5.6.3 p5).
+    bool is_call_with_finalizable_result(ASR::FunctionCall_t* fc) {
+        ASR::Function_t* func = ASRUtils::get_function(fc->m_name);
+        if (func == nullptr ||
+                Function__TO__ReturnType_MAP_.find(func) ==
+                    Function__TO__ReturnType_MAP_.end()) {
+            return false;
+        }
+        LCOMPILERS_ASSERT(func->n_args > 0);
+        ASR::Variable_t* result = ASRUtils::EXPR2VAR(
+            func->m_args[func->n_args - 1]);
+        return ASRUtils::is_finalizable_function_result(fc->m_type,
+            result->m_type_declaration);
+    }
+
+    // Whether the statement being transformed contains no other statement
+    // and does not transfer control (ASRUtils::is_single_statement), and the
+    // variables created for the results that it references in expressions.
+    // They are declared by a BLOCK made of the statement, so that they are
+    // finalized when it is done (see scope_statement_results).
+    bool statement_can_be_block = false;
+    std::vector<ASR::symbol_t*> statement_results;
+
+    // A new variable of the current scope for the result of `x`. It is
+    // the result, and it is finalized when its scope ends: the scope of the
+    // pointer that the function_result_scope pass associated with the
+    // result, or the BLOCK made of the statement.
+    ASR::expr_t* create_finalizable_result_var(ASR::FunctionCall_t* x) {
+        ASR::Function_t* func = ASRUtils::get_function(x->m_name);
+        ASR::Variable_t* result = ASRUtils::EXPR2VAR(
+            func->m_args[func->n_args - 1]);
+        std::string name = current_scope->get_unique_name(
+            "__libasr__created__var__" + std::to_string(result_counter++)
+            + "_return_slot");
+        ASR::symbol_t* result_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, x->base.base.loc,
+                current_scope, s2c(al, name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default,
+                ASRUtils::duplicate_type(al, x->m_type),
+                result->m_type_declaration, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required,
+                false));
+        current_scope->add_symbol(name, result_sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
+            result_sym));
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x){
         traverse_functionCall_args(x->m_args, x->n_args);
         if (x->m_dt) {
@@ -572,12 +710,24 @@ public :
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as
             // the sibling so create_var can extract the type_decl symbol.
-            ASR::expr_t* sibling_var = (was_converted && func->n_args > 0)
-                ? func->m_args[func->n_args - 1] : nullptr;
-            ASR::expr_t* result_var = PassUtils::create_var(
+            // A result that is finalized after the statement gets a new
+            // variable of its own if the statement can be made a BLOCK.
+            // Otherwise it reuses the variable, whose previous value is
+            // finalized before the call (see finalize_result_argument).
+            bool finalizable_result = is_call_with_finalizable_result(x);
+            ASR::expr_t* result_var = nullptr;
+            if (finalizable_result && statement_can_be_block) {
+                result_var = create_finalizable_result_var(x);
+                statement_results.push_back(
+                    ASR::down_cast<ASR::Var_t>(result_var)->m_v);
+            } else {
+                ASR::expr_t* sibling_var = (was_converted && func->n_args > 0)
+                    ? func->m_args[func->n_args - 1] : nullptr;
+                result_var = PassUtils::create_var(
                                             result_counter++,
                                             "return_slot", x->base.base.loc,
                                             create_type_for_return_slot_var(x->m_type) , al, current_scope, sibling_var);
+            }
 
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
             if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
@@ -606,6 +756,10 @@ public :
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
                                                 nullptr, false, current_scope, std::nullopt, true));
+            if (finalizable_result && !statement_can_be_block) {
+                finalize_result_argument(al, result_var, current_scope,
+                    pass_result);
+            }
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
@@ -622,36 +776,196 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
         Vec<ASR::stmt_t*>* parent_body = nullptr;
+        // Pointer variable -> the variable the pointer was last associated
+        // with, for the pointer temporaries earlier passes introduce.
+        std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> pointer_base_;
 
-        bool expr_same(ASR::expr_t *a, ASR::expr_t *b) {
-            if (a->type != b->type) {
+        // Peel array elements, array sections, structure/union components and
+        // physical casts off a designator and return the variable it is
+        // ultimately rooted at, or nullptr if `e` is not a designator (a
+        // literal, a function call, an arithmetic expression, ...).
+        static ASR::symbol_t* designator_base_symbol(ASR::expr_t *e) {
+            while (e != nullptr) {
+                switch (e->type) {
+                    case ASR::exprType::Var: {
+                        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(e)->m_v);
+                        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+                            // e.g. a procedure passed as an actual argument
+                            return nullptr;
+                        }
+                        return sym;
+                    }
+                    case ASR::exprType::ArrayItem:
+                        e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::ArraySection:
+                        e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::StructInstanceMember:
+                        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::UnionInstanceMember:
+                        e = ASR::down_cast<ASR::UnionInstanceMember_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::StringItem:
+                        e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                        break;
+                    case ASR::exprType::StringSection:
+                        e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                        break;
+                    case ASR::exprType::ArrayPhysicalCast:
+                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                        break;
+                    default:
+                        return nullptr;
+                }
+            }
+            return nullptr;
+        }
+
+        // The variable `sym` ultimately designates.  An array section actual
+        // argument reaches this pass as a pointer temporary associated with
+        // the section, so without this the aliasing is no longer visible.
+        // One probe, never a walk: record_pointer_association resolves before
+        // it stores.  The map is not transitively closed for all that — a
+        // symbol that was stored as a value can become a key later — so a
+        // stale chain may survive, and is deliberately left unresolved.
+        ASR::symbol_t* resolve_pointer_base(ASR::symbol_t *sym) const {
+            auto it = pointer_base_.find(sym);
+            return it == pointer_base_.end() ? sym : it->second;
+        }
+
+        // True when `e` is a pointer, or is rooted at a variable with the
+        // TARGET attribute, i.e. storage that some pointer may designate.
+        // Array elements and sections, structure and union components,
+        // string elements and sections and physical casts are looked through.
+        static bool expr_has_pointer_or_target(ASR::expr_t *e) {
+            while (e != nullptr) {
+                if (ASRUtils::is_pointer(ASRUtils::expr_type(e))) {
+                    return true;
+                }
+                switch (e->type) {
+                    case ASR::exprType::Var: {
+                        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(e)->m_v);
+                        return sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)
+                            && ASR::down_cast<ASR::Variable_t>(sym)->m_target_attr;
+                    }
+                    case ASR::exprType::ArrayItem:
+                        e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::ArraySection:
+                        e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::StructInstanceMember:
+                        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::UnionInstanceMember:
+                        e = ASR::down_cast<ASR::UnionInstanceMember_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::StringItem:
+                        e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                        break;
+                    case ASR::exprType::StringSection:
+                        e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                        break;
+                    case ASR::exprType::ArrayPhysicalCast:
+                        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            return false;
+        }
+
+        // True when `e` is, or is reached through, a pointer: `p`, `q%ptr`,
+        // `q%ptr%v`. Where such a pointer points is not visible to this pass.
+        static bool expr_has_pointer_component(ASR::expr_t *e) {
+            while (e != nullptr) {
+                if (ASRUtils::is_pointer(ASRUtils::expr_type(e))) {
+                    return true;
+                }
+                switch (e->type) {
+                    case ASR::exprType::ArrayItem:
+                        e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                        break;
+                    case ASR::exprType::StructInstanceMember:
+                        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            return false;
+        }
+
+        // True when `a` and `b` may designate overlapping storage, i.e. they
+        // are rooted at the same variable.  A whole object and one of its
+        // components or elements alias each other, so the two designators do
+        // not have to have the same shape (`t` aliases `t%v` and `t%v(1:2)`).
+        // Pointers whose association the map cannot see are treated
+        // conservatively, see the fallback below.
+        bool expr_may_alias(ASR::expr_t *a, ASR::expr_t *b) {
+            ASR::symbol_t *a_sym = designator_base_symbol(a);
+            if (a_sym == nullptr) {
                 return false;
             }
-
-            // Get past any array item or struct member to the actual Var
-            while (ASR::is_a<ASR::ArrayItem_t>(*a) || ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
-                if (ASR::is_a<ASR::ArrayItem_t>(*a)) {
-                    a = ASR::down_cast<ASR::ArrayItem_t>(a)->m_v;
-                } else {
-                    a = ASR::down_cast<ASR::StructInstanceMember_t>(a)->m_v;
-                }
+            ASR::symbol_t *b_sym = designator_base_symbol(b);
+            if (b_sym == nullptr) {
+                return false;
             }
-
-            // Get past any array item or struct member to the actual Var
-            while (ASR::is_a<ASR::ArrayItem_t>(*b) || ASR::is_a<ASR::StructInstanceMember_t>(*b)) {
-                if (ASR::is_a<ASR::ArrayItem_t>(*b)) {
-                    b = ASR::down_cast<ASR::ArrayItem_t>(b)->m_v;
-                } else {
-                    b = ASR::down_cast<ASR::StructInstanceMember_t>(b)->m_v;
-                }
+            // Associations recorded from the Associate statements walked so far.
+            if (resolve_pointer_base(a_sym) == resolve_pointer_base(b_sym)) {
+                return true;
             }
+            // Fallback (#13300). The map is built by one source-order walk, so
+            // it misses an association made in a branch, across a loop back
+            // edge or in a callee. When `a` and `b` can both be reached
+            // through a pointer, and at least one of them really is, assume
+            // they may overlap: a temporary costs a copy, a missed alias
+            // corrupts memory. Two plain TARGET variables cannot alias
+            // without a pointer, so they are left alone.
+            //
+            // The temporary has the type of the target `a`. For a target that
+            // is itself a pointer (an ASSOCIATE name, a pointer variable) it
+            // would be a pointer that is never associated, so such targets
+            // keep the behaviour of the map above.
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(a))) {
+                return false;
+            }
+            if (expr_has_pointer_or_target(a) && expr_has_pointer_or_target(b)) {
+                return expr_has_pointer_component(a) || expr_has_pointer_component(b);
+            }
+            return false;
+        }
 
-            // In normal cases, both a and b should be a Var_t
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*a));
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*b));
-
-            // Check if the 2 expressions refer to the same symbol
-            return ASR::down_cast<ASR::Var_t>(a)->m_v == ASR::down_cast<ASR::Var_t>(b)->m_v;
+        // Remember what a pointer was associated with, so that a later call
+        // argument that reaches this pass as a pointer temporary can still be
+        // recognised as designating part of the assignment target.
+        void record_pointer_association(ASR::expr_t *target, ASR::expr_t *value) {
+            if (target == nullptr || !ASR::is_a<ASR::Var_t>(*target)) {
+                return;
+            }
+            ASR::symbol_t *ptr_sym = designator_base_symbol(target);
+            if (ptr_sym == nullptr) {
+                return;
+            }
+            ASR::symbol_t *base_sym = value == nullptr
+                ? nullptr : designator_base_symbol(value);
+            // Resolve now, not at lookup time: `p => q` records the variable
+            // `q` designates *at this point*, which is what `p` designates
+            // for the rest of the procedure even if `q` is re-associated
+            // later.
+            if (base_sym != nullptr) {
+                base_sym = resolve_pointer_base(base_sym);
+            }
+            if (base_sym == nullptr || base_sym == ptr_sym) {
+                pointer_base_.erase(ptr_sym);
+            } else {
+                pointer_base_[ptr_sym] = base_sym;
+            }
         }
 
     public:
@@ -687,10 +1001,30 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 pass_result.n = 0;
             }
             bool remove_original_statement_copy = remove_original_statement;
+            bool statement_can_be_block_copy = replacer.statement_can_be_block;
+            std::vector<ASR::symbol_t*> statement_results_copy;
+            statement_results_copy.swap(replacer.statement_results);
             for (size_t i = 0; i < n_body; i++) {
                 parent_body = &body;
                 remove_original_statement = false;
+                replacer.statement_can_be_block =
+                    ASRUtils::is_single_statement(*m_body[i]);
+                replacer.statement_results.clear();
                 visit_stmt(*m_body[i]);
+                if (!replacer.statement_results.empty()) {
+                    Vec<ASR::stmt_t*> statement;
+                    statement.reserve(al, pass_result.size() + 1);
+                    for (size_t j = 0; j < pass_result.size(); j++) {
+                        statement.push_back(al, pass_result[j]);
+                    }
+                    pass_result.n = 0;
+                    if (!remove_original_statement) {
+                        statement.push_back(al, m_body[i]);
+                    }
+                    body.push_back(al, scope_statement_results(
+                        m_body[i]->base.loc, statement));
+                    continue;
+                }
                 if( pass_result.size() > 0 ) {
                     for (size_t j=0; j < pass_result.size(); j++) {
                         body.push_back(al, pass_result[j]);
@@ -701,10 +1035,39 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     body.push_back(al, m_body[i]);
                 }
             }
+            replacer.statement_can_be_block = statement_can_be_block_copy;
+            replacer.statement_results.swap(statement_results_copy);
             remove_original_statement = remove_original_statement_copy;
             m_body = body.p;
             n_body = body.size();
             parent_body = nullptr; // Avoid dangling pointer bugs
+        }
+
+        // The BLOCK made of `statement`, a statement and the calls that
+        // return the results it references (F2018 7.5.6.3 p5) into
+        // replacer.statement_results, which become variables of the BLOCK:
+        // they are finalized when the statement is done, like any variable
+        // of a BLOCK, and not again when the procedure returns.
+        ASR::stmt_t* scope_statement_results(const Location &loc,
+                Vec<ASR::stmt_t*> &statement) {
+            SymbolTable* block_scope = al.make_new<SymbolTable>(current_scope);
+            for (ASR::symbol_t* result : replacer.statement_results) {
+                std::string name = ASRUtils::symbol_name(result);
+                LCOMPILERS_ASSERT(current_scope->get_symbol(name) == result);
+                current_scope->erase_symbol(name);
+                ASR::down_cast<ASR::Variable_t>(result)->m_parent_symtab =
+                    block_scope;
+                block_scope->add_symbol(name, result);
+            }
+            replacer.statement_results.clear();
+            std::string block_name = current_scope->get_unique_name(
+                "__libasr_function_result_block");
+            ASR::asr_t* block = ASR::make_Block_t(al, loc, block_scope,
+                s2c(al, block_name), statement.p, statement.n);
+            block_scope->asr_owner = block;
+            ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(block);
+            current_scope->add_symbol(block_name, block_sym);
+            return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym));
         }
 
         bool is_function_call_returning_aggregate_type(ASR::expr_t* m_value) {
@@ -722,6 +1085,34 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             return PassUtils::is_aggregate_or_array_type(m_value);
+        }
+
+        // `p => f(...)`, where the result of `f` is finalized after the
+        // statement that references it (F2018 7.5.6.3 p5). Such an
+        // association is made by semantics for the associate name of an
+        // ASSOCIATE construct whose selector is a reference to `f`, and by
+        // the function_result_scope pass for every other reference, in the
+        // BLOCK it makes of the statement. The result is returned into a new
+        // variable of the scope of the association, the construct or that
+        // BLOCK, which is finalized when that scope ends, and only then.
+        void associate_finalizable_result(const Location &loc,
+                ASR::Associate_t &associate, ASR::FunctionCall_t* fc) {
+            ASR::expr_t* result_var = replacer.create_finalizable_result_var(fc);
+            Vec<ASR::call_arg_t> s_args;
+            s_args.reserve(al, fc->n_args + 1);
+            for (size_t i = 0; i < fc->n_args; i++) {
+                s_args.push_back(al, fc->m_args[i]);
+            }
+            ASR::call_arg_t result_arg;
+            result_arg.loc = result_var->base.loc;
+            result_arg.m_value = result_var;
+            s_args.push_back(al, result_arg);
+            pass_result.push_back(al, ASRUtils::STMT(
+                ASRUtils::make_SubroutineCall_t_util(al, loc, fc->m_name,
+                    fc->m_original_name, s_args.p, s_args.size(), fc->m_dt,
+                    nullptr, false, current_scope, std::nullopt, true)));
+            associate.m_value = result_var;
+            remove_original_statement = false;
         }
 
         bool subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
@@ -794,17 +1185,24 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
             }
 
+            if (ASR::is_a<ASR::Associate_t>(xx) &&
+                    replacer.is_call_with_finalizable_result(fc)) {
+                associate_finalizable_result(loc,
+                    *ASR::down_cast<ASR::Associate_t>(&xx), fc);
+                return true;
+            }
+
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
 
-                if (fc->m_args[i].m_value && this->expr_same(target, fc->m_args[i].m_value)) {
+                if (fc->m_args[i].m_value && this->expr_may_alias(target, fc->m_args[i].m_value)) {
                     use_temp_var_for_return = true;
                 }
             }
 
-            if (fc->m_dt && this->expr_same(target, fc->m_dt)) {
+            if (fc->m_dt && this->expr_may_alias(target, fc->m_dt)) {
                 use_temp_var_for_return = true;
             }
 
@@ -890,6 +1288,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.loc = target->base.loc;
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
+            if (replacer.is_call_with_finalizable_result(fc)) {
+                finalize_result_argument(al, target, current_scope,
+                    pass_result);
+            }
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope, std::nullopt, true));
             pass_result.push_back(al, subrout_call);
@@ -919,6 +1321,46 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return true;
         }
 
+        // A BLOCK construct's body is transformed while the enclosing
+        // procedure's symbol table is walked, which is before any statement of
+        // the enclosing body. Without this an association written inside the
+        // block would be visible to the statements above it.
+        void visit_Block(const ASR::Block_t &x) {
+            std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> saved =
+                pointer_base_;
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Block(x);
+            pointer_base_ = saved;
+        }
+
+        void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
+            std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> saved =
+                pointer_base_;
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_AssociateBlock(x);
+            pointer_base_ = saved;
+        }
+
+        // Pointer associations do not carry from one procedure to the next,
+        // and a module variable is the same symbol in every procedure that
+        // uses it, so the map starts empty for each of them. This drops the
+        // associations a callee makes, which the pass cannot see anyway: it
+        // trades a detection that depended on the order the symbol table
+        // happened to be walked in for one that is the same every time.
+        void visit_Function(const ASR::Function_t &x) {
+            pointer_base_.clear();
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Function(x);
+            pointer_base_.clear();
+        }
+
+        void visit_Program(const ASR::Program_t &x) {
+            pointer_base_.clear();
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Program(x);
+            pointer_base_.clear();
+        }
+
         void visit_Assignment(const ASR::Assignment_t &x) {
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
@@ -944,6 +1386,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         }
 
         void visit_Associate(const ASR::Associate_t &x) {
+            record_pointer_association(x.m_target, x.m_value);
             ASR::ttype_t* t = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
             if(is_function_call_returning_aggregate_type(x.m_value) && ASR::is_a<ASR::StructType_t>(*t)) {
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);

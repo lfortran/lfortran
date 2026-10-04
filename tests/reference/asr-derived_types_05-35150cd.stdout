@@ -12,6 +12,7 @@
                     derived_type_05
                     []
                     []
+                    ()
                 ),
             derived_types_05_stdlib_string_type:
                 (Module
@@ -461,6 +462,7 @@
                     .false.
                     .false.
                     .true.
+                    ()
                 ),
             stdlib_string_type_constructor:
                 (Module
@@ -866,7 +868,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

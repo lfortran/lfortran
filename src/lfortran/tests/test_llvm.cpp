@@ -78,7 +78,7 @@ TEST_CASE("LLVM target configuration") {
     llvm::FunctionType *function_type = llvm::FunctionType::get(
         llvm::Type::getVoidTy(context), false);
     llvm::Function *function = llvm::Function::Create(function_type,
-        llvm::Function::ExternalLinkage, "f", module);
+        llvm::Function::ExternalLinkage, "f", &module);
     llvm::BasicBlock *entry = llvm::BasicBlock::Create(
         context, "entry", function);
     llvm::ReturnInst::Create(context, entry);
@@ -517,7 +517,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -559,7 +559,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -2437,6 +2437,44 @@ end program
     CHECK(e.evaluate2(cell).ok);
 }
 
+TEST_CASE("FortranEvaluator a cell declaring a requirement and a template") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // Every cell is snapshotted symbol by symbol through SymbolDuplicator so
+    // the next one is parented to a tree no ASR pass has touched. A kind the
+    // duplicator does not know about throws and kills the cell, which is what
+    // a Requirement and a Template used to do.
+    const char *cell = R"(module mtempl
+implicit none
+requirement r {t, op}
+deferred type :: t
+deferred interface
+function op(x, y) result(z)
+type(t), intent(in) :: x, y
+type(t) :: z
+end function
+end interface
+end requirement
+template add_t {t, op}
+require r {t, op}
+contains
+function add_generic(x, y) result(z)
+type(t), intent(in) :: x, y
+type(t) :: z
+z = op(x, y)
+end function
+end template
+end module
+)";
+    CHECK(e.evaluate2(cell).ok);
+    // again, so the second cell is built on the duplicated scope
+    CHECK(e.evaluate2(cell).ok);
+}
+
 TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -2500,6 +2538,65 @@ TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
     // The quoted line is the one that declares dp, not this cell's text.
     CHECK(message.find("module mdp; integer, parameter :: dp = kind(0.0d0)")
         != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator a module's derived type globals across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The members of a derived type global that no static initializer can
+    // describe are set up by executable code. That has to run once, when the
+    // cell declaring the global runs: the cell below has no program, and a
+    // later program must not set the global up again, which would reset
+    // whatever the cells in between assigned to it.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(module rm3
+implicit none
+type :: t
+integer :: z = 7
+integer, allocatable :: a(:)
+end type
+type :: u
+integer :: z = 7
+end type
+type(t) :: arr(3)
+type(t) :: s
+type(u) :: su
+integer :: seen = 0
+end module
+)");
+    CHECK(r.ok);
+    CHECK(e.evaluate2("use rm3\n").ok);
+    r = e.evaluate2("arr(3)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 7);
+    CHECK(e.evaluate2("arr(1)%z = 99\n").ok);
+    CHECK(e.evaluate2("s%z = 98\n").ok);
+    CHECK(e.evaluate2("su%z = 97\n").ok);
+    r = e.evaluate2("arr(1)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    CHECK(e.evaluate2(R"(program p
+use rm3
+implicit none
+seen = arr(1)%z
+end program
+)").ok);
+    r = e.evaluate2("seen\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    r = e.evaluate2("arr(1)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 99);
+    r = e.evaluate2("s%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 98);
+    r = e.evaluate2("su%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 97);
+    r = e.evaluate2("arr(2)%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 7);
 }
 
 TEST_CASE("FortranEvaluator the calls the kernel makes") {

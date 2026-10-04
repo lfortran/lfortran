@@ -238,6 +238,7 @@
                         )]
                         []
                     )]
+                    ()
                 ),
             bindc_06_mod:
                 (Module
@@ -359,9 +360,11 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
+    ()
 )
