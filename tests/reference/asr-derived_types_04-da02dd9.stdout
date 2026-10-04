@@ -365,6 +365,16 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                ),
+                                            time_to_string:
+                                                (ExternalSymbol
+                                                    8
+                                                    time_to_string
+                                                    2 time_to_string
+                                                    tomlf_datetime
+                                                    []
+                                                    time_to_string
+                                                    Public
                                                 )
                                         })
                                     datetime_to_string
@@ -416,7 +426,7 @@
                                         .false.
                                         Host
                                     )
-                                    [time_to_string]
+                                    []
                                     [(Var 8 lhs)
                                     (Var 8 rhs)]
                                     [(If
@@ -624,8 +634,8 @@
                                                     ()
                                                 )
                                                 (SubroutineCall
-                                                    2 time_to_string
-                                                    2 time_to_string
+                                                    8 time_to_string
+                                                    8 time_to_string
                                                     [((Var 8 lhs))
                                                     ((StructInstanceMember
                                                         (Var 8 rhs)
