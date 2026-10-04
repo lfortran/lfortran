@@ -6564,22 +6564,22 @@ void remove_from_unit_to_file(int32_t unit_num) {
 static void _lfortran_close_all_units(void) {
     const size_t scratch_prefix_len = strlen(scratch_prefix);
     for (int i = 0; i <= last_index_used; i++) {
-        if (unit_to_file[i].filename != NULL) {
-            // Delete scratch files at normal program termination
-            if (strncmp(unit_to_file[i].filename, scratch_prefix,
-                        scratch_prefix_len) == 0) {
-                remove(unit_to_file[i].filename);
-            }
-            internal_free(unit_to_file[i].filename);
-            unit_to_file[i].filename = NULL;
-        }
-        // Close non-standard file pointers
+        // Close first. remove() of a file that is still open fails on Windows.
         if (unit_to_file[i].filep != NULL &&
             unit_to_file[i].filep != stdin &&
             unit_to_file[i].filep != stdout &&
             unit_to_file[i].filep != stderr) {
             fclose(unit_to_file[i].filep);
             unit_to_file[i].filep = NULL;
+        }
+        if (unit_to_file[i].filename != NULL) {
+            // Delete scratch files at program termination
+            if (strncmp(unit_to_file[i].filename, scratch_prefix,
+                        scratch_prefix_len) == 0) {
+                remove(unit_to_file[i].filename);
+            }
+            internal_free(unit_to_file[i].filename);
+            unit_to_file[i].filename = NULL;
         }
     }
 }
@@ -6710,6 +6710,16 @@ _lfortran_open(int32_t unit_num,
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    // exit() from a runtime error skips the finalizer emitted at the end of
+    // main. Register the closer so scratch files are still deleted. Do not
+    // register _lfortran_internal_alloc_finalize(): its leak check calls
+    // exit(), which is undefined from an atexit handler.
+    static int exit_cleanup_registered = 0;
+    if (!exit_cleanup_registered) {
+        if (atexit(_lfortran_close_all_units) == 0) {
+            exit_cleanup_registered = 1;
+        }
     }
     bool ini_encoding = true;
     if (encoding == NULL) {
