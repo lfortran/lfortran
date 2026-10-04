@@ -927,12 +927,13 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     val = val * pow(10, scale);
 
     int width = 0, decimal_digits = 0;
-    bool is_negative = (val < 0);
+    // signbit() keeps the minus sign of a negative zero
+    bool is_negative = signbit(val);
     double integer_part = floor(fabs(val));
     double decimal_part = fabs(val) - integer_part;
 
-    int sign_width = (val < 0) ? 1 : 0; // Negative sign
-    bool sign_plus_exist = (use_sign_plus && val>=0); // Positive sign
+    int sign_width = is_negative ? 1 : 0; // Negative sign
+    bool sign_plus_exist = (use_sign_plus && !is_negative); // Positive sign
 
     // parsing the format
     char* dot_pos = strchr(format, '.');
@@ -1000,7 +1001,7 @@ void handle_float(FloatFormatType format_type, char* format, double val, int sca
     if(sign_plus_exist){
         strcat(formatted_value, "+");
     }
-    if (val < 0) {
+    if (is_negative) {
         strcat(formatted_value, "-");
     }
     if (integer_part == 0.0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
@@ -1067,7 +1068,7 @@ void handle_en(char* format, double val, int scale, char** result, char* c, bool
     if (exp_digits == 0) exp_digits = 2;
     else if (exp_digits == -1) exp_digits = 2;
 
-    bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
+    bool sign_plus_exist = (is_signed_plus && !signbit(val)); // SP specifier
 
     char formatted_value[256];
     double abs_val = fabs(val);
@@ -1309,9 +1310,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     int digits = decimal_digits;
-    int sign_width = (val < 0) ? 1 : 0;
-    bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
-    bool is_negative = (val < 0);
+    // signbit() keeps the minus sign of a negative zero
+    bool is_negative = signbit(val);
+    int sign_width = is_negative ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && !is_negative); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
@@ -1338,7 +1340,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
     // val_str = "11230000128"
 
-    if (val < 0) {
+    if (is_negative) {
         // removes `-` (negative) sign
         memmove(val_str, val_str + 1, strlen(val_str));
     }
@@ -2921,7 +2923,7 @@ static void format_float_fortran(char* result, float val) {
     float abs_val = fabsf(val);
     
     if (abs_val == 0.0f) {
-        sprintf(result, "0.00000000");
+        sprintf(result, signbit(val) ? "-0.00000000" : "0.00000000");
         return;
     }
     if (abs_val < 0.1f || abs_val >= 1.0e8f) {
@@ -2950,7 +2952,7 @@ static void format_double_fortran(char* result, double val) {
     double abs_val = fabs(val);
     
     if (abs_val == 0.0) {
-        sprintf(result, "0.0000000000000000");
+        sprintf(result, signbit(val) ? "-0.0000000000000000" : "0.0000000000000000");
         return;
     }
 
@@ -2986,7 +2988,7 @@ static void format_long_double_fortran(char* result, long double val) {
     long double abs_val = fabsl(val);
     
     if (abs_val == 0.0L) {
-        sprintf(result, "0.000000000000000000000");
+        sprintf(result, signbit(val) ? "-0.000000000000000000000" : "0.000000000000000000000");
         return;
     }
 
@@ -4539,6 +4541,69 @@ LFORTRAN_API void _lfortran_complex_pow_64(struct _lfortran_complex_64* a,
 
 }
 
+// complex**integer by repeated multiplication (binary exponentiation); a
+// negative exponent gives 1/z**(-n). The compiler folds constants and unrolls
+// constant exponents with the same algorithm, so all give identical results.
+LFORTRAN_API void _lfortran_complex_pow_int_32(struct _lfortran_complex_32* a,
+        int64_t n, struct _lfortran_complex_32 *result)
+{
+    struct _lfortran_complex_32 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_32(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_32(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_32 one = {1, 0};
+        _lfortran_complex_div_32(&one, &res, &res);
+    }
+    *result = res;
+}
+
+LFORTRAN_API void _lfortran_complex_pow_int_64(struct _lfortran_complex_64* a,
+        int64_t n, struct _lfortran_complex_64 *result)
+{
+    struct _lfortran_complex_64 base = *a, res;
+    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        result->re = 1;
+        result->im = 0;
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_64(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_64(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_64 one = {1, 0};
+        _lfortran_complex_div_64(&one, &res, &res);
+    }
+    *result = res;
+}
+
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
@@ -5388,25 +5453,23 @@ LFORTRAN_API int32_t _lpython_bit_length8(int64_t num)
     return res;
 }
 
-//repeat str for n time
-LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char** s, int32_t n, char** dest)
+// Repeat the counted string `s` of length `s_len` `n` times. `s` is Fortran
+// character storage and is not guaranteed to be NUL-terminated.
+LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char* s, int64_t s_len, int32_t n, char** dest)
 {
-    int cntr = 0;
-    char trmn = '\0';
-    int s_len = strlen(*s);
-    int trmn_size = sizeof(trmn);
-    int f_len = s_len*n;
+    int64_t f_len = s_len * n;
     if (f_len < 0)
         f_len = 0;
-    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len+trmn_size);
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < s_len; j++) {
-            dest_char[cntr] = (*s)[j];
-            cntr++;
+    char* dest_char = (char*)ALLOCATOR_ALLOC(al, f_len + 1);
+    int64_t cntr = 0;
+    if (s_len > 0) {
+        for (int32_t i = 0; i < n; i++) {
+            memcpy(dest_char + cntr, s, s_len);
+            cntr += s_len;
         }
     }
-    dest_char[cntr] = trmn;
-    *dest = &(dest_char[0]);
+    dest_char[cntr] = '\0';
+    *dest = dest_char;
 }
 
 LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n)
