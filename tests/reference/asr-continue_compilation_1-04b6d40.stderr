@@ -874,6 +874,24 @@ semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute b
 2068 | subroutine bindc_optional_value_contains(x) bind(c)  ! {Error} Variable `x` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value_contains` is BIND(C)
      |                                          ^ 
 
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2081:22
+     |
+2081 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^^^^^^^ 
+
+semantic error: Initialization of `pnc_y1` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2088:5
+     |
+2088 |     integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization of `pnc_y2` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2089:5
+     |
+2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3036,13 +3054,13 @@ semantic error: Unapplicable types for intrinsic function max
      |                     ^^^ 
 
 semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
-    --> tests/errors/continue_compilation_1.f90:2078:14
+    --> tests/errors/continue_compilation_1.f90:2095:14
      |
-2078 |     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+2095 |     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
      |              ^^^^^^^^^^^^^ 
 
 semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
-    --> tests/errors/continue_compilation_1.f90:2079:14
+    --> tests/errors/continue_compilation_1.f90:2096:14
      |
-2079 |     print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
+2096 |     print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
      |              ^^^^^^^^^ 

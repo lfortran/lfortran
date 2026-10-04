@@ -2073,6 +2073,23 @@ contains
     end subroutine
 end subroutine
 
+module derived_type_nonconst_bound_in_continue_compilation_1_m
+    implicit none
+    integer :: dtncb_m = 3
+    type :: dtncb_t
+        ! `dtncb_m` is not a named constant, so `dtncb_m*2` is not constant
+        integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+end module
+
+subroutine parameter_nonconstant_init()
+    implicit none
+    integer :: pnc_bla
+    integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+    integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+    print *, pnc_y1, pnc_y2
+end subroutine
+
 subroutine secnds_argument_errors()
     implicit none
     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
