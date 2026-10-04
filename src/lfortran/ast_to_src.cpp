@@ -2633,8 +2633,7 @@ public:
             // The loop ends on its labelled terminal statement: the body
             // printed it if it is an action statement or an inner loop
             // sharing it, otherwise it was a `<label> continue`
-            if (printed_labels.count(x.m_do_label) == 0) {
-                printed_labels.insert(x.m_do_label);
+            if (printed_labels.insert(x.m_do_label).second) {
                 r += indent;
                 r += std::to_string(x.m_do_label);
                 r += " continue";
