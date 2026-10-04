@@ -5976,14 +5976,16 @@ static double _lfortran_seconds_since_midnight() {
 #elif defined(__APPLE__) && !defined(__aarch64__)
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    struct tm* ptm = localtime(&tv.tv_sec);
-    return 3600.0 * ptm->tm_hour + 60.0 * ptm->tm_min + ptm->tm_sec
+    struct tm tm;
+    localtime_r(&tv.tv_sec, &tm);
+    return 3600.0 * tm.tm_hour + 60.0 * tm.tm_min + tm.tm_sec
         + 0.001 * (tv.tv_usec / 1000);
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    struct tm* ptm = localtime(&ts.tv_sec);
-    return 3600.0 * ptm->tm_hour + 60.0 * ptm->tm_min + ptm->tm_sec
+    struct tm tm;
+    localtime_r(&ts.tv_sec, &tm);
+    return 3600.0 * tm.tm_hour + 60.0 * tm.tm_min + tm.tm_sec
         + 0.001 * (ts.tv_nsec / 1000000);
 #endif
 }
