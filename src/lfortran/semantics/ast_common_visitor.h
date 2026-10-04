@@ -9236,11 +9236,12 @@ public:
                             //     allocatable qbh(:)
                             //     integer qbh
                             ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(symbol_variable->m_type);
+                            ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(type);
                             if ( ASR::is_a<ASR::Array_t>(*alloc_type->m_type) ) {
                                 ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(alloc_type->m_type);
-                                array_type->m_type = type;
+                                array_type->m_type = element_type;
                             } else {
-                                alloc_type->m_type = type;
+                                alloc_type->m_type = element_type;
                             }
                         } else {
                             symbol_variable->m_type = type;
