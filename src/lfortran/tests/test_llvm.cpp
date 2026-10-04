@@ -600,6 +600,21 @@ TEST_CASE("runtime debug map of a binary without line info") {
         error_message));
     CHECK(!error_message.empty());
 
+    error_message.clear();
+    CHECK(!LCompilers::write_runtime_debug_map(obj, ".", error_message));
+    CHECK(!error_message.empty());
+    for (const std::string &contents : {"invalid object", "!<arch>\n"}) {
+        std::string invalid = obj + ".invalid";
+        {
+            std::ofstream file(invalid, std::ios::binary);
+            file << contents;
+        }
+        error_message.clear();
+        CHECK(!LCompilers::write_runtime_debug_map(invalid, map, error_message));
+        CHECK(!error_message.empty());
+        std::filesystem::remove(invalid);
+    }
+
     std::filesystem::remove(obj);
     std::filesystem::remove(map);
 }
