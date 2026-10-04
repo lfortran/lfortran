@@ -14290,8 +14290,9 @@ static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context *context,
             d->pc[d->pc_size] = pc;
             d->pc_size++;
         } else {
-            printf("The stacktrace length is out of range.\nAborting...");
-            abort();
+            fprintf(stderr, "note: stacktrace truncated at %d frames\n",
+                LCOMPILERS_MAX_STACKTRACE_LENGTH);
+            return _URC_END_OF_STACK;
         }
     }
     return _URC_NO_REASON;

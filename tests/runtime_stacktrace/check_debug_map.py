@@ -96,6 +96,27 @@ def check_failures(compiler, source, work):
         print('PASS buffered write failure warns, removes map, and runs')
 
 
+def check_deep_stack(compiler, source, work):
+    source = work / 'deep.f90'
+    for depth in (1, 20, 100, 300, 1000):
+        source.write_text('program deep\ncall f(' + str(depth) + ')\ncontains\n'
+                          'recursive subroutine f(n)\ninteger, intent(in) :: n\n'
+                          'if(n>0) then\ncall f(n-1)\nelse\nerror stop "deep"\n'
+                          'end if\nend subroutine\nend program\n')
+        compile_program(compiler, source, 'program', work)
+        result = run([str(work / 'program')], work)
+        require(result.returncode == 1, result.stdout + result.stderr)
+        require('ERROR STOP deep' in result.stderr, result.stderr)
+        frames = re.findall(r'  File .*?, line (\d+)', result.stderr)
+        require(frames and frames[-1] == '9', result.stderr)
+        require(len(frames) <= 200, 'stack frame limit was exceeded')
+        require(result.stdout == '', result.stdout)
+        if depth >= 300:
+            require('stacktrace truncated at 200 frames' in result.stderr,
+                    result.stderr)
+        print('PASS recursion depth', depth)
+
+
 def check_nodebug(compiler, source, work):
     for name, text in (
             ('m1', 'module m1\ncontains\ninteger function f()\nf=42\n'
@@ -117,7 +138,8 @@ def check_nodebug(compiler, source, work):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--lfortran', required=True)
-    parser.add_argument('--case', choices=('paths', 'large_map', 'failures', 'nodebug'),
+    parser.add_argument('--case', choices=('paths', 'large_map', 'failures',
+                                          'deep_stack', 'nodebug'),
                         required=True)
     args = parser.parse_args()
     compiler = str(pathlib.Path(args.lfortran).resolve())
