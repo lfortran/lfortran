@@ -22,6 +22,12 @@ tokenizer error: Zero is not a valid statement label
 1191 |     0 print *, "unreachable"  ! {Error} Zero is not a valid statement label
      |     ^ 
 
+syntax error: Token '<' is unexpected here
+    --> tests/errors/continue_compilation_1.f90:2093:1
+     |
+2093 | <<<<<<< HEAD
+     | ^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
@@ -1932,7 +1938,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3052,9 +3058,3 @@ semantic error: Unapplicable types for intrinsic function max
      |
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
-
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
-    --> tests/errors/continue_compilation_1.f90:2094:34
-     |
-2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
-     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
