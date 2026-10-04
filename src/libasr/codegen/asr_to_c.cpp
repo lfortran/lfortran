@@ -241,6 +241,10 @@ public:
     std::string convert_variable_decl(const ASR::Variable_t &v,
         DeclarationOptions* decl_options=nullptr)
     {
+        if (v.m_storage == ASR::storage_typeType::Threadprivate) {
+            throw CodeGenError("threadprivate variables are not supported by the c backend",
+                v.base.base.loc);
+        }
         bool pre_initialise_derived_type;
         bool use_ptr_for_derived_type;
         bool use_static;
