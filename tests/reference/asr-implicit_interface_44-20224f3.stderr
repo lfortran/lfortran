@@ -1,0 +1,5 @@
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+ --> tests/../integration_tests/implicit_interface_44.f90:3:12
+  |
+3 |   external diff
+  |            ^^^^ 
