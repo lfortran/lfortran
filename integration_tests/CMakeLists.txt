@@ -414,8 +414,9 @@ RUN(NAME print_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2)
 RUN(NAME print_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2)
 RUN(NAME print_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_14 LABELS gfortran llvm)
-RUN(NAME print_15 LABELS llvm)
+RUN(NAME print_15 LABELS llvm NO_STD_F23)
 RUN(NAME print_16 LABELS gfortran llvm EXTRA_ARGS --std=f23)
+RUN(NAME print_17 LABELS gfortran llvm EXTRA_ARGS --std=f23)
 
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
@@ -1295,6 +1296,15 @@ RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
 RUN(NAME format_112 LABELS gfortran llvm)
+# real(10) is the x87 80-bit extended type, which is also the C long double
+# the runtime formats it with, only on x86-64 Linux. On other platforms the
+# generated code and the runtime disagree on how a real(10) value is stored:
+# https://github.com/lfortran/lfortran/issues/13935
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    RUN(NAME format_113 LABELS gfortran llvm)
+endif()
+RUN(NAME format_114 LABELS gfortran llvm)
+RUN(NAME format_115 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4129,6 +4139,10 @@ RUN(NAME write_43 LABELS gfortran llvm)
 RUN(NAME write_44 LABELS gfortran llvm)
 RUN(NAME write_45 LABELS gfortran llvm)
 RUN(NAME write_46 LABELS gfortran llvm)
+RUN(NAME write_47 LABELS gfortran llvm c)
+RUN(NAME write_48 LABELS gfortran llvm c)
+# llvm: an iostat= variable of a non-default kind fails module verification (#13947)
+RUN(NAME write_49 LABELS gfortran c)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -4910,6 +4924,9 @@ RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_95 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_96 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_97 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
+    EXTRAFILES openmp_threadprivate_tls_mod.f90
+    EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -5690,6 +5707,7 @@ RUN(NAME gpu_metal_371 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
@@ -5785,3 +5803,5 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)

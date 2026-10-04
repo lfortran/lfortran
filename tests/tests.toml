@@ -626,6 +626,11 @@ filename = "preprocessor23.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor24.F90"
+asr_preprocess = true
+cpp_infer = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -2979,6 +2984,11 @@ filename = "print5.f90"
 run = true
 
 [[test]]
+filename = "print6.f90"
+options = "--std=f23"
+run = true
+
+[[test]]
 filename = "print_intrinsics.f90"
 asr = true
 run = true
@@ -3361,6 +3371,26 @@ filename = "errors/char4_backend_c.f90"
 c = true
 cpp = true
 wat = true
+
+[[test]]
+filename = "errors/write_internal_file_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_dummy_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_init_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_save_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_kind4_item_c.f90"
+c = true
 
 [[test]]
 filename = "errors/continue_compilation_1.f90"

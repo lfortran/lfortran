@@ -9,6 +9,7 @@ Which formatting language a format string is written in.
 ```text
 string_format_kind
     = FormatFortran
+    | FormatFortranLeadingBlank
     | FormatC
     | FormatPythonPercent
     | FormatPythonFString
@@ -20,6 +21,7 @@ string_format_kind
 | Value | Meaning |
 |----------|-------------|
 | `FormatFortran` | Fortran edit descriptors, `"(f8.3,i4)"`. |
+| `FormatFortranLeadingBlank` | Fortran list-directed formatting (`fmt` is `nil`) that starts with a blank when at least one value is written; with `FormatFortran` it starts with the first value. |
 | `FormatC` | C `printf` conversions, `"%f: %d"`. |
 | `FormatPythonPercent` | Python's `%` operator, `"%f: %d" % (a, b)`. |
 | `FormatPythonFString` | an f-string, `f"{a}: {b}"`. |
