@@ -9,7 +9,5 @@ data b/40/
 integer(int32) :: total
 total = a + b
 write(*, 100) total
-if (total /= 42) then
-    error stop
-end if
+if (total /= 42) error stop
 end program decl_order_02

@@ -1756,6 +1756,10 @@ ast = true
 wat = true
 
 [[test]]
+filename = "../integration_tests/if_09.f90"
+ast_f90 = true
+
+[[test]]
 filename = "../integration_tests/case_01.f90"
 ast = true
 ast_f90 = true
@@ -2715,6 +2719,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/construct_name_01.f90"
+ast_f90 = true
+
+[[test]]
 filename = "implicit1.f90"
 ast = true
 ast_f90 = true
@@ -3000,6 +3008,12 @@ ast = true
 ast_f90 = true
 ast_fixed_form = true
 ast_f90_fixed_form = true
+
+# Must compile without warnings: POINTER/ALLOCATABLE DO loop-control
+# expressions are valid scalar-int-expr (#12681).
+[[test]]
+filename = "../integration_tests/doloop_20.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "../integration_tests/doloop_21.f90"
@@ -3953,6 +3967,11 @@ asr_disable_warnings = true
 asr_disable_style_suggestion_and_warnings = true
 
 [[test]]
+filename = "save5.f90"
+asr = true
+
+
+[[test]]
 filename = "style1.f90"
 asr_disable_warnings = true
 asr_enable_style_suggestion = true
@@ -4687,6 +4706,10 @@ asr = true
 
 [[test]]
 filename = "errors/external1.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implicit_interface_44.f90"
 asr = true
 
 # Parser
@@ -6193,3 +6216,21 @@ filename = "../integration_tests/global_init_07.f90"
 # from the initializer it knows while the storage is sized from the value the
 # generated code has at that point.
 pass = "global_init"
+
+# A pass that rejects the program: `--show-asr` reports its error and prints
+# no ASR.
+[[test]]
+filename = "show_pass_error_01.f90"
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+# The same with `--show-fortran`, which prints no Fortran.
+[[test]]
+filename = "show_pass_error_02.f90"
+fortran = true
+pass = "parallel_canonicalize,parallel_dispatch"
+options = "--gpu=metal"
+
+[[test]]
+filename = "../integration_tests/string_122.f90"
+asr = true

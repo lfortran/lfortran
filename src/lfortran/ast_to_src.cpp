@@ -2220,6 +2220,21 @@ public:
         this->visit_expr(*x.m_test);
         r += s;
         r += ") ";
+        if (x.m_single) {
+            // Logical IF statement: the action statement on the same line
+            std::string if_indent = indent;
+            indent = "";
+            this->visit_decl_stmt(*x.m_body[0]);
+            indent = if_indent;
+            r += s;
+            if (x.m_trivia) {
+                // The comment after the action statement, before its newline
+                r.pop_back();
+                r += print_trivia_after(*x.m_trivia);
+            }
+            s = r;
+            return;
+        }
         r += syn(gr::Conditional);
         r += "then";
         r += syn();
@@ -2257,6 +2272,7 @@ public:
         r += syn(gr::Conditional);
         r += "end if";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2330,6 +2346,7 @@ public:
         r += syn(gr::Repeat);
         r += "end where";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -2604,6 +2621,8 @@ public:
         } else {
             r.append("\n");
         }
+        // Only a label printed within the body of this loop counts: the
+        // same label may have been printed in an earlier program unit
         printed_labels.erase(x.m_do_label);
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
@@ -2639,8 +2658,7 @@ public:
         // The body already printed the label if it ends with the labelled
         // statement that terminates the loop (`10 a(i) = 0`) or with an
         // inner loop sharing it (`do 10 j = ...` / `do 10 i = ...`)
-        if (x.m_do_label != 0 && printed_labels.count(x.m_do_label) == 0) {
-            printed_labels.insert(x.m_do_label);
+        if (x.m_do_label != 0 && printed_labels.insert(x.m_do_label).second) {
             r += std::to_string(x.m_do_label);
             r += " ";
         }
@@ -2924,6 +2942,7 @@ public:
         r += syn(gr::Repeat);
         r.append("end do");
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -3192,6 +3211,7 @@ public:
         r += syn(gr::Repeat);
         r += "end do";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4455,6 +4475,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -4655,6 +4676,7 @@ public:
         r += syn(gr::Conditional);
         r += "end select";
         r += syn();
+        r += end_stmt_name(x);
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
