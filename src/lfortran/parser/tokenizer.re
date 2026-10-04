@@ -731,7 +731,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 } else if (enddo_newline_process) {
                     // The comment ends the terminal statement of labelled
                     // DO loops: insert their `end do`s after it, as for a
-                    // plain newline (the line is counted after them)
+                    // plain newline. `line_num` and `cur_line` are advanced
+                    // once the last `end do` is emitted (`enddo_state == 2`
+                    // at the top of `lex`)
                     enddo_newline_process = false;
                     enddo_state = 1;
                     last_token=yytokentype::TK_NEWLINE;
