@@ -1,4 +1,4 @@
-module modules_76_mod
+module modules_78_mod
     implicit none
     ! The bare PRIVATE statement comes after these declarations. It still
     ! makes every name without an explicit access-spec private (F2018 8.6.1
@@ -14,10 +14,10 @@ contains
         hidden_count = hidden_count + 1
         shown_count = shown_count + 2
     end subroutine bump
-end module modules_76_mod
+end module modules_78_mod
 
-program modules_76
-    use modules_76_mod
+program modules_78
+    use modules_78_mod
     implicit none
     ! Legal only because the module does not export this name.
     integer :: hidden_count
@@ -27,4 +27,4 @@ program modules_76
     if (hidden_count /= 10) error stop
     if (shown_count /= 4) error stop
     print *, "OK"
-end program modules_76
+end program modules_78
