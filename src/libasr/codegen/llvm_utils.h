@@ -1067,6 +1067,7 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
+            call_final_of_allocatable_local(v, llvm_var, struct_sym);
             check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
 
             // For non-allocatable DescriptorArray of strings, the cached
@@ -1089,6 +1090,42 @@ class ASRToLLVMVisitor;
                     }
                 }
             }
+        }
+
+        /**
+         * An unsaved allocated allocatable local of a procedure or BLOCK
+         * construct is deallocated when the scope ends (F2018 9.7.3.2), and
+         * a deallocated entity is finalized (F2018 7.5.6.3), so call its
+         * scalar FINAL procedure before the memory is freed. Main program
+         * variables are not finalized when execution terminates (7.5.6.4).
+         * Polymorphic variables are finalized through their vtable.
+         */
+        void call_final_of_allocatable_local(ASR::Variable_t* const v,
+                llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
+            // `llvm_var` is the loaded pointer to the allocated struct.
+            if (struct_sym == nullptr || struct_sym->n_member_functions == 0) { return; }
+            if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
+            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*t_past) || ASRUtils::is_class_type(t_past)) { return; }
+            ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
+            if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
+            check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
+                for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
+                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
+                        struct_sym->m_member_functions[fi]);
+                    // An array FINAL procedure may have been replaced by the
+                    // array_by_data pass; it does not apply to a scalar.
+                    if (final_sym == nullptr) { continue; }
+                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                    ASR::Function_t* const final_fn = ASR::down_cast<ASR::Function_t>(final_sym);
+                    // A scalar entity is finalized by the FINAL procedure with
+                    // a scalar dummy argument, elemental or not (7.5.6.2).
+                    if (ASRUtils::is_array(ASRUtils::expr_type(final_fn->m_args[0]))) { continue; }
+                    uint32_t const fh = get_hash((ASR::asr_t*)final_sym);
+                    LCOMPILERS_ASSERT(llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end());
+                    builder_->CreateCall(llvm_symtab_fn_[fh], {llvm_var});
+                }
+            });
         }
 
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
