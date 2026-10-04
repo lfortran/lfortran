@@ -15,27 +15,19 @@ else
         n = 1
     end if
 end if chk
-if (n /= 1) then
-    error stop
-end if
+if (n /= 1) error stop
 sel: select case (n)
     case (1)
         n = 2
     case default
         n = 30
 end select sel
-if (n /= 2) then
-    error stop
-end if
+if (n /= 2) error stop
 w: do while (n < 100)
     n = n + 1
-    if (n == 5) then
-        exit w
-    end if
+    if (n == 5) exit w
 end do w
-if (n /= 5) then
-    error stop
-end if
+if (n /= 5) error stop
 dc: do concurrent (i = 1:4)
     a(i) = i - 2
 end do dc
@@ -44,9 +36,7 @@ wh: where (a > 0)
 elsewhere
     a = -1
 end where wh
-if (any(a /= [-1, -1, 1, 1])) then
-    error stop
-end if
+if (any(a /= [-1, -1, 1, 1])) error stop
 p = n
 st: select type (p)
     type is (integer)
@@ -54,7 +44,5 @@ st: select type (p)
     class default
         n = 0
 end select st
-if (n /= 6) then
-    error stop
-end if
+if (n /= 6) error stop
 end program construct_name_01
