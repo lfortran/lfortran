@@ -1932,7 +1932,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3053,14 +3053,20 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
-semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
-    --> tests/errors/continue_compilation_1.f90:2095:14
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+    --> tests/errors/continue_compilation_1.f90:2094:34
      |
-2095 |     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+    --> tests/errors/continue_compilation_1.f90:2103:14
+     |
+2103 |     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
      |              ^^^^^^^^^^^^^ 
 
 semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
-    --> tests/errors/continue_compilation_1.f90:2096:14
+    --> tests/errors/continue_compilation_1.f90:2104:14
      |
-2096 |     print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
+2104 |     print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
      |              ^^^^^^^^^ 
