@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-derived_types_210-cc5463e",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/derived_types_210.f90",
+    "infile_hash": "4c88484b17da4555c40314913825e908c4960cfb02bab9aa58b4b8d9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-derived_types_210-cc5463e.stdout",
+    "stdout_hash": "a7e449e92d02357a7b45b4bb9f4a71d7cf273ef203a0c15414821622",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

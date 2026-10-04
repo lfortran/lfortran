@@ -1372,7 +1372,7 @@ asr = true
 ast_f90 = true
 
 [[test]]
-filename = "../integration_tests/derived_types_209.f90"
+filename = "../integration_tests/derived_types_210.f90"
 ast_f90 = true
 
 [[test]]
