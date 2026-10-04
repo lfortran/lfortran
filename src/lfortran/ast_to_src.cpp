@@ -3722,16 +3722,18 @@ public:
         s +=  op2str(x.m_op);
         if (right_precedence == 9) {
             s += "(" + right + ")";
-        } else if (x.m_op != operatorType::Pow) {
-            // Left-associative, and floating-point `+` and `*` are not
-            // associative: `a*(b*c)` must not be printed as `a*b*c`
-            if (right_precedence > last_expr_precedence) {
+        } else if (x.m_op == operatorType::Pow) {
+            // `**` is right-associative: `a**(b**c)` is printed as `a**b**c`
+            if (right_precedence >= last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
             }
         } else {
-            if (right_precedence >= last_expr_precedence) {
+            // `+`, `-`, `*` and `/` are left-associative: `a-b-c` is
+            // `(a-b)-c`, so a right operand of the same precedence keeps
+            // the parentheses it has in the AST, as in `a-(b-c)` or `a*(b*c)`
+            if (right_precedence > last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
