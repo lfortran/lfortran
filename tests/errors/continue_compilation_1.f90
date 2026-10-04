@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -2090,6 +2090,7 @@ subroutine parameter_nonconstant_init()
     print *, pnc_y1, pnc_y2
 end subroutine
 
+<<<<<<< HEAD
 ! The `target` argument of `associated` must be a pointer or target
 ! variable or function, not an arbitrary expression.
 subroutine associated_target_not_variable_in_continue_compilation_1()
@@ -2098,3 +2099,12 @@ subroutine associated_target_not_variable_in_continue_compilation_1()
     a => null()
     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
 end subroutine
+=======
+subroutine allocate_func_target_01()
+    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+end subroutine allocate_func_target_01
+
+function func_alloc_target_01() result(res) bind(c)
+    character(:), pointer :: res
+end function func_alloc_target_01
+>>>>>>> upstream/main
