@@ -4,37 +4,23 @@ s = 0
 do i = 1, 5
     s = s + i
 end do
-if (s /= 15) then
-    error stop
-end if
+if (s /= 15) error stop
 s = 0
 do i = 1, 5
-    if (i == 3) then
-        go to 1
-    end if
+    if (i == 3) go to 1
     s = s + i
 1 end do
-if (s /= 12) then
-    error stop
-end if
+if (s /= 12) error stop
 s = 0
 do i = 1, 5
-    if (i == 3) then
-        go to 2
-    end if
+    if (i == 3) go to 2
     s = s + i
 2 end do
-if (s /= 12) then
-    error stop
-end if
+if (s /= 12) error stop
 s = 0
 do i = 1, 5
-    if (i == 3) then
-        go to 3
-    end if
+    if (i == 3) go to 3
     s = s + i
 3 end do
-if (s /= 12) then
-    error stop
-end if
+if (s /= 12) error stop
 end program doloop_19
