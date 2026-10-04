@@ -3058,3 +3058,9 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: An allocate-object must be a data pointer or an allocatable variable
+    --> tests/errors/continue_compilation_1.f90:2109:14
+     |
+2109 |     allocate(aofc_qbh(n))  ! {Error} An allocate-object must be a data pointer or an allocatable variable
+     |              ^^^^^^^^^^^ `aofc_qbh` is not an array variable, so this resolves to a function call

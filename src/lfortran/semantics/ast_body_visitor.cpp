@@ -3847,11 +3847,12 @@ public:
                 new_arg.n_dims = 0;
             } else {
                 // The allocate-object did not resolve to a data reference,
-                // so there is no variable to allocate. This happens with
-                // implicit interfaces enabled, where `x(n)` for a scalar or
-                // undeclared `x` resolves to a call to an external function
-                // `x`. Report it here: an alloc_arg with no target would
-                // crash the checks that run after this loop.
+                // so there is no variable to allocate. This happens when
+                // `x(n)` resolves to a call to a function `x`: one with an
+                // explicit interface, or, with implicit interfaces enabled,
+                // a scalar or undeclared `x`. Report it here: an alloc_arg
+                // with no target would crash the checks that run after this
+                // loop.
                 std::string label_msg = "this expression cannot be allocated";
                 AST::expr_t* alloc_obj = x.m_args[i].m_end ? x.m_args[i].m_end
                                                            : x.m_args[i].m_step;
