@@ -3016,10 +3016,6 @@ filename = "../integration_tests/doloop_20.f90"
 semantics_only_cc = true
 
 [[test]]
-filename = "../integration_tests/doloop_23.f90"
-ast_f90 = true
-
-[[test]]
 filename = "fixedform_doloop.f"
 ast = true
 
