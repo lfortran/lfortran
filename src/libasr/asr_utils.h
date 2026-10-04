@@ -86,6 +86,72 @@ inline std::string strip_genericprocedure_suffix(const std::string &sym_name) {
     return sym_name;
 }
 
+// Parse a format consisting of a single DT edit descriptor,
+// "(DT[char-literal-constant][(v-list)])", into the iotype ("DT" followed by
+// the char-literal-constant) and v_list arguments of a defined I/O procedure.
+inline bool parse_dt_edit_descriptor(const std::string &fmt,
+        std::string &iotype, std::vector<int64_t> &v_list) {
+    size_t i = 0, n = fmt.size();
+    auto skip_blanks = [&]() { while (i < n && fmt[i] == ' ') i++; };
+    auto match = [&](char c) {
+        skip_blanks();
+        if (i < n && std::tolower(static_cast<unsigned char>(fmt[i])) == c) {
+            i++;
+            return true;
+        }
+        return false;
+    };
+    if (!match('(') || !match('d') || !match('t')) {
+        return false;
+    }
+    iotype = "DT";
+    v_list.clear();
+    skip_blanks();
+    if (i < n && (fmt[i] == '\'' || fmt[i] == '"')) {
+        char quote = fmt[i++];
+        for (;; i++) {
+            if (i >= n) {
+                return false;
+            }
+            if (fmt[i] == quote) {
+                if (i + 1 < n && fmt[i + 1] == quote) {
+                    i++;
+                } else {
+                    i++;
+                    break;
+                }
+            }
+            iotype += fmt[i];
+        }
+    }
+    if (match('(')) {
+        do {
+            skip_blanks();
+            size_t start = i;
+            if (i < n && (fmt[i] == '+' || fmt[i] == '-')) {
+                i++;
+            }
+            size_t digits_start = i;
+            while (i < n && std::isdigit(static_cast<unsigned char>(fmt[i]))) {
+                i++;
+            }
+            if (i == digits_start) {
+                return false;
+            }
+            v_list.push_back(std::strtoll(fmt.substr(start, i - start).c_str(),
+                nullptr, 10));
+        } while (match(','));
+        if (!match(')')) {
+            return false;
+        }
+    }
+    if (!match(')')) {
+        return false;
+    }
+    skip_blanks();
+    return i == n;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
