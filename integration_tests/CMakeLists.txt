@@ -1296,6 +1296,15 @@ RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
 RUN(NAME format_112 LABELS gfortran llvm)
+# real(10) is the x87 80-bit extended type, which is also the C long double
+# the runtime formats it with, only on x86-64 Linux. On other platforms the
+# generated code and the runtime disagree on how a real(10) value is stored:
+# https://github.com/lfortran/lfortran/issues/13935
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    RUN(NAME format_113 LABELS gfortran llvm)
+endif()
+RUN(NAME format_114 LABELS gfortran llvm)
+RUN(NAME format_115 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
