@@ -550,6 +550,8 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         help="Run all tests sequentially")
     parser.add_argument("--no-color", action="store_true",
                     help="Turn off colored tests output")
+    parser.add_argument("--continue-on-failure", action="store_true",
+                    help="Run every test and report all failures")
     args = parser.parse_args()
     update_reference = args.update
     verify_hash = args.verify_hash
@@ -569,6 +571,25 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     skip_run_with_dbg = args.skip_run_with_dbg
     global no_color
     no_color = args.no_color
+    continue_on_failure = args.continue_on_failure
+    failures = []
+
+    def run_one(test, skip_dbg, color_off):
+        try:
+            single_test(test,
+                        update_reference=update_reference,
+                        verify_hash=verify_hash,
+                        specific_backends=specific_backends,
+                        excluded_backends=excluded_backends,
+                        verbose=verbose,
+                        no_llvm=no_llvm,
+                        skip_run_with_dbg=skip_dbg,
+                        no_color=color_off)
+        except RunException as exc:
+            if not continue_on_failure:
+                raise
+            return exc
+        return None
 
     # While updating references, only wipe the whole reference directory if the
     # user is updating the entire suite (no -t filters). For a targeted update
@@ -606,18 +627,36 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
 
     for test in filtered_tests:
         if 'extrafiles' in test:
-            single_test(test,
-                update_reference=update_reference,
-                verify_hash=verify_hash,
-                specific_backends=specific_backends,
-                excluded_backends=excluded_backends,
-                verbose=verbose,
-                no_llvm=no_llvm,
-                skip_run_with_dbg=True,
-                no_color=True)
+            if continue_on_failure:
+                exc = run_one(test, True, True)
+                if exc:
+                    failures.append(exc)
+            else:
+                single_test(test,
+                    update_reference=update_reference,
+                    verify_hash=verify_hash,
+                    specific_backends=specific_backends,
+                    excluded_backends=excluded_backends,
+                    verbose=verbose,
+                    no_llvm=no_llvm,
+                    skip_run_with_dbg=True,
+                    no_color=True)
     filtered_tests = [test for test in filtered_tests if 'extrafiles' not in test]
 
-    if args.sequential:
+    if continue_on_failure:
+        if args.sequential:
+            for test in filtered_tests:
+                exc = run_one(test, skip_run_with_dbg, no_color)
+                if exc:
+                    failures.append(exc)
+        else:
+            with ThreadPoolExecutor() as ex:
+                for exc in ex.map(
+                        lambda test: run_one(test, skip_run_with_dbg, no_color),
+                        filtered_tests):
+                    if exc:
+                        failures.append(exc)
+    elif args.sequential:
         for test in filtered_tests:
             single_test(test,
                         update_reference=update_reference,
@@ -645,6 +684,11 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             for f in futures:
                 if not f:
                     ex.shutdown(wait=False)
+    if failures:
+        for exc in failures:
+            print(exc, file=sys.stderr)
+        print("%d checks failed." % len(failures), file=sys.stderr)
+        sys.exit(1)
     if list_tests:
         return
 
