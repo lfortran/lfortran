@@ -586,8 +586,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         skip_run_with_dbg=skip_dbg,
                         no_color=color_off)
         except RunException as exc:
-            if not continue_on_failure:
-                raise
             return exc
         return None
 
