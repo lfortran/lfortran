@@ -217,4 +217,10 @@ program continue_compilation_3
         bpe = d
     end subroutine
         
+    subroutine stop_code_wrong_type()
+        real :: x
+        x = 5.0
+        stop x  ! {Error} Stop code must be of type INTEGER or CHARACTER, found `f32`
+    end subroutine
+
 end program

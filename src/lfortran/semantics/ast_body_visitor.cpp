@@ -102,7 +102,6 @@ private:
                 Level::Error, Stage::Semantic, {
                     Label("", {loc})
                 }));
-            throw SemanticAbort();
         }
         return code;
     }
