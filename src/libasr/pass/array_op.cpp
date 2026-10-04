@@ -166,7 +166,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntrinsicElementalFunction(x);
         ASR::IntrinsicElementalFunction_t& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0])) ) {
+        if (ASRUtils::is_array(xx.m_type)) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
@@ -178,8 +178,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             return ;
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if( (x.m_dt && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt))) ||
-            !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
+        if (ASRUtils::is_array(xx.m_type)) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
