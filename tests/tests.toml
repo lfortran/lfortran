@@ -6232,4 +6232,4 @@ asr = true
 
 [[test]]
 filename = "warnings/exit_nonstandard_call_01.f90"
-asr_preprocess = true
+asr = true
