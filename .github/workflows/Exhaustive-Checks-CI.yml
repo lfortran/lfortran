@@ -130,6 +130,9 @@ jobs:
       - name: Test Moved Installation
         shell: bash -e -l {0}
         run: |
+          python3 src/ci/test_runtime_headers.py \
+            --source-dir src --build-dir builddir --install-prefix inst \
+            --kokkos-dir "$CONDA_PREFIX" --relocate
           mv inst inst.moved
           cp src/examples/expr2.f90 expr2.F90
           rm -rf src
@@ -212,6 +215,13 @@ jobs:
             test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
+
+      - name: Test Moved Build and Installation
+        shell: bash -e -l {0}
+        run: |
+            python3 ci/test_runtime_headers.py \
+              --source-dir . --build-dir . --install-prefix inst \
+              --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
 
 # Commented out to save CI runners:
@@ -829,7 +839,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' && github.repository == 'lfortran/lfortran' }}
           tags: ${{ steps.image-tags.outputs.tags }}
 
   build_xlfortran_jupyterlite:
