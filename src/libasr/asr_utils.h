@@ -10675,6 +10675,24 @@ static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
     return has_link_time_address(v.m_symbolic_value);
 }
 
+// The code that describes a scalar of `type` to the runtime's formatted output
+// (`_lcompilers_string_format_fortran` in `libasr/runtime/lfortran_intrinsics.c`),
+// which every backend that calls it must produce the same way:
+//
+//     I<kind>, U<kind>      integer, unsigned integer
+//     R<kind>               real
+//     {R<kind>,R<kind>}     complex, as a pair of reals
+//     L<bits>               logical, read as an integer of that many bits
+//     S-DESC-K<kind>        character, as a string descriptor
+//     S-CCHAR-K<kind>       character, as a pointer to its data
+//     CPtr                  type(c_ptr)
+//
+// A character code leaves out the optional `-<len>` suffix, which a backend
+// appends when the runtime should take the length from the code rather than
+// from the value. An empty string means the type has no scalar code: an array
+// or a derived type is described through its elements or components.
+std::string get_format_type_code(ASR::ttype_t* type);
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

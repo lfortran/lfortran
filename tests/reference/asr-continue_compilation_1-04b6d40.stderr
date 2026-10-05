@@ -1932,7 +1932,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3053,8 +3053,14 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
-semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
-    --> tests/errors/continue_compilation_1.f90:2112:20
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+    --> tests/errors/continue_compilation_1.f90:2094:34
      |
-2112 |     call take_proc(x)
+2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:2120:20
+     |
+2120 |     call take_proc(x)
      |                    ^ 

@@ -620,6 +620,11 @@ filename = "preprocessor23.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor24.F90"
+asr_preprocess = true
+cpp_infer = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -2719,6 +2724,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/construct_name_01.f90"
+ast_f90 = true
+
+[[test]]
 filename = "implicit1.f90"
 ast = true
 ast_f90 = true
@@ -2965,6 +2974,11 @@ filename = "print5.f90"
 run = true
 
 [[test]]
+filename = "print6.f90"
+options = "--std=f23"
+run = true
+
+[[test]]
 filename = "print_intrinsics.f90"
 asr = true
 run = true
@@ -3004,6 +3018,12 @@ ast = true
 ast_f90 = true
 ast_fixed_form = true
 ast_f90_fixed_form = true
+
+# Must compile without warnings: POINTER/ALLOCATABLE DO loop-control
+# expressions are valid scalar-int-expr (#12681).
+[[test]]
+filename = "../integration_tests/doloop_20.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "fixedform_doloop.f"
@@ -3343,6 +3363,26 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/write_internal_file_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_dummy_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_init_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_save_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_kind4_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -3657,6 +3697,10 @@ ast = true
 filename = "fixed_form/ptr_assign1.f"
 ast = true
 options = "--implicit-typing --implicit-interface --implicit-argument-casting"
+
+[[test]]
+filename = "fixed_form/tab_continue1.f"
+ast = true
 
 [[test]]
 filename = "fixed_form/call1.f"
@@ -4687,6 +4731,10 @@ asr = true
 
 [[test]]
 filename = "errors/external1.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/implicit_interface_44.f90"
 asr = true
 
 # Parser
@@ -6207,3 +6255,7 @@ filename = "show_pass_error_02.f90"
 fortran = true
 pass = "parallel_canonicalize,parallel_dispatch"
 options = "--gpu=metal"
+
+[[test]]
+filename = "../integration_tests/string_122.f90"
+asr = true

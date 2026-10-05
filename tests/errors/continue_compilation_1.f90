@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -2089,6 +2089,14 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+subroutine allocate_func_target_01()
+    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+end subroutine allocate_func_target_01
+
+function func_alloc_target_01() result(res) bind(c)
+    character(:), pointer :: res
+end function func_alloc_target_01
 
 ! A required dummy procedure must not be omitted in a call.
 module missing_proc_arg_mod

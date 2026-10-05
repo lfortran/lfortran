@@ -1,0 +1,5 @@
+code generation error: an internal file with the save attribute in a procedure or a block is not supported by the C backend yet
+  --> tests/errors/write_internal_file_save_c.f90:12:15
+   |
+12 |         write(s, '(i4)') n
+   |               ^ 
