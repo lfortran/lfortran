@@ -310,6 +310,12 @@ public:
         }
     }
 
+    void visit_Enum(const AST::Enum_t& x) {
+        if( from_block ) {
+            visit_EnumUtil(x);
+        }
+    }
+
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
