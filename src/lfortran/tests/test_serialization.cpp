@@ -1158,7 +1158,7 @@ static const std::string runtime_trait_serialization_source = R"(
 module runtime_trait_serialization_m
 implicit none
 abstract interface :: IValue
-    function value() result(r)
+    pure function value() result(r)
         integer :: r
     end function
     function tag(code) result(r)
@@ -1177,7 +1177,7 @@ implements IValue :: Payload
     procedure, nopass :: tag => read_tag
 end implements
 contains
-function read_value(self) result(r)
+pure function read_value(self) result(r)
     class(Payload), intent(in) :: self
     integer :: r
     r = self%n
@@ -1336,6 +1336,24 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
         ASRUtils::EXPR2VAR(proc->m_return_var)->m_type = type;
         ASRUtils::get_FunctionType(proc)->m_return_var_type = type;
         rejects("asr.verify.trait_witness.binding_signature");
+    }
+    SUBCASE("binding cannot drop required purity") {
+        ASRUtils::get_FunctionType(function("read_value"))->m_pure = false;
+        function("read_value")->m_side_effect_free = false;
+        rejects("asr.verify.trait_witness.procedure_attributes");
+    }
+    SUBCASE("binding cannot drop required elemental attribute") {
+        auto *required = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(implementation->m_bindings[0].m_member));
+        ASRUtils::get_FunctionType(required)->m_elemental = true;
+        rejects("asr.verify.trait_witness.procedure_attributes");
+    }
+    SUBCASE("binding can strengthen an impure contract to pure") {
+        ASRUtils::get_FunctionType(function("read_tag"))->m_pure = true;
+        function("read_tag")->m_side_effect_free = true;
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*result.result, true, valid));
+        INFO(valid.render2());
     }
     SUBCASE("binding has wrong nominal receiver") {
         ASRUtils::EXPR2VAR(function("read_value")->m_args[0])->m_type_declaration =

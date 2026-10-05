@@ -1651,6 +1651,13 @@ public:
             ASRUtils::symbol_get_past_external(binding.m_member));
         auto *procedure = ASR::down_cast<Function_t>(
             ASRUtils::symbol_get_past_external(binding.m_procedure));
+        auto *required_signature = ASRUtils::get_FunctionType(required);
+        auto *actual_signature = ASRUtils::get_FunctionType(procedure);
+        require_with_loc_id(
+                (!required_signature->m_pure || actual_signature->m_pure) &&
+                (!required_signature->m_elemental || actual_signature->m_elemental),
+            "asr.verify.trait_witness.procedure_attributes",
+            "A witness binding must preserve required pure and elemental attributes", loc);
         size_t receiver = procedure->n_args;
         if (!binding.m_is_nopass) {
             for (size_t i = 0; i < procedure->n_args; i++) {

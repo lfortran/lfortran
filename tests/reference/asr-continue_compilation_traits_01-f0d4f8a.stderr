@@ -667,3 +667,15 @@ semantic error: runtime trait view projections are not implemented yet
      |
 1981 |         call consume(object)
      |                      ^^^^^^ 
+
+semantic error: call to impure trait procedure 'value' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2019:13
+     |
+2019 |         r = object%value()
+     |             ^^^^^^^^^^^^^^ 
+
+semantic error: call to impure trait procedure 'act' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2032:9
+     |
+2032 |         call object%act()
+     |         ^^^^^^^^^^^^^^^^^ 

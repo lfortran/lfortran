@@ -291,6 +291,9 @@ names, and calling conventions apply. Receivers are read-only by default;
 future explicit per-message mutation effects have no settled syntax yet.
 Named non-first PASS and NOPASS are supported. NOPASS still dynamically
 selects the implementation from the witness.
+Dynamic calls obey the contract's PURE attribute: a PURE consumer cannot call
+an impure message, and each binding must preserve required PURE and ELEMENTAL
+attributes. A binding may be PURE even when its contract does not require it.
 
 View dummies currently require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. Trait arrays, projections, inline

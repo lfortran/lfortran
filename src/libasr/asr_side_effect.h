@@ -121,6 +121,29 @@ public:
         }
         BaseWalkVisitor::visit_FunctionCall(x);
     }
+
+    bool check_trait_call(const Location &l, symbol_t *name, int64_t slot) {
+        if (!check_call(l, name)) return false;
+        auto *contract = down_cast<TraitRuntimeContract_t>(ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(name)));
+        auto *origin = ASRUtils::symbol_get_past_external(
+            contract->m_slots[slot].m_origins[0]);
+        description = "call to impure trait procedure '" +
+            std::string(ASRUtils::symbol_name(origin)) + "'";
+        return true;
+    }
+
+    void visit_TraitFunctionCall(const TraitFunctionCall_t &x) {
+        if (found) return;
+        if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
+        BaseWalkVisitor::visit_TraitFunctionCall(x);
+    }
+
+    void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {
+        if (found) return;
+        if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
+        BaseWalkVisitor::visit_TraitSubroutineCall(x);
+    }
 };
 
 } // namespace ASR

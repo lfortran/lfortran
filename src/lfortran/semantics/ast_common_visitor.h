@@ -23498,8 +23498,12 @@ public:
                 tmp = ASR::make_TraitSubroutineCall_t(al, loc, callee, runtime_slot,
                     call->m_args, call->n_args);
             }
-            current_function_deterministic = false;
-            current_function_side_effect_free = false;
+            if (!function->m_deterministic) {
+                current_function_deterministic = false;
+            }
+            if (!function->m_side_effect_free) {
+                current_function_side_effect_free = false;
+            }
             return true;
         }
         if (generic) {

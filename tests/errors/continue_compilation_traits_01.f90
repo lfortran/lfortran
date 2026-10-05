@@ -2004,3 +2004,31 @@ contains
         r = 0
     end function
 end module traits_runtime_nyi_combination_m
+
+module traits_runtime_impure_function_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    pure function observe(object) result(r)
+        class(IValue), intent(in) :: object
+        integer :: r
+        r = object%value()
+    end function
+end module
+
+module traits_runtime_impure_subroutine_m
+    implicit none
+    abstract interface :: IAction
+        subroutine act()
+        end subroutine
+    end interface
+contains
+    pure subroutine observe(object)
+        class(IAction), intent(in) :: object
+        call object%act()
+    end subroutine
+end module
