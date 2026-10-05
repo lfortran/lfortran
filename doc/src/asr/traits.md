@@ -78,8 +78,9 @@ equivalent concrete computations.
 
 Character- and array-valued trait methods still encounter a separate
 aggregate-return lowering limitation in the default compilation pipeline.
-The dependent-signature declaration tests isolate normalization from that
-lowering pass; a standard-Fortran oracle checks the concrete computations.
+The dependent-signature declaration fixtures have ASR reference coverage through
+`function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
+oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, trait objects
 (`class(Trait)`), mutable receivers, associated types, intrinsic type sets,
