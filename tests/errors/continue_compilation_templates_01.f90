@@ -2604,3 +2604,43 @@ contains
         clash_get = 1
     end subroutine
 end module
+
+module continue_compilation_templates_01_generic_tmpl
+    implicit none
+    template gen_t {T, plus}
+        deferred type :: T
+        deferred interface
+            function plus(x, y) result(z)
+                type(T), intent(in) :: x, y
+                type(T) :: z
+            end function
+        end interface
+        interface gen_dbl
+            procedure gen_twice
+        end interface
+    contains
+        function gen_twice(x) result(z)
+            type(T), intent(in) :: x
+            type(T) :: z
+            z = plus(x, x)
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_generic
+    use continue_compilation_templates_01_generic_tmpl
+    implicit none
+    instantiate gen_t {integer, gen_iadd}
+    instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_twice', which is already declared in this scope
+contains
+    function gen_iadd(x, y) result(z)
+        integer, intent(in) :: x, y
+        integer :: z
+        z = x + y
+    end function
+    subroutine gen_proc()
+        integer :: gen_dbl
+        instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_dbl', which is already declared in this scope
+        gen_dbl = 1
+    end subroutine
+end module
