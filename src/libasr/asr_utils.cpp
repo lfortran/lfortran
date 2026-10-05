@@ -2290,12 +2290,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 }
                             }
                             ASR::ttype_t *return_type = nullptr;
-                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args >= 1 &&
-                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                            if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(al,
@@ -2314,7 +2314,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASRUtils::insert_self_arg(al, a_name, call_args1, n_call_args1, self_arg);
                             {
                                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
-                                if (ftype->m_return_var_type) {
+                                // An elemental reference with an array argument
+                                // has the shape of the argument, set above.
+                                if (ftype->m_return_var_type && first_array_arg == nullptr) {
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
@@ -3532,11 +3534,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     loc);
                             }
                             ASR::ttype_t* return_type = nullptr;
-                            if (ASRUtils::get_FunctionType(func)->m_elemental && func->n_args >= 1
-                                && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value))) {
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                            if (first_array_arg != nullptr) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                    ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                    ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(
@@ -3558,7 +3561,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                             {
                                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
-                                if (ftype->m_return_var_type) {
+                                // An elemental reference with an array argument
+                                // has the shape of the argument, set above.
+                                if (ftype->m_return_var_type && first_array_arg == nullptr) {
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
