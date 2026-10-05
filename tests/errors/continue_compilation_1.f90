@@ -2097,3 +2097,14 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+subroutine allocate_object_function_call_1(n)
+    implicit none
+    integer, intent(in) :: n
+    interface
+        double precision function aofc_qbh(k)
+            integer, intent(in) :: k
+        end function
+    end interface
+    allocate(aofc_qbh(n))  ! {Error} An allocate-object must be a data pointer or an allocatable variable
+end subroutine
