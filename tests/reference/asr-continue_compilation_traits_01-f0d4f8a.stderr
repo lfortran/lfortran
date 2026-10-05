@@ -1,0 +1,379 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_01.f90:8:5 - 13:1
+   |
+ 8 |        abstract interface :: IValue
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |    
+   | ...^ LFortran extension
+
+semantic error: missing implementation of trait method 'get_value'
+  --> tests/errors/continue_compilation_traits_01.f90:18:5 - 19:23
+   |
+18 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+19 |        end implements Box
+   | ...^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got real(4)
+  --> tests/errors/continue_compilation_traits_01.f90:81:5 - 84:1
+   |
+81 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+84 |    
+   | ...^ 
+
+semantic error: argument 'value' does not match trait method 'consume': expected integer(4), got real(4)
+   --> tests/errors/continue_compilation_traits_01.f90:104:5 - 106:19
+    |
+104 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+106 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: rank of argument 'value' does not match trait method 'consume': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:124:5 - 126:19
+    |
+124 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+126 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got integer(8)
+   --> tests/errors/continue_compilation_traits_01.f90:144:5 - 146:19
+    |
+144 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+146 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result rank does not match trait method 'get_value': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:165:5 - 167:19
+    |
+165 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+167 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: function or subroutine category does not match trait method 'get_value'
+   --> tests/errors/continue_compilation_traits_01.f90:356:5 - 359:1
+    |
+356 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+359 |    
+    | ...^ 
+
+semantic error: a trait witness must be a public, nondeferred binding
+   --> tests/errors/continue_compilation_traits_01.f90:425:20
+    |
+425 |         procedure, private :: get_value => box_get_value
+    |                    ^^^^^^^ 
+
+semantic error: intent, optionality or value attribute of argument 'value' does not match trait method 'set_value'
+   --> tests/errors/continue_compilation_traits_01.f90:451:5 - 454:1
+    |
+451 |        implements ISetter :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+454 |    
+    | ...^ 
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+   --> tests/errors/continue_compilation_traits_01.f90:550:5
+    |
+550 |     type(IValue) :: object
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects are not implemented yet
+   --> tests/errors/continue_compilation_traits_01.f90:562:5
+    |
+562 |     class(IValue), allocatable :: object
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: missing implementation of trait method 'value'
+   --> tests/errors/continue_compilation_traits_01.f90:638:5 - 641:1
+    |
+638 |        implements IChild :: Payload
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+641 |    
+    | ...^ 
+
+semantic error: incompatible declarations of trait method 'value': results have type integer(4) and integer(8)
+   --> tests/errors/continue_compilation_traits_01.f90:744:5 - 745:28
+    |
+744 |        abstract interface, extends(INarrow + IWide) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+745 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': results have rank 0 and rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:765:5 - 766:28
+    |
+765 |        abstract interface, extends(IScalar + IArray) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+766 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'values': result array shapes differ
+   --> tests/errors/continue_compilation_traits_01.f90:782:5 - 783:18
+    |
+782 |        abstract interface, extends(ITwo + IThree) :: IConflict
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+783 |        end interface
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:803:5 - 804:28
+    |
+803 |        abstract interface, extends(IRequired + IOptional) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+804 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:823:5 - 824:28
+    |
+823 |        abstract interface, extends(IInput + IOutput) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+824 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:843:5 - 844:28
+    |
+843 |        abstract interface, extends(IReference + IByValue) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+844 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': pure, elemental or abi attributes differ
+   --> tests/errors/continue_compilation_traits_01.f90:863:5 - 864:28
+    |
+863 |        abstract interface, extends(IOrdinary + IPure) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+864 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'shifted': pure, elemental or abi attributes differ
+   --> tests/errors/continue_compilation_traits_01.f90:885:5 - 886:28
+    |
+885 |        abstract interface, extends(IPure + IElemental) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+886 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'shifted': dummy argument names differ ('delta' and 'amount')
+   --> tests/errors/continue_compilation_traits_01.f90:907:5 - 908:28
+    |
+907 |        abstract interface, extends(IDelta + IAmount) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+908 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'IMissing' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:1164:5 - 1165:25
+     |
+1164 |        abstract interface, extends(IMissing) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1165 |        end interface IChild
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'Payload' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:1176:5 - 1177:25
+     |
+1176 |        abstract interface, extends(Payload) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1177 |        end interface IChild
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cyclic inheritance of trait 'iself'
+    --> tests/errors/continue_compilation_traits_01.f90:1184:5 - 1185:24
+     |
+1184 |        abstract interface, extends(ISelf) :: ISelf
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1185 |        end interface ISelf
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and real(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1208:5 - 1209:28
+     |
+1208 |        abstract interface, extends(IInteger + IReal) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1209 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument counts differ
+    --> tests/errors/continue_compilation_traits_01.f90:1229:5 - 1230:28
+     |
+1229 |        abstract interface, extends(INoArgument + IArgument) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1230 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and integer(8)
+    --> tests/errors/continue_compilation_traits_01.f90:1251:5 - 1252:28
+     |
+1251 |        abstract interface, extends(INarrow + IWide) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1252 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has rank 0 and rank 1
+    --> tests/errors/continue_compilation_traits_01.f90:1273:5 - 1274:28
+     |
+1273 |        abstract interface, extends(IScalar + IArray) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1274 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and real(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1297:20
+     |
+1297 |     function query{IInteger + IReal :: T}(object) result(res)
+     |                    ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_01.f90:63:17
+   |
+63 |         value = read_value(object)
+   |                 ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+  --> tests/errors/continue_compilation_traits_01.f90:63:9
+   |
+63 |         value = read_value(object)
+   |         ^^^^^              ^^^^^^ type mismatch (integer and box)
+
+semantic error: method 'missing_value' is not provided by the declared trait constraints
+   --> tests/errors/continue_compilation_traits_01.f90:205:15
+    |
+205 |         res = x%missing_value()
+    |               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:260:13
+    |
+260 |         if (read_value{SmallBox}(right) /= 22) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:261:13
+    |
+261 |         if (read_value{LargeBox}(left) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'get_value': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_01.f90:338:13
+    |
+338 |         if (read_value(object) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+   --> tests/errors/continue_compilation_traits_01.f90:406:17
+    |
+406 |         value = make_value()
+    |                 ^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'isecond' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:511:9
+    |
+511 |         call use_second(value, result)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `value`: expected `integer(4)` but got `real(4)`.
+   --> tests/errors/continue_compilation_traits_01.f90:538:31
+    |
+538 |         call object%get_value(value)
+    |                               ^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ichild' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:613:13
+    |
+613 |         if (child_value(object) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'righttrait' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:716:13
+    |
+716 |         if (combined_value(object) /= 7) error stop 1
+    |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'righttrait' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:723:13
+    |
+723 |         if (reversed_value(object) /= 7) error stop 2
+    |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1019:13
+     |
+1019 |         if (read_value(object) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1032:13
+     |
+1032 |         if (read_value(object) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1122:13
+     |
+1122 |         if (read_value(object, other) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: method 'child_value' is not provided by the declared trait constraints
+    --> tests/errors/continue_compilation_traits_01.f90:1155:15
+     |
+1155 |         res = object%child_value()
+     |               ^^^^^^^^^^^^^^^^^^^^ 

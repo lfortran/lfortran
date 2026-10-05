@@ -5552,6 +5552,335 @@ bool is_struct_like_type(ASR::ttype_t *t)
     return ASR::is_a<ASR::StructType_t>(*t2) || ASRUtils::is_class_type(t2);
 }
 
+TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
+{
+    TraitHierarchy result;
+    std::set<const ASR::Trait_t*> active, visited;
+    std::set<ASR::symbol_t*> members;
+    std::function<bool(const ASR::Trait_t&)> visit =
+        [&](const ASR::Trait_t &current) {
+            if (active.count(&current)) {
+                result.error = TraitHierarchyError::Cycle;
+                return false;
+            }
+            if (!visited.insert(&current).second) return true;
+            active.insert(&current);
+            result.traits.push_back(&current);
+            if (current.n_parents && !current.m_parents) {
+                result.error = TraitHierarchyError::Parent;
+                return false;
+            }
+            for (size_t i = 0; i < current.n_parents; i++) {
+                ASR::symbol_t *parent = current.m_parents[i];
+                if (parent && ASR::is_a<ASR::ExternalSymbol_t>(*parent)) {
+                    if (!check_external) continue;
+                    parent = ASR::down_cast<ASR::ExternalSymbol_t>(parent)->m_external;
+                }
+                if (!parent || !ASR::is_a<ASR::Trait_t>(*parent)) {
+                    result.error = TraitHierarchyError::Parent;
+                    return false;
+                }
+                if (!visit(*ASR::down_cast<ASR::Trait_t>(parent))) return false;
+            }
+            if (!current.m_symtab ||
+                    current.m_symtab->asr_owner != &current.base.base) {
+                result.error = TraitHierarchyError::Member;
+                return false;
+            }
+            for (const auto &entry : current.m_symtab->get_scope()) {
+                ASR::symbol_t *member = entry.second;
+                if (!member || !ASR::is_a<ASR::Function_t>(*member) ||
+                        symbol_parent_symtab(member) != current.m_symtab) {
+                    result.error = TraitHierarchyError::Member;
+                    return false;
+                }
+                if (members.insert(member).second) result.members.push_back(member);
+            }
+            active.erase(&current);
+            return true;
+        };
+    visit(trait);
+    return result;
+}
+
+// Specification expressions use the correspondence between ordinary dummies,
+// not their symbol addresses in two different procedure scopes.
+static bool trait_length_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    if (!left || !right || left == right) return left == right;
+    int64_t a_value, b_value;
+    if (extract_value(expr_value(left), a_value) &&
+            extract_value(expr_value(right), b_value)) return a_value == b_value;
+    if (left->type != right->type) return false;
+    if (ASR::is_a<ASR::Var_t>(*left)) {
+        auto *a = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(left)->m_v);
+        auto *b = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(right)->m_v);
+        auto parameter = parameters.find(a);
+        return a && b &&
+            (a == b || (parameter != parameters.end() && parameter->second == b));
+    }
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::IntegerBinOp_t>(left);
+        auto *b = ASR::down_cast<ASR::IntegerBinOp_t>(right);
+        return a->m_op == b->m_op && types_equal(a->m_type, b->m_type, left, right) &&
+            trait_length_equal(a->m_left, b->m_left, parameters) &&
+            trait_length_equal(a->m_right, b->m_right, parameters);
+    }
+    if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*left)) {
+        return trait_length_equal(ASR::down_cast<ASR::IntegerUnaryMinus_t>(left)->m_arg,
+            ASR::down_cast<ASR::IntegerUnaryMinus_t>(right)->m_arg, parameters);
+    }
+    if (ASR::is_a<ASR::Cast_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::Cast_t>(left);
+        auto *b = ASR::down_cast<ASR::Cast_t>(right);
+        return a->m_kind == b->m_kind && types_equal(a->m_type, b->m_type, left, right) &&
+            trait_length_equal(a->m_arg, b->m_arg, parameters);
+    }
+    if (ASR::is_a<ASR::StringLen_t>(*left)) {
+        return trait_length_equal(ASR::down_cast<ASR::StringLen_t>(left)->m_arg,
+            ASR::down_cast<ASR::StringLen_t>(right)->m_arg, parameters);
+    }
+    if (ASR::is_a<ASR::ArraySize_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::ArraySize_t>(left);
+        auto *b = ASR::down_cast<ASR::ArraySize_t>(right);
+        return trait_length_equal(a->m_v, b->m_v, parameters) &&
+            trait_length_equal(a->m_dim, b->m_dim, parameters);
+    }
+    if (ASR::is_a<ASR::ArrayBound_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::ArrayBound_t>(left);
+        auto *b = ASR::down_cast<ASR::ArrayBound_t>(right);
+        return a->m_bound == b->m_bound &&
+            trait_length_equal(a->m_v, b->m_v, parameters) &&
+            trait_length_equal(a->m_dim, b->m_dim, parameters);
+    }
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(left);
+        auto *b = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(right);
+        if (a->m_intrinsic_id != b->m_intrinsic_id ||
+                a->m_overload_id != b->m_overload_id || a->n_args != b->n_args) return false;
+        for (size_t i = 0; i < a->n_args; i++) {
+            if (!trait_length_equal(a->m_args[i], b->m_args[i], parameters)) return false;
+        }
+        return true;
+    }
+    if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::FunctionCall_t>(left);
+        auto *b = ASR::down_cast<ASR::FunctionCall_t>(right);
+        if (!a->m_name || !b->m_name ||
+                symbol_get_past_external(a->m_name) != symbol_get_past_external(b->m_name) ||
+                a->n_args != b->n_args ||
+                !trait_length_equal(a->m_dt, b->m_dt, parameters)) return false;
+        for (size_t i = 0; i < a->n_args; i++) {
+            if (!trait_length_equal(a->m_args[i].m_value, b->m_args[i].m_value,
+                    parameters)) return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool trait_shapes_equal(ASR::ttype_t *left, ASR::ttype_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    if (is_array(left) != is_array(right) ||
+            is_assumed_rank_array(left) != is_assumed_rank_array(right)) return false;
+    ASR::dimension_t *a = nullptr, *b = nullptr;
+    size_t a_rank = extract_dimensions_from_ttype(left, a);
+    size_t b_rank = extract_dimensions_from_ttype(right, b);
+    if (a_rank != b_rank) return false;
+    for (size_t i = 0; i < a_rank; i++) {
+        if (!trait_length_equal(a[i].m_length, b[i].m_length, parameters)) return false;
+    }
+    return true;
+}
+
+bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    ASR::ttype_t *a = typed_expr_type(left), *b = typed_expr_type(right);
+    if (!a || !b) return false;
+    if (is_pointer(a) != is_pointer(b) ||
+            is_allocatable(a) != is_allocatable(b) ||
+            !trait_shapes_equal(a, b, parameters)) {
+        return false;
+    }
+    a = extract_type(a);
+    b = extract_type(b);
+    if (a->type != b->type) return false;
+    if (ASR::is_a<ASR::StructType_t>(*a)) {
+        const auto *a_type = ASR::down_cast<ASR::StructType_t>(a);
+        const auto *b_type = ASR::down_cast<ASR::StructType_t>(b);
+        if (a_type->m_is_cstruct != b_type->m_is_cstruct ||
+                a_type->m_is_unlimited_polymorphic != b_type->m_is_unlimited_polymorphic) {
+            return false;
+        }
+        if (a_type->m_is_unlimited_polymorphic) return true;
+        ASR::symbol_t *a_decl = symbol_get_past_external(
+            get_struct_sym_from_struct_expr(left));
+        ASR::symbol_t *b_decl = symbol_get_past_external(
+            get_struct_sym_from_struct_expr(right));
+        return a_decl && b_decl && a_decl == b_decl;
+    }
+    if (ASR::is_a<ASR::String_t>(*a)) {
+        auto *a_string = ASR::down_cast<ASR::String_t>(a);
+        auto *b_string = ASR::down_cast<ASR::String_t>(b);
+        if (a_string->m_len_kind != b_string->m_len_kind) return false;
+        if (!trait_length_equal(a_string->m_len, b_string->m_len, parameters)) return false;
+    }
+    return types_equal(a, b, left, right);
+}
+
+TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
+    const ASR::Function_t &right, size_t left_offset, size_t right_offset)
+{
+    LCOMPILERS_ASSERT(left_offset <= left.n_args && right_offset <= right.n_args);
+    if (!left.m_function_signature || !right.m_function_signature ||
+            !ASR::is_a<ASR::FunctionType_t>(*left.m_function_signature) ||
+            !ASR::is_a<ASR::FunctionType_t>(*right.m_function_signature)) {
+        return {TraitMethodDifference::Contract, "a procedure signature is missing"};
+    }
+    if (left.n_args - left_offset != right.n_args - right_offset) {
+        return {TraitMethodDifference::Arguments, "argument counts differ"};
+    }
+    if ((left.n_args && !left.m_args) || (right.n_args && !right.m_args)) {
+        return {TraitMethodDifference::Contract, "argument declarations are missing"};
+    }
+    std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+    for (size_t i = 0; i < left.n_args - left_offset; i++) {
+        ASR::expr_t *a_expr = left.m_args[i + left_offset];
+        ASR::expr_t *b_expr = right.m_args[i + right_offset];
+        if (!a_expr || !b_expr || !ASR::is_a<ASR::Var_t>(*a_expr) ||
+                !ASR::is_a<ASR::Var_t>(*b_expr)) {
+            return {TraitMethodDifference::Contract, "trait arguments must be variables"};
+        }
+        ASR::symbol_t *a_symbol = symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(a_expr)->m_v);
+        ASR::symbol_t *b_symbol = symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(b_expr)->m_v);
+        if (!a_symbol || !b_symbol || !ASR::is_a<ASR::Variable_t>(*a_symbol) ||
+                !ASR::is_a<ASR::Variable_t>(*b_symbol) ||
+                !typed_expr_type(a_expr) || !typed_expr_type(b_expr)) {
+            return {TraitMethodDifference::Contract,
+                "trait arguments must have explicit data types"};
+        }
+        parameters.emplace(a_symbol, b_symbol);
+    }
+    for (size_t i = 0; i < left.n_args - left_offset; i++) {
+        ASR::expr_t *a_expr = left.m_args[i + left_offset];
+        ASR::expr_t *b_expr = right.m_args[i + right_offset];
+        auto *a = EXPR2VAR(a_expr);
+        auto *b = EXPR2VAR(b_expr);
+        int a_rank = extract_n_dims_from_ttype(a->m_type);
+        int b_rank = extract_n_dims_from_ttype(b->m_type);
+        std::string argument = "argument '" + std::string(a->m_name) + "'";
+        if (a_rank != b_rank) {
+            return {TraitMethodDifference::Arguments, argument + " has rank " +
+                std::to_string(a_rank) + " and rank " + std::to_string(b_rank)};
+        }
+        if (is_pointer(a->m_type) != is_pointer(b->m_type) ||
+                is_allocatable(a->m_type) != is_allocatable(b->m_type)) {
+            return {TraitMethodDifference::Contract,
+                argument + " has different pointer or allocatable attributes"};
+        }
+        if (!trait_shapes_equal(a->m_type, b->m_type, parameters)) {
+            return {TraitMethodDifference::Contract,
+                argument + " has different array shapes"};
+        }
+        if (!trait_types_equal(a_expr, b_expr, parameters)) {
+            return {TraitMethodDifference::Arguments, argument + " has type " +
+                type_to_str_with_kind(a->m_type, a_expr) + " and " +
+                type_to_str_with_kind(b->m_type, b_expr)};
+        }
+        if (std::string(a->m_name) != b->m_name) {
+            return {TraitMethodDifference::Contract, "dummy argument names differ ('" +
+                std::string(a->m_name) + "' and '" + b->m_name + "')"};
+        }
+        if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
+                a->m_value_attr != b->m_value_attr) {
+            return {TraitMethodDifference::Contract,
+                argument + " has different intent, optional or value attributes"};
+        }
+        if (a->m_target_attr != b->m_target_attr ||
+                a->m_contiguous_attr != b->m_contiguous_attr ||
+                a->m_is_volatile != b->m_is_volatile) {
+            return {TraitMethodDifference::Contract,
+                argument + " has different target, contiguous or volatile attributes"};
+        }
+    }
+    if (bool(left.m_return_var) != bool(right.m_return_var)) {
+        return {TraitMethodDifference::Contract, "function and subroutine categories differ"};
+    }
+    if (left.m_return_var) {
+        ASR::ttype_t *a = typed_expr_type(left.m_return_var);
+        ASR::ttype_t *b = typed_expr_type(right.m_return_var);
+        if (!a || !b) {
+            return {TraitMethodDifference::Contract, "a result type is missing"};
+        }
+        int a_rank = extract_n_dims_from_ttype(a);
+        int b_rank = extract_n_dims_from_ttype(b);
+        if (a_rank != b_rank) {
+            return {TraitMethodDifference::Contract, "results have rank " +
+                std::to_string(a_rank) + " and rank " + std::to_string(b_rank)};
+        }
+        if (!trait_shapes_equal(a, b, parameters)) {
+            return {TraitMethodDifference::Contract, "result array shapes differ"};
+        }
+        if (!trait_types_equal(left.m_return_var, right.m_return_var, parameters)) {
+            return {TraitMethodDifference::Contract, "results have type " +
+                type_to_str_with_kind(a, left.m_return_var) + " and " +
+                type_to_str_with_kind(b, right.m_return_var)};
+        }
+    }
+    auto *a = get_FunctionType(left);
+    auto *b = get_FunctionType(right);
+    if (a->m_pure != b->m_pure || a->m_elemental != b->m_elemental ||
+            a->m_abi != b->m_abi) {
+        return {TraitMethodDifference::Contract,
+            "pure, elemental or abi attributes differ"};
+    }
+    return {};
+}
+
+bool trait_bindings_equal(const ASR::trait_binding_t &left,
+    const ASR::trait_binding_t &right)
+{
+    ASR::symbol_t *a = symbol_get_past_external(left.m_procedure);
+    ASR::symbol_t *b = symbol_get_past_external(right.m_procedure);
+    LCOMPILERS_ASSERT(a && b);
+    if (a != b ||
+            left.m_is_nopass != right.m_is_nopass) return false;
+    if (left.m_is_nopass) return true;
+    return left.m_self_argument && right.m_self_argument &&
+        std::string(left.m_self_argument) == right.m_self_argument;
+}
+
+const ASR::trait_binding_t *find_trait_binding(
+    const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member)
+{
+    member = symbol_get_past_external(member);
+    for (size_t i = 0; i < implementation.n_bindings; i++) {
+        if (symbol_get_past_external(implementation.m_bindings[i].m_member) == member) {
+            return &implementation.m_bindings[i];
+        }
+    }
+    return nullptr;
+}
+
+ASR::symbol_t *conflicting_trait_binding(
+    const ASR::TraitImplementation_t &left,
+    const ASR::TraitImplementation_t &right)
+{
+    for (size_t i = 0; i < left.n_bindings; i++) {
+        const auto &binding = left.m_bindings[i];
+        const auto *other = find_trait_binding(right, binding.m_member);
+        if (other && !trait_bindings_equal(binding, *other)) {
+            return symbol_get_past_external(binding.m_member);
+        }
+    }
+    return nullptr;
+}
+
 // `check_equal_type` does not look at a character length, but a caller
 // compiled against `character(len=5)` reserves five bytes for a result the
 // implementation writes ten into.

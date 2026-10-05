@@ -30,6 +30,9 @@ None.
 The generic body can use only its declared requirements. A normalized
 procedure has an explicit first receiver argument of the deferred type.
 Specialization substitutes a conformance witness for that procedure.
+The mappings cover the trait's transitive requirements. Identical callable
+contracts may share a normalized procedure, but their originating nominal
+requirements are retained and all selected witnesses must agree.
 References to signatures in a trait's nested scope use canonical
 `ExternalSymbol` imports so serialization does not depend on symbol order.
 

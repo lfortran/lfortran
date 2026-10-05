@@ -67,11 +67,58 @@ cannot determine a type parameter, provide it explicitly.
 See `integration_tests/traits_static_01.f90` for a complete example with two
 unrelated implementing types and checked runtime results.
 
+## Inheritance and composed constraints
+
+A trait can inherit the requirements of other traits and add its own:
+
+```fortran
+abstract interface, extends(IValue) :: ILabeled
+    function get_label() result(label)
+        integer :: label
+    end function get_label
+end interface ILabeled
+```
+
+A type implementing `ILabeled` must provide both `get_value` and `get_label`.
+It can then satisfy a constraint requiring either `ILabeled` or `IValue`.
+Implementing only `IValue` does not satisfy `ILabeled`.
+
+Multiple parents use `extends(A + B)`. A generic parameter can require the
+same combination directly, for example `function combine{A + B :: T}(x)`.
+An `implements (A + B) :: ConcreteType` block adopts both traits, but does not
+implicitly adopt another named child trait. Conformance remains nominal.
+
+Inherited requirements retain their original identities. A diamond through a
+shared ancestor does not create duplicate requirements. Identical same-name
+signatures declared independently coalesce as a callable requirement while
+retaining the obligations of every originating trait.
+
+When a constraint can be satisfied through multiple visible conformance paths,
+the canonical implementing procedures and receiver bindings must agree.
+Re-exports and an explicit parent conformance agreeing with a child
+conformance are not ambiguous; conflicting witnesses are diagnosed rather than
+selected by import order. Different-argument-signature inherited overloads
+remain a separate implementation stage.
+
+Constrained generic procedures can forward an argument to a helper whose
+requirements follow from the caller's declared constraints. For example, an
+`ILabeled` argument can be passed to `read_value`, with either
+`read_value(object)` or `read_value{T}(object)`. This is checked before concrete
+instantiation; a parent-only constraint cannot supply a child requirement.
+The shared template instantiator specializes the partially bound helper when
+the caller is instantiated.
+
+Exact contract equivalence includes ordinary dummy names, types, kinds, ranks,
+array extents, character lengths, and procedure/dummy attributes. Result
+variable spelling is irrelevant. Concrete implementation dummies can have
+different names: the existing positional adapters preserve the trait's public
+argument names.
+
 ## Current boundaries
 
-The initial implementation covers module-scoped trait declarations, ordinary
-function/subroutine signatures, read-only scalar receivers with `intent(in)`,
-named `pass`, and `nopass`.
+The static implementation covers module-scoped trait declarations, inheritance
+and composition, ordinary function/subroutine signatures, read-only scalar
+receivers with `intent(in)`, named `pass`, and `nopass`.
 Traits are enabled by default and produce a portability warning. GFortran does
 not accept this extension; separate standard-Fortran oracle tests cover the
 equivalent concrete computations.
@@ -81,14 +128,15 @@ The broader proposal is not yet implemented. In particular, trait objects
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
-Inference currently requires concrete actual types; forwarding a deferred
-parameter to another constrained generic is a later extension.
+Forwarding that mixes concrete and deferred type arguments, or crosses nested
+or shadowed generic-binder scopes, is not implemented yet.
 
 ## Compiler representation
 
 Three ASR symbol kinds preserve the semantic distinction from templates:
 
-- `Trait` owns the receiver-independent abstract procedure signatures.
+- `Trait` owns its directly declared receiver-independent signatures and
+  references its parent traits.
 - `TraitConstraint` connects a generic type parameter to a trait and to the
   normalized abstract procedures used when checking its body.
 - `TraitImplementation` records a concrete type's nominal conformance and its

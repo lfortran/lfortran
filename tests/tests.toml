@@ -5831,59 +5831,11 @@ ast_f90 = true
 asr = true
 
 [[test]]
-filename = "errors/traits_missing_method_01.f90"
-semantics_only_cc = true
+filename = "../integration_tests/traits_inheritance_03.f90"
+ast_f90 = true
 
 [[test]]
-filename = "errors/traits_structural_no_nominal_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_wrong_return_kind_rank_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_bad_body_undeclared_method_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_explicit_type_arg_conflict_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_ambiguous_visible_implementations_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_function_subroutine_mismatch_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_missing_type_inference_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_private_binding_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_optional_ordinary_arg_mismatch_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_same_name_nonominal_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_call_argument_type_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_concrete_type_01.f90"
-semantics_only_cc = true
-
-[[test]]
-filename = "errors/traits_runtime_unimplemented_01.f90"
+filename = "errors/continue_compilation_traits_01.f90"
 semantics_only_cc = true
 
 [[test]]

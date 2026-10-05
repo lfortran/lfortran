@@ -93,6 +93,7 @@ private:
     std::vector<std::string> variable_dependencies;
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
+    std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*> trait_callables;
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
@@ -785,6 +786,14 @@ public:
                 check(proc_fn->n_args == member_fn->n_args + 1,
                     "asr.verify.trait_requirement.normalized_arg_count",
                     "A trait requirement procedure must have one receiver argument more than its trait member");
+                check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
+                    "asr.verify.trait_requirement.procedure_is_restriction",
+                    "A normalized trait requirement must be a restriction procedure");
+                auto mismatch = ASRUtils::trait_method_mismatch(*member_fn, *proc_fn, 0, 1);
+                check(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                    "asr.verify.trait_requirement.signature_matches",
+                    "A normalized trait requirement must preserve its member's signature: "
+                        + mismatch.message);
             }
         }
     }
@@ -834,9 +843,10 @@ public:
             bool found = false;
             for (size_t i = 0; i < proc->n_args; i++) {
                 if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i])) continue;
-                ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
+                ASR::symbol_t *arg = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(proc->m_args[i])->m_v);
-                if (arg && std::string(arg->m_name) == x.m_self_argument) {
+                if (arg && ASR::is_a<ASR::Variable_t>(*arg) &&
+                        std::string(ASRUtils::symbol_name(arg)) == x.m_self_argument) {
                     found = true;
                     break;
                 }
@@ -846,6 +856,21 @@ public:
                 std::string(x.m_self_argument) + "' is not present in procedure '" +
                 std::string(x.m_procedure ? ASRUtils::symbol_name(x.m_procedure) : "<null>") + "'");
         }
+    }
+
+    ASRUtils::TraitHierarchy verify_trait_hierarchy(const ASR::Trait_t &trait,
+            const Location &loc) {
+        auto hierarchy = ASRUtils::trait_hierarchy(trait, check_external);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Cycle,
+            "asr.verify.trait.inheritance_cycle",
+            "Trait inheritance must not contain a cycle", loc, diagnostics);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Parent,
+            "asr.verify.trait.parent_is_trait",
+            "Trait parents must be resolved Trait symbols", loc, diagnostics);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Member,
+            "asr.verify.trait.member_provenance",
+            "Trait members must be Functions owned by their defining trait", loc, diagnostics);
+        return hierarchy;
     }
 
     void visit_Trait(const Trait_t &x) {
@@ -895,16 +920,30 @@ public:
                 "' members must not have a body");
             this->visit_symbol(*a.second);
         }
+        require(x.n_parents == 0 || x.m_parents != nullptr,
+            "Trait parent references must be present");
         for (size_t i = 0; i < x.n_parents; i++) {
             require(x.m_parents[i] != nullptr,
                 "Trait parent cannot be nullptr");
-            ASR::symbol_t *parent = check_external
-                ? ASRUtils::symbol_get_past_external(x.m_parents[i])
-                : x.m_parents[i];
-            require_id(parent != nullptr && ASR::is_a<ASR::Trait_t>(*parent),
-                "asr.verify.trait.parent_is_trait",
-                "Trait parent must be a Trait, not " +
-                    std::string(x.m_parents[i] ? ASRUtils::symbol_type_name(*x.m_parents[i]) : "<null>"));
+            require_id(symtab_in_scope(x.m_symtab->parent, x.m_parents[i]),
+                "asr.verify.trait.parent_in_scope",
+                "Trait parents must be referenced through visible symbols");
+        }
+        auto hierarchy = verify_trait_hierarchy(x, x.base.base.loc);
+        if (check_external) {
+            std::map<std::string, ASR::Function_t*> methods;
+            for (ASR::symbol_t *member : hierarchy.members) {
+                auto *method = ASR::down_cast<ASR::Function_t>(member);
+                auto previous = methods.emplace(method->m_name, method);
+                if (!previous.second) {
+                    auto mismatch = ASRUtils::trait_method_mismatch(
+                        *previous.first->second, *method);
+                    require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                        "asr.verify.trait.inherited_signature_matches",
+                        "Same-name trait requirements must have equivalent signatures: " +
+                            mismatch.message);
+                }
+            }
         }
         current_symtab = parent_symtab;
     }
@@ -958,6 +997,11 @@ public:
             "asr.verify.trait_constraint.trait_is_trait",
             "TraitConstraint trait must be a Trait, not " +
                 std::string(x.m_trait ? ASRUtils::symbol_type_name(*x.m_trait) : "<null>"));
+        auto hierarchy = verify_trait_hierarchy(
+            *ASR::down_cast<ASR::Trait_t>(trait), x.base.base.loc);
+        std::set<ASR::symbol_t*> trait_members(
+            hierarchy.members.begin(), hierarchy.members.end());
+        std::set<ASR::symbol_t*> required_members;
         for (size_t i = 0; i < x.n_requirements; i++) {
             visit_trait_requirement(x.m_requirements[i]);
             ASR::symbol_t *member = check_external
@@ -967,30 +1011,46 @@ public:
                     ASR::is_a<ASR::Function_t>(*member),
                 "asr.verify.trait_constraint.member_is_function",
                 "TraitConstraint requirement member must be a Function");
-            std::set<const ASR::Trait_t*> seen_traits;
-            std::function<bool(ASR::Trait_t*, ASR::symbol_t*)> trait_has_member =
-                [&](ASR::Trait_t *trait_sym, ASR::symbol_t *required_member) -> bool {
-                    if (trait_sym == nullptr || !seen_traits.insert(trait_sym).second) return false;
-                    for (auto &item : trait_sym->m_symtab->get_scope()) {
-                        if (ASR::is_a<ASR::Function_t>(*item.second) &&
-                                ASRUtils::symbol_get_past_external(item.second) == required_member) {
-                            return true;
-                        }
-                    }
-                    for (size_t j = 0; j < trait_sym->n_parents; j++) {
-                        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(trait_sym->m_parents[j]);
-                        if (parent && ASR::is_a<ASR::Trait_t>(*parent) &&
-                                trait_has_member(ASR::down_cast<ASR::Trait_t>(parent), required_member)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                };
-            require_id(trait_has_member(ASR::down_cast<ASR::Trait_t>(trait),
-                    member),
+            require_id(trait_members.count(member) != 0,
                 "asr.verify.trait_constraint.member_belongs_to_trait",
                 "TraitConstraint requirement member must belong to the trait");
+            require_id(required_members.insert(member).second,
+                "asr.verify.trait_constraint.member_is_unique",
+                "TraitConstraint must not repeat an original member");
+            ASR::symbol_t *procedure = ASRUtils::symbol_get_past_external(
+                x.m_requirements[i].m_procedure);
+            require_id(ASRUtils::symbol_parent_symtab(procedure) == x.m_parent_symtab,
+                "asr.verify.trait_constraint.procedure_scope",
+                "A normalized requirement must belong to its generic parameter's scope");
+            auto *function = ASR::down_cast<ASR::Function_t>(procedure);
+            ASR::expr_t *receiver = function->m_args[0];
+            require_id(receiver && ASR::is_a<ASR::Var_t>(*receiver) &&
+                    ASR::down_cast<ASR::Var_t>(receiver)->m_v &&
+                    ASR::is_a<ASR::Variable_t>(
+                        *ASR::down_cast<ASR::Var_t>(receiver)->m_v),
+                "asr.verify.trait_constraint.receiver_is_variable",
+                "A normalized requirement must have a receiver variable");
+            auto *self = ASRUtils::EXPR2VAR(receiver);
+            require_id(self->m_type && ASR::is_a<ASR::TypeParameter_t>(*self->m_type) &&
+                    self->m_intent == ASR::intentType::In &&
+                    self->m_presence == ASR::presenceType::Required &&
+                    !self->m_value_attr && !self->m_type_declaration &&
+                    std::string(ASR::down_cast<ASR::TypeParameter_t>(
+                        self->m_type)->m_param) ==
+                        ASR::down_cast<ASR::TypeParameter_t>(
+                            ASRUtils::symbol_type(parameter))->m_param,
+                "asr.verify.trait_constraint.receiver_matches_parameter",
+                "A normalized receiver must be the constraint's read-only type parameter");
+            auto callable = trait_callables.emplace(
+                std::make_pair(parameter, std::string(ASRUtils::symbol_name(member))),
+                procedure);
+            require_id(callable.second || callable.first->second == procedure,
+                "asr.verify.trait_constraint.callable_is_coalesced",
+                "Same-name requirements of one parameter must share a normalized procedure");
         }
+        require_id(required_members.size() == trait_members.size(),
+            "asr.verify.trait_constraint.requirements_complete",
+            "TraitConstraint requirements must cover every original trait member");
     }
 
     void visit_TraitImplementation(const TraitImplementation_t &x) {
@@ -1041,26 +1101,12 @@ public:
             "TraitImplementation trait must be a Trait, not " +
                 std::string(x.m_trait ? ASRUtils::symbol_type_name(*x.m_trait) : "<null>"));
         visit_ttype(*x.m_implementing_type);
-        ASR::Trait_t *trait_sym = ASR::down_cast<ASR::Trait_t>(trait);
-        std::set<ASR::symbol_t*> trait_members;
-        std::set<const ASR::Trait_t*> seen_impl_traits;
-        std::function<void(ASR::Trait_t*)> collect_trait_members =
-            [&](ASR::Trait_t *t) {
-                if (t == nullptr || !seen_impl_traits.insert(t).second) return;
-                for (auto &item : t->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                        trait_members.insert(ASRUtils::symbol_get_past_external(item.second));
-                    }
-                }
-                for (size_t i = 0; i < t->n_parents; i++) {
-                    ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(t->m_parents[i]);
-                    if (parent && ASR::is_a<ASR::Trait_t>(*parent)) {
-                        collect_trait_members(ASR::down_cast<ASR::Trait_t>(parent));
-                    }
-                }
-            };
-        collect_trait_members(trait_sym);
+        auto hierarchy = verify_trait_hierarchy(
+            *ASR::down_cast<ASR::Trait_t>(trait), x.base.base.loc);
+        std::set<ASR::symbol_t*> trait_members(
+            hierarchy.members.begin(), hierarchy.members.end());
         std::set<ASR::symbol_t*> bound_members;
+        std::map<std::string, const ASR::trait_binding_t*> methods;
         for (size_t i = 0; i < x.n_bindings; i++) {
             visit_trait_binding(x.m_bindings[i]);
             ASR::symbol_t *member = check_external
@@ -1078,6 +1124,11 @@ public:
                 "asr.verify.trait_implementation.member_belongs_to_trait",
                 "TraitImplementation binding member '" + member_name +
                 "' does not belong to the trait");
+            auto previous = methods.emplace(member_name, &x.m_bindings[i]);
+            require_id(previous.second || ASRUtils::trait_bindings_equal(
+                    *previous.first->second, x.m_bindings[i]),
+                "asr.verify.trait_implementation.coalesced_binding_agrees",
+                "Equivalent inherited methods must have the same procedure and receiver binding");
         }
         require(bound_members.size() == trait_members.size(),
             "TraitImplementation bindings must cover each trait member exactly once");

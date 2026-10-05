@@ -3745,6 +3745,18 @@ RUN(NAME traits_module_01 LABELS llvm NO_STD_F23)
 RUN(NAME traits_separate_01 LABELS llvm NO_STD_F23
     EXTRAFILES traits_separate_01_contracts.f90 traits_separate_01_impl.f90)
 RUN(NAME traits_reexport_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_inheritance_02 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_03 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_04 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_05 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_inheritance_05_contracts.f90
+        traits_inheritance_05_types.f90 traits_inheritance_05_impl.f90)
+RUN(NAME traits_composition_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_composition_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_composition_02 LABELS llvm NO_STD_F23)
+RUN(NAME traits_composition_03 LABELS llvm NO_STD_F23)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)

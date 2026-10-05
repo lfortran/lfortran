@@ -751,7 +751,7 @@
                                     )
                                     2 largebox
                                     2 ivalue
-                                    [(2 __trait_member_ivalue_get_value1
+                                    [(2 __trait_member_ivalue_get_value
                                     2 large_value
                                     self
                                     .false.)]
@@ -779,16 +779,6 @@
                                 (ExternalSymbol
                                     2
                                     __trait_member_ivalue_get_value
-                                    3 get_value
-                                    traits_static_01_m
-                                    [ivalue]
-                                    get_value
-                                    Private
-                                ),
-                            __trait_member_ivalue_get_value1:
-                                (ExternalSymbol
-                                    2
-                                    __trait_member_ivalue_get_value1
                                     3 get_value
                                     traits_static_01_m
                                     [ivalue]

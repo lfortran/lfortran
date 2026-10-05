@@ -10486,6 +10486,46 @@ struct InterfaceMismatch {
     std::string message;
 };
 
+enum class TraitHierarchyError { None, Cycle, Parent, Member };
+
+struct TraitHierarchy {
+    TraitHierarchyError error = TraitHierarchyError::None;
+    std::vector<const ASR::Trait_t*> traits;
+    std::vector<ASR::symbol_t*> members;
+};
+
+// Walk parents in declaration order and retain each original member once.
+// Unresolved external parents are left for the full verifier when requested.
+TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait,
+    bool check_external = true);
+
+enum class TraitMethodDifference { None, Arguments, Contract };
+
+struct TraitMethodMismatch {
+    TraitMethodDifference difference = TraitMethodDifference::None;
+    std::string message;
+};
+
+// Exact trait contracts, rather than the directional compatibility used by
+// ordinary procedure calls. Offsets omit normalized leading receiver arguments.
+TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
+    const ASR::Function_t &right, size_t left_offset = 0,
+    size_t right_offset = 0);
+
+bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters = {});
+
+bool trait_bindings_equal(const ASR::trait_binding_t &left,
+    const ASR::trait_binding_t &right);
+
+const ASR::trait_binding_t *find_trait_binding(
+    const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);
+
+// A shared nominal obligation must carry the same procedure and receiver.
+ASR::symbol_t *conflicting_trait_binding(
+    const ASR::TraitImplementation_t &left,
+    const ASR::TraitImplementation_t &right);
+
 // Compares two procedures that must present the same interface. `skip` is the
 // position of the one dummy argument they may declare differently (the
 // passed-object dummy argument), or `impl->n_args` when there is none. `what`
