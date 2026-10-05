@@ -8,6 +8,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 #include <libasr/asr.h>
+#include <libasr/pass/intent_out_deallocate.h>
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
@@ -1067,7 +1068,11 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
-            check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false);
+            // An array temporary that an ASR pass made, such as the one that
+            // holds an array constructor, has function results as its
+            // elements: each of them is an entity of its own.
+            check_userDefinedFinalizer_then_finalize(llvm_var, v->m_type, struct_sym, false,
+                ASRUtils::is_compiler_generated_name(v->m_name));
 
             // For non-allocatable DescriptorArray of strings, the cached
             // finalize function only frees the character data but not the
@@ -1091,7 +1096,13 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct){
+        /**
+         * @param elements_are_entities The elements of the array `ptr` are
+         *        finalized one by one as scalar entities, rather than the
+         *        array as one entity.
+         */
+        void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct,
+                bool elements_are_entities = false){
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path.
@@ -1104,44 +1115,57 @@ class ASRToLLVMVisitor;
                     finalize(ptr, type, struct_sym, in_struct);
                     return;
                 }
-                for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
-                    std::string final_proc_name = struct_sym->m_member_functions[fi];
-                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
-                    if (final_sym) {
-                        final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                        if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
-                            llvm::Function* final_fn = llvm_symtab_fn_[fh];
-                            if (ASR::is_a<ASR::Array_t>(*v_type_past)) {
-                                // Variable is an array but the final subroutine
-                                // takes a scalar — call it element-by-element.
-                                ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(v_type_past);
-                                llvm::Type* elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
-                                llvm::Value* data_ptr = builder_->CreateBitCast(
-                                    ptr, elem_llvm_type->getPointerTo());
-                                int64_t array_size = ASRUtils::get_fixed_size_of_array(type);
-                                auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
-                                auto* iter = builder_->CreateAlloca(iter_type, nullptr, "final_iter");
-                                builder_->CreateStore(
-                                    llvm::ConstantInt::get(iter_type, -1, true), iter);
-                                auto cond_fn = [&]() {
-                                    auto* loaded = builder_->CreateLoad(iter_type, iter);
-                                    auto* next = builder_->CreateAdd(loaded,
-                                        llvm::ConstantInt::get(iter_type, 1));
-                                    builder_->CreateStore(next, iter);
-                                    return builder_->CreateICmpSLT(next,
-                                        llvm::ConstantInt::get(iter_type, array_size));
-                                };
-                                auto body_fn = [&]() {
-                                    auto* idx = builder_->CreateLoad(iter_type, iter);
-                                    auto* elem = llvm_utils_->create_ptr_gep2(
-                                        elem_llvm_type, data_ptr, idx);
-                                    builder_->CreateCall(final_fn, {elem});
-                                };
-                                llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
+                // F2018 7.5.6.2 step 1: the final subroutine whose dummy
+                // argument has the rank of the entity, or else an elemental
+                // one called for every element.  A nonelemental final
+                // subroutine of any other rank is not called.
+                int rank = ASRUtils::extract_n_dims_from_ttype(v_type_past);
+                ASR::Function_t* final_proc = select_final_procedure(struct_sym,
+                    elements_are_entities ? 0 : rank);
+                if (final_proc != nullptr) {
+                    uint32_t fh = get_hash((ASR::asr_t*)final_proc);
+                    if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                        llvm::Function* final_fn = llvm_symtab_fn_[fh];
+                        int dummy_rank = ASRUtils::extract_n_dims_from_ttype(
+                            ASRUtils::expr_type(final_proc->m_args[0]));
+                        if (rank == 0) {
+                            builder_->CreateCall(final_fn, {ptr});
+                        } else if (dummy_rank == rank) {
+                            call_array_final(final_fn, final_proc, ptr, v_type_past, struct_sym);
+                        } else {
+                            // A final subroutine with a scalar dummy argument:
+                            // call it element-by-element.
+                            ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(v_type_past);
+                            llvm::Type* elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+                            llvm::Type* arr_llvm_type = get_llvm_type(v_type_past, struct_sym);
+                            llvm::Value* data_ptr = nullptr;
+                            if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+                                data_ptr = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
+                                    llvm_utils_->create_gep2(arr_llvm_type, ptr, 0));
                             } else {
-                                builder_->CreateCall(final_fn, {ptr});
+                                data_ptr = builder_->CreateBitCast(
+                                    ptr, elem_llvm_type->getPointerTo());
                             }
+                            llvm::Value* array_size = llvm_utils_->get_array_size(
+                                ptr, arr_llvm_type, v_type_past, &asr_to_llvm_visitor_);
+                            auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
+                            auto* iter = builder_->CreateAlloca(iter_type, nullptr, "final_iter");
+                            builder_->CreateStore(
+                                llvm::ConstantInt::get(iter_type, -1, true), iter);
+                            auto cond_fn = [&]() {
+                                auto* loaded = builder_->CreateLoad(iter_type, iter);
+                                auto* next = builder_->CreateAdd(loaded,
+                                    llvm::ConstantInt::get(iter_type, 1));
+                                builder_->CreateStore(next, iter);
+                                return builder_->CreateICmpSLT(next, array_size);
+                            };
+                            auto body_fn = [&]() {
+                                auto* idx = builder_->CreateLoad(iter_type, iter);
+                                auto* elem = llvm_utils_->create_ptr_gep2(
+                                    elem_llvm_type, data_ptr, idx);
+                                builder_->CreateCall(final_fn, {elem});
+                            };
+                            llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
                         }
                     }
                 }
@@ -1149,7 +1173,16 @@ class ASRToLLVMVisitor;
 
             finalize(ptr, type, struct_sym, in_struct);
         }
-        
+
+        /**
+         * Calls the final subroutine `final_fn`, whose dummy argument has the
+         * rank of the array `ptr`, with the whole array.
+         *
+         * @param arr_type ASR array type of `ptr` (a fixed-size or descriptor array).
+         */
+        void call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
+                llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym);
+
         void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
@@ -2592,8 +2625,9 @@ class ASRToLLVMVisitor;
 
         /**
          * Call the final subroutine of `struct_sym` whose dummy argument is a
-         * scalar, if the type has one, on the scalar struct at `ptr`. This is
-         * step 1 of finalizing a scalar entity of that type (F2018 7.5.6.2).
+         * scalar (`select_final_procedure` for rank 0), if the type has one,
+         * on the scalar struct at `ptr`. This is step 1 of finalizing a scalar
+         * entity of that type (F2018 7.5.6.2).
          * Only the type's own final subroutines are considered: those of its
          * parent type apply to the parent component.
          *
@@ -2601,43 +2635,30 @@ class ASRToLLVMVisitor;
          * finalized. An array is finalized by a final subroutine of its rank
          * or else by an elemental one, so the subroutine is called on the
          * element only when it is elemental and the type has no final
-         * subroutine for an array.
+         * subroutine for an array (the rank of the array is not known here).
          */
         void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym,
                 const bool array_element = false) {
+            ASR::Function_t* const final_proc = select_final_procedure(struct_sym, 0);
+            if (final_proc == nullptr) return;
             if (array_element) {
+                if (!ASRUtils::is_elemental(&final_proc->base)) return;
                 for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
                     ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
                         struct_sym->m_member_functions[i]);
-                    LCOMPILERS_ASSERT(final_sym != nullptr);
-                    ASR::Function_t* final_fn = ASR::down_cast<ASR::Function_t>(
-                        ASRUtils::symbol_get_past_external(final_sym));
-                    if (final_fn->n_args == 1 && ASRUtils::is_array(
-                            ASRUtils::expr_type(final_fn->m_args[0]))) {
+                    if (final_sym == nullptr) continue;
+                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
+                    if (ASR::is_a<ASR::Function_t>(*final_sym) && ASRUtils::is_array(
+                            ASRUtils::expr_type(ASR::down_cast<ASR::Function_t>(final_sym)->m_args[0]))) {
                         return;
                     }
                 }
             }
-            for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
-                ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
-                    struct_sym->m_member_functions[i]);
-                LCOMPILERS_ASSERT(final_sym != nullptr);
-                final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                ASR::Function_t* final_fn = ASR::down_cast<ASR::Function_t>(final_sym);
-                if (final_fn->n_args != 1 || ASRUtils::is_array(
-                        ASRUtils::expr_type(final_fn->m_args[0]))) {
-                    continue;
-                }
-                if (array_element && !ASRUtils::is_elemental(final_sym)) {
-                    return;
-                }
-                uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
-                    llvm::Function* const fn = llvm_symtab_fn_[fh];
-                    builder_->CreateCall(fn, {builder_->CreateBitCast(ptr,
-                        fn->getFunctionType()->getParamType(0))});
-                }
-                return;
+            uint32_t fh = get_hash((ASR::asr_t*)final_proc);
+            if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
+                llvm::Function* const fn = llvm_symtab_fn_[fh];
+                builder_->CreateCall(fn, {builder_->CreateBitCast(ptr,
+                    fn->getFunctionType()->getParamType(0))});
             }
         }
 
