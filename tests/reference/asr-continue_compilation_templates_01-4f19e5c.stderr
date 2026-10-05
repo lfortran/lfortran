@@ -1425,6 +1425,34 @@ semantic error: the instantiation of template 'clash_t' defines 'clash_get', whi
 2603 |         instantiate clash_t {real}  ! {Error} the instantiation of template 'clash_t' defines 'clash_get', which is already declared in this scope
      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: name the entities to instantiate in an only-list and rename this one, e.g. `only: clash_get_instance => clash_get`
 
+semantic error: the instantiation of template 'gen_t' defines 'gen_twice', which is already declared in this scope
+    --> tests/errors/continue_compilation_templates_01.f90:2634:5
+     |
+2634 |     instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_twice', which is already declared in this scope
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'gen_twice' is already declared
+     |
+2622 |            function gen_twice(x) result(z)
+     |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+2626 |            end function
+     | ...~~~~~~~~~~~~~~~~~~~~ 'gen_twice' is declared here
+     |
+2634 |     instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_twice', which is already declared in this scope
+     |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: name the entities to instantiate in an only-list and rename this one, e.g. `only: gen_twice_instance => gen_twice`
+
+semantic error: the instantiation of template 'gen_t' defines 'gen_dbl', which is already declared in this scope
+    --> tests/errors/continue_compilation_templates_01.f90:2643:9
+     |
+2643 |         instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_dbl', which is already declared in this scope
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'gen_dbl' is already declared
+     |
+2642 |         integer :: gen_dbl
+     |                    ~~~~~~~ 'gen_dbl' is declared here
+     |
+2643 |         instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_dbl', which is already declared in this scope
+     |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: name the entities to instantiate in an only-list and rename this one, e.g. `only: gen_dbl_instance => gen_dbl`
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |

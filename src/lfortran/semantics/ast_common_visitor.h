@@ -25664,16 +25664,10 @@ public:
                                     std::set<std::string> &indirect_public_symbols) {
         // Get all public symbols from the module
         for (auto &item : m->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
-                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
-                if (st->m_access != ASR::accessType::Private) {
-                    for (auto &x: st->m_symtab->get_scope()) {
-                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*x.second)) {
-                            indirect_public_symbols.insert(x.first);
-                        }
-                    }
-                }
-            } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+            // A private procedure bound to a public type is not imported: the
+            // type-bound procedure refers to it directly, and its name stays
+            // free for a procedure of the using scope.
+            if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
                 if (gp->m_access != ASR::accessType::Private) {
                     for (size_t i = 0; i < gp->n_procs; i++ ) {
@@ -25890,6 +25884,9 @@ public:
                 }
             } else if( ASR::is_a<ASR::Struct_t>(*item.second) ) {
                 ASR::Struct_t *mv = ASR::down_cast<ASR::Struct_t>(item.second);
+                if ((!to_submodule) && mv->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 // `mv` is the Variable in a module. Now we construct
                 // an ExternalSymbol that points to it.
                 Str name;
