@@ -892,6 +892,30 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
 2097 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2113:22
+     |
+2113 |         integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^ 
+
+semantic error: Type parameter 't' is not specified in any requirements
+    --> tests/errors/continue_compilation_1.f90:2115:5
+     |
+2115 |     type(t) :: x
+     |     ^^^^^^^^^^^^ 
+
+semantic error: Explicit shaped array with nonconstant bounds
+    --> tests/errors/continue_compilation_1.f90:2124:22
+     |
+2124 |         integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
+     |                      ^^^ 
+
+semantic error: Type parameter 't' is not specified in any requirements
+    --> tests/errors/continue_compilation_1.f90:2126:5
+     |
+2126 |     type(t) :: x
+     |     ^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3058,3 +3082,15 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2102 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Variable 'x' not declared
+    --> tests/errors/continue_compilation_1.f90:2117:19
+     |
+2117 |     print *, size(x%b)
+     |                   ^^^ 
+
+semantic error: Variable 'x' not declared
+    --> tests/errors/continue_compilation_1.f90:2127:19
+     |
+2127 |     print *, size(x%c)
+     |                   ^^^ 
