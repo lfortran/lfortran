@@ -107,6 +107,9 @@ requirements follow from the caller's declared constraints. For example, an
 instantiation; a parent-only constraint cannot supply a child requirement.
 The shared template instantiator specializes the partially bound helper when
 the caller is instantiated.
+Forwarding between constrained generics can be mutually recursive: inferred and
+explicit type arguments preserve the recursive calls, including after module
+serialization.
 
 Exact contract equivalence includes ordinary dummy names, types, kinds, ranks,
 array shape categories and extents, character lengths, and procedure/dummy
@@ -158,6 +161,11 @@ arguments and result, so dependent character lengths and array bounds use
 `FunctionParam` indices that include the prepended receiver. Specialization
 resolves the witnesses into ordinary concrete procedure calls before backend
 lowering.
+Forwarded signatures and their canonical recursive edges are bound before any
+pending bodies are copied. Composing an instantiation uses the original generic
+definition and its type/witness substitutions, not a copy of an in-progress
+body. Body materialization distinguishes an active dependency from a completed
+source; a legitimate empty subroutine is still allowed.
 
 Conformance metadata belongs to the implementation's module. Adding a
 retroactive implementation does not mutate the original imported derived type.

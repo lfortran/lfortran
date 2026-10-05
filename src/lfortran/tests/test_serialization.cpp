@@ -861,6 +861,123 @@ end module
     }
 }
 
+TEST_CASE("Recursive trait forwarding preserves canonical backedges") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module recursive_traits_m
+implicit none
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+type :: Box
+    integer :: data
+end type
+implements IValue :: Box
+    procedure, pass :: value => box_value
+end implements
+contains
+function box_value(self) result(r)
+    class(Box), intent(in) :: self
+    integer :: r
+    r = self%data
+end function
+recursive function first{IValue :: T}(x, n) result(r)
+    type(T), intent(in) :: x
+    integer, intent(in) :: n
+    integer :: r
+    if (n == 0) then
+        r = x%value()
+    else
+        r = second(x, n-1) + 1
+    end if
+end function
+recursive function second{IValue :: U}(x, n) result(r)
+    type(U), intent(in) :: x
+    integer, intent(in) :: n
+    integer :: r
+    if (n == 0) then
+        r = x%value()
+    else
+        r = first{U}(x, n-1) + 1
+    end if
+end function
+end module
+program recursive_traits
+use recursive_traits_m
+implicit none
+type(Box) :: x
+integer :: a, b
+x = Box(11)
+a = first(x, 4)
+b = second(x, 4)
+end program
+)";
+    asr_ser(source);
+    asr_mod(source, "recursive_traits_m");
+
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+
+    auto recursive_callee = [](ASR::Function_t *function) {
+        // Both source functions have a base case and a recursive branch.
+        REQUIRE(function->n_body == 1);
+        auto *branch = ASR::down_cast<ASR::If_t>(function->m_body[0]);
+        REQUIRE(branch->n_body == 1);
+        REQUIRE(branch->n_orelse == 1);
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(branch->m_orelse[0]);
+        auto *addition = ASR::down_cast<ASR::IntegerBinOp_t>(assignment->m_value);
+        auto *call = ASR::down_cast<ASR::FunctionCall_t>(addition->m_left);
+        return ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(call->m_name));
+    };
+    auto check_cycles = [&](ASR::TranslationUnit_t *unit) {
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+        auto *program = ASR::down_cast<ASR::Program_t>(
+            unit->m_symtab->get_symbol("recursive_traits"));
+        REQUIRE(program->n_body == 3);
+        auto entry = [&](size_t i) {
+            auto *assignment = ASR::down_cast<ASR::Assignment_t>(program->m_body[i]);
+            auto *call = ASR::down_cast<ASR::FunctionCall_t>(assignment->m_value);
+            return ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(call->m_name));
+        };
+        auto *first = entry(1);
+        auto *second = entry(2);
+        CHECK(first != second);
+        CHECK(recursive_callee(first) == second);
+        CHECK(recursive_callee(second) == first);
+
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            unit->m_symtab->get_symbol("recursive_traits_m"));
+        for (const char *name : {"first", "second"}) {
+            auto *generic = ASR::down_cast<ASR::Template_t>(
+                module->m_symtab->get_symbol(name));
+            auto *original = ASR::down_cast<ASR::Function_t>(
+                generic->m_symtab->get_symbol(name));
+            auto *forwarded = recursive_callee(original);
+            CHECK(forwarded != original);
+            CHECK(recursive_callee(forwarded) == original);
+        }
+    };
+    check_cycles(result.result);
+    LCompilers::SymbolTable symtab(nullptr);
+    auto *copy = ASR::down_cast2<ASR::TranslationUnit_t>(
+        LCompilers::deserialize_asr(
+            al, LCompilers::serialize(*result.result), true, symtab, 0));
+    fix_external_symbols(*copy, symtab);
+    check_cycles(copy);
+}
+
 TEST_CASE("Trait forwarding checks nominal implications before instantiation") {
     const std::string declarations = R"(
 module forwarding_contracts

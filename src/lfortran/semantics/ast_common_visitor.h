@@ -22490,6 +22490,69 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, signature, al);
     }
 
+    ASR::symbol_t *find_trait_specialization(SymbolTable *target,
+            ASR::Template_t *generic,
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+            const std::vector<TraitEvidence> &evidence) {
+        if (target == generic->m_symtab) {
+            bool identity = true;
+            for (const auto &entry : types) {
+                if (ASRUtils::symbol_get_past_external(entry.second.second)
+                        != generic->m_symtab->get_symbol(entry.first)) {
+                    identity = false;
+                    break;
+                }
+            }
+            for (const auto &binding : evidence) {
+                if (binding.requirement != binding.procedure) identity = false;
+            }
+            if (identity) return generic->m_symtab->get_symbol(generic->m_name);
+        }
+        for (const auto &cached : trait_specializations) {
+            if (cached.scope != target || cached.generic != generic
+                    || cached.evidence != evidence
+                    || cached.types.size() != types.size()) continue;
+            bool same = true;
+            for (const auto &entry : types) {
+                auto prior = cached.types.find(entry.first);
+                if (prior == cached.types.end()
+                        || ASRUtils::symbol_get_past_external(prior->second.second)
+                            != ASRUtils::symbol_get_past_external(entry.second.second)
+                        || (ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::extract_type(entry.second.first))
+                            && !entry.second.second)
+                        || !ASRUtils::types_equal(prior->second.first, entry.second.first,
+                            nullptr, nullptr)) {
+                    same = false;
+                    break;
+                }
+            }
+            if (same) return cached.procedure;
+        }
+        return nullptr;
+    }
+
+    ASR::symbol_t *instantiate_trait_signature(SymbolTable *target,
+            ASR::Template_t *generic,
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+            const std::vector<TraitEvidence> &evidence,
+            std::map<std::string, ASR::symbol_t*> symbols) {
+        ASR::symbol_t *procedure = generic->m_symtab->get_symbol(generic->m_name);
+        std::string name = target->get_unique_name("__instantiated_" +
+            std::string(generic->m_name));
+        size_t n_diagnostics = diag.diagnostics.size();
+        auto previous = target->get_scope();
+        ASR::symbol_t *specialization = instantiate_symbol(
+            al, target, types, symbols, name, procedure, diag);
+        if (diag.diagnostics.size() > n_diagnostics) {
+            erase_failed_instantiation(target, previous);
+            throw SemanticAbort();
+        }
+        trait_specializations.push_back({target, generic, types, evidence, specialization});
+        queue_body_instantiation(types, symbols, {{specialization, procedure}});
+        return specialization;
+    }
+
     ASR::symbol_t *specialize_trait_procedure(ASR::Template_t *generic,
             ASR::Function_t *procedure, Vec<ASR::call_arg_t> &args,
             AST::decl_attribute_t **explicit_args, size_t n_explicit_args,
@@ -22693,7 +22756,6 @@ public:
                     + "' for generic type parameter '" + parameter + "'", loc);
             }
         }
-        if (forwarding && target == generic->m_symtab) return &procedure->base;
         std::vector<TraitEvidence> evidence;
         for (const auto &requirement : requirements) {
             if (requirement.forwarded) {
@@ -22707,26 +22769,9 @@ public:
                     binding.m_is_nopass});
             }
         }
-        for (const auto &cached : trait_specializations) {
-            if (cached.scope != target || cached.generic != generic
-                    || cached.evidence != evidence
-                    || cached.types.size() != types.size()) continue;
-            bool same = true;
-            for (const auto &entry : types) {
-                auto prior = cached.types.find(entry.first);
-                if (prior == cached.types.end()
-                        || ASRUtils::symbol_get_past_external(prior->second.second)
-                            != ASRUtils::symbol_get_past_external(entry.second.second)
-                        || (ASR::is_a<ASR::StructType_t>(
-                                *ASRUtils::extract_type(entry.second.first))
-                            && !entry.second.second)
-                        || !ASRUtils::types_equal(prior->second.first, entry.second.first,
-                            nullptr, nullptr)) {
-                    same = false;
-                    break;
-                }
-            }
-            if (same) return cached.procedure;
+        if (ASR::symbol_t *cached =
+                find_trait_specialization(target, generic, types, evidence)) {
+            return cached;
         }
         std::map<std::string, ASR::symbol_t*> symbols;
         for (const auto &requirement : requirements) {
@@ -22736,19 +22781,7 @@ public:
                     requirement.procedure, type.first, type.second,
                     *requirement.binding, target, loc);
         }
-        std::string name = target->get_unique_name("__instantiated_" +
-            std::string(generic->m_name));
-        size_t n_diagnostics = diag.diagnostics.size();
-        auto previous = target->get_scope();
-        ASR::symbol_t *specialization = instantiate_symbol(
-            al, target, types, symbols, name, &procedure->base, diag);
-        if (diag.diagnostics.size() > n_diagnostics) {
-            erase_failed_instantiation(target, previous);
-            throw SemanticAbort();
-        }
-        trait_specializations.push_back({target, generic, types, evidence, specialization});
-        queue_body_instantiation(types, symbols, {{specialization, &procedure->base}});
-        return specialization;
+        return instantiate_trait_signature(target, generic, types, evidence, symbols);
     }
 
     bool handle_trait_call(const std::string &name, AST::struct_member_t *members,
@@ -23217,11 +23250,12 @@ public:
         if (is_body_visitor) {
             pending_body_instantiations.push_back(p);
         } else {
+            bind_pending_body(p);
             instantiate_pending_body(p);
         }
     }
 
-    void instantiate_pending_body(PendingBodyInstantiation &p) {
+    void bind_pending_body(PendingBodyInstantiation &p) {
         // Forwarded procedures belong to the caller's template, not to its
         // local function scope. Bind all of them before copying bodies so a
         // same-named specialization in the destination cannot capture a call.
@@ -23233,7 +23267,14 @@ public:
             auto *generic = ASR::down_cast<ASR::Template_t>(owner);
             if (trait_constraints(generic).empty()) continue;
             SymbolTable *target = ASRUtils::symbol_parent_symtab(selection.first);
-            if (target == generic->m_symtab) continue;
+            std::map<ASR::symbol_t*, TraitEvidence> bound_evidence;
+            for (const auto &cached : trait_specializations) {
+                if (cached.procedure != selection.first) continue;
+                for (const auto &binding : cached.evidence) {
+                    bound_evidence.emplace(binding.requirement, binding);
+                }
+                break;
+            }
             std::vector<ASR::symbol_t*> procedures;
             for (const auto &entry : generic->m_symtab->get_scope()) {
                 if (entry.second != selection.second &&
@@ -23249,6 +23290,49 @@ public:
                     if (pair.second == procedure) selected = true;
                 }
                 if (selected) continue;
+                bool forwarded = false;
+                // Compose a pending forwarding edge with this instantiation.
+                // Copy the original definition, never an unfinished body.
+                for (size_t i = 0; i < trait_specializations.size(); i++) {
+                    if (trait_specializations[i].procedure != procedure) continue;
+                    const auto source = trait_specializations[i];
+                    LCOMPILERS_ASSERT(source.scope == generic->m_symtab);
+                    auto types = source.types;
+                    for (auto &entry : types) {
+                        auto *parameter =
+                            ASR::down_cast<ASR::TypeParameter_t>(entry.second.first);
+                        LCOMPILERS_ASSERT(ASRUtils::symbol_get_past_external(
+                            entry.second.second) ==
+                            generic->m_symtab->get_symbol(parameter->m_param));
+                        auto actual = p.type_subs.find(parameter->m_param);
+                        LCOMPILERS_ASSERT(actual != p.type_subs.end());
+                        entry.second = actual->second;
+                    }
+                    std::vector<TraitEvidence> evidence;
+                    std::map<std::string, ASR::symbol_t*> symbols;
+                    for (const auto &binding : source.evidence) {
+                        auto bound = bound_evidence.find(binding.procedure);
+                        LCOMPILERS_ASSERT(bound != bound_evidence.end());
+                        auto resolved = bound->second;
+                        resolved.requirement = binding.requirement;
+                        evidence.push_back(resolved);
+                        auto actual = p.symbol_subs.find(
+                            ASRUtils::symbol_name(binding.procedure));
+                        LCOMPILERS_ASSERT(actual != p.symbol_subs.end());
+                        symbols[ASRUtils::symbol_name(binding.requirement)] =
+                            actual->second;
+                    }
+                    ASR::symbol_t *specialization =
+                        find_trait_specialization(target, source.generic, types, evidence);
+                    if (!specialization) {
+                        specialization = instantiate_trait_signature(
+                            target, source.generic, types, evidence, symbols);
+                    }
+                    p.symbol_subs[ASRUtils::symbol_name(procedure)] = specialization;
+                    forwarded = true;
+                    break;
+                }
+                if (forwarded) continue;
                 std::string name = target->get_unique_name(
                     "__instantiated_" + std::string(ASRUtils::symbol_name(procedure)));
                 size_t n_diagnostics = diag.diagnostics.size();
@@ -23262,6 +23346,9 @@ public:
                 p.symbols.push_back({specialization, procedure});
             }
         }
+    }
+
+    void instantiate_pending_body(PendingBodyInstantiation &p) {
         std::set<ASR::symbol_t*> instantiated_bodies;
         for (auto &sym_pair : p.symbols) {
             instantiate_body(al, p.type_subs, p.symbol_subs, sym_pair.first,
@@ -23286,7 +23373,7 @@ public:
     // the Template wrapping a templated procedure `source`, which holds the
     // procedure's own instantiations), so an instantiation of `source`
     // copies its body.
-    static bool is_within(ASR::symbol_t *target, ASR::symbol_t *source) {
+    bool is_within(ASR::symbol_t *target, ASR::symbol_t *source) {
         if (target == source) return true;
         SymbolTable *source_symtab = template_symbol_symtab(source);
         SymbolTable *parent = ASRUtils::symbol_parent_symtab(source);
@@ -23294,7 +23381,11 @@ public:
                 && ASR::is_a<ASR::symbol_t>(*parent->asr_owner)
                 && ASR::is_a<ASR::Template_t>(
                     *ASR::down_cast<ASR::symbol_t>(parent->asr_owner))) {
-            source_symtab = parent;
+            // Trait forwarding signatures are already bound. Their siblings
+            // are separate selections, not bodies copied with this procedure.
+            auto *generic = ASR::down_cast<ASR::Template_t>(
+                ASR::down_cast<ASR::symbol_t>(parent->asr_owner));
+            if (trait_constraints(generic).empty()) source_symtab = parent;
         }
         if (source_symtab == nullptr) return false;
         for (SymbolTable *t = ASRUtils::symbol_parent_symtab(target);
@@ -23304,28 +23395,41 @@ public:
         return false;
     }
 
+    enum class BodyInstantiationState { Pending, Active, Complete };
+
     // An instantiation that copies a template containing another pending
     // instantiation is built after it, so it copies a complete body.
-    void instantiate_pending_bodies_from(size_t i, std::vector<bool> &started) {
-        if (started[i]) return;
-        started[i] = true;
+    void instantiate_pending_bodies_from(size_t i,
+            std::vector<BodyInstantiationState> &states) {
+        if (states[i] == BodyInstantiationState::Complete) return;
+        LCOMPILERS_ASSERT(states[i] == BodyInstantiationState::Pending);
+        states[i] = BodyInstantiationState::Active;
         for (size_t j = 0; j < pending_body_instantiations.size(); j++) {
-            if (started[j]) continue;
+            if (i == j || states[j] == BodyInstantiationState::Complete) continue;
             bool needed = false;
             for (auto &src : pending_body_instantiations[i].symbols) {
                 for (auto &dst : pending_body_instantiations[j].symbols) {
                     if (is_within(dst.first, src.second)) needed = true;
                 }
             }
-            if (needed) instantiate_pending_bodies_from(j, started);
+            if (needed) instantiate_pending_bodies_from(j, states);
         }
         instantiate_pending_body(pending_body_instantiations[i]);
+        states[i] = BodyInstantiationState::Complete;
     }
 
     void instantiate_pending_bodies() {
-        std::vector<bool> started(pending_body_instantiations.size(), false);
+        // Binding can discover more specializations. Finish every signature
+        // and recursive backedge before materializing any of their bodies.
         for (size_t i = 0; i < pending_body_instantiations.size(); i++) {
-            instantiate_pending_bodies_from(i, started);
+            auto p = pending_body_instantiations[i];
+            bind_pending_body(p);
+            pending_body_instantiations[i] = std::move(p);
+        }
+        std::vector<BodyInstantiationState> states(
+            pending_body_instantiations.size(), BodyInstantiationState::Pending);
+        for (size_t i = 0; i < pending_body_instantiations.size(); i++) {
+            instantiate_pending_bodies_from(i, states);
         }
         pending_body_instantiations.clear();
     }
