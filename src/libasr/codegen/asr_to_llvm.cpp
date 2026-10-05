@@ -11552,7 +11552,21 @@ public:
                 section_wrapper), wrapper_ptr);
             builder->CreateStore(wrapper_ptr, data_field);
         }
-        builder->CreateStore(target, target_desc);
+        // A pointer array owns its descriptor: a local one on the stack of
+        // its own scope, a module one in static storage and a component one
+        // on the heap, freed with the enclosing object. The section
+        // descriptor above is a temporary of this procedure, so copy it into
+        // the descriptor the pointer owns. Storing its address instead would
+        // leave the pointer referring to a dead stack slot after return, and
+        // the finalizer of a derived type would free that stack slot.
+        llvm::Value* owned_desc = llvm_utils->CreateLoad2(
+            target_type->getPointerTo(), target_desc);
+        llvm_utils->create_if_else(builder->CreateIsNull(owned_desc), [&]() {
+            builder->CreateStore(target, target_desc);
+        }, [&]() {
+            builder->CreateStore(llvm_utils->CreateLoad2(target_type, target),
+                owned_desc);
+        });
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
@@ -28668,6 +28682,60 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
         }
         return llvm_size;
     }
+}
+
+/// Defined here to evaluate the bounds of an array whose shape is not
+/// constant with `ASRToLLVMVisitor::visit_expr_wrapper()`.
+void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
+        llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
+    ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
+    ASR::ttype_t* const dummy_type = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(final_proc->m_args[0]));
+    llvm::Type* const param_type = final_fn->getFunctionType()->getParamType(0);
+    llvm::Type* const elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+    const bool dummy_is_descriptor = ASRUtils::extract_physical_type(dummy_type)
+        == ASR::array_physical_typeType::DescriptorArray;
+    llvm::Value* data = nullptr;
+    switch (arr_t->m_physical_type) {
+        case ASR::array_physical_typeType::DescriptorArray:
+            if (dummy_is_descriptor) {
+                builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr, param_type)});
+                return;
+            }
+            data = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
+                llvm_utils_->arr_api->get_pointer_to_data(get_llvm_type(arr_type, struct_sym), ptr));
+            break;
+        case ASR::array_physical_typeType::FixedSizeArray:
+        case ASR::array_physical_typeType::PointerArray:
+            data = builder_->CreateBitCast(ptr, elem_llvm_type->getPointerTo());
+            break;
+        default:
+            throw CodeGenError("finalization of an array of this physical type is not implemented yet");
+    }
+    if (!dummy_is_descriptor) {
+        builder_->CreateCall(final_fn, {builder_->CreateBitCast(data, param_type)});
+        return;
+    }
+    // Describe the array with a descriptor of the dummy's type.
+    llvm::Type* const desc_type = get_llvm_type(dummy_type, struct_sym);
+    llvm::Value* const desc = llvm_utils_->arr_api->create_descriptor_alloca(desc_type, "final_arg_desc");
+    builder_->CreateStore(llvm::Constant::getNullValue(desc_type), desc);
+    builder_->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()),
+            llvm_utils_->module->getDataLayout().getTypeAllocSize(elem_llvm_type)),
+        llvm_utils_->create_gep2(desc_type, desc, 1));
+    builder_->CreateStore(builder_->CreateBitCast(data,
+            llvm::cast<llvm::StructType>(desc_type)->getElementType(0)),
+        llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
+    std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
+    for (size_t r = 0; r < arr_t->n_dims; r++) {
+        asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_start, true);
+        llvm::Value* const start = asr_to_llvm_visitor_.tmp;
+        asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_length, true);
+        llvm_dims.push_back({start, asr_to_llvm_visitor_.tmp});
+    }
+    llvm_utils_->arr_api->fill_array_details(desc_type, desc, elem_llvm_type,
+        arr_t->n_dims, llvm_dims, llvm_utils_->module, false);
+    builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
 }
 
 llvm::Value* LLVMUtils::get_descriptor_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type){

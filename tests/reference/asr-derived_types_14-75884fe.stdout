@@ -273,6 +273,16 @@
                     (SymbolTable
                         2
                         {
+                            1_enum_type:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type
+                                    4 enum_type
+                                    derived_types_14_module
+                                    []
+                                    enum_type
+                                    Public
+                                ),
                             check:
                                 (Function
                                     (SymbolTable
@@ -360,16 +370,6 @@
                                     .true.
                                     .true.
                                     ()
-                                ),
-                            enum_type:
-                                (ExternalSymbol
-                                    2
-                                    enum_type
-                                    4 enum_type
-                                    derived_types_14_module
-                                    []
-                                    enum_type
-                                    Public
                                 ),
                             toml_get_value_type:
                                 (Function
