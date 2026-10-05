@@ -2097,3 +2097,24 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+subroutine derived_type_local_bound_01()
+    implicit none
+    integer :: k
+    type :: t
+        integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+    type(t) :: x
+    k = 1
+    print *, size(x%b)
+end subroutine
+
+subroutine derived_type_local_bound_02(n)
+    implicit none
+    integer, intent(in) :: n
+    type :: t
+        integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
+    end type
+    type(t) :: x
+    print *, size(x%c)
+end subroutine
