@@ -3058,3 +3058,57 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:2110:9
+     |
+2110 |         expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+     |         ^^^^^^^^ 
+     |
+2109 |     associate (expr_arr => assoc_arr + 1)
+     |                            ~~~~~~~~~~~~~ associated with an expression here
+
+semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:2111:9
+     |
+2111 |         expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+     |         ^^^^^^^^^^^ 
+     |
+2109 |     associate (expr_arr => assoc_arr + 1)
+     |                            ~~~~~~~~~~~~~ associated with an expression here
+
+semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
+    --> tests/errors/continue_compilation_1.f90:2112:20
+     |
+2112 |         read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
+     |                    ^^^^^^^^ 
+     |
+2109 |     associate (expr_arr => assoc_arr + 1)
+     |                            ~~~~~~~~~~~~~ associated with an expression here
+
+semantic error: Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
+    --> tests/errors/continue_compilation_1.f90:2115:12
+     |
+2115 |         do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
+     |            ^^^^^^^^^ 
+     |
+2114 |     associate (expr_size => size(assoc_arr))
+     |                             ~~~~~~~~~~~~~~~ associated with an expression here
+
+semantic error: Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:2119:9
+     |
+2119 |         expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
+     |         ^^^^^^^^^ 
+     |
+2118 |     associate (expr_call => associate_expr_value())
+     |                             ~~~~~~~~~~~~~~~~~~~~~~ associated with an expression here
+
+semantic error: Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:2124:13
+     |
+2124 |             expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
+     |             ^^^^^^^^^^ 
+     |
+2123 |         associate (expr_inner => expr_outer)
+     |                                  ~~~~~~~~~~ associated with an expression here

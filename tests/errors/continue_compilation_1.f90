@@ -2097,3 +2097,44 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+! An associate name whose selector is an expression, and not a variable, is
+! not definable, so it must not appear in a variable definition context
+! (F2018 11.1.3.3).
+subroutine associate_expr_not_definable()
+    implicit none
+    integer :: assoc_arr(3)
+    integer :: assoc_res
+    assoc_arr = [1, 2, 3]
+    associate (expr_arr => assoc_arr + 1)
+        expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+        expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+        read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
+    end associate
+    associate (expr_size => size(assoc_arr))
+        do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
+        end do
+    end associate
+    associate (expr_call => associate_expr_value())
+        expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
+    end associate
+    ! Associating with a name that is not definable does not make it definable.
+    associate (expr_outer => assoc_arr + 1)
+        associate (expr_inner => expr_outer)
+            expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
+        end associate
+    end associate
+    ! An associate name whose selector is a variable stays definable, and the
+    ! name is only restricted inside its own construct.
+    associate (var_arr => assoc_arr)
+        var_arr = 4
+        assoc_res = var_arr(2)
+    end associate
+    print *, assoc_res
+contains
+    function associate_expr_value() result(assoc_val)
+        implicit none
+        integer :: assoc_val(3)
+        assoc_val = [1, 2, 3]
+    end function
+end subroutine
