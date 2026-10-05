@@ -32,7 +32,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       LFORTRAN_TEST_SUITE: ${{ github.event_name == 'pull_request' && !inputs.full && (matrix.os != 'ubuntu-latest' || matrix.llvm-version != '11') && 'smoke' || 'full' }}
-      LFORTRAN_CI_RELEASE: ${{ github.event_name == 'pull_request' && !inputs.full && matrix.os == 'ubuntu-latest' && matrix.llvm-version != '11' && '1' || '0' }}
     strategy:
       fail-fast: false
       matrix:

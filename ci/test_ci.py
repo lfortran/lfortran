@@ -220,9 +220,9 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("group: quick-${{ inputs.full && 'full' || 'default' }}-", source)
         self.assertIn("if: github.event_name == 'pull_request' && !inputs.full", source)
         self.assertIn("FULL_COVERAGE: ${{ inputs.full }}", source)
-        for key in ("LFORTRAN_TEST_SUITE", "LFORTRAN_CI_RELEASE"):
-            expression = re.search(rf"^\s*{key}: (.+)$", source, re.MULTILINE).group(1)
-            self.assertIn("github.event_name == 'pull_request' && !inputs.full", expression)
+        expression = re.search(r"^\s*LFORTRAN_TEST_SUITE: (.+)$", source, re.MULTILINE).group(1)
+        self.assertIn("github.event_name == 'pull_request' && !inputs.full", expression)
+        self.assertNotIn("LFORTRAN_CI_RELEASE", source)
 
     def test_exhaustive_gate_reads_current_labels(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
@@ -362,21 +362,18 @@ class QuickScriptTests(unittest.TestCase):
                     self.assertNotIn("", args)
                     self.assertEqual("--smoke" in args, suite == "smoke")
 
-    def test_build_type_defaults_and_pr_release(self):
+    def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()
         block = source.split('if [[ $WIN == "1" ]]; then # Windows', 1)[1]
         block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\ncmake ", 1)[0]
         script = self.directory / "build-type.sh"
         script.write_text(block + '\necho "BUILD_TYPE=$BUILD_TYPE"\n')
-        for win, release, expected in (("0", None, "Debug"), ("0", "1", "Release"),
-                                       ("0", "0", "Debug"), ("1", "0", "Release")):
-            with self.subTest(win=win, release=release):
-                self.env["WIN"] = win
-                self.env.pop("LFORTRAN_CI_RELEASE", None)
-                if release is not None:
-                    self.env["LFORTRAN_CI_RELEASE"] = release
-                result = self.run_shell(script)
-                self.assertIn(f"BUILD_TYPE={expected}", result.stdout)
+        for win, expected in (("0", "Debug"), ("1", "Release")):
+            for suite in ("smoke", "full"):
+                with self.subTest(win=win, suite=suite):
+                    self.env.update(WIN=win, LFORTRAN_TEST_SUITE=suite)
+                    result = self.run_shell(script)
+                    self.assertIn(f"BUILD_TYPE={expected}", result.stdout)
 
 
 if __name__ == "__main__":
