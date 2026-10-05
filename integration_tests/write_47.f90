@@ -22,11 +22,14 @@ program write_47
     z = (1.5, -2.0)
     zz = (0.5d0, 0.25d0)
 
-    ! List-directed: LFortran writes no leading blank, GFortran does.
+    ! List-directed: LFortran writes no leading blank by default and a single
+    ! leading blank with --std=f23, GFortran writes a leading blank.
     write(s, *) x
-    if (s /= "-1.00000000         " .and. s /= "  -1.00000000       ") error stop 1
+    if (s /= "-1.00000000         " .and. s /= " -1.00000000        " &
+        .and. s /= "  -1.00000000       ") error stop 1
     write(s, *) i
-    if (s /= "42                  " .and. s /= "          42        ") error stop 2
+    if (s /= "42                  " .and. s /= " 42                 " &
+        .and. s /= "          42        ") error stop 2
     write(s, *) l
     if (s /= "T                   " .and. s /= " T                  ") error stop 3
 
