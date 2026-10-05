@@ -2793,6 +2793,8 @@ RUN(NAME derived_types_213 LABELS gfortran llvm)
 RUN(NAME derived_types_214 LABELS llvm) # gfortran segfaults on reshape () of a polymorphic array passed to a class dummy
 RUN(NAME derived_types_215 LABELS gfortran llvm)
 RUN(NAME derived_types_216 LABELS gfortran llvm)
+RUN(NAME derived_types_217 LABELS gfortran llvm)
+RUN(NAME derived_types_218 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
