@@ -1744,6 +1744,401 @@ public:
         return true;
     }
 
+    bool lower_defined_formatted_io(
+        const Location &loc,
+        ASR::expr_t *unit,
+        ASR::expr_t *fmt,
+        Vec<ASR::expr_t*> &values,
+        ASR::expr_t *a_end,
+        ASR::expr_t *a_iostat,
+        ASR::expr_t *a_iomsg,
+        int64_t m_label,
+        std::vector<ASR::asr_t*> &out_stmts) {
+        if (!fmt) return false;
+        if (unit && !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(unit))) return false;
+        ASR::expr_t *fmt_val = ASRUtils::expr_value(fmt);
+        if (!fmt_val || !ASR::is_a<ASR::StringConstant_t>(*fmt_val)) return false;
+
+        std::string fmt_str = ASR::down_cast<ASR::StringConstant_t>(fmt_val)->m_s;
+        size_t open_p = fmt_str.find('(');
+        size_t close_p = fmt_str.rfind(')');
+        if (open_p == std::string::npos || close_p == std::string::npos || open_p >= close_p) {
+            return false;
+        }
+
+        std::string content = fmt_str.substr(open_p + 1, close_p - open_p - 1);
+
+        bool contains_dt = false;
+        {
+            bool in_q = false;
+            char q_char = '\0';
+            for (size_t k = 0; k < content.size(); k++) {
+                if (in_q) {
+                    if (content[k] == q_char) in_q = false;
+                } else if (content[k] == '\'' || content[k] == '"') {
+                    in_q = true;
+                    q_char = content[k];
+                } else if ((content[k] == 'd' || content[k] == 'D') &&
+                           k + 1 < content.size() &&
+                           (content[k+1] == 't' || content[k+1] == 'T')) {
+                    contains_dt = true;
+                    break;
+                }
+            }
+        }
+        if (!contains_dt) return false;
+
+        struct Item {
+            enum Kind { DT, FMT, LITERAL, SLASH } kind;
+            std::string str;
+            bool consumes_val = false;
+        };
+        std::vector<Item> items;
+        std::function<bool(size_t&, std::vector<Item>&)> parse_items =
+            [&](size_t &i, std::vector<Item> &out) -> bool {
+            while (i < content.size()) {
+                while (i < content.size() && (std::isspace(static_cast<unsigned char>(content[i])) || content[i] == ',')) {
+                    i++;
+                }
+                if (i >= content.size() || content[i] == ')') {
+                    return true;
+                }
+
+                if (content[i] == '\'' || content[i] == '"') {
+                    char quote = content[i++];
+                    size_t start = i;
+                    while (i < content.size() && content[i] != quote) {
+                        i++;
+                    }
+                    std::string lit = content.substr(start, i - start);
+                    if (i < content.size()) i++;
+                    out.push_back({Item::LITERAL, lit, false});
+                    continue;
+                }
+
+                if (content[i] == '/') {
+                    i++;
+                    out.push_back({Item::SLASH, "/", false});
+                    continue;
+                }
+
+                if (content[i] == ':') {
+                    i++;
+                    continue;
+                }
+
+                if (content[i] == '(') {
+                    i++;
+                    std::vector<Item> sub;
+                    if (!parse_items(i, sub)) return false;
+                    if (i < content.size() && content[i] == ')') i++;
+                    out.insert(out.end(), sub.begin(), sub.end());
+                    continue;
+                }
+
+                if ((content[i] == 'x' || content[i] == 'X') &&
+                    (i + 1 >= content.size() || !std::isalpha(static_cast<unsigned char>(content[i+1])))) {
+                    i++;
+                    out.push_back({Item::LITERAL, " ", false});
+                    continue;
+                }
+
+                if ((content[i] == 'd' || content[i] == 'D') &&
+                    i + 1 < content.size() &&
+                    (content[i+1] == 't' || content[i+1] == 'T')) {
+                    i += 2;
+                    std::string suffix = "";
+                    if (i < content.size() && (content[i] == '\'' || content[i] == '"')) {
+                        char quote = content[i++];
+                        size_t start = i;
+                        while (i < content.size() && content[i] != quote) {
+                            i++;
+                        }
+                        suffix = content.substr(start, i - start);
+                        if (i < content.size()) i++;
+                    }
+                    if (i < content.size() && content[i] == '(') {
+                        int depth = 1;
+                        i++;
+                        while (i < content.size() && depth > 0) {
+                            if (content[i] == '(') depth++;
+                            else if (content[i] == ')') depth--;
+                            i++;
+                        }
+                    }
+                    out.push_back({Item::DT, "DT" + suffix, true});
+                    continue;
+                }
+
+                if (std::isdigit(static_cast<unsigned char>(content[i]))) {
+                    size_t num_start = i;
+                    while (i < content.size() && std::isdigit(static_cast<unsigned char>(content[i]))) {
+                        i++;
+                    }
+                    int count = std::stoi(content.substr(num_start, i - num_start));
+                    while (i < content.size() && std::isspace(static_cast<unsigned char>(content[i]))) {
+                        i++;
+                    }
+                    if (i >= content.size()) return false;
+
+                    if (content[i] == '(') {
+                        i++;
+                        std::vector<Item> group;
+                        if (!parse_items(i, group)) return false;
+                        if (i < content.size() && content[i] == ')') i++;
+                        for (int r = 0; r < count; r++) {
+                            out.insert(out.end(), group.begin(), group.end());
+                        }
+                        continue;
+                    }
+
+                    if (content[i] == 'x' || content[i] == 'X') {
+                        i++;
+                        out.push_back({Item::LITERAL, std::string(count, ' '), false});
+                        continue;
+                    }
+
+                    if (content[i] == 'p' || content[i] == 'P') {
+                        i++;
+                        continue;
+                    }
+
+                    if ((content[i] == 'd' || content[i] == 'D') &&
+                        i + 1 < content.size() &&
+                        (content[i+1] == 't' || content[i+1] == 'T')) {
+                        i += 2;
+                        std::string suffix = "";
+                        if (i < content.size() && (content[i] == '\'' || content[i] == '"')) {
+                            char quote = content[i++];
+                            size_t start = i;
+                            while (i < content.size() && content[i] != quote) {
+                                i++;
+                            }
+                            suffix = content.substr(start, i - start);
+                            if (i < content.size()) i++;
+                        }
+                        if (i < content.size() && content[i] == '(') {
+                            int depth = 1;
+                            i++;
+                            while (i < content.size() && depth > 0) {
+                                if (content[i] == '(') depth++;
+                                else if (content[i] == ')') depth--;
+                                i++;
+                            }
+                        }
+                        for (int r = 0; r < count; r++) {
+                            out.push_back({Item::DT, "DT" + suffix, true});
+                        }
+                        continue;
+                    }
+
+                    size_t desc_start = i;
+                    while (i < content.size() && content[i] != ',' && content[i] != ')' &&
+                           content[i] != '/' && content[i] != ':' &&
+                           !std::isspace(static_cast<unsigned char>(content[i]))) {
+                        i++;
+                    }
+                    std::string desc = content.substr(desc_start, i - desc_start);
+                    for (int r = 0; r < count; r++) {
+                        out.push_back({Item::FMT, "(" + desc + ")", true});
+                    }
+                    continue;
+                }
+
+                size_t desc_start = i;
+                while (i < content.size() && content[i] != ',' && content[i] != ')' &&
+                       content[i] != '/' && content[i] != ':' &&
+                       !std::isspace(static_cast<unsigned char>(content[i]))) {
+                    i++;
+                }
+                std::string desc = content.substr(desc_start, i - desc_start);
+                std::string udesc = desc;
+                for (char &c : udesc) c = std::toupper(static_cast<unsigned char>(c));
+                if (udesc == "SP" || udesc == "SS" || udesc == "S" ||
+                    udesc == "BN" || udesc == "BZ" ||
+                    udesc == "DC" || udesc == "DP" ||
+                    udesc == "RU" || udesc == "RD" || udesc == "RZ" ||
+                    udesc == "RN" || udesc == "RC" || udesc == "RP") {
+                    continue;
+                }
+                out.push_back({Item::FMT, "(" + desc + ")", true});
+            }
+            return true;
+        };
+
+        size_t parse_pos = 0;
+        if (!parse_items(parse_pos, items)) {
+            return false;
+        }
+
+        size_t vals_consumed = 0;
+        for (const auto &it : items) {
+            if (it.consumes_val) vals_consumed++;
+        }
+        if (vals_consumed != values.size()) {
+            return false;
+        }
+
+        if (!unit) {
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            unit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 6, int_type));
+        }
+
+        ASR::ttype_t *str_type_0 = ASRUtils::TYPE(ASR::make_String_t(
+            al, loc, 1,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, loc, s2c(al, ""), str_type_0));
+
+        bool is_advancing = (a_end == nullptr);
+        size_t val_idx = 0;
+
+        for (size_t it_idx = 0; it_idx < items.size(); it_idx++) {
+            const auto &item = items[it_idx];
+            bool is_last = (it_idx == items.size() - 1);
+            ASR::expr_t *end_expr = (is_last && is_advancing) ? nullptr : empty_string;
+            int64_t cur_label = (it_idx == 0) ? m_label : -1;
+
+            if (item.kind == Item::DT) {
+                ASR::expr_t *val = values[val_idx++];
+                Vec<ASR::expr_t*> overload_args;
+                overload_args.reserve(al, 6);
+                overload_args.push_back(al, val);
+                overload_args.push_back(al, unit);
+
+                ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, 1,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                        static_cast<int64_t>(item.str.size()),
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                ASR::expr_t *iotype_arg = ASRUtils::EXPR(
+                    ASR::make_StringConstant_t(al, loc, s2c(al, item.str), char_type));
+                overload_args.push_back(al, iotype_arg);
+
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+                dims.push_back(al, dim);
+                ASR::ttype_t *arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type,
+                    dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                Vec<ASR::expr_t*> arr_args;
+                arr_args.reserve(al, 0);
+                overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+                    al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
+
+                ASR::expr_t *cur_iostat = a_iostat;
+                if (!cur_iostat) {
+                    std::string tmp_iostat_name = current_scope->get_unique_name("lfortran_tmp_iostat");
+                    ASR::symbol_t *iostat_sym = declare_implicit_variable2(
+                        loc, tmp_iostat_name, ASRUtils::intent_local, int_type);
+                    cur_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
+                }
+                overload_args.push_back(al, cur_iostat);
+
+                ASR::expr_t *cur_iomsg = a_iomsg;
+                if (!cur_iomsg) {
+                    std::string tmp_iomsg_name = current_scope->get_unique_name("lfortran_tmp_iomsg");
+                    ASR::symbol_t *iomsg_sym = declare_implicit_variable2(
+                        loc, tmp_iomsg_name, ASRUtils::intent_local, str_type_0);
+                    cur_iomsg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, iomsg_sym));
+                }
+                overload_args.push_back(al, cur_iomsg);
+
+                std::string read_write = "~write_formatted";
+                ASR::asr_t *overloaded_asr = nullptr;
+                if (!ASRUtils::use_overloaded_file_read_write(read_write, overload_args,
+                        current_scope, overloaded_asr, al, loc,
+                        current_function_dependencies, current_module_dependencies,
+                        [&](const std::string &msg, const Location &err_loc) {
+                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic,
+                                {Label("", {err_loc})}));
+                            throw SemanticAbort();
+                        })) {
+                    return false;
+                }
+
+                ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
+                    cur_iomsg, cur_iostat, nullptr, nullptr, 0,
+                    nullptr, end_expr, ASRUtils::STMT(overloaded_asr), true,
+                    nullptr, nullptr, nullptr, nullptr, nullptr);
+                out_stmts.push_back(stmt);
+            } else if (item.kind == Item::FMT) {
+                ASR::expr_t *val = values[val_idx++];
+                ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, 1,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                        static_cast<int64_t>(item.str.size()),
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                ASR::expr_t *item_fmt = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, item.str), fmt_type));
+                Vec<ASR::expr_t*> fmt_args;
+                fmt_args.reserve(al, 1);
+                fmt_args.push_back(al, val);
+                ASR::ttype_t *alloc_str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::TYPE(ASR::make_String_t(
+                        al, loc, 1, nullptr,
+                        ASR::string_length_kindType::DeferredLength,
+                        ASR::string_physical_typeType::DescriptorString))));
+                ASR::expr_t *sf = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
+                    al, loc, item_fmt, fmt_args.p, 1,
+                    ASR::string_format_kindType::FormatFortran, alloc_str_type, nullptr));
+                Vec<ASR::expr_t*> sf_vec;
+                sf_vec.reserve(al, 1);
+                sf_vec.push_back(al, sf);
+                ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
+                    nullptr, nullptr, nullptr, sf_vec.p, 1,
+                    nullptr, end_expr, nullptr, true,
+                    nullptr, nullptr, nullptr, nullptr, nullptr);
+                out_stmts.push_back(stmt);
+            } else if (item.kind == Item::LITERAL) {
+                std::string lit_fmt = "(\"" + item.str + "\")";
+                ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, 1,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                        static_cast<int64_t>(lit_fmt.size()),
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                ASR::expr_t *item_fmt = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                    al, loc, s2c(al, lit_fmt), fmt_type));
+                ASR::ttype_t *alloc_str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::TYPE(ASR::make_String_t(
+                        al, loc, 1, nullptr,
+                        ASR::string_length_kindType::DeferredLength,
+                        ASR::string_physical_typeType::DescriptorString))));
+                ASR::expr_t *sf = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
+                    al, loc, item_fmt, nullptr, 0,
+                    ASR::string_format_kindType::FormatFortran, alloc_str_type, nullptr));
+                Vec<ASR::expr_t*> sf_vec;
+                sf_vec.reserve(al, 1);
+                sf_vec.push_back(al, sf);
+                ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
+                    nullptr, nullptr, nullptr, sf_vec.p, 1,
+                    nullptr, end_expr, nullptr, true,
+                    nullptr, nullptr, nullptr, nullptr, nullptr);
+                out_stmts.push_back(stmt);
+            } else if (item.kind == Item::SLASH) {
+                ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
+                    nullptr, nullptr, nullptr, nullptr, 0,
+                    nullptr, nullptr, nullptr, true,
+                    nullptr, nullptr, nullptr, nullptr, nullptr);
+                out_stmts.push_back(stmt);
+            }
+        }
+        return true;
+    }
+
     void create_read_write_ASR_node(const AST::decl_stmt_t& read_write_stmt, AST::decl_stmtType _type) {
         int64_t m_label = -1;
         int64_t end_label = -1;
@@ -2527,6 +2922,12 @@ public:
                         break;
                     }
                 }
+            }
+        }
+        if (_type == AST::decl_stmtType::Write && formatted && a_fmt != nullptr) {
+            if (lower_defined_formatted_io(loc, a_unit, a_fmt, a_values_vec, a_end, a_iostat, a_iomsg, m_label, tmp_vec)) {
+                tmp = nullptr;
+                return;
             }
         }
         read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
@@ -9377,6 +9778,16 @@ public:
                 }
             }
             body.push_back(al, expr);
+        }
+        if (fmt != nullptr) {
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, x.base.base.loc, 4));
+            ASR::expr_t *stdout_unit = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, x.base.base.loc, 6, int_type));
+            if (lower_defined_formatted_io(x.base.base.loc, stdout_unit, fmt, body, nullptr, nullptr, nullptr, x.m_label, tmp_vec)) {
+                tmp = nullptr;
+                return;
+            }
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);

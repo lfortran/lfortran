@@ -4153,6 +4153,7 @@ RUN(NAME write_47 LABELS gfortran llvm c)
 RUN(NAME write_48 LABELS gfortran llvm c)
 # llvm: an iostat= variable of a non-default kind fails module verification (#13947)
 RUN(NAME write_49 LABELS gfortran c)
+RUN(NAME write_50 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)

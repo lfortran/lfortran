@@ -23037,7 +23037,14 @@ public:
             }
 
             // Write parent record terminator
-            {
+            bool write_newline = true;
+            if (x.m_end) {
+                char *end_str = nullptr;
+                if (ASRUtils::extract_value(x.m_end, end_str) && strlen(end_str) == 0) {
+                    write_newline = false;
+                }
+            }
+            if (write_newline) {
                 std::string func_name = "_lfortran_file_write_newline";
                 llvm::Function *fn = module->getFunction(func_name);
                 if (!fn) {

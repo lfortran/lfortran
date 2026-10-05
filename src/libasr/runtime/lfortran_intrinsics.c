@@ -6261,9 +6261,12 @@ int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
+static void _lfortran_init_standard_units(void);
+
 // Locate the UNIT_FILE entry for a given unit number. Returns NULL if not
 // connected.
 static inline struct UNIT_FILE* find_unit(int32_t unit_num) {
+    _lfortran_init_standard_units();
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].unit == unit_num) return &unit_to_file[i];
     }
