@@ -401,16 +401,16 @@ semantic error: LEN parameters in parameterized derived types are not supported 
     |         ^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'out_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
-   --> tests/errors/continue_compilation_1.f90:614:14
+   --> tests/errors/continue_compilation_1.f90:614:29
     |
 614 |     integer, intent(out) :: out_intent
-    |              ^^^^^^^^^^^ 'out_intent' is not a dummy argument
+    |                             ^^^^^^^^^^ 'out_intent' is not a dummy argument
 
 semantic error: 'in_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
-   --> tests/errors/continue_compilation_1.f90:615:14
+   --> tests/errors/continue_compilation_1.f90:615:28
     |
 615 |     integer, intent(in) :: in_intent
-    |              ^^^^^^^^^^ 'in_intent' is not a dummy argument
+    |                            ^^^^^^^^^ 'in_intent' is not a dummy argument
 
 semantic error: Parameterized derived type 'container' parameter 'ik' has no default value and must be specified
    --> tests/errors/continue_compilation_1.f90:626:5
@@ -893,10 +893,10 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-    --> tests/errors/continue_compilation_1.f90:2104:5
+    --> tests/errors/continue_compilation_1.f90:2104:19
      |
 2104 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-     |     ^^^^^^^^^^ 'y' is not a dummy argument
+     |                   ^ 'y' is not a dummy argument
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33

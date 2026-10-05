@@ -8468,7 +8468,7 @@ public:
                                 Level::Error, Stage::Semantic, {
                                     Label("'" + sym
                                         + "' is not a dummy argument",
-                                        {x.m_attributes[i]->base.loc})
+                                        {s->loc})
                                 }));
                             throw SemanticAbort();
                         }
@@ -8727,7 +8727,7 @@ public:
                                     Level::Error, Stage::Semantic, {
                                         Label("'" + var_name
                                             + "' is not a dummy argument",
-                                            {a->base.loc})
+                                            {s.loc})
                                     }));
                                 throw SemanticAbort();
                             }
