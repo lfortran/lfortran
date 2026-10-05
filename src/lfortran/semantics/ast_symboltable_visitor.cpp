@@ -866,6 +866,39 @@ public:
         }
     }
 
+    void check_runtime_trait_dummies(const ASR::Function_t &function) {
+        bool invalid = false;
+        for (size_t i = 0; i < function.n_args; i++) {
+            auto *symbol = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
+            auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
+            if (!ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(dummy->m_type))) continue;
+            std::string message;
+            if (ASRUtils::is_pointer(dummy->m_type) ||
+                    ASRUtils::is_allocatable(dummy->m_type)) {
+                message = "pointer and allocatable runtime trait objects "
+                    "are not implemented yet";
+            } else if (!ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) {
+                message = "runtime trait objects currently require a scalar dummy";
+            } else if (dummy->m_storage != ASR::storage_typeType::Default ||
+                    dummy->m_symbolic_value || dummy->m_value) {
+                message = "runtime trait dummies cannot have saved or initialized storage";
+            } else if (dummy->m_intent != ASR::intentType::In ||
+                    dummy->m_presence != ASR::presenceType::Required ||
+                    dummy->m_value_attr) {
+                message = "runtime trait dummies currently require intent(in) "
+                    "without optional or value";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {dummy->base.base.loc}, "");
+                invalid = true;
+            }
+        }
+        if (invalid) throw SemanticAbort();
+    }
+
     // C1610 (J3/26-007r1, 16.3): within a template or templated procedure, or a
     // scoping unit nested therein, an entity that is not accessed by host or
     // use association shall not have the SAVE attribute. Each instantiation of
@@ -2293,6 +2326,7 @@ public:
             is_requirement, init_deterministic, init_side_effect_free);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
@@ -3165,6 +3199,7 @@ public:
         }
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations

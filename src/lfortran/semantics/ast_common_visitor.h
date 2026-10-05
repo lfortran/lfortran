@@ -9166,12 +9166,6 @@ public:
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
-                if (ASR::is_a<ASR::TraitObjectType_t>(*type) &&
-                        (s_intent != ASR::intentType::In ||
-                         s_presence == ASR::presenceType::Optional || value_attr)) {
-                    trait_call_error("runtime trait dummies currently require intent(in) "
-                        "without optional or value", x.base.base.loc);
-                }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
                     /*

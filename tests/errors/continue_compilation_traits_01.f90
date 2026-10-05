@@ -2078,3 +2078,54 @@ contains
         r = observe(object)
     end function
 end module
+
+module traits_runtime_completed_attributes_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    subroutine split_optional(object)
+        class(IValue), intent(in) :: object
+        optional :: object
+    end subroutine
+    function split_optional_function(object) result(r)
+        class(IValue), intent(in) :: object
+        optional :: object
+        integer :: r
+        r = 0
+    end function
+    subroutine split_out(object)
+        class(IValue) :: object
+        intent(out) :: object
+    end subroutine
+    subroutine split_inout(object)
+        class(IValue) :: object
+        intent(inout) :: object
+    end subroutine
+    subroutine split_save(object)
+        class(IValue), intent(in) :: object
+        save :: object
+    end subroutine
+    subroutine split_allocatable(object)
+        class(IValue), intent(in) :: object
+        allocatable :: object
+    end subroutine
+    subroutine split_array(object)
+        class(IValue), intent(in) :: object
+        dimension :: object(2)
+    end subroutine
+    subroutine missing_intent(object)
+        class(IValue) :: object
+    end subroutine
+    subroutine split_value(object)
+        class(IValue), intent(in) :: object
+        value :: object
+    end subroutine
+    subroutine split_pointer(object)
+        class(IValue), intent(in) :: object
+        pointer :: object
+    end subroutine
+end module

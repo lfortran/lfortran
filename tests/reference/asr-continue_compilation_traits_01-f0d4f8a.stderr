@@ -397,20 +397,10 @@ semantic error: Dummy argument 'object' not defined
      | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait dummies currently require intent(in) without optional or value
-    --> tests/errors/continue_compilation_traits_01.f90:1927:9
+    --> tests/errors/continue_compilation_traits_01.f90:1927:41
      |
 1927 |         class(IValue), intent(inout) :: object
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Dummy argument 'object' not defined
-    --> tests/errors/continue_compilation_traits_01.f90:1926:5 - 1928:18
-     |
-1926 |        subroutine mutable_view(object)
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-1928 |        end subroutine
-     | ...^^^^^^^^^^^^^^^^^^ 
+     |                                         ^^^^^^ 
 
 semantic error: runtime trait combinations are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:1999:9
@@ -449,6 +439,66 @@ semantic error: Dummy argument 'object' not defined
      |
 2047 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2091:38
+     |
+2091 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2095:38
+     |
+2095 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2101:26
+     |
+2101 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2105:26
+     |
+2105 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait dummies cannot have saved or initialized storage
+    --> tests/errors/continue_compilation_traits_01.f90:2109:38
+     |
+2109 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: pointer and allocatable runtime trait objects are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2113:38
+     |
+2113 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: Cannot set dimension for variable of non-numerical type
+    --> tests/errors/continue_compilation_traits_01.f90:2118:9
+     |
+2118 |         dimension :: object(2)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2121:26
+     |
+2121 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: Attribute declaration not supported
+    --> tests/errors/continue_compilation_traits_01.f90:2125:9
+     |
+2125 |         value :: object
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: standalone pointer attribute declaration requires `--implicit-interface`
+    --> tests/errors/continue_compilation_traits_01.f90:2129:9
+     |
+2129 |         pointer :: object
+     |         ^^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17

@@ -1428,6 +1428,56 @@ end module
     }
 }
 
+TEST_CASE("Runtime trait dummies validate completed procedure attributes") {
+    const std::string contracts = R"(
+module runtime_attributes_m
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+contains
+)";
+    for (bool function : {false, true}) {
+        for (bool recovery : {false, true}) {
+            for (const std::string &attribute : {
+                    "optional :: object", "allocatable :: object",
+                    "pointer :: object", "save :: object",
+                    "dimension :: object(2)", "value :: object",
+                    "intent(out) :: object"}) {
+                Allocator al(1024 * 1024);
+                LCompilers::diag::Diagnostics diagnostics;
+                LCompilers::CompilerOptions options;
+                options.continue_compilation = recovery;
+                options.implicit_interface = true;
+                std::string source = contracts +
+                    (function ? "function consume(object) result(r)\n"
+                              : "subroutine consume(object)\n") +
+                    "class(IValue), intent(in) :: object\n" + attribute + "\n" +
+                    (function ? "integer :: r\nr = 0\nend function\n"
+                              : "end subroutine\n") + "end module\n";
+                INFO(source);
+                auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+                REQUIRE(parsed.ok);
+                LCompilers::LocationManager lm;
+                auto result = LCompilers::LFortran::ast_to_asr(
+                    al, *parsed.result, diagnostics, nullptr, false, options, lm);
+                INFO(diagnostics.render2());
+                if (!recovery) CHECK_FALSE(result.ok);
+                CHECK(diagnostics.has_error());
+                if (result.ok) {
+                    LCompilers::diag::Diagnostics valid;
+                    CHECK(LCompilers::asr_verify(*result.result, true, valid));
+                    INFO(valid.render2());
+                }
+                for (const auto &diagnostic : diagnostics.diagnostics) {
+                    CHECK(diagnostic.code.find("asr.verify.") != 0);
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("Runtime trait slots retain diamonds and independent nominal origins") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

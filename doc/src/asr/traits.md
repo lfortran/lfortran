@@ -298,7 +298,10 @@ an impure message, and each binding must preserve required PURE and ELEMENTAL
 attributes. A binding may be PURE even when its contract does not require it.
 
 View dummies currently require explicit `intent(in)` and cannot be pointer,
-allocatable, optional, or VALUE. Trait arrays, projections, inline
+allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
+is equivalent to an inline INTENT attribute; eligibility is checked on the
+completed procedure interface. Saved or initialized view storage is not
+supported. Trait arrays, projections, inline
 `class(A+B)`, aggregate results, generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection is a
