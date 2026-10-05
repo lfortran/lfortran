@@ -5834,6 +5834,18 @@ asr = true
 filename = "../integration_tests/traits_inheritance_03.f90"
 ast_f90 = true
 
+# Traits are an LFortran extension. Keep these unused declarations stage-only
+# until aggregate-return lowering preserves the original trait signatures.
+[[test]]
+filename = "../integration_tests/traits_dependent_result_01.f90"
+asr = true
+options = "--pass=function_call_in_declaration --cumulative --verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_dependent_result_02.f90"
+asr = true
+options = "--pass=function_call_in_declaration --cumulative --verify-all-passes"
+
 [[test]]
 filename = "errors/continue_compilation_traits_01.f90"
 semantics_only_cc = true

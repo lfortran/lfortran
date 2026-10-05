@@ -187,6 +187,91 @@ TEST_CASE("Trait AST and ASR serialization") {
     asr_mod(trait_serialization_source);
 }
 
+TEST_CASE("Trait dependent signature normalization and serialization") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_dependent_signature_m
+implicit none
+abstract interface :: IResult
+    pure function text(n, zinput) result(r)
+        integer, intent(in) :: n
+        character(len=n), intent(in) :: zinput
+        character(len=n) :: r
+    end function
+    pure function values(offset, n, zinput) result(r)
+        integer, intent(in) :: offset, n, zinput(n)
+        integer :: r(n)
+    end function
+end interface
+contains
+function unused{IResult :: T}(x) result(r)
+    type(T), intent(in) :: x
+    integer :: r
+    r = 0
+end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    ASR::Module_t *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_dependent_signature_m"));
+    ASR::Template_t *generic = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("unused"));
+    ASR::TraitConstraint_t *constraint = nullptr;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+            constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        }
+    }
+    REQUIRE(constraint != nullptr);
+    REQUIRE(constraint->n_requirements == 2);
+    for (size_t i = 0; i < constraint->n_requirements; i++) {
+        auto &requirement = constraint->m_requirements[i];
+        auto *member = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(requirement.m_member));
+        auto *procedure = ASR::down_cast<ASR::Function_t>(requirement.m_procedure);
+        auto *original = ASRUtils::get_FunctionType(member);
+        auto *signature = ASRUtils::get_FunctionType(procedure);
+        CAPTURE(member->m_name);
+        REQUIRE(signature->n_arg_types == original->n_arg_types + 1);
+        CHECK(ASR::is_a<ASR::TypeParameter_t>(*signature->m_arg_types[0]));
+        CHECK(signature->m_abi == original->m_abi);
+        CHECK(signature->m_deftype == original->m_deftype);
+        CHECK(signature->m_pure);
+        CHECK(signature->m_is_restriction);
+        CHECK_FALSE(original->m_is_restriction);
+        const bool is_text = std::string(member->m_name) == "text";
+        const int parameter = is_text ? 1 : 2;
+        for (auto *type : {signature->m_return_var_type,
+                          signature->m_arg_types[signature->n_arg_types - 1]}) {
+            ASR::expr_t *length = is_text
+                ? ASR::down_cast<ASR::String_t>(type)->m_len
+                : ASR::down_cast<ASR::Array_t>(type)->m_dims[0].m_length;
+            REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*length));
+            CHECK(ASR::down_cast<ASR::FunctionParam_t>(length)->m_param_number
+                == parameter);
+        }
+        ASR::expr_t *original_length = is_text
+            ? ASR::down_cast<ASR::String_t>(original->m_return_var_type)->m_len
+            : ASR::down_cast<ASR::Array_t>(original->m_return_var_type)->m_dims[0].m_length;
+        REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*original_length));
+        CHECK(ASR::down_cast<ASR::FunctionParam_t>(original_length)->m_param_number
+            == parameter - 1);
+    }
+}
+
 TEST_CASE("Trait conformance verification preserves nominal identity") {
     namespace ASR = LCompilers::ASR;
     Allocator al(1024 * 1024);

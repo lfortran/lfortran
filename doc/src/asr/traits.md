@@ -123,6 +123,12 @@ Traits are enabled by default and produce a portability warning. GFortran does
 not accept this extension; separate standard-Fortran oracle tests cover the
 equivalent concrete computations.
 
+Character- and array-valued trait methods still encounter a separate
+aggregate-return lowering limitation in the default compilation pipeline.
+The dependent-signature declaration fixtures have ASR reference coverage through
+`function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
+oracle checks the concrete computations through the default compilation pipeline.
+
 The broader proposal is not yet implemented. In particular, trait objects
 (`class(Trait)`), mutable receivers, associated types, intrinsic type sets,
 generic derived types, trait initializers, and generic-method runtime dispatch
@@ -145,8 +151,11 @@ Three ASR symbol kinds preserve the semantic distinction from templates:
 Constrained generic procedures use the existing `Template` carrier and shared
 type/symbol substitution and body-instantiation machinery. A normalized
 requirement has a receiver argument in its internal signature; source trait
-signatures do not. Specialization resolves the witnesses into ordinary concrete
-procedure calls before backend lowering.
+signatures do not. Its complete function type is rebuilt from the normalized
+arguments and result, so dependent character lengths and array bounds use
+`FunctionParam` indices that include the prepended receiver. Specialization
+resolves the witnesses into ordinary concrete procedure calls before backend
+lowering.
 
 Conformance metadata belongs to the implementation's module. Adding a
 retroactive implementation does not mutate the original imported derived type.
