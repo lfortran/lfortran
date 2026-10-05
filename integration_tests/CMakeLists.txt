@@ -5931,6 +5931,7 @@ RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
     RUN(NAME real80_cast_01 LABELS gfortran llvm)
     RUN(NAME real80_compare_01 LABELS gfortran llvm)
+    RUN(NAME real80_unary_minus_01 LABELS gfortran llvm)
 endif()
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME equivalence_40 LABELS gfortran llvm)

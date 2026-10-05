@@ -5,13 +5,9 @@ real(10) :: x, y, z, big, a(3), h, n, tiny, small, huge4
 character(len=90) :: s
 
 x = 1.0_10/3.0_10
-y = 2.0_10/3.0_10*1.0e10_10
-y = -y
-! A negative real(10) literal crashes the compiler (#13896), so negative
-! values are made by negating a variable
+y = -2.0_10/3.0_10*1.0e10_10
 h = 2.5_10
-n = 0.5_10
-n = -n
+n = -0.5_10
 z = 0.0_10
 big = 1.0e3000_10
 a = [x, 1.5_10, 2.0_10/3.0_10]

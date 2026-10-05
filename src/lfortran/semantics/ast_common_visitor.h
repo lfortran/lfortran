@@ -1363,7 +1363,14 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             return;
         } else if (ASRUtils::is_real(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
+                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))
+                        && ASRUtils::extract_kind_from_ttype_t(result_type) == 10) {
+                    // kind=10 m_r is a pointer to the long double bytes
+                    long double op_value = ASRUtils::real_constant_get_r10(
+                        ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(operand)));
+                    value = ASRUtils::make_RealConstant_r10(al, x.base.base.loc,
+                        -op_value, result_type);
+                } else if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
                     double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                             ASRUtils::expr_value(operand))->m_r;
                     value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
