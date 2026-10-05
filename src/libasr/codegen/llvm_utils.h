@@ -2771,8 +2771,11 @@ class ASRToLLVMVisitor;
             builder_->SetInsertPoint(entry);
 
             llvm::Value* const i8_ptr_arg = &fn->args().begin()[0];
-            llvm::Type*  const llvm_type = get_llvm_type(ASRUtils::type_get_past_allocatable_pointer(type), struct_sym);
-            LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy(), "Expected a not pointer type")
+            ASR::ttype_t* const type_past = ASRUtils::type_get_past_allocatable_pointer(type);
+            llvm::Type*  const llvm_type = get_llvm_type(type_past, struct_sym);
+            LCOMPILERS_ASSERT_MSG(!llvm_type->isPointerTy()
+                || ASR::is_a<ASR::CPtr_t>(*type_past)
+                || ASR::is_a<ASR::FunctionType_t>(*type_past), "Expected a not pointer type")
             llvm::Value* const correctly_typed_ptr = builder_->CreateBitCast(i8_ptr_arg, llvm_type->getPointerTo());
             check_userDefinedFinalizer_then_finalize(correctly_typed_ptr, type, struct_sym, false);
 
