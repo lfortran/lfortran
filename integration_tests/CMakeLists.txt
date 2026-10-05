@@ -5925,6 +5925,12 @@ RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod.f90)
+# real(10) constants are built from the compiler's C long double, which is the
+# x87 80-bit type the generated code uses only on x86-64 Linux:
+# https://github.com/lfortran/lfortran/issues/13935
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    RUN(NAME real80_compare_01 LABELS gfortran llvm)
+endif()
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME equivalence_40 LABELS gfortran llvm)
 RUN(NAME equivalence_41 LABELS gfortran llvm)

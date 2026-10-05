@@ -4293,6 +4293,9 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
             } else {
                 result = perform_compare(lf_f128_cmp(lv, rv), 0, op);
             }
+        } else if (ASRUtils::extract_kind_from_ttype_t(lc->m_type) == 10) {
+            result = perform_compare(ASRUtils::real_constant_get_r10(lc),
+                ASRUtils::real_constant_get_r10(rc), op);
         } else {
             result = perform_compare(lc->m_r, rc->m_r, op);
         }
