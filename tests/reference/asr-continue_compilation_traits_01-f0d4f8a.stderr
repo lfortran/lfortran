@@ -314,6 +314,32 @@ semantic error: incompatible declarations of trait method 'count': argument 'a' 
 1381 |     function query{ISize + IShape :: T}(object) result(r)
      |                    ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1403:5 - 1404:18
+     |
+1403 |        abstract interface, extends(IFirst + ISecond) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1404 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'zinput' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1423:21
+     |
+1423 |     function unused{IFirst + ISecond :: T}(x) result(r)
+     |                     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'a' does not match trait method 'count': expected integer(4)[:], got integer(4)[:]
+    --> tests/errors/continue_compilation_traits_01.f90:1442:5 - 1444:19
+     |
+1442 |        implements IFirst :: Box
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1444 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

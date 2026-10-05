@@ -11,6 +11,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/utils.h>
 
 using LCompilers::TRY;
@@ -859,6 +860,217 @@ end module
         CHECK(ASRUtils::trait_types_equal(a_fixed->m_args[0], b_fixed->m_args[0]));
         CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
     }
+}
+
+static std::string trait_designator_source(const std::string &left,
+        const std::string &right, const std::string &declarations = "",
+        bool normalize = true) {
+    return "module trait_designators_m\nimplicit none\n" + declarations +
+        "abstract interface :: ILeft\n" + left + "end interface\n"
+        "abstract interface :: IRight\n" + right + "end interface\n"
+        "abstract interface, extends(ILeft + IRight) :: IChild\nend interface\n" +
+        (normalize ?
+        "contains\nfunction unused{ILeft + IRight :: T}(x) result(r)\n"
+        "type(T), intent(in) :: x\ninteger :: r\nr = 0\nend function\n" : "") +
+        "end module\n";
+}
+
+TEST_CASE("Trait array-element bounds preserve positional correspondence") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string method = R"(
+function count(n, other, k, zinput) result(r)
+    integer, intent(in) :: n(2, 2), other(2, 2), k(2)
+    integer, intent(in) :: zinput(n(k(1), 2), other(1, 1))
+    integer :: r
+end function
+)";
+    const std::string source = trait_designator_source(method, method);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_designators_m"));
+    auto member = [&](const std::string &name) {
+        auto *trait = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol(name));
+        return ASR::down_cast<ASR::Function_t>(trait->m_symtab->get_symbol("count"));
+    };
+    auto *a = member("ileft");
+    auto *b = member("iright");
+    auto *generic = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("unused"));
+    ASR::Function_t *normalized = nullptr;
+    size_t requirements = 0;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        REQUIRE(constraint->n_requirements == 1);
+        auto *procedure = ASR::down_cast<ASR::Function_t>(
+            constraint->m_requirements[0].m_procedure);
+        if (normalized) CHECK(normalized == procedure);
+        normalized = procedure;
+        requirements++;
+    }
+    REQUIRE(requirements == 2);
+    REQUIRE(normalized != nullptr);
+    CHECK(ASRUtils::trait_method_mismatch(*a, *normalized, 0, 1).difference ==
+        ASRUtils::TraitMethodDifference::None);
+    CHECK(ASRUtils::trait_method_mismatch(*normalized, *b, 1, 0).difference ==
+        ASRUtils::TraitMethodDifference::None);
+
+    auto item = [](ASR::ttype_t *type, size_t dimension) {
+        return ASR::down_cast<ASR::ArrayItem_t>(
+            ASR::down_cast<ASR::Array_t>(type)->m_dims[dimension].m_length);
+    };
+    for (auto entry : {std::make_pair(a, size_t(0)),
+            std::make_pair(b, size_t(0)), std::make_pair(normalized, size_t(1))}) {
+        auto *procedure = entry.first;
+        size_t offset = entry.second;
+        auto *signature = ASRUtils::get_FunctionType(procedure);
+        REQUIRE(signature->n_arg_types == 4 + offset);
+        auto *type = signature->m_arg_types[3 + offset];
+        auto *first = item(type, 0);
+        auto *index = ASR::down_cast<ASR::ArrayItem_t>(first->m_args[0].m_right);
+        for (auto parameter : {
+                std::make_pair(first->m_v, offset),
+                std::make_pair(index->m_v, offset + 2),
+                std::make_pair(item(type, 1)->m_v, offset + 1)}) {
+            auto *expr = parameter.first;
+            size_t position = parameter.second;
+            REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*expr));
+            CHECK(ASR::down_cast<ASR::FunctionParam_t>(expr)->m_param_number ==
+                position);
+        }
+    }
+    auto verify_rejection = [&](const std::string &code) {
+        LCompilers::PassUtils::UpdateDependenciesVisitor dependencies(al);
+        dependencies.visit_TranslationUnit(*result.result);
+        auto check = [&](ASR::TranslationUnit_t *unit) {
+            LCompilers::diag::Diagnostics invalid;
+            CHECK_FALSE(LCompilers::asr_verify(*unit, true, invalid));
+            REQUIRE(!invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code == code);
+        };
+        check(result.result);
+        LCompilers::SymbolTable symtab(nullptr);
+        auto *copy = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(
+                al, LCompilers::serialize(*result.result), true, symtab, 0));
+        fix_external_symbols(*copy, symtab);
+        check(copy);
+    };
+    auto integer = [&](ASR::expr_t *old, int value) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, old->base.loc, value, ASRUtils::expr_type(old)));
+    };
+
+    SUBCASE("faithful contracts and normalized copies serialize and verify") {
+        ast_ser(source);
+        asr_ser(source);
+        asr_mod(source);
+    }
+    SUBCASE("inherited contracts compare every subscript in either order") {
+        for (auto *type : {ASRUtils::expr_type(b->m_args[3]),
+                ASRUtils::get_FunctionType(b)->m_arg_types[3]}) {
+            auto &subscript = item(type, 0)->m_args[1].m_right;
+            subscript = integer(subscript, 1);
+        }
+        CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::Contract);
+        CHECK(ASRUtils::trait_method_mismatch(*b, *a).difference ==
+            ASRUtils::TraitMethodDifference::Contract);
+        verify_rejection("asr.verify.trait.inherited_signature_matches");
+    }
+    SUBCASE("normalization preserves nested subscripts") {
+        for (auto *type : {ASRUtils::expr_type(normalized->m_args[4]),
+                ASRUtils::get_FunctionType(normalized)->m_arg_types[4]}) {
+            auto *index = ASR::down_cast<ASR::ArrayItem_t>(
+                item(type, 0)->m_args[0].m_right);
+            auto &subscript = index->m_args[0].m_right;
+            subscript = integer(subscript, 2);
+        }
+        verify_rejection("asr.verify.trait_requirement.signature_matches");
+    }
+    SUBCASE("equal-shaped ordinary dummies are not interchangeable") {
+        item(ASRUtils::expr_type(b->m_args[3]), 0)->m_v = b->m_args[1];
+        auto *base = item(ASRUtils::get_FunctionType(b)->m_arg_types[3], 0)->m_v;
+        ASR::down_cast<ASR::FunctionParam_t>(base)->m_param_number = 1;
+        verify_rejection("asr.verify.trait.inherited_signature_matches");
+    }
+    SUBCASE("unsupported expressions are not equal even when shared") {
+        auto *unknown = ASRUtils::EXPR(ASR::make_ArrayRank_t(
+            al, a->base.base.loc, a->m_args[0],
+            ASRUtils::expr_type(a->m_return_var), nullptr));
+        for (auto *procedure : {a, b}) {
+            ASR::down_cast<ASR::Array_t>(
+                ASRUtils::expr_type(procedure->m_args[3]))->m_dims[0].m_length = unknown;
+        }
+        CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::Contract);
+    }
+}
+
+TEST_CASE("Trait specification designators compare bases and selectors") {
+    std::string arguments, declarations, bound, different, types;
+    SUBCASE("components retain original member identity") {
+        types = "type Bounds\ninteger :: extent(2), other(2)\nend type\n";
+        arguments = "n";
+        declarations = "import :: Bounds\ntype(Bounds), intent(in) :: n\n";
+        bound = "n%extent(1)";
+        different = "n%other(1)";
+    }
+    SUBCASE("substrings retain both limits") {
+        arguments = "text, first, last";
+        declarations = "character(*), intent(in) :: text\n"
+            "integer, intent(in) :: first, last\n";
+        bound = "len(text(first:last))";
+        different = "len(text(last:first))";
+    }
+    SUBCASE("character items retain their subscript") {
+        arguments = "text, first, last";
+        declarations = "character(*), intent(in) :: text\n"
+            "integer, intent(in) :: first, last\n";
+        bound = "iachar(text(first:first))";
+        different = "iachar(text(last:last))";
+    }
+    SUBCASE("array sections retain their stride") {
+        arguments = "n, last";
+        types = "interface\npure integer function extent(n) result(r)\n"
+            "integer, intent(in) :: n(:)\nend function\nend interface\n";
+        declarations = "import :: extent\ninteger, intent(in) :: n(:), last\n";
+        bound = "extent(n(1:last:2))";
+        different = "extent(n(1:last:1))";
+    }
+    auto method = [&](const std::string &length) {
+        return "function count(" + arguments + ", a) result(r)\n" +
+            declarations + "integer, intent(in) :: a(" + length + ")\n"
+            "integer :: r\nend function\n";
+    };
+    const std::string source = trait_designator_source(
+        method(bound), method(bound), types, false);
+    asr_ser(source);
+    asr_mod(source);
+
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, trait_designator_source(
+        method(bound), method(different), types, false), diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    CHECK_FALSE(result.ok);
+    REQUIRE(diagnostics.has_error());
+    CHECK(diagnostics.diagnostics.back().message.find("different array shapes") !=
+        std::string::npos);
 }
 
 TEST_CASE("Recursive trait forwarding preserves canonical backedges") {

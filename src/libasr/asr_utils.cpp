@@ -5608,7 +5608,10 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
 static bool trait_length_equal(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
 {
-    if (!left || !right || left == right) return left == right;
+    if (!left || !right) return left == right;
+    // Storage conversions do not change which elements a designator selects.
+    left = get_past_array_physical_cast(left);
+    right = get_past_array_physical_cast(right);
     int64_t a_value, b_value;
     if (extract_value(expr_value(left), a_value) &&
             extract_value(expr_value(right), b_value)) return a_value == b_value;
@@ -5619,6 +5622,48 @@ static bool trait_length_equal(ASR::expr_t *left, ASR::expr_t *right,
         auto parameter = parameters.find(a);
         return a && b &&
             (a == b || (parameter != parameters.end() && parameter->second == b));
+    }
+    auto array_reference_equal = [&](const auto &a, const auto &b) {
+        if (a.n_args != b.n_args || !trait_length_equal(a.m_v, b.m_v, parameters)) {
+            return false;
+        }
+        for (size_t i = 0; i < a.n_args; i++) {
+            if (!trait_length_equal(a.m_args[i].m_left, b.m_args[i].m_left, parameters) ||
+                    !trait_length_equal(a.m_args[i].m_right, b.m_args[i].m_right, parameters) ||
+                    !trait_length_equal(a.m_args[i].m_step, b.m_args[i].m_step, parameters)) {
+                return false;
+            }
+        }
+        return true;
+    };
+    if (ASR::is_a<ASR::ArrayItem_t>(*left)) {
+        return array_reference_equal(*ASR::down_cast<ASR::ArrayItem_t>(left),
+            *ASR::down_cast<ASR::ArrayItem_t>(right));
+    }
+    if (ASR::is_a<ASR::ArraySection_t>(*left)) {
+        return array_reference_equal(*ASR::down_cast<ASR::ArraySection_t>(left),
+            *ASR::down_cast<ASR::ArraySection_t>(right));
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::StructInstanceMember_t>(left);
+        auto *b = ASR::down_cast<ASR::StructInstanceMember_t>(right);
+        return a->m_m && b->m_m &&
+            symbol_get_past_external(a->m_m) == symbol_get_past_external(b->m_m) &&
+            trait_length_equal(a->m_v, b->m_v, parameters);
+    }
+    if (ASR::is_a<ASR::StringItem_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::StringItem_t>(left);
+        auto *b = ASR::down_cast<ASR::StringItem_t>(right);
+        return trait_length_equal(a->m_arg, b->m_arg, parameters) &&
+            trait_length_equal(a->m_idx, b->m_idx, parameters);
+    }
+    if (ASR::is_a<ASR::StringSection_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::StringSection_t>(left);
+        auto *b = ASR::down_cast<ASR::StringSection_t>(right);
+        return trait_length_equal(a->m_arg, b->m_arg, parameters) &&
+            trait_length_equal(a->m_start, b->m_start, parameters) &&
+            trait_length_equal(a->m_end, b->m_end, parameters) &&
+            trait_length_equal(a->m_step, b->m_step, parameters);
     }
     if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
         auto *a = ASR::down_cast<ASR::IntegerBinOp_t>(left);

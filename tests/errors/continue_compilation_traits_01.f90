@@ -1384,3 +1384,69 @@ contains
         r = 0
     end function
 end module
+
+! M2A-E29: both subscripts are valid, but independent inherited bounds differ.
+module traits_arrayitem_contract_inheritance_m
+    implicit none
+    abstract interface :: IFirst
+        function count(n, a) result(r)
+            integer, intent(in) :: n(2), a(n(1))
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISecond
+        function count(n, a) result(r)
+            integer, intent(in) :: n(2), a(n(2))
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(IFirst + ISecond) :: IChild
+    end interface
+end module
+
+! M2A-E30: direct composition must also distinguish array subscripts.
+module traits_arrayitem_contract_composition_m
+    implicit none
+    abstract interface :: IFirst
+        function count(n, zinput) result(r)
+            integer, intent(in) :: n(2), zinput(n(1))
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISecond
+        function count(n, zinput) result(r)
+            integer, intent(in) :: n(2), zinput(n(2))
+            integer :: r
+        end function
+    end interface
+contains
+    function unused{IFirst + ISecond :: T}(x) result(r)
+        type(T), intent(in) :: x
+        integer :: r
+        r = 0
+    end function
+end module
+
+! M2A-E31: positional implementation renaming cannot change the bound's index.
+module traits_arrayitem_contract_binding_m
+    implicit none
+    abstract interface :: IFirst
+        function count(n, a) result(r)
+            integer, intent(in) :: n(2), a(n(1))
+            integer :: r
+        end function
+    end interface
+    type :: Box
+        integer :: data
+    end type
+    implements IFirst :: Box
+        procedure, pass(self) :: count => box_count
+    end implements
+contains
+    function box_count(extents, self, values) result(r)
+        integer, intent(in) :: extents(2), values(extents(2))
+        class(Box), intent(in) :: self
+        integer :: r
+        r = self%data + sum(values)
+    end function
+end module
