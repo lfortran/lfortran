@@ -3020,7 +3020,7 @@ filename = "../integration_tests/doloop_21.f90"
 ast_f90 = true
 
 [[test]]
-filename = "doloop_shared_label_goto.f90"
+filename = "../integration_tests/doloop_24.f90"
 ast_f90 = true
 
 [[test]]
@@ -3680,6 +3680,10 @@ ast = true
 filename = "fixed_form/ptr_assign1.f"
 ast = true
 options = "--implicit-typing --implicit-interface --implicit-argument-casting"
+
+[[test]]
+filename = "fixed_form/tab_continue1.f"
+ast = true
 
 [[test]]
 filename = "fixed_form/call1.f"
