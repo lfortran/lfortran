@@ -3224,6 +3224,10 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
+                        if (struct_sym != nullptr && !ASRUtils::is_class_type(element_type)) {
+                            llvm_symtab_finalizer.call_array_final_before_deallocate(tmp,
+                                ASRUtils::type_get_past_allocatable_pointer(cur_type), struct_sym);
+                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {

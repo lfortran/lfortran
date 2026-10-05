@@ -892,6 +892,42 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
 2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Initialization of `cihs_h` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2107:9
+     |
+2107 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: component `cihs_a` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2111:29
+     |
+2111 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+     |                             ^^^^^^ `cihs_a` is a component of the derived type being defined
+
+semantic error: component `cihs_c` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2115:29
+     |
+2115 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+     |                             ^^^^^^^^^ `cihs_c` is a component of the derived type being defined
+
+semantic error: component `cihs_n` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2119:27
+     |
+2119 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+     |                           ^^^^^^ `cihs_n` is a component of the derived type being defined
+
+semantic error: component `cihs_k` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2123:14
+     |
+2123 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+     |              ^^^^^^ `cihs_k` is a component of the derived type being defined
+
+semantic error: component `cihs_l` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2127:23
+     |
+2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+     |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
