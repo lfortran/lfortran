@@ -283,6 +283,9 @@ Each witness owns its typed adapter procedures in a separate symbol table.
 Static-only backends can ignore this runtime evidence without losing existing
 static trait lowering; a source-level runtime view still requires a supported
 backend.
+Fortran inspection preserves experimental trait declarations and implementations.
+Executable Fortran output leaves this compile-only metadata as comments and
+continues to reject actual runtime views with an explicit backend diagnostic.
 
 Supported methods are ordinary scalar integer-result functions and
 subroutines with scalar integer, real, complex, logical, character, or

@@ -5837,6 +5837,10 @@ asr = true
 c = true
 
 [[test]]
+filename = "../integration_tests/traits_static_declaration_01.f90"
+fortran = true
+
+[[test]]
 filename = "../integration_tests/traits_inheritance_03.f90"
 ast_f90 = true
 

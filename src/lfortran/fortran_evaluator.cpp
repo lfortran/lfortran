@@ -1044,7 +1044,7 @@ Result<std::string> FortranEvaluator::get_fortran(const std::string &code,
         if (!had_error_before_passes && diagnostics.has_error()) {
             return Error();
         }
-        return asr_to_fortran(*asr.result, diagnostics, false, 4);
+        return asr_to_fortran(*asr.result, diagnostics, false, 4, for_compilation);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

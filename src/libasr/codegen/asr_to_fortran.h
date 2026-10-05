@@ -8,7 +8,8 @@ namespace LCompilers {
 
     // Converts ASR to Fortran source code
     Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,
-            diag::Diagnostics &diagnostics, bool color, int indent);
+            diag::Diagnostics &diagnostics, bool color, int indent,
+            bool for_compilation=false);
 
 } // namespace LCompilers
 

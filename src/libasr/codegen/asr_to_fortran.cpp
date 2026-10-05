@@ -40,6 +40,7 @@ public:
     // is then recursively constructed using `src`.
     std::string src;
     bool use_colors;
+    bool for_compilation;
     int indent_level;
     std::string indent;
     int indent_spaces;
@@ -60,8 +61,8 @@ public:
     bool in_struct_member_declaration = false;
 
 public:
-    ASRToFortranVisitor(bool _use_colors, int _indent)
-        : use_colors{_use_colors}, indent_level{0},
+    ASRToFortranVisitor(bool _use_colors, int _indent, bool _for_compilation)
+        : use_colors{_use_colors}, for_compilation{_for_compilation}, indent_level{0},
             indent_spaces{_indent}
         { }
 
@@ -924,7 +925,7 @@ public:
     }
 
     void visit_Trait(const ASR::Trait_t &x) {
-        if (x.m_kind == ASR::trait_kindType::UniversalTrait &&
+        if (!for_compilation && x.m_kind == ASR::trait_kindType::UniversalTrait &&
                 ASRUtils::trait_runtime_contract(const_cast<ASR::symbol_t*>(&x.base))) {
             std::string r = indent + "abstract interface";
             if (x.n_parents) {
@@ -1021,7 +1022,8 @@ public:
     }
 
     void visit_TraitImplementation(const ASR::TraitImplementation_t &x) {
-        if (ASRUtils::trait_runtime_witness(const_cast<ASR::TraitImplementation_t&>(x))) {
+        if (!for_compilation &&
+                ASRUtils::trait_runtime_witness(const_cast<ASR::TraitImplementation_t&>(x))) {
             std::string r = indent + "implements " + ASRUtils::symbol_name(x.m_trait) +
                 " :: " + ASRUtils::symbol_name(x.m_type_declaration) + "\n";
             inc_indent();
@@ -3593,8 +3595,8 @@ public:
 };
 
 Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics, bool color, int indent) {
-    ASRToFortranVisitor v(color, indent);
+        diag::Diagnostics &diagnostics, bool color, int indent, bool for_compilation) {
+    ASRToFortranVisitor v(color, indent, for_compilation);
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

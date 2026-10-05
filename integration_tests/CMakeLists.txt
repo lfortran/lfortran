@@ -3739,6 +3739,8 @@ RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
 RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_static_bindc_01_m.f90)
 RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)
+RUN(NAME traits_static_declaration_01 LABELS llvm c fortran NO_STD_F23)
+RUN(NAME traits_static_declaration_01_oracle LABELS gfortran llvm c fortran)
 RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
