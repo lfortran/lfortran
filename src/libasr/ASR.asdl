@@ -253,7 +253,7 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter | Threadprivate
+storage_type = Default | Save | Parameter | ThreadPrivate
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface | ImplicitInterface

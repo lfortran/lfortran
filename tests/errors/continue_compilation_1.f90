@@ -2097,3 +2097,62 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+! OpenMP threadprivate review regressions (#14008).
+
+module tp_error_missing
+integer :: x
+!$omp threadprivate
+end module
+
+module tp_error_empty
+integer :: x
+!$omp threadprivate()
+end module
+
+module tp_error_unclosed
+integer :: x
+!$omp threadprivate(x
+end module
+
+module tp_error_trailing
+integer :: x
+!$omp threadprivate(x) extra
+end module
+
+module tp_error_blank
+integer :: x
+!$omp threadprivate(x,)
+end module
+
+module tp_error_common
+integer :: x
+!$omp threadprivate(/x/)
+end module
+
+module tp_error_undeclared
+integer :: x
+!$omp threadprivate(y)
+end module
+
+module tp_error_type
+type :: t
+integer :: x
+end type
+!$omp threadprivate(t)
+end module
+
+module tp_error_parameter
+integer, parameter :: x=1
+!$omp threadprivate(x)
+end module
+
+subroutine tp_error_nonmodule
+integer :: x
+!$omp threadprivate(x)
+end subroutine
+
+module tp_error_unsupported
+integer :: x
+!$omp parallel
+end module
