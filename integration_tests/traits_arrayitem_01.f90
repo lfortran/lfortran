@@ -2,26 +2,25 @@
 module traits_arrayitem_01_m
     implicit none
 
-    ! zinput avoids the separate template-copy ordering limitation.
     abstract interface :: ILeft
-        function count(n, zinput) result(r)
-            integer, intent(in) :: n(1), zinput(n(1))
+        function count(n, a) result(r)
+            integer, intent(in) :: n(1), a(n(1))
             integer :: r
         end function
-        function matrix(n, k, zinput) result(r)
+        function matrix(n, k, a) result(r)
             integer, intent(in) :: n(2, 2), k(2)
-            integer, intent(in) :: zinput(n(k(1), 2), k(2))
+            integer, intent(in) :: a(n(k(1), 2), k(2))
             integer :: r
         end function
     end interface
     abstract interface :: IRight
-        function count(n, zinput) result(r)
-            integer, intent(in) :: n(1), zinput(n(1))
+        function count(n, a) result(r)
+            integer, intent(in) :: n(1), a(n(1))
             integer :: r
         end function
-        function matrix(n, k, zinput) result(r)
+        function matrix(n, k, a) result(r)
             integer, intent(in) :: n(2, 2), k(2)
-            integer, intent(in) :: zinput(n(k(1), 2), k(2))
+            integer, intent(in) :: a(n(k(1), 2), k(2))
             integer :: r
         end function
     end interface

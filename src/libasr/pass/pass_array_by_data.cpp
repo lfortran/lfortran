@@ -160,12 +160,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     symbol_duplicator.duplicate_symbol(item.second, new_symtab);
                 }
             }
-            for( auto& item: x->m_symtab->get_scope() ) {
-                if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
-                    symbol_duplicator.duplicate_symbol(item.second, new_symtab);
-                }
-            }
-            symbol_duplicator.fixup_local_type_declarations(new_symtab, x->m_symtab);
+            symbol_duplicator.duplicate_SymbolTable(x->m_symtab, new_symtab);
             // The duplicated body's BlockCall statements still reference
             // Block symbols in the original symtab. Remap them to the
             // corresponding duplicated Blocks in new_symtab.

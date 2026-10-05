@@ -875,13 +875,192 @@ static std::string trait_designator_source(const std::string &left,
         "end module\n";
 }
 
+TEST_CASE("Trait declaration copying is independent of dummy spelling") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    for (const std::string &name : {"a", "binput", "zinput"}) {
+        for (bool scalar : {false, true}) {
+            CAPTURE(name);
+            CAPTURE(scalar);
+            const std::string bound = scalar ? "n" : "n(1)";
+            const std::string source =
+                "module review_arrayitem_normalized_m\nimplicit none\n"
+                "abstract interface :: IA\nfunction count(n, " + name + ") result(r)\n"
+                "integer, intent(in) :: " + bound + "\n"
+                "integer, intent(in) :: " + name + "(" + bound + ")\n"
+                "integer :: r\nend function\nend interface\ncontains\n"
+                "function unused{IA :: T}(x) result(r)\n"
+                "type(T), intent(in) :: x\ninteger :: r\nr = 0\n"
+                "end function\nend module\nprogram review_arrayitem_normalized\n"
+                "use review_arrayitem_normalized_m\nimplicit none\nend program\n";
+            ast_ser(source);
+            asr_ser(source);
+            asr_mod(source, "review_arrayitem_normalized_m");
+
+            Allocator al(1024 * 1024);
+            LCompilers::diag::Diagnostics diagnostics;
+            LCompilers::CompilerOptions options;
+            auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+            REQUIRE(parsed.ok);
+            LCompilers::LocationManager lm;
+            auto result = LCompilers::LFortran::ast_to_asr(
+                al, *parsed.result, diagnostics, nullptr, false, options, lm);
+            REQUIRE(result.ok);
+            auto *module = ASR::down_cast<ASR::Module_t>(
+                result.result->m_symtab->get_symbol("review_arrayitem_normalized_m"));
+            auto *trait = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol("ia"));
+            auto *original = ASR::down_cast<ASR::Function_t>(
+                trait->m_symtab->get_symbol("count"));
+            auto *generic = ASR::down_cast<ASR::Template_t>(
+                module->m_symtab->get_symbol("unused"));
+            ASR::Function_t *normalized = nullptr;
+            for (const auto &entry : generic->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                REQUIRE(constraint->n_requirements == 1);
+                normalized = ASR::down_cast<ASR::Function_t>(
+                    constraint->m_requirements[0].m_procedure);
+            }
+            REQUIRE(normalized != nullptr);
+            for (auto entry : {std::make_pair(original, size_t(0)),
+                    std::make_pair(normalized, size_t(1))}) {
+                auto *procedure = entry.first;
+                size_t offset = entry.second;
+                auto get_bound = [&](ASR::ttype_t *type) {
+                    auto *length = ASR::down_cast<ASR::Array_t>(type)->m_dims[0].m_length;
+                    return scalar ? length : ASR::down_cast<ASR::ArrayItem_t>(length)->m_v;
+                };
+                auto *declaration = get_bound(ASRUtils::expr_type(procedure->m_args[1 + offset]));
+                CHECK(ASR::down_cast<ASR::Var_t>(declaration)->m_v ==
+                    ASR::down_cast<ASR::Var_t>(procedure->m_args[offset])->m_v);
+                auto *parameter = get_bound(
+                    ASRUtils::get_FunctionType(procedure)->m_arg_types[1 + offset]);
+                REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*parameter));
+                CHECK(ASR::down_cast<ASR::FunctionParam_t>(parameter)->m_param_number == offset);
+            }
+            CHECK(ASRUtils::EXPR2VAR(original->m_args[0]) !=
+                ASRUtils::EXPR2VAR(normalized->m_args[1]));
+        }
+    }
+}
+
+TEST_CASE("Symbol copying remaps complete declarations without capturing host symbols") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module copy_declarations_m
+implicit none
+integer :: host_n
+type :: Bounds
+    integer :: n
+end type
+contains
+function original(n, a, btext, box) result(r)
+    integer, intent(in) :: n(1), a(n(1))
+    character(len=n(1)), intent(in) :: btext
+    type(Bounds), intent(in) :: box
+    integer :: r(n(1)), member(box%n), host_bound(host_n)
+    integer, parameter :: zseed = 3, aseed = zseed + 1
+    r = a
+    block
+        integer :: early(n(1))
+        early = a
+    end block
+end function
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("copy_declarations_m"));
+    auto *original = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("original"));
+    auto *original_a = ASRUtils::EXPR2VAR(original->m_args[1]);
+    original_a->m_codims = al.allocate<ASR::codimension_t>(1);
+    original_a->n_codims = 1;
+    original_a->m_codims[0].loc = original_a->base.base.loc;
+    original_a->m_codims[0].m_start =
+        ASR::down_cast<ASR::Array_t>(original_a->m_type)->m_dims[0].m_length;
+    original_a->m_codims[0].m_end = nullptr;
+    original_a->m_codims[0].m_end_star = ASR::codimension_typeType::CodimensionStar;
+    ASRUtils::SymbolDuplicator duplicator(al);
+    auto *copy = ASR::down_cast<ASR::Function_t>(
+        duplicator.duplicate_Function(original, module->m_symtab));
+    copy->m_name = LCompilers::s2c(al, "copied");
+    module->m_symtab->add_symbol("copied", &copy->base);
+    auto variable = [](LCompilers::SymbolTable *scope, const std::string &name) {
+        return ASR::down_cast<ASR::Variable_t>(scope->get_symbol(name));
+    };
+    auto length = [&](LCompilers::SymbolTable *scope, const std::string &name) {
+        return ASR::down_cast<ASR::Array_t>(variable(scope, name)->m_type)->m_dims[0].m_length;
+    };
+    for (auto *procedure : {original, copy}) {
+        auto *scope = procedure->m_symtab;
+        auto *n = scope->get_symbol("n");
+        for (const std::string &name : {"a", "r"}) {
+            auto *bound = ASR::down_cast<ASR::ArrayItem_t>(length(scope, name));
+            CHECK(ASR::down_cast<ASR::Var_t>(bound->m_v)->m_v == n);
+        }
+        auto *codim = ASR::down_cast<ASR::ArrayItem_t>(
+            variable(scope, "a")->m_codims[0].m_start);
+        CHECK(ASR::down_cast<ASR::Var_t>(codim->m_v)->m_v == n);
+        auto *text = ASR::down_cast<ASR::String_t>(variable(scope, "btext")->m_type);
+        CHECK(ASR::down_cast<ASR::Var_t>(
+            ASR::down_cast<ASR::ArrayItem_t>(text->m_len)->m_v)->m_v == n);
+        auto *initializer = ASR::down_cast<ASR::IntegerBinOp_t>(
+            variable(scope, "aseed")->m_symbolic_value);
+        CHECK(ASR::down_cast<ASR::Var_t>(initializer->m_left)->m_v ==
+            scope->get_symbol("zseed"));
+        auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(length(scope, "member"));
+        CHECK(ASR::down_cast<ASR::Var_t>(member->m_v)->m_v == scope->get_symbol("box"));
+        CHECK(ASRUtils::symbol_get_past_external(member->m_m) ==
+            ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("bounds"))->
+                m_symtab->get_symbol("n"));
+        CHECK(ASRUtils::symbol_get_past_external(variable(scope, "box")->m_type_declaration) ==
+            module->m_symtab->get_symbol("bounds"));
+        CHECK(ASR::down_cast<ASR::Var_t>(length(scope, "host_bound"))->m_v ==
+            module->m_symtab->get_symbol("host_n"));
+        size_t blocks = 0;
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Block_t>(*entry.second)) continue;
+            blocks++;
+            auto *block = ASR::down_cast<ASR::Block_t>(entry.second);
+            auto *bound = ASR::down_cast<ASR::ArrayItem_t>(length(block->m_symtab, "early"));
+            CHECK(ASR::down_cast<ASR::Var_t>(bound->m_v)->m_v == n);
+        }
+        CHECK(blocks == 1);
+    }
+    CHECK(copy->m_symtab->get_symbol("n") != original->m_symtab->get_symbol("n"));
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    LCompilers::SymbolTable symtab(nullptr);
+    auto *roundtrip = ASR::down_cast2<ASR::TranslationUnit_t>(
+        LCompilers::deserialize_asr(
+            al, LCompilers::serialize(*result.result), true, symtab, 0));
+    fix_external_symbols(*roundtrip, symtab);
+    CHECK(LCompilers::asr_verify(*roundtrip, true, diagnostics));
+
+    auto *destination = al.make_new<LCompilers::SymbolTable>(module->m_symtab);
+    duplicator.duplicate_symbol(module->m_symtab->get_symbol("host_n"), destination);
+    duplicator.duplicate_SymbolTable(original->m_symtab, destination);
+    CHECK(ASR::down_cast<ASR::Var_t>(length(destination, "host_bound"))->m_v ==
+        module->m_symtab->get_symbol("host_n"));
+    CHECK(destination->get_symbol("host_n") != module->m_symtab->get_symbol("host_n"));
+}
+
 TEST_CASE("Trait array-element bounds preserve positional correspondence") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
     const std::string method = R"(
-function count(n, other, k, zinput) result(r)
+function count(n, other, k, a) result(r)
     integer, intent(in) :: n(2, 2), other(2, 2), k(2)
-    integer, intent(in) :: zinput(n(k(1), 2), other(1, 1))
+    integer, intent(in) :: a(n(k(1), 2), other(1, 1))
     integer :: r
 end function
 )";

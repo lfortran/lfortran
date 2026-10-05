@@ -158,7 +158,11 @@ type/symbol substitution and body-instantiation machinery. A normalized
 requirement has a receiver argument in its internal signature; source trait
 signatures do not. Its complete function type is rebuilt from the normalized
 arguments and result, so dependent character lengths and array bounds use
-`FunctionParam` indices that include the prepended receiver. Specialization
+`FunctionParam` indices that include the prepended receiver. Declaration copying
+remaps dependent bounds and initializers after all local declarations exist;
+dummy spelling and symbol-table iteration order do not affect the copied
+references. Host-associated declarations and uncopied nominal types retain
+their original identities. Specialization
 resolves the witnesses into ordinary concrete procedure calls before backend
 lowering.
 Forwarded signatures and their canonical recursive edges are bound before any
