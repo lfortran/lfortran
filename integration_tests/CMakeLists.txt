@@ -3735,7 +3735,18 @@ RUN(NAME template_instantiate_subp_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_02 LABELS llvm)
 RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
-RUN(NAME traits_static_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
+RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_scalar_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_separate_01_contracts.f90
+        traits_runtime_separate_01_consumer.f90 traits_runtime_separate_01_a.f90
+        traits_runtime_separate_01_b.f90)
+RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
+    EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
 RUN(NAME traits_static_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_02 LABELS llvm NO_STD_F23)
 RUN(NAME traits_static_03 LABELS llvm NO_STD_F23)

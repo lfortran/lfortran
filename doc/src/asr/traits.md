@@ -1,10 +1,13 @@
-# Experimental static traits
+# Experimental traits
 
 Traits are an experimental, nonstandard LFortran extension. The initial
 implementation supports nominal constraints for concrete derived types and
 finite intrinsic-numeric type sets on generic procedures. Existing requirements,
 templates, and standard Fortran
 type-bound procedures keep their existing meanings.
+
+The LLVM backend also supports an initial borrowed runtime subset. This is not
+yet the full owning/pointer runtime-trait model.
 
 ## Declaring a contract
 
@@ -247,13 +250,70 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 `function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
 oracle checks the concrete computations through the default compilation pipeline.
 
-The broader proposal is not yet implemented. In particular, trait objects
-(`class(Trait)`), mutable receivers, associated types, unrestricted intrinsic capabilities,
+The broader proposal is not yet implemented. In particular, owning/pointer trait
+objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
 Forwarding that mixes concrete and deferred type arguments, or crosses nested
 or shadowed generic-binder scopes, is not implemented yet.
+
+## Borrowed runtime dispatch
+
+A scalar `class(IValue), intent(in)` dummy borrows an exact nonpolymorphic
+concrete actual with visible nominal conformance:
+
+```fortran
+function observe(object) result(value)
+    class(IValue), intent(in) :: object
+    integer :: value
+    value = object%get_value()
+end function
+```
+
+The same independently compiled `observe` accepts unrelated implementing types.
+It requires only the contract module, not implementation modules. The
+construction site selects evidence once; forwarding the same view preserves
+its payload address, concrete dynamic metadata, and selected witness. Neither
+packing nor forwarding allocates, clones, or finalizes the payload.
+
+Each witness owns its typed adapter procedures in a separate symbol table.
+Static-only backends can ignore this runtime evidence without losing existing
+static trait lowering; a source-level runtime view still requires a supported
+backend.
+
+Supported methods are ordinary scalar integer-result functions and
+subroutines with scalar integer, real, complex, logical, character, or
+nonpolymorphic derived-type arguments. Normal argument intents, kinds, keyword
+names, and calling conventions apply. Receivers are read-only by default;
+future explicit per-message mutation effects have no settled syntax yet.
+Named non-first PASS and NOPASS are supported. NOPASS still dynamically
+selects the implementation from the witness.
+
+View dummies currently require explicit `intent(in)` and cannot be pointer,
+allocatable, optional, or VALUE. Trait arrays, projections, inline
+`class(A+B)`, aggregate results, generic methods, and adoption from unknown
+polymorphic sources remain unsupported. A plain nondummy trait local is
+invalid, not an implicitly owning box. Concrete SELECT TYPE inspection is a
+later stage: eventual TYPE IS tests nominal concrete identity, and CLASS IS
+tests real implementation inheritance, not unrelated-trait discovery.
+Universal traits with generic methods remain eligible in that future model;
+type-set traits remain constraint-only.
+
+The private same-build/target LLVM representation is a stack header containing
+concrete CLASS lifecycle metadata, the original payload address, and an
+independent immutable witness pointer. Concrete inheritance and storage are
+unchanged. Contract slots are unrelated to concrete TBP table offsets.
+Provider-owned tables/adapters are emitted even if the provider never packs a
+view. Nominal metadata linkage uses defining scopes, not same-spelled local
+type names or structural equality. No cross-version or cross-DSO ABI is promised.
+
+`traits_runtime_01`, `traits_runtime_03`, `traits_runtime_scalar_01`, and
+`traits_runtime_borrow_01` exercise execution, PASS/NOPASS, ordinary scalar
+arguments, identity, and borrowing lifetime. `traits_runtime_separate_01.py`
+compiles the contract-only consumer before both providers in fresh processes,
+checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
+provider archive. It is registered in CTest in normal and fast configurations.
 
 ## Compiler representation
 
@@ -306,3 +366,12 @@ source; a legitimate empty subroutine is still allowed.
 Conformance metadata belongs to the implementation's module. Adding a
 retroactive implementation does not mutate the original imported derived type.
 The LLVM backend does not infer conformance or choose trait overloads.
+
+Runtime contracts use `TraitRuntimeContract` and `trait_slot` to retain all
+nominal origins, including coalesced messages and shared diamonds.
+`TraitWitness` records the selected conformance, typed adapters, and liveness
+dependencies. `TraitObjectType`, `TraitPack`, `TraitReceiver`,
+`TraitFunctionCall`, and `TraitSubroutineCall` make view identity, compiler
+borrowing, authorized recovery, and unresolved dispatch explicit. Only symbols
+own scopes. The existing frontend adapter builder normalizes receivers; no
+separate generic engine or backend conformance search is involved.

@@ -1832,6 +1832,15 @@ public:
                 r.append(y); \
                 break;
 
+    void visit_AttrTraitClass(const AttrTraitClass_t &x) {
+        std::string r = "class(";
+        for (size_t i = 0; i < x.n_traits; i++) {
+            if (i) r += " + ";
+            r += x.m_traits[i];
+        }
+        s = r + ")";
+    }
+
     void visit_AttrType(const AttrType_t &x) {
         std::string r;
         r += syn(gr::Type);

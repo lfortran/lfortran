@@ -843,6 +843,8 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
         case ASR::symbolType::TraitConstraint: return "TraitConstraint";
         case ASR::symbolType::TraitImplementation: return "TraitImplementation";
+        case ASR::symbolType::TraitRuntimeContract: return "TraitRuntimeContract";
+        case ASR::symbolType::TraitWitness: return "TraitWitness";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -1093,6 +1095,9 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             res += ASRUtils::symbol_name(ti->m_trait);
             return res;
         }
+        case ASR::symbolType::TraitRuntimeContract:
+        case ASR::symbolType::TraitWitness:
+            return "! runtime trait evidence " + std::string(symbol_name(&s));
         case ASR::symbolType::AssociateBlock: {
             const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
             return "associate (" + std::string(ab->m_name) + ")";
@@ -1246,6 +1251,12 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitImplementation: {
             return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitRuntimeContract: {
+            return ASR::down_cast<ASR::TraitRuntimeContract_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitWitness: {
+            return ASR::down_cast<ASR::TraitWitness_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -1428,6 +1439,11 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                 return "derived_type";
             }
             return ASRUtils::symbol_name(struct_sym);
+        }
+        case ASR::ttypeType::TraitObjectType: {
+            auto *contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract));
+            return "class(" + std::string(symbol_name(contract->m_trait)) + ")";
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
@@ -1706,8 +1722,13 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         case ASR::symbolType::Trait:
         case ASR::symbolType::TraitConstraint:
         case ASR::symbolType::TraitImplementation:
+        case ASR::symbolType::TraitRuntimeContract:
             // Runtime dependencies belong to the specialized procedures.
             return std::make_pair(nullptr, size_t(0));
+        case ASR::symbolType::TraitWitness: {
+            auto *witness = ASR::down_cast<ASR::TraitWitness_t>(f);
+            return std::make_pair(witness->m_dependencies, witness->n_dependencies);
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1764,6 +1785,12 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitImplementation: {
             return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_parent_symtab;
+        }
+        case ASR::symbolType::TraitRuntimeContract: {
+            return ASR::down_cast<ASR::TraitRuntimeContract_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::TraitWitness: {
+            return ASR::down_cast<ASR::TraitWitness_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
@@ -1834,6 +1861,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitImplementation: {
             return nullptr;
+        }
+        case ASR::symbolType::TraitRuntimeContract: {
+            return ASR::down_cast<ASR::TraitRuntimeContract_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::TraitWitness: {
+            return ASR::down_cast<ASR::TraitWitness_t>(f)->m_symtab;
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
@@ -2808,6 +2841,13 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             }
             return "CPtr";
         }
+        case ASR::ttypeType::TraitObjectType: {
+            auto *reference = ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract;
+            auto *contract = symbol_get_past_external(reference);
+            if (!contract) return "TraitView_" + std::string(symbol_name(reference));
+            return "TraitView_" + std::string(symbol_name(get_asr_owner(contract)))
+                + "_" + symbol_name(contract);
+        }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
@@ -3756,6 +3796,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::String:
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
+        case ASR::ttypeType::TraitObjectType:
         case ASR::ttypeType::EnumType:
         case ASR::ttypeType::UnionType:
         case ASR::ttypeType::List:
@@ -4800,6 +4841,11 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                                                        tnew->m_is_unlimited_polymorphic));
             break;
         }
+        case ASR::ttypeType::TraitObjectType: {
+            t_ = TYPE(ASR::make_TraitObjectType_t(al, t->base.loc,
+                ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract));
+            break;
+        }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
@@ -5125,6 +5171,8 @@ static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::t
 
 static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR::ttype_t* t, const Location& loc) {
     switch (t->type) {
+        case ASR::ttypeType::TraitObjectType:
+            return duplicate_type(al, t);
         case ASR::ttypeType::Array: {
             return duplicate_type_without_dims(al, ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
         }
@@ -5690,6 +5738,12 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
     if( !check_for_dimensions ) {
         a = ASRUtils::type_get_past_array(a);
         b = ASRUtils::type_get_past_array(b);
+    }
+    if (ASR::is_a<ASR::TraitObjectType_t>(*a) || ASR::is_a<ASR::TraitObjectType_t>(*b)) {
+        return ASR::is_a<ASR::TraitObjectType_t>(*a)
+            && ASR::is_a<ASR::TraitObjectType_t>(*b)
+            && symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(a)->m_contract)
+                == symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(b)->m_contract);
     }
     // If either argument is a polymorphic type, return true.
     if (ASRUtils::is_class_type(a)) {
@@ -10544,6 +10598,14 @@ struct TraitHierarchy {
     std::vector<const ASR::Trait_t*> traits;
     std::vector<ASR::symbol_t*> members;
 };
+
+ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
+ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
+ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation);
+bool runtime_trait_method_supported(const ASR::Function_t &method);
+std::string nominal_symbol_name(const ASR::symbol_t *symbol);
+bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
+    diag::Diagnostics &diagnostics, const std::string &backend);
 
 // Walk parents in declaration order and retain each original member once.
 // Unresolved external parents are left for the full verifier when requested.

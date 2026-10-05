@@ -6664,6 +6664,10 @@ public:
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
+        if (x.m_vartype && AST::is_a<AST::AttrTraitClass_t>(*x.m_vartype)) {
+            trait_call_error("runtime trait combinations are not implemented yet",
+                x.m_vartype->base.loc);
+        }
         _declaring_variable = true;
         current_variable_type_ = nullptr;
         current_struct_type_var_expr = nullptr;
@@ -9162,6 +9166,12 @@ public:
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                     (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                if (ASR::is_a<ASR::TraitObjectType_t>(*type) &&
+                        (s_intent != ASR::intentType::In ||
+                         s_presence == ASR::presenceType::Optional || value_attr)) {
+                    trait_call_error("runtime trait dummies currently require intent(in) "
+                        "without optional or value", x.base.base.loc);
+                }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
@@ -11184,6 +11194,9 @@ public:
         AST::var_sym_t* var_sym,
         ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false, bool is_assumed_rank=false) {
 
+        if (AST::is_a<AST::AttrTraitClass_t>(*decl_attribute)) {
+            trait_call_error("runtime trait combinations are not implemented yet", loc);
+        }
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
             // ONLY supposed to be used for LFortran specific types
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
@@ -11828,7 +11841,31 @@ public:
                         ASR::trait_kindType::IntrinsicTypeSet) {
                     trait_call_error("a type-set trait cannot be used as a runtime class", loc);
                 }
-                trait_call_error("runtime trait objects are not implemented yet", loc);
+                if (is_pointer || is_allocatable) {
+                    trait_call_error("pointer and allocatable runtime trait objects "
+                        "are not implemented yet", loc);
+                }
+                if (!is_argument || dims.size() || is_assumed_rank) {
+                    trait_call_error("runtime trait objects currently require a scalar dummy", loc);
+                }
+                auto *contract = ASRUtils::trait_runtime_contract(v);
+                if (!contract) {
+                    trait_call_error("runtime dispatch for this trait method signature "
+                        "is not implemented yet", loc);
+                }
+                for (size_t i = 0; i < contract->n_slots; i++) {
+                    auto *member = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(contract->m_slots[i].m_origins[0]));
+                    if (!ASRUtils::runtime_trait_method_supported(*member)) {
+                        trait_call_error("runtime dispatch for this trait method signature "
+                            "is not implemented yet", loc);
+                    }
+                }
+                type_declaration = nullptr;
+                ASR::symbol_t *reference = make_operator_proc_visible(
+                    &contract->base, "trait", current_scope);
+                ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+                return ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc, reference));
             }
             // A deferred type argument of a template or a requirement is stored
             // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
@@ -15387,6 +15424,7 @@ public:
                 if( args.p[i].m_value == nullptr ) {
                     continue;
                 }
+                adapt_runtime_trait_argument(args.p[i].m_value, func->m_args[i]);
                 ASR::expr_t* arg = args.p[i].m_value;
                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
@@ -22782,23 +22820,36 @@ public:
     ASR::symbol_t *trait_adapter(ASR::Function_t *required,
             ASR::ttype_t *type, ASR::symbol_t *type_declaration,
             const ASR::trait_binding_t &binding,
-            SymbolTable *scope, const Location &loc) {
+            SymbolTable *scope, const Location &loc,
+            ASR::TraitWitness_t *witness = nullptr, size_t slot = 0) {
         ASRUtils::SymbolDuplicator duplicator(al);
         ASR::symbol_t *copy = duplicator.duplicate_Function(required, scope);
         if (!copy) trait_call_error("cannot construct the trait method adapter", loc);
         ASR::Function_t *adapter = ASR::down_cast<ASR::Function_t>(copy);
-        adapter->m_name = s2c(al, scope->get_unique_name("__trait_adapter"));
+        adapter->m_name = s2c(al, scope->get_unique_name(witness
+            ? std::string(witness->m_name) + "_" + std::to_string(slot)
+            : "__trait_adapter"));
         adapter->m_access = ASR::accessType::Private;
         auto *signature = ASRUtils::get_FunctionType(adapter);
         signature->m_is_restriction = false;
         signature->m_deftype = ASR::deftypeType::Implementation;
         LCOMPILERS_ASSERT(adapter->n_args > 0);
         ASR::Variable_t *receiver = ASRUtils::EXPR2VAR(adapter->m_args[0]);
-        receiver->m_type = ASRUtils::duplicate_type(al, type);
-        receiver->m_type_declaration = type_declaration
+        receiver->m_type = witness
+            ? ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
+                make_operator_proc_visible(witness->m_contract, "trait", adapter->m_symtab)))
+            : ASRUtils::duplicate_type(al, type);
+        receiver->m_type_declaration = !witness && type_declaration
             ? ASRUtils::import_type_declaration(al, type_declaration, adapter->m_symtab)
             : nullptr;
         signature->m_arg_types[0] = receiver->m_type;
+        ASR::expr_t *payload = adapter->m_args[0];
+        if (witness && !binding.m_is_nopass) {
+            payload = ASRUtils::EXPR(ASR::make_TraitReceiver_t(al, loc,
+                payload, &witness->base,
+                ASRUtils::import_type_declaration(al, type_declaration, adapter->m_symtab),
+                ASRUtils::duplicate_type(al, type)));
+        }
         ASR::Function_t *implementation = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(binding.m_procedure));
         Vec<ASR::call_arg_t> args;
@@ -22809,7 +22860,7 @@ public:
             bool is_receiver = !binding.m_is_nopass
                 && std::string(ASRUtils::EXPR2VAR(implementation->m_args[i])->m_name)
                     == binding.m_self_argument;
-            arg.m_value = adapter->m_args[is_receiver ? 0 : j++];
+            arg.m_value = is_receiver ? payload : adapter->m_args[j++];
             args.push_back(al, arg);
         }
         SetChar dependencies;
@@ -22842,6 +22893,76 @@ public:
         adapter->n_dependencies = dependencies.size();
         scope->add_symbol(adapter->m_name, copy);
         return copy;
+    }
+
+    void adapt_runtime_trait_argument(ASR::expr_t *&actual, ASR::expr_t *dummy) {
+        auto *target = ASRUtils::expr_type(dummy);
+        auto *source = ASRUtils::expr_type(actual);
+        if (!ASR::is_a<ASR::TraitObjectType_t>(*target)) {
+            if (ASR::is_a<ASR::TraitObjectType_t>(*source)) {
+                tmp = nullptr;
+                trait_call_error("conversion from a runtime trait view to a non-trait "
+                    "dummy is not implemented yet", actual->base.loc);
+            }
+            return;
+        }
+        tmp = nullptr;
+        if (ASR::is_a<ASR::TraitObjectType_t>(*source)) {
+            if (!ASRUtils::types_equal(source, target, actual, dummy)) {
+                trait_call_error("runtime trait view projections are not implemented yet",
+                    actual->base.loc);
+            }
+            return;
+        }
+        auto *concrete = ASRUtils::extract_type(source);
+        if (!ASR::is_a<ASR::StructType_t>(*concrete) || ASRUtils::is_array(source)
+                || ASRUtils::is_class_type(concrete)) {
+            trait_call_error("runtime trait packing currently requires an exact "
+                "nonpolymorphic scalar derived type", actual->base.loc);
+        }
+        if (!ASR::is_a<ASR::Var_t>(*actual) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*actual) &&
+                !ASR::is_a<ASR::ArrayItem_t>(*actual)) {
+            trait_call_error("borrowing a runtime trait from this expression "
+                "is not implemented yet", actual->base.loc);
+        }
+        auto *contract = ASRUtils::trait_runtime_contract(target);
+        auto *trait = ASRUtils::symbol_get_past_external(contract->m_trait);
+        auto *declaration = ASRUtils::get_struct_sym_from_struct_expr(actual);
+        ASR::TraitImplementation_t *selected = nullptr;
+        bool projection = false;
+        for (auto *implementation :
+                trait_implementations_for_type(declaration, actual->base.loc)) {
+            if (ASRUtils::symbol_get_past_external(implementation->m_trait) == trait) {
+                if (!selected) selected = implementation;
+            } else {
+                auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(implementation->m_trait)),
+                    actual->base.loc);
+                for (auto *parent : hierarchy.traits) {
+                    if (&parent->base == trait) projection = true;
+                }
+            }
+        }
+        if (!selected) {
+            if (projection) {
+                trait_call_error("runtime trait view projections are not implemented yet",
+                    actual->base.loc);
+            }
+            trait_call_error("no visible nominal implementation of trait '"
+                + std::string(ASRUtils::symbol_name(trait)) + "' for type '"
+                + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(declaration))
+                + "'", actual->base.loc);
+        }
+        auto *witness = ASRUtils::trait_runtime_witness(*selected);
+        LCOMPILERS_ASSERT(witness);
+        auto *reference = make_operator_proc_visible(&witness->base, "trait", current_scope);
+        ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+            al, actual->base.loc,
+            make_operator_proc_visible(&contract->base, "trait", current_scope)));
+        actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
+            al, actual->base.loc, actual, reference, view_type));
     }
 
     void trait_call_arguments(ASR::Function_t *signature,
@@ -23227,6 +23348,7 @@ public:
         ASR::Template_t *generic = nullptr;
         ASR::expr_t *receiver = nullptr;
         bool abstract_method = false;
+        int64_t runtime_slot = -1;
         const ASR::trait_binding_t *concrete_binding = nullptr;
         if (n_members == 0) {
             ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
@@ -23252,7 +23374,25 @@ public:
             variable = ASRUtils::symbol_get_past_external(variable);
             if (!variable || !ASR::is_a<ASR::Variable_t>(*variable)) return false;
             ASR::ttype_t *type = ASRUtils::extract_type(ASRUtils::symbol_type(variable));
-            if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
+            if (ASR::is_a<ASR::TraitObjectType_t>(*type)) {
+                tmp = nullptr;
+                auto *contract = ASRUtils::trait_runtime_contract(type);
+                for (size_t i = 0; i < contract->n_slots; i++) {
+                    auto &slot = contract->m_slots[i];
+                    auto *member = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(slot.m_origins[0]));
+                    if (name == member->m_name) {
+                        signature = member;
+                        callee = slot.m_procedure;
+                        runtime_slot = i;
+                        break;
+                    }
+                }
+                if (!callee) {
+                    trait_call_error("method '" + name
+                        + "' is not provided by the declared runtime trait", loc);
+                }
+            } else if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
                 auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(type);
                 for (SymbolTable *scope = ASRUtils::symbol_parent_symtab(variable);
                         scope; scope = scope->parent) {
@@ -23321,6 +23461,47 @@ public:
         }
         Vec<ASR::call_arg_t> args;
         trait_call_arguments(signature, actuals, n_actuals, keywords, n_keywords, args, loc);
+        if (runtime_slot >= 0) {
+            auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
+            std::string local_name = current_scope->get_unique_name(
+                std::string(contract->m_name) + "_" + name);
+            Vec<char*> scopes;
+            scopes.reserve(al, 1);
+            scopes.push_back(al, contract->m_name);
+            callee = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, loc, current_scope, s2c(al, local_name), callee,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(&contract->base)),
+                scopes.p, scopes.size(), ASRUtils::symbol_name(callee),
+                ASR::accessType::Private));
+            current_scope->add_symbol(local_name, callee);
+            args = prepend_call_arg(receiver, args);
+            validate_create_function_arguments(args, callee);
+            auto *function = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(callee));
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, function, args);
+            if (is_function) {
+                auto *call = ASR::down_cast2<ASR::FunctionCall_t>(
+                    ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr,
+                        args.p, args.size(), ASRUtils::expr_type(signature->m_return_var),
+                        nullptr, nullptr, current_scope, current_function_dependencies,
+                        compiler_options.implicit_argument_casting));
+                tmp = ASR::make_TraitFunctionCall_t(al, loc, callee, runtime_slot,
+                    call->m_args, call->n_args, call->m_type);
+            } else {
+                ASR::stmt_t *cast = nullptr;
+                auto *call = ASR::down_cast2<ASR::SubroutineCall_t>(
+                    ASRUtils::make_SubroutineCall_t_util(al, loc, callee, nullptr,
+                        args.p, args.size(), nullptr, &cast,
+                        compiler_options.implicit_argument_casting, current_scope,
+                        current_function_dependencies));
+                LCOMPILERS_ASSERT(!cast);
+                tmp = ASR::make_TraitSubroutineCall_t(al, loc, callee, runtime_slot,
+                    call->m_args, call->n_args);
+            }
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+            return true;
+        }
         if (generic) {
             callee = specialize_trait_procedure(generic, signature, args,
                 explicit_args, n_explicit_args, loc);
@@ -27258,6 +27439,8 @@ public:
         get_indirect_public_symbols(m, indirect_public_symbols);
         for (auto &item : m->m_symtab->get_scope()) {
             ASR::symbol_t *canonical = ASRUtils::symbol_get_past_external(item.second);
+            if (canonical && (ASR::is_a<ASR::TraitRuntimeContract_t>(*canonical)
+                    || ASR::is_a<ASR::TraitWitness_t>(*canonical))) continue;
             if (canonical && (ASR::is_a<ASR::Trait_t>(*canonical)
                     || ASR::is_a<ASR::TraitImplementation_t>(*canonical))) {
                 if (to_submodule || trait_symbol_access(item.second) == ASR::accessType::Public) {

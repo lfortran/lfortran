@@ -100,7 +100,7 @@ semantic error: a trait cannot be used as a concrete type; use a trait-constrain
 550 |     type(IValue) :: object
     |     ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait objects are not implemented yet
+semantic error: pointer and allocatable runtime trait objects are not implemented yet
    --> tests/errors/continue_compilation_traits_01.f90:562:5
     |
 562 |     class(IValue), allocatable :: object
@@ -368,6 +368,72 @@ semantic error: type-set trait composition is not implemented yet
 1706 |     function unused{IValue + integer :: T}(x) result(r)
      |                     ^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: CLASS variable 'object' must be dummy, allocatable or pointer
+    --> tests/errors/continue_compilation_traits_01.f90:1755:9
+     |
+1755 |         class(IValue) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: pointer and allocatable runtime trait objects are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1902:5
+     |
+1902 |     class(IValue), pointer :: object
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:1914:9
+     |
+1914 |         class(IValue), intent(in) :: object(:)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:1913:5 - 1915:18
+     |
+1913 |        subroutine array_view(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1915 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:1927:9
+     |
+1927 |         class(IValue), intent(inout) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:1926:5 - 1928:18
+     |
+1926 |        subroutine mutable_view(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1928 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait combinations are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1999:9
+     |
+1999 |         class(IValue + ITag), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:1998:5 - 2000:18
+     |
+1998 |        subroutine combined_view(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2000 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait combinations are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2002:9
+     |
+2002 |         class(IValue + ITag), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |
@@ -553,3 +619,51 @@ semantic error: integer(4) is not a member of inline type set {integer(8) :: t} 
      |
 1740 |         r = identity(1)
      |             ^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:1783:22
+     |
+1783 |         call consume(object)
+     |                      ^^^^^^ 
+
+semantic error: method 'secret' is not provided by the declared runtime trait
+    --> tests/errors/continue_compilation_traits_01.f90:1798:13
+     |
+1798 |         r = object%secret()
+     |             ^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `object` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:1815:34
+     |
+1815 |         call requires_definition(object)
+     |                                  ^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1873:21
+     |
+1873 |         r = observe(object)
+     |                     ^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1891:21
+     |
+1891 |         r = observe(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait packing currently requires an exact nonpolymorphic scalar derived type
+    --> tests/errors/continue_compilation_traits_01.f90:1955:22
+     |
+1955 |         call consume(object)
+     |                      ^^^^^^ 
+
+semantic error: concrete select type inspection of runtime trait views is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1959:21
+     |
+1959 |         select type(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait view projections are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1981:22
+     |
+1981 |         call consume(object)
+     |                      ^^^^^^ 

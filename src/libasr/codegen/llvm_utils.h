@@ -220,6 +220,7 @@ class ASRToLLVMVisitor;
             return ASR::is_a<ASR::Tuple_t>(*asr_type) ||
                    ASR::is_a<ASR::List_t>(*asr_type) ||
                    ASR::is_a<ASR::StructType_t>(*asr_type) ||
+                   ASR::is_a<ASR::TraitObjectType_t>(*asr_type) ||
                    ASR::is_a<ASR::Dict_t>(*asr_type);
         }
         // Check if type is represented as a pointer to the backend type.
@@ -803,6 +804,10 @@ class ASRToLLVMVisitor;
                 llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
+            llvm::StructType* getTraitType() {
+                return llvm::StructType::get(context,
+                    {i8_ptr, i8_ptr, i8_ptr->getPointerTo()}, false);
+            }
 
             llvm::Value* get_type_identifier_for_polymorphic_type(ASR::expr_t* arg, llvm::Value* arg_val, 
                 ASR::symbol_t* struct_sym, llvm::Module* module, int class_type_id);

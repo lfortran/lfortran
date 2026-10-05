@@ -618,9 +618,14 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
         case ASR::exprType::GetPointer:
+        case ASR::exprType::TraitPack:
+        case ASR::exprType::TraitFunctionCall:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
             return nullptr;
+        }
+        case ASR::exprType::TraitReceiver: {
+            return ASR::down_cast<ASR::TraitReceiver_t>(expression)->m_type_declaration;
         }
         case ASR::exprType::UnionInstanceMember: {
             ASR::UnionInstanceMember_t* union_instance_member = ASR::down_cast<ASR::UnionInstanceMember_t>(expression);
@@ -5601,6 +5606,95 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
         };
     visit(trait);
     return result;
+}
+
+ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait)
+{
+    trait = symbol_get_past_external(trait);
+    for (const auto &entry : symbol_parent_symtab(trait)->get_scope()) {
+        if (!ASR::is_a<ASR::TraitRuntimeContract_t>(*entry.second)) continue;
+        auto *contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(entry.second);
+        if (symbol_get_past_external(contract->m_trait) == trait) return contract;
+    }
+    return nullptr;
+}
+
+ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type)
+{
+    return ASR::down_cast<ASR::TraitRuntimeContract_t>(symbol_get_past_external(
+        ASR::down_cast<ASR::TraitObjectType_t>(extract_type(view_type))->m_contract));
+}
+
+ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation)
+{
+    for (const auto &entry : implementation.m_parent_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitWitness_t>(*entry.second)) continue;
+        auto *witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        if (symbol_get_past_external(witness->m_implementation) == &implementation.base) {
+            return witness;
+        }
+    }
+    return nullptr;
+}
+
+bool runtime_trait_method_supported(const ASR::Function_t &method)
+{
+    if (method.m_return_var &&
+            !ASR::is_a<ASR::Integer_t>(*expr_type(method.m_return_var))) return false;
+    for (size_t i = 0; i < method.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*method.m_args[i])) return false;
+        auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
+        auto *arg = ASR::down_cast<ASR::Variable_t>(symbol);
+        auto *type = arg->m_type;
+        if (!(ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
+                || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)
+                || ASR::is_a<ASR::String_t>(*type)
+                || (ASR::is_a<ASR::StructType_t>(*type) && !is_class_type(type)))
+                || arg->m_presence != ASR::presenceType::Required) return false;
+    }
+    return true;
+}
+
+std::string nominal_symbol_name(const ASR::symbol_t *symbol)
+{
+    symbol = symbol_get_past_external(const_cast<ASR::symbol_t*>(symbol));
+    std::vector<std::string> components;
+    while (symbol) {
+        components.push_back(symbol_name(symbol));
+        auto *scope = symbol_parent_symtab(symbol);
+        symbol = scope && scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(scope->asr_owner) : nullptr;
+    }
+    std::string result;
+    for (auto i = components.rbegin(); i != components.rend(); ++i) {
+        result += std::to_string(i->size()) + "_" + *i;
+    }
+    return result;
+}
+
+bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
+    diag::Diagnostics &diagnostics, const std::string &backend)
+{
+    class FindRuntimeView : public ASR::BaseWalkVisitor<FindRuntimeView> {
+    public:
+        bool found = false;
+        Location loc;
+        void visit_TraitRuntimeContract(const ASR::TraitRuntimeContract_t &) {}
+        void visit_TraitWitness(const ASR::TraitWitness_t &) {}
+        void visit_TraitObjectType(const ASR::TraitObjectType_t &x) {
+            if (!found) loc = x.base.base.loc;
+            found = true;
+        }
+    } visitor;
+    visitor.visit_TranslationUnit(unit);
+    if (visitor.found) {
+        diagnostics.add(diag::Diagnostic(
+            "runtime trait dispatch is not implemented by the " + backend + " backend",
+            diag::Level::Error, diag::Stage::CodeGen, {
+                diag::Label("", {visitor.loc})}));
+    }
+    return visitor.found;
 }
 
 // Specification expressions use the correspondence between ordinary dummies,

@@ -77,6 +77,39 @@ public:
         fn_declarations[h] = x.m_name;
     }
 
+    void retain_trait_procedure(ASR::symbol_t *symbol) {
+        fn_used[get_hash((ASR::asr_t*)symbol)] = ASRUtils::symbol_name(symbol);
+        symbol = ASRUtils::symbol_get_past_external(symbol);
+        fn_used[get_hash((ASR::asr_t*)symbol)] = ASRUtils::symbol_name(symbol);
+    }
+
+    void visit_TraitRuntimeContract(const ASR::TraitRuntimeContract_t &x) {
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitRuntimeContract(x);
+        for (size_t i = 0; i < x.n_slots; i++) {
+            retain_trait_procedure(x.m_slots[i].m_procedure);
+            for (size_t j = 0; j < x.m_slots[i].n_origins; j++) {
+                retain_trait_procedure(x.m_slots[i].m_origins[j]);
+            }
+        }
+    }
+
+    void visit_TraitWitness(const ASR::TraitWitness_t &x) {
+        for (size_t i = 0; i < x.n_procedures; i++) {
+            retain_trait_procedure(x.m_procedures[i]);
+        }
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitWitness(x);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        retain_trait_procedure(x.m_name);
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitFunctionCall(x);
+    }
+
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+        retain_trait_procedure(x.m_name);
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitSubroutineCall(x);
+    }
+
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         if (ASR::is_a<ASR::Function_t>(*x.m_external)) {
             uint64_t h = get_hash((ASR::asr_t*)&x);

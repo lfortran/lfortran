@@ -7279,6 +7279,13 @@ public:
                 visit_Variable(*v);
             }
         }
+        for (const auto &entry : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+                emit_trait_witness(*ASR::down_cast<ASR::TraitWitness_t>(entry.second),
+                    !prototype_only &&
+                    ASR::down_cast<ASR::TraitWitness_t>(entry.second)->m_abi == ASR::abiType::Source);
+            }
+        }
 
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
@@ -7371,6 +7378,11 @@ public:
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
                 instantiate_function(*v);
+            }
+        }
+        for (const auto &entry : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+                emit_trait_witness(*ASR::down_cast<ASR::TraitWitness_t>(entry.second), true);
             }
         }
         visit_procedures(x);
@@ -10242,6 +10254,17 @@ public:
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
+            }
+        }
+        if (!prototype_only) {
+            for (const auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitWitness_t>(*item.second)) continue;
+                auto *witness = ASR::down_cast<ASR::TraitWitness_t>(item.second);
+                if (witness->m_abi != ASR::abiType::Source) continue;
+                auto *saved_scope = current_scope;
+                current_scope = witness->m_symtab;
+                visit_procedures(*witness);
+                current_scope = saved_scope;
             }
         }
     }
@@ -24471,6 +24494,23 @@ public:
                 continue;
             }
 
+            if (x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::TraitObjectType_t>(*expr_type(x.m_args[i].m_value))
+                     || ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value))) {
+                int64_t saved_loads = ptr_loads;
+                ptr_loads = 0;
+                visit_expr_wrapper(x.m_args[i].m_value, true);
+                ptr_loads = saved_loads;
+                if (ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value)) {
+                    tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc,
+                            &orig_arg->base)), orig_arg->m_type,
+                        expr_type(x.m_args[i].m_value));
+                }
+                args.push_back(tmp);
+                continue;
+            }
+
             if( x.m_args[i].m_value == nullptr ) {
                 LCOMPILERS_ASSERT(orig_arg != nullptr);
                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -27578,6 +27618,99 @@ public:
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
                                 ASR::ttype_t* asr_return_type) {
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+    }
+
+    llvm::GlobalVariable *emit_trait_witness(const ASR::TraitWitness_t &x, bool define) {
+        if (x.m_abi == ASR::abiType::Source) {
+            auto *saved_scope = current_scope;
+            current_scope = x.m_symtab;
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(x.m_procedures[i]));
+                instantiate_function(*procedure);
+            }
+            current_scope = saved_scope;
+        }
+        std::string name = "__trait_witness_" + ASRUtils::nominal_symbol_name(&x.base);
+        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr, x.n_procedures);
+        auto *table = module->getNamedGlobal(name);
+        if (!table) {
+            table = new llvm::GlobalVariable(*module, type, true,
+                llvm::GlobalValue::ExternalLinkage, nullptr, name);
+        }
+        if (define && !table->hasInitializer()) {
+            std::vector<llvm::Constant*> entries;
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
+                uint32_t hash = get_hash((ASR::asr_t*)procedure);
+                auto *function = llvm_symtab_fn.at(hash);
+                entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+            }
+            table->setInitializer(llvm::ConstantArray::get(type, entries));
+        }
+        return table;
+    }
+
+    void visit_TraitPack(const ASR::TraitPack_t &x) {
+        auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+            ASRUtils::symbol_get_past_external(x.m_witness));
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(
+            ASRUtils::symbol_get_past_external(witness->m_implementation));
+        auto *concrete = ASRUtils::symbol_get_past_external(implementation->m_type_declaration);
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = LLVM::is_llvm_pointer(*expr_type(x.m_payload));
+        visit_expr_wrapper(x.m_payload, true);
+        ptr_loads = saved_loads;
+        llvm::Value *payload = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+        auto *type = llvm_utils->getTraitType();
+        llvm::Value *view = llvm_utils->CreateAlloca(type, nullptr, "trait_borrow");
+        llvm::Value *vptr = struct_api->get_pointer_to_method(concrete, module.get());
+        vptr = builder->CreateBitCast(vptr, llvm_utils->i8_ptr);
+        builder->CreateStore(vptr, llvm_utils->create_gep2(type, view, 0));
+        builder->CreateStore(payload, llvm_utils->create_gep2(type, view, 1));
+        llvm::Value *table = emit_trait_witness(*witness, false);
+        table = builder->CreateBitCast(table, llvm_utils->i8_ptr->getPointerTo());
+        builder->CreateStore(table, llvm_utils->create_gep2(type, view, 2));
+        tmp = view;
+    }
+
+    void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr_wrapper(x.m_view, true);
+        ptr_loads = saved_loads;
+        llvm::Value *payload = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+            llvm_utils->create_gep2(llvm_utils->getTraitType(), tmp, 1));
+        auto *concrete_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_type, x.m_type_declaration, module.get());
+        tmp = builder->CreateBitCast(payload, concrete_type->getPointerTo());
+    }
+
+    template <typename T>
+    void emit_trait_call(const T &x, ASR::ttype_t *result_type) {
+        ASR::FunctionCall_t call{};
+        call.m_name = x.m_name;
+        call.m_args = x.m_args;
+        call.n_args = x.n_args;
+        call.m_type = result_type;
+        std::vector<llvm::Value*> args = convert_call_args(call);
+        auto *procedure = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(x.m_name));
+        auto *function_type = llvm_utils->get_function_type(*procedure, module.get());
+        llvm::Value *table = llvm_utils->CreateLoad2(llvm_utils->i8_ptr->getPointerTo(),
+            llvm_utils->create_gep2(llvm_utils->getTraitType(), args[0], 2));
+        llvm::Value *entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+            llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, table, x.m_slot));
+        entry = builder->CreateBitCast(entry, function_type->getPointerTo());
+        tmp = builder->CreateCall(function_type, entry, args);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        emit_trait_call(x, x.m_type);
+    }
+
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+        emit_trait_call(x, nullptr);
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {

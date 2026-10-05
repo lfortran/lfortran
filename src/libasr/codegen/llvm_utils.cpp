@@ -1040,6 +1040,9 @@ namespace LCompilers {
                 }
                 break;
             }
+            case (ASR::ttypeType::TraitObjectType):
+                type = getTraitType()->getPointerTo();
+                break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
@@ -1649,6 +1652,9 @@ namespace LCompilers {
                 llvm_type = getIntType(a_kind);
                 break;
             }
+            case (ASR::ttypeType::TraitObjectType):
+                llvm_type = getTraitType();
+                break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
@@ -10022,7 +10028,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
-        std::string gv_name = "_VTable_" + std::string(ASRUtils::symbol_name(struct_sym));
+        std::string gv_name = "_VTable_" + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::StructType *outerStructTy = llvm::StructType::get(context, { arrTy }, false);
         llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
 
@@ -10048,7 +10054,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
+        const std::string type_info_name = "_Type_Info_" + ASRUtils::nominal_symbol_name(struct_sym);
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
@@ -10093,7 +10099,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                                             llvm::GlobalValue::LinkOnceODRLinkage,
                                                             type_info_init,
                                                             type_info_name);
-        type_info_var->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        // Metadata addresses are nominal identities used by SELECT TYPE.
         type_info_var->setAlignment(llvm::MaybeAlign(8));
 
         newclass2typeinfo.insert(
@@ -10109,12 +10115,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         );
 
         // Create the function in the module
-        std::string func_name = "_allocate_struct_";
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
-        if (owner) {
-            func_name += ASRUtils::symbol_name(owner) + std::string("_");
-        }
-        func_name += ASRUtils::symbol_name(struct_sym);
+        std::string func_name = "_allocate_struct_" + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
@@ -10190,12 +10191,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         );
 
         // Create the function in the module
-        std::string func_name = "_copy_";
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
-        if (owner) {
-            func_name += ASRUtils::symbol_name(owner) + std::string("_");
-        }
-        func_name += ASRUtils::symbol_name(struct_sym);
+        std::string func_name = "_copy_" + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,

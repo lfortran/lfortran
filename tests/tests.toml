@@ -5831,6 +5831,12 @@ ast_f90 = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/traits_runtime_01.f90"
+ast_f90 = true
+asr = true
+c = true
+
+[[test]]
 filename = "../integration_tests/traits_inheritance_03.f90"
 ast_f90 = true
 

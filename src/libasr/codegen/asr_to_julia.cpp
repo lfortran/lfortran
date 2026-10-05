@@ -1989,6 +1989,7 @@ public:
 Result<std::string>
 asr_to_julia(Allocator& al, ASR::TranslationUnit_t& asr, diag::Diagnostics& diag)
 {
+    if (ASRUtils::reject_runtime_traits(asr, diag, "julia")) return Error();
     ASRToJuliaVisitor v(al, diag);
     try {
         v.visit_asr((ASR::asr_t&) asr);

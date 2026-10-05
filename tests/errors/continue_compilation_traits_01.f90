@@ -1740,3 +1740,267 @@ contains
         r = identity(1)
     end subroutine
 end module traits_numeric_b1_n09_m
+
+! R0/R1: borrowed runtime views, nominal packing and ordinary dynamic calls.
+
+module traits_runtime_n01_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function value
+    end interface IValue
+contains
+    subroutine invalid_local()
+        class(IValue) :: object
+    end subroutine invalid_local
+end module traits_runtime_n01_m
+
+module traits_runtime_n02_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function value
+    end interface IValue
+    type :: Box
+        integer :: payload
+    contains
+        procedure :: value => box_value
+    end type Box
+contains
+    function box_value(self) result(r)
+        class(Box), intent(in) :: self
+        integer :: r
+        r = self%payload
+    end function box_value
+    subroutine consume(object)
+        class(IValue), intent(in) :: object
+    end subroutine consume
+    subroutine invalid_nominal()
+        type(Box) :: object
+        object%payload = 7
+        call consume(object)
+    end subroutine invalid_nominal
+end module traits_runtime_n02_m
+
+module traits_runtime_n03_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function value
+    end interface IValue
+contains
+    function invalid_member(object) result(r)
+        class(IValue), intent(in) :: object
+        integer :: r
+        r = object%secret()
+    end function invalid_member
+end module traits_runtime_n03_m
+
+module traits_runtime_n08_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function value
+    end interface IValue
+contains
+    subroutine requires_definition(object)
+        class(*), intent(inout) :: object
+    end subroutine requires_definition
+    subroutine invalid_actual(object)
+        class(IValue), intent(in) :: object
+        call requires_definition(object)
+    end subroutine invalid_actual
+end module traits_runtime_n08_m
+
+module traits_runtime_n11_contracts_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function value
+    end interface IValue
+    type :: Box
+        integer :: payload
+    end type Box
+end module traits_runtime_n11_contracts_m
+
+module traits_runtime_n11_a_m
+    use traits_runtime_n11_contracts_m, only: IValue, Box
+    implicit none
+    implements IValue :: Box
+        procedure, pass :: value => a_value
+    end implements Box
+contains
+    function a_value(self) result(r)
+        class(Box), intent(in) :: self
+        integer :: r
+        r = self%payload
+    end function a_value
+end module traits_runtime_n11_a_m
+
+module traits_runtime_n11_b_m
+    use traits_runtime_n11_contracts_m, only: IValue, Box
+    implicit none
+    implements IValue :: Box
+        procedure, pass :: value => b_value
+    end implements Box
+contains
+    function b_value(self) result(r)
+        class(Box), intent(in) :: self
+        integer :: r
+        r = -self%payload
+    end function b_value
+end module traits_runtime_n11_b_m
+
+module traits_runtime_n11_consumer_m
+    use traits_runtime_n11_a_m
+    use traits_runtime_n11_b_m
+    implicit none
+contains
+    function observe(object) result(r)
+        class(IValue), intent(in) :: object
+        integer :: r
+        r = object%value()
+    end function observe
+    function invalid_pack() result(r)
+        type(Box) :: object
+        integer :: r
+        object%payload = 7
+        r = observe(object)
+    end function invalid_pack
+end module traits_runtime_n11_consumer_m
+
+module traits_runtime_n11_reverse_m
+    use traits_runtime_n11_b_m
+    use traits_runtime_n11_a_m
+    implicit none
+contains
+    function observe(object) result(r)
+        class(IValue), intent(in) :: object
+        integer :: r
+        r = object%value()
+    end function observe
+    function invalid_pack() result(r)
+        type(Box) :: object
+        integer :: r
+        object%payload = 7
+        r = observe(object)
+    end function invalid_pack
+end module traits_runtime_n11_reverse_m
+
+module traits_runtime_nyi_pointer_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    class(IValue), pointer :: object
+end module traits_runtime_nyi_pointer_m
+
+module traits_runtime_nyi_array_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    subroutine array_view(object)
+        class(IValue), intent(in) :: object(:)
+    end subroutine
+end module traits_runtime_nyi_array_m
+
+module traits_runtime_nyi_mutable_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    subroutine mutable_view(object)
+        class(IValue), intent(inout) :: object
+    end subroutine
+end module traits_runtime_nyi_mutable_m
+
+module traits_runtime_nyi_conversion_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    type :: Payload
+        integer :: n
+    end type
+    implements IValue :: Payload
+        procedure, pass :: value => get_value
+    end implements
+contains
+    function get_value(self) result(r)
+        class(Payload), intent(in) :: self
+        integer :: r
+        r = self%n
+    end function
+    subroutine consume(object)
+        class(IValue), intent(in) :: object
+    end subroutine
+    subroutine polymorphic_source(object)
+        class(Payload), intent(in) :: object
+        call consume(object)
+    end subroutine
+    subroutine concrete_inspection(object)
+        class(IValue), intent(in) :: object
+        select type(object)
+        type is(Payload)
+            print *, object%n
+        end select
+    end subroutine
+end module traits_runtime_nyi_conversion_m
+
+module traits_runtime_nyi_projection_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(IValue) :: IChild
+    end interface
+contains
+    subroutine consume(object)
+        class(IValue), intent(in) :: object
+    end subroutine
+    subroutine project(object)
+        class(IChild), intent(in) :: object
+        call consume(object)
+    end subroutine
+end module traits_runtime_nyi_projection_m
+
+module traits_runtime_nyi_combination_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ITag
+        function tag() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    subroutine combined_view(object)
+        class(IValue + ITag), intent(in) :: object
+    end subroutine
+    function combined_function(object) result(r)
+        class(IValue + ITag), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module traits_runtime_nyi_combination_m

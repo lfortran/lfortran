@@ -635,6 +635,37 @@ namespace LCompilers {
                     }
                 }
 
+                void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+                    ASR::FunctionCall_t call{};
+                    call.m_name = x.m_name;
+                    call.m_args = x.m_args;
+                    call.n_args = x.n_args;
+                    call.m_type = x.m_type;
+                    visit_FunctionCall(call);
+                }
+
+                void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+                    ASR::SubroutineCall_t call{};
+                    call.m_name = x.m_name;
+                    call.m_args = x.m_args;
+                    call.n_args = x.n_args;
+                    visit_SubroutineCall(call);
+                }
+
+                void visit_TraitWitness(const ASR::TraitWitness_t &x) {
+                    for (const auto &entry : x.m_symtab->get_scope()) {
+                        visit_symbol(*entry.second);
+                    }
+                    Vec<char*> dependencies;
+                    dependencies.reserve(al, x.n_procedures);
+                    for (size_t i = 0; i < x.n_procedures; i++) {
+                        dependencies.push_back(al, ASRUtils::symbol_name(x.m_procedures[i]));
+                    }
+                    auto &witness = const_cast<ASR::TraitWitness_t&>(x);
+                    witness.m_dependencies = dependencies.p;
+                    witness.n_dependencies = dependencies.size();
+                }
+
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
                     if(fill_variable_dependencies){
                         variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));

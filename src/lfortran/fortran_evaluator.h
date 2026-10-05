@@ -132,7 +132,7 @@ public:
         ASR::asr_t &asr, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics,
-        LCompilers::PassManager& pass_manager);
+        LCompilers::PassManager& pass_manager, bool for_compilation=false);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
     Allocator &get_al() { return al; };

@@ -304,6 +304,7 @@ decl_attribute
 -- list; a lone name is still an AttrName.
     | AttrExpr(expr value)
     | AttrRank(expr* rank)
+    | AttrTraitClass(identifier* traits)
 
 simple_attribute
     = AttrAbstract

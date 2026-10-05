@@ -14,6 +14,9 @@ trait_requirement
 trait_binding
     = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)
 
+trait_slot
+    = (symbol* origins, symbol procedure)
+
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
@@ -45,6 +48,8 @@ symbol
     | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types)
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
+    | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
+    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -109,6 +114,7 @@ stmt
     | Expr(expr expression)
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
+    | TraitSubroutineCall(symbol name, int slot, call_arg* args)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -231,6 +237,12 @@ expr
     | GpuThreadIndex(int dim, ttype type, expr? value)
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
+    -- Packs borrow an exact concrete scalar; forwarding a view uses Var.
+    | TraitPack(expr payload, symbol witness, ttype type)
+    -- Only the witness's own typed adapters may recover its concrete payload.
+    | TraitReceiver(expr view, symbol witness, symbol type_declaration, ttype type)
+    -- args[0] is the borrowed view, including for a nopass implementation.
+    | TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
 
 ttype
     = Integer(int kind)
@@ -253,6 +265,7 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    | TraitObjectType(symbol contract)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a

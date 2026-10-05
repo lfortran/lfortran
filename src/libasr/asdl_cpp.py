@@ -427,6 +427,11 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((TraitImplementation_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
+        for name in ("TraitRuntimeContract", "TraitWitness"):
+            self.emit("case ASR::symbolType::%s: {" % name, 3)
+            self.emit("node_to_return = ( ASR::asr_t* ) ((%s_t*)sym);" % name, 4)
+            self.emit("return;", 4)
+            self.emit("}", 3)
         self.emit("case ASR::symbolType::AssociateBlock: {", 3)
         self.emit("node_to_return = ( ASR::asr_t* ) ((AssociateBlock_t*)sym);", 4)
         self.emit("return;", 4)
@@ -3761,6 +3766,9 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
         elif name.endswith("Constant") or name == "CompilerOptions":
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
+        elif name in ("TraitPack", "TraitReceiver", "TraitFunctionCall"):
+            self.emit("case ASR::exprType::%s: { return nullptr; }"
+                    % name, 2, new_line=False)
         else:
             self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_value; }"\
                     % (name, name), 2, new_line=False)

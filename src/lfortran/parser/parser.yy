@@ -1748,6 +1748,11 @@ declaration_type_spec
     | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" trait_name_list "+" id ")" {
+        Vec<ast_t*> names = $3;
+        names.push_back(p.m_a, $5);
+        $$ = make_AttrTraitClass_t(p.m_a, @$, REDUCE_ARGS(p.m_a, names), names.size());
+      }
     | KW_CLASS "(" id "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_NAME_KIND(Class, $3, $5, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;

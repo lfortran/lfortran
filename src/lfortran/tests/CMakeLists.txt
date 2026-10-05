@@ -150,6 +150,22 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (NOT WIN32 AND NOT EMSCRIPTEN)
+            foreach(mode normal fast)
+                set(runtime_trait_flags)
+                if (mode STREQUAL "fast")
+                    list(APPEND runtime_trait_flags --fast)
+                endif()
+                add_test(
+                    NAME test_runtime_trait_separate_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_separate_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags}
+                )
+            endforeach()
+        endif()
         add_test(
             NAME test_asr_text_edn_conformance
             COMMAND ${LFORTRAN_TEST_PYTHON}

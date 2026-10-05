@@ -4707,6 +4707,10 @@ public:
         {
             ASR::ttype_t* selector_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(m_selector));
+            if (ASR::is_a<ASR::TraitObjectType_t>(*selector_type)) {
+                trait_call_error("concrete select type inspection of runtime trait views "
+                    "is not implemented yet", x.m_selector->base.loc);
+            }
             if (!ASRUtils::is_class_type(selector_type)
                     && !ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
                 diag.add(Diagnostic(
@@ -9030,11 +9034,6 @@ public:
                 throw SemanticAbort();
             }
         }
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
-            && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
-            // check if asr owner is associate block.
-            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
-        }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         // If the call goes through a FunctionPointerCast temp, type-check
         // against the cast target interface so the call agrees with its callee.
@@ -9090,6 +9089,7 @@ public:
                         }
                     }
                     if (i < args.size() && args[i].m_value != nullptr) {
+                        adapt_runtime_trait_argument(args.p[i].m_value, f->m_args[i + offset]);
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
                         ASR::ttype_t* param_type = v->m_type;
@@ -9190,6 +9190,10 @@ public:
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
         }
         ASR::stmt_t* cast_stmt = nullptr;
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
+                && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);

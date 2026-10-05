@@ -5,11 +5,11 @@
             traits_static_01:
                 (Program
                     (SymbolTable
-                        12
+                        18
                         {
                             __implements_largebox_ivalue:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     __implements_largebox_ivalue
                                     2 __implements_largebox_ivalue
                                     traits_static_01_m
@@ -19,7 +19,7 @@
                                 ),
                             __implements_smallbox_ivalue:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     __implements_smallbox_ivalue
                                     2 __implements_smallbox_ivalue
                                     traits_static_01_m
@@ -30,11 +30,11 @@
                             __instantiated_read_value:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        20
                                         {
                                             res:
                                                 (Variable
-                                                    14
+                                                    20
                                                     res
                                                     []
                                                     ReturnVar
@@ -58,7 +58,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    14
+                                                    20
                                                     t
                                                     []
                                                     In
@@ -71,7 +71,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 smallbox
+                                                    18 smallbox
                                                     Source
                                                     Public
                                                     Required
@@ -87,7 +87,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    14
+                                                    20
                                                     x
                                                     []
                                                     In
@@ -100,7 +100,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 smallbox
+                                                    18 smallbox
                                                     Source
                                                     Public
                                                     Required
@@ -137,13 +137,13 @@
                                         Host
                                     )
                                     [__trait_adapter]
-                                    [(Var 14 x)]
+                                    [(Var 20 x)]
                                     [(Assignment
-                                        (Var 14 res)
+                                        (Var 20 res)
                                         (FunctionCall
-                                            12 __trait_adapter
+                                            18 __trait_adapter
                                             ()
-                                            [((Var 14 x))]
+                                            [((Var 20 x))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -152,7 +152,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 14 res)
+                                    (Var 20 res)
                                     Public
                                     .false.
                                     .false.
@@ -161,11 +161,11 @@
                             __instantiated_read_value1:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        22
                                         {
                                             res:
                                                 (Variable
-                                                    16
+                                                    22
                                                     res
                                                     []
                                                     ReturnVar
@@ -189,7 +189,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    16
+                                                    22
                                                     t
                                                     []
                                                     In
@@ -202,7 +202,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 largebox
+                                                    18 largebox
                                                     Source
                                                     Public
                                                     Required
@@ -218,7 +218,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    16
+                                                    22
                                                     x
                                                     []
                                                     In
@@ -231,7 +231,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 largebox
+                                                    18 largebox
                                                     Source
                                                     Public
                                                     Required
@@ -268,13 +268,13 @@
                                         Host
                                     )
                                     [__trait_adapter1]
-                                    [(Var 16 x)]
+                                    [(Var 22 x)]
                                     [(Assignment
-                                        (Var 16 res)
+                                        (Var 22 res)
                                         (FunctionCall
-                                            12 __trait_adapter1
+                                            18 __trait_adapter1
                                             ()
-                                            [((Var 16 x))]
+                                            [((Var 22 x))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -283,7 +283,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 16 res)
+                                    (Var 22 res)
                                     Public
                                     .false.
                                     .false.
@@ -292,11 +292,11 @@
                             __trait_adapter:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        19
                                         {
                                             res:
                                                 (Variable
-                                                    13
+                                                    19
                                                     res
                                                     []
                                                     ReturnVar
@@ -320,7 +320,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    19
                                                     self
                                                     []
                                                     In
@@ -333,7 +333,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 smallbox
+                                                    18 smallbox
                                                     Source
                                                     Private
                                                     Required
@@ -370,13 +370,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 self)]
+                                    [(Var 19 self)]
                                     [(Assignment
-                                        (Var 13 res)
+                                        (Var 19 res)
                                         (FunctionCall
-                                            12 small_value
+                                            18 small_value
                                             ()
-                                            [((Var 13 self))]
+                                            [((Var 19 self))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -385,7 +385,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 13 res)
+                                    (Var 19 res)
                                     Private
                                     .false.
                                     .false.
@@ -394,11 +394,11 @@
                             __trait_adapter1:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        21
                                         {
                                             res:
                                                 (Variable
-                                                    15
+                                                    21
                                                     res
                                                     []
                                                     ReturnVar
@@ -422,7 +422,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    15
+                                                    21
                                                     self
                                                     []
                                                     In
@@ -435,7 +435,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    12 largebox
+                                                    18 largebox
                                                     Source
                                                     Private
                                                     Required
@@ -472,13 +472,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 self)]
+                                    [(Var 21 self)]
                                     [(Assignment
-                                        (Var 15 res)
+                                        (Var 21 res)
                                         (FunctionCall
-                                            12 large_value
+                                            18 large_value
                                             ()
-                                            [((Var 15 self))]
+                                            [((Var 21 self))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -487,7 +487,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 15 res)
+                                    (Var 21 res)
                                     Private
                                     .false.
                                     .false.
@@ -495,7 +495,7 @@
                                 ),
                             ivalue:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     ivalue
                                     2 ivalue
                                     traits_static_01_m
@@ -505,7 +505,7 @@
                                 ),
                             large_value:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     large_value
                                     2 large_value
                                     traits_static_01_m
@@ -515,7 +515,7 @@
                                 ),
                             largebox:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     largebox
                                     2 largebox
                                     traits_static_01_m
@@ -525,7 +525,7 @@
                                 ),
                             left:
                                 (Variable
-                                    12
+                                    18
                                     left
                                     []
                                     Local
@@ -538,7 +538,7 @@
                                         .true.
                                         .false.
                                     )
-                                    12 smallbox
+                                    18 smallbox
                                     Source
                                     Public
                                     Required
@@ -554,7 +554,7 @@
                                 ),
                             read_value:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     read_value
                                     2 read_value
                                     traits_static_01_m
@@ -564,7 +564,7 @@
                                 ),
                             right:
                                 (Variable
-                                    12
+                                    18
                                     right
                                     []
                                     Local
@@ -577,7 +577,7 @@
                                         .true.
                                         .false.
                                     )
-                                    12 largebox
+                                    18 largebox
                                     Source
                                     Public
                                     Required
@@ -593,7 +593,7 @@
                                 ),
                             small_value:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     small_value
                                     2 small_value
                                     traits_static_01_m
@@ -603,7 +603,7 @@
                                 ),
                             smallbox:
                                 (ExternalSymbol
-                                    12
+                                    18
                                     smallbox
                                     2 smallbox
                                     traits_static_01_m
@@ -615,9 +615,9 @@
                     traits_static_01
                     [traits_static_01_m]
                     [(Assignment
-                        (Var 12 left)
+                        (Var 18 left)
                         (StructConstructor
-                            12 smallbox
+                            18 smallbox
                             [((IntegerConstant 7 (Integer 4) Decimal))]
                             (StructType
                                 [(Integer 4)]
@@ -632,9 +632,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 12 right)
+                        (Var 18 right)
                         (StructConstructor
-                            12 largebox
+                            18 largebox
                             [((IntegerConstant 11 (Integer 4) Decimal))]
                             (StructType
                                 [(Integer 4)]
@@ -652,9 +652,9 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                12 __instantiated_read_value
+                                18 __instantiated_read_value
                                 ()
-                                [((Var 12 left))]
+                                [((Var 18 left))]
                                 (Integer 4)
                                 ()
                                 ()
@@ -673,9 +673,9 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                12 __instantiated_read_value1
+                                18 __instantiated_read_value1
                                 ()
-                                [((Var 12 right))]
+                                [((Var 18 right))]
                                 (Integer 4)
                                 ()
                                 ()
@@ -694,9 +694,9 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                12 __instantiated_read_value
+                                18 __instantiated_read_value
                                 ()
-                                [((Var 12 left))]
+                                [((Var 18 left))]
                                 (Integer 4)
                                 ()
                                 ()
@@ -715,9 +715,9 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                12 __instantiated_read_value1
+                                18 __instantiated_read_value1
                                 ()
-                                [((Var 12 right))]
+                                [((Var 18 right))]
                                 (Integer 4)
                                 ()
                                 ()
@@ -757,6 +757,125 @@
                                     .false.)]
                                     Public
                                 ),
+                            __implements_largebox_ivalue_witness:
+                                (TraitWitness
+                                    (SymbolTable
+                                        16
+                                        {
+                                            __implements_largebox_ivalue_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    17
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    17
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __implements_largebox_ivalue_witness_0
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [large_value]
+                                                    [(Var 17 self)]
+                                                    [(Assignment
+                                                        (Var 17 res)
+                                                        (FunctionCall
+                                                            2 large_value
+                                                            ()
+                                                            [((TraitReceiver
+                                                                (Var 17 self)
+                                                                2 __implements_largebox_ivalue_witness
+                                                                2 largebox
+                                                                (StructType
+                                                                    [(Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 17 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    __implements_largebox_ivalue_witness
+                                    2 __trait_contract_ivalue
+                                    2 __implements_largebox_ivalue
+                                    [16 __implements_largebox_ivalue_witness_0]
+                                    [__implements_largebox_ivalue_witness_0]
+                                    Source
+                                ),
                             __implements_smallbox_ivalue:
                                 (TraitImplementation
                                     2
@@ -774,6 +893,229 @@
                                     self
                                     .false.)]
                                     Public
+                                ),
+                            __implements_smallbox_ivalue_witness:
+                                (TraitWitness
+                                    (SymbolTable
+                                        14
+                                        {
+                                            __implements_smallbox_ivalue_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        15
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    15
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    15
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __implements_smallbox_ivalue_witness_0
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [small_value]
+                                                    [(Var 15 self)]
+                                                    [(Assignment
+                                                        (Var 15 res)
+                                                        (FunctionCall
+                                                            2 small_value
+                                                            ()
+                                                            [((TraitReceiver
+                                                                (Var 15 self)
+                                                                2 __implements_smallbox_ivalue_witness
+                                                                2 smallbox
+                                                                (StructType
+                                                                    [(Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 15 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    __implements_smallbox_ivalue_witness
+                                    2 __trait_contract_ivalue
+                                    2 __implements_smallbox_ivalue
+                                    [14 __implements_smallbox_ivalue_witness_0]
+                                    [__implements_smallbox_ivalue_witness_0]
+                                    Source
+                                ),
+                            __trait_contract_ivalue:
+                                (TraitRuntimeContract
+                                    (SymbolTable
+                                        5
+                                        {
+                                            __trait_ivalue_get_value:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            res:
+                                                                (Variable
+                                                                    6
+                                                                    res
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    6
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __trait_ivalue_get_value
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 6 self)]
+                                                    []
+                                                    (Var 6 res)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __trait_member_ivalue_get_value:
+                                                (ExternalSymbol
+                                                    5
+                                                    __trait_member_ivalue_get_value
+                                                    3 get_value
+                                                    traits_static_01_m
+                                                    [ivalue]
+                                                    get_value
+                                                    Private
+                                                )
+                                        })
+                                    __trait_contract_ivalue
+                                    2 ivalue
+                                    [([5 __trait_member_ivalue_get_value]
+                                    5 __trait_ivalue_get_value)]
                                 ),
                             __trait_member_ivalue_get_value:
                                 (ExternalSymbol
@@ -855,13 +1197,13 @@
                             large_value:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        10
                                         {
                                             1_largebox_value:
                                                 (ExternalSymbol
-                                                    8
+                                                    10
                                                     1_largebox_value
-                                                    6 value
+                                                    8 value
                                                     traits_static_01_m
                                                     [largebox]
                                                     value
@@ -869,7 +1211,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    8
+                                                    10
                                                     res
                                                     []
                                                     ReturnVar
@@ -893,7 +1235,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    8
+                                                    10
                                                     self
                                                     []
                                                     In
@@ -943,15 +1285,15 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 self)]
+                                    [(Var 10 self)]
                                     [(Assignment
-                                        (Var 8 res)
+                                        (Var 10 res)
                                         (IntegerBinOp
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             Mul
                                             (StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_largebox_value
+                                                (Var 10 self)
+                                                10 1_largebox_value
                                                 (Integer 4)
                                                 ()
                                             )
@@ -962,7 +1304,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 8 res)
+                                    (Var 10 res)
                                     Public
                                     .true.
                                     .true.
@@ -971,11 +1313,11 @@
                             largebox:
                                 (Struct
                                     (SymbolTable
-                                        6
+                                        8
                                         {
                                             value:
                                                 (Variable
-                                                    6
+                                                    8
                                                     value
                                                     []
                                                     Local
@@ -1021,21 +1363,21 @@
                             read_value:
                                 (Template
                                     (SymbolTable
-                                        9
+                                        11
                                         {
                                             __constraint_t:
                                                 (TraitConstraint
-                                                    9
+                                                    11
                                                     __constraint_t
-                                                    9 t
+                                                    11 t
                                                     2 ivalue
-                                                    [(9 __trait_member_ivalue_get_value
-                                                    9 __trait_t_get_value)]
+                                                    [(11 __trait_member_ivalue_get_value
+                                                    11 __trait_t_get_value)]
                                                     []
                                                 ),
                                             __trait_member_ivalue_get_value:
                                                 (ExternalSymbol
-                                                    9
+                                                    11
                                                     __trait_member_ivalue_get_value
                                                     3 get_value
                                                     traits_static_01_m
@@ -1046,11 +1388,11 @@
                                             __trait_t_get_value:
                                                 (Function
                                                     (SymbolTable
-                                                        11
+                                                        13
                                                         {
                                                             res:
                                                                 (Variable
-                                                                    11
+                                                                    13
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -1074,7 +1416,7 @@
                                                                 ),
                                                             self:
                                                                 (Variable
-                                                                    11
+                                                                    13
                                                                     self
                                                                     []
                                                                     In
@@ -1122,9 +1464,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 11 self)]
+                                                    [(Var 13 self)]
                                                     []
-                                                    (Var 11 res)
+                                                    (Var 13 res)
                                                     Private
                                                     .false.
                                                     .false.
@@ -1133,11 +1475,11 @@
                                             read_value:
                                                 (Function
                                                     (SymbolTable
-                                                        10
+                                                        12
                                                         {
                                                             res:
                                                                 (Variable
-                                                                    10
+                                                                    12
                                                                     res
                                                                     []
                                                                     ReturnVar
@@ -1161,7 +1503,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    10
+                                                                    12
                                                                     t
                                                                     []
                                                                     In
@@ -1189,7 +1531,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    10
+                                                                    12
                                                                     x
                                                                     []
                                                                     In
@@ -1237,13 +1579,13 @@
                                                         Host
                                                     )
                                                     [__trait_t_get_value]
-                                                    [(Var 10 x)]
+                                                    [(Var 12 x)]
                                                     [(Assignment
-                                                        (Var 10 res)
+                                                        (Var 12 res)
                                                         (FunctionCall
-                                                            9 __trait_t_get_value
+                                                            11 __trait_t_get_value
                                                             ()
-                                                            [((Var 10 x))]
+                                                            [((Var 12 x))]
                                                             (Integer 4)
                                                             ()
                                                             ()
@@ -1252,7 +1594,7 @@
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 10 res)
+                                                    (Var 12 res)
                                                     Public
                                                     .false.
                                                     .false.
@@ -1260,7 +1602,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    9
+                                                    11
                                                     t
                                                     []
                                                     In
@@ -1294,13 +1636,13 @@
                             small_value:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        9
                                         {
                                             1_smallbox_value:
                                                 (ExternalSymbol
-                                                    7
+                                                    9
                                                     1_smallbox_value
-                                                    5 value
+                                                    7 value
                                                     traits_static_01_m
                                                     [smallbox]
                                                     value
@@ -1308,7 +1650,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    7
+                                                    9
                                                     res
                                                     []
                                                     ReturnVar
@@ -1332,7 +1674,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    7
+                                                    9
                                                     self
                                                     []
                                                     In
@@ -1382,12 +1724,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 self)]
+                                    [(Var 9 self)]
                                     [(Assignment
-                                        (Var 7 res)
+                                        (Var 9 res)
                                         (StructInstanceMember
-                                            (Var 7 self)
-                                            7 1_smallbox_value
+                                            (Var 9 self)
+                                            9 1_smallbox_value
                                             (Integer 4)
                                             ()
                                         )
@@ -1395,7 +1737,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 7 res)
+                                    (Var 9 res)
                                     Public
                                     .true.
                                     .true.
@@ -1404,11 +1746,11 @@
                             smallbox:
                                 (Struct
                                     (SymbolTable
-                                        5
+                                        7
                                         {
                                             value:
                                                 (Variable
-                                                    5
+                                                    7
                                                     value
                                                     []
                                                     Local

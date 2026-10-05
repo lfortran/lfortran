@@ -12,6 +12,8 @@
 "symbol.Trait" = "non-executable"
 "symbol.TraitConstraint" = "metadata"
 "symbol.TraitImplementation" = "metadata"
+"symbol.TraitRuntimeContract" = "metadata"
+"symbol.TraitWitness" = "helper:module witness emission"
 "symbol.Namelist" = "helper:formatted I/O"
 
 "type_set_operation.TypeSetBinary" = "metadata"
@@ -73,6 +75,7 @@
 "ttype.TypeParameter" = "helper:LLVM type lowering"
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"
+"ttype.TraitObjectType" = "helper:LLVM type lowering"
 
 "attribute.Attribute" = "metadata"
 "tbind.Bind" = "metadata"

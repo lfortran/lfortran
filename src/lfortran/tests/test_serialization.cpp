@@ -1154,6 +1154,309 @@ TEST_CASE("Trait AST and ASR serialization") {
     asr_mod(trait_serialization_source);
 }
 
+static const std::string runtime_trait_serialization_source = R"(
+module runtime_trait_serialization_m
+implicit none
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+    function tag(code) result(r)
+        integer, intent(in) :: code
+        integer :: r
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+type :: Other
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure, pass :: value => read_value
+    procedure, nopass :: tag => read_tag
+end implements
+contains
+function read_value(self) result(r)
+    class(Payload), intent(in) :: self
+    integer :: r
+    r = self%n
+end function
+function read_tag(code) result(r)
+    integer, intent(in) :: code
+    integer :: r
+    r = 100 + code
+end function
+function observe(object) result(r)
+    class(IValue), intent(in) :: object
+    integer :: r
+    r = object%value()
+end function
+function forward(object) result(r)
+    class(IValue), intent(in) :: object
+    integer :: r
+    r = observe(object)
+end function
+function construct(object) result(r)
+    type(Payload), intent(in) :: object
+    integer :: r
+    r = forward(object)
+end function
+end module
+)";
+
+TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    ast_ser(runtime_trait_serialization_source);
+    asr_ser(runtime_trait_serialization_source);
+    asr_mod(runtime_trait_serialization_source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, runtime_trait_serialization_source,
+        diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("runtime_trait_serialization_m"));
+    auto *contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("ivalue"));
+    REQUIRE(contract);
+    REQUIRE(contract->n_slots == 2);
+    ASR::TraitWitness_t *witness = nullptr;
+    for (auto &entry : module->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        }
+    }
+    REQUIRE(witness);
+    auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(
+        ASRUtils::symbol_get_past_external(witness->m_implementation));
+    auto function = [&](const std::string &name) {
+        return ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
+    };
+    auto *observe = function("observe");
+    auto *dispatch = ASR::down_cast<ASR::TraitFunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(observe->m_body[0])->m_value);
+    auto *construction = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(function("construct")->m_body[0])->m_value);
+    auto *pack = ASR::down_cast<ASR::TraitPack_t>(construction->m_args[0].m_value);
+    auto *forward = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(function("forward")->m_body[0])->m_value);
+    CHECK(ASR::is_a<ASR::Var_t>(*forward->m_args[0].m_value));
+    CHECK(ASRUtils::symbol_get_past_external(pack->m_witness) == &witness->base);
+    CHECK(ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+        module->m_symtab->get_symbol("payload"));
+    CHECK(ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("payload"))->m_parent == nullptr);
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("text named and positional preserve canonical witness references") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            std::string text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "runtime_traits.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("missing witness slot") {
+        witness->n_procedures = 0;
+        rejects("asr.verify.trait_witness.complete");
+    }
+    SUBCASE("missing selected witness") {
+        pack->m_witness = nullptr;
+        rejects("asr.verify.trait_pack.required_fields");
+    }
+    SUBCASE("wrong witness slot signature") {
+        witness->m_procedures[0] = witness->m_procedures[1];
+        witness->m_dependencies[0] = ASRUtils::symbol_name(witness->m_procedures[1]);
+        rejects("asr.verify.trait_witness.signature");
+    }
+    SUBCASE("an adapter must belong to its witness scope") {
+        witness->m_procedures[0] = &function("read_tag")->base;
+        witness->m_dependencies[0] = function("read_tag")->m_name;
+        rejects("asr.verify.trait_witness.unique_procedure");
+    }
+    SUBCASE("out of scope selected witness") {
+        auto *reference = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, pack->base.base.loc, observe->m_symtab, LCompilers::s2c(al, "foreign_witness"),
+            &witness->base, module->m_name, nullptr, 0, witness->m_name,
+            ASR::accessType::Private));
+        observe->m_symtab->add_symbol("foreign_witness", reference);
+        pack->m_witness = reference;
+        rejects("asr.verify.trait_borrow.witness_in_scope");
+    }
+    SUBCASE("type set cannot supply a runtime view") {
+        ASR::down_cast<ASR::Trait_t>(
+            module->m_symtab->get_symbol("ivalue"))->m_kind =
+                ASR::trait_kindType::IntrinsicTypeSet;
+        rejects("asr.verify.trait_implementation.not_type_set");
+    }
+    SUBCASE("duplicate witness slot") {
+        witness->m_procedures[1] = witness->m_procedures[0];
+        rejects("asr.verify.trait_witness.unique_procedure");
+    }
+    SUBCASE("wrong dynamic slot") {
+        dispatch->m_slot = 1 - dispatch->m_slot;
+        rejects("asr.verify.trait_call.slot");
+    }
+    SUBCASE("wrong nominal pack payload") {
+        ASRUtils::EXPR2VAR(pack->m_payload)->m_type_declaration =
+            module->m_symtab->get_symbol("other");
+        rejects("asr.verify.trait_pack.nominal_type");
+    }
+    SUBCASE("borrowed dummy is not an owner") {
+        auto *var = ASRUtils::EXPR2VAR(observe->m_args[0]);
+        var->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var->base.base.loc, var->m_type));
+        rejects("asr.verify.call.actual_allocatable_matches_formal");
+    }
+    SUBCASE("borrowed view is not a plain local") {
+        ASRUtils::EXPR2VAR(observe->m_args[0])->m_intent = ASR::intentType::Local;
+        rejects("asr.verify.trait_view.borrowed_storage");
+    }
+    SUBCASE("binding has wrong result signature") {
+        auto *proc = function("read_value");
+        auto *type = ASRUtils::TYPE(ASR::make_Real_t(al, proc->base.base.loc, 4));
+        ASRUtils::EXPR2VAR(proc->m_return_var)->m_type = type;
+        ASRUtils::get_FunctionType(proc)->m_return_var_type = type;
+        rejects("asr.verify.trait_witness.binding_signature");
+    }
+    SUBCASE("binding has wrong nominal receiver") {
+        ASRUtils::EXPR2VAR(function("read_value")->m_args[0])->m_type_declaration =
+            module->m_symtab->get_symbol("other");
+        rejects("asr.verify.trait_witness.receiver_type");
+    }
+    SUBCASE("nominal origins cannot disappear") {
+        contract->m_slots[0].n_origins = 0;
+        rejects("asr.verify.trait_contract.origins");
+    }
+    SUBCASE("runtime interface cannot become an ordinary direct call") {
+        ASR::down_cast<ASR::Assignment_t>(observe->m_body[0])->m_value =
+            ASRUtils::EXPR(ASR::make_FunctionCall_t(al, dispatch->base.base.loc,
+                dispatch->m_name, nullptr, dispatch->m_args, dispatch->n_args,
+                dispatch->m_type, nullptr, nullptr));
+        rejects("asr.verify.trait_call.dynamic_required");
+    }
+    SUBCASE("consumer cannot recover an arbitrary concrete payload") {
+        const auto &loc = dispatch->base.base.loc;
+        auto *recovery = ASRUtils::EXPR(ASR::make_TraitReceiver_t(al, loc,
+            observe->m_args[0], &witness->base, implementation->m_type_declaration,
+            implementation->m_implementing_type));
+        ASR::call_arg_t *arg = al.allocate<ASR::call_arg_t>(1);
+        arg->loc = loc;
+        arg->m_value = recovery;
+        ASR::down_cast<ASR::Assignment_t>(observe->m_body[0])->m_value =
+            ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                &function("read_value")->base, nullptr, arg, 1,
+                dispatch->m_type, nullptr, nullptr));
+        LCompilers::PassUtils::UpdateDependenciesVisitor dependencies(al);
+        dependencies.visit_TranslationUnit(*result.result);
+        rejects("asr.verify.trait_receiver.authorized_adapter");
+    }
+}
+
+TEST_CASE("Runtime trait combinations report their declaration boundary") {
+    const std::string contracts = R"(
+module runtime_combo_contracts
+abstract interface :: A
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface :: B
+    function other() result(r)
+        integer :: r
+    end function
+end interface
+end module
+)";
+    for (const auto &declaration : {"program combined\n", "subroutine combined()\n",
+            "function combined() result(r)\n"}) {
+        CAPTURE(declaration);
+        const std::string source = contracts + declaration +
+            "use runtime_combo_contracts\nimplicit none\n"
+            "class(A + B), pointer :: view\ninteger :: r\nend\n";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        LCompilers::LocationManager lm;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        CHECK_FALSE(result.ok);
+        CHECK(diagnostics.render2().find(
+            "runtime trait combinations are not implemented yet") != std::string::npos);
+    }
+}
+
+TEST_CASE("Runtime trait slots retain diamonds and independent nominal origins") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    std::string source = R"(
+module runtime_origins_m
+abstract interface :: IBase
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface, extends(IBase) :: ILeft
+end interface
+abstract interface, extends(IBase) :: IRight
+end interface
+abstract interface :: IIndependent
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface, extends(ILeft + IRight + IIndependent) :: ICombined
+end interface
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("runtime_origins_m"));
+    auto *contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("icombined"));
+    REQUIRE(contract);
+    REQUIRE(contract->n_slots == 1);
+    CHECK(contract->m_slots[0].n_origins == 2);
+    auto *first = ASRUtils::symbol_get_past_external(contract->m_slots[0].m_origins[0]);
+    auto *second = ASRUtils::symbol_get_past_external(contract->m_slots[0].m_origins[1]);
+    CHECK(ASRUtils::get_asr_owner(first) == module->m_symtab->get_symbol("ibase"));
+    CHECK(ASRUtils::get_asr_owner(second) == module->m_symtab->get_symbol("iindependent"));
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    ast_ser(printed);
+    asr_ser(printed);
+    ast_ser("module runtime_combination_m\ncontains\nsubroutine f(x)\n"
+        "class(A + B), intent(in) :: x\nend subroutine\nend module\n");
+}
+
 TEST_CASE("Trait dependent signature normalization and serialization") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
