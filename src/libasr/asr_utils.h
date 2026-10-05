@@ -180,6 +180,9 @@ bool is_finalizable_function_reference(ASR::expr_t* expr);
 // Whether `expr` or one of its subexpressions is such a reference.
 bool contains_finalizable_function_reference(ASR::expr_t* expr);
 
+// Whether `expr` or one of its subexpressions is a function reference.
+bool contains_function_reference(ASR::expr_t* expr);
+
 // Whether `x` contains no other statement and does not transfer control
 // elsewhere, so that it can be made the body of a BLOCK that is left only
 // by completing it (or by terminating the program).

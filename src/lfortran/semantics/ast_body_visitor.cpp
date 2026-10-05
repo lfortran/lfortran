@@ -9658,10 +9658,11 @@ public:
                     diag::Label("", {test_int->base.loc})}));
             throw SemanticAbort();
         }
-        if (ASRUtils::contains_finalizable_function_reference(test_int)) {
-            // The test is evaluated once, and the results of the functions
-            // it references are finalized after that (F2018 7.5.6.3 p5):
-            // the two comparisons below would otherwise share the reference.
+        if (ASRUtils::contains_function_reference(test_int)) {
+            // The test is evaluated once (F2008 8.2.4), so the functions it
+            // references are invoked once, and their results are finalized
+            // after that (F2018 7.5.6.3 p5): the two comparisons below would
+            // otherwise each evaluate the reference.
             std::string tmp_name = current_scope->get_unique_name(
                 "__lfortran_arithmetic_if_test");
             ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(
