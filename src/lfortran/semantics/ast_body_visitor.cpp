@@ -3707,6 +3707,15 @@ public:
                 if( AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i].m_start) ) {
                     AST::FuncCallOrArray_t* func_call_t =
                         AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
+                    if (func_call_t->n_member > 0) {
+                        diag.add(Diagnostic(
+                            "type-spec in ALLOCATE must be a derived type name",
+                            Level::Error, Stage::Semantic, {
+                                Label("type-spec in ALLOCATE must be a type name, not a component or element reference",
+                                    {x.m_args[i].m_start->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     std::string type_name = to_lower(std::string(func_call_t->m_func));
                     if( type_name == "character" ) {
                         if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
@@ -3771,6 +3780,15 @@ public:
                     }
                 } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
+                    if (name_t->n_member > 0) {
+                        diag.add(Diagnostic(
+                            "type-spec in ALLOCATE must be a derived type name",
+                            Level::Error, Stage::Semantic, {
+                                Label("type-spec in ALLOCATE must be a type name, not a component or element reference",
+                                    {x.m_args[i].m_start->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     std::string name_lower = to_lower(name_t->m_id);
                     if( name_lower == "integer" ) {
                         new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,

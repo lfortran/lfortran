@@ -3077,6 +3077,12 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
+semantic error: No matching `operator(-)` found for this operand type
+    --> tests/errors/continue_compilation_1.f90:2081:10
+     |
+2081 |     qq = -q  ! {Error} No matching `operator(-)` found for this operand type
+     |          ^^ 
+
 semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
     --> tests/errors/continue_compilation_1.f90:2102:34
      |
@@ -3094,3 +3100,15 @@ semantic error: Variable 'x' not declared
      |
 2127 |     print *, size(x%c)
      |                   ^^^ 
+
+semantic error: type-spec in ALLOCATE must be a derived type name
+    --> tests/errors/continue_compilation_1.f90:2137:14
+     |
+2137 |     allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
+     |              ^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference
+
+semantic error: type-spec in ALLOCATE must be a derived type name
+    --> tests/errors/continue_compilation_1.f90:2138:14
+     |
+2138 |     allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
+     |              ^^^^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference

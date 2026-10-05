@@ -2126,3 +2126,14 @@ subroutine derived_type_local_bound_02(n)
     type(t) :: x
     print *, size(x%c)
 end subroutine
+
+subroutine test_issue_13826()
+    type :: t
+        integer :: k = 5
+    end type
+    class(t), allocatable :: y
+    integer :: arr(3)
+
+    allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
+    allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
+end subroutine test_issue_13826
