@@ -2545,3 +2545,62 @@ contains
         y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
     end subroutine
 end module
+
+module continue_compilation_templates_01_defasgn
+    implicit none
+
+    requirement defasgn_r{lhs_t, rhs_t, assign_i}
+        deferred type :: lhs_t, rhs_t
+        deferred interface
+            subroutine assign_i(lhs, rhs)
+                type(lhs_t), intent(out) :: lhs
+                type(rhs_t), intent(in) :: rhs
+            end subroutine
+        end interface
+    end requirement
+
+    template defasgn_tmpl{copy_t, original_t, assign_s}
+        deferred type :: copy_t, original_t
+        require :: defasgn_r{copy_t, original_t, assign_s}
+        interface assignment(=)
+            module procedure assign_s
+        end interface
+    contains
+        function defasgn_copy(original) result(copy)
+            type(copy_t) :: original
+            type(original_t) :: copy
+            copy = original  ! {Error} Type mismatch in assignment, the types must be compatible
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_clash_tmpl
+    implicit none
+    template clash_t {T}
+        deferred type :: T
+        type :: clash_box
+            type(T) :: x
+        end type
+    contains
+        function clash_get(b) result(r)
+            type(clash_box), intent(in) :: b
+            type(T) :: r
+            r = b%x
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_clash
+    use continue_compilation_templates_01_clash_tmpl
+    implicit none
+    type :: clash_box
+        real :: y
+    end type
+    instantiate clash_t {integer}  ! {Error} the instantiation of template 'clash_t' defines 'clash_box', which is already declared in this scope
+contains
+    subroutine clash_proc()
+        integer :: clash_get
+        instantiate clash_t {real}  ! {Error} the instantiation of template 'clash_t' defines 'clash_get', which is already declared in this scope
+        clash_get = 1
+    end subroutine
+end module
