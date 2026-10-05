@@ -426,25 +426,65 @@ use a stable feature-based smoke suite: macOS/LLVM 11 and Linux/LLVM 21, plus
 LLVM 7/23 compatibility checks. Existing required check names are retained.
 Windows keeps its native build and supported
 compile/link/run checks. Metal, CUDA-on-CPU and the compiler-to-WASM check remain
-enabled. Shared jobs add a Release LLVM 11 compiler for selected third-party
-projects and coarrays, LLVM-to-WASM coverage, and no-LLVM/MLIR builds.
+enabled. Shared jobs add a Release LLVM 11 compiler for the Caffeine coarray
+backend, LLVM-to-WASM coverage, and no-LLVM/MLIR builds.
 
 Quick also samples separate compilation, leak detection and Fortran 2023
 options, and runs the small single-invocation suite. It reuses the jobs in
-`Compiler-Compatibility-CI.yml` with `quick: true`; this does not launch a second,
-standalone exhaustive PR run.
+`Compiler-Compatibility-CI.yml` with `quick: true`. Ordinary PRs run only the
+small gate of the standalone Exhaustive workflow; its compiler jobs require
+an explicit request.
 The existing protected `Build LFortran to WASM and Upload` status aggregates
 all Quick jobs, including compatibility failures, without requiring a branch
 protection change.
 
-Every push to `main` and every `v*` tag still runs **both full workflows**,
-including the complete LLVM matrix, full platform suites and existing
-third-party, documentation, packaging and JupyterLite checks. Main runs are
-not automatically cancelled or rotated. Maintainers may cancel older runs
-manually when runners are saturated, keeping the latest run.
+**Third-party applications generate bugs for the integration suite; they are
+not a PR regression suite.** The application catalog runs on every push to
+`main`, where it both finds coverage gaps and demonstrates compatibility with
+real applications. It does not run on PRs, including explicitly requested
+Exhaustive checks or manual checks on a PR branch. There is no automatic
+exception for changes to serialization, finalization, I/O or GPU lowering.
+FIATS and other applications remain main-only even when built with GPU flags.
 
-There is no exhaustive PR label or label-triggered rerun. For an exceptional
-PR needing full coverage, dispatch it on the branch in your fork:
+Caffeine is different: it supplies the coarray runtime backend. Building it
+and running the coarray capability checks remains part of Quick, just as
+Metal and CUDA-on-CPU integration tests validate particular backends and
+platforms. Toolchain/runtime dependencies are not the application catalog.
+
+When an application finds a compiler bug, reduce the failure to a registered
+integration regression in the relevant modes, fix the compiler, and verify
+the original application failure. Promptly fix or revert a regression on main.
+The lasting protection for future PRs is the integration test, not adding the
+whole application to Quick. Finding such a gap on main is an accepted trade-off,
+not a reason to silently ignore the failing application check.
+
+Every main push keeps the full LLVM matrix, full platform suites, application,
+documentation, packaging and JupyterLite checks. Main runs are not automatically
+cancelled or rotated. Maintainers may cancel older runs manually when runners
+are saturated, keeping the latest run.
+
+**Releases require green main, including application validation.** The commit
+selected for release must have passed the full main CI. A green Quick PR or
+extended compiler run is not a substitute. Release-tag workflows still run
+compiler, documentation and packaging checks; they do not repeat the application
+catalog already validated on main.
+
+Use `Tests::Run-Exhaustive` only for rare, explicitly requested extended compiler
+coverage, for example a particular major refactor. It is not a normal condition
+for marking a PR ready, and automation must not apply it based on the subsystem
+being changed. Add it with:
+
+```bash
+gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive
+```
+
+The label controller reruns the current PR revision's Exhaustive workflow,
+whose gate reads the live labels. Subsequent pushes run extended checks while
+the label remains present. Unrelated label changes do not replace the result.
+GitHub cannot rerun workflows older than 30 days; push a new commit or close
+and reopen an older PR before requesting these checks.
+
+Alternatively, explicitly dispatch extended compiler checks on your fork:
 
 ```bash
 gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
@@ -453,9 +493,10 @@ gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
 gh run watch <run-id> --repo <fork-owner>/lfortran
 ```
 
-Check that the run tested the intended head SHA. The manual run also invokes
-Quick in its full main-style mode, including the complete macOS suite, so it
-covers both workflows without publishing or deploying. These runs need not
+Check that the run tested the intended head SHA. Both labeled and manually
+requested runs also invoke Quick in its full main-style mode, including the
+complete macOS suite, without cancelling ordinary Quick checks. They do not
+run the application catalog, publish or deploy. Manual fork runs need not
 appear among the upstream PR's checks.
 
 To run the representative integration subset locally:

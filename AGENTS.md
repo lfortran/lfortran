@@ -133,17 +133,33 @@ only once, redirect to a log file and then examine the log file.
 
 - `Quick checks` is the normal PR gate. It runs full Linux LLVM/reference
   coverage and representative checks on every platform, plus shared compiler
-  compatibility jobs. No exhaustive label is required before review or merge.
-- Every push to `main` and every `v*` tag retains the full Quick and Exhaustive
-  suites and LLVM matrix. Do not automatically cancel or coalesce main runs;
-  maintainers may manually cancel older runs while keeping the latest.
-- Run full PR CI only when explicitly requested, using
-  `gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>`.
-  Verify the manual run's head SHA and result in the fork, not just the upstream
-  PR checks. Manual full runs do not publish or deploy.
+  compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
+  capability checks in Quick. No exhaustive label is required before review
+  or merge.
+- Third-party applications are **bug generators for integration tests**, not a
+  PR regression suite. Run the application catalog on every push to `main`,
+  never on ordinary, labeled or manually dispatched PR checks. This includes
+  applications such as FIATS even when built with GPU flags.
+- A compiler failure found by an application must become a reduced, registered
+  integration regression. Fix it promptly or revert the offending change,
+  and verify the original application failure as well as the regression.
+  Do not add whole applications to Quick or waive their failures.
+- Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
+  checks. Do not apply it automatically based on files or compiler subsystems
+  touched. It does not enable the application catalog on a PR. Manual dispatch
+  in a fork is an alternative; verify its tested SHA and result there.
+- Every main push keeps the full compiler matrix and application validation.
+  Main runs are not automatically cancelled or coalesced; maintainers may
+  manually cancel older runs while keeping the latest. Release-tag workflows
+  keep compiler and packaging checks without repeating the application catalog.
+- Release only a tested main commit whose full CI, including applications,
+  is green. Quick or extended PR checks alone do not qualify a release.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
+
+See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
+and the distinction between capability tests and application validation.
 
 ### Test Placement Decision Tree
 - If the test compiles and runs end-to-end → integration test (preferred).

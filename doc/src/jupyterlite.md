@@ -22,8 +22,9 @@ pixi run lab   # builds the WASM kernel and the site, then serves it at
 
 The site is built and deployed by the `build_xlfortran_jupyterlite` and
 `deploy_jupyterlite` jobs in `.github/workflows/Exhaustive-Checks-CI.yml`.
-The build runs on every push to `main`, release tags, and explicitly dispatched
-full checks on a branch. Deployment runs only on pushes to `main`. Ordinary PRs
+The build runs on every push to `main`, release tags, and explicitly requested
+Exhaustive checks (the rare `Tests::Run-Exhaustive` PR label or a manual dispatch).
+Deployment runs only on pushes to `main`. Ordinary PRs
 run Quick checks instead; they still build and test the standalone WASM compiler.
 The full jobs run the same scripts the pixi tasks below wrap:
 

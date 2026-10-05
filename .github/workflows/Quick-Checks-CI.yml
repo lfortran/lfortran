@@ -10,11 +10,16 @@ on:
     branches:
       - main
   workflow_call:
+    inputs:
+      full:
+        description: Run full platform suites for explicitly requested Exhaustive checks
+        type: boolean
+        default: false
 
 # Main runs stay independent per commit; only superseded PR runs are cancelled.
-# A literal prefix keeps manual calls distinct from the calling workflow's group.
+# Full calls must neither cancel normal Quick checks nor their caller.
 concurrency:
-  group: quick-${{ github.event.number || github.sha }}
+  group: quick-${{ inputs.full && 'full' || 'default' }}-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -26,8 +31,8 @@ jobs:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     env:
-      LFORTRAN_TEST_SUITE: ${{ github.event_name == 'pull_request' && (matrix.os != 'ubuntu-latest' || matrix.llvm-version != '11') && 'smoke' || 'full' }}
-      LFORTRAN_CI_RELEASE: ${{ github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.llvm-version != '11' && '1' || '0' }}
+      LFORTRAN_TEST_SUITE: ${{ github.event_name == 'pull_request' && !inputs.full && (matrix.os != 'ubuntu-latest' || matrix.llvm-version != '11') && 'smoke' || 'full' }}
+      LFORTRAN_CI_RELEASE: ${{ github.event_name == 'pull_request' && !inputs.full && matrix.os == 'ubuntu-latest' && matrix.llvm-version != '11' && '1' || '0' }}
     strategy:
       fail-fast: false
       matrix:
@@ -333,7 +338,7 @@ jobs:
 
   compatibility:
     name: Compiler compatibility
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && !inputs.full
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
       quick: true
@@ -444,12 +449,13 @@ jobs:
           WASM_RESULT: ${{ needs.build_to_wasm_and_upload.result }}
           COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
           EVENT_NAME: ${{ github.event_name }}
+          FULL_COVERAGE: ${{ inputs.full }}
         run: |
           if [ "$BUILD_RESULT" != success ] || [ "$WASM_RESULT" != success ]; then
             echo "::error::Quick platform or WASM checks did not pass"
             exit 1
           fi
-          if [ "$EVENT_NAME" = pull_request ] && [ "$COMPATIBILITY_RESULT" != success ]; then
+          if [ "$EVENT_NAME" = pull_request ] && [ "$FULL_COVERAGE" != true ] && [ "$COMPATIBILITY_RESULT" != success ]; then
             echo "::error::Quick compiler compatibility checks did not pass"
             exit 1
           fi

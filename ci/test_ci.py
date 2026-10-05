@@ -135,18 +135,20 @@ class RunnerTests(unittest.TestCase):
         self.assertIn("if: ${{ !cancelled() }}", status)
         script = status.split("        run: |\n", 1)[1]
         cases = (
-            ("pull_request", "success", "success", "success", True),
-            ("pull_request", "success", "success", "failure", False),
-            ("pull_request", "success", "success", "skipped", False),
-            ("pull_request", "failure", "success", "success", False),
-            ("pull_request", "success", "failure", "success", False),
-            ("push", "success", "success", "skipped", True),
-            ("workflow_dispatch", "success", "success", "skipped", True),
-            ("push", "skipped", "success", "skipped", False),
+            ("pull_request", "false", "success", "success", "success", True),
+            ("pull_request", "false", "success", "success", "failure", False),
+            ("pull_request", "false", "success", "success", "skipped", False),
+            ("pull_request", "false", "failure", "success", "success", False),
+            ("pull_request", "false", "success", "failure", "success", False),
+            ("pull_request", "true", "success", "success", "skipped", True),
+            ("pull_request", "true", "failure", "success", "skipped", False),
+            ("push", "false", "success", "success", "skipped", True),
+            ("workflow_dispatch", "true", "success", "success", "skipped", True),
+            ("push", "false", "skipped", "success", "skipped", False),
         )
-        for event, build, wasm, compatibility, success in cases:
-            with self.subTest(event=event, build=build, wasm=wasm, compatibility=compatibility):
-                env = dict(os.environ, EVENT_NAME=event, BUILD_RESULT=build,
+        for event, full, build, wasm, compatibility, success in cases:
+            with self.subTest(event=event, full=full, build=build, wasm=wasm, compatibility=compatibility):
+                env = dict(os.environ, EVENT_NAME=event, FULL_COVERAGE=full, BUILD_RESULT=build,
                            WASM_RESULT=wasm, COMPATIBILITY_RESULT=compatibility)
                 result = subprocess.run(["bash"], input=script, env=env,
                                         capture_output=True, text=True)
@@ -167,29 +169,117 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
 
-    def test_third_party_quick_selection_preserves_full_default(self):
+    def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
+        self.assertNotIn("--quick", source)
         definitions = source.split("while [[ $# -gt 0 ]]; do", 1)[0]
         sections = re.findall(r'^time_section "([^"]+)"', source, re.MULTILINE)
-        for quick in (False, True):
-            script = definitions + f"\nset +x\nQUICK={'true' if quick else 'false'}\n"
-            for section in sections:
-                script += f'time_section "{section}" ":"\n'
-            result = subprocess.run(
-                ["bash"], input=script, capture_output=True, text=True,
+        script = definitions + "\nset +x\n"
+        for section in sections:
+            script += f'time_section "{section}" ":"\n'
+        result = subprocess.run(["bash"], input=script, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        selected = [
+            line[len("##[group] "):] for line in result.stdout.splitlines()
+            if line.startswith("##[group] ") and line != "##[group] Setup"
+        ]
+        self.assertEqual(selected, sections)
+
+
+class WorkflowPolicyTests(unittest.TestCase):
+    def test_application_catalog_runs_only_on_main_pushes(self):
+        workflows = ROOT / ".github/workflows"
+        callers = [path.name for path in workflows.glob("*.yml")
+                   if "ci/test_third_party_codes.sh" in path.read_text()]
+        self.assertEqual(callers, ["Compiler-Compatibility-CI.yml"])
+        source = (workflows / callers[0]).read_text()
+        step = source.split("      - name: Test third party codes\n", 1)[1].split("\n      - ", 1)[0]
+        condition = re.search(r"^\s*if: (.+)$", step, re.MULTILINE).group(1)
+        self.assertEqual(condition,
+            "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' "
+            "&& !inputs.quick && (matrix.llvm-version == '11' || matrix.llvm-version == '19' "
+            "|| contains(matrix.os, 'macos')) }}")
+        self.assertNotIn("--quick", step)
+        self.assertIn('LAPACK_MODE="full"', step)
+
+    def test_capability_checks_remain_in_quick(self):
+        workflows = ROOT / ".github/workflows"
+        quick = (workflows / "Quick-Checks-CI.yml").read_text()
+        shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
+        self.assertIn("./run_tests.py -b metal -j3", quick)
+        self.assertIn("./run_tests.py -b cuda_cpu -j3", quick)
+        self.assertIn("quick: true", quick)
+        caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
+        caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
+        self.assertIn("if: ${{ !inputs.quick || matrix.llvm-version == '11' }}", caffeine)
+        self.assertIn("run: ci/test_caffeine.sh --verify-all-passes", caffeine)
+        self.assertNotIn("github.event_name", caffeine)
+
+    def test_full_quick_does_not_cancel_or_duplicate_normal_quick(self):
+        source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        self.assertIn("group: quick-${{ inputs.full && 'full' || 'default' }}-", source)
+        self.assertIn("if: github.event_name == 'pull_request' && !inputs.full", source)
+        self.assertIn("FULL_COVERAGE: ${{ inputs.full }}", source)
+        for key in ("LFORTRAN_TEST_SUITE", "LFORTRAN_CI_RELEASE"):
+            expression = re.search(rf"^\s*{key}: (.+)$", source, re.MULTILINE).group(1)
+            self.assertIn("github.event_name == 'pull_request' && !inputs.full", expression)
+
+    def test_exhaustive_gate_reads_current_labels(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
+        self.assertIn("types: [opened, reopened, synchronize]", source)
+        gate = source.split("\n  gate:\n", 1)[1].split("\n  full_quick:\n", 1)[0]
+        script = gate.split("        run: |\n", 1)[1]
+        with tempfile.TemporaryDirectory(prefix="lfortran-ci-gate-") as temporary:
+            directory = Path(temporary)
+            gh = directory / "gh"
+            gh.write_text(
+                "#!/bin/sh\n"
+                'if [ "$LABEL_RESULT" = error ]; then echo "API failed" >&2; exit 1; fi\n'
+                'printf "%s\\n" "$LABEL_RESULT"\n'
             )
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            selected = [
-                line[len("##[group] "):] for line in result.stdout.splitlines()
-                if line.startswith("##[group] ") and line != "##[group] Setup"
-            ]
-            expected = [
-                label for label in sections if label.endswith((
-                    "Testing conda-forge fpm", "Testing assert",
-                    "Testing neural-fortran", "Testing toml-f",
-                ))
-            ] if quick else sections
-            self.assertEqual(selected, expected)
+            gh.chmod(0o755)
+            output = directory / "output"
+            cases = (
+                ("pull_request", "true", "run=true\n"),
+                ("pull_request", "false", "run=false\n"),
+                ("pull_request", "error", None),
+                ("pull_request", "invalid", None),
+                ("push", "error", "run=true\n"),
+                ("workflow_dispatch", "error", "run=true\n"),
+                ("pull_request_target", "true", None),
+            )
+            for event, label, expected in cases:
+                with self.subTest(event=event, label=label):
+                    output.write_text("")
+                    env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ["PATH"],
+                               GITHUB_EVENT_NAME=event, GITHUB_OUTPUT=str(output),
+                               LABEL_RESULT=label, PR="123")
+                    result = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail"], input=script, env=env,
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode == 0, expected is not None)
+                    self.assertEqual(output.read_text(), expected or "")
+
+        jobs = source.split("\njobs:\n", 1)[1]
+        blocks = re.split(r"(?m)^  ([\w-]+):\n", jobs)
+        for index in range(1, len(blocks), 2):
+            name, body = blocks[index:index + 2]
+            if name in ("gate", "deploy_jupyterlite"):
+                continue
+            self.assertIn("needs: gate", body, name)
+            self.assertIn("needs.gate.outputs.run == 'true'", body, name)
+        self.assertIn("full: true", source)
+        self.assertIn("quick: false", source)
+
+    def test_label_controller_never_executes_pr_code(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-Label-CI.yml").read_text()
+        self.assertIn("pull_request_target:", source)
+        self.assertIn("if: github.event.label.name == 'Tests::Run-Exhaustive'", source)
+        self.assertNotIn("actions/checkout", source)
+        self.assertNotIn("workflow_dispatch", source)
+        self.assertIn('gh run rerun "$run_id"', source)
+        self.assertIn('if [ "$(head_sha)" != "$sha" ]; then', source)
 
 
 class QuickScriptTests(unittest.TestCase):

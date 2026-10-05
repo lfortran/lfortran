@@ -9,9 +9,10 @@ description: >
   original issue is fully fixed, open a draft PR from the user's fork with
   `gh`, review it with pr-review, and keep fixing CI failures and review
   blockers until Quick checks is green and the PR is clean, then mark it
-  ready for review. Full CI runs on every main push; request a manual full
-  run on a PR only when the user asks for one. Unrelated pre-existing bugs are filed
-  as separate issues and linked from the PR.
+  ready for review. Third-party applications run on main to generate
+  integration-test regressions, not as a PR gate. Extended PR compiler checks
+  are opt-in only when the user requests them. Unrelated pre-existing bugs
+  are filed as separate issues and linked from the PR.
   Triggers: fix issue, fix github issue, issue to PR, resolve issue, send PR
   for issue, end-to-end fix.
 compatibility: >
@@ -104,8 +105,9 @@ Never, under any circumstances:
 - push to the upstream `lfortran/lfortran` repository;
 - use an unconditional force-push; when the policy below calls for rebasing,
   update the fork branch only with `git push --force-with-lease`;
-- comment on, close, or relabel the original issue, add any label to
-  the PR, comment on other issues or PRs (including existing issues found in
+- comment on, close, or relabel the original issue, add a label to
+  the PR except an explicitly requested `Tests::Run-Exhaustive`, comment on
+  other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
 
@@ -380,7 +382,7 @@ The fix subagent reads the actual comment text.
 **6c. Decide.** The PR is **clean** when all of these hold for the current
 head SHA:
 
-- every CI check passed, or each failing check was shown by a subagent to
+- every applicable CI check passed, or each failing check was shown by a subagent to
   also fail on `main` (it is pre-existing, so report it but do not fix it
   here);
 - the latest fresh review has **no blocker and no rework** findings;
@@ -393,20 +395,37 @@ Quick includes the shared compiler compatibility jobs; those are not optional.
 Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
 Do not treat missing or all-skipped Quick checks as success.
+Expected skips of unrequested Exhaustive jobs and main-only application
+validation do not block a PR.
 
-Full CI runs on every push to `main`; it is not a routine prerequisite for
-marking a PR ready. Do not add CI labels, dispatch full CI automatically, or
-cancel older main runs. If a high-risk change merits extra coverage, explain
-why and ask the user before requesting it.
+Third-party applications are bug generators for the integration suite and
+release compatibility checks on every main push, not a PR test suite.
+When the reported bug comes from an application, reduce it, add the registered
+integration regression, fix the compiler and verify the original application
+failure locally. Do not add that application to Quick. Caffeine-backed
+coarray and GPU integration checks remain required capability tests.
 
-Only when the user explicitly requests full PR coverage, dispatch
-`Exhaustive-Checks-CI.yml` on the PR branch in the user's fork:
+Do not add CI labels or dispatch extended CI automatically, including for
+serialization, finalization, I/O or GPU changes. Do not cancel older main runs.
+The rare `Tests::Run-Exhaustive` label is for an explicit request for extended
+compiler coverage; it does not run the application catalog on a PR.
+
+Only when the user requests extended checks, add the label with
+`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
+If it is already present, wait for the applicable checks rather than removing
+it. They must pass for the current revision before finishing, subject to the
+pre-existing-failure rule above. Label addition reruns the current PR's
+Exhaustive workflow; subsequent pushes rerun it while the label remains.
+If labeling is unavailable, an explicitly requested manual run in the fork
+is an alternative:
 `gh workflow run Exhaustive-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Record the run ID, URL and tested head SHA in `state.md`, and wait for that
-run with `gh run watch <run-id> --repo <login>/lfortran`. Manual fork runs
-do not necessarily appear in upstream `gh pr checks`. Require success for
-the current head SHA before finishing; a push invalidates the old result.
-Full-run failures go to the fix subagent like any other CI failure.
+Record its run ID, URL and head SHA in `state.md` and wait with
+`gh run watch <run-id> --repo <login>/lfortran`; it may not appear in upstream
+`gh pr checks`. A push invalidates the old result. Extended-check failures
+go to the fix subagent like any other CI failure.
+
+Release qualification is separate: the release commit must have green full
+main CI, including applications. Quick or extended PR success is not enough.
 
 If done, go to Phase 6.
 
@@ -463,7 +482,7 @@ Bugs fixed (<count> MRE iterations, one commit each):
   2. ...
 
 CI:      green  (pre-existing failures on main: <none | names>)
-Full CI: <not requested | green, run URL and tested SHA>
+Extended compiler CI: <not requested | green, run URL and tested SHA>
 Review:  <rounds> round(s); blockers/rework fixed: <n>; rejected with reason: <n>
 Follow-up issues filed: <#M, #M (duplicate of existing), ... or none>
 Other follow-ups (not bugs, not filed): <list or none>
