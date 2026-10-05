@@ -11537,7 +11537,21 @@ public:
                 section_wrapper), wrapper_ptr);
             builder->CreateStore(wrapper_ptr, data_field);
         }
-        builder->CreateStore(target, target_desc);
+        // A pointer array owns its descriptor: a local one on the stack of
+        // its own scope, a module one in static storage and a component one
+        // on the heap, freed with the enclosing object. The section
+        // descriptor above is a temporary of this procedure, so copy it into
+        // the descriptor the pointer owns. Storing its address instead would
+        // leave the pointer referring to a dead stack slot after return, and
+        // the finalizer of a derived type would free that stack slot.
+        llvm::Value* owned_desc = llvm_utils->CreateLoad2(
+            target_type->getPointerTo(), target_desc);
+        llvm_utils->create_if_else(builder->CreateIsNull(owned_desc), [&]() {
+            builder->CreateStore(target, target_desc);
+        }, [&]() {
+            builder->CreateStore(llvm_utils->CreateLoad2(target_type, target),
+                owned_desc);
+        });
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
