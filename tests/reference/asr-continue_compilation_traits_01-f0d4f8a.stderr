@@ -282,6 +282,38 @@ semantic error: overloading trait method 'measure' with different argument signa
 1297 |     function query{IInteger + IReal :: T}(object) result(res)
      |                    ^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1319:5 - 1320:18
+     |
+1319 |        abstract interface, extends(IShape + ISize) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1320 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1338:5 - 1339:18
+     |
+1338 |        abstract interface, extends(ISize + IShape) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1339 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1358:20
+     |
+1358 |     function query{IShape + ISize :: T}(object) result(r)
+     |                    ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1381:20
+     |
+1381 |     function query{ISize + IShape :: T}(object) result(r)
+     |                    ^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

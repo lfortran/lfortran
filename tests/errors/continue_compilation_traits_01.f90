@@ -1300,3 +1300,87 @@ contains
         res = object%measure(2)
     end function query
 end module traits_composition_unsupported_overload_01_constraint_m
+
+! M2A-E25: assumed-shape and assumed-size inherited contracts are incompatible.
+module traits_shape_contract_inheritance_01_m
+    implicit none
+    abstract interface :: IShape
+        function count(a) result(r)
+            integer, intent(in) :: a(:)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISize
+        function count(a) result(r)
+            integer, intent(in) :: a(*)
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(IShape + ISize) :: IChild
+    end interface
+end module
+
+! M2A-E26: reversing the parent order must not change shape compatibility.
+module traits_shape_contract_inheritance_02_m
+    implicit none
+    abstract interface :: IShape
+        function count(a) result(r)
+            integer, intent(in) :: a(:)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISize
+        function count(a) result(r)
+            integer, intent(in) :: a(*)
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(ISize + IShape) :: IChild
+    end interface
+end module
+
+! M2A-E27: direct composition requires the same array shape category.
+module traits_shape_contract_composition_01_m
+    implicit none
+    abstract interface :: IShape
+        function count(a) result(r)
+            integer, intent(in) :: a(:)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISize
+        function count(a) result(r)
+            integer, intent(in) :: a(*)
+            integer :: r
+        end function
+    end interface
+contains
+    function query{IShape + ISize :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module
+
+! M2A-E28: reversing the constraint order must not change shape compatibility.
+module traits_shape_contract_composition_02_m
+    implicit none
+    abstract interface :: IShape
+        function count(a) result(r)
+            integer, intent(in) :: a(:)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: ISize
+        function count(a) result(r)
+            integer, intent(in) :: a(*)
+            integer :: r
+        end function
+    end interface
+contains
+    function query{ISize + IShape :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module

@@ -739,6 +739,128 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
     }
 }
 
+TEST_CASE("Trait array shape contracts distinguish assumed-size") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_array_contracts_m
+implicit none
+abstract interface :: ILeft
+    function count(a) result(r)
+        integer, intent(in) :: a(:)
+        integer :: r
+    end function
+    function fixed(a) result(r)
+        integer, intent(in) :: a(3)
+        integer :: r
+    end function
+end interface
+abstract interface :: IRight
+    function count(a) result(r)
+        integer, intent(in) :: a(:)
+        integer :: r
+    end function
+    function fixed(a) result(r)
+        integer, intent(in) :: a(3)
+        integer :: r
+    end function
+end interface
+abstract interface, extends(ILeft + IRight) :: IChild
+end interface
+contains
+function unused{ILeft + IRight :: T}(x) result(r)
+    type(T), intent(in) :: x
+    integer :: r
+    r = 0
+end function
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_array_contracts_m"));
+    auto *left = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol("ileft"));
+    auto *right = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol("iright"));
+    auto *a = ASR::down_cast<ASR::Function_t>(left->m_symtab->get_symbol("count"));
+    auto *b = ASR::down_cast<ASR::Function_t>(right->m_symtab->get_symbol("count"));
+    auto *generic = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("unused"));
+    ASR::Function_t *normalized = nullptr;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        for (size_t i = 0; i < constraint->n_requirements; i++) {
+            const auto &requirement = constraint->m_requirements[i];
+            if (ASRUtils::symbol_get_past_external(requirement.m_member) == &a->base) {
+                normalized = ASR::down_cast<ASR::Function_t>(requirement.m_procedure);
+            }
+        }
+    }
+    REQUIRE(normalized != nullptr);
+    auto set_representation = [](ASR::Function_t *procedure, size_t argument,
+            ASR::array_physical_typeType physical_type) {
+        for (auto *type : {ASRUtils::expr_type(procedure->m_args[argument]),
+                ASRUtils::get_FunctionType(procedure)->m_arg_types[argument]}) {
+            ASR::down_cast<ASR::Array_t>(type)->m_physical_type = physical_type;
+        }
+    };
+
+    SUBCASE("inherited shapes must match in either order") {
+        set_representation(b, 0, ASR::array_physical_typeType::UnboundedPointerArray);
+        for (auto mismatch : {ASRUtils::trait_method_mismatch(*a, *b),
+                ASRUtils::trait_method_mismatch(*b, *a)}) {
+            CHECK(mismatch.difference == ASRUtils::TraitMethodDifference::Contract);
+            CHECK(mismatch.message == "argument 'a' has different array shapes");
+        }
+        CHECK_FALSE(ASRUtils::trait_types_equal(a->m_args[0], b->m_args[0]));
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code ==
+            "asr.verify.trait.inherited_signature_matches");
+    }
+
+    SUBCASE("normalization must preserve the member shape category") {
+        set_representation(normalized, 1, ASR::array_physical_typeType::UnboundedPointerArray);
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code ==
+            "asr.verify.trait_requirement.signature_matches");
+    }
+
+    SUBCASE("matching assumed-size contracts remain equivalent") {
+        set_representation(a, 0, ASR::array_physical_typeType::UnboundedPointerArray);
+        set_representation(b, 0, ASR::array_physical_typeType::UnboundedPointerArray);
+        set_representation(normalized, 1, ASR::array_physical_typeType::UnboundedPointerArray);
+        CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::None);
+        CHECK(ASRUtils::trait_types_equal(a->m_args[0], b->m_args[0]));
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    }
+
+    SUBCASE("equivalent explicit-shape contracts can use different storage") {
+        auto *a_fixed = ASR::down_cast<ASR::Function_t>(
+            left->m_symtab->get_symbol("fixed"));
+        auto *b_fixed = ASR::down_cast<ASR::Function_t>(
+            right->m_symtab->get_symbol("fixed"));
+        set_representation(a_fixed, 0, ASR::array_physical_typeType::DescriptorArray);
+        set_representation(b_fixed, 0, ASR::array_physical_typeType::PointerArray);
+        CHECK(ASRUtils::trait_method_mismatch(*a_fixed, *b_fixed).difference ==
+            ASRUtils::TraitMethodDifference::None);
+        CHECK(ASRUtils::trait_types_equal(a_fixed->m_args[0], b_fixed->m_args[0]));
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    }
+}
+
 TEST_CASE("Trait forwarding checks nominal implications before instantiation") {
     const std::string declarations = R"(
 module forwarding_contracts

@@ -109,7 +109,9 @@ The shared template instantiator specializes the partially bound helper when
 the caller is instantiated.
 
 Exact contract equivalence includes ordinary dummy names, types, kinds, ranks,
-array extents, character lengths, and procedure/dummy attributes. Result
+array shape categories and extents, character lengths, and procedure/dummy
+attributes. In particular, assumed-shape (`a(:)`) and assumed-size (`a(*)`)
+requirements cannot coalesce even though both have unknown extents. Result
 variable spelling is irrelevant. Concrete implementation dummies can have
 different names: the existing positional adapters preserve the trait's public
 argument names.

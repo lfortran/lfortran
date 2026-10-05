@@ -5685,6 +5685,14 @@ static bool trait_shapes_equal(ASR::ttype_t *left, ASR::ttype_t *right,
 {
     if (is_array(left) != is_array(right) ||
             is_assumed_rank_array(left) != is_assumed_rank_array(right)) return false;
+    if (is_array(left)) {
+        // Missing extents do not distinguish assumed-size from assumed-shape dummies.
+        bool a_assumed_size = extract_physical_type(left) ==
+            ASR::array_physical_typeType::UnboundedPointerArray;
+        bool b_assumed_size = extract_physical_type(right) ==
+            ASR::array_physical_typeType::UnboundedPointerArray;
+        if (a_assumed_size != b_assumed_size) return false;
+    }
     ASR::dimension_t *a = nullptr, *b = nullptr;
     size_t a_rank = extract_dimensions_from_ttype(left, a);
     size_t b_rank = extract_dimensions_from_ttype(right, b);
