@@ -3957,6 +3957,7 @@ RUN(NAME array_section_33 LABELS gfortran)
 RUN(NAME array_section_34 LABELS gfortran llvm)
 RUN(NAME array_section_35 LABELS gfortran llvm)
 RUN(NAME array_section_36 LABELS gfortran llvm)
+RUN(NAME array_section_37 LABELS gfortran llvm GFORTRAN_ARGS -fcheck=bounds)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)

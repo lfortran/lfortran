@@ -4686,6 +4686,26 @@ filename = "errors/array_bounds_check_17.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_18.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_19.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_20.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_21.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_22.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 

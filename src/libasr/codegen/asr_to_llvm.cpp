@@ -11312,6 +11312,75 @@ public:
         builder->CreateStore(new_desc, target_desc);
     }
 
+    /*
+        Checks that the elements selected by `section` lie within the bounds
+        of the array it is a section of. A subscript triplet is checked only
+        when it selects at least one element, and then its first and last
+        selected elements are checked. A dimension whose upper bound is not
+        known (`ubounds[i] == nullptr`, assumed-size) is not checked.
+    */
+    void check_array_section_bounds(const ASR::ArraySection_t& section,
+            llvm::Value** lbs, llvm::Value** ubs, llvm::Value** ds,
+            llvm::Value** non_sliced_indices,
+            const std::vector<llvm::Value*>& lbounds,
+            const std::vector<llvm::Value*>& ubounds) {
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        llvm::Value* zero = llvm::ConstantInt::get(idx_type, 0);
+        std::string array_name;
+        if (ASR::is_a<ASR::Var_t>(*section.m_v)) {
+            array_name = ASRUtils::EXPR2VAR(section.m_v)->m_name;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*section.m_v)) {
+            array_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::StructInstanceMember_t>(section.m_v)->m_m);
+        }
+        llvm::Value* llvm_array_name = LCompilers::create_global_string_ptr(
+            context, *module, *builder, array_name);
+        auto check_index = [&](llvm::Value* cond, llvm::Value* index, size_t dim,
+                llvm::Value* lbound, llvm::Value* ubound) {
+            cond = builder->CreateAnd(cond, builder->CreateOr(
+                builder->CreateICmpSLT(index, lbound),
+                builder->CreateICmpSGT(index, ubound)));
+            llvm_utils->generate_runtime_error(cond,
+                "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                {LLVMUtils::RuntimeLabel("", {section.base.base.loc})},
+                infile,
+                location_manager,
+                llvm_array_name,
+                index,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), dim + 1),
+                lbound,
+                ubound);
+        };
+        for (size_t i = 0; i < section.n_args; i++) {
+            if (ubounds[i] == nullptr) {
+                continue;
+            }
+            llvm::Value* lbound = builder->CreateSExtOrTrunc(lbounds[i], idx_type);
+            llvm::Value* ubound = builder->CreateSExtOrTrunc(ubounds[i], idx_type);
+            if (ds[i] == nullptr) {
+                check_index(builder->getTrue(),
+                    builder->CreateSExtOrTrunc(non_sliced_indices[i], idx_type),
+                    i, lbound, ubound);
+                continue;
+            }
+            llvm::Value* l = builder->CreateSExtOrTrunc(lbs[i], idx_type);
+            llvm::Value* u = builder->CreateSExtOrTrunc(ubs[i], idx_type);
+            llvm::Value* s = builder->CreateSExtOrTrunc(ds[i], idx_type);
+            llvm::Value* not_empty = builder->CreateOr(
+                builder->CreateAnd(builder->CreateICmpSGT(s, zero),
+                    builder->CreateICmpSLE(l, u)),
+                builder->CreateAnd(builder->CreateICmpSLT(s, zero),
+                    builder->CreateICmpSGE(l, u)));
+            // A zero stride selects nothing; divide by one instead of zero.
+            llvm::Value* safe_s = builder->CreateSelect(
+                builder->CreateICmpEQ(s, zero), llvm::ConstantInt::get(idx_type, 1), s);
+            llvm::Value* last = builder->CreateAdd(l, builder->CreateMul(
+                builder->CreateSDiv(builder->CreateSub(u, l), safe_s), safe_s));
+            check_index(not_empty, l, i, lbound, ubound);
+            check_index(not_empty, last, i, lbound, ubound);
+        }
+    }
+
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
@@ -11509,12 +11578,42 @@ public:
                 }
                 llvm_diminfo.push_back(al, dim_length);
             }
+            if (compiler_options.po.bounds_checking) {
+                llvm::Type* idx_type = arr_descr->get_index_type();
+                std::vector<llvm::Value*> lbounds, ubounds;
+                for( int i = 0; i < value_rank; i++ ) {
+                    llvm::Value* lbound = builder->CreateSExtOrTrunc(llvm_diminfo[2 * i], idx_type);
+                    lbounds.push_back(lbound);
+                    if (m_dims[i].m_length) {
+                        ubounds.push_back(builder->CreateSub(builder->CreateAdd(lbound,
+                            builder->CreateSExtOrTrunc(llvm_diminfo[2 * i + 1], idx_type)),
+                            llvm::ConstantInt::get(idx_type, 1)));
+                    } else {
+                        ubounds.push_back(nullptr);
+                    }
+                }
+                check_array_section_bounds(*array_section, lbs.p, ubs.p, ds.p,
+                    non_sliced_indices.p, lbounds, ubounds);
+            }
             arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
                 target, expr_type(x.m_target), x.m_target,
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank, location_manager);
         } else {
+            if (compiler_options.po.bounds_checking) {
+                llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    value_desc_type, value_desc);
+                std::vector<llvm::Value*> lbounds, ubounds;
+                for( int i = 0; i < value_rank; i++ ) {
+                    llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                        dim_des_arr, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), i));
+                    lbounds.push_back(arr_descr->get_lower_bound(dim_des));
+                    ubounds.push_back(arr_descr->get_upper_bound(dim_des));
+                }
+                check_array_section_bounds(*array_section, lbs.p, ubs.p, ds.p,
+                    non_sliced_indices.p, lbounds, ubounds);
+            }
             arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
                 value_desc_type,
                 target, expr_type(x.m_target), x.m_target,
