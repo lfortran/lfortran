@@ -32,7 +32,7 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def run_test(backend, std, test_pattern=None):
+def run_test(backend, std, test_pattern=None, smoke=False):
     run_cmd(f"mkdir {BASE_DIR}/test-{backend}")
     if std == "f23":
         std_string = "-DSTD_F23=yes"
@@ -65,6 +65,8 @@ def run_test(backend, std, test_pattern=None):
         generator_flags = skip_fc_detection
 
     common=f" {generator_flags} -DCURRENT_BINARY_DIR={BASE_DIR}/test-{backend} -S {BASE_DIR} -B {BASE_DIR}/test-{backend}"
+    if smoke:
+        common += " -DLFORTRAN_SMOKE=ON"
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
@@ -143,6 +145,8 @@ def run_test(backend, std, test_pattern=None):
 
     # Build ctest command with optional test pattern filter
     ctest_cmd = f"ctest -j{NO_OF_THREADS} --output-on-failure"
+    if smoke:
+        ctest_cmd += " --no-tests=error"
     if verbose:
         ctest_cmd += " -V"
     if test_pattern:
@@ -153,13 +157,13 @@ def run_test(backend, std, test_pattern=None):
     run_cmd(ctest_cmd, cwd=cwd)
 
 
-def test_backend(backend, std, test_pattern=None):
+def test_backend(backend, std, test_pattern=None, smoke=False):
     if backend not in SUPPORTED_BACKENDS:
         raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
         raise Exception(f"Unsupported Backend: {std}\n")
 
-    run_test(backend, std, test_pattern)
+    run_test(backend, std, test_pattern, smoke)
 
 def check_module_names():
     from glob import glob
@@ -203,6 +207,8 @@ def get_args():
                 help="Run tests with --separate-compilation")
     parser.add_argument("-t", "--test", type=str,
                 help="Run specific tests matching pattern (regex)")
+    parser.add_argument("--smoke", action="store_true",
+                help="Build and run the representative CI subset, including configure-time tests")
     parser.add_argument("--ninja", action='store_true',
                 help="Use Ninja build system instead of Make (faster builds)")
     parser.add_argument("-m", action='store_true',
@@ -240,7 +246,7 @@ def main():
     verbose = args.verbose
     test_pattern = args.test
     for backend in args.backends:
-        test_backend(backend, args.std, test_pattern)
+        test_backend(backend, args.std, test_pattern, args.smoke)
 
 if __name__ == "__main__":
     main()

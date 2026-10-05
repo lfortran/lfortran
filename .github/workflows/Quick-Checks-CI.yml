@@ -9,16 +9,12 @@ on:
   pull_request:
     branches:
       - main
+  workflow_call:
 
-# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
-# which eventually evaluates to: CI-7488 and 'sha' isn't used.
-# NOTE: `||` acts as a logical OR and a default operator both,
-# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
-# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
-# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
-# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
+# Main runs stay independent per commit; only superseded PR runs are cancelled.
+# A literal prefix keeps manual calls distinct from the calling workflow's group.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  group: quick-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -29,14 +25,15 @@ jobs:
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
+    env:
+      LFORTRAN_TEST_SUITE: ${{ github.event_name == 'pull_request' && (matrix.os != 'ubuntu-latest' || matrix.llvm-version != '11') && 'smoke' || 'full' }}
+      LFORTRAN_CI_RELEASE: ${{ github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.llvm-version != '11' && '1' || '0' }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # macOS runs LLVM 11 only. A full integration-test pass costs ~7x
-          # more on the 3-core macOS runners than on Linux, and macOS + a
-          # recent LLVM is covered on every merge by the Exhaustive checks
-          # "Test LLVM 22 (macos-latest)" job.
+          # PRs use smoke coverage on secondary platforms/LLVM versions.
+          # Main and tags retain the full original suites and LLVM versions.
           - os: macos-latest
             llvm-version: "11"
           - os: ubuntu-latest
@@ -149,9 +146,18 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
-      # --std=f23, llvm -sc, --detect-leaks, llvm_single_invocation, and
-      # ci/test_cpp_version.sh run in Exhaustive checks (release /
-      # debug_outOfSource) on main and on PRs labeled Tests::Run-Exhaustive.
+      - name: Test representative option combinations
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.llvm-version == '11'
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            NPROC=$(nproc)
+            ./run_tests.py -b llvm --smoke -sc -j${NPROC}
+            ./run_tests.py -b llvm_submodule --smoke -sc -j${NPROC}
+            ./run_tests.py -b llvm --smoke --detect-leaks -j${NPROC}
+            ./run_tests.py -b llvm --smoke --std=f23 -j${NPROC}
+            ./run_tests.py -b llvm --smoke --std=f23 -f -j${NPROC}
+            ./run_tests.py -b llvm_single_invocation -j${NPROC}
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}
@@ -299,6 +305,11 @@ jobs:
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
 
+      - name: Test CI smoke selection
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        shell: bash -e -l {0}
+        run: python ci/test_ci.py
+
       - name: Check Bison Grammar for Essential Conflicts
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         shell: bash -e -l {0}
@@ -320,8 +331,15 @@ jobs:
         run: |
           python3 check_ai_commit_authorship.py
 
+  compatibility:
+    name: Compiler compatibility
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/Compiler-Compatibility-CI.yml
+    with:
+      quick: true
+
   build_to_wasm_and_upload:
-    name: Build LFortran to WASM and Upload
+    name: Build LFortran to WASM
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v7
@@ -404,9 +422,34 @@ jobs:
             micromamba run -n xeus-lfortran-wasm-build node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
+        if: github.event_name == 'push'
         shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
+  quick_status:
+    # Keep this existing protected check name, and make it cover every Quick
+    # job so the new compatibility checks cannot be bypassed at merge time.
+    name: Build LFortran to WASM and Upload
+    needs: [Build, compatibility, build_to_wasm_and_upload]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require all Quick checks
+        env:
+          BUILD_RESULT: ${{ needs.Build.result }}
+          WASM_RESULT: ${{ needs.build_to_wasm_and_upload.result }}
+          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$BUILD_RESULT" != success ] || [ "$WASM_RESULT" != success ]; then
+            echo "::error::Quick platform or WASM checks did not pass"
+            exit 1
+          fi
+          if [ "$EVENT_NAME" = pull_request ] && [ "$COMPATIBILITY_RESULT" != success ]; then
+            echo "::error::Quick compiler compatibility checks did not pass"
+            exit 1
+          fi

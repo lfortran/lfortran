@@ -6,6 +6,7 @@ set -ex  # Exit immediately on any error
 : "${FC:=gfortran}"
 : "${LFORTRAN_LAPACK_TEST_MODE:=full}"
 LAPACK_TEST_MODE="$LFORTRAN_LAPACK_TEST_MODE"
+QUICK=false
 
 # Color definitions for pretty output
 GREEN='\033[0;32m'
@@ -16,7 +17,8 @@ NC='\033[0m' # No Color
 # Helper functions for logging
 print_usage() {
   cat <<EOF
-Usage: $0 [--lapack-mode <smoke|full>]
+Usage: $0 [--quick] [--lapack-mode <smoke|full>]
+  --quick  Test fpm, assert, neural-fortran and toml-f only.
 EOF
 }
 
@@ -66,6 +68,12 @@ assert_git_commit() {
 time_section() {
   local LABEL="$1"
   local BLOCK="$2"
+  if [[ "$QUICK" == true ]]; then
+    case "$LABEL" in
+      *"Testing conda-forge fpm"|*"Testing assert"|*"Testing neural-fortran"|*"Testing toml-f") ;;
+      *) echo "Skipping in quick suite: $LABEL"; return ;;
+    esac
+  fi
   local START=$(date +%s)
   echo "##[group] $LABEL"
   print_section "$LABEL"
@@ -77,6 +85,10 @@ time_section() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --quick)
+      QUICK=true
+      shift
+      ;;
     --lapack-mode)
       if [[ $# -lt 2 ]]; then
         echo "ERROR: --lapack-mode requires a value"

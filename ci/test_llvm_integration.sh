@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# LLVM-backend integration tests for Exhaustive CI.
+# LLVM-backend integration tests for full and PR compatibility CI.
 #
 # Used on LLVM versions that do not run the third-party suite. Covers the
 # LLVM option combinations from Quick checks (ci/test.sh) plus separate
-# compilation and leak detection (those two live in Exhaustive only).
+# compilation and leak detection.
 set -ex
 
 NPROC=${NPROC:-$(nproc)}
@@ -22,10 +22,14 @@ if [[ "${LFORTRAN_LLVM_VERSION}" == "7" || "${LFORTRAN_LLVM_VERSION}" == "8" ]];
 fi
 
 cd integration_tests
-./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}"
-./run_tests.py -b llvm -sc -j"${NPROC}"
-./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}"
-./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}"
-./run_tests.py -b llvm_submodule -j"${NPROC}"
-./run_tests.py -b llvm_submodule -sc -j"${NPROC}"
-./run_tests.py -b llvm --detect-leaks -j"${NPROC}"
+selection=()
+if [[ "${LFORTRAN_TEST_SUITE:-full}" == "smoke" ]]; then
+    selection=(--smoke)
+fi
+./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm -sc -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm_submodule -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm_submodule -sc -j"${NPROC}" "${selection[@]}"
+./run_tests.py -b llvm --detect-leaks -j"${NPROC}" "${selection[@]}"

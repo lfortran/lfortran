@@ -416,3 +416,59 @@ Integration tests run slowly because Apple checks the hash of each executable on
 
 You can turn off that feature in the Privacy tab of the Security and Privacy item of System Preferences > Developer Tools > Terminal.app > "allow the apps below to run software locally that does not meet the system's security
 policy."
+
+#### CI coverage
+
+Pull requests normally run only **Quick checks**. The primary Linux/LLVM 11
+job runs the full reference and integration suites, including normal and
+`--fast` modes, GFortran, C/C++, Fortran and OpenMP. Secondary PR configurations
+use a stable feature-based smoke suite: macOS/LLVM 11 and Linux/LLVM 21, plus
+LLVM 7/23 compatibility checks. Existing required check names are retained.
+Windows keeps its native build and supported
+compile/link/run checks. Metal, CUDA-on-CPU and the compiler-to-WASM check remain
+enabled. Shared jobs add a Release LLVM 11 compiler for selected third-party
+projects and coarrays, LLVM-to-WASM coverage, and no-LLVM/MLIR builds.
+
+Quick also samples separate compilation, leak detection and Fortran 2023
+options, and runs the small single-invocation suite. It reuses the jobs in
+`Compiler-Compatibility-CI.yml` with `quick: true`; this does not launch a second,
+standalone exhaustive PR run.
+The existing protected `Build LFortran to WASM and Upload` status aggregates
+all Quick jobs, including compatibility failures, without requiring a branch
+protection change.
+
+Every push to `main` and every `v*` tag still runs **both full workflows**,
+including the complete LLVM matrix, full platform suites and existing
+third-party, documentation, packaging and JupyterLite checks. Main runs are
+not automatically cancelled or rotated. Maintainers may cancel older runs
+manually when runners are saturated, keeping the latest run.
+
+There is no exhaustive PR label or label-triggered rerun. For an exceptional
+PR needing full coverage, dispatch it on the branch in your fork:
+
+```bash
+gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
+gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
+    --branch <branch> --event workflow_dispatch
+gh run watch <run-id> --repo <fork-owner>/lfortran
+```
+
+Check that the run tested the intended head SHA. The manual run also invokes
+Quick in its full main-style mode, including the complete macOS suite, so it
+covers both workflows without publishing or deploying. These runs need not
+appear among the upstream PR's checks.
+
+To run the representative integration subset locally:
+
+```bash
+cd integration_tests
+./run_tests.py -b llvm --smoke > smoke.log 2>&1
+./run_tests.py -b llvm --smoke -f > smoke-fast.log 2>&1
+```
+
+The explicit list lives in `integration_tests/smoke_tests.cmake`. Selection
+happens before targets and configure-time compiler commands are created,
+including WASM and implicit-interface tests. Backend support labels and
+normal/fast/standard flags still apply. An empty selected backend is an error.
+Use the full suite for primary regression coverage; add representative tests
+to the list when introducing a new feature or platform-sensitive path.

@@ -129,6 +129,22 @@ only once, redirect to a log file and then examine the log file.
   before your change and pass after. Do not merge without a full local pass of
   unit and integration suites.
 
+### CI policy
+
+- `Quick checks` is the normal PR gate. It runs full Linux LLVM/reference
+  coverage and representative checks on every platform, plus shared compiler
+  compatibility jobs. No exhaustive label is required before review or merge.
+- Every push to `main` and every `v*` tag retains the full Quick and Exhaustive
+  suites and LLVM matrix. Do not automatically cancel or coalesce main runs;
+  maintainers may manually cancel older runs while keeping the latest.
+- Run full PR CI only when explicitly requested, using
+  `gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>`.
+  Verify the manual run's head SHA and result in the fork, not just the upstream
+  PR checks. Manual full runs do not publish or deploy.
+- `integration_tests/run_tests.py --smoke` selects the maintained feature set in
+  `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
+  CI configurations, not a replacement for full local regression testing.
+
 ### Test Placement Decision Tree
 - If the test compiles and runs end-to-end → integration test (preferred).
 - If the test checks a compile-time error → `tests/errors/continue_compilation_1.f90`
