@@ -3739,6 +3739,8 @@ RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
 RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME derived_type_borrow_01 LABELS gfortran llvm fortran)
 RUN(NAME traits_runtime_scalar_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_separate_01 LABELS llvm llvm2 NO_STD_F23
     EXTRA_ARGS --verify-all-passes

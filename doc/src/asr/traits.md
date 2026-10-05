@@ -276,6 +276,8 @@ It requires only the contract module, not implementation modules. The
 construction site selects evidence once; forwarding the same view preserves
 its payload address, concrete dynamic metadata, and selected witness. Neither
 packing nor forwarding allocates, clones, or finalizes the payload.
+Scalar components and array elements borrow their original storage just like
+whole scalar actuals; this does not introduce array-valued trait views.
 
 Each witness owns its typed adapter procedures in a separate symbol table.
 Static-only backends can ignore this runtime evidence without losing existing
@@ -309,7 +311,8 @@ view. Nominal metadata linkage uses defining scopes, not same-spelled local
 type names or structural equality. No cross-version or cross-DSO ABI is promised.
 
 `traits_runtime_01`, `traits_runtime_03`, `traits_runtime_scalar_01`, and
-`traits_runtime_borrow_01` exercise execution, PASS/NOPASS, ordinary scalar
+`traits_runtime_borrow_01` and `traits_runtime_borrow_02` exercise execution,
+PASS/NOPASS, ordinary scalar
 arguments, identity, and borrowing lifetime. `traits_runtime_separate_01.py`
 compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged

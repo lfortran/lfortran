@@ -27657,10 +27657,8 @@ public:
         auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(
             ASRUtils::symbol_get_past_external(witness->m_implementation));
         auto *concrete = ASRUtils::symbol_get_past_external(implementation->m_type_declaration);
-        int64_t saved_loads = ptr_loads;
-        ptr_loads = LLVM::is_llvm_pointer(*expr_type(x.m_payload));
-        visit_expr_wrapper(x.m_payload, true);
-        ptr_loads = saved_loads;
+        visit_expr_load_wrapper(x.m_payload,
+            LLVM::is_llvm_pointer(*expr_type(x.m_payload)));
         llvm::Value *payload = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
         auto *type = llvm_utils->getTraitType();
         llvm::Value *view = llvm_utils->CreateAlloca(type, nullptr, "trait_borrow");
