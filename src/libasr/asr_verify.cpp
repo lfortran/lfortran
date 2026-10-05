@@ -873,6 +873,16 @@ public:
         return hierarchy;
     }
 
+    static bool type_set_concrete_kind(ASR::ttype_t *type) {
+        if (!type || !(ASR::is_a<ASR::Integer_t>(*type) ||
+                ASR::is_a<ASR::Real_t>(*type) ||
+                ASR::is_a<ASR::Complex_t>(*type) ||
+                ASR::is_a<ASR::Logical_t>(*type))) return false;
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        // The ordinary type verifier also admits unresolved PDT kinds >= 1000.
+        return kind > 0 && kind < 1000;
+    }
+
     void visit_Trait(const Trait_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
@@ -916,7 +926,8 @@ public:
                 auto *type = x.m_member_types[i];
                 require_id(type && (ASR::is_a<ASR::Integer_t>(*type) ||
                         ASR::is_a<ASR::Real_t>(*type) ||
-                        ASR::is_a<ASR::Complex_t>(*type)),
+                        ASR::is_a<ASR::Complex_t>(*type)) &&
+                        type_set_concrete_kind(type),
                     "asr.verify.trait.numeric_member",
                     "An intrinsic type-set member must be a concrete scalar numeric type");
                 visit_ttype(*type);
@@ -1140,7 +1151,8 @@ public:
                 bool deferred = ASR::is_a<ASR::TypeParameter_t>(*type);
                 require_id((deferred && parameter ==
                             ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ||
-                        (!deferred && (ASR::is_a<ASR::Integer_t>(*type) ||
+                        (!deferred && type_set_concrete_kind(type) &&
+                            (ASR::is_a<ASR::Integer_t>(*type) ||
                             ASR::is_a<ASR::Real_t>(*type) || ASR::is_a<ASR::Complex_t>(*type) ||
                             (j == procedure->n_args && ASR::is_a<ASR::Logical_t>(*type)))),
                     "asr.verify.type_set.signature",
@@ -1191,7 +1203,7 @@ public:
                         "Capability witness locals must be concrete variables");
                     auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
                     require_id(variable->m_type &&
-                            !ASRUtils::is_type_parameter(*variable->m_type) &&
+                            type_set_concrete_kind(variable->m_type) &&
                             !variable->m_symbolic_value && !variable->m_value &&
                             variable->m_storage == ASR::storage_typeType::Default &&
                             variable->m_presence == ASR::presenceType::Required,

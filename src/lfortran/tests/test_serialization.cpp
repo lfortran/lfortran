@@ -401,6 +401,30 @@ TEST_CASE("Numeric trait proofs reject incomplete and forged witnesses") {
     ret->m_type = ASRUtils::TYPE(ASR::make_Real_t(al, proof.loc, 4));
     rejected("asr.verify.type_set.witness_type");
     ret->m_type = ret_type;
+    auto *witness_signature = ASRUtils::get_FunctionType(witness);
+    auto *signature_argument = witness_signature->m_arg_types[0];
+    witness_signature->m_arg_types[0] = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, proof.loc, 1001));
+    rejected("asr.verify.function.argument_type_matches_signature");
+    witness_signature->m_arg_types[0] = signature_argument;
+    auto *signature_result = witness_signature->m_return_var_type;
+    witness_signature->m_return_var_type = ASRUtils::TYPE(
+        ASR::make_Real_t(al, proof.loc, 1001));
+    rejected("asr.verify.function.return_type_matches_signature");
+    witness_signature->m_return_var_type = signature_result;
+    auto *witness_argument = ASRUtils::EXPR2VAR(witness->m_args[0]);
+    auto *argument_type = witness_argument->m_type;
+    witness_argument->m_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, proof.loc, 1001));
+    rejected("asr.verify.type_set.witness_locals");
+    witness_argument->m_type = argument_type;
+    auto *restriction_signature = ASRUtils::get_FunctionType(
+        ASR::down_cast<ASR::Function_t>(proof.m_procedure));
+    auto *restriction_argument = restriction_signature->m_arg_types[0];
+    restriction_signature->m_arg_types[0] = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, proof.loc, 1001));
+    rejected("asr.verify.function.argument_type_matches_signature");
+    restriction_signature->m_arg_types[0] = restriction_argument;
     auto *operation = proof.m_operation;
     proof.m_operation = ASR::down_cast<ASR::type_set_operation_t>(
         ASR::make_TypeSetBinary_t(al, proof.loc, ASR::Sub));
@@ -495,6 +519,146 @@ TEST_CASE("Numeric trait proofs reject incomplete and forged witnesses") {
     signature->m_is_restriction = restriction;
     function->n_body = body_size;
     function->n_dependencies = dependencies;
+}
+
+TEST_CASE("Numeric trait finite proofs require concrete intrinsic kinds") {
+    namespace ASR = LCompilers::ASR;
+    struct DeferredKind : ASR::BaseWalkVisitor<DeferredKind> {
+        ASR::ttypeType category;
+        int64_t kind;
+        size_t changed = 0;
+        DeferredKind(ASR::ttypeType category, int64_t kind)
+            : category(category), kind(kind) {}
+        void visit_Integer(const ASR::Integer_t &x) {
+            if (category == ASR::ttypeType::Integer) {
+                const_cast<ASR::Integer_t&>(x).m_kind = kind;
+                changed++;
+            }
+        }
+        void visit_Real(const ASR::Real_t &x) {
+            if (category == ASR::ttypeType::Real) {
+                const_cast<ASR::Real_t&>(x).m_kind = kind;
+                changed++;
+            }
+        }
+        void visit_Complex(const ASR::Complex_t &x) {
+            if (category == ASR::ttypeType::Complex) {
+                const_cast<ASR::Complex_t&>(x).m_kind = kind;
+                changed++;
+            }
+        }
+        void visit_Logical(const ASR::Logical_t &x) {
+            if (category == ASR::ttypeType::Logical) {
+                const_cast<ASR::Logical_t&>(x).m_kind = kind;
+                changed++;
+            }
+        }
+    };
+    auto check_mutation = [&](const std::string &source, ASR::ttypeType category,
+            const std::string &code) {
+        Allocator al(1024 * 1024);
+        LCompilers::CompilerOptions options;
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::LocationManager lm;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+        auto binary = LCompilers::serialize(*result.result);
+        Allocator loaded_al(1024 * 1024);
+        LCompilers::SymbolTable scope(nullptr);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(loaded_al, binary, true, scope, 0));
+        fix_external_symbols(*loaded, scope);
+        REQUIRE(LCompilers::asr_verify(*loaded, true, diagnostics));
+        auto rejected = [&](ASR::TranslationUnit_t *unit) {
+            LCompilers::diag::Diagnostics errors;
+            CHECK_FALSE(LCompilers::asr_verify(*unit, true, errors));
+            REQUIRE(!errors.diagnostics.empty());
+            INFO(errors.render2());
+            CHECK(errors.diagnostics.back().code == code);
+            CHECK(!errors.diagnostics.back().labels.empty());
+        };
+        for (auto *unit : {result.result, loaded}) {
+            for (int64_t kind : {1000, 1001}) {
+                CAPTURE(kind);
+                DeferredKind mutation(category, kind);
+                mutation.visit_TranslationUnit(*unit);
+                REQUIRE(mutation.changed > 0);
+                rejected(unit);
+            }
+        }
+    };
+    struct Member {
+        const char *source;
+        ASR::ttypeType category;
+    };
+    for (const auto &member : {
+            Member{"integer", ASR::ttypeType::Integer},
+            Member{"real(8)", ASR::ttypeType::Real},
+            Member{"complex(8)", ASR::ttypeType::Complex}}) {
+        for (const auto &expression : {"x", "x + x"}) {
+            CAPTURE(member.source);
+            CAPTURE(expression);
+            auto source = std::string(R"(
+module numeric_concrete_kind
+implicit none
+abstract interface :: a_numeric
+    )") + member.source + R"(
+end interface
+contains
+function unused{a_numeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = )" + expression + R"(
+end function
+end module
+)";
+            check_mutation(source, member.category, "asr.verify.trait.numeric_member");
+        }
+    }
+    check_mutation(R"(
+module numeric_source_kind
+implicit none
+abstract interface :: a_numeric
+    real(8)
+end interface
+contains
+function unused{a_numeric :: T}(n) result(r)
+    integer, intent(in) :: n
+    type(T) :: r
+    r = T(n)
+end function
+end module
+)", ASR::ttypeType::Integer, "asr.verify.type_set.signature");
+    check_mutation(R"(
+module numeric_result_kind
+implicit none
+abstract interface :: a_numeric
+    integer
+end interface
+contains
+function unused{a_numeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    logical :: r
+    r = x < x
+end function
+end module
+)", ASR::ttypeType::Logical, "asr.verify.type_set.signature");
+    const std::string pdt = R"(
+module numeric_pdt_control
+implicit none
+type :: box(k)
+    integer, kind :: k
+    integer(k) :: value
+end type
+end module
+)";
+    asr_ser(pdt);
+    asr_mod(pdt, "numeric_pdt_control");
 }
 
 TEST_CASE("Numeric trait intrinsic boundaries and ordinary applicability") {
