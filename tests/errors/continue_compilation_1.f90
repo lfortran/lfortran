@@ -2369,3 +2369,13 @@ contains
         cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
     end function cc1_proc_variable_count
 end module cc1_proc_variable_count_mod
+
+subroutine block_derived_type_bound_procedure()
+    block
+        type :: bdtbp_t
+            integer :: a
+        contains
+            procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+        end type
+    end block
+end subroutine
