@@ -4297,22 +4297,21 @@ public:
                             ASR::presenceType::Required, false));
                     procedure->m_symtab->add_symbol(receiver_name, receiver);
                     Vec<ASR::expr_t*> args;
-                    Vec<ASR::ttype_t*> arg_types;
                     args.reserve(al, procedure->n_args + 1);
-                    arg_types.reserve(al, procedure->n_args + 1);
                     args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(
                         al, parameter.loc, receiver)));
-                    arg_types.push_back(al, ASRUtils::symbol_type(receiver));
                     for (size_t k = 0; k < procedure->n_args; k++) {
                         args.push_back(al, procedure->m_args[k]);
-                        arg_types.push_back(al, ASRUtils::expr_type(procedure->m_args[k]));
                     }
                     procedure->m_args = args.p;
                     procedure->n_args = args.size();
                     ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(procedure);
-                    signature->m_arg_types = arg_types.p;
-                    signature->n_arg_types = arg_types.size();
-                    signature->m_is_restriction = true;
+                    procedure->m_function_signature = ASRUtils::TYPE(
+                        ASRUtils::make_FunctionType_t_util(al,
+                            procedure->base.base.loc, procedure->m_args,
+                            procedure->n_args, procedure->m_return_var,
+                            signature, procedure->m_symtab));
+                    ASRUtils::get_FunctionType(procedure)->m_is_restriction = true;
                     generic->m_symtab->add_symbol(procedure_name, copy);
                     ASR::trait_requirement_t requirement;
                     requirement.loc = parameter.loc;

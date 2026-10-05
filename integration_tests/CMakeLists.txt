@@ -3741,6 +3741,14 @@ RUN(NAME traits_static_02 LABELS llvm NO_STD_F23)
 RUN(NAME traits_static_03 LABELS llvm NO_STD_F23)
 RUN(NAME traits_static_03_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_04 LABELS llvm NO_STD_F23)
+# Traits are an LFortran extension; the concrete oracle covers standard Fortran.
+# These unused interfaces isolate signature normalization: aggregate lowering
+# currently changes normalized requirements without changing their trait members.
+RUN(NAME traits_dependent_result_01 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --skip-pass=subroutine_from_function)
+RUN(NAME traits_dependent_result_02 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --skip-pass=subroutine_from_function)
+RUN(NAME traits_dependent_result_oracle LABELS gfortran llvm)
 RUN(NAME traits_module_01 LABELS llvm NO_STD_F23)
 RUN(NAME traits_separate_01 LABELS llvm NO_STD_F23
     EXTRAFILES traits_separate_01_contracts.f90 traits_separate_01_impl.f90)
