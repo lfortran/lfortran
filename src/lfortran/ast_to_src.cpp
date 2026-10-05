@@ -2003,6 +2003,11 @@ public:
             r.append(x.m_traits[i]);
             if (i < x.n_traits-1) r.append(" + ");
         }
+        for (size_t i=0; i<x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
         r += " :: ";
         r.append(x.m_name);
         s = r;

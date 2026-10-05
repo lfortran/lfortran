@@ -23106,9 +23106,22 @@ public:
                                 nullptr, nullptr)) member = true;
                     }
                     if (!member) {
+                        std::string description = "type-set trait '" +
+                            std::string(trait->m_name) + "'";
+                        auto *owner = ASRUtils::get_asr_owner(&trait->base);
+                        if (owner && ASR::is_a<ASR::Template_t>(*owner)) {
+                            description = "inline type set {";
+                            for (size_t i = 0; i < trait->n_member_types; i++) {
+                                if (i) description += " | ";
+                                description += ASRUtils::type_to_str_fortran_symbol(
+                                    trait->m_member_types[i], nullptr, true);
+                            }
+                            description += " :: " + parameter + "} of generic '" +
+                                ASRUtils::symbol_name(owner) + "'";
+                        }
                         trait_call_error(ASRUtils::type_to_str_fortran_symbol(
-                            type, types.at(parameter).second, true) + " is not a member of "
-                            "type-set trait '" + trait->m_name + "'", loc);
+                            type, types.at(parameter).second, true) +
+                            " is not a member of " + description, loc);
                     }
                 }
                 continue;
@@ -23219,6 +23232,15 @@ public:
             ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
             if (!symbol) return false;
             symbol = ASRUtils::symbol_get_past_external(symbol);
+            if (symbol && ASR::is_a<ASR::Function_t>(*symbol)) {
+                auto *owner = ASRUtils::get_asr_owner(symbol);
+                if (owner && ASR::is_a<ASR::Template_t>(*owner)) {
+                    auto *definition = ASR::down_cast<ASR::Template_t>(owner);
+                    if (definition->m_symtab->get_symbol(definition->m_name) == symbol) {
+                        symbol = owner;
+                    }
+                }
+            }
             if (!symbol || !ASR::is_a<ASR::Template_t>(*symbol)) return false;
             generic = ASR::down_cast<ASR::Template_t>(symbol);
             if (trait_constraints(generic).empty()) return false;

@@ -406,7 +406,7 @@ argstar = (expr? value)
 -- Null for `arg` means, it's a star
 arg = (identifier? arg)
 
-trait_parameter = (identifier name, identifier* traits)
+trait_parameter = (identifier name, identifier* traits, decl_attribute* member_types)
 
 
 -- Encoding of array elements and sections in fnarg:

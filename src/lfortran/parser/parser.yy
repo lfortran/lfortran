@@ -814,7 +814,9 @@ trait_name_spec
     ;
 
 trait_parameter
-    : trait_name_spec "::" id { $$ = TRAIT_PARAMETER(p.m_a, $3, $1, @$); }
+    : trait_name_spec "::" id %dprec 2 { $$ = TRAIT_PARAMETER(p.m_a, $3, $1, @$); }
+    | finite_type_set "::" id %dprec 1 {
+        $$ = TRAIT_TYPE_PARAMETER(p.m_a, $3, $1, @$); }
     ;
 
 trait_parameter_list

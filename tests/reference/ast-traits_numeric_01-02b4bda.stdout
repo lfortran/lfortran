@@ -138,7 +138,8 @@
                 []
             )
             [(T
-            [INumeric])]
+            [INumeric]
+            [])]
         )
         (TraitProcedure
             (Function
@@ -263,7 +264,8 @@
                 []
             )
             [(T
-            [INumeric])]
+            [INumeric]
+            [])]
         )]
     )
     (Program

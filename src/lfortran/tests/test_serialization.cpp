@@ -243,6 +243,315 @@ static LCompilers::ASR::TraitConstraint_t *numeric_constraint(
     return nullptr;
 }
 
+static const std::string inline_numeric_source = R"(
+module inline_numeric_m
+implicit none
+private
+public :: shift, walk
+integer, parameter :: rk = 8
+contains
+function shift{integer | real(rk) :: T}(x, n) result(r)
+    type(T), intent(in) :: x
+    integer, intent(in) :: n
+    type(T) :: r
+    r = x + T(n)
+end function
+recursive function walk{integer | real(rk) :: T}(x, n) result(r)
+    type(T), intent(in) :: x
+    integer, intent(in) :: n
+    type(T) :: r
+    if (n == 0) then
+        r = x
+    else if (n == 1) then
+        r = walk{T}(x + T(1), n-1)
+    else
+        r = walk(x + T(1), n-1)
+    end if
+end function
+subroutine unused{integer(4) :: U, integer(4) :: V}(x, y)
+    type(U), intent(inout) :: x
+    type(V), intent(inout) :: y
+    x = x + U(1)
+    y = y + V(2)
+end subroutine
+end module
+module inline_other_m
+implicit none
+contains
+function shift{integer | real(8) :: T}(x, n) result(r)
+    type(T), intent(in) :: x
+    integer, intent(in) :: n
+    type(T) :: r
+    r = x + T(n) + T(n)
+end function
+end module
+module inline_facade_m
+use inline_numeric_m, only: renamed => shift, again => shift, walk
+implicit none
+private
+public :: renamed, again, walk
+end module
+program inline_client
+use inline_numeric_m, only: shift
+use inline_facade_m, only: renamed, again, walk
+use inline_other_m, only: other => shift
+implicit none
+integer :: i, j, k
+real(8) :: a, b
+i = shift(1, 2)
+j = renamed{integer}(1, 2)
+k = other(1, 2)
+a = again(0.d0, 16777217)
+b = shift{real(8)}(0.d0, 16777217)
+i = walk(1, 3)
+j = walk{integer}(1, 3)
+a = walk(1.d0, 3)
+end program
+)";
+
+TEST_CASE("Inline numeric constraints preserve owned identities and roundtrips") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    ast_ser(inline_numeric_source);
+    asr_ser(inline_numeric_source);
+    asr_mod(inline_numeric_source, "inline_numeric_m");
+    asr_mod(inline_numeric_source, "inline_facade_m");
+
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, inline_numeric_source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+
+    auto check_identity = [&](ASR::TranslationUnit_t *unit) {
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            unit->m_symtab->get_symbol("inline_numeric_m"));
+        auto *other = ASR::down_cast<ASR::Module_t>(
+            unit->m_symtab->get_symbol("inline_other_m"));
+        auto *constraint = numeric_constraint(module, "shift");
+        auto *other_constraint = numeric_constraint(other, "shift");
+        auto *trait = ASR::down_cast<ASR::Trait_t>(constraint->m_trait);
+        CHECK(trait != ASR::down_cast<ASR::Trait_t>(other_constraint->m_trait));
+        CHECK(trait->m_symtab->parent == constraint->m_parent_symtab);
+        CHECK(trait->m_access == ASR::Private);
+        CHECK(trait->m_kind == ASR::IntrinsicTypeSet);
+        CHECK(trait->n_member_types == 2);
+        CHECK(ASRUtils::get_asr_owner(&trait->base) == module->m_symtab->get_symbol("shift"));
+        for (const char *name : {"shift", "walk", "unused"}) {
+            auto *c = numeric_constraint(module, name);
+            REQUIRE(c);
+            CHECK(c->n_intrinsic_requirements == 2);
+            for (size_t i = 0; i < c->n_intrinsic_requirements; i++) {
+                CHECK(c->m_intrinsic_requirements[i].n_witnesses ==
+                    ASR::down_cast<ASR::Trait_t>(c->m_trait)->n_member_types);
+            }
+        }
+        auto *unused = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("unused"));
+        std::set<ASR::symbol_t*> binder_traits;
+        for (const auto &entry : unused->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+                binder_traits.insert(ASR::down_cast<ASR::TraitConstraint_t>(
+                    entry.second)->m_trait);
+            }
+        }
+        CHECK(binder_traits.size() == 2);
+        auto *client = ASR::down_cast<ASR::Program_t>(
+            unit->m_symtab->get_symbol("inline_client"));
+        auto call = [&](size_t i) {
+            return ASR::down_cast<ASR::FunctionCall_t>(
+                ASR::down_cast<ASR::Assignment_t>(client->m_body[i])->m_value);
+        };
+        auto callee = [&](size_t i) {
+            return ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(call(i)->m_name));
+        };
+        CHECK(callee(0) == callee(1));
+        CHECK(callee(0) != callee(2));
+        CHECK(callee(3) == callee(4));
+        CHECK(callee(0) != callee(3));
+        CHECK(callee(5) == callee(6));
+        CHECK(callee(5) != callee(7));
+        CHECK(ASR::is_a<ASR::Integer_t>(*call(0)->m_type));
+        CHECK(ASR::is_a<ASR::Real_t>(*call(3)->m_type));
+        CHECK(ASRUtils::extract_kind_from_ttype_t(call(3)->m_type) == 8);
+        struct Calls : ASR::BaseWalkVisitor<Calls> {
+            ASR::symbol_t *target;
+            size_t count = 0;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                if (ASRUtils::symbol_get_past_external(x.m_name) == target) count++;
+                ASR::BaseWalkVisitor<Calls>::visit_FunctionCall(x);
+            }
+        };
+        auto *generic = ASR::down_cast<ASR::Template_t>(
+            module->m_symtab->get_symbol("walk"));
+        auto *original = ASR::down_cast<ASR::Function_t>(
+            generic->m_symtab->get_symbol("walk"));
+        for (auto *function : {original, callee(5), callee(7)}) {
+            Calls calls;
+            calls.target = &function->base;
+            for (size_t i = 0; i < function->n_body; i++) {
+                calls.visit_stmt(*function->m_body[i]);
+            }
+            CHECK(calls.count == 2);
+        }
+        auto *facade = ASR::down_cast<ASR::Module_t>(
+            unit->m_symtab->get_symbol("inline_facade_m"));
+        CHECK(ASRUtils::symbol_get_past_external(facade->m_symtab->get_symbol("renamed")) ==
+            module->m_symtab->get_symbol("shift"));
+        CHECK(ASRUtils::symbol_get_past_external(client->m_symtab->get_symbol("again")) ==
+            module->m_symtab->get_symbol("shift"));
+    };
+    check_identity(result.result);
+    LCompilers::SymbolTable symtab(nullptr);
+    auto *copy = ASR::down_cast2<ASR::TranslationUnit_t>(LCompilers::deserialize_asr(
+        al, LCompilers::serialize(*result.result), true, symtab, 0));
+    fix_external_symbols(*copy, symtab);
+    check_identity(copy);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        auto loaded = LCompilers::asr_from_text(al, text, "inline.asr", lm, diagnostics);
+        REQUIRE(loaded.ok);
+        check_identity(loaded.result);
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("{integer | real(rk) :: T}") != std::string::npos);
+    CHECK(printed.find("{integer(4) :: U, integer(4) :: V}") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(rebuilt.ok);
+    check_identity(rebuilt.result);
+    CHECK(LCompilers::asr_to_text(*result.result) == LCompilers::asr_to_text(*rebuilt.result));
+}
+
+TEST_CASE("Inline numeric constraints verify private single-binder ownership") {
+    namespace ASR = LCompilers::ASR;
+    const std::string source = R"(
+module inline_owner
+implicit none
+contains
+function identity{integer(4) :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = x
+end function
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto check = [&](ASR::TranslationUnit_t *unit) {
+        auto *module = ASR::down_cast<ASR::Module_t>(unit->m_symtab->get_symbol("inline_owner"));
+        auto *constraint = numeric_constraint(module, "identity");
+        auto *trait = ASR::down_cast<ASR::Trait_t>(constraint->m_trait);
+        auto rejected = [&](const std::string &code) {
+            LCompilers::diag::Diagnostics errors;
+            CHECK_FALSE(LCompilers::asr_verify(*unit, true, errors));
+            REQUIRE(!errors.diagnostics.empty());
+            INFO(errors.render2());
+            CHECK(errors.diagnostics.back().code == code);
+        };
+        trait->m_access = ASR::Public;
+        rejected("asr.verify.trait.inline_is_private_type_set");
+        trait->m_access = ASR::Private;
+        trait->m_kind = ASR::UniversalTrait;
+        rejected("asr.verify.trait.inline_is_private_type_set");
+        trait->m_kind = ASR::IntrinsicTypeSet;
+        auto *scope = constraint->m_parent_symtab;
+        scope->erase_symbol(constraint->m_name);
+        rejected("asr.verify.trait.inline_has_one_binder");
+        scope->add_symbol(constraint->m_name, &constraint->base);
+        auto *extra = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitConstraint_t(
+            al, constraint->base.base.loc, scope, LCompilers::s2c(al, "extra"),
+            constraint->m_parameter, constraint->m_trait, nullptr, 0, nullptr, 0));
+        scope->add_symbol("extra", extra);
+        rejected("asr.verify.trait.inline_has_one_binder");
+        scope->erase_symbol("extra");
+        auto *member = ASR::down_cast<ASR::Integer_t>(trait->m_member_types[0]);
+        member->m_kind = 1001;
+        rejected("asr.verify.trait.numeric_member");
+        member->m_kind = 4;
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+    };
+    check(result.result);
+    LCompilers::SymbolTable symtab(nullptr);
+    auto *copy = ASR::down_cast2<ASR::TranslationUnit_t>(LCompilers::deserialize_asr(
+        al, LCompilers::serialize(*result.result), true, symtab, 0));
+    fix_external_symbols(*copy, symtab);
+    check(copy);
+}
+
+TEST_CASE("Inline numeric constraints stage unsupported syntax and capabilities") {
+    const std::string prefix = R"(
+module inline_stages
+implicit none
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+contains
+function unused{)";
+    const std::string suffix = R"( :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = x
+end function
+end module
+)";
+    struct Case {
+        std::string constraint;
+        bool parsed;
+        std::string message;
+    };
+    for (const auto &test : std::vector<Case>{
+            {"integer(4) + IValue", false, "unexpected"},
+            {"IValue | integer", false, "unexpected"},
+            {"integer |", false, "unexpected"},
+            {"IValue + integer", true, "type-set trait composition is not implemented yet"},
+            {"integer(*)", true, "type-set kind wildcards are not implemented yet"},
+            {"real(kind=*)", true, "type-set kind wildcards are not implemented yet"},
+            {"logical(4)", true, "non-numeric type-set members are not implemented yet"},
+            {"tuple(integer, real)", false, "unexpected"}}) {
+        Allocator al(64 * 1024);
+        LCompilers::CompilerOptions options;
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::LocationManager lm;
+        auto source = prefix + test.constraint + suffix;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        INFO(test.constraint);
+        REQUIRE(parsed.ok == test.parsed);
+        if (test.parsed) {
+            auto result = LCompilers::LFortran::ast_to_asr(
+                al, *parsed.result, diagnostics, nullptr, false, options, lm);
+            CHECK_FALSE(result.ok);
+        }
+        REQUIRE(!diagnostics.diagnostics.empty());
+        const auto &error = diagnostics.diagnostics.back();
+        CHECK(error.stage == (test.parsed ? LCompilers::diag::Stage::Semantic
+                                         : LCompilers::diag::Stage::Parser));
+        CHECK(error.message.find(test.message) != std::string::npos);
+        REQUIRE(!error.labels.empty());
+        CHECK(!error.labels[0].spans.empty());
+    }
+}
+
 TEST_CASE("Numeric trait source, binary, text and module roundtrips") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

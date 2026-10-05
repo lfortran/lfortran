@@ -3775,6 +3775,11 @@ RUN(NAME traits_numeric_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes
 RUN(NAME traits_numeric_05 LABELS llvm NO_STD_F23
     EXTRAFILES traits_numeric_05_contracts.f90 traits_numeric_05_ops.f90 traits_numeric_05_facade.f90
     EXTRA_ARGS --separate-compilation --verify-all-passes)
+RUN(NAME traits_numeric_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_09 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_10 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_numeric_10_ops.f90 traits_numeric_10_facade.f90
+    EXTRA_ARGS --separate-compilation --verify-all-passes)
 RUN(NAME traits_numeric_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_numeric_02_oracle LABELS gfortran llvm)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)

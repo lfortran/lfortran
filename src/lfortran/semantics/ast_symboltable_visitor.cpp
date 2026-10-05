@@ -4191,6 +4191,71 @@ public:
         return reference;
     }
 
+    Vec<ASR::ttype_t*> resolve_type_set_members(
+            AST::decl_attribute_t **members, size_t count, std::string name) {
+        Vec<ASR::ttype_t*> member_types;
+        member_types.reserve(al, count);
+        for (size_t j = 0; j < count; j++) {
+            if (!AST::is_a<AST::AttrType_t>(*members[j])) {
+                trait_error("non-numeric type-set members are not implemented yet",
+                    members[j]->base.loc);
+            }
+            auto *attribute = AST::down_cast<AST::AttrType_t>(members[j]);
+            for (size_t k = 0; k < attribute->n_kind; k++) {
+                if (attribute->m_kind[k].m_type == AST::kind_item_typeType::Star) {
+                    trait_error("type-set kind wildcards are not implemented yet",
+                        attribute->m_kind[k].loc);
+                }
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t *declaration = nullptr;
+            ASR::ttype_t *type = determine_type(attribute->base.base.loc,
+                name, members[j], false, false, dims, nullptr,
+                declaration, current_procedure_abi_type);
+            if (!ASR::is_a<ASR::Integer_t>(*type) &&
+                    !ASR::is_a<ASR::Real_t>(*type) &&
+                    !ASR::is_a<ASR::Complex_t>(*type)) {
+                trait_error("non-numeric type-set members are not implemented yet",
+                    attribute->base.base.loc);
+            }
+            bool duplicate = false;
+            for (auto *member : member_types) {
+                if (ASRUtils::types_equal(member, type, nullptr, nullptr)) {
+                    duplicate = true;
+                }
+            }
+            if (!duplicate) member_types.push_back(al, type);
+        }
+        return member_types;
+    }
+
+    AST::decl_attribute_t *bare_type_set_member(
+            const std::string &name, const Location &loc) {
+        static const std::map<std::string, AST::decl_typeType> types = {
+            {"integer", AST::TypeInteger}, {"real", AST::TypeReal},
+            {"complex", AST::TypeComplex}, {"logical", AST::TypeLogical},
+            {"character", AST::TypeCharacter}, {"byte", AST::TypeInteger},
+            {"doubleprecision", AST::TypeDoublePrecision},
+            {"doublecomplex", AST::TypeDoubleComplex}};
+        auto type = types.find(name);
+        if (type == types.end()) return nullptr;
+        Vec<AST::kind_item_t> kind;
+        kind.reserve(al, 1);
+        if (name == "byte") {
+            AST::kind_item_t item;
+            item.loc = loc;
+            item.m_id = nullptr;
+            item.m_value = AST::down_cast<AST::expr_t>(
+                AST::make_Num_t(al, loc, 1, nullptr));
+            item.m_type = AST::kind_item_typeType::Value;
+            kind.push_back(al, item);
+        }
+        return AST::down_cast<AST::decl_attribute_t>(AST::make_AttrType_t(
+            al, loc, type->second, kind.size() ? kind.p : nullptr, kind.size(),
+            nullptr, nullptr, AST::None));
+    }
+
     void visit_Trait(const AST::Trait_t &x) {
         warn_traits_extension(x.base.base.loc);
         if (scoping_unit_kind != ScopingUnitKind::Module) {
@@ -4223,35 +4288,8 @@ public:
                 }
                 trait_definition->m_kind = ASR::trait_kindType::IntrinsicTypeSet;
                 auto *set = AST::down_cast<AST::InterfaceTypeSet_t>(x.m_items[i]);
-                for (size_t j = 0; j < set->n_member_types; j++) {
-                    auto *attribute = AST::down_cast<AST::AttrType_t>(
-                        set->m_member_types[j]);
-                    for (size_t k = 0; k < attribute->n_kind; k++) {
-                        if (attribute->m_kind[k].m_type == AST::kind_item_typeType::Star) {
-                            trait_error("type-set kind wildcards are not implemented yet",
-                                attribute->m_kind[k].loc);
-                        }
-                    }
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 0);
-                    ASR::symbol_t *declaration = nullptr;
-                    ASR::ttype_t *type = determine_type(attribute->base.base.loc,
-                        name, set->m_member_types[j], false, false, dims, nullptr,
-                        declaration, current_procedure_abi_type);
-                    if (!ASR::is_a<ASR::Integer_t>(*type) &&
-                            !ASR::is_a<ASR::Real_t>(*type) &&
-                            !ASR::is_a<ASR::Complex_t>(*type)) {
-                        trait_error("non-numeric type-set members are not implemented yet",
-                            attribute->base.base.loc);
-                    }
-                    bool duplicate = false;
-                    for (auto *member : member_types) {
-                        if (ASRUtils::types_equal(member, type, nullptr, nullptr)) {
-                            duplicate = true;
-                        }
-                    }
-                    if (!duplicate) member_types.push_back(al, type);
-                }
+                member_types = resolve_type_set_members(
+                    set->m_member_types, set->n_member_types, name);
             }
             trait_definition->m_member_types = member_types.p;
             trait_definition->n_member_types = member_types.size();
@@ -4387,24 +4425,48 @@ public:
     void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
         warn_traits_extension(x.base.base.loc);
         std::set<std::string> parameters;
+        std::vector<std::vector<ASR::symbol_t*>> parameter_traits(x.n_parameters);
+        std::vector<Vec<ASR::ttype_t*>> parameter_members(x.n_parameters);
         for (size_t i = 0; i < x.n_parameters; i++) {
-            std::string name = to_lower(x.m_parameters[i].m_name);
+            const auto &parameter = x.m_parameters[i];
+            std::string name = to_lower(parameter.m_name);
             if (!parameters.insert(name).second) {
                 trait_error("duplicate generic type parameter '" + name + "'",
-                    x.m_parameters[i].loc);
+                    parameter.loc);
             }
-            if (x.m_parameters[i].n_traits == 0) {
+            parameter_members[i].reserve(al, 0);
+            if (parameter.n_member_types) {
+                parameter_members[i] = resolve_type_set_members(
+                    parameter.m_member_types, parameter.n_member_types, name);
+                continue;
+            }
+            if (parameter.n_traits == 0) {
                 trait_error("unconstrained generic parameters are not implemented yet",
-                    x.m_parameters[i].loc);
+                    parameter.loc);
             }
-            for (size_t j = 0; j < x.m_parameters[i].n_traits; j++) {
-                auto *trait = resolve_trait(x.m_parameters[i].m_traits[j],
-                    x.m_parameters[i].loc);
-                if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
-                        x.m_parameters[i].n_traits != 1) {
-                    trait_error("type-set trait composition is not implemented yet",
-                        x.m_parameters[i].loc);
+            for (size_t j = 0; j < parameter.n_traits; j++) {
+                std::string trait_name = to_lower(parameter.m_traits[j]);
+                ASR::symbol_t *symbol = current_scope->resolve_symbol(trait_name);
+                // Bare intrinsic keywords remain names in the AST. A visible
+                // trait wins; an explicit kind or union takes the type-set path.
+                if (!symbol || !ASR::is_a<ASR::Trait_t>(
+                        *ASRUtils::symbol_get_past_external(symbol))) {
+                    if (auto *member = bare_type_set_member(trait_name, parameter.loc)) {
+                        if (parameter.n_traits != 1) {
+                            trait_error("type-set trait composition is not implemented yet",
+                                parameter.loc);
+                        }
+                        parameter_members[i] = resolve_type_set_members(&member, 1, name);
+                        continue;
+                    }
                 }
+                auto *trait = resolve_trait(trait_name, parameter.loc);
+                if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
+                        parameter.n_traits != 1) {
+                    trait_error("type-set trait composition is not implemented yet",
+                        parameter.loc);
+                }
+                parameter_traits[i].push_back(symbol);
             }
         }
         AST::program_unit_t *lowered = lower_trait_procedure(al, x);
@@ -4418,9 +4480,21 @@ public:
             const auto &parameter = x.m_parameters[i];
             ASR::symbol_t *type_symbol = generic->m_symtab->get_symbol(
                 to_lower(parameter.m_name));
+            if (parameter_members[i].size()) {
+                std::string name = generic->m_symtab->get_unique_name(
+                    "__type_set_" + to_lower(parameter.m_name));
+                auto *scope = al.make_new<SymbolTable>(generic->m_symtab);
+                auto *trait = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(
+                    al, parameter.loc, scope, s2c(al, name), nullptr, 0,
+                    ASR::accessType::Private, ASR::trait_kindType::IntrinsicTypeSet,
+                    parameter_members[i].p, parameter_members[i].size()));
+                generic->m_symtab->add_symbol(name, trait);
+                parameter_traits[i].push_back(trait);
+            }
             std::map<std::string, std::pair<ASR::Function_t*, ASR::symbol_t*>> methods;
-            for (size_t j = 0; j < parameter.n_traits; j++) {
-                ASR::Trait_t *trait = resolve_trait(parameter.m_traits[j], parameter.loc);
+            for (auto *trait_symbol : parameter_traits[i]) {
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(trait_symbol));
                 auto hierarchy = checked_trait_hierarchy(*trait, parameter.loc);
                 Vec<ASR::trait_requirement_t> requirements;
                 requirements.reserve(al, hierarchy.members.size());
@@ -4448,8 +4522,7 @@ public:
                     "__constraint_" + to_lower(parameter.m_name));
                 ASR::symbol_t *constraint = ASR::down_cast<ASR::symbol_t>(
                     ASR::make_TraitConstraint_t(al, parameter.loc, generic->m_symtab,
-                        s2c(al, constraint_name), type_symbol,
-                        current_scope->resolve_symbol(to_lower(parameter.m_traits[j])),
+                        s2c(al, constraint_name), type_symbol, trait_symbol,
                         requirements.p, requirements.size(), nullptr, 0));
                 generic->m_symtab->add_symbol(constraint_name, constraint);
             }

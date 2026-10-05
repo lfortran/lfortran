@@ -137,7 +137,8 @@
                 []
             )
             [(T
-            [OriginalNumeric])]
+            [OriginalNumeric]
+            [])]
         )
         (TraitProcedure
             (Function
@@ -207,7 +208,8 @@
                 []
             )
             [(T
-            [ImportedNumeric])]
+            [ImportedNumeric]
+            [])]
         )]
     )
     (Program

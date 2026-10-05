@@ -186,12 +186,51 @@ specialized body is copied.
 
 Type-set traits are constraints, not runtime `class(...)` objects, concrete
 `type(...)` union variables, or traits that derived types can manually adopt.
-Inline sets, kind wildcards, type-set inheritance/composition, and composition
+Kind wildcards, type-set inheritance/composition, and composition
 with nominal constraints remain separate stages.
 
 The complete executable examples and concrete GFortran counterparts are
 `integration_tests/traits_numeric_01.f90` through `traits_numeric_05.f90` and
 `traits_numeric_01_oracle.f90` / `traits_numeric_02_oracle.f90`.
+
+### Inline finite constraints
+
+A generic can declare a finite constraint directly, using the same exact
+membership, all-member body checking, conversions, and specialization rules:
+
+```fortran
+function mean{integer | real(real64) :: T}(x) result(r)
+    type(T), intent(in) :: x(:)
+    type(T) :: r
+    integer :: i
+    r = T(0)
+    do i = 1, size(x)
+        r = r + x(i)
+    end do
+    r = r / T(size(x))
+end function
+```
+
+Singletons such as `{integer :: T}` and `{real(kind=8) :: T}` are also
+supported. For backward compatibility, a **bare** intrinsic-looking name,
+such as `integer` or `real`, denotes a visible named trait when there is one;
+otherwise it denotes the intrinsic singleton. Ordinary variables with those
+names do not shadow the intrinsic constraint. An explicit kind (`integer(4)`)
+or a union (`integer | real(8)`) unambiguously specifies intrinsic members,
+even when a same-named trait is visible. Fortran keywords are not reserved.
+The older unconstrained-template syntax `{T}` keeps its existing meaning.
+
+Each inline constraint belongs to one binder of one generic definition.
+Repeated explicit and inferred calls, self-recursion, imports, renaming, and
+re-exports retain that identity, including when a public generic is exported
+from a private-by-default module. Equal member lists in different definitions
+are not interned together. Forwarding between distinct finite constraints,
+including identical inline lists, remains unsupported; use the same named
+finite trait for cooperating generics.
+
+See `traits_numeric_06.f90` for means and self-recursion,
+`traits_numeric_09.f90` for singleton/shadowing controls, and
+`traits_numeric_10.f90` and its modules for separate compilation.
 
 ## Current boundaries
 
@@ -222,7 +261,10 @@ Three ASR symbol kinds preserve the semantic distinction from templates:
 
 - `Trait` explicitly distinguishes universal contracts from intrinsic type
   sets. It owns receiver-independent signatures and parent references for
-  universal traits, or a finite list of concrete numeric member types.
+  universal traits, or a finite list of concrete numeric member types. An
+  inline set is a private `Trait` owned by its defining `Template`, referenced
+  by exactly one binder's `TraitConstraint` there. This structural ownership,
+  not a generated-name convention, distinguishes it from a named declaration.
 - `TraitConstraint` connects a generic type parameter to a trait and to the
   normalized abstract procedures used when checking its body.
 - `TraitImplementation` records a concrete type's nominal conformance and its

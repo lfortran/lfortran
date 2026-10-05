@@ -41,6 +41,13 @@ ordinary union variable or runtime class, and cannot be manually implemented.
 Its canonical symbol still distinguishes it from a separately declared trait
 with identical member types.
 
+An inline constraint is represented by a private `IntrinsicTypeSet` whose
+parent scope is its defining `Template`. Exactly one `TraitConstraint` in
+that scope references it. Template ownership is its provenance; the generated
+symbol name has no semantic meaning. The identity and complete member list
+survive generic specialization, serialization, and re-export. Module- and
+program-owned named traits retain their existing representation.
+
 ## Examples
 
 See the [static traits guide](../../traits.md).

@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Module
-        traits_numeric_02_m
+        traits_numeric_06_m
         (TriviaNode
             []
             [(EndOfLine)
@@ -23,333 +23,10 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )
-        (Trait
-            INumeric
-            []
-            [(InterfaceTypeSet
-                [(AttrType
-                    TypeInteger
-                    []
-                    ()
-                    ()
-                    None
-                )
-                (AttrType
-                    TypeReal
-                    [(()
-                    real64
-                    Value)]
-                    ()
-                    ()
-                    None
-                )]
-            )]
         )]
         [(TraitProcedure
             (Function
-                zero_like
-                [(x)]
-                []
-                ()
-                ()
-                (TriviaNode
-                    []
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(x
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    []
-                    [(zero_like
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Assignment
-                    0
-                    zero_like
-                    (FuncCallOrArray
-                        T
-                        []
-                        [(()
-                        0
-                        ()
-                        0)]
-                        []
-                        []
-                        []
-                    )
-                    ()
-                )]
-                []
-                []
-            )
-            [(T
-            [INumeric]
-            [])]
-        )
-        (TraitProcedure
-            (Function
-                zero
-                []
-                []
-                value
-                ()
-                (TriviaNode
-                    []
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    []
-                    [(value
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Assignment
-                    0
-                    value
-                    (FuncCallOrArray
-                        T
-                        []
-                        [(()
-                        0
-                        ()
-                        0)]
-                        []
-                        []
-                        []
-                    )
-                    ()
-                )]
-                []
-                []
-            )
-            [(T
-            [INumeric]
-            [])]
-        )
-        (TraitProcedure
-            (Function
-                from_integer
-                [(n)]
-                []
-                value
-                ()
-                (TriviaNode
-                    []
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
-                [(Declaration
-                    (AttrType
-                        TypeInteger
-                        []
-                        ()
-                        ()
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(n
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    []
-                    [(value
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Assignment
-                    0
-                    value
-                    (FuncCallOrArray
-                        T
-                        []
-                        [(()
-                        n
-                        ()
-                        0)]
-                        []
-                        []
-                        []
-                    )
-                    ()
-                )]
-                []
-                []
-            )
-            [(T
-            [INumeric]
-            [])]
-        )
-        (TraitProcedure
-            (Function
-                evaluate
-                [(a)
-                (b)
-                (n)]
-                []
-                value
-                ()
-                (TriviaNode
-                    []
-                    [(EndOfLine)
-                    (EndOfLine)]
-                )
-                [(Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(a
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())
-                    (b
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeInteger
-                        []
-                        ()
-                        ()
-                        None
-                    )
-                    [(AttrIntent
-                        In
-                    )]
-                    [(n
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Declaration
-                    (AttrType
-                        TypeType
-                        []
-                        ()
-                        T
-                        None
-                    )
-                    []
-                    [(value
-                    []
-                    []
-                    ()
-                    ()
-                    None
-                    ())]
-                    ()
-                )
-                (Assignment
-                    0
-                    value
-                    (- (* (+ a b) (FuncCallOrArray
-                        T
-                        []
-                        [(()
-                        n
-                        ()
-                        0)]
-                        []
-                        []
-                        []
-                    )) (/ a b))
-                    ()
-                )]
-                []
-                []
-            )
-            [(T
-            [INumeric]
-            [])]
-        )
-        (TraitProcedure
-            (Function
-                forward_result
+                inline_shift
                 [(x)
                 (n)]
                 []
@@ -421,15 +98,153 @@
                 (Assignment
                     0
                     value
-                    (+ (FuncCallOrArray
-                        identity
+                    (+ x (FuncCallOrArray
+                        T
                         []
                         [(()
-                        (+ x (FuncCallOrArray
-                            T
+                        n
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    ))
+                    ()
+                )]
+                []
+                []
+            )
+            [(T
+            []
+            [(AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            (AttrType
+                TypeReal
+                [(()
+                real64
+                Value)]
+                ()
+                ()
+                None
+            )])]
+        )
+        (TraitProcedure
+            (Function
+                mean
+                [(x)]
+                []
+                r
+                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        T
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(x
+                    [(()
+                    ()
+                    DimensionExpr)]
+                    []
+                    ()
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        T
+                        None
+                    )
+                    []
+                    [(r
+                    []
+                    []
+                    ()
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeInteger
+                        []
+                        ()
+                        ()
+                        None
+                    )
+                    []
+                    [(i
+                    []
+                    []
+                    ()
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Assignment
+                    0
+                    r
+                    (FuncCallOrArray
+                        T
+                        []
+                        [(()
+                        0
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    ()
+                )
+                (DoLoop
+                    0
+                    ()
+                    0
+                    i
+                    1
+                    (FuncCallOrArray
+                        size
+                        []
+                        [(()
+                        x
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    )
+                    ()
+                    [(Assignment
+                        0
+                        r
+                        (+ r (FuncCallOrArray
+                            x
                             []
                             [(()
-                            n
+                            i
                             ()
                             0)]
                             []
@@ -437,21 +252,22 @@
                             []
                         ))
                         ()
-                        0)]
-                        []
-                        []
-                        [(AttrName
-                            T
-                        )]
-                    ) (FuncCallOrArray
-                        identity
+                    )]
+                    ()
+                    ()
+                )
+                (Assignment
+                    0
+                    r
+                    (/ r (FuncCallOrArray
+                        T
                         []
                         [(()
                         (FuncCallOrArray
-                            T
+                            size
                             []
                             [(()
-                            n
+                            x
                             ()
                             0)]
                             []
@@ -470,15 +286,33 @@
                 []
             )
             [(T
-            [INumeric]
-            [])]
+            []
+            [(AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            (AttrType
+                TypeReal
+                [(()
+                real64
+                Value)]
+                ()
+                ()
+                None
+            )])]
         )
         (TraitProcedure
             (Function
-                identity
-                [(x)]
-                []
-                value
+                advance
+                [(x)
+                (n)]
+                [(SimpleAttribute
+                    AttrRecursive
+                )]
+                r
                 ()
                 ()
                 [(Declaration
@@ -503,14 +337,16 @@
                 )
                 (Declaration
                     (AttrType
-                        TypeType
+                        TypeInteger
                         []
                         ()
-                        T
+                        ()
                         None
                     )
-                    []
-                    [(value
+                    [(AttrIntent
+                        In
+                    )]
+                    [(n
                     []
                     []
                     ()
@@ -519,44 +355,149 @@
                     ())]
                     ()
                 )
-                (Assignment
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        T
+                        None
+                    )
+                    []
+                    [(r
+                    []
+                    []
+                    ()
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (If
                     0
-                    value
-                    x
+                    ()
+                    (== n 0)
+                    [(Assignment
+                        0
+                        r
+                        x
+                        ()
+                    )]
+                    [(If
+                        0
+                        ()
+                        (== n 1)
+                        [(Assignment
+                            0
+                            r
+                            (FuncCallOrArray
+                                advance
+                                []
+                                [(()
+                                (+ x (FuncCallOrArray
+                                    T
+                                    []
+                                    [(()
+                                    1
+                                    ()
+                                    0)]
+                                    []
+                                    []
+                                    []
+                                ))
+                                ()
+                                0)
+                                (()
+                                (- n 1)
+                                ()
+                                0)]
+                                []
+                                []
+                                [(AttrName
+                                    T
+                                )]
+                            )
+                            ()
+                        )]
+                        [(Assignment
+                            0
+                            r
+                            (FuncCallOrArray
+                                advance
+                                []
+                                [(()
+                                (+ x (FuncCallOrArray
+                                    T
+                                    []
+                                    [(()
+                                    1
+                                    ()
+                                    0)]
+                                    []
+                                    []
+                                    []
+                                ))
+                                ()
+                                0)
+                                (()
+                                (- n 1)
+                                ()
+                                0)]
+                                []
+                                []
+                                []
+                            )
+                            ()
+                        )]
+                        .false.
+                        ()
+                        ()
+                        ()
+                    )]
+                    .false.
+                    ()
+                    ()
                     ()
                 )]
                 []
                 []
             )
             [(T
-            [INumeric]
-            [])]
+            []
+            [(AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            (AttrType
+                TypeReal
+                [(()
+                real64
+                Value)]
+                ()
+                ()
+                None
+            )])]
         )]
     )
     (Program
-        traits_numeric_02
+        traits_numeric_06
         ()
         [(Use
             []
-            traits_numeric_02_m
+            traits_numeric_06_m
             [(UseSymbol
-                zero_like
+                inline_shift
                 ()
             )
             (UseSymbol
-                zero
+                mean
                 ()
             )
             (UseSymbol
-                from_integer
-                ()
-            )
-            (UseSymbol
-                evaluate
-                ()
-            )
-            (UseSymbol
-                forward_result
+                advance
                 ()
             )]
             .true.
@@ -574,6 +515,48 @@
         )
         (ImplicitNone
             []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(integers
+            [(1
+            4
+            DimensionExpr)]
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                [(()
+                real64
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(reals
+            [(1
+            4
+            DimensionExpr)]
+            []
+            ()
+            ()
+            None
+            ())]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -586,10 +569,14 @@
             []
             [(()
             (FuncCallOrArray
-                zero_like
+                inline_shift
                 []
                 [(()
-                9
+                4
+                ()
+                0)
+                (()
+                (u- 2)
                 ()
                 0)]
                 []
@@ -599,7 +586,7 @@
             ()
             0)
             (()
-            0
+            2
             ()
             0)]
             []
@@ -612,10 +599,14 @@
             []
             [(()
             (FuncCallOrArray
-                zero_like
+                inline_shift
                 []
                 [(()
-                9
+                4
+                ()
+                0)
+                (()
+                (u- 2)
                 ()
                 0)]
                 []
@@ -631,7 +622,7 @@
             ()
             0)
             (()
-            0
+            2
             ()
             0)]
             []
@@ -644,10 +635,14 @@
             []
             [(()
             (FuncCallOrArray
-                zero_like
+                inline_shift
                 []
                 [(()
-                (Real "9.0_real64")
+                (Real "4.5_real64")
+                ()
+                0)
+                (()
+                (u- 2)
                 ()
                 0)]
                 []
@@ -657,7 +652,7 @@
             ()
             0)
             (()
-            (Real "0.0_real64")
+            (Real "2.5_real64")
             ()
             0)]
             []
@@ -670,10 +665,14 @@
             []
             [(()
             (FuncCallOrArray
-                zero_like
+                inline_shift
                 []
                 [(()
-                (Real "9.0_real64")
+                (Real "4.5_real64")
+                ()
+                0)
+                (()
+                (u- 2)
                 ()
                 0)]
                 []
@@ -691,36 +690,7 @@
             ()
             0)
             (()
-            (Real "0.0_real64")
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_integer
-            []
-            [(()
-            (FuncCallOrArray
-                zero
-                []
-                []
-                []
-                []
-                [(AttrType
-                    TypeInteger
-                    []
-                    ()
-                    ()
-                    None
-                )]
-            )
-            ()
-            0)
-            (()
-            0
+            (Real "2.5_real64")
             ()
             0)]
             []
@@ -733,120 +703,19 @@
             []
             [(()
             (FuncCallOrArray
-                zero
-                []
-                []
-                []
-                []
-                [(AttrType
-                    TypeReal
-                    [(()
-                    real64
-                    Value)]
-                    ()
-                    ()
-                    None
-                )]
-            )
-            ()
-            0)
-            (()
-            (Real "0.0_real64")
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_integer
-            []
-            [(()
-            (FuncCallOrArray
-                from_integer
+                inline_shift
                 []
                 [(()
-                (u- 7)
+                (Real "0.0_real64")
                 ()
-                0)]
-                []
-                []
-                [(AttrType
-                    TypeInteger
-                    []
-                    ()
-                    ()
-                    None
-                )]
-            )
-            ()
-            0)
-            (()
-            (u- 7)
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_real64
-            []
-            [(()
-            (FuncCallOrArray
-                from_integer
-                []
-                [(()
-                (u- 7)
-                ()
-                0)]
-                []
-                []
-                [(AttrType
-                    TypeReal
-                    [(()
-                    real64
-                    Value)]
-                    ()
-                    ()
-                    None
-                )]
-            )
-            ()
-            0)
-            (()
-            (u- (Real "7.0_real64"))
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_real64
-            []
-            [(()
-            (FuncCallOrArray
-                from_integer
-                []
-                [(()
+                0)
+                (()
                 16777217
                 ()
                 0)]
                 []
                 []
-                [(AttrType
-                    TypeReal
-                    [(()
-                    real64
-                    Value)]
-                    ()
-                    ()
-                    None
-                )]
+                []
             )
             ()
             0)
@@ -858,24 +727,103 @@
             []
             ()
         )
+        (If
+            0
+            ()
+            (/= (FuncCallOrArray
+                kind
+                []
+                [(()
+                (FuncCallOrArray
+                    inline_shift
+                    []
+                    [(()
+                    (Real "0.0_real64")
+                    ()
+                    0)
+                    (()
+                    1
+                    ()
+                    0)]
+                    []
+                    []
+                    []
+                )
+                ()
+                0)]
+                []
+                []
+                []
+            ) real64)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (Assignment
+            0
+            integers
+            (ArrayInitializer
+                ()
+                ()
+                [1
+                2
+                4
+                8]
+            )
+            ()
+        )
+        (Assignment
+            0
+            reals
+            (FuncCallOrArray
+                real
+                []
+                [(()
+                integers
+                ()
+                0)
+                (()
+                real64
+                ()
+                0)]
+                []
+                []
+                []
+            )
+            ()
+        )
         (SubroutineCall
             0
             expect_integer
             []
             [(()
             (FuncCallOrArray
-                evaluate
+                mean
                 []
                 [(()
-                7
-                ()
-                0)
-                (()
-                2
-                ()
-                0)
-                (()
-                3
+                (FuncCallOrArray
+                    integers
+                    []
+                    [(()
+                    ()
+                    2
+                    0)]
+                    []
+                    []
+                    []
+                )
                 ()
                 0)]
                 []
@@ -885,7 +833,51 @@
             ()
             0)
             (()
-            24
+            2
+            ()
+            0)]
+            []
+            []
+            ()
+        )
+        (SubroutineCall
+            0
+            expect_real64
+            []
+            [(()
+            (FuncCallOrArray
+                mean
+                []
+                [(()
+                (FuncCallOrArray
+                    reals
+                    []
+                    [(()
+                    ()
+                    2
+                    0)]
+                    []
+                    []
+                    []
+                )
+                ()
+                0)]
+                []
+                []
+                [(AttrType
+                    TypeReal
+                    [(()
+                    real64
+                    Value)]
+                    ()
+                    ()
+                    None
+                )]
+            )
+            ()
+            0)
+            (()
+            (Real "2.5_real64")
             ()
             0)]
             []
@@ -898,18 +890,20 @@
             []
             [(()
             (FuncCallOrArray
-                evaluate
+                mean
                 []
                 [(()
-                7
-                ()
-                0)
-                (()
-                2
-                ()
-                0)
-                (()
-                3
+                (u- (FuncCallOrArray
+                    integers
+                    []
+                    [(()
+                    3
+                    1
+                    0)]
+                    []
+                    []
+                    []
+                ))
                 ()
                 0)]
                 []
@@ -925,7 +919,7 @@
             ()
             0)
             (()
-            24
+            (u- 2)
             ()
             0)]
             []
@@ -938,14 +932,46 @@
             []
             [(()
             (FuncCallOrArray
-                evaluate
+                mean
                 []
                 [(()
-                (Real "7.0_real64")
+                (FuncCallOrArray
+                    reals
+                    []
+                    [(()
+                    3
+                    1
+                    0)]
+                    []
+                    []
+                    []
+                )
                 ()
-                0)
-                (()
-                (Real "2.0_real64")
+                0)]
+                []
+                []
+                []
+            )
+            ()
+            0)
+            (()
+            (/ (Real "7.0_real64") (Real "3.0_real64"))
+            ()
+            0)]
+            []
+            []
+            ()
+        )
+        (SubroutineCall
+            0
+            expect_integer
+            []
+            [(()
+            (FuncCallOrArray
+                advance
+                []
+                [(()
+                4
                 ()
                 0)
                 (()
@@ -959,7 +985,7 @@
             ()
             0)
             (()
-            (Real "23.5_real64")
+            7
             ()
             0)]
             []
@@ -972,14 +998,10 @@
             []
             [(()
             (FuncCallOrArray
-                evaluate
+                advance
                 []
                 [(()
-                (Real "7.0_real64")
-                ()
-                0)
-                (()
-                (Real "2.0_real64")
+                (Real "1.5_real64")
                 ()
                 0)
                 (()
@@ -1001,151 +1023,11 @@
             ()
             0)
             (()
-            (Real "23.5_real64")
+            (Real "4.5_real64")
             ()
             0)]
             []
             []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_integer
-            []
-            [(()
-            (FuncCallOrArray
-                forward_result
-                []
-                [(()
-                7
-                ()
-                0)
-                (()
-                3
-                ()
-                0)]
-                []
-                []
-                []
-            )
-            ()
-            0)
-            (()
-            13
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (SubroutineCall
-            0
-            expect_real64
-            []
-            [(()
-            (FuncCallOrArray
-                forward_result
-                []
-                [(()
-                (Real "7.5_real64")
-                ()
-                0)
-                (()
-                3
-                ()
-                0)]
-                []
-                []
-                []
-            )
-            ()
-            0)
-            (()
-            (Real "13.5_real64")
-            ()
-            0)]
-            []
-            []
-            ()
-        )
-        (If
-            0
-            ()
-            (/= (FuncCallOrArray
-                kind
-                []
-                [(()
-                (FuncCallOrArray
-                    zero_like
-                    []
-                    [(()
-                    (Real "1.0_real64")
-                    ()
-                    0)]
-                    []
-                    []
-                    []
-                )
-                ()
-                0)]
-                []
-                []
-                []
-            ) real64)
-            [(ErrorStop
-                0
-                ()
-                ()
-                ()
-            )]
-            []
-            .true.
-            ()
-            ()
-            ()
-        )
-        (If
-            0
-            ()
-            (/= (FuncCallOrArray
-                kind
-                []
-                [(()
-                (FuncCallOrArray
-                    from_integer
-                    []
-                    [(()
-                    1
-                    ()
-                    0)]
-                    []
-                    []
-                    [(AttrType
-                        TypeReal
-                        [(()
-                        real64
-                        Value)]
-                        ()
-                        ()
-                        None
-                    )]
-                )
-                ()
-                0)]
-                []
-                []
-                []
-            ) real64)
-            [(ErrorStop
-                0
-                ()
-                ()
-                ()
-            )]
-            []
-            .true.
-            ()
-            ()
             (TriviaNode
                 []
                 [(EndOfLine)

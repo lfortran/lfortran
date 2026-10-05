@@ -5895,6 +5895,34 @@ asr = true
 options = "--verify-all-passes"
 
 [[test]]
+filename = "../integration_tests/traits_numeric_06.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_09.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_10.f90"
+extrafiles = "../integration_tests/traits_numeric_10_ops.f90, ../integration_tests/traits_numeric_10_facade.f90"
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_10_ops.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   

@@ -900,9 +900,25 @@ public:
         }
         require_id(trait_scope_owner != nullptr &&
                 (ASR::is_a<ASR::Module_t>(*trait_scope_owner) ||
-                 ASR::is_a<ASR::Program_t>(*trait_scope_owner)),
+                 ASR::is_a<ASR::Program_t>(*trait_scope_owner) ||
+                 ASR::is_a<ASR::Template_t>(*trait_scope_owner)),
             "asr.verify.trait.scope_is_module",
-            "Traits must be declared in a module or program scope");
+            "Traits must be declared in a module, program or defining template scope");
+        if (ASR::is_a<ASR::Template_t>(*trait_scope_owner)) {
+            require_id(x.m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
+                    x.m_access == ASR::accessType::Private,
+                "asr.verify.trait.inline_is_private_type_set",
+                "A template-owned trait must be a private intrinsic type set");
+            size_t bindings = 0;
+            for (const auto &entry : parent_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                if (constraint->m_trait == &x.base) bindings++;
+            }
+            require_id(bindings == 1,
+                "asr.verify.trait.inline_has_one_binder",
+                "An inline type set must belong to exactly one defining generic binder");
+        }
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "Trait::m_symtab->counter must be unique");
         require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,

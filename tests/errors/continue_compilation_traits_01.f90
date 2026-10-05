@@ -1611,3 +1611,132 @@ module traits_numeric_a_n10_m
     implements INumeric :: Box
     end implements Box
 end module traits_numeric_a_n10_m
+
+module traits_numeric_b1_n01_m
+    implicit none
+contains
+    function identity{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+    subroutine probe()
+        integer(8) :: r
+        ! B1-N01: exact membership excludes an integer of another kind.
+        r = identity(1_8)
+    end subroutine
+end module traits_numeric_b1_n01_m
+
+module traits_numeric_b1_n02_m
+    implicit none
+contains
+    function identity{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+    subroutine probe()
+        real :: r
+        ! B1-N02: default real is not real(8).
+        r = identity(1.0)
+    end subroutine
+end module traits_numeric_b1_n02_m
+
+module traits_numeric_b1_n03_m
+    implicit none
+contains
+    function identity{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+    subroutine probe()
+        complex(8) :: r
+        ! B1-N03: a valid copy does not grant membership to another category.
+        r = identity((1.d0, 2.d0))
+    end subroutine
+end module traits_numeric_b1_n03_m
+
+module traits_numeric_b1_n04_m
+    implicit none
+contains
+    function unused{integer | real(8) | complex(8) :: T}(x, y) result(r)
+        type(T), intent(in) :: x, y
+        logical :: r
+        ! B1-N04: every member must support ordering, even without a call.
+        r = x < y
+    end function
+end module traits_numeric_b1_n04_m
+
+module traits_numeric_b1_n05_m
+    implicit none
+contains
+    function unused{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        ! B1-N05: a logical is not a numeric conversion source.
+        r = T(.true.)
+    end function
+end module traits_numeric_b1_n05_m
+
+module traits_numeric_b1_n06_m
+    implicit none
+contains
+    function identity{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+    subroutine probe()
+        real(8) :: r
+        ! B1-N06: explicit type actuals cannot cast a conflicting ordinary actual.
+        r = identity{integer}(1.d0)
+    end subroutine
+end module traits_numeric_b1_n06_m
+
+module traits_numeric_b1_n07_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+contains
+    ! B1-N07: a bare intrinsic singleton cannot be composed with a nominal trait.
+    function unused{IValue + integer :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+end module traits_numeric_b1_n07_m
+
+module traits_numeric_b1_n08_m
+    implicit none
+contains
+    function first{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        ! B1-N08: equal lists do not intern independently declared constraints.
+        r = second{T}(x)
+    end function
+    function second{integer | real(8) :: U}(x) result(r)
+        type(U), intent(in) :: x
+        type(U) :: r
+        r = x
+    end function
+end module traits_numeric_b1_n08_m
+
+module traits_numeric_b1_n09_m
+    implicit none
+contains
+    function identity{integer(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x
+    end function
+    subroutine probe()
+        integer :: r
+        ! B1-N09: singleton constraints use the same exact-membership checker.
+        r = identity(1)
+    end subroutine
+end module traits_numeric_b1_n09_m

@@ -1145,6 +1145,26 @@ static inline trait_parameter_t *TRAIT_PARAMETER(Allocator &al,
     r->m_name = name2char(name);
     r->m_traits = REDUCE_ARGS(al, traits);
     r->n_traits = traits.size();
+    r->m_member_types = nullptr;
+    r->n_member_types = 0;
+    return r;
+}
+
+static inline trait_parameter_t *TRAIT_TYPE_PARAMETER(Allocator &al,
+        const ast_t *name, const Vec<ast_t*> &types, Location &loc)
+{
+    trait_parameter_t *r = al.allocate<trait_parameter_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_traits = nullptr;
+    r->n_traits = 0;
+    Vec<decl_attribute_t*> members;
+    members.reserve(al, types.size());
+    for (auto *type : types) {
+        members.push_back(al, down_cast<decl_attribute_t>(type));
+    }
+    r->m_member_types = members.p;
+    r->n_member_types = members.size();
     return r;
 }
 
