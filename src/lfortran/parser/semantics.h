@@ -2143,6 +2143,22 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
 
 static inline ast_t* OMP_PRAGMA2(Allocator &al,
         Location &loc, std::string omp_str) {
+    std::string lower_text = LCompilers::to_lower(omp_str);
+    size_t start = lower_text.find_first_not_of(" \t\r\n");
+    if (start != std::string::npos && lower_text.compare(start, 5, "!$omp") == 0) {
+        start = lower_text.find_first_not_of(" \t\r\n", start + 5);
+        std::string directive = start == std::string::npos ? "" : lower_text.substr(start);
+        const std::string keyword = "threadprivate";
+        if (LCompilers::startswith(directive, keyword) &&
+                (directive.size() == keyword.size() ||
+                 directive[keyword.size()] == '(' ||
+                 directive[keyword.size()] == ' ' ||
+                 directive[keyword.size()] == '\t')) {
+            return make_DeclarationPragma_t(al, loc,
+                LCompilers::LFortran::AST::OMPPragma,
+                LCompilers::s2c(al, omp_str), nullptr);
+        }
+    }
     std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(omp_str);
     size_t i = 1;
     bool m_end = false;
@@ -3171,6 +3187,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Inquire)
         TRIVIA_SET(Nullify)
         TRIVIA_SET(Pragma)
+        TRIVIA_SET(DeclarationPragma)
         TRIVIA_SET(Open)
         TRIVIA_SET(Return)
         TRIVIA_SET(Print)

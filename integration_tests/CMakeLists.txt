@@ -414,8 +414,9 @@ RUN(NAME print_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2)
 RUN(NAME print_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2)
 RUN(NAME print_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_14 LABELS gfortran llvm)
-RUN(NAME print_15 LABELS llvm)
+RUN(NAME print_15 LABELS llvm NO_STD_F23)
 RUN(NAME print_16 LABELS gfortran llvm EXTRA_ARGS --std=f23)
+RUN(NAME print_17 LABELS gfortran llvm EXTRA_ARGS --std=f23)
 
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm c fortran)
@@ -1296,6 +1297,15 @@ RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
 RUN(NAME format_112 LABELS gfortran llvm)
+# real(10) is the x87 80-bit extended type, which is also the C long double
+# the runtime formats it with, only on x86-64 Linux. On other platforms the
+# generated code and the runtime disagree on how a real(10) value is stored:
+# https://github.com/lfortran/lfortran/issues/13935
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    RUN(NAME format_113 LABELS gfortran llvm)
+endif()
+RUN(NAME format_114 LABELS gfortran llvm)
+RUN(NAME format_115 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1884,6 +1894,7 @@ RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
 RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
 RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
+RUN(NAME intrinsics_481 LABELS gfortran llvm c) # sign on real(4)/real(8) with negative zero, C backend RealCopySign (#13918)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
@@ -2175,6 +2186,7 @@ RUN(NAME forall_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-typing)
 RUN(NAME forall_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_04 LABELS gfortran llvm)
+RUN(NAME forall_05 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
@@ -3503,6 +3515,7 @@ RUN(NAME class_150 LABELS gfortran llvm)
 RUN(NAME class_151 LABELS gfortran llvm)
 RUN(NAME class_152 LABELS gfortran llvm)
 RUN(NAME class_153 LABELS gfortran llvm)
+RUN(NAME class_154 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -3742,6 +3755,7 @@ RUN(NAME template_instantiate_scope_07 LABELS gfortran llvm)
 RUN(NAME template_instantiate_scope_08 LABELS llvm)
 RUN(NAME template_instantiate_scope_09 LABELS gfortran llvm)
 RUN(NAME template_instantiate_scope_10 LABELS llvm)
+RUN(NAME template_instantiate_no_only_01 LABELS llvm)
 RUN(NAME template_prefix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3775,6 +3789,7 @@ RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_defined_assignment_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4126,6 +4141,10 @@ RUN(NAME write_43 LABELS gfortran llvm)
 RUN(NAME write_44 LABELS gfortran llvm)
 RUN(NAME write_45 LABELS gfortran llvm)
 RUN(NAME write_46 LABELS gfortran llvm)
+RUN(NAME write_47 LABELS gfortran llvm c)
+RUN(NAME write_48 LABELS gfortran llvm c)
+# llvm: an iostat= variable of a non-default kind fails module verification (#13947)
+RUN(NAME write_49 LABELS gfortran c)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -4693,6 +4712,7 @@ RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_16 LABELS gfortran llvm llvm_omp)
 RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
+RUN(NAME do_concurrent_18 LABELS gfortran llvm)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4793,6 +4813,7 @@ RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm
 RUN(NAME polymorphic_arguments_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME polymorphic_arguments_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocatable_polymorphic_mold_01 LABELS gfortran llvm fortran)
+RUN(NAME allocatable_polymorphic_mold_02 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_01 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_assign_03 LABELS gfortran llvm)
@@ -4905,6 +4926,9 @@ RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_95 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_96 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_97 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
+    EXTRAFILES openmp_threadprivate_tls_mod.f90
+    EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -5685,6 +5709,7 @@ RUN(NAME gpu_metal_371 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
@@ -5780,3 +5805,5 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)

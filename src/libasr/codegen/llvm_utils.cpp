@@ -334,7 +334,7 @@ namespace LCompilers {
         return allocator_instance;
     }
 
-    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode)
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank)
     {
         llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
         if (!fn_printf) {
@@ -344,6 +344,7 @@ namespace LCompilers {
                     llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt64Ty(context)->getPointerTo(),
+                    llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context),
@@ -374,6 +375,7 @@ namespace LCompilers {
         } else {
             full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         }
+        full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), leading_blank));
         for (size_t i = 6; i < args.size(); i++) {
             full_args.push_back(args[i]);
         }
@@ -3578,11 +3580,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
 
     void LLVMUtils::init_mold_upoly_array_data(
-            llvm::Value* wrapper, llvm::Value* mold_wrapper,
-            llvm::Type* class_type, llvm::Value* num_elements) {
-        // Copy vptr from mold's wrapper to the new array's wrapper
-        llvm::Value* mold_vptr = CreateLoad2(vptr_type,
-            create_gep2(class_type, mold_wrapper, 0));
+            llvm::Value* wrapper, llvm::Value* mold_vptr_or_wrapper,
+            llvm::Type* class_type, llvm::Value* num_elements,
+            bool mold_is_static_vptr) {
+        // Copy vptr from mold (static, or loaded from mold's wrapper)
+        llvm::Value* mold_vptr = mold_is_static_vptr
+            ? mold_vptr_or_wrapper
+            : CreateLoad2(vptr_type, create_gep2(class_type, mold_vptr_or_wrapper, 0));
         builder->CreateStore(mold_vptr,
             create_gep2(class_type, wrapper, 0));
 
@@ -3603,21 +3607,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         // For string types, initialize each string descriptor.
         // String type tag: ttypeType::String(=4) + kind(=1) = 5
-        llvm::Value* type_tag = get_class_type_tag_from_vptr(mold_vptr);
-        llvm::Value* is_string = builder->CreateICmpEQ(type_tag,
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 5));
+        if (!mold_is_static_vptr) {
+            llvm::Value* type_tag = get_class_type_tag_from_vptr(mold_vptr);
+            llvm::Value* is_string = builder->CreateICmpEQ(type_tag,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 5));
 
-        create_if_else(is_string, [&]() {
-            // Get string length from mold's data (a string_descriptor)
-            llvm::Value* mold_data = CreateLoad2(i8_ptr,
-                create_gep2(class_type, mold_wrapper, 1));
-            llvm::Value* mold_str_desc = builder->CreateBitCast(
-                mold_data, string_descriptor->getPointerTo());
-            llvm::Value* str_len = CreateLoad2(
-                llvm::Type::getInt64Ty(context),
-                create_gep2(string_descriptor, mold_str_desc, 1));
-            init_string_descriptors(data_mem, num_elements, str_len);
-        }, [&]() {});
+            create_if_else(is_string, [&]() {
+                // Get string length from mold's data (a string_descriptor)
+                llvm::Value* mold_data = CreateLoad2(i8_ptr,
+                    create_gep2(class_type, mold_vptr_or_wrapper, 1));
+                llvm::Value* mold_str_desc = builder->CreateBitCast(
+                    mold_data, string_descriptor->getPointerTo());
+                llvm::Value* str_len = CreateLoad2(
+                    llvm::Type::getInt64Ty(context),
+                    create_gep2(string_descriptor, mold_str_desc, 1));
+                init_string_descriptors(data_mem, num_elements, str_len);
+            }, [&]() {});
+        }
     }
 
     llvm::Value* LLVMUtils::get_polymorphic_array_data_ptr(llvm::Value* base_ptr, llvm::Value* idx, llvm::Value* vptr) {
