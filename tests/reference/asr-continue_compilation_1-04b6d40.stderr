@@ -3077,6 +3077,12 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
+semantic error: No matching `operator(-)` found for this operand type
+    --> tests/errors/continue_compilation_1.f90:2081:10
+     |
+2081 |     qq = -q  ! {Error} No matching `operator(-)` found for this operand type
+     |          ^^ 
+
 semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
     --> tests/errors/continue_compilation_1.f90:2102:34
      |
