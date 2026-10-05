@@ -8,6 +8,12 @@ module ASR {
 unit
     = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
+trait_requirement
+    = (symbol member, symbol procedure)
+
+trait_binding
+    = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)
+
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
@@ -36,6 +42,9 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
+    | Trait(symbol_table symtab, identifier name, symbol* parents, access access)
+    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements)
+    | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)

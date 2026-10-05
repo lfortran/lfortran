@@ -13,6 +13,7 @@
 #include <libasr/exception.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
+#include <lfortran/semantics/trait_procedures.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
@@ -6326,6 +6327,10 @@ public:
         tmp = nullptr;
     }
 
+    void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
+        visit_program_unit(*lower_trait_procedure(al, x));
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
     // an error
@@ -8414,6 +8419,11 @@ public:
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         if (handle_conditional_arg_subroutine(x)) {
+            return;
+        }
+        if (handle_trait_call(to_lower(x.m_name), x.m_member, x.n_member,
+                x.m_args, x.n_args, x.m_keywords, x.n_keywords,
+                x.m_temp_args, x.n_temp_args, false, x.base.base.loc)) {
             return;
         }
         std::string sub_name = to_lower(x.m_name);

@@ -382,6 +382,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'interface' { KW(END_INTERFACE) }
             'endinterface' { KW(ENDINTERFACE) }
 
+            'end' whitespace 'implements' { KW(END_IMPLEMENTS) }
+            'endimplements' { KW(ENDIMPLEMENTS) }
+
             'end' whitespace 'type' { KW(END_TYPE) }
             'endtype' { KW(ENDTYPE) }
 
@@ -444,6 +447,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'images' { KW(IMAGES) }
             'implicit' { KW(IMPLICIT) }
             'import' { KW(IMPORT) }
+            'implements' { KW(IMPLEMENTS) }
             'impure' { KW(IMPURE) }
             'in' { KW(IN) }
             'include' { KW(INCLUDE) }

@@ -9,6 +9,9 @@
 "symbol.Block" = "helper:BlockCall"
 "symbol.Requirement" = "non-executable"
 "symbol.Template" = "non-executable"
+"symbol.Trait" = "non-executable"
+"symbol.TraitConstraint" = "metadata"
+"symbol.TraitImplementation" = "metadata"
 "symbol.Namelist" = "helper:formatted I/O"
 
 "stmt.Assign" = "helper:legacy assigned goto"
