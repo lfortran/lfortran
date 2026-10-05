@@ -2639,7 +2639,6 @@ if (allocated(x)) then
     s = sum(x)
 end if
 if (allocated(c)) k = size(c) * 10 + len_trim(c(2))
-if (c(1) /= 'abc') k = -1
 k = k + sum(q) * 100
 end program
 )").ok);
