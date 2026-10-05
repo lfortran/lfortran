@@ -1956,7 +1956,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3076,6 +3076,12 @@ semantic error: Unapplicable types for intrinsic function max
      |
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+    --> tests/errors/continue_compilation_1.f90:2094:34
+     |
+2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
 
 semantic error: Variable 'x' not declared
     --> tests/errors/continue_compilation_1.f90:2109:19
