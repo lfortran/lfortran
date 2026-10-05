@@ -340,6 +340,28 @@ semantic error: argument 'a' does not match trait method 'count': expected integ
 1444 |        end implements
      | ...^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: a type-set trait cannot be used as a runtime class
+    --> tests/errors/continue_compilation_traits_01.f90:1587:9
+     |
+1587 |         class(INumeric), pointer :: value
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+    --> tests/errors/continue_compilation_traits_01.f90:1598:5
+     |
+1598 |     type(INumeric) :: value
+     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be manually implemented
+    --> tests/errors/continue_compilation_traits_01.f90:1611:5 - 1612:23
+     |
+1611 |        implements INumeric :: Box
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1612 |        end implements Box
+     | ...^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |
@@ -435,3 +457,45 @@ semantic error: method 'child_value' is not provided by the declared trait const
      |
 1155 |         res = object%child_value()
      |               ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: integer(8) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1469:17
+     |
+1469 |         value = identity(7_int64)
+     |                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: real(4) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1488:17
+     |
+1488 |         value = identity(7.0_real32)
+     |                 ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: complex(8) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1507:17
+     |
+1507 |         value = identity((2.0_real64, 1.0_real64))
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator '<' is not available for type-set member complex(8)
+    --> tests/errors/continue_compilation_traits_01.f90:1522:18
+     |
+1522 |         answer = x < y
+     |                  ^^^^^ 
+
+semantic error: conversion is not available for type-set member integer(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1536:17
+     |
+1536 |         value = T(.true.)
+     |                 ^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+    --> tests/errors/continue_compilation_traits_01.f90:1555:17
+     |
+1555 |         value = identity{integer}(2.0_real64)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+    --> tests/errors/continue_compilation_traits_01.f90:1574:17
+     |
+1574 |         value = from_integer(2)
+     |                 ^^^^^^^^^^^^^^^ 

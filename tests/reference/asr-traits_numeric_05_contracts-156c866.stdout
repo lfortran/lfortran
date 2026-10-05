@@ -1,0 +1,75 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            traits_numeric_05_contracts_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            inumeric:
+                                (Trait
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    inumeric
+                                    []
+                                    Public
+                                    IntrinsicTypeSet
+                                    [(Integer 4)
+                                    (Real 8)]
+                                ),
+                            real64:
+                                (ExternalSymbol
+                                    2
+                                    real64
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Private
+                                )
+                        })
+                    traits_numeric_05_contracts_m
+                    ()
+                    [iso_fortran_env]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                ),
+            traits_numeric_05_other_m:
+                (Module
+                    (SymbolTable
+                        10
+                        {
+                            inumeric:
+                                (Trait
+                                    (SymbolTable
+                                        11
+                                        {
+                                            
+                                        })
+                                    inumeric
+                                    []
+                                    Public
+                                    IntrinsicTypeSet
+                                    [(Integer 4)]
+                                )
+                        })
+                    traits_numeric_05_other_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

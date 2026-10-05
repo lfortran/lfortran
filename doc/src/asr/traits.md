@@ -1,8 +1,8 @@
 # Experimental static traits
 
 Traits are an experimental, nonstandard LFortran extension. The initial
-implementation supports nominal constraints for concrete derived types on
-generic procedures with static method dispatch. Existing requirements,
+implementation supports nominal constraints for concrete derived types and
+finite intrinsic-numeric type sets on generic procedures. Existing requirements,
 templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
@@ -119,6 +119,80 @@ variable spelling is irrelevant. Concrete implementation dummies can have
 different names: the existing positional adapters preserve the trait's public
 argument names.
 
+## Finite numeric type sets
+
+A named trait can instead enumerate intrinsic numeric categories and kinds:
+
+```fortran
+use iso_fortran_env, only: real64
+
+abstract interface :: INumeric
+    integer | real(real64)
+end interface INumeric
+```
+
+Membership is exact: this set admits `integer(4)` and `real(8)` with the normal
+default kinds, not `integer(8)`, `real(4)`, or `complex(8)`. A singleton such as
+`abstract interface :: IInteger; integer; end interface` has the same semantics.
+Repeated equivalent members are coalesced. Membership supplies implicit
+conformance; no `implements` declaration is required or allowed.
+
+The compiler checks one generic body against **every** declared member, even
+when the function is never instantiated:
+
+```fortran
+function numeric_sum{INumeric :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    integer :: i
+    s = T(0)
+    do i = 1, size(x)
+        s = s + x(i)
+    end do
+end function
+
+function numeric_average{INumeric :: T}(x) result(a)
+    type(T), intent(in) :: x(:)
+    type(T) :: a
+    a = numeric_sum(x) / T(size(x))
+end function
+```
+
+Scalar `+`, `-`, `*`, `/` and comparisons use the ordinary intrinsic operator
+rules for each member. The operands must currently have the same type
+parameter. Adding `complex(8)` to the set makes ordered comparisons invalid,
+including in unused generic definitions. Integer division stays integer
+division. Whole-array or mixed-binder generic arithmetic and unary generic
+operators are separate stages; scalar array elements are supported.
+
+`T(expr)` checks the actual intrinsic `int`, `real`, or `cmplx` conversion with
+the target's explicit kind. It does not convert through default real first.
+A logical source is not a valid numeric initializer. Conversion currently
+accepts one scalar numeric source; unsupported conversion kinds are diagnosed
+as not implemented. `size` uses its element-type-independent array inquiry
+rules. Other intrinsic calls on numeric type parameters are explicitly
+diagnosed as not implemented, rather than bypassing definition-time checking.
+
+Both `numeric_sum(values)` and `numeric_sum{real(real64)}(values)` work for
+real64 arrays. A type parameter appearing only in the result requires an
+explicit type argument; the assignment target does not infer it. Inferred and
+explicit `{T}` forwarding preserve the same canonical trait, including a
+helper defined later in the module, renamed imports, and separate compilation.
+Forwarding between distinct finite traits is not yet implemented, even if
+their member lists happen to be equal.
+Specializing these generics in specification expressions is not yet supported;
+ordinary executable calls complete their signatures and proofs before any
+specialized body is copied.
+
+Type-set traits are constraints, not runtime `class(...)` objects, concrete
+`type(...)` union variables, or traits that derived types can manually adopt.
+Inline sets, kind wildcards, type-set inheritance/composition, and composition
+with nominal constraints remain separate stages.
+
+The complete executable examples and concrete GFortran counterparts are
+`integration_tests/traits_numeric_01.f90` through `traits_numeric_05.f90` and
+`traits_numeric_01_oracle.f90` / `traits_numeric_02_oracle.f90`.
+
 ## Current boundaries
 
 The static implementation covers module-scoped trait declarations, inheritance
@@ -135,7 +209,7 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, trait objects
-(`class(Trait)`), mutable receivers, associated types, intrinsic type sets,
+(`class(Trait)`), mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
@@ -146,8 +220,9 @@ or shadowed generic-binder scopes, is not implemented yet.
 
 Three ASR symbol kinds preserve the semantic distinction from templates:
 
-- `Trait` owns its directly declared receiver-independent signatures and
-  references its parent traits.
+- `Trait` explicitly distinguishes universal contracts from intrinsic type
+  sets. It owns receiver-independent signatures and parent references for
+  universal traits, or a finite list of concrete numeric member types.
 - `TraitConstraint` connects a generic type parameter to a trait and to the
   normalized abstract procedures used when checking its body.
 - `TraitImplementation` records a concrete type's nominal conformance and its
@@ -165,6 +240,21 @@ references. Host-associated declarations and uncopied nominal types retain
 their original identities. Specialization
 resolves the witnesses into ordinary concrete procedure calls before backend
 lowering.
+Numeric restrictions have no invented receiver. Each operation records an
+abstract restriction function and a complete family of small, concrete,
+one-operation witness functions in the owning template. Verification checks
+each member exactly once, substituted argument/result kinds, and the operation
+itself—not merely a plausible function signature. The generic's loops,
+assignments and control flow are not cloned for all members.
+
+Body-discovered requirements are closed over forwarding edges in the pending
+binding worklist before any specialized body is copied. Numeric cache identity
+uses the canonical generic, scope, and type substitutions, not the still-growing
+witness list. Only selected concrete witnesses enter executable scopes, through
+the existing symbol/body instantiator. Complete proofs and bound forwarding
+bodies survive module serialization; clients do not depend on private proof
+functions being exported by producer objects.
+
 Forwarded signatures and their canonical recursive edges are bound before any
 pending bodies are copied. Composing an instantiation uses the original generic
 definition and its type/witness substitutions, not a copy of an in-progress

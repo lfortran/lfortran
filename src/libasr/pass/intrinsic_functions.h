@@ -5046,6 +5046,17 @@ namespace Cmplx {
 
     static inline ASR::asr_t* create_Cmplx(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
+        for (size_t i = 0; i < 2; i++) {
+            if (!args[i]) continue;
+            auto *type = ASRUtils::expr_type(args[i]);
+            if (!is_integer(*type) && !is_unsigned_integer(*type) &&
+                    !is_real(*type) && !(i == 0 && is_complex(*type))) {
+                append_error(diag, i == 0 ?
+                    "the first argument of 'cmplx' must be integer, real or complex" :
+                    "the second argument of 'cmplx' must be integer or real", loc);
+                return nullptr;
+            }
+        }
         if (args[0] == nullptr) {
                 append_error(diag, "The first argument of `cmplx` intrinsic must be present", loc);
                 return nullptr;

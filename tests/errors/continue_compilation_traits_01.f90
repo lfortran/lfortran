@@ -1450,3 +1450,164 @@ contains
         r = self%data + sum(values)
     end function
 end module
+
+! A-N01: integer(int64) is not a member of default integer | real(real64).
+module traits_numeric_a_n01_m
+    use iso_fortran_env, only: int64, real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function identity{INumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = x
+    end function identity
+    subroutine run_case()
+        integer(int64) :: value
+        value = identity(7_int64)
+    end subroutine run_case
+end module traits_numeric_a_n01_m
+
+! A-N02: real(real32) is not a member, even though its arithmetic would work.
+module traits_numeric_a_n02_m
+    use iso_fortran_env, only: real32, real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function identity{INumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = x
+    end function identity
+    subroutine run_case()
+        real(real32) :: value
+        value = identity(7.0_real32)
+    end subroutine run_case
+end module traits_numeric_a_n02_m
+
+! A-N03: complex(real64) is not a member, even with an otherwise valid identity body.
+module traits_numeric_a_n03_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function identity{INumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = x
+    end function identity
+    subroutine run_case()
+        complex(real64) :: value
+        value = identity((2.0_real64, 1.0_real64))
+    end subroutine run_case
+end module traits_numeric_a_n03_m
+
+! A-N04: adding complex removes <; reject this unused generic at definition time.
+module traits_numeric_a_n04_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64) | complex(real64)
+    end interface INumeric
+contains
+    function less_than{INumeric :: T}(x, y) result(answer)
+        type(T), intent(in) :: x, y
+        logical :: answer
+        answer = x < y
+    end function less_than
+end module traits_numeric_a_n04_m
+
+! A-N05: neither INT nor REAL accepts a logical source; the unused generic must fail.
+module traits_numeric_a_n05_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function invalid_cast{INumeric :: T}() result(value)
+        type(T) :: value
+        value = T(.true.)
+    end function invalid_cast
+end module traits_numeric_a_n05_m
+
+! A-N06: explicit integer conflicts with an ordinary real(real64) actual.
+module traits_numeric_a_n06_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function identity{INumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = x
+    end function identity
+    subroutine run_case()
+        integer :: value
+        value = identity{integer}(2.0_real64)
+    end subroutine run_case
+end module traits_numeric_a_n06_m
+
+! A-N07: neither integer n nor the assignment context determines T.
+module traits_numeric_a_n07_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    function from_integer{INumeric :: T}(n) result(value)
+        integer, intent(in) :: n
+        type(T) :: value
+        value = T(n)
+    end function from_integer
+    subroutine run_case()
+        real(real64) :: value
+        value = from_integer(2)
+    end subroutine run_case
+end module traits_numeric_a_n07_m
+
+! A-N08: a type-set trait cannot declare a runtime class(...) object.
+module traits_numeric_a_n08_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+contains
+    subroutine consume()
+        class(INumeric), pointer :: value
+    end subroutine consume
+end module traits_numeric_a_n08_m
+
+! A-N09: type(INumeric) is not a concrete union variable.
+module traits_numeric_a_n09_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+    type(INumeric) :: value
+end module traits_numeric_a_n09_m
+
+! A-N10: a derived type cannot manually implement a type-set trait.
+module traits_numeric_a_n10_m
+    use iso_fortran_env, only: real64
+    implicit none
+    abstract interface :: INumeric
+        integer | real(real64)
+    end interface INumeric
+    type :: Box
+        integer :: value
+    end type Box
+    implements INumeric :: Box
+    end implements Box
+end module traits_numeric_a_n10_m

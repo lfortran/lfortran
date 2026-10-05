@@ -1158,6 +1158,17 @@ static inline ast_t *TRAIT_PROCEDURE(Allocator &al, ast_t *procedure,
         parameters.p, parameters.size());
 }
 
+static inline ast_t *INTERFACE_TYPE_SET(Allocator &al,
+        const Vec<ast_t*> &types, const Location &loc)
+{
+    Vec<decl_attribute_t*> members;
+    members.reserve(al, types.size());
+    for (size_t i = 0; i < types.size(); i++) {
+        members.push_back(al, down_cast<decl_attribute_t>(types[i]));
+    }
+    return make_InterfaceTypeSet_t(al, loc, members.p, members.size());
+}
+
 static inline ast_t *TRAIT(Allocator &al, const ast_t *name,
         const Vec<ast_t*> &parents, ast_t *end, ast_t *trivia,
         const Vec<ast_t*> &items, Location &loc,

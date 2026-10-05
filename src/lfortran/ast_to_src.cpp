@@ -1098,6 +1098,16 @@ public:
         s = r;
     }
 
+    void visit_InterfaceTypeSet(const InterfaceTypeSet_t &x) {
+        std::string r = indent;
+        for (size_t i = 0; i < x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
+        s = r + "\n";
+    }
+
     void visit_Trait(const Trait_t &x) {
         std::string r = indent;
         r += syn(gr::UnitHeader);

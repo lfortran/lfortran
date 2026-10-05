@@ -5851,6 +5851,50 @@ filename = "errors/continue_compilation_traits_01.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "../integration_tests/traits_numeric_01.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_02.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_03.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_04.f90"
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_05_contracts.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_05.f90"
+extrafiles = "../integration_tests/traits_numeric_05_contracts.f90, ../integration_tests/traits_numeric_05_ops.f90, ../integration_tests/traits_numeric_05_facade.f90"
+ast = true
+ast_f90 = true
+asr = true
+# Snapshot checked ASR before the per-invocation separate-compilation suffixes.
+# The integration target and fresh-process module tests use separate compilation.
+options = "--verify-all-passes"
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   

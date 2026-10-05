@@ -4207,25 +4207,73 @@ public:
         ASR::symbol_t *trait = ASR::down_cast<ASR::symbol_t>(
             ASR::make_Trait_t(al, x.base.base.loc, current_scope,
                 s2c(al, name), nullptr, 0,
-                assgnd_access.count(name) ? assgnd_access[name] : saved_access));
+                assgnd_access.count(name) ? assgnd_access[name] : saved_access,
+                ASR::trait_kindType::UniversalTrait, nullptr, 0));
         parent->add_symbol(name, trait);
         dflt_access = ASR::accessType::Public;
         try {
+            auto *trait_definition = ASR::down_cast<ASR::Trait_t>(trait);
+            Vec<ASR::ttype_t*> member_types;
+            member_types.reserve(al, 1);
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::InterfaceTypeSet_t>(*x.m_items[i])) continue;
+                if (x.n_items != 1 || x.n_parents) {
+                    trait_error("type-set trait composition and inheritance "
+                        "are not implemented yet", x.m_items[i]->base.loc);
+                }
+                trait_definition->m_kind = ASR::trait_kindType::IntrinsicTypeSet;
+                auto *set = AST::down_cast<AST::InterfaceTypeSet_t>(x.m_items[i]);
+                for (size_t j = 0; j < set->n_member_types; j++) {
+                    auto *attribute = AST::down_cast<AST::AttrType_t>(
+                        set->m_member_types[j]);
+                    for (size_t k = 0; k < attribute->n_kind; k++) {
+                        if (attribute->m_kind[k].m_type == AST::kind_item_typeType::Star) {
+                            trait_error("type-set kind wildcards are not implemented yet",
+                                attribute->m_kind[k].loc);
+                        }
+                    }
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 0);
+                    ASR::symbol_t *declaration = nullptr;
+                    ASR::ttype_t *type = determine_type(attribute->base.base.loc,
+                        name, set->m_member_types[j], false, false, dims, nullptr,
+                        declaration, current_procedure_abi_type);
+                    if (!ASR::is_a<ASR::Integer_t>(*type) &&
+                            !ASR::is_a<ASR::Real_t>(*type) &&
+                            !ASR::is_a<ASR::Complex_t>(*type)) {
+                        trait_error("non-numeric type-set members are not implemented yet",
+                            attribute->base.base.loc);
+                    }
+                    bool duplicate = false;
+                    for (auto *member : member_types) {
+                        if (ASRUtils::types_equal(member, type, nullptr, nullptr)) {
+                            duplicate = true;
+                        }
+                    }
+                    if (!duplicate) member_types.push_back(al, type);
+                }
+            }
+            trait_definition->m_member_types = member_types.p;
+            trait_definition->n_member_types = member_types.size();
             Vec<ASR::symbol_t*> parents;
             parents.reserve(al, x.n_parents);
             for (size_t i = 0; i < x.n_parents; i++) {
-                resolve_trait(x.m_parents[i], x.base.base.loc);
+                if (resolve_trait(x.m_parents[i], x.base.base.loc)->m_kind ==
+                        ASR::trait_kindType::IntrinsicTypeSet) {
+                    trait_error("type-set trait composition and inheritance "
+                        "are not implemented yet", x.base.base.loc);
+                }
                 ASR::symbol_t *parent_trait = parent->resolve_symbol(
                     to_lower(x.m_parents[i]));
                 parents.push_back(al, parent_trait);
                 ASRUtils::insert_module_dependency(
                     parent_trait, al, current_module_dependencies);
             }
-            auto *trait_definition = ASR::down_cast<ASR::Trait_t>(trait);
             trait_definition->m_parents = parents.p;
             trait_definition->n_parents = parents.size();
             checked_trait_hierarchy(*trait_definition, x.base.base.loc);
             for (size_t i = 0; i < x.n_items; i++) {
+                if (AST::is_a<AST::InterfaceTypeSet_t>(*x.m_items[i])) continue;
                 if (!AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
                     trait_error("a trait must contain procedure signatures",
                         x.m_items[i]->base.loc);
@@ -4350,7 +4398,13 @@ public:
                     x.m_parameters[i].loc);
             }
             for (size_t j = 0; j < x.m_parameters[i].n_traits; j++) {
-                resolve_trait(x.m_parameters[i].m_traits[j], x.m_parameters[i].loc);
+                auto *trait = resolve_trait(x.m_parameters[i].m_traits[j],
+                    x.m_parameters[i].loc);
+                if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
+                        x.m_parameters[i].n_traits != 1) {
+                    trait_error("type-set trait composition is not implemented yet",
+                        x.m_parameters[i].loc);
+                }
             }
         }
         AST::program_unit_t *lowered = lower_trait_procedure(al, x);
@@ -4396,7 +4450,7 @@ public:
                     ASR::make_TraitConstraint_t(al, parameter.loc, generic->m_symtab,
                         s2c(al, constraint_name), type_symbol,
                         current_scope->resolve_symbol(to_lower(parameter.m_traits[j])),
-                        requirements.p, requirements.size()));
+                        requirements.p, requirements.size(), nullptr, 0));
                 generic->m_symtab->add_symbol(constraint_name, constraint);
             }
         }
@@ -4616,6 +4670,10 @@ public:
         std::map<std::string, ASR::Function_t*> methods;
         for (size_t i = 0; i < x.n_traits; i++) {
             ASR::Trait_t *trait = resolve_trait(x.m_traits[i], x.base.base.loc);
+            if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet) {
+                trait_error("a type-set trait cannot be manually implemented",
+                    x.base.base.loc);
+            }
             hierarchies.push_back(checked_trait_hierarchy(*trait, x.base.base.loc));
             for (ASR::symbol_t *member : hierarchies.back().members) {
                 auto *method = ASR::down_cast<ASR::Function_t>(member);

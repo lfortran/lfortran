@@ -1,0 +1,13 @@
+{
+    "basename": "ast-traits_numeric_05-1a54a6b",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/traits_numeric_05.f90",
+    "infile_hash": "ac3ed42b15df63ef5370776bbe5d5e26d36eaab8125380cfe36ca654",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-traits_numeric_05-1a54a6b.stdout",
+    "stdout_hash": "41680f80f4dbf41f2a4d1a643fd7519363b2ec43a49e42ad13b8f221",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

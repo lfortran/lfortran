@@ -11,8 +11,10 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/asr_text.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/utils.h>
+#include <lfortran/ast_to_src.h>
 
 using LCompilers::TRY;
 using LCompilers::string_to_uint64;
@@ -146,6 +148,497 @@ void asr_mod(const std::string &src, const std::string &module_name = "") {
     LCOMPILERS_ASSERT(LCompilers::asr_verify(*asr2, true, diagnostics));
 
     CHECK(original == LCompilers::pickle(*asr2));
+}
+
+static const std::string numeric_trait_source = R"(
+module numeric_contracts
+implicit none
+integer, parameter :: rk = 8
+abstract interface :: INumeric
+    integer | real(rk)
+end interface
+abstract interface :: IComplex
+    complex(rk)
+end interface
+type :: Box
+    integer :: value
+end type
+contains
+function first{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = second{T}(x)
+end function
+function second{INumeric :: U}(x) result(r)
+    type(U), intent(in) :: x
+    type(U) :: r
+    r = helper(x)
+end function
+function helper{INumeric :: V}(x) result(r)
+    type(V), intent(in) :: x
+    type(V) :: r
+    r = x + V(1)
+end function
+function unused_arithmetic{INumeric :: T}(x, y, n) result(r)
+    type(T), intent(in) :: x, y
+    integer, intent(in) :: n
+    type(T) :: r
+    r = (x + y) * T(n) - x / y
+end function
+function unused_compare{INumeric :: T}(x, y) result(r)
+    type(T), intent(in) :: x, y
+    logical :: r
+    r = x < y .or. x > y
+end function
+function unused_equal{IComplex :: T}(x, y) result(r)
+    type(T), intent(in) :: x, y
+    logical :: r
+    r = x == y
+end function
+function unused_complex_cast{IComplex :: T}(n) result(r)
+    integer, intent(in) :: n
+    type(T) :: r
+    r = T(n)
+end function
+function numeric_sum{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x(:)
+    type(T) :: r
+    integer :: i
+    r = T(0)
+    do i = 1, size(x)
+        r = r + x(i)
+    end do
+end function
+end module
+module numeric_other
+implicit none
+abstract interface :: INumeric
+    integer | integer(4)
+end interface
+end module
+program numeric_client
+use numeric_contracts, only: first, renamed => first, RootNumeric => INumeric, numeric_sum
+use numeric_other, only: OtherNumeric => INumeric
+implicit none
+integer :: i, j
+real(8) :: a, b
+i = first(2)
+j = renamed{integer}(3)
+a = first(2.d0)
+b = renamed{real(8)}(3.d0)
+i = numeric_sum([1, 2, 3])
+a = numeric_sum([1.d0, 2.d0, 3.d0])
+end program
+)";
+
+static LCompilers::ASR::TraitConstraint_t *numeric_constraint(
+        LCompilers::ASR::Module_t *module, const std::string &name) {
+    namespace ASR = LCompilers::ASR;
+    auto *generic = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol(name));
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+            return ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        }
+    }
+    return nullptr;
+}
+
+TEST_CASE("Numeric trait source, binary, text and module roundtrips") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    ast_ser(numeric_trait_source);
+    asr_ser(numeric_trait_source);
+    asr_mod(numeric_trait_source, "numeric_contracts");
+
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, numeric_trait_source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("numeric_contracts"));
+    for (const auto &name : {"first", "second", "helper"}) {
+        auto *constraint = numeric_constraint(module, name);
+        REQUIRE(constraint);
+        CHECK(constraint->n_intrinsic_requirements == 2);
+        for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
+            CHECK(constraint->m_intrinsic_requirements[i].n_witnesses == 2);
+        }
+    }
+    CHECK(numeric_constraint(module, "unused_arithmetic")->n_intrinsic_requirements == 5);
+    CHECK(numeric_constraint(module, "unused_compare")->n_intrinsic_requirements == 2);
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("numeric_client"));
+    auto callee = [&](size_t index) {
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(program->m_body[index]);
+        return ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::FunctionCall_t>(assignment->m_value)->m_name);
+    };
+    CHECK(callee(0) == callee(1));
+    CHECK(callee(2) == callee(3));
+    CHECK(callee(0) != callee(2));
+    struct ArrayItems : ASR::BaseWalkVisitor<ArrayItems> {
+        std::vector<ASR::ttype_t*> types;
+        void visit_ArrayItem(const ASR::ArrayItem_t &x) { types.push_back(x.m_type); }
+    };
+    for (size_t i : {4u, 5u}) {
+        auto *sum = ASR::down_cast<ASR::Function_t>(callee(i));
+        ArrayItems items;
+        for (size_t j = 0; j < sum->n_body; j++) items.visit_stmt(*sum->m_body[j]);
+        REQUIRE(items.types.size() == 1);
+        CHECK(ASRUtils::types_equal(items.types[0],
+            ASRUtils::expr_type(sum->m_return_var), nullptr, nullptr));
+        CHECK(ASRUtils::extract_kind_from_ttype_t(items.types[0]) == (i == 4 ? 4 : 8));
+    }
+    size_t real_conversions = 0;
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Function_t>(*entry.second)) continue;
+        auto *fn = ASR::down_cast<ASR::Function_t>(entry.second);
+        if (fn->n_body != 1 || !ASR::is_a<ASR::Assignment_t>(*fn->m_body[0])) continue;
+        auto *value = ASR::down_cast<ASR::Assignment_t>(fn->m_body[0])->m_value;
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) ||
+                !ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(value))) continue;
+        auto *conversion = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+        REQUIRE(conversion->n_args == 1);
+        CHECK(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(conversion->m_args[0])));
+        CHECK(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value)) == 8);
+        real_conversions++;
+    }
+    CHECK(real_conversions > 0);
+    auto *root_trait = ASRUtils::symbol_get_past_external(
+        program->m_symtab->get_symbol("rootnumeric"));
+    auto *other_trait = ASRUtils::symbol_get_past_external(
+        program->m_symtab->get_symbol("othernumeric"));
+    CHECK(root_trait != other_trait);
+    CHECK(ASR::down_cast<ASR::Trait_t>(root_trait)->n_member_types == 2);
+    CHECK(ASR::down_cast<ASR::Trait_t>(other_trait)->n_member_types == 1);
+
+    auto check_roundtrip = [&](ASR::TranslationUnit_t *unit) {
+        auto *client = ASR::down_cast<ASR::Program_t>(
+            unit->m_symtab->get_symbol("numeric_client"));
+        auto *one = ASR::down_cast<ASR::FunctionCall_t>(
+            ASR::down_cast<ASR::Assignment_t>(client->m_body[0])->m_value);
+        auto *two = ASR::down_cast<ASR::FunctionCall_t>(
+            ASR::down_cast<ASR::Assignment_t>(client->m_body[1])->m_value);
+        CHECK(ASRUtils::symbol_get_past_external(one->m_name) ==
+            ASRUtils::symbol_get_past_external(two->m_name));
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+    };
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        Allocator text_al(1024 * 1024);
+        LCompilers::LocationManager text_lm;
+        auto loaded = LCompilers::asr_from_text(
+            text_al, text, "numeric.asr", text_lm, diagnostics);
+        REQUIRE(loaded.ok);
+        check_roundtrip(loaded.result);
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    CHECK(printed.find("integer | real(rk)") != std::string::npos);
+    CHECK(printed.find("complex(rk)") != std::string::npos);
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(rebuilt.ok);
+    check_roundtrip(rebuilt.result);
+    CHECK(LCompilers::asr_to_text(*rebuilt.result) ==
+        LCompilers::asr_to_text(*result.result));
+}
+
+TEST_CASE("Numeric trait proofs reject incomplete and forged witnesses") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, numeric_trait_source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("numeric_contracts"));
+    auto *constraint = numeric_constraint(module, "helper");
+    REQUIRE(constraint);
+    auto *trait = ASR::down_cast<ASR::Trait_t>(
+        ASRUtils::symbol_get_past_external(constraint->m_trait));
+    auto rejected = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics errors;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, errors));
+        REQUIRE(!errors.diagnostics.empty());
+        INFO(errors.render2());
+        CHECK(errors.diagnostics.back().code == code);
+        CHECK(!errors.diagnostics.back().labels.empty());
+    };
+    auto &proof = constraint->m_intrinsic_requirements[0];
+    REQUIRE(proof.n_witnesses == 2);
+    size_t requirement_count = constraint->n_intrinsic_requirements;
+    constraint->n_intrinsic_requirements = 0;
+    rejected("asr.verify.type_set.restriction_record");
+    constraint->n_intrinsic_requirements = requirement_count;
+    proof.n_witnesses--;
+    rejected("asr.verify.type_set.total_proof");
+    proof.n_witnesses++;
+    auto *member = proof.m_witnesses[1].m_member_type;
+    proof.m_witnesses[1].m_member_type = proof.m_witnesses[0].m_member_type;
+    rejected("asr.verify.type_set.unique_witness");
+    proof.m_witnesses[1].m_member_type = ASRUtils::TYPE(ASR::make_Real_t(al, proof.loc, 4));
+    rejected("asr.verify.type_set.member_in_set");
+    proof.m_witnesses[1].m_member_type = member;
+    auto *witness = ASR::down_cast<ASR::Function_t>(proof.m_witnesses[1].m_procedure);
+    auto *ret = ASRUtils::EXPR2VAR(witness->m_return_var);
+    auto *ret_type = ret->m_type;
+    ret->m_type = ASRUtils::TYPE(ASR::make_Real_t(al, proof.loc, 4));
+    rejected("asr.verify.type_set.witness_type");
+    ret->m_type = ret_type;
+    auto *operation = proof.m_operation;
+    proof.m_operation = ASR::down_cast<ASR::type_set_operation_t>(
+        ASR::make_TypeSetBinary_t(al, proof.loc, ASR::Sub));
+    rejected("asr.verify.type_set.arity");
+    proof.m_operation = operation;
+
+    ASR::type_set_requirement_t *arithmetic = nullptr;
+    for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
+        if (ASR::is_a<ASR::TypeSetBinary_t>(*constraint->m_intrinsic_requirements[i].m_operation)) {
+            arithmetic = &constraint->m_intrinsic_requirements[i];
+        }
+    }
+    REQUIRE(arithmetic);
+    auto *arithmetic_op = ASR::down_cast<ASR::TypeSetBinary_t>(arithmetic->m_operation);
+    auto saved_op = arithmetic_op->m_op;
+    arithmetic_op->m_op = ASR::Sub;
+    rejected("asr.verify.type_set.witness_operation");
+    arithmetic_op->m_op = saved_op;
+
+    auto *integer_witness = ASR::down_cast<ASR::Function_t>(proof.m_witnesses[0].m_procedure);
+    auto *assignment = ASR::down_cast<ASR::Assignment_t>(integer_witness->m_body[0]);
+    auto *expression = assignment->m_value;
+    assignment->m_value = integer_witness->m_args[0];
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    assignment->m_value = ASRUtils::EXPR(ASR::make_Cast_t(al, proof.loc,
+        integer_witness->m_args[0], ASR::cast_kindType::IntegerToInteger,
+        ASRUtils::expr_type(integer_witness->m_return_var), nullptr, nullptr));
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    assignment->m_value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, proof.loc,
+        integer_witness->m_args[0], ASR::Add, integer_witness->m_args[0],
+        ASRUtils::expr_type(integer_witness->m_return_var), nullptr));
+    rejected("asr.verify.type_set.witness_operation");
+    assignment->m_value = expression;
+
+    auto &complex_proof = numeric_constraint(module, "unused_equal")->m_intrinsic_requirements[0];
+    auto *comparison = ASR::down_cast<ASR::TypeSetComparison_t>(complex_proof.m_operation);
+    auto *complex_fn = ASR::down_cast<ASR::Function_t>(complex_proof.m_witnesses[0].m_procedure);
+    auto *compare_expr = ASR::down_cast<ASR::ComplexCompare_t>(
+        ASR::down_cast<ASR::Assignment_t>(complex_fn->m_body[0])->m_value);
+    comparison->m_op = ASR::Lt;
+    compare_expr->m_op = ASR::Lt;
+    rejected("asr.verify.type_set.witness_operation");
+    comparison->m_op = ASR::Eq;
+    compare_expr->m_op = ASR::Eq;
+
+    trait->m_kind = ASR::trait_kindType::UniversalTrait;
+    rejected("asr.verify.trait_constraint.intrinsic_category");
+    trait->m_kind = ASR::trait_kindType::IntrinsicTypeSet;
+    auto *box = module->m_symtab->get_symbol("box");
+    auto *bad_impl = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitImplementation_t(
+        al, proof.loc, module->m_symtab, LCompilers::s2c(al, "bad_impl"),
+        ASRUtils::make_StructType_t_util(al, proof.loc, box, true), box, &trait->base,
+        nullptr, 0, ASR::accessType::Private));
+    module->m_symtab->add_symbol("bad_impl", bad_impl);
+    rejected("asr.verify.trait_implementation.not_type_set");
+    module->m_symtab->erase_symbol("bad_impl");
+
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("numeric_client"));
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(program->m_body[0])->m_value);
+    auto *callee = call->m_name;
+    call->m_name = proof.m_procedure;
+    rejected("asr.verify.call.unbound_restriction");
+    call->m_name = callee;
+    auto *function = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(callee));
+    auto *concrete_arg = ASRUtils::EXPR2VAR(function->m_args[0]);
+    auto *concrete_type = concrete_arg->m_type;
+    concrete_arg->m_type = ASRUtils::symbol_type(constraint->m_parameter);
+    rejected("asr.verify.type_parameter.concrete_executable");
+    concrete_arg->m_type = concrete_type;
+    auto *main_variable = ASR::down_cast<ASR::Variable_t>(
+        program->m_symtab->get_symbol("i"));
+    auto *main_type = main_variable->m_type;
+    main_variable->m_type = ASRUtils::symbol_type(constraint->m_parameter);
+    rejected("asr.verify.type_parameter.concrete_executable");
+    main_variable->m_type = main_type;
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+
+    // A concrete legacy operator witness can retain is_restriction, including
+    // in an interface loaded from a separately compiled module.
+    auto *signature = ASRUtils::get_FunctionType(function);
+    auto definition = signature->m_deftype;
+    bool restriction = signature->m_is_restriction;
+    size_t body_size = function->n_body, dependencies = function->n_dependencies;
+    signature->m_deftype = ASR::deftypeType::Interface;
+    signature->m_is_restriction = true;
+    function->n_body = 0;
+    function->n_dependencies = 0;
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    signature->m_deftype = definition;
+    signature->m_is_restriction = restriction;
+    function->n_body = body_size;
+    function->n_dependencies = dependencies;
+}
+
+TEST_CASE("Numeric trait intrinsic boundaries and ordinary applicability") {
+    const std::string prefix = R"(
+module numeric_intrinsic_boundary
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+contains
+function unused{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = )";
+    for (const auto &expr : {"abs(x)", "abs(a=x)", "mod(x,x)", "sqrt(x)", "real(x)",
+                            "int(x)", "cmplx(x)", "kind(x)", "dble(x)", "dble(a=x)",
+                            "reshape([x],[1])", "-x", "x**x"}) {
+        CAPTURE(expr);
+        Allocator al(1024 * 1024);
+        LCompilers::CompilerOptions options;
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::LocationManager lm;
+        auto source = prefix + expr + "\nend function\nend module\n";
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        CHECK_FALSE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        CHECK(diagnostics.diagnostics.back().message.find("not implemented yet") != std::string::npos);
+    }
+    for (const auto &source : {
+            "module m\ncontains\nlogical function less(x,y)\ncomplex(8) :: x,y\n"
+                "less=x<y\nend function\nend module\n",
+            "module m\ncontains\ncomplex(8) function convert(x)\nlogical :: x\n"
+                "convert=cmplx(x,kind=8)\nend function\nend module\n"}) {
+        Allocator al(1024 * 1024);
+        LCompilers::CompilerOptions options;
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::LocationManager lm;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        CHECK_FALSE(result.ok);
+        CHECK(diagnostics.has_error());
+    }
+}
+
+TEST_CASE("Numeric trait constructors respect nested value shadowing") {
+    const std::string source = R"(
+module numeric_shadow
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+contains
+function identity{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    type(T) :: r
+    r = x
+contains
+integer function nested(T) result(r)
+    integer, intent(in) :: T(:)
+    r = T(1)
+end function
+end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+}
+
+TEST_CASE("Numeric trait staged forms do not create unchecked specializations") {
+    const std::vector<std::pair<std::string, std::string>> sources = {
+        {R"(
+module m
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+contains
+function unused{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x(:)
+    type(T) :: r(size(x))
+    r = reshape(x, [size(x)])
+end function
+end module
+)", "intrinsic 'reshape' on a type-set parameter is not implemented yet"},
+        {R"(
+module m
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+contains
+pure function extent{INumeric :: T}(x) result(r)
+    type(T), intent(in) :: x
+    integer :: r
+    r = 1
+end function
+subroutine use_extent(x, y)
+    integer, intent(in) :: x, y(extent{integer}(x))
+end subroutine
+end module
+)", "type-set generic calls in specification expressions are not implemented yet"},
+        {R"(
+module m
+implicit none
+abstract interface :: IComplex
+    complex(8)
+end interface
+interface operator(<)
+    module procedure compare
+end interface
+contains
+logical function compare(x, y)
+    complex(8), intent(in) :: x, y
+    compare = .false.
+end function
+function unused{IComplex :: T}(x, y) result(r)
+    type(T), intent(in) :: x, y
+    logical :: r
+    r = x < y
+end function
+end module
+)", "operator '<' is not available for type-set member complex(8)"}
+    };
+    for (const auto &source : sources) {
+        CAPTURE(source.second);
+        Allocator al(1024 * 1024);
+        LCompilers::CompilerOptions options;
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::LocationManager lm;
+        auto parsed = LCompilers::LFortran::parse(al, source.first, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        CHECK_FALSE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        INFO(diagnostics.render2());
+        CHECK(diagnostics.diagnostics.back().message == source.second);
+    }
 }
 
 static const std::string trait_serialization_source = R"(

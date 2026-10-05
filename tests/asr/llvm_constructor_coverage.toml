@@ -14,6 +14,9 @@
 "symbol.TraitImplementation" = "metadata"
 "symbol.Namelist" = "helper:formatted I/O"
 
+"type_set_operation.TypeSetBinary" = "metadata"
+"type_set_operation.TypeSetComparison" = "metadata"
+
 "stmt.Assign" = "helper:legacy assigned goto"
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"

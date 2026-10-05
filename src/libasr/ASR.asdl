@@ -42,8 +42,8 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
-    | Trait(symbol_table symtab, identifier name, symbol* parents, access access)
-    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements)
+    | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types)
+    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
 
 stmt
@@ -330,5 +330,18 @@ map_type
     
 schedule_type
     = Static | Dynamic | Guided | Auto | Runtime
+
+trait_kind = UniversalTrait | IntrinsicTypeSet
+
+type_set_operation
+    = TypeSetBinary(binop op)
+    | TypeSetComparison(cmpop op)
+    | TypeSetConversion()
+
+type_set_witness
+    = (ttype member_type, symbol procedure)
+
+type_set_requirement
+    = (symbol procedure, type_set_operation operation, type_set_witness* witnesses)
 
 }

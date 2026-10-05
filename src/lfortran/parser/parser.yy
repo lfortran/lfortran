@@ -598,6 +598,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <kind_arg> kind_arg2
 %type <vec_ast> interface_body
 %type <ast> interface_item
+%type <vec_ast> trait_body finite_type_set
 %type <interface_op_type> operator_type
 %type <ast> write_arg
 %type <argstarkw> write_arg2
@@ -714,13 +715,13 @@ interface_decl
     ;
 
 trait_decl
-    : KW_ABSTRACT KW_INTERFACE "::" id sep interface_body
+    : KW_ABSTRACT KW_INTERFACE "::" id sep trait_body
         endinterface0 id_opt sep {
             Vec<ast_t*> parents;
             LIST_NEW(parents);
             $$ = TRAIT(p.m_a, $4, parents, $8, TRIVIA($5, $9, @$), $6, @$, p.diag); }
     | KW_ABSTRACT KW_INTERFACE "," KW_EXTENDS "(" trait_name_spec ")" "::" id
-        sep interface_body endinterface0 id_opt sep {
+        sep trait_body endinterface0 id_opt sep {
             $$ = TRAIT(p.m_a, $9, $6, $13, TRIVIA($10, $14, @$), $11, @$, p.diag); }
     ;
 
@@ -773,6 +774,18 @@ end_implements
 interface_body
     : interface_body interface_item { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    ;
+
+trait_body
+    : trait_body interface_item { $$ = $1; LIST_ADD($$, $2); }
+    | trait_body finite_type_set sep {
+        $$ = $1; LIST_ADD($$, INTERFACE_TYPE_SET(p.m_a, $2, @2)); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+finite_type_set
+    : intrinsic_type_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+    | finite_type_set "|" intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
     ;
 
 interface_item

@@ -921,6 +921,13 @@ public:
         std::string r = indent;
         r += "! trait ";
         r += x.m_name;
+        if (x.m_kind == ASR::trait_kindType::IntrinsicTypeSet) {
+            r += " = ";
+            for (size_t i = 0; i < x.n_member_types; i++) {
+                if (i) r += " | ";
+                r += ASRUtils::type_to_str_fortran_symbol(x.m_member_types[i], nullptr, true);
+            }
+        }
         if (x.n_parents > 0) {
             r += " extends(";
             for (size_t i = 0; i < x.n_parents; i++) {
@@ -957,6 +964,26 @@ public:
             r += ASRUtils::symbol_name(x.m_requirements[i].m_member);
             r += " => ";
             r += ASRUtils::symbol_name(x.m_requirements[i].m_procedure);
+            r += "\n";
+        }
+        for (size_t i = 0; i < x.n_intrinsic_requirements; i++) {
+            const auto &requirement = x.m_intrinsic_requirements[i];
+            r += indent + "!   intrinsic restriction ";
+            r += ASRUtils::symbol_name(requirement.m_procedure);
+            if (ASR::is_a<ASR::TypeSetBinary_t>(*requirement.m_operation)) {
+                r += " operator " + binop2str(
+                    ASR::down_cast<ASR::TypeSetBinary_t>(requirement.m_operation)->m_op);
+            } else if (ASR::is_a<ASR::TypeSetComparison_t>(*requirement.m_operation)) {
+                r += " operator " + cmpop2str(
+                    ASR::down_cast<ASR::TypeSetComparison_t>(requirement.m_operation)->m_op);
+            } else {
+                r += " conversion";
+            }
+            r += " witnesses:";
+            for (size_t j = 0; j < requirement.n_witnesses; j++) {
+                r += " " + ASRUtils::type_to_str_fortran_symbol(
+                    requirement.m_witnesses[j].m_member_type, nullptr, true);
+            }
             r += "\n";
         }
         dec_indent();

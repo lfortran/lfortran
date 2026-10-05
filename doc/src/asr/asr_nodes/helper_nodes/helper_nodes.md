@@ -22,5 +22,10 @@ rank_stmt
 reduction_expr
 require_instantiation
 tbind
+trait_binding
+trait_requirement
+type_set_operation
+type_set_requirement
+type_set_witness
 type_stmt
 ```
