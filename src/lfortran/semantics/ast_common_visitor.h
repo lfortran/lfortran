@@ -1729,19 +1729,27 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
 // alive, the components already declared in `scope` (the symbol table of the
 // derived type being defined) are hidden, so that e.g. `real :: value = value`
 // resolves the initializer to the host entity `value`.
+// `active` points to the names currently hidden, so that a reference to one
+// of them can be diagnosed as a reference to a component; it is set by the
+// outermost object only.
 class HiddenDerivedTypeComponents {
     SymbolTable *scope;
-    std::vector<std::pair<std::string, ASR::symbol_t*>> hidden;
+    std::map<std::string, ASR::symbol_t*> hidden;
+    const std::map<std::string, ASR::symbol_t*> *&active;
+    bool is_outermost = false;
 
 public:
-    HiddenDerivedTypeComponents(SymbolTable *scope, bool is_derived_type)
-            : scope(scope) {
-        if (!is_derived_type) return;
+    HiddenDerivedTypeComponents(SymbolTable *scope, bool is_derived_type,
+            const std::map<std::string, ASR::symbol_t*> *&active)
+            : scope(scope), active(active) {
+        if (!is_derived_type || active) return;
+        is_outermost = true;
+        active = &hidden;
         for (auto &item : scope->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second) &&
                     ASR::down_cast<ASR::Variable_t>(item.second)->m_storage
                         != ASR::storage_typeType::Parameter) {
-                hidden.push_back(item);
+                hidden.insert(item);
             }
         }
         for (auto &item : hidden) {
@@ -1754,9 +1762,11 @@ public:
         const HiddenDerivedTypeComponents &) = delete;
 
     ~HiddenDerivedTypeComponents() {
+        if (!is_outermost) return;
         for (auto &item : hidden) {
             scope->add_or_overwrite_symbol(item.first, item.second);
         }
+        active = nullptr;
     }
 };
 
@@ -2152,6 +2162,9 @@ public:
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
+    // Components hidden while a component declaration of the derived type
+    // being defined is analyzed (see HiddenDerivedTypeComponents)
+    const std::map<std::string, ASR::symbol_t*> *hidden_derived_type_components = nullptr;
     // Maps (PDT-template symtab ptr, member_var_name) ->
     // (inner_PDT_name, sentinel_kind_arg_values).
     std::map<std::pair<SymbolTable*, std::string>,
@@ -2639,6 +2652,21 @@ public:
         throw SemanticAbort();
     }
 
+    // A name that is not found in the host scope but is a component of the
+    // derived type being defined refers to that component, which cannot be
+    // referenced in a component declaration.
+    void check_hidden_derived_type_component_reference(const Location &loc,
+            const std::string &var_name) {
+        if (hidden_derived_type_components &&
+                hidden_derived_type_components->find(var_name)
+                    != hidden_derived_type_components->end()) {
+            diag.semantic_error_label("component `" + var_name
+                + "` cannot be referenced in a component declaration", {loc},
+                "`" + var_name + "` is a component of the derived type being defined");
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
@@ -2664,6 +2692,7 @@ public:
             return tmp;
         }
         if (!v) {
+            check_hidden_derived_type_component_reference(loc, var_name);
             if (check_is_explicit_intrinsic(var_name)) {
                 std::string intrinsic_name = var_name;
                 std::vector<std::string> arg_types;
@@ -8882,7 +8911,7 @@ public:
                             }
                             dims_attr_loc = ad->base.base.loc;
                             HiddenDerivedTypeComponents hidden_components(
-                                current_scope, is_derived_type);
+                                current_scope, is_derived_type, hidden_derived_type_components);
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                                 s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
@@ -9018,7 +9047,7 @@ public:
                         throw SemanticAbort();
                     }
                     HiddenDerivedTypeComponents hidden_components(
-                        current_scope, is_derived_type);
+                        current_scope, is_derived_type, hidden_derived_type_components);
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
@@ -9178,7 +9207,7 @@ public:
                 }
                 {
                     HiddenDerivedTypeComponents hidden_components(
-                        current_scope, is_derived_type);
+                        current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                         (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
@@ -9329,7 +9358,7 @@ public:
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
                             if ( s.n_dim > 0 && !is_template) {
                                 HiddenDerivedTypeComponents hidden_components(
-                                    current_scope, is_derived_type);
+                                    current_scope, is_derived_type, hidden_derived_type_components);
                                 for (size_t dim_i = 0; dim_i < s.n_dim; dim_i++) {
                                     AST::dimension_t& dim = s.m_dim[dim_i];
                                     if (dim.m_start != nullptr &&
@@ -9432,7 +9461,7 @@ public:
                         is_struct_const = true;
                     }
                     HiddenDerivedTypeComponents hidden_components(
-                        current_scope, is_derived_type);
+                        current_scope, is_derived_type, hidden_derived_type_components);
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
@@ -9875,7 +9904,7 @@ public:
                     }
                     try {
                         HiddenDerivedTypeComponents hidden_components(
-                            current_scope, is_derived_type);
+                            current_scope, is_derived_type, hidden_derived_type_components);
                         visit_restricted_expr(*s.m_initializer,
                             RestrictedExprContext::InitExpr);
                     } catch (const SemanticAbort &) {
@@ -21646,6 +21675,7 @@ public:
 
     ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
+            check_hidden_derived_type_component_reference(loc, remote_sym);
             if (compiler_options.implicit_interface) {
                 return nullptr;
             } else {

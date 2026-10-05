@@ -2106,4 +2106,24 @@ module component_init_host_scope_in_continue_compilation_1_m
         ! is the module variable, which is not a named constant
         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
     end type
+    type :: cihs_u
+        integer :: cihs_a = 1
+        integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+    end type
+    type :: cihs_v
+        integer :: cihs_c(2) = 1
+        integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+    end type
+    type :: cihs_w
+        integer :: cihs_n = 2
+        integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+    end type
+    type :: cihs_x
+        integer :: cihs_k = 4
+        real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+    end type
+    type :: cihs_y
+        integer :: cihs_l = 3
+        character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+    end type
 end module
