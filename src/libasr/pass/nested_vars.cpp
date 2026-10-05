@@ -543,7 +543,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         return false;
     }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void create_context_modules(const ASR::TranslationUnit_t &x) {
         current_scope = x.m_symtab;
         SymbolTable* current_scope_copy = current_scope;
 
@@ -786,7 +786,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             func_to_nested_module[it.first] = mod_sym;
         }
         replacer.nested_var_to_ext_var = nested_var_to_ext_var;
+        current_scope = current_scope_copy;
+    }
 
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
@@ -1902,14 +1906,18 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     NestedVarVisitor v(al);
     v.visit_TranslationUnit(unit);
     ReplaceNestedVisitor w(al, v.nesting_map);
-    w.visit_TranslationUnit(unit);
-    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
-        w.assumed_length_ctx_var_len);
-    z.visit_TranslationUnit(unit);
+    w.create_context_modules(unit);
+    // Re-point references to the moved program types before replacing the
+    // captured variables, so that a context variable passed to a contained
+    // procedure has the same type as its dummy argument.
     if (!w.moved_program_structs.empty()) {
         ReplaceMovedProgramStructs r(al, w.moved_program_structs);
         r.visit_TranslationUnit(unit);
     }
+    w.visit_TranslationUnit(unit);
+    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
+        w.assumed_length_ctx_var_len);
+    z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
 }
