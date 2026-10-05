@@ -1646,6 +1646,43 @@ ASR::stmt_t* forall_to_do_concurrent(Allocator& al, const ASR::ForAllSingle_t& x
         body.p, body.size()));
 }
 
+// Only the arm of a conditional expression that is chosen is evaluated
+// (Fortran 2023, 10.1.4 NOTE 3), so the temporaries `visit` creates for an
+// arm cannot go in front of the whole statement. They go in the branches of
+// an If statement instead, on the condition evaluated once into a variable,
+// which the conditional expression then tests. A character result is still
+// visited in place, as the LLVM backend cannot yet branch on a variable there.
+void visit_conditional_expr(Allocator& al, ASR::IfExp_t* x,
+        Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+        ExprsWithTargetType& exprs_with_target,
+        const std::function<void(ASR::expr_t*&)>& visit) {
+    visit(x->m_test);
+    if (ASRUtils::is_character(*x->m_type)) {
+        visit(x->m_body);
+        visit(x->m_orelse);
+        return;
+    }
+    Vec<ASR::stmt_t*>* current_body_copy = current_body;
+    Vec<ASR::stmt_t*> then_body; then_body.reserve(al, 1);
+    Vec<ASR::stmt_t*> else_body; else_body.reserve(al, 1);
+    current_body = &then_body;
+    visit(x->m_body);
+    current_body = &else_body;
+    visit(x->m_orelse);
+    current_body = current_body_copy;
+    if (then_body.empty() && else_body.empty()) {
+        return;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*x->m_test)) {
+        x->m_test = create_and_declare_temporary_variable_for_scalar(x->m_test,
+            "_conditional_expr_test", al, current_body, current_scope,
+            exprs_with_target);
+    }
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+        x->base.base.loc, nullptr, x->m_test, then_body.p, then_body.size(),
+        else_body.p, else_body.size())));
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -2696,6 +2733,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
+    // See visit_conditional_expr.
+    void visit_IfExp(const ASR::IfExp_t& x) {
+        visit_conditional_expr(al, const_cast<ASR::IfExp_t*>(&x), current_body,
+            current_scope, exprs_with_target, [this](ASR::expr_t*& expr) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &expr;
+                call_replacer();
+                current_expr = current_expr_copy;
+                visit_expr(*expr);
+            });
+    }
+
     /**
      * In case `x.test` expression needs temporaries
      *
@@ -2757,6 +2806,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ttype(ASR::ttype_t* /*x*/) {
         // Do nothing
+    }
+
+    // See visit_conditional_expr.
+    void replace_IfExp(ASR::IfExp_t* x) {
+        visit_conditional_expr(al, x, current_body, current_scope,
+            exprs_with_target, [this](ASR::expr_t*& expr) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &expr;
+                replace_expr(expr);
+                current_expr = current_expr_copy;
+            });
     }
 
     // Whether the expression being replaced is an operand of an array
@@ -3267,6 +3327,18 @@ class ReplaceExprWithTemporaryVisitor:
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
+    }
+
+    // See visit_conditional_expr.
+    void visit_IfExp(const ASR::IfExp_t& x) {
+        visit_conditional_expr(al, const_cast<ASR::IfExp_t*>(&x), current_body,
+            current_scope, exprs_with_target, [this](ASR::expr_t*& expr) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &expr;
+                call_replacer();
+                current_expr = current_expr_copy;
+                visit_expr(*expr);
+            });
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
