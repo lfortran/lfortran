@@ -1115,7 +1115,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                   ASR::expr_t *&left, ASR::expr_t *&right,
                                   ASR::asr_t *&asr, diag::Diagnostics &diag, 
                                   std::string& intrinsic_op_name, SymbolTable* curr_scope,
-                                  SetChar current_function_dependencies, SetChar current_module_dependencies) {
+                                  SetChar& current_function_dependencies, SetChar& current_module_dependencies) {
     ASR::logicalbinopType op;
     switch (x.m_op) {
         case (AST::And):
