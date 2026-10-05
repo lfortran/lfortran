@@ -394,7 +394,56 @@
                     )
                     (Assignment
                         (Var 5 qq)
-                        (Var 5 q)
+                        (ArrayBroadcast
+                            (OverloadedUnaryMinus
+                                (Var 5 q)
+                                (StructType
+                                    [(Real 4)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ()
+                                (FunctionCall
+                                    5 neg
+                                    5 neg
+                                    [((Var 5 q))]
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ()
+                                    ()
+                                )
+                            )
+                            (ArrayConstant
+                                4
+                                [3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (StructType
+                                    [(Real 4)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
                         ()
                         .false.
                         .false.
