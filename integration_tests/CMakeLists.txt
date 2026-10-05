@@ -3998,6 +3998,8 @@ RUN(NAME finalization_12 LABELS gfortran llvm)
 RUN(NAME finalization_13 LABELS gfortran llvm)
 RUN(NAME finalization_14 LABELS gfortran llvm)
 RUN(NAME finalization_15 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
+RUN(NAME finalization_20 LABELS gfortran llvm)
+RUN(NAME finalization_21 LABELS gfortran llvm)
 RUN(NAME finalization_25 LABELS gfortran llvm)
 RUN(NAME finalization_26 LABELS gfortran llvm)
 
