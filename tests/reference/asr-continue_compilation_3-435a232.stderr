@@ -253,6 +253,18 @@ semantic error: Invalid argument `end` supplied
 136 |     rewind(end="world")
     |     ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')
+   --> tests/errors/continue_compilation_3.f90:137:14
+    |
+137 |     print *, ishft(3, 40)  !ishft_shift_too_large
+    |              ^^^^^^^^^^^^ 
+
+semantic error: Argument of `log` cannot be less than or equal to zero
+   --> tests/errors/continue_compilation_3.f90:138:14
+    |
+138 |     print *, log(0.0)  !log_zero
+    |              ^^^^^^^^ 
+
 semantic error: Type and kind of the relevant arguments of Sign must be the same
    --> tests/errors/continue_compilation_3.f90:140:14
     |
