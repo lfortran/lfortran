@@ -22955,7 +22955,10 @@ public:
                 + "'", actual->base.loc);
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected);
-        LCOMPILERS_ASSERT(witness);
+        if (!witness) {
+            trait_call_error("runtime dispatch for this trait implementation ABI "
+                "is not implemented yet", actual->base.loc);
+        }
         auto *reference = make_operator_proc_visible(&witness->base, "trait", current_scope);
         ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
         auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(

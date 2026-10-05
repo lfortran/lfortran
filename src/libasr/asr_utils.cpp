@@ -5639,6 +5639,8 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
 
 bool runtime_trait_method_supported(const ASR::Function_t &method)
 {
+    auto abi = get_FunctionType(method)->m_abi;
+    if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return false;
     if (method.m_return_var &&
             !ASR::is_a<ASR::Integer_t>(*expr_type(method.m_return_var))) return false;
     for (size_t i = 0; i < method.n_args; i++) {

@@ -4483,6 +4483,12 @@ public:
     void create_runtime_trait_witness(ASR::TraitImplementation_t *implementation) {
         auto *contract = ASRUtils::trait_runtime_contract(implementation->m_trait);
         if (!contract) return;
+        for (size_t i = 0; i < implementation->n_bindings; i++) {
+            auto *procedure = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(implementation->m_bindings[i].m_procedure));
+            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
+            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return;
+        }
         for (size_t i = 0; i < contract->n_slots; i++) {
             auto *member = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(contract->m_slots[i].m_origins[0]));

@@ -2032,3 +2032,49 @@ contains
         call object%act()
     end subroutine
 end module
+
+module traits_runtime_bindc_contract_m
+    implicit none
+    abstract interface :: IValue
+        function value(n) result(r) bind(c)
+            integer, value, intent(in) :: n
+            integer :: r
+        end function
+    end interface
+contains
+    subroutine consume(object)
+        class(IValue), intent(in) :: object
+    end subroutine
+end module
+
+module traits_runtime_bindc_implementation_m
+    implicit none
+    abstract interface :: IValue
+        function value(n) result(r)
+            integer, value, intent(in) :: n
+            integer :: r
+        end function
+    end interface
+    type :: Payload
+        integer :: n
+    end type
+    implements IValue :: Payload
+        procedure, nopass :: value => c_value
+    end implements
+contains
+    function c_value(n) result(r) bind(c, name="traits_runtime_bindc_implementation_value")
+        integer, value, intent(in) :: n
+        integer :: r
+        r = n + 19
+    end function
+    function observe(object) result(r)
+        class(IValue), intent(in) :: object
+        integer :: r
+        r = object%value(4)
+    end function
+    function invalid_pack() result(r)
+        type(Payload) :: object
+        integer :: r
+        r = observe(object)
+    end function
+end module

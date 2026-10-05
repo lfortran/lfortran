@@ -434,6 +434,22 @@ semantic error: runtime trait combinations are not implemented yet
 2002 |         class(IValue + ITag), intent(in) :: object
      |         ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2046:9
+     |
+2046 |         class(IValue), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:2045:5 - 2047:18
+     |
+2045 |        subroutine consume(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2047 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |
@@ -679,3 +695,9 @@ semantic error: call to impure trait procedure 'act' is not allowed inside a PUR
      |
 2032 |         call object%act()
      |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait implementation ABI is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2078:21
+     |
+2078 |         r = observe(object)
+     |                     ^^^^^^ 

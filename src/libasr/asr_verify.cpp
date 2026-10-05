@@ -1654,6 +1654,13 @@ public:
         auto *required_signature = ASRUtils::get_FunctionType(required);
         auto *actual_signature = ASRUtils::get_FunctionType(procedure);
         require_with_loc_id(
+                (required_signature->m_abi == abiType::Source ||
+                    required_signature->m_abi == abiType::ExternalUndefined) &&
+                (actual_signature->m_abi == abiType::Source ||
+                    actual_signature->m_abi == abiType::ExternalUndefined),
+            "asr.verify.trait_witness.binding_abi",
+            "A runtime witness binding requires the ordinary source calling convention", loc);
+        require_with_loc_id(
                 (!required_signature->m_pure || actual_signature->m_pure) &&
                 (!required_signature->m_elemental || actual_signature->m_elemental),
             "asr.verify.trait_witness.procedure_attributes",

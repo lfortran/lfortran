@@ -1355,6 +1355,10 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
         CHECK(LCompilers::asr_verify(*result.result, true, valid));
         INFO(valid.render2());
     }
+    SUBCASE("binding cannot use an unsupported runtime ABI") {
+        ASRUtils::get_FunctionType(function("read_value"))->m_abi = ASR::abiType::BindC;
+        rejects("asr.verify.trait_witness.binding_abi");
+    }
     SUBCASE("binding has wrong nominal receiver") {
         ASRUtils::EXPR2VAR(function("read_value")->m_args[0])->m_type_declaration =
             module->m_symtab->get_symbol("other");

@@ -287,7 +287,9 @@ backend.
 Supported methods are ordinary scalar integer-result functions and
 subroutines with scalar integer, real, complex, logical, character, or
 nonpolymorphic derived-type arguments. Normal argument intents, kinds, keyword
-names, and calling conventions apply. Receivers are read-only by default;
+names, and the ordinary Fortran calling convention apply. BIND(C) contracts
+or implementations remain available statically but do not provide runtime
+dispatch in this slice. Receivers are read-only by default;
 future explicit per-message mutation effects have no settled syntax yet.
 Named non-first PASS and NOPASS are supported. NOPASS still dynamically
 selects the implementation from the witness.
