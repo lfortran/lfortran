@@ -310,6 +310,25 @@ public:
         }
     }
 
+    void visit_DerivedType(const AST::DerivedType_t& x) {
+        if( !from_block ) {
+            return;
+        }
+        // The bindings of a type-bound procedure part are only resolved by the
+        // symbol table visitor, once the whole specification part of the
+        // program unit has been visited.
+        if( x.n_contains > 0 ) {
+            diag.add(Diagnostic(
+                "type-bound procedures of a derived type defined in a BLOCK "
+                "construct are not supported yet",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_contains[0]->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        visit_DerivedTypeUtil(x);
+    }
+
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
