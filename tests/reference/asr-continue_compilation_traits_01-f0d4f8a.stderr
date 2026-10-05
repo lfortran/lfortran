@@ -1,0 +1,161 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_01.f90:8:5 - 13:1
+   |
+ 8 |        abstract interface :: IValue
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |    
+   | ...^ LFortran extension
+
+semantic error: missing implementation of trait method 'get_value'
+  --> tests/errors/continue_compilation_traits_01.f90:18:5 - 19:23
+   |
+18 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+19 |        end implements Box
+   | ...^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got real(4)
+  --> tests/errors/continue_compilation_traits_01.f90:81:5 - 84:1
+   |
+81 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+84 |    
+   | ...^ 
+
+semantic error: argument 'value' does not match trait method 'consume': expected integer(4), got real(4)
+   --> tests/errors/continue_compilation_traits_01.f90:104:5 - 106:19
+    |
+104 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+106 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: rank of argument 'value' does not match trait method 'consume': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:124:5 - 126:19
+    |
+124 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+126 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got integer(8)
+   --> tests/errors/continue_compilation_traits_01.f90:144:5 - 146:19
+    |
+144 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+146 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result rank does not match trait method 'get_value': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:165:5 - 167:19
+    |
+165 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+167 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: function or subroutine category does not match trait method 'get_value'
+   --> tests/errors/continue_compilation_traits_01.f90:356:5 - 359:1
+    |
+356 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+359 |    
+    | ...^ 
+
+semantic error: a trait witness must be a public, nondeferred binding
+   --> tests/errors/continue_compilation_traits_01.f90:425:20
+    |
+425 |         procedure, private :: get_value => box_get_value
+    |                    ^^^^^^^ 
+
+semantic error: intent, optionality or value attribute of argument 'value' does not match trait method 'set_value'
+   --> tests/errors/continue_compilation_traits_01.f90:451:5 - 454:1
+    |
+451 |        implements ISetter :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+454 |    
+    | ...^ 
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+   --> tests/errors/continue_compilation_traits_01.f90:550:5
+    |
+550 |     type(IValue) :: object
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects are not implemented yet
+   --> tests/errors/continue_compilation_traits_01.f90:562:5
+    |
+562 |     class(IValue), allocatable :: object
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_01.f90:63:17
+   |
+63 |         value = read_value(object)
+   |                 ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+  --> tests/errors/continue_compilation_traits_01.f90:63:9
+   |
+63 |         value = read_value(object)
+   |         ^^^^^              ^^^^^^ type mismatch (integer and box)
+
+semantic error: method 'missing_value' is not provided by the declared trait constraints
+   --> tests/errors/continue_compilation_traits_01.f90:205:15
+    |
+205 |         res = x%missing_value()
+    |               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:260:13
+    |
+260 |         if (read_value{SmallBox}(right) /= 22) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:261:13
+    |
+261 |         if (read_value{LargeBox}(left) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue'
+   --> tests/errors/continue_compilation_traits_01.f90:338:13
+    |
+338 |         if (read_value(object) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+   --> tests/errors/continue_compilation_traits_01.f90:406:17
+    |
+406 |         value = make_value()
+    |                 ^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'isecond' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:511:9
+    |
+511 |         call use_second(value, result)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `value`: expected `integer(4)` but got `real(4)`.
+   --> tests/errors/continue_compilation_traits_01.f90:538:31
+    |
+538 |         call object%get_value(value)
+    |                               ^^^^^ 
