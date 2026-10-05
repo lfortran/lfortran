@@ -2,9 +2,11 @@ program print_15
 ! Verify the runtime list-directed (`print *, ...`) output uses minimal
 ! widths and emits no leading whitespace by default. This is the
 ! Flang-compatible behavior. The opt-in `--print-leading-space` flag (and
-! `--std=f23` / `--std=legacy`) inserts an explicit leading space at the
-! semantics layer; that is intentionally NOT exercised here, since this
-! test runs in default mode.
+! `--std=f23` / `--std=legacy`) makes every list-directed record that
+! writes at least one item start with a blank, including internal writes
+! such as `write(s, *) 5`. The exact-text assertions below would not hold
+! then, so this test runs in default mode only (`NO_STD_F23`); print_17
+! covers the leading blank.
 !
 ! GFortran emits Gw.d-style padded fields for list-directed output, so
 ! the exact-text assertions below are LFortran/Flang specific. Keep this

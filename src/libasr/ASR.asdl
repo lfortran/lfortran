@@ -295,7 +295,7 @@ cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
-string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
+string_format_kind = FormatFortran | FormatFortranLeadingBlank | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
 
 omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Atomic | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | TeamsDistribute | DistributeParallelDo | Target | TargetData
 omp_clause

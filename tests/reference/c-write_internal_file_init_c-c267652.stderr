@@ -1,0 +1,5 @@
+code generation error: an internal file with an initial value is not supported by the C backend yet
+ --> tests/errors/write_internal_file_init_c.f90:6:11
+  |
+6 |     write(buf, '(i0)') 42
+  |           ^^^ 

@@ -6493,6 +6493,43 @@ public:
         throw SemanticAbort();
     }
 
+    // An instantiation without an only-list adds every procedure and derived
+    // type of the template to this scope under its own name, so none of these
+    // names may already be a local identifier of the scope.
+    void check_instantiation_name_clashes(const AST::Instantiate_t &x,
+            ASR::Template_t *temp) {
+        if (x.n_symbols != 0) {
+            return;
+        }
+        std::string template_name = to_lower(x.m_name);
+        for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+            ASR::symbol_t *s = sym_pair.second;
+            std::string s_name = ASRUtils::symbol_name(s);
+            if (!(ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
+                    || ASRUtils::is_template_arg(&temp->base, s_name)) {
+                continue;
+            }
+            ASR::symbol_t *existing = current_scope->get_symbol(s_name);
+            if (existing == nullptr) {
+                continue;
+            }
+            diag.add(diag::Diagnostic(
+                "the instantiation of template '" + template_name
+                + "' defines '" + s_name + "', which is already declared in"
+                " this scope",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("'" + s_name + "' is already declared",
+                        {x.base.base.loc}),
+                    diag::Label("'" + s_name + "' is declared here",
+                        {existing->base.loc}, false),
+                    diag::Label("help: name the entities to instantiate in an"
+                        " only-list and rename this one, e.g. `only: "
+                        + s_name + "_instance => " + s_name + "`",
+                        {x.base.base.loc}, false)}));
+            throw SemanticAbort();
+        }
+    }
+
     // Instantiating a derived type of an only-list also instantiates, under a
     // generated name, each type of the template its components use. When the
     // only-list names such a type after the type that uses it, e.g.
@@ -6546,6 +6583,7 @@ public:
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
         check_instantiation_generic_specs(x, temp);
         check_instantiation_local_names(x, temp);
+        check_instantiation_name_clashes(x, temp);
 
         // R1630: the arguments may be given by keyword, so match them against
         // the template's deferred-argument list before using them
@@ -6896,6 +6934,22 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
                     instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
                         diag);
+                }
+            }
+            // Every derived type of the template is an entity of the
+            // instantiation under its own name. A procedure instantiated above
+            // may already have instantiated a type it uses under a generated
+            // name; that instance becomes the named one, so that the
+            // procedure and the users of the type share the same type.
+            std::set<ASR::symbol_t*> named_instances;
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                ASR::symbol_t *s = sym_pair.second;
+                std::string s_name = ASRUtils::symbol_name(s);
+                if (ASR::is_a<ASR::Struct_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
+                    rename_dependency_instance(s_name, s_name, symbol_subs,
+                        named_instances);
+                    named_instances.insert(instantiate_symbol(al, current_scope,
+                        type_subs, symbol_subs, s_name, s, diag));
                 }
             }
             // Generic specs last, so that they reuse the instances of their
