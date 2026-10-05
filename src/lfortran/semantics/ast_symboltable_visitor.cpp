@@ -140,6 +140,19 @@ public:
             v.scoping_unit_kind = enclosing;
         }
     };
+    struct ProcedureNameScope {
+        SymbolTableVisitor &v;
+        std::string enclosing;
+
+        ProcedureNameScope(SymbolTableVisitor &v_, const std::string &name)
+                : v(v_), enclosing(v_.current_procedure_name) {
+            v.current_procedure_name = name;
+        }
+
+        ~ProcedureNameScope() {
+            v.current_procedure_name = enclosing;
+        }
+    };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
     // Tracks whether an IMPLICIT NONE statement is in effect in the scoping
     // unit being visited. A scoping unit without IMPLICIT statements keeps
@@ -1470,7 +1483,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
-        current_procedure_name = function_name;
+        ProcedureNameScope procedure_name_scope(*this, function_name);
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
 
@@ -2069,7 +2082,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
-        current_procedure_name = sym_name;
+        ProcedureNameScope procedure_name_scope(*this, sym_name);
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
@@ -2701,7 +2714,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
-        current_procedure_name = sym_name;
+        ProcedureNameScope procedure_name_scope(*this, sym_name);
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
