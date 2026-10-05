@@ -892,6 +892,12 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
 2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Initialization of `cihs_h` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2107:9
+     |
+2107 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -2097,3 +2097,13 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+module component_init_host_scope_in_continue_compilation_1_m
+    implicit none
+    integer :: cihs_h = 3
+    type :: cihs_t
+        ! a component initializer is evaluated in the host scope: `cihs_h`
+        ! is the module variable, which is not a named constant
+        integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+    end type
+end module
