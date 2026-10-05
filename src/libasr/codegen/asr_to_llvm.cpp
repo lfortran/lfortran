@@ -17728,10 +17728,14 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_arg, true);
+        this->visit_expr_load_wrapper(x.m_arg,
+            LLVM::is_llvm_pointer(*expr_type(x.m_arg)) ? 2 : 1,
+            true);
+        llvm::Value *arg_val = tmp;
+        load_non_array_non_character_pointers(x.m_arg, ASRUtils::expr_type(x.m_arg), arg_val);
         llvm::Value *zero = llvm::ConstantInt::get(context,
             llvm::APInt(ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg)) * 8, 0));
-        tmp = builder->CreateSub(zero, tmp);
+        tmp = builder->CreateSub(zero, arg_val);
     }
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
@@ -17747,8 +17751,12 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_arg, true);
-        tmp = builder->CreateFNeg(tmp);
+        this->visit_expr_load_wrapper(x.m_arg,
+            LLVM::is_llvm_pointer(*expr_type(x.m_arg)) ? 2 : 1,
+            true);
+        llvm::Value *arg_val = tmp;
+        load_non_array_non_character_pointers(x.m_arg, ASRUtils::expr_type(x.m_arg), arg_val);
+        tmp = builder->CreateFNeg(arg_val);
     }
 
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
