@@ -2595,7 +2595,7 @@ namespace Present {
 
                 return nullptr;
             }
-        } else if (!ASR::is_a<ASR::Function_t>(*sym)) {
+        } else {
             diag.semantic_error_label(
                 "Argument to 'present' must be an optional dummy argument",
                 {arg->base.loc},
