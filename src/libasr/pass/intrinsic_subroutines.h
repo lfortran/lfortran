@@ -229,6 +229,34 @@ namespace RandomSeed {
             fill_func_arg_sub("get", real32, In);
         }
 
+        if (is_real(*arg_types[0]) && is_real(*arg_types[1]) && is_real(*arg_types[2])) {
+            // `call random_seed()` with no arguments must reseed the RNG and
+            // refresh the internal seed buffer, matching
+            // `random_init(repeatable=.false., image_distinct=.false.)`.
+            std::string c_func_name_2 = "_lfortran_random_init";
+            SymbolTable *fn_symtab_2 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_2; args_2.reserve(al, 2);
+            ASR::expr_t *rep_arg = b.Variable(fn_symtab_2, "repeatable_c",
+                logical, ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+            args_2.push_back(al, rep_arg);
+            ASR::expr_t *img_arg = b.Variable(fn_symtab_2, "image_distinct_c",
+                logical, ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
+            args_2.push_back(al, img_arg);
+            ASR::expr_t *return_var_2 = b.Variable(fn_symtab_2, c_func_name_2,
+                logical, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+            SetChar dep_2; dep_2.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_2; body_2.reserve(al, 1);
+            ASR::symbol_t *s_2 = make_ASR_Function_t(c_func_name_2, fn_symtab_2, dep_2, args_2,
+                body_2, return_var_2, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_2));
+            fn_symtab->add_symbol(c_func_name_2, s_2);
+            dep.push_back(al, s2c(al, c_func_name_2));
+            Vec<ASR::expr_t*> call_args_2; call_args_2.reserve(al, 2);
+            call_args_2.push_back(al, b.bool_t(false, logical));
+            call_args_2.push_back(al, b.bool_t(false, logical));
+            ASR::expr_t* discard_2 = declare("_lcompilers_random_seed_init_result", logical, Local);
+            body.push_back(al, b.Assignment(discard_2, b.Call(s_2, call_args_2, logical)));
+        }
+
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);

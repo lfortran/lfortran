@@ -82,6 +82,7 @@ std::string GpuOffloadVisitor::unhonoured_clause(
     }
 }
 
+
 // A region this pass does not take is left exactly as it was, and is
 // looked inside for the regions it can take.
 void GpuOffloadVisitor::decline(const ASR::OMPRegion_t &x) {
@@ -246,8 +247,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Find local scalar temporaries (assigned but not arrays, not loop vars)
-    std::set<std::string> local_vars, assigned_vars;
-    GpuLocalVarCollector lv_collector(local_vars, assigned_vars, enclosing_block_scopes);
+    std::set<std::string> assigned_vars, inner_loop_vars;
+    GpuLocalVarCollector lv_collector(assigned_vars, inner_loop_vars, enclosing_block_scopes);
     for (size_t i = 0; i < work.n_body; i++) {
         lv_collector.visit_stmt(*work.body[i]);
     }
@@ -323,7 +324,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (auto &name : assigned_vars) {
         if (loop_var_set.count(name)) continue;
         if (all_reduction_targets.count(name)) continue;
-        if (post_loop_vars.count(name)) continue;
+        if (post_loop_vars.count(name) && !inner_loop_vars.count(name)) continue;
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
@@ -1940,6 +1941,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    ASR::ttype_t *loop_int_type = ASRUtils::expr_type(work.head(0).m_v);
+
     // Save host-side head expressions BEFORE in-place replacement
     std::vector<DimInfo> dim_info;
     for (size_t d = 0; d < n_dims; d++) {
@@ -1990,8 +1993,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // replacement contains nothing that would be replaced again.
     ASR::expr_t *slot_index = nullptr;
     if (!pending_reductions.empty()) {
-        ASR::ttype_t *slot_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, loop_int_type);
         gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
             ASRUtils::duplicate_type(al, slot_type));
         slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -2028,8 +2030,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     Vec<ASR::stmt_t*> kernel_body;
     kernel_body.reserve(al, work.n_body + 2 * n_dims + 1);
 
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = loop_int_type;
 
     ASR::expr_t *thread_idx = ASRUtils::EXPR(
         ASR::make_GpuThreadIndex_t(al, loc, 0, int_type, nullptr));

@@ -160,7 +160,7 @@
                                     [num_bits]
                                     []
                                     Source
-                                    Private
+                                    Public
                                     .false.
                                     .true.
                                     .false.
