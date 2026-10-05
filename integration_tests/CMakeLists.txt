@@ -1894,6 +1894,7 @@ RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character opera
 RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
 RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
 RUN(NAME intrinsics_481 LABELS gfortran llvm c) # sign on real(4)/real(8) with negative zero, C backend RealCopySign (#13918)
+RUN(NAME intrinsics_482 LABELS gfortran llvm) # dot_product on a derived-type component section (#14036)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
@@ -5086,6 +5087,7 @@ RUN(NAME separate_compilation_51 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_52 LABELS gfortran llvm EXTRAFILES separate_compilation_52a.f90 separate_compilation_52b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_53 LABELS gfortran llvm EXTRAFILES separate_compilation_53a.f90 separate_compilation_53b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_54 LABELS gfortran llvm EXTRAFILES separate_compilation_54a.f90 separate_compilation_54b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME separate_compilation_55 LABELS gfortran llvm EXTRAFILES separate_compilation_55a.f90 EXTRA_ARGS --separate-compilation) # dot_product on a derived-type component section (#14036)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
