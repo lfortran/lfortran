@@ -213,7 +213,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     And,
     Or,
     Xor,
-    Rand
+    Rand,
+    Secnds
     // ...
 };
 
@@ -1834,6 +1835,60 @@ namespace Rand {
         return b.Call(new_symbol, new_args, return_type);
     }
 } // namespace Rand
+
+namespace Secnds {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "secnds() takes exactly 1 argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Secnds(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            append_error(diag, "Intrinsic secnds function accepts exactly 1 argument", loc);
+            return nullptr;
+        }
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_real(*arg_type) || ASRUtils::is_array(arg_type)
+                || ASRUtils::extract_kind_from_ttype_t(arg_type) != 4) {
+            append_error(diag, "The argument of 'secnds' intrinsic must be a scalar real(4), found "
+                + ASRUtils::type_to_str_with_kind(arg_type, args[0]), loc);
+            return nullptr;
+        }
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+                static_cast<int64_t>(IntrinsicElementalFunctions::Secnds),
+                args.p, args.n, 0, return_type, nullptr);
+    }
+
+    static inline ASR::expr_t* instantiate_Secnds(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
+        std::string c_func_name = "_lfortran_secnds";
+        std::string new_name = "_lcompilers_secnds_";
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var));
+        }
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(new_name, return_type, ReturnVar);
+        {
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        }
+
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, return_type);
+    }
+} // namespace Secnds
 
 namespace ThisImage {
 

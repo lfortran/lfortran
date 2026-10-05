@@ -6121,6 +6121,44 @@ LFORTRAN_API int32_t _lfortran_values(int32_t n)
     return result;
 }
 
+// secnds ----------------------------------------------------------------------
+
+// Seconds since local midnight, as SECNDS reads the clock
+static double _lfortran_seconds_since_midnight() {
+#if defined(_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    return 3600.0 * st.wHour + 60.0 * st.wMinute + st.wSecond
+        + 0.001 * st.wMilliseconds;
+#elif defined(__APPLE__) && !defined(__aarch64__)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm tm;
+    localtime_r(&tv.tv_sec, &tm);
+    return 3600.0 * tm.tm_hour + 60.0 * tm.tm_min + tm.tm_sec
+        + 0.001 * (tv.tv_usec / 1000);
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    struct tm tm;
+    localtime_r(&ts.tv_sec, &tm);
+    return 3600.0 * tm.tm_hour + 60.0 * tm.tm_min + tm.tm_sec
+        + 0.001 * (ts.tv_nsec / 1000000);
+#endif
+}
+
+// SECNDS(X): seconds since midnight minus X, in single precision as GFortran
+// computes it: X is reduced with fmod (keeping its sign) and a negative
+// result wraps past midnight
+LFORTRAN_API float _lfortran_secnds(float x) {
+    float t = (float) _lfortran_seconds_since_midnight();
+    float x0 = (float) fmod((double) x, 86400.0);
+    if (t - x0 < 0.0f) {
+        x0 -= 86400.0f;
+    }
+    return t - x0;
+}
+
 LFORTRAN_API float _lfortran_sp_rand_num() {
     return rand() / (float) RAND_MAX;
 }

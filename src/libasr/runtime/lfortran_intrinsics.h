@@ -270,6 +270,7 @@ LFORTRAN_API void _lfortran_date(char* result);
 LFORTRAN_API void _lfortran_time(char* result);
 LFORTRAN_API void _lfortran_zone(char* result);
 LFORTRAN_API int32_t _lfortran_values(int32_t n);
+LFORTRAN_API float _lfortran_secnds(float x);
 LFORTRAN_API float _lfortran_sp_rand_num();
 LFORTRAN_API double _lfortran_dp_rand_num();
 LFORTRAN_API void _lfortran_random_seed_put_i32(int32_t value, int32_t index);

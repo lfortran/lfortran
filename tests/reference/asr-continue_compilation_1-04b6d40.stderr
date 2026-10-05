@@ -3058,3 +3058,15 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+    --> tests/errors/continue_compilation_1.f90:2103:14
+     |
+2103 |     print *, secnds(0.0d0)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found real(8)
+     |              ^^^^^^^^^^^^^ 
+
+semantic error: The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
+    --> tests/errors/continue_compilation_1.f90:2104:14
+     |
+2104 |     print *, secnds(1)  ! {Error} The argument of 'secnds' intrinsic must be a scalar real(4), found integer(4)
+     |              ^^^^^^^^^ 
