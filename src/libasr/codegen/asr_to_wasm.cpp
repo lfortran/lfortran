@@ -3324,6 +3324,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if(x.m_fmt){
            //TODO :: respect fmt.
         }
+        if (x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank
+                && x.n_args > 0) {
+            emit_call_fd_write(1, " ", 1, 0);
+        }
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *v = x.m_args[i];
             ASR::ttype_t *t = ASRUtils::expr_type(v);
