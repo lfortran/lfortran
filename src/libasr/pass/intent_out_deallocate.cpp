@@ -11,6 +11,25 @@
 
 
 namespace LCompilers {
+ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
+    if (st == nullptr) return nullptr;
+    ASR::Function_t *elemental = nullptr;
+    for (size_t i = 0; i < st->n_member_functions; i++) {
+        ASR::symbol_t *sym = st->m_symtab->parent->get_symbol(
+            st->m_member_functions[i]);
+        // A final subroutine that has the name of a generic interface is
+        // not found under its own name (#14018).
+        if (sym == nullptr) continue;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Function_t>(*sym)) continue;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        if (ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(fn->m_args[0])) == rank) return fn;
+        if (ASRUtils::is_elemental(sym)) elemental = fn;
+    }
+    return elemental;
+}
+
 // Deallocate allocatable `intent(out)` dummy arguments at function entry.
 //
 // Notes / limitations:
@@ -467,9 +486,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
                     m.second);
-                if (!is_finalizable_component(m_var)) continue;
-                if (struct_needs_finalization(component_struct_type(m_var),
-                        visited)) {
+                if (struct_needs_finalization(
+                        finalizable_component_struct_type(m_var), visited)) {
                     return true;
                 }
             }
@@ -483,18 +501,20 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         return false;
     }
 
-    // Whether a component is one this pass finalizes on entry.  An array
-    // component is skipped, because a final subroutine is only called for an
-    // entity whose rank its dummy argument has; an allocatable one is
-    // finalized when it is deallocated (emit_struct_cleanup_stmts emits that
-    // deallocation); a pointer one is never finalized; and the dynamic type
-    // of a polymorphic one, which decides what applies to it, is not known
-    // here.
-    static bool is_finalizable_component(ASR::Variable_t* m_var) {
+    // The derived type of a component this pass finalizes on entry, or of
+    // the elements of such an array component; nullptr for any other
+    // component.  An allocatable one is finalized when it is deallocated
+    // (emit_struct_cleanup_stmts emits that deallocation); a pointer one is
+    // never finalized; and the dynamic type of a polymorphic one, which
+    // decides what applies to it, is not known here.
+    static ASR::Struct_t* finalizable_component_struct_type(
+            ASR::Variable_t* m_var) {
         if (ASRUtils::is_allocatable(m_var->m_type) ||
-                ASRUtils::is_pointer(m_var->m_type)) return false;
-        if (ASRUtils::is_class_type(m_var->m_type)) return false;
-        return component_struct_type(m_var) != nullptr;
+                ASRUtils::is_pointer(m_var->m_type)) return nullptr;
+        if (ASRUtils::is_class_type(m_var->m_type)) return nullptr;
+        ASR::Struct_t* st = component_struct_type(m_var);
+        if (st != nullptr) return st;
+        return array_component_struct_type(m_var);
     }
 
     // Call the final subroutines of `st` itself with `entity_expr` as the
@@ -505,12 +525,11 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             SymbolTable* current_scope,
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
-        for (size_t fi = 0; fi < st->n_member_functions; fi++) {
-            std::string final_proc_name = st->m_member_functions[fi];
-            ASR::symbol_t* final_sym =
-                st->m_symtab->parent->get_symbol(final_proc_name);
-            LCOMPILERS_ASSERT(final_sym != nullptr);
-            if (final_sym == nullptr) continue;
+        ASR::Function_t *selected = select_final_procedure(st,
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(entity_expr)));
+        if (selected != nullptr) {
+            std::string final_proc_name = selected->m_name;
+            ASR::symbol_t* final_sym = &selected->base;
 
             ASR::symbol_t* local_final_sym =
                 current_scope->resolve_symbol(final_proc_name);
@@ -554,14 +573,65 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
     }
 
+    // Finalize the array `arr_expr`, whose elements are of type `st`
+    // (F2018 7.5.6.2).  Step 1 calls the final subroutine whose dummy argument
+    // has the rank of the array with the whole array, or else an elemental
+    // one for every element; a nonelemental one of any other rank is not
+    // called.  Step 2 then finalizes the components of every element.
+    void emit_array_finalize_stmts(
+            ASR::expr_t* arr_expr,
+            ASR::Struct_t* st,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        int rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(arr_expr));
+        ASR::Function_t* final_proc = select_final_procedure(st, rank);
+        if (final_proc != nullptr) {
+            ASR::ttype_t* dummy_type = ASRUtils::expr_type(
+                final_proc->m_args[0]);
+            if (ASRUtils::extract_n_dims_from_ttype(dummy_type) == rank) {
+                ASR::array_physical_typeType arg_phys =
+                    ASRUtils::extract_physical_type(
+                        ASRUtils::expr_type(arr_expr));
+                ASR::array_physical_typeType dummy_phys =
+                    ASRUtils::extract_physical_type(dummy_type);
+                ASR::expr_t* arg = arr_expr;
+                if (arg_phys != dummy_phys) {
+                    arg = ASRUtils::EXPR(
+                        ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
+                            arr_expr, arg_phys, dummy_phys,
+                            ASRUtils::duplicate_type(al,
+                                ASRUtils::expr_type(arr_expr), nullptr,
+                                dummy_phys, true),
+                            nullptr));
+                }
+                emit_final_calls(arg, st, current_scope, loc, out_stmts);
+            } else {
+                emit_per_element_stmts(arr_expr, "_intent_out_final_idx_",
+                    current_scope, loc, out_stmts,
+                    [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                        emit_final_calls(elem_ref, st, current_scope, loc,
+                            body);
+                    });
+            }
+        }
+        emit_per_element_stmts(arr_expr, "_intent_out_final_idx_",
+            current_scope, loc, out_stmts,
+            [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                emit_struct_component_finalize_stmts(elem_ref, st,
+                    current_scope, loc, body);
+            });
+    }
+
     // Finalize the finalizable components of `struct_expr` (F2018 7.5.6.2,
     // step 2).  A component of derived type is an entity in its own right, so
     // the same sequence applies to it: its type's final subroutines first,
     // then its own components.  Components inherited from a parent type are
     // finalized too; the parent component itself is not, because its final
     // subroutine takes the parent type and this pass cannot form a reference
-    // of that type.  `is_finalizable_component` says which components this
-    // covers.
+    // of that type.  `finalizable_component_struct_type` says which
+    // components this covers.
     void emit_struct_component_finalize_stmts(
             ASR::expr_t* struct_expr,
             ASR::Struct_t* struct_type,
@@ -574,8 +644,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
                     m.second);
-                if (!is_finalizable_component(m_var)) continue;
-                ASR::Struct_t* m_struct = component_struct_type(m_var);
+                ASR::Struct_t* m_struct =
+                    finalizable_component_struct_type(m_var);
+                if (m_struct == nullptr) continue;
                 std::set<ASR::Struct_t*> visited;
                 if (!struct_needs_finalization(m_struct, visited)) continue;
 
@@ -583,6 +654,11 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     ASRUtils::getStructInstanceMember_t(al, loc,
                         (ASR::asr_t*)struct_expr, m.second, m.second,
                         current_scope));
+                if (ASRUtils::is_array(m_var->m_type)) {
+                    emit_array_finalize_stmts(member_expr, m_struct,
+                        current_scope, loc, out_stmts);
+                    continue;
+                }
                 emit_final_calls(member_expr, m_struct, current_scope, loc,
                     out_stmts);
                 emit_struct_component_finalize_stmts(member_expr, m_struct,

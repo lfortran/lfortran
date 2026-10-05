@@ -2451,18 +2451,11 @@ public:
                 }));
             throw SemanticAbort();
         }
-        if (_type == AST::decl_stmtType::Write && a_fmt == nullptr
-                && compiler_options.print_leading_space && formatted
-                && n_values > 0) {
-            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
-            ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
-            file_write->m_id = a_id;
-            file_write->m_iomsg = a_iomsg;
-            file_write->m_iostat = a_iostat;
-            file_write->m_unit = a_unit;
-            file_write->m_label = m_label;
-            tmp_vec.push_back(file_write_asr_t);
-        } else if (_type == AST::decl_stmtType::Write) {
+        // List-directed output starts with a blank when at least one item is
+        // written, which is only known at run time.
+        bool list_directed_leading_blank = _type == AST::decl_stmtType::Write
+            && a_fmt == nullptr && compiler_options.print_leading_space && formatted;
+        if (_type == AST::decl_stmtType::Write) {
             a_fmt_constant = a_fmt;
         }
         std::vector<ASR::stmt_t*> post_stmts;
@@ -2855,6 +2848,11 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
+        // A user-defined derived-type output procedure, or a single
+        // character item written directly, bypasses the StringFormat, so
+        // the leading blank is then written by a statement of its own.
+        bool separate_leading_blank = list_directed_leading_blank
+            && overloaded_stmt != nullptr;
         // Don't use stringFormat with single character argument. An implied
         // do loop is a list of output items rather than a single character
         // value, even when all its items happen to be of character type, so
@@ -2864,6 +2862,7 @@ public:
             && a_values_vec.size() == 1
             && !ASR::is_a<ASR::ImpliedDoLoop_t>(*a_values_vec[0])
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
+            separate_leading_blank = list_directed_leading_blank;
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
             a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous, a_decimal);
@@ -2874,8 +2873,12 @@ public:
                         al, loc, 1, nullptr,
                         ASR::string_length_kindType::DeferredLength,
                         ASR::string_physical_typeType::DescriptorString))));
+                ASR::string_format_kindType kind =
+                    list_directed_leading_blank && !separate_leading_blank
+                    ? ASR::string_format_kindType::FormatFortranLeadingBlank
+                    : ASR::string_format_kindType::FormatFortran;
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
-                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
+                    a_fmt_constant, a_values_vec.p, a_values_vec.size(), kind,
                     type, nullptr));
                 a_values_vec.reserve(al, 1);
                 a_values_vec.push_back(al, string_format);
@@ -2895,6 +2898,16 @@ public:
                a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(), overloaded_stmt, formatted, a_nml, a_rec, a_pad, a_decimal);
         }
 
+        if (separate_leading_blank) {
+            ASR::asr_t* file_write_asr_t = construct_leading_space(loc);
+            ASR::FileWrite_t* file_write = ASR::down_cast<ASR::FileWrite_t>(ASRUtils::STMT(file_write_asr_t));
+            file_write->m_id = a_id;
+            file_write->m_iomsg = a_iomsg;
+            file_write->m_iostat = a_iostat;
+            file_write->m_unit = a_unit;
+            file_write->m_label = m_label;
+            tmp_vec.push_back(file_write_asr_t);
+        }
         tmp_vec.push_back(tmp);
         if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
             emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
@@ -3041,7 +3054,11 @@ public:
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
-                if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
+                // A derived type is instantiated under its own name too, and
+                // the bodies of its type-bound procedures are instantiated
+                // with it.
+                if ((ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
+                        && !ASRUtils::is_template_arg(sym, s_name)) {
                     ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
                     if (new_s == nullptr) {
                         continue;
@@ -4169,10 +4186,14 @@ public:
             
             if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
-                ASR::ttype_t* sym_type = sym ? ASRUtils::symbol_type(sym) : nullptr;
-                if (!sym_type || (!ASRUtils::is_allocatable(sym_type) && !ASRUtils::is_pointer(sym_type))) {
-                    std::string type_str = ASRUtils::type_to_str_python_expr(alloc_type, alloc_expr);
+                ASR::symbol_t* sym_past_external = sym ? ASRUtils::symbol_get_past_external(sym) : nullptr;
+                bool sym_is_variable = sym_past_external && ASR::is_a<ASR::Variable_t>(*sym_past_external);
+                ASR::ttype_t* sym_type = sym_is_variable ? ASRUtils::symbol_type(sym) : nullptr;
+                if (!sym_is_variable || !sym_type || (!ASRUtils::is_allocatable(sym_type) && !ASRUtils::is_pointer(sym_type))) {
                     std::string var_name = sym ? ASRUtils::symbol_name(sym) : "variable";
+                    std::string type_str = sym_is_variable ?
+                        ASRUtils::type_to_str_fortran_expr(alloc_type, alloc_expr) :
+                        std::string("`") + var_name + "`";
                     diag.add(Diagnostic(
                         "Allocate should only be called with Allocatable or Pointer type inputs, found " + type_str,
                         Level::Error, Stage::Semantic, {
@@ -4200,7 +4221,8 @@ public:
                 // Fortran standard (F2018 9.7.1.2). Rank is checked separately below.
                 ASR::ttype_t* source_base_type = ASRUtils::extract_type(source_type);
                 ASR::ttype_t* var_base_type = ASRUtils::extract_type(var_type);
-                if (!ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
+                if (!ASRUtils::is_unlimited_polymorphic_type(var_base_type) &&
+                    !ASRUtils::check_equal_type(source_base_type, var_base_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran_expr(source_type, source);
                     std::string var_type_str = ASRUtils::type_to_str_fortran_expr(var_type, alloc_args_vec.p[i].m_a);
                     diag.add(Diagnostic(
@@ -4370,7 +4392,7 @@ public:
             } else {
                 diag.add(Diagnostic(
                     "Cannot deallocate variables in expression " +
-                    ASRUtils::type_to_str_python_expr(ASRUtils::expr_type((tmp_expr)), tmp_expr),
+                    ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type((tmp_expr)), tmp_expr),
                     Level::Error, Stage::Semantic, {
                         Label("",{tmp_expr->base.loc})
                     }));
@@ -7260,6 +7282,23 @@ public:
                 }) ) {
             overloaded_stmt = ASRUtils::STMT(asr);
         }
+        // The value assigned to a complex part (`z%re = y`) is converted to
+        // the real type of that part. A deferred type of a template has no
+        // such conversion, so report the type mismatch instead.
+        const Location complex_part_loc = target->base.loc;
+        auto convert_to_complex_part = [&](ASR::expr_t *&y, ASR::ttype_t *real_type) {
+            if (ASRUtils::is_type_parameter(*ASRUtils::expr_type(y))) {
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {complex_part_loc, y->base.loc},
+                    "type mismatch (" + ASRUtils::type_to_str_fortran_expr(real_type, nullptr)
+                        + " and " + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(y), y) + ")"
+                );
+                throw SemanticAbort();
+            }
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y,
+                ASRUtils::expr_type(y), real_type, diag);
+        };
         if (ASR::is_a<ASR::Cast_t>(*target)) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
             if (cast->m_kind == ASR::cast_kindType::ComplexToReal) {
@@ -7275,8 +7314,7 @@ public:
 
                 ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
-                ImplicitCastRules::set_converted_value(al, loc, &y,
-                    ASRUtils::expr_type(y), real_type, diag);
+                convert_to_complex_part(y, real_type);
                 ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                     val, real_type, nullptr));
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -7297,8 +7335,7 @@ public:
 
             ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
-            ImplicitCastRules::set_converted_value(al, loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+            convert_to_complex_part(y, real_type);
             ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
                 val, real_type, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
@@ -7316,8 +7353,7 @@ public:
             const Location& loc = x.base.base.loc;
             ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target))));
-            ImplicitCastRules::set_converted_value(al, loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+            convert_to_complex_part(y, real_type);
             ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
                 ASR::cast_kindType::ComplexToReal, real_type, nullptr, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
@@ -9298,11 +9334,10 @@ public:
                 std::string fmt_str = std::string(fmt_const->m_s);
                 validate_format_string(fmt_str, fmt->base.loc, diag);
             }
-        } else {
-            if (compiler_options.print_leading_space && x.n_values > 0) {
-                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
-            }
         }
+        // List-directed output starts with a blank when at least one item is
+        // written, which is only known at run time.
+        bool list_directed_leading_blank = !fmt && compiler_options.print_leading_space;
 
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
@@ -9382,6 +9417,11 @@ public:
                         && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(body[0]))
                         && !ASR::is_a<ASR::ImpliedDoLoop_t>(*body[0])
                         ) {
+            // A single character item is printed directly, not through a
+            // StringFormat, so the leading blank is printed on its own.
+            if (list_directed_leading_blank) {
+                current_body->push_back(al, ASRUtils::STMT(construct_leading_space(x.base.base.loc)));
+            }
             tmp = ASR::make_Print_t(al, x.base.base.loc, body[0]);
         } else {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
@@ -9389,8 +9429,11 @@ public:
                     al, x.base.base.loc, 1, nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
+            ASR::string_format_kindType kind = list_directed_leading_blank
+                ? ASR::string_format_kindType::FormatFortranLeadingBlank
+                : ASR::string_format_kindType::FormatFortran;
             ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt?fmt->base.loc:x.base.base.loc,
-                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                fmt, body.p, body.size(), kind,
                 type, nullptr));
 
             Vec<ASR::expr_t*> print_args;
@@ -9647,9 +9690,28 @@ public:
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
         }
+        // A deferred type of a template has no conversion to or from the
+        // integer type of the loop control, so reject it before the loop
+        // control expressions are converted to the type of the DO variable.
+        auto check_loop_control_type = [&](ASR::expr_t *e, const std::string &what) {
+            ASR::ttype_t *e_type = ASRUtils::expr_type(e);
+            if (ASRUtils::is_type_parameter(*e_type)) {
+                diag.semantic_error_label(
+                    what + " must be integer, not "
+                        + ASRUtils::type_to_str_fortran_expr(e_type, e),
+                    {e->base.loc}, "");
+                all_loops_blocks_nesting -= 1;
+                all_blocks_nesting--;
+                throw SemanticAbort();
+            }
+        };
+        if (var) {
+            check_loop_control_type(var, "DO variable");
+        }
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
+            check_loop_control_type(start, "start expression in DO loop");
             type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(start));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
@@ -9664,6 +9726,7 @@ public:
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
+            check_loop_control_type(end, "end expression in DO loop");
             type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(end));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
@@ -9680,6 +9743,7 @@ public:
         if (x.m_increment) {
             visit_expr(*x.m_increment);
             increment = ASRUtils::EXPR(tmp);
+            check_loop_control_type(increment, "step expression in DO loop");
             // Check that the increment is not zero
             if (ASR::is_a<ASR::IntegerConstant_t>(*increment)) {
                 ASR::IntegerConstant_t* inc = ASR::down_cast<ASR::IntegerConstant_t>(increment);
@@ -9793,6 +9857,42 @@ public:
         all_blocks_nesting--;
     }
 
+    // Lower the optional scalar mask of a FORALL / DO CONCURRENT header into an
+    // `if` wrapped around the loop body, so that the body only executes for the
+    // index values that satisfy the mask.
+    ASR::stmt_t* mask_to_if(AST::expr_t &ast_mask, Vec<ASR::stmt_t*> &body) {
+        visit_expr(ast_mask);
+        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(test));
+        if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
+            diag.add(diag::Diagnostic("Expected logical expression as mask, but received " +
+                ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) +
+                    " expression, expected logical", {test->base.loc})}));
+            throw SemanticAbort();
+        }
+        return ASRUtils::STMT(ASR::make_If_t(al, test->base.loc, nullptr, test,
+            body.p, body.size(), nullptr, 0));
+    }
+
+    ASR::stmt_t* mask_to_if(AST::expr_t &ast_mask, ASR::stmt_t *stmt) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, stmt);
+        return mask_to_if(ast_mask, body);
+    }
+
+    // Replace `body` with the single `if` statement guarding it.
+    void apply_mask(AST::expr_t &ast_mask, Vec<ASR::stmt_t*> &body) {
+        ASR::stmt_t *if_stmt = mask_to_if(ast_mask, body);
+        Vec<ASR::stmt_t*> masked_body;
+        masked_body.reserve(al, 1);
+        masked_body.push_back(al, if_stmt);
+        body = masked_body;
+    }
+
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
         LoopScope loop_scope(in_loop, in_do_concurrent, true);
@@ -9865,6 +9965,15 @@ public:
             } else {
                 increment = nullptr;
             }
+            ASR::ttype_t *var_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var));
+            ASR::ttype_t *start_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(start));
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &start, start_type, var_type, diag);
+            ASR::ttype_t *end_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(end));
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &end, end_type, var_type, diag);
+            if (increment) {
+                ASR::ttype_t *inc_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(increment));
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &increment, inc_type, var_type, diag);
+            }
             ASR::do_loop_head_t head;
             head.m_v = var;
             head.m_start = start;
@@ -9876,6 +9985,9 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
+        if (x.m_mask) {
+            apply_mask(*x.m_mask, body);
+        }
         Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
         Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
         Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);
@@ -9976,6 +10088,11 @@ public:
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
         ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
 
+        // The mask guards the assignment, inside all the index loops
+        if (x.m_mask) {
+            inner_stmt = mask_to_if(*x.m_mask, inner_stmt);
+        }
+
         // Nest ForAllSingle nodes from innermost to outermost
         for (int i = x.n_control - 1; i >= 0; i--) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
@@ -10063,6 +10180,9 @@ public:
         if (x.n_body == 1) {
             this->visit_decl_stmt(*x.m_body[0]);
             ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+            if (x.m_mask) {
+                stmt = mask_to_if(*x.m_mask, stmt);
+            }
             for (int i = heads.size() - 1; i >= 0; i--) {
                 tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
                 stmt = ASRUtils::STMT(tmp);
@@ -10071,6 +10191,9 @@ public:
             Vec<ASR::stmt_t*> body;
             body.reserve(al, x.n_body);
             transform_stmts(body, x.n_body, x.m_body);
+            if (x.m_mask) {
+                apply_mask(*x.m_mask, body);
+            }
             tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
                 nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }

@@ -2455,3 +2455,152 @@ contains
         instantiate defop_t {operator(.minus.), integer}, only: defop_g => defop_f  ! {Error} the instantiation argument 'operator(.minus.)' for 't' requires a deferred procedure
     end subroutine
 end module
+
+! A deferred type has no implicit conversion to the real type of a complex
+! part, so assigning a value of a deferred type to `z%re` or `z%im` inside a
+! template is a type mismatch (#13678). This used to fail an assertion in the
+! implicit-cast rules.
+module continue_compilation_templates_01_complex_part_deferred
+    implicit none
+contains
+    template subroutine set_re{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        complex :: z
+        z%re = x  ! {Error} type mismatch (real and t)
+    end subroutine
+
+    template subroutine set_im{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        complex :: z(3)
+        z%im = x  ! {Error} type mismatch (real and t)
+    end subroutine
+end module
+
+! A deferred type has no conversion to the integer type of a DO loop control,
+! so using a value of a deferred type as a DO variable or as a loop control
+! expression inside a template is an error (#13678). This used to fail an
+! assertion in the implicit-cast rules.
+module continue_compilation_templates_01_do_deferred
+    implicit none
+contains
+    template subroutine do_start{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = x, 2  ! {Error} start expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_end{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = 1, x  ! {Error} end expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_step{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: i
+        do i = 1, 2, x  ! {Error} step expression in DO loop must be integer, not t
+        end do
+    end subroutine
+
+    template subroutine do_var{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        do x = 1, 2  ! {Error} DO variable must be integer, not t
+        end do
+    end subroutine
+end module
+
+! A deferred type has no intrinsic arithmetic and no implicit conversion, so
+! an arithmetic operator between a deferred type and an intrinsic type inside a
+! template is undefined unless a requirement provides it (#13678). This used to
+! fail an assertion in the implicit-cast rules.
+module continue_compilation_templates_01_arith_deferred
+    implicit none
+contains
+    template subroutine add_int{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+    end subroutine
+
+    template subroutine mul_real_left{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        real :: y
+        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+    end subroutine
+
+    template subroutine pow_int{t}(x)
+        deferred type :: t
+        type(t), intent(in) :: x
+        integer :: y
+        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+    end subroutine
+end module
+
+module continue_compilation_templates_01_defasgn
+    implicit none
+
+    requirement defasgn_r{lhs_t, rhs_t, assign_i}
+        deferred type :: lhs_t, rhs_t
+        deferred interface
+            subroutine assign_i(lhs, rhs)
+                type(lhs_t), intent(out) :: lhs
+                type(rhs_t), intent(in) :: rhs
+            end subroutine
+        end interface
+    end requirement
+
+    template defasgn_tmpl{copy_t, original_t, assign_s}
+        deferred type :: copy_t, original_t
+        require :: defasgn_r{copy_t, original_t, assign_s}
+        interface assignment(=)
+            module procedure assign_s
+        end interface
+    contains
+        function defasgn_copy(original) result(copy)
+            type(copy_t) :: original
+            type(original_t) :: copy
+            copy = original  ! {Error} Type mismatch in assignment, the types must be compatible
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_clash_tmpl
+    implicit none
+    template clash_t {T}
+        deferred type :: T
+        type :: clash_box
+            type(T) :: x
+        end type
+    contains
+        function clash_get(b) result(r)
+            type(clash_box), intent(in) :: b
+            type(T) :: r
+            r = b%x
+        end function
+    end template
+end module
+
+module continue_compilation_templates_01_clash
+    use continue_compilation_templates_01_clash_tmpl
+    implicit none
+    type :: clash_box
+        real :: y
+    end type
+    instantiate clash_t {integer}  ! {Error} the instantiation of template 'clash_t' defines 'clash_box', which is already declared in this scope
+contains
+    subroutine clash_proc()
+        integer :: clash_get
+        instantiate clash_t {real}  ! {Error} the instantiation of template 'clash_t' defines 'clash_get', which is already declared in this scope
+        clash_get = 1
+    end subroutine
+end module
