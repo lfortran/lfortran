@@ -3058,3 +3058,15 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: type-spec in ALLOCATE must be a derived type name
+    --> tests/errors/continue_compilation_1.f90:2109:14
+     |
+2109 |     allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
+     |              ^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference
+
+semantic error: type-spec in ALLOCATE must be a derived type name
+    --> tests/errors/continue_compilation_1.f90:2110:14
+     |
+2110 |     allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
+     |              ^^^^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference

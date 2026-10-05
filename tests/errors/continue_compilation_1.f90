@@ -2097,3 +2097,15 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+
+subroutine test_type_spec()
+    type :: t
+        integer :: k = 5
+    end type
+    class(t), allocatable :: y
+    integer :: arr(3)
+
+    allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
+    allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
+end subroutine test_type_spec
