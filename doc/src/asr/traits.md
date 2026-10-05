@@ -314,6 +314,8 @@ The private same-build/target LLVM representation is a stack header containing
 concrete CLASS lifecycle metadata, the original payload address, and an
 independent immutable witness pointer. Concrete inheritance and storage are
 unchanged. Contract slots are unrelated to concrete TBP table offsets.
+Verification checks referenced slot interfaces and witness evidence at each
+use, independently of the order of their defining modules and consumers.
 Provider-owned tables/adapters are emitted even if the provider never packs a
 view. Nominal metadata linkage uses defining scopes, not same-spelled local
 type names or structural equality. No cross-version or cross-DSO ABI is promised.

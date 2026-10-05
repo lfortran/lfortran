@@ -1467,6 +1467,86 @@ public:
             "TraitImplementation bindings must cover each trait member exactly once");
     }
 
+    Function_t *verify_runtime_trait_procedure(symbol_t *reference,
+            const Location &loc, const std::string &code) {
+        auto *symbol = ASRUtils::symbol_get_past_external(reference);
+        require_with_loc_id(symbol && ASR::is_a<Function_t>(*symbol),
+            code, "A runtime trait procedure reference must name a function", loc);
+        auto *procedure = ASR::down_cast<Function_t>(symbol);
+        require_with_loc_id(procedure->m_name && procedure->m_symtab &&
+                procedure->m_symtab->parent && procedure->m_function_signature &&
+                ASR::is_a<FunctionType_t>(*procedure->m_function_signature) &&
+                (!procedure->n_args || procedure->m_args),
+            "asr.verify.trait_procedure.signature",
+            "A runtime trait procedure requires a scope, signature and argument declarations", loc);
+        for (size_t i = 0; i < procedure->n_args; i++) {
+            auto *arg = procedure->m_args[i];
+            auto *variable = arg && ASR::is_a<Var_t>(*arg)
+                ? ASRUtils::symbol_get_past_external(ASR::down_cast<Var_t>(arg)->m_v)
+                : nullptr;
+            require_with_loc_id(variable && ASR::is_a<Variable_t>(*variable) &&
+                    ASRUtils::symbol_name(variable) && typed_expr_type(arg),
+                "asr.verify.trait_procedure.argument",
+                "A runtime trait procedure argument must name a typed variable", loc);
+        }
+        require_with_loc_id(!procedure->m_return_var ||
+                typed_expr_type(procedure->m_return_var),
+            "asr.verify.trait_procedure.result",
+            "A runtime trait function requires a typed result", loc);
+        return procedure;
+    }
+
+    Function_t *verify_runtime_trait_slot(const TraitRuntimeContract_t &contract,
+            size_t index, const Location &loc) {
+        require_with_loc_id(index < contract.n_slots && contract.m_slots,
+            "asr.verify.trait_contract.complete",
+            "A runtime contract must declare each referenced slot", loc);
+        auto &slot = contract.m_slots[index];
+        require_with_loc_id(slot.n_origins && slot.m_origins,
+            "asr.verify.trait_contract.origins",
+            "A callable slot must retain its nominal origins", loc);
+        auto *procedure = verify_runtime_trait_procedure(slot.m_procedure, loc,
+            "asr.verify.trait_contract.procedure");
+        require_with_loc_id(procedure->m_symtab->parent == contract.m_symtab,
+            "asr.verify.trait_contract.procedure",
+            "A callable slot must own its normalized interface", loc);
+        require_with_loc_id(procedure->n_args > 0 &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(procedure->m_args[0])) &&
+                ASRUtils::symbol_get_past_external(ASR::down_cast<TraitObjectType_t>(
+                    typed_expr_type(procedure->m_args[0]))->m_contract) == &contract.base &&
+                ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent == intentType::In &&
+                ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Interface &&
+                !ASRUtils::get_FunctionType(procedure)->m_is_restriction &&
+                procedure->n_body == 0,
+            "asr.verify.trait_contract.receiver",
+            "A callable interface must take its read-only view as its first argument", loc);
+        return procedure;
+    }
+
+    TraitImplementation_t *verify_runtime_trait_evidence(const TraitWitness_t &witness,
+            const Location &loc) {
+        auto *contract_symbol = ASRUtils::symbol_get_past_external(witness.m_contract);
+        auto *impl_symbol = ASRUtils::symbol_get_past_external(witness.m_implementation);
+        require_with_loc_id(contract_symbol && ASR::is_a<TraitRuntimeContract_t>(*contract_symbol) &&
+                impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol),
+            "asr.verify.trait_witness.evidence",
+            "A runtime witness requires a contract and nominal implementation", loc);
+        auto *contract = ASR::down_cast<TraitRuntimeContract_t>(contract_symbol);
+        auto *implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+        require_with_loc_id(!contract->n_slots || contract->m_slots,
+            "asr.verify.trait_contract.complete",
+            "A runtime contract must declare its slots", loc);
+        require_with_loc_id(witness.n_procedures == contract->n_slots &&
+                (!witness.n_procedures || (witness.m_procedures && witness.m_dependencies)) &&
+                witness.n_dependencies == witness.n_procedures,
+            "asr.verify.trait_witness.complete",
+            "A runtime witness must implement and retain every slot", loc);
+        require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
+            "asr.verify.trait_witness.evidence",
+            "A runtime implementation must declare its bindings", loc);
+        return implementation;
+    }
+
     void visit_TraitObjectType(const TraitObjectType_t &x) {
         require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
             "asr.verify.trait_view.contract_in_scope",
@@ -1529,22 +1609,7 @@ public:
                 require_id(slot.n_origins == expected[i].size() && slot.m_origins,
                     "asr.verify.trait_contract.origins",
                     "A callable slot must retain every nominal origin exactly once");
-                auto *proc_symbol = ASRUtils::symbol_get_past_external(slot.m_procedure);
-                require_id(proc_symbol && ASR::is_a<Function_t>(*proc_symbol) &&
-                        ASRUtils::symbol_parent_symtab(proc_symbol) == current_symtab,
-                    "asr.verify.trait_contract.procedure",
-                    "A callable slot must own its normalized interface");
-                auto *procedure = ASR::down_cast<Function_t>(proc_symbol);
-                require_id(procedure->n_args > 0 && procedure->m_args &&
-                        ASR::is_a<TraitObjectType_t>(*ASRUtils::expr_type(procedure->m_args[0])) &&
-                        ASRUtils::trait_runtime_contract(ASRUtils::expr_type(procedure->m_args[0]))
-                            == &x &&
-                        ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent == intentType::In &&
-                        ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Interface &&
-                        !ASRUtils::get_FunctionType(procedure)->m_is_restriction &&
-                        procedure->n_body == 0,
-                    "asr.verify.trait_contract.receiver",
-                    "A callable interface must take its read-only view as its first argument");
+                auto *procedure = verify_runtime_trait_slot(x, i, x.base.base.loc);
                 for (size_t j = 0; j < slot.n_origins; j++) {
                     auto *origin = ASRUtils::symbol_get_past_external(slot.m_origins[j]);
                     require_id(origin == expected[i][j] &&
@@ -1589,34 +1654,24 @@ public:
             visit_adapters();
             return;
         }
-        auto *contract_symbol = ASRUtils::symbol_get_past_external(x.m_contract);
-        auto *impl_symbol = ASRUtils::symbol_get_past_external(x.m_implementation);
-        require_id(contract_symbol && ASR::is_a<TraitRuntimeContract_t>(*contract_symbol) &&
-                impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol),
-            "asr.verify.trait_witness.evidence",
-            "A runtime witness requires a contract and nominal implementation");
-        auto *contract = ASR::down_cast<TraitRuntimeContract_t>(contract_symbol);
-        auto *implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+        auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
+        auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
+            ASRUtils::symbol_get_past_external(x.m_contract));
         require_id(implementation->m_parent_symtab == current_symtab &&
                 ASRUtils::symbol_get_past_external(implementation->m_trait) ==
                     ASRUtils::symbol_get_past_external(contract->m_trait),
             "asr.verify.trait_witness.conformance_origin",
             "A runtime witness must preserve the exact contract and conformance origin");
-        require_id(x.n_procedures == contract->n_slots &&
-                (!x.n_procedures || (x.m_procedures && x.m_dependencies)) &&
-                x.n_dependencies == x.n_procedures,
-            "asr.verify.trait_witness.complete",
-            "A runtime witness must implement and retain every slot");
         std::set<symbol_t*> procedures;
         for (size_t i = 0; i < x.n_procedures; i++) {
-            auto *symbol = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
-            require_id(symbol && ASR::is_a<Function_t>(*symbol) &&
-                    ASRUtils::symbol_parent_symtab(symbol) == x.m_symtab &&
+            auto *procedure = verify_runtime_trait_procedure(x.m_procedures[i],
+                x.base.base.loc, "asr.verify.trait_witness.unique_procedure");
+            auto *symbol = &procedure->base;
+            require_id(ASRUtils::symbol_parent_symtab(symbol) == x.m_symtab &&
                     x.m_symtab->get_symbol(ASRUtils::symbol_name(symbol)) == symbol &&
                     procedures.insert(symbol).second,
                 "asr.verify.trait_witness.unique_procedure",
                 "Every runtime slot requires its own provider-owned typed adapter");
-            auto *procedure = ASR::down_cast<Function_t>(symbol);
             require_id(x.m_dependencies[i] &&
                     std::string(x.m_dependencies[i]) == procedure->m_name &&
                     ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Implementation,
@@ -1627,8 +1682,8 @@ public:
             if (signature.m_abi == abiType::ExternalUndefined) signature.m_abi = abiType::Source;
             auto comparable = *procedure;
             comparable.m_function_signature = &signature.base;
-            auto mismatch = ASRUtils::trait_method_mismatch(
-                *ASR::down_cast<Function_t>(contract->m_slots[i].m_procedure), comparable);
+            auto *slot_procedure = verify_runtime_trait_slot(*contract, i, x.base.base.loc);
+            auto mismatch = ASRUtils::trait_method_mismatch(*slot_procedure, comparable);
             require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                 "asr.verify.trait_witness.signature",
                 "A runtime witness adapter must match its slot: " + mismatch.message);
@@ -1647,10 +1702,10 @@ public:
     void verify_runtime_binding(const TraitImplementation_t &implementation,
             const trait_binding_t &binding) {
         const Location &loc = binding.loc;
-        auto *required = ASR::down_cast<Function_t>(
-            ASRUtils::symbol_get_past_external(binding.m_member));
-        auto *procedure = ASR::down_cast<Function_t>(
-            ASRUtils::symbol_get_past_external(binding.m_procedure));
+        auto *required = verify_runtime_trait_procedure(binding.m_member, loc,
+            "asr.verify.trait_binding.member_is_function");
+        auto *procedure = verify_runtime_trait_procedure(binding.m_procedure, loc,
+            "asr.verify.trait_binding.procedure_is_function");
         auto *required_signature = ASRUtils::get_FunctionType(required);
         auto *actual_signature = ASRUtils::get_FunctionType(procedure);
         require_with_loc_id(
@@ -1733,8 +1788,7 @@ public:
         visit_ttype(*x.m_type);
         if (!check_external) return;
         auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
-        auto *implementation = ASR::down_cast<TraitImplementation_t>(
-            ASRUtils::symbol_get_past_external(witness->m_implementation));
+        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
         auto *type = ASRUtils::expr_type(x.m_payload);
         auto *scalar = ASRUtils::extract_type(type);
         require_id(ASR::is_a<TraitObjectType_t>(*x.m_type) &&
@@ -1764,10 +1818,13 @@ public:
         visit_ttype(*x.m_type);
         if (!check_external) return;
         auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
-        auto *implementation = ASR::down_cast<TraitImplementation_t>(
-            ASRUtils::symbol_get_past_external(witness->m_implementation));
-        require_id(ASR::is_a<TraitObjectType_t>(*ASRUtils::expr_type(x.m_view)) &&
-                &ASRUtils::trait_runtime_contract(ASRUtils::expr_type(x.m_view))->base ==
+        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
+        auto *view_type = typed_expr_type(x.m_view);
+        require_id(view_type && ASR::is_a<TraitObjectType_t>(*view_type),
+            "asr.verify.trait_receiver.nominal_type",
+            "Concrete recovery requires a scalar trait view");
+        visit_ttype(*view_type);
+        require_id(&ASRUtils::trait_runtime_contract(view_type)->base ==
                     ASRUtils::symbol_get_past_external(witness->m_contract) &&
                 ASR::is_a<StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) &&
                 x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration) &&
@@ -1776,16 +1833,16 @@ public:
             "asr.verify.trait_receiver.nominal_type",
             "Concrete recovery must preserve the witness's proven nominal payload type");
         auto *scope = current_symtab;
-        while (scope->asr_owner && ASR::is_a<symbol_t>(*scope->asr_owner) &&
+        while (scope && scope->asr_owner && ASR::is_a<symbol_t>(*scope->asr_owner) &&
                 !ASR::is_a<Function_t>(*ASR::down_cast<symbol_t>(scope->asr_owner))) {
             scope = scope->parent;
         }
         bool authorized = false;
         for (size_t i = 0; i < witness->n_procedures; i++) {
-            auto *procedure = ASRUtils::symbol_get_past_external(witness->m_procedures[i]);
-            if (scope->parent == witness->m_symtab &&
-                    (ASR::asr_t*)procedure == scope->asr_owner) {
-                auto *function = ASR::down_cast<Function_t>(procedure);
+            auto *function = verify_runtime_trait_procedure(witness->m_procedures[i],
+                x.base.base.loc, "asr.verify.trait_witness.unique_procedure");
+            if (scope && scope->parent == witness->m_symtab &&
+                    (ASR::asr_t*)function == scope->asr_owner) {
                 authorized = function->n_args && same_variable(x.m_view, function->m_args[0]);
             }
         }
@@ -1796,15 +1853,21 @@ public:
     template <typename T>
     void verify_trait_call(const T &x) {
         require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
-                ASR::is_a<TraitObjectType_t>(*ASRUtils::expr_type(x.m_args[0].m_value)),
+                typed_expr_type(x.m_args[0].m_value) &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)),
             "asr.verify.trait_call.receiver",
             "A runtime trait call requires a borrowed view as its first argument");
         if (!check_external) return;
+        visit_ttype(*typed_expr_type(x.m_args[0].m_value));
         auto *contract = ASRUtils::trait_runtime_contract(
-            ASRUtils::expr_type(x.m_args[0].m_value));
-        require_id(x.m_slot >= 0 && (size_t)x.m_slot < contract->n_slots &&
+            typed_expr_type(x.m_args[0].m_value));
+        require_id(x.m_slot >= 0 && (size_t)x.m_slot < contract->n_slots,
+            "asr.verify.trait_call.slot",
+            "A runtime call must select a declared slot");
+        auto *procedure = verify_runtime_trait_slot(*contract, x.m_slot, x.base.base.loc);
+        require_id(
                 ASRUtils::symbol_get_past_external(x.m_name) ==
-                    contract->m_slots[x.m_slot].m_procedure,
+                    &procedure->base,
             "asr.verify.trait_call.slot",
             "A runtime call must name the canonical interface at its view's slot");
     }

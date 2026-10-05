@@ -1279,6 +1279,19 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
         witness->n_procedures = 0;
         rejects("asr.verify.trait_witness.complete");
     }
+    SUBCASE("a contract slot cannot name a trait instead of a procedure") {
+        contract->m_slots[0].m_procedure = contract->m_trait;
+        rejects("asr.verify.trait_contract.procedure");
+    }
+    SUBCASE("a referenced slot must have its function signature") {
+        auto *slot = ASR::down_cast<ASR::Function_t>(contract->m_slots[0].m_procedure);
+        slot->m_function_signature = nullptr;
+        rejects("asr.verify.trait_procedure.signature");
+    }
+    SUBCASE("a referenced contract must have its slot records") {
+        contract->m_slots = nullptr;
+        rejects("asr.verify.trait_contract.complete");
+    }
     SUBCASE("missing selected witness") {
         pack->m_witness = nullptr;
         rejects("asr.verify.trait_pack.required_fields");
@@ -1426,6 +1439,62 @@ end module
         CHECK(diagnostics.render2().find(
             "runtime trait combinations are not implemented yet") != std::string::npos);
     }
+}
+
+TEST_CASE("Runtime trait evidence is checked before its defining module") {
+    namespace ASR = LCompilers::ASR;
+    const std::string source = runtime_trait_serialization_source + R"(
+program a_runtime_trait_consumer
+    use runtime_trait_serialization_m
+    type(Payload) :: object
+    object%n = 19
+    if (observe(object) /= 19) error stop
+end program
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *scope = result.result->m_symtab;
+    REQUIRE(ASR::is_a<ASR::Program_t>(*scope->get_scope().begin()->second));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        scope->get_symbol("runtime_trait_serialization_m"));
+    ASR::TraitWitness_t *witness = nullptr;
+    for (auto &entry : module->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        }
+    }
+    REQUIRE(witness);
+    std::string code;
+    SUBCASE("a pack checks the implementation kind before the witness is visited") {
+        witness->m_implementation = module->m_symtab->get_symbol("payload");
+        code = "asr.verify.trait_witness.evidence";
+    }
+    SUBCASE("a forward witness reference checks its procedure records") {
+        witness->m_procedures = nullptr;
+        code = "asr.verify.trait_witness.complete";
+    }
+    SUBCASE("a consumer rejects a changed receiver contract") {
+        auto *observe = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("observe"));
+        auto *view = ASR::down_cast<ASR::TraitObjectType_t>(
+            LCompilers::ASRUtils::expr_type(observe->m_args[0]));
+        view->m_contract = module->m_symtab->get_symbol("ivalue");
+        code = "asr.verify.call.actual_type_matches_formal";
+    }
+    LCompilers::diag::Diagnostics invalid;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    INFO(invalid.render2());
+    REQUIRE(!invalid.diagnostics.empty());
+    CHECK(invalid.diagnostics.back().code == code);
 }
 
 TEST_CASE("Runtime trait dummies validate completed procedure attributes") {
