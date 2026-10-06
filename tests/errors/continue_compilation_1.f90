@@ -2127,3 +2127,17 @@ module component_init_host_scope_in_continue_compilation_1_m
         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
     end type
 end module
+
+subroutine intent_list_assignment_error(x, y)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
+
+subroutine intent_list_non_dummy_error(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+end subroutine intent_list_non_dummy_error
+
