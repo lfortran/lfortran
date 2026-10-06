@@ -2799,8 +2799,10 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
         return false;
     }
     ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym);
-    // A final procedure of the variable's own type finalizes the variable.
-    if (struct_t->n_member_functions > 0) {
+    // The variable is finalized if finalizing it does anything: a final
+    // procedure of its own type, of a type it extends (the parent component
+    // is finalized, F2018 7.5.6.2), or of one of its components.
+    if (struct_needs_finalization(sym)) {
         return true;
     }
     for (size_t i = 0; i < struct_t->n_members; i++) {

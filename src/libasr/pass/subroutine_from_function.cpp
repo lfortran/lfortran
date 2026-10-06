@@ -90,13 +90,24 @@ public:
         // what intent(out) does on entry instead. Every call finalizes what it
         // passes for the result before the call when that is not a new
         // result variable (see finalize_result_argument).
+        //
+        // An array result of a finalizable type is not finalized on entry
+        // either. The calls do not finalize what they pass for it yet.
         void handle_finalizable_result(ASR::Function_t &x) {
             LCOMPILERS_ASSERT(x.n_args > 0);
             ASR::expr_t* result = x.m_args[x.n_args - 1];
             ASR::Variable_t* result_var = ASRUtils::EXPR2VAR(result);
-            if (result_var->m_intent != ASR::intentType::Out ||
-                    !ASRUtils::is_finalizable_function_result(
-                        result_var->m_type, result_var->m_type_declaration)) {
+            if (result_var->m_intent != ASR::intentType::Out) {
+                return;
+            }
+            ASR::ttype_t* const result_type = result_var->m_type;
+            const bool finalizable_array = ASRUtils::is_array(result_type)
+                && !ASRUtils::is_allocatable_or_pointer(result_type)
+                && ASRUtils::is_finalizable_function_result(
+                    ASRUtils::type_get_past_array(result_type),
+                    result_var->m_type_declaration);
+            if (!finalizable_array && !ASRUtils::is_finalizable_function_result(
+                    result_type, result_var->m_type_declaration)) {
                 return;
             }
             result_var->m_intent = ASR::intentType::InOut;

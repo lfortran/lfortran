@@ -590,6 +590,9 @@ public:
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
+        // Access assigned by name in an earlier module of the same file must
+        // not carry over to a same-named entity of this module.
+        assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
@@ -733,6 +736,15 @@ public:
                     co->m_access = assgnd_access[item.first];
                 } else {
                     co->m_access = dflt_access;
+                }
+            } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                // A derived type may precede the `public :: t` or default
+                // `private` statement that sets its access.
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    st->m_access = assgnd_access[item.first];
+                } else {
+                    st->m_access = dflt_access;
                 }
             }
         }
@@ -3413,6 +3425,10 @@ public:
                         }
                     } else if (simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
                         is_deferred = true;
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrPublic) {
+                        assgnd_access[dt_name] = ASR::accessType::Public;
+                    } else if (simple_attr->m_attr == AST::simple_attributeType::AttrPrivate) {
+                        assgnd_access[dt_name] = ASR::accessType::Private;
                     }
                     break;
                 }
@@ -3420,6 +3436,12 @@ public:
                     break;
             }
         }
+        // Taken before the components are visited, as a `private` statement
+        // among them changes `dflt_access`. A later `public :: t` or default
+        // `private` statement of the module is applied once the whole
+        // specification part is seen, in visit_ModuleSubmoduleCommon.
+        ASR::accessType struct_access = assgnd_access.count(dt_name)
+            ? assgnd_access[dt_name] : dflt_access;
         if (is_deferred) {
             // C1613 (J3/26-007r1, 16.4.1.2): the name declared by a DEFERRED
             // TYPE statement shall be a deferred argument of the scoping unit
@@ -3612,7 +3634,7 @@ public:
                 nullptr, 0,
                 nullptr, 0,
                 nullptr, 0,
-                is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+                is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size());
@@ -3666,6 +3688,7 @@ public:
                 this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
+                is_derived_type = false;
                 throw;
             }
         }
@@ -3726,7 +3749,7 @@ public:
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
             final_proc_names.p, final_proc_names.size(),
-            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, dflt_access, false, is_abstract,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
             nullptr, 0);
@@ -3843,6 +3866,7 @@ public:
                 this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
+                is_derived_type = false;
                 throw;
             }
         }

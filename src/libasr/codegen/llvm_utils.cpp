@@ -9956,13 +9956,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Constant*> slots;
         llvm::Function* copy_function = define_intrinsic_type_copy_function(ttype, module);
         llvm::Function* allocate_function = define_intrinsic_type_allocate_function(ttype, module);
-        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr);
+        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, true);
+        llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, false);
         slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
         slots.push_back(llvm::ConstantExpr::getBitCast(intrinsic_type_info.at(
             ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)), llvm_utils->i8_ptr));  // Type Info
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_finalize_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -10012,12 +10016,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
-        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t);
+        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
+        llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, false);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_array_members_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_finalize_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -11167,33 +11175,38 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     }
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
-        if( struct_sym->n_member_functions == 0) return;
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
+        auto chain_has_final = [](ASR::Struct_t* st) {
+            for (; st != nullptr; st = st->m_parent == nullptr ? nullptr
+                    : ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(st->m_parent))) {
+                if (st->n_member_functions > 0) return true;
+            }
+            return false;
+        };
+        if (!chain_has_final(struct_sym)) return;
         llvm_utils->validate_llvm_SSA(
             llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
             ptr);
-        ASR::symbol_t* final_sym {};
-        for(size_t i = 0 ; i < struct_sym->n_member_functions; i++){
-            std::string fn_name = struct_sym->m_member_functions[i];
-            ASR::Function_t * fn = ASR::down_cast<ASR::Function_t>(struct_sym->m_symtab->
-                                    parent->get_symbol(struct_sym->m_member_functions[i]));  
-            if(ASRUtils::is_array(ASRUtils::EXPR2VAR(fn->m_args[0])->m_type)){
-                continue; // We only handle rank 0 finalizer
-            }
-            LCOMPILERS_ASSERT_MSG(final_sym == nullptr, "while looking for rank-0-final fn -- found multiple ones")
-            final_sym =  ASRUtils::symbol_get_past_external(&fn->base);
-        }
-        uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-        LCOMPILERS_ASSERT(llvm_symtab_fn.find(fh) != llvm_symtab_fn.end())
-        llvm::Function* final_fn = llvm_symtab_fn[fh];
         llvm::Value* struct_ptr = ptr;
         if (ASRUtils::is_class_type(ASRUtils::extract_type(ty))) {
             llvm::Type* class_llvm_type = llvm_utils->getClassType(struct_sym, false);
-            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-            struct_ptr = builder->CreateLoad(expected_type,
+            llvm::Type* data_ptr_type = llvm_utils->getStructType(
+                struct_sym, llvm_utils->module, true);
+            struct_ptr = llvm_utils->CreateLoad2(data_ptr_type,
                 llvm_utils->create_gep2(class_llvm_type, ptr, 1));
         }
-        builder->CreateCall(final_fn, {struct_ptr});
+        // F2018 7.5.6.2: the final subroutine of the type is called, and then
+        // the parent component is finalized as an entity of the parent type,
+        // which calls the final subroutine of that type, and so on up.
+        while (chain_has_final(struct_sym)) {
+            finalizer_instnace.call_scalar_final_procedure(struct_ptr, struct_sym);
+            if (struct_sym->m_parent == nullptr) break;
+            struct_ptr = llvm_utils->create_gep2(
+                llvm_utils->getStructType(struct_sym, llvm_utils->module), struct_ptr, 0);
+            struct_sym = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
+        }
     }
 
 } // namespace LCompilers
