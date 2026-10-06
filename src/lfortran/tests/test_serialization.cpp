@@ -2872,16 +2872,35 @@ TEST_CASE("Trait specification designators compare bases and selectors") {
     Allocator al(1024 * 1024);
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::CompilerOptions options;
-    auto parsed = LCompilers::LFortran::parse(al, trait_designator_source(
-        method(bound), method(different), types, false), diagnostics, options);
+    const std::string bad_source = trait_designator_source(
+        method(bound), method(different), types, false);
+    auto parsed = LCompilers::LFortran::parse(al, bad_source, diagnostics, options);
     REQUIRE(parsed.ok);
     LCompilers::LocationManager lm;
     auto result = LCompilers::LFortran::ast_to_asr(
         al, *parsed.result, diagnostics, nullptr, false, options, lm);
     CHECK_FALSE(result.ok);
     REQUIRE(diagnostics.has_error());
+    CHECK(diagnostics.diagnostics.back().stage == LCompilers::diag::Stage::Semantic);
     CHECK(diagnostics.diagnostics.back().message.find("different array shapes") !=
         std::string::npos);
+
+    Allocator recovery_al(1024 * 1024);
+    LCompilers::diag::Diagnostics recovery_diagnostics;
+    options.continue_compilation = true;
+    const std::string recovery_source = bad_source +
+        "module after_trait_bound_failure\ninteger :: marker = 17\nend module\n";
+    auto recovery_ast = LCompilers::LFortran::parse(
+        recovery_al, recovery_source, recovery_diagnostics, options);
+    REQUIRE(recovery_ast.ok);
+    auto recovered = LCompilers::LFortran::ast_to_asr(
+        recovery_al, *recovery_ast.result, recovery_diagnostics,
+        nullptr, false, options, lm);
+    REQUIRE(recovered.ok);
+    CHECK(recovery_diagnostics.has_error());
+    CHECK(recovered.result->m_symtab->get_symbol("after_trait_bound_failure") != nullptr);
+    LCompilers::diag::Diagnostics verification;
+    CHECK(LCompilers::asr_verify(*recovered.result, true, verification));
 }
 
 TEST_CASE("Recursive trait forwarding preserves canonical backedges") {

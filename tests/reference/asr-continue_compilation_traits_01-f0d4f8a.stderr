@@ -534,6 +534,16 @@ semantic error: runtime trait components are not implemented yet
 2246 |         class(IValue), allocatable :: owner
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:2271:5 - 2272:18
+     |
+2271 |        abstract interface, extends(ILeft + IRight) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2272 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

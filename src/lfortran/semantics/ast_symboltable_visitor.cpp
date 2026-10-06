@@ -867,6 +867,19 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
+        // Postponed bounds are complete now; two missing bounds could have
+        // compared equal when the trait declarations were first visited.
+        try {
+            for (const auto &entry : m->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Trait_t>(*entry.second)) {
+                    auto *trait = ASR::down_cast<ASR::Trait_t>(entry.second);
+                    check_trait_methods(*trait, trait->base.base.loc);
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_scope->erase_symbol(m->m_name);
+            throw;
+        }
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
@@ -4354,6 +4367,27 @@ public:
             nullptr, nullptr, AST::None));
     }
 
+    void check_trait_methods(ASR::Trait_t &trait, const Location &loc) {
+        std::map<std::string, ASR::Function_t*> methods;
+        for (ASR::symbol_t *member : checked_trait_hierarchy(trait, loc).members) {
+            auto *method = ASR::down_cast<ASR::Function_t>(member);
+            for (size_t i = 0; i < method->n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
+                        !ASR::is_a<ASR::Variable_t>(
+                            *ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(method->m_args[i])->m_v))) {
+                    trait_error("procedure dummy arguments in trait methods "
+                        "are not implemented yet", method->base.base.loc);
+                }
+            }
+            auto previous = methods.emplace(method->m_name, method);
+            if (!previous.second) {
+                check_trait_method_compatibility(*previous.first->second,
+                    *method, loc);
+            }
+        }
+    }
+
     void visit_Trait(const AST::Trait_t &x) {
         warn_traits_extension(x.base.base.loc);
         if (scoping_unit_kind != ScopingUnitKind::Module) {
@@ -4447,25 +4481,7 @@ public:
                 }
                 visit_interface_item(*x.m_items[i]);
             }
-            std::map<std::string, ASR::Function_t*> methods;
-            for (ASR::symbol_t *member :
-                    checked_trait_hierarchy(*trait_definition, x.base.base.loc).members) {
-                auto *method = ASR::down_cast<ASR::Function_t>(member);
-                for (size_t i = 0; i < method->n_args; i++) {
-                    if (!ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
-                            !ASR::is_a<ASR::Variable_t>(
-                                *ASRUtils::symbol_get_past_external(
-                                    ASR::down_cast<ASR::Var_t>(method->m_args[i])->m_v))) {
-                        trait_error("procedure dummy arguments in trait methods "
-                            "are not implemented yet", method->base.base.loc);
-                    }
-                }
-                auto previous = methods.emplace(method->m_name, method);
-                if (!previous.second) {
-                    check_trait_method_compatibility(*previous.first->second,
-                        *method, x.base.base.loc);
-                }
-            }
+            check_trait_methods(*trait_definition, x.base.base.loc);
         } catch (const SemanticAbort &) {
             current_scope = parent;
             dflt_access = saved_access;

@@ -2246,3 +2246,32 @@ module traits_owning_component_boundary_m
         class(IValue), allocatable :: owner
     end type
 end module
+
+module traits_inherited_component_bounds_m
+    implicit none
+    type Bounds
+        integer :: extent(2), other(2)
+    end type
+    abstract interface :: ILeft
+        function count(n, a) result(r)
+            import :: Bounds
+            type(Bounds), intent(in) :: n
+            integer, intent(in) :: a(n%extent(1))
+            integer :: r
+        end function
+    end interface
+    abstract interface :: IRight
+        function count(n, a) result(r)
+            import :: Bounds
+            type(Bounds), intent(in) :: n
+            integer, intent(in) :: a(n%other(1))
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(ILeft + IRight) :: IChild
+    end interface
+end module
+
+module traits_after_component_bounds_error_m
+    integer :: marker = 17
+end module

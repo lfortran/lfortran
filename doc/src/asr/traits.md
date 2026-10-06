@@ -123,6 +123,10 @@ variable spelling is irrelevant. Concrete implementation dummies can have
 different names: the existing positional adapters preserve the trait's public
 argument names.
 
+Module trait signatures are checked again after postponed specification
+expressions have been resolved. Component-based bounds must agree before ASR
+leaves semantics; this diagnostic does not depend on compiler assertions.
+
 ## Finite numeric type sets
 
 A named trait can instead enumerate intrinsic numeric categories and kinds:
