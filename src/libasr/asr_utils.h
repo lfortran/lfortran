@@ -140,11 +140,16 @@ void set_null_context_from_variable(Allocator& al, const Location& loc,
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s);
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression);
 
-// The procedure that an assignment of `s` to `s` is defined by, or nullptr
-// when there is none. `resolve_struct_assign_symbol` alone is not enough: it
-// answers with any `~assign` visible from the type, whose procedures may all
-// take other types, so the procedures are matched against `s` here.
-ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s);
+struct StructDefinedAssignment {
+    ASR::Function_t* procedure = nullptr;
+    ASR::StructMethodDeclaration_t* dispatch_binding = nullptr;
+};
+
+// Resolve scalar assignment of `s` to `s`, including inherited overrides.
+// A polymorphic component retains its binding for dynamic dispatch; otherwise
+// only an executable procedure can be returned, never a deferred interface.
+StructDefinedAssignment resolve_struct_defined_assignment(
+    ASR::Struct_t* s, bool is_polymorphic);
 
 // An intrinsic assignment whose variable is of derived type does more than
 // copy the components across. F2018 7.5.6.3 p1: the variable is finalized

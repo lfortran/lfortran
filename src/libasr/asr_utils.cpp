@@ -2734,7 +2734,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
 
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
     while (s != nullptr) {
-        ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
+        ASR::symbol_t* result = s->m_symtab->get_symbol("~assign");
         if (result != nullptr) {
             return result;
         }
@@ -2747,23 +2747,39 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
     return nullptr;
 }
 
-ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s) {
+static ASR::StructMethodDeclaration_t* resolve_struct_method_binding(
+        ASR::Struct_t* type, ASR::StructMethodDeclaration_t* binding) {
+    for (auto* level = type; level != nullptr; level = level->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(level->m_parent)) : nullptr) {
+        if (auto* override = level->m_symtab->get_symbol(binding->m_name)) {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                ASRUtils::symbol_get_past_external(override));
+        }
+    }
+    return binding;
+}
+
+StructDefinedAssignment resolve_struct_defined_assignment(
+        ASR::Struct_t* s, bool is_polymorphic) {
     ASR::symbol_t* da_sym = resolve_struct_assign_symbol(s);
     if (da_sym == nullptr) {
-        return nullptr;
+        return {};
     }
     da_sym = ASRUtils::symbol_get_past_external(da_sym);
     if (!ASR::is_a<ASR::CustomOperator_t>(*da_sym)) {
-        return nullptr;
+        return {};
     }
     ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(da_sym);
     for (size_t ip = 0; ip < custom_op->n_procs; ip++) {
         ASR::symbol_t* assign_proc =
             ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
         ASR::symbol_t* candidate;
+        ASR::StructMethodDeclaration_t* binding = nullptr;
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
-            auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc);
-            if (binding->m_is_deferred) continue;
+            binding = resolve_struct_method_binding(s,
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc));
+            if (binding->m_is_deferred && !is_polymorphic) continue;
             candidate = ASRUtils::symbol_get_past_external(
                 binding->m_proc);
         } else {
@@ -2773,28 +2789,29 @@ ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s) {
             continue;
         }
         ASR::Function_t* cand_func = ASR::down_cast<ASR::Function_t>(candidate);
-        if (cand_func->n_args < 2) {
+        if (cand_func->n_args != 2) {
             continue;
         }
-        // Both formals must be type/class of s (type_declaration).
+        // Nonpolymorphic formals require exact identity; CLASS formals can
+        // accept an extension of their declared type.
         auto formal_matches = [&](ASR::expr_t* arg) {
             ASR::Variable_t* var = ASRUtils::EXPR2VAR(arg);
-            ASR::ttype_t* t = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(var->m_type)));
+            ASR::ttype_t* t = ASRUtils::type_get_past_allocatable_pointer(var->m_type);
             if (!ASR::is_a<ASR::StructType_t>(*t) ||
                     var->m_type_declaration == nullptr) {
                 return false;
             }
-            return ASRUtils::symbol_get_past_external(var->m_type_declaration)
-                == &s->base;
+            auto* formal = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(var->m_type_declaration));
+            return ASRUtils::is_class_type(t)
+                ? can_pass_derviedtype_arg_to_parameter(s, formal) : s == formal;
         };
         if (formal_matches(cand_func->m_args[0]) &&
                 formal_matches(cand_func->m_args[1])) {
-            return candidate;
+            return {cand_func, is_polymorphic ? binding : nullptr};
         }
     }
-    return nullptr;
+    return {};
 }
 
 bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
@@ -2830,8 +2847,10 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym) {
         if (!ASR::is_a<ASR::Struct_t>(*member_struct)) {
             continue;
         }
-        if (resolve_struct_defined_assignment_proc(
-                ASR::down_cast<ASR::Struct_t>(member_struct)) != nullptr) {
+        if (resolve_struct_defined_assignment(
+                ASR::down_cast<ASR::Struct_t>(member_struct),
+                ASRUtils::is_class_type(ASRUtils::extract_type(member_var->m_type)))
+                .procedure != nullptr) {
             return true;
         }
     }
@@ -2991,6 +3010,13 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                    if (expr_dt) {
+                        auto* actual_type = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(
+                                ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
+                        class_proc = resolve_struct_method_binding(actual_type, class_proc);
+                        proc = &class_proc->base;
+                    }
                     ASR::symbol_t* proc_func = class_proc->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,

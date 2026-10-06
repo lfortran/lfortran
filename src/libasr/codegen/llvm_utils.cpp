@@ -10654,44 +10654,60 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
             llvm::Value* dest, llvm::Value* src, llvm::Module* module,
             bool value_is_class) {
-        ASR::symbol_t* matching_func_sym =
-            ASRUtils::resolve_struct_defined_assignment_proc(struct_t);
-        if (matching_func_sym == nullptr) {
+        auto assignment = ASRUtils::resolve_struct_defined_assignment(
+            struct_t, value_is_class);
+        if (assignment.procedure == nullptr) {
             return false;
         }
 
-        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
-        llvm::Function* assign_fn = nullptr;
-        // Prefer the already-emitted function from the codegen symbol table.
-        uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
-        auto it = llvm_symtab_fn.find(fh);
-        if (it != llvm_symtab_fn.end()) {
-            assign_fn = it->second;
+        ASR::Function_t* func_t = assignment.procedure;
+        ASR::symbol_t* matching_func_sym = &func_t->base;
+        auto* assign_type = llvm_utils->get_function_type(*func_t, module);
+        llvm::Value* assign_fn = nullptr;
+        if (assignment.dispatch_binding) {
+            create_new_vtable_for_struct_type(&struct_t->base, module);
+            size_t pass_index = ASRUtils::get_pass_arg_index(
+                &assignment.dispatch_binding->base);
+            LCOMPILERS_ASSERT(pass_index < 2);
+            auto* receiver = pass_index == 0 ? dest : src;
+            auto* table = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+                llvm_utils->create_gep2(llvm_utils->getClassType(struct_t), receiver, 0));
+            auto offset = struct_vtab_function_offset.at(&struct_t->base)
+                .at(assignment.dispatch_binding->m_name);
+            auto* entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr,
+                    builder->CreateBitCast(table, llvm_utils->i8_ptr->getPointerTo()), offset));
+            assign_fn = builder->CreateBitCast(entry, assign_type->getPointerTo());
         } else {
-            // Fallback: declare by mangled name (e.g. assign not yet visited).
-            ASR::FunctionType_t* ftype =
-                ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
-            std::string func_name;
-            if (ftype->m_abi == ASR::abiType::BindC) {
-                func_name = ftype->m_bindc_name ? ftype->m_bindc_name
-                    : std::string(ASRUtils::symbol_name(matching_func_sym));
+            // Prefer the already-emitted function from the codegen symbol table.
+            uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
+            auto it = llvm_symtab_fn.find(fh);
+            if (it != llvm_symtab_fn.end()) {
+                assign_fn = it->second;
             } else {
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
-                if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-                    func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
-                        + "_" + ASRUtils::symbol_name(matching_func_sym);
+                // Fallback: declare by mangled name (e.g. assign not yet visited).
+                ASR::FunctionType_t* ftype =
+                    ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
+                std::string func_name;
+                if (ftype->m_abi == ASR::abiType::BindC) {
+                    func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                        : std::string(ASRUtils::symbol_name(matching_func_sym));
                 } else {
-                    func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                    ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
+                    if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                        func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
+                            + "_" + ASRUtils::symbol_name(matching_func_sym);
+                    } else {
+                        func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                    }
                 }
+                assign_fn = module->getFunction(func_name);
+                if (!assign_fn) {
+                    assign_fn = llvm::Function::Create(assign_type,
+                        llvm::Function::ExternalLinkage, func_name, module);
+                }
+                llvm_symtab_fn[fh] = llvm::cast<llvm::Function>(assign_fn);
             }
-            assign_fn = module->getFunction(func_name);
-            if (!assign_fn) {
-                llvm::FunctionType* fntype =
-                    llvm_utils->get_function_type(*func_t, module);
-                assign_fn = llvm::Function::Create(fntype,
-                    llvm::Function::ExternalLinkage, func_name, module);
-            }
-            llvm_symtab_fn[fh] = assign_fn;
         }
 
         ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
@@ -10732,9 +10748,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return v;
         };
 
-        builder->CreateCall(assign_fn, {
-            adjust_arg(dest, fn_lhs_is_class),
-            adjust_arg(src, fn_rhs_is_class)
+        builder->CreateCall(assign_type, assign_fn, {
+            builder->CreateBitCast(adjust_arg(dest, fn_lhs_is_class),
+                assign_type->getParamType(0)),
+            builder->CreateBitCast(adjust_arg(src, fn_rhs_is_class),
+                assign_type->getParamType(1))
         });
         return true;
     }

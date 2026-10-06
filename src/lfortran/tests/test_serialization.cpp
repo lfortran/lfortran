@@ -1628,6 +1628,75 @@ end module
     }
 }
 
+TEST_CASE("Inherited assignment retains concrete or dynamic binding") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module inherited_assignment_m
+type, abstract :: base
+contains
+    procedure(signature), deferred :: assign
+    generic :: assignment(=) => assign
+end type
+abstract interface
+    subroutine signature(self, other)
+        import base
+        class(base), intent(inout) :: self
+        class(base), intent(in) :: other
+    end subroutine
+end interface
+type, extends(base) :: child
+contains
+    procedure :: assign => assign_child
+end type
+type, extends(child) :: descendant
+end type
+contains
+subroutine assign_child(self, other)
+    class(child), intent(inout) :: self
+    class(base), intent(in) :: other
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto* scope = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("inherited_assignment_m"))->m_symtab;
+    auto* base = ASR::down_cast<ASR::Struct_t>(scope->get_symbol("base"));
+    auto* child = ASR::down_cast<ASR::Struct_t>(scope->get_symbol("child"));
+    auto* descendant = ASR::down_cast<ASR::Struct_t>(scope->get_symbol("descendant"));
+    auto* override = ASR::down_cast<ASR::Function_t>(scope->get_symbol("assign_child"));
+    auto* binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+        child->m_symtab->get_symbol("assign"));
+    auto exact = ASRUtils::resolve_struct_defined_assignment(child, false);
+    CHECK(exact.procedure == override);
+    CHECK(exact.dispatch_binding == nullptr);
+    auto inherited = ASRUtils::resolve_struct_defined_assignment(descendant, false);
+    CHECK(inherited.procedure == override);
+    CHECK(inherited.dispatch_binding == nullptr);
+    auto dynamic = ASRUtils::resolve_struct_defined_assignment(child, true);
+    CHECK(dynamic.procedure == override);
+    CHECK(dynamic.dispatch_binding == binding);
+    auto abstract = ASRUtils::resolve_struct_defined_assignment(base, false);
+    CHECK(abstract.procedure == nullptr);
+    CHECK(abstract.dispatch_binding == nullptr);
+    auto deferred = ASRUtils::resolve_struct_defined_assignment(base, true);
+    CHECK(deferred.procedure == ASR::down_cast<ASR::Function_t>(
+        scope->get_symbol("signature")));
+    REQUIRE(deferred.dispatch_binding);
+    CHECK(deferred.dispatch_binding->m_is_deferred);
+}
+
 TEST_CASE("Runtime trait combinations report their declaration boundary") {
     const std::string contracts = R"(
 module runtime_combo_contracts

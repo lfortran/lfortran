@@ -366,6 +366,8 @@ old value, including self-assignment and RHS expressions reading the LHS.
 SOURCE and snapshot capture copy values without invoking component-defined
 assignment. Intrinsic assignment then invokes component-defined assignment
 where required, on the actual destination rather than the snapshot.
+Inherited component assignment resolves the concrete overriding binding;
+ordinary polymorphic components retain dynamic dispatch through their binding.
 This initialization policy also applies recursively to derived-type array
 components: freshly allocated elements are not finalized, while replacing a
 live component finalizes its old value before releasing that storage.
@@ -391,7 +393,7 @@ procedures are rejected because the contract does not promise pure dynamic
 lifecycle effects.
 
 `traits_runtime_04` is the unchanged owning-value acceptance program.
-`traits_runtime_owning_01` through `_08` cover fresh initialization, MOLD,
+`traits_runtime_owning_01` through `_10` cover fresh initialization, MOLD,
 typed allocation, nested finalizers, pointer association, self/overlap,
 concrete results, completed attributes, component-defined assignment and bounded lifetimes.
 `traits_runtime_owning_separate_01` copies through a contract-only consumer
