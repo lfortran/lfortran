@@ -2660,6 +2660,10 @@ public:
                         !(signature->m_pure && (result || x.m_intent == intentType::Out)),
                     "asr.verify.trait_owner.slot_effects",
                     "An allocatable trait slot or result requires the source ABI and proven lifecycle effects");
+                require_id(!slot || x.m_intent != intentType::Out ||
+                        (!function->m_side_effect_free && !function->m_deterministic),
+                    "asr.verify.trait_owner.entry_effects",
+                    "A trait OUT-slot procedure must retain its unchecked entry cleanup effects");
             }
         }
         std::string current_name_copy = current_name;

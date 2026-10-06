@@ -10614,6 +10614,20 @@ inline bool is_trait_owner(const ASR::ttype_t *type) {
         ASR::is_a<ASR::TraitObjectType_t>(
             *ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
 }
+
+inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
+    for (size_t i = 0; i < function.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*function.m_args[i])) continue;
+        auto *symbol = symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
+        auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
+        if (dummy->m_intent == ASR::intentType::Out && is_trait_owner(dummy->m_type)) {
+            return true;
+        }
+    }
+    return false;
+}
 bool runtime_trait_method_supported(const ASR::Function_t &method);
 std::string nominal_symbol_name(const ASR::symbol_t *symbol);
 bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,

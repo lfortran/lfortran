@@ -1802,6 +1802,15 @@ end module
         ASRUtils::get_FunctionType(out)->m_pure = true;
         rejects("asr.verify.trait_owner.slot_effects");
     }
+    SUBCASE("output cleanup cannot be summarized as side-effect-free") {
+        auto *out = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("out_slot"));
+        CHECK(ASRUtils::has_trait_out_cleanup(*out));
+        CHECK_FALSE(out->m_side_effect_free);
+        CHECK_FALSE(out->m_deterministic);
+        out->m_side_effect_free = true;
+        rejects("asr.verify.trait_owner.entry_effects");
+    }
     SUBCASE("allocation slots cannot forge a C ABI") {
         ASRUtils::get_FunctionType(write)->m_abi = ASR::abiType::BindC;
         rejects("asr.verify.trait_owner.slot_effects");

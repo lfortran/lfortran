@@ -1711,6 +1711,10 @@ namespace LCompilers {
                 a_args.push_back(al, x->m_return_var);
                 x->m_args = a_args.p;
                 x->n_args = a_args.n;
+                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(x->m_return_var))) {
+                    x->m_side_effect_free = false;
+                    x->m_deterministic = false;
+                }
                 x->m_return_var = nullptr;
                 ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(
                     x->m_function_signature);

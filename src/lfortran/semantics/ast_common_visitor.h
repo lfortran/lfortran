@@ -23012,6 +23012,10 @@ public:
             return;
         }
         if (ASRUtils::is_trait_owner(target)) {
+            if (ASRUtils::EXPR2VAR(dummy)->m_intent == ASR::intentType::Out) {
+                current_function_side_effect_free = false;
+                current_function_deterministic = false;
+            }
             if (ASRUtils::is_trait_owner(source) &&
                     ASR::is_a<ASR::FunctionCall_t>(*actual)) {
                 trait_call_error("passing a runtime trait function result to an "

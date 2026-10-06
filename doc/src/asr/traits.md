@@ -400,6 +400,10 @@ return without allocating. Nested calls forward the original slot without
 copying a header. Callee scope exit never destroys a dummy's allocation.
 Optional, VALUE and BIND(C) slots, and PURE dynamic OUT-entry cleanup, remain
 explicit semantic NYIs.
+Completed procedure effects include OUT-entry cleanup, including calls through
+an explicit procedure-variable interface. A trivial scalar-result body does
+not make that dynamic cleanup side-effect-free. Readonly IN inquiry remains
+usable in PURE procedures and through their declared pure interfaces.
 
 Scalar functions returning `class(I), allocatable` return one owned value.
 The existing `function_result_scope` and `subroutine_from_function` passes put
@@ -450,6 +454,8 @@ behavior and exact dynamic FINAL counts. `_slot_02` checks completed attributes,
 renamed/re-exported contracts, readonly inquiry, and early-return ownership.
 `_slot_03` checks the same allocation-slot convention through procedure pointers
 and procedure dummies, including ordinary optional arguments.
+`_slot_04` and its standard oracle preserve PURE readonly slot inquiry through
+nested BLOCK/ASSOCIATE bodies and procedure arguments.
 `traits_runtime_result_01` retains exact FINAL counts and payload scribbling for
 direct borrowing, owner assignment, nested forwarding and SOURCE initialization.
 `_result_02` adds pointer-target effects, multiple references, IF/DO construct

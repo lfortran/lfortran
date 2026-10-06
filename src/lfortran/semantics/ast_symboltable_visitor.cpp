@@ -911,7 +911,7 @@ public:
         }
     }
 
-    void check_runtime_trait_dummies(const ASR::Function_t &function) {
+    void check_runtime_trait_dummies(ASR::Function_t &function) {
         bool invalid = false;
         if (function.m_return_var && ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(function.m_return_var)))) {
@@ -976,6 +976,10 @@ public:
                 diag.semantic_error_label(message, {dummy->base.base.loc}, "");
                 invalid = true;
             }
+        }
+        if (ASRUtils::has_trait_out_cleanup(function)) {
+            function.m_side_effect_free = false;
+            function.m_deterministic = false;
         }
         if (invalid) throw SemanticAbort();
     }

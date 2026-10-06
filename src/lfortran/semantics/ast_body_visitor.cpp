@@ -6382,8 +6382,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = true;
-        current_function_side_effect_free = true;
+        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_side_effect_free = current_function_deterministic;
         transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;
@@ -6486,8 +6486,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = true;
-        current_function_side_effect_free = true;
+        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_side_effect_free = current_function_deterministic;
         body.reserve(al, x.n_items);
         auto& scope_data_func = data_structure[current_scope->counter];
         if (scope_data_func.size()>0) {
@@ -6595,8 +6595,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = true;
-        current_function_side_effect_free = true;
+        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_side_effect_free = current_function_deterministic;
         transform_stmts(body, x.n_items, x.m_items);
         handle_format();
         SetChar func_deps;

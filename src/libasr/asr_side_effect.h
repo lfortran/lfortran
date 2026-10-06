@@ -97,6 +97,12 @@ public:
     // be free of side effects.
     bool check_call(const Location &l, symbol_t* name) {
         symbol_t* sym = ASRUtils::symbol_get_past_external(name);
+        auto *declared = ASRUtils::get_function(sym);
+        if (declared && ASRUtils::has_trait_out_cleanup(*declared)) {
+            mark_found(l,
+                "runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects");
+            return true;
+        }
         std::string proc_name;
         if (is_a<Function_t>(*sym)) {
             if (down_cast<Function_t>(sym)->m_side_effect_free) {

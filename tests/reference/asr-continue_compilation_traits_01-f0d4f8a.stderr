@@ -1073,3 +1073,27 @@ semantic error: more actual than formal arguments in procedure call
      |
 2549 |         if (query(owner, owner)) error stop
      |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2577:23
+     |
+2577 |             ignored = clear(slot)
+     |                       ^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2586:23
+     |
+2586 |             ignored = callback(slot)
+     |                       ^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'wrapper' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2593:23
+     |
+2593 |             ignored = wrapper(slot)
+     |                       ^^^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2599:13
+     |
+2599 |             call clear_sub(slot)
+     |             ^^^^^^^^^^^^^^^^^^^^ 

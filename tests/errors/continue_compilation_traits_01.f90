@@ -2549,3 +2549,54 @@ contains
         if (query(owner, owner)) error stop
     end subroutine
 end module
+
+module traits_out_entry_effects_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+contains
+    integer function clear(slot)
+        class(IValue), allocatable, intent(out) :: slot
+        clear = 1
+    end function
+    subroutine clear_sub(slot)
+        class(IValue), allocatable, intent(out) :: slot
+    end subroutine
+    integer function wrapper(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+        procedure(clear), pointer :: callback
+        callback => clear
+        wrapper = callback(slot)
+    end function
+    pure subroutine direct_output(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+        block
+            integer :: ignored
+            ignored = clear(slot)
+        end block
+    end subroutine
+    pure subroutine indirect_output(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+        block
+            procedure(clear), pointer :: callback
+            integer :: ignored
+            callback => clear
+            ignored = callback(slot)
+        end block
+    end subroutine
+    pure subroutine transitive_output(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+        integer :: ignored
+        associate(marker => 1)
+            ignored = wrapper(slot)
+        end associate
+    end subroutine
+    pure subroutine subroutine_output(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+        associate(marker => 1)
+            call clear_sub(slot)
+        end associate
+    end subroutine
+end module
