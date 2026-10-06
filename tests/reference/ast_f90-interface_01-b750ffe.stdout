@@ -33,14 +33,20 @@ real :: r
 
 i = 5
 call a(i)
-if (i /= 6) error stop
+if (i /= 6) then
+    error stop
+end if
 
 r = 6
 call a(r)
-if (r /= 7) error stop
+if (r /= 7) then
+    error stop
+end if
 
 i = 7
 call a(i)
-if (i /= 8) error stop
+if (i /= 8) then
+    error stop
+end if
 
 end program interface_01

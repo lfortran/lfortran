@@ -1,8 +1,12 @@
 program if1
 integer :: i
 i = 5
-if (i == 5) print *, "correct"
-if (i == 6) print *, "incorrect"
+if (i == 5) then
+    print *, "correct"
+end if
+if (i == 6) then
+    print *, "incorrect"
+end if
 i = -2
 40 i = i + 1
 if (i) 50, 60, 70

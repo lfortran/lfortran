@@ -1,0 +1,5 @@
+tokenizer error: Expected an executable statement inside a labeled do loop
+ --> tests/fixed_form/tab_continue1.f:6:1
+  |
+6 |  91    continue
+  | ^ 

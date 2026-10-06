@@ -18,7 +18,9 @@ select case (i)
         print *, "4"
 end select
 
-if (out /= 40) error stop
+if (out /= 40) then
+    error stop
+end if
 
 select case (i)
     case (1)
@@ -29,6 +31,8 @@ select case (i)
         print *, "2,3,4"
 end select
 
-if (out /= 22) error stop
+if (out /= 22) then
+    error stop
+end if
 
 end program case_01

@@ -1,4 +1,4 @@
-type, bind(c) :: prif_coarray_handle
+type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 

@@ -5,7 +5,7 @@ type :: __module_prif_prif_team_type
     type(__module_prif_prif_dummy_team_descriptor), pointer :: info
 end type __module_prif_prif_team_type
 
-type, bind(c) :: prif_coarray_handle
+type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
@@ -63,7 +63,9 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_co_broadcast_cptr(a_ptr, size_in_bytes, source_image, stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_co_broadcast_cptr(a_ptr, size_in_bytes, source_image, stat, errmsg,&
+        &
+         errmsg_alloc)
         type(c_ptr), intent(in) :: a_ptr
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc

@@ -4,7 +4,9 @@ integer :: joblist[*], job
 integer :: a, b
 integer :: IntegerSample
 character(len=50) :: Sample
-if (this_image() == 1) read(*, *) joblist
+if (this_image() == 1) then
+    read(*, *) joblist
+end if
 sync all
 do
     critical

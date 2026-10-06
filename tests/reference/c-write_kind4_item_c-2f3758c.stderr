@@ -1,5 +1,12 @@
-code generation error: character(kind=4) is not supported by the C backend, only kind 1 is
- --> tests/errors/write_kind4_item_c.f90:5:21
-  |
-5 |     write(*, '(a)') 4_"xyz"
-  |                     ^^^^^^^ 
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7aedc4[0m
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a28a[0m
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a1c9[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7319ca[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x86a241[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x8593ee[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x882bb6[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x127a571[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x12f71ca[0m
+LCompilersException: visit_FileWrite() not implemented

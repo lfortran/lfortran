@@ -272,7 +272,7 @@
                                     [map]
                                     []
                                     Source
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     .false.
@@ -1088,7 +1088,7 @@
                                     stored_value]
                                     []
                                     Source
-                                    Public
+                                    Private
                                     .false.
                                     .false.
                                     .false.

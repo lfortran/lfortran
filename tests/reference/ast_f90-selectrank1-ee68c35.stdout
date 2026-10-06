@@ -4,7 +4,9 @@ select rank (x)
     rank (0)
         x = 0
     rank (2)
-        if (size(x, 2) >= 2) x(:, 2) = 2
+        if (size(x, 2) >= 2) then
+            x(:, 2) = 2
+        end if
     rank default
         print *, "i did not expect rank", rank(x), "shape", shape(x)
         error stop "process bad arg"

@@ -3,7 +3,9 @@ implicit none
 real :: x
 
 call subroutines_10_sub(x, 3, *100, *200)
-if (x < 0 .and. x > 10) error stop
+if (x < 0 .and. x > 10) then
+    error stop
+end if
 stop
 
 100 print *, "Negative input value"
@@ -17,7 +19,11 @@ end program subroutines_10
 subroutine subroutines_10_sub(x, i, *, *)
 real, intent(out) :: x
 integer, intent(in) :: i
-if (i < 0) return 1
-if (i > 10) return 2
+if (i < 0) then
+    return 1
+end if
+if (i > 10) then
+    return 2
+end if
 x = i
 end subroutine subroutines_10_sub

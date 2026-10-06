@@ -1,6 +1,8 @@
 program reserved_02
 implicit none
-if (integer() /= 1) error stop
+if (integer() /= 1) then
+    error stop
+end if
 
 
 contains

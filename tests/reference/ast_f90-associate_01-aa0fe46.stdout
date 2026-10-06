@@ -12,13 +12,23 @@ allocate(b(n, n), c(n, 5, n))
     x(1) = a_1 + 5
     y(2, 3, 4) = 3
     z(1, 1) = 17
-    if (size(z) /= 100) error stop
+    if (size(z) /= 100) then
+        error stop
+    end if
 end associate loop
 a_1 = a(1)
-if (a(1) == 5) go to 1
+if (a(1) == 5) then
+    go to 1
+end if
 c_234 = c(2, 3, 4)
 c_121 = c(1, 2, 1)
-if (a_1 /= 10.) error stop
-if (c_234 /= 3.) error stop
-if (c_121 /= 17.) error stop
+if (a_1 /= 10.) then
+    error stop
+end if
+if (c_234 /= 3.) then
+    error stop
+end if
+if (c_121 /= 17.) then
+    error stop
+end if
 end program associate_01

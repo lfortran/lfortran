@@ -962,7 +962,7 @@ ifcont39:                                         ; preds = %ifcont37
   %429 = load i32, i32* %428, align 4
   %430 = alloca i32, align 4
   store i32 %429, i32* %430, align 4
-  %431 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %303, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %430)
+  %431 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i64* %303, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %430)
   %432 = load i64, i64* %303, align 8
   %433 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %431, i8** %433, align 8
@@ -1573,7 +1573,7 @@ ifcont6:                                          ; preds = %ifcont4
   %127 = load i32, i32* %126, align 4
   %128 = alloca i32, align 4
   store i32 %127, i32* %128, align 4
-  %129 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %128)
+  %129 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %128)
   %130 = load i64, i64* %1, align 8
   %131 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %129, i8** %131, align 8
@@ -2012,7 +2012,7 @@ ifcont30:                                         ; preds = %ifcont28
   %392 = load i32, i32* %391, align 4
   %393 = alloca i32, align 4
   store i32 %392, i32* %393, align 4
-  %394 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %266, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %393)
+  %394 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %266, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %393)
   %395 = load i64, i64* %266, align 8
   %396 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc31, i32 0, i32 0
   store i8* %394, i8** %396, align 8
@@ -2747,7 +2747,7 @@ ifcont23:                                         ; preds = %ifcont21
   %154 = load i32, i32* %153, align 4
   %155 = alloca i32, align 4
   store i32 %154, i32* %155, align 4
-  %156 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %28, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %155)
+  %156 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i64* %28, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %155)
   %157 = load i64, i64* %28, align 8
   %158 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %156, i8** %158, align 8
@@ -3203,7 +3203,7 @@ declare void @exit(i32)
 
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 

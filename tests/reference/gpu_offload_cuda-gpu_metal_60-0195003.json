@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "gpu_offload_cuda-gpu_metal_60-0195003.stderr",
-    "stderr_hash": "a185c3b7b6c3a83b39bc4975dc3ae8cbb5943aa1752c8a1bf2920f4b",
-    "returncode": 5
+    "stderr_hash": "c49550fb680a5bd72576698a1d4e197b78d911a87580b3e2c1f144ca",
+    "returncode": 1
 }

@@ -26,7 +26,9 @@ if (first) then
         call random_number(u)
         u = 2*u - 1
         r2 = sum(u**2)
-        if (r2 < 1 .and. r2 > 0) exit
+        if (r2 < 1 .and. r2 > 0) then
+            exit
+        end if
     end do
     u = u*sqrt((-2)*log(r2)/r2)
     x = u(1)

@@ -245,13 +245,11 @@
                         ()
                     )]
                     []
-                    .true.
                     ()
                     ()
                     ()
                 )]
                 []
-                .false.
                 ()
                 ()
                 (TriviaNode
@@ -327,13 +325,11 @@
                         ()
                     )]
                     []
-                    .true.
                     ()
                     ()
                     ()
                 )]
                 []
-                .false.
                 (TriviaNode
                     []
                     [(EndOfLine)

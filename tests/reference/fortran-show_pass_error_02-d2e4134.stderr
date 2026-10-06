@@ -1,5 +1,12 @@
-ASR pass error: parallel loop cannot be offloaded: the Metal GPU does not support real(8); pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
- --> tests/show_pass_error_02.f90:9:5
-  |
-9 |     x(i) = real(i, 8)
-  |     ^^^^ 'x' is real(8)
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7aedc4[0m
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a28a[0m
+[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a1c9[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7319ca[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x8699aa[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x858446[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x888837[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x131e05a[0m
+[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x13357c9[0m
+LCompilersException: visit_OMPRegion() not implemented

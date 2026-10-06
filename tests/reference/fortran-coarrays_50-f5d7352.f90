@@ -44,7 +44,7 @@ type :: __module_prif_prif_team_type
     type(__module_prif_prif_dummy_team_descriptor), pointer :: info
 end type __module_prif_prif_team_type
 
-type, bind(c) :: prif_coarray_handle
+type :: prif_coarray_handle
     type(c_ptr) :: info
 end type prif_coarray_handle
 
@@ -92,7 +92,6 @@ call __module_prif_prif_stop(.false.)
 contains
 
 subroutine __lfortran_global_init_coarrays_50()
-    use coarrays_50_m, only: __lfortran_global_init_coarrays_50_m
     logical(4), save :: __lfortran_global_init_done = .false.
     integer(4) :: stat
     if (.not. __lfortran_global_init_done) then
@@ -124,8 +123,9 @@ subroutine int_remote(v)
 end subroutine int_remote
 
 interface
-    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc, coarray_handle,&
-         allocated_memory, stat, errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&
+        &
+         coarray_handle, allocated_memory, stat, errmsg, errmsg_alloc)
         type(c_ptr), intent(out) :: allocated_memory
         type(prif_coarray_handle), intent(out) :: coarray_handle
         character(len=*, kind=1), intent(inout), optional :: errmsg
@@ -139,8 +139,9 @@ interface
 end interface
 
 interface
-    subroutine __module_prif_prif_get(image_num, coarray_handle, offset, current_image_buffer, size_in_bytes, stat,&
-         errmsg, errmsg_alloc)
+    subroutine __module_prif_prif_get(image_num, coarray_handle, offset, current_image_buffer, size_in_bytes,&
+        &
+         stat, errmsg, errmsg_alloc)
         type(prif_coarray_handle), intent(in) :: coarray_handle
         type(c_ptr), intent(in) :: current_image_buffer
         character(len=*, kind=1), intent(inout), optional :: errmsg

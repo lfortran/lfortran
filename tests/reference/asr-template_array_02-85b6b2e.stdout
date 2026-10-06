@@ -103,7 +103,7 @@
                                     template_array_02_math
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -113,7 +113,7 @@
                                     template_array_02_math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             array_tmpl:
                                 (Template
@@ -1761,7 +1761,7 @@
                                     template_array_02_math
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -1771,7 +1771,7 @@
                                     template_array_02_math
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 )
                         })
                     template_array_02_m
