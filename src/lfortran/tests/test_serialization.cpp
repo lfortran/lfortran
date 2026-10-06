@@ -1599,7 +1599,7 @@ end module
         rejects("asr.verify.trait_view.borrowed_storage");
     }
     SUBCASE("rejected escaping storage does not poison a later local owner") {
-        for (const std::string &bad : {
+        for (const std::string bad : {
                 "subroutine bad(owner)\nclass(IValue), allocatable, intent(out) :: owner\nend subroutine\n",
                 "function bad() result(owner)\nclass(IValue), allocatable :: owner\nend function\n"}) {
             std::string recovering_source = source.substr(0, source.find("subroutine exercise")) +
@@ -1731,7 +1731,7 @@ contains
 )";
     for (bool function : {false, true}) {
         for (bool recovery : {false, true}) {
-            for (const std::string &attribute : {
+            for (const std::string attribute : {
                     "optional :: object", "allocatable :: object",
                     "pointer :: object", "save :: object",
                     "dimension :: object(2)", "value :: object",
@@ -2510,7 +2510,7 @@ static std::string trait_designator_source(const std::string &left,
 TEST_CASE("Trait declaration copying is independent of dummy spelling") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
-    for (const std::string &name : {"a", "binput", "zinput"}) {
+    for (const std::string name : {"a", "binput", "zinput"}) {
         for (bool scalar : {false, true}) {
             CAPTURE(name);
             CAPTURE(scalar);
@@ -2636,7 +2636,7 @@ end module
     for (auto *procedure : {original, copy}) {
         auto *scope = procedure->m_symtab;
         auto *n = scope->get_symbol("n");
-        for (const std::string &name : {"a", "r"}) {
+        for (const std::string name : {"a", "r"}) {
             auto *bound = ASR::down_cast<ASR::ArrayItem_t>(length(scope, name));
             CHECK(ASR::down_cast<ASR::Var_t>(bound->m_v)->m_v == n);
         }
