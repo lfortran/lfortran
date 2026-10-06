@@ -2508,3 +2508,44 @@ contains
         end block
     end subroutine
 end module
+
+module traits_indirect_slot_boundaries_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface, extends(IValue) :: IChild
+    end interface
+contains
+    function make() result(object)
+        class(IValue), allocatable :: object
+    end function
+    logical function has_value(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        has_value = allocated(slot)
+    end function
+    subroutine child_slot()
+        class(IChild), allocatable :: child
+        procedure(has_value), pointer :: query
+        query => has_value
+        if (query(child)) error stop
+    end subroutine
+    subroutine borrowed_slot(view)
+        class(IValue), intent(in) :: view
+        procedure(has_value), pointer :: query
+        query => has_value
+        if (query(view)) error stop
+    end subroutine
+    subroutine result_actual()
+        procedure(has_value), pointer :: query
+        query => has_value
+        if (query(make())) error stop
+    end subroutine
+    subroutine extra_actual()
+        class(IValue), allocatable :: owner
+        procedure(has_value), pointer :: query
+        query => has_value
+        if (query(owner, owner)) error stop
+    end subroutine
+end module

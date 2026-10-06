@@ -2107,6 +2107,73 @@ end program
     CHECK(invalid.diagnostics.back().code == "asr.verify.trait_result.capture_nonalias");
 }
 
+TEST_CASE("Runtime trait indirect functions verify their declared slot interface") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module indirect_slot_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+abstract interface, extends(IValue) :: IChild
+end interface
+contains
+logical function query(slot)
+    class(IValue), allocatable, intent(in) :: slot
+    query = allocated(slot)
+end function
+function make() result(object)
+    class(IValue), allocatable :: object
+end function
+subroutine exercise(view)
+    class(IValue), intent(in) :: view
+    class(IValue), allocatable :: owner
+    class(IChild), allocatable :: child
+    procedure(query), pointer :: reader
+    reader => query
+    if (reader(owner)) error stop
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("indirect_slot_m"));
+    auto *exercise = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("exercise"));
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::If_t>(exercise->m_body[1])->m_test);
+    REQUIRE(ASR::is_a<ASR::Variable_t>(*call->m_name));
+    SUBCASE("a child slot is not invariant even for an IN function dummy") {
+        call->m_args[0].m_value = ASRUtils::EXPR(ASR::make_Var_t(al,
+            call->base.base.loc, exercise->m_symtab->get_symbol("child")));
+    }
+    SUBCASE("a nonallocatable view is not a slot") {
+        call->m_args[0].m_value = exercise->m_args[0];
+    }
+    SUBCASE("a result actual cannot bypass the current slot capability boundary") {
+        auto *type = ASRUtils::expr_type(call->m_args[0].m_value);
+        call->m_args[0].m_value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
+            call->base.base.loc, module->m_symtab->get_symbol("make"), nullptr,
+            nullptr, 0, type, nullptr, nullptr));
+    }
+    LCompilers::diag::Diagnostics invalid;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    INFO(invalid.render2());
+    REQUIRE(!invalid.diagnostics.empty());
+    CHECK(invalid.diagnostics.back().code == "asr.verify.trait_owner.argument");
+}
+
 TEST_CASE("Inherited assignment retains concrete or dynamic binding") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

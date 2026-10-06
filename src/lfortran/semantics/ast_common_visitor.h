@@ -16132,22 +16132,30 @@ public:
             }
             return_type = ASRUtils::duplicate_type(al, return_type, &new_dims);
         }
-        // TODO: Uncomment later
-        // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
+        ASR::expr_t* dt = nullptr;
+        Vec<ASR::call_arg_t> call_args;
+        call_args.from_pointer_n_copy(al, args.p, args.size());
         if( is_dt_present ) {
-            ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+            dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
-            ASR::call_arg_t* call_args = args.p + 1;
+            ASR::call_arg_t* actuals = args.p + 1;
             size_t n_call_args = args.size() - 1;
-            ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
-            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                call_args, n_call_args, return_type, nullptr, dt, current_scope, current_function_dependencies,
-                compiler_options.implicit_argument_casting);
-        } else {
-            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
-                compiler_options.implicit_argument_casting);
+            ASRUtils::insert_self_arg(al, v, actuals, n_call_args, dt);
+            call_args.from_pointer_n_copy(al, actuals, n_call_args);
         }
+        ASR::Function_t* declared = ASRUtils::get_function(v);
+        if (declared && !ASRUtils::is_bare_implicit_interface(*declared)) {
+            if (call_args.size() > declared->n_args) {
+                trait_call_error("more actual than formal arguments in procedure call", loc);
+            }
+            validate_missing_required_arguments(loc, call_args, declared);
+            ASRUtils::set_absent_optional_arguments_to_null(call_args, declared, al);
+            validate_create_function_arguments(call_args, &declared->base);
+        }
+        return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+            call_args.p, call_args.size(), return_type, nullptr, dt,
+            current_scope, current_function_dependencies,
+            compiler_options.implicit_argument_casting);
     }
 
     // `fn` is a local Function or GenericProcedure (that resolves to a
@@ -23004,6 +23012,11 @@ public:
             return;
         }
         if (ASRUtils::is_trait_owner(target)) {
+            if (ASRUtils::is_trait_owner(source) &&
+                    ASR::is_a<ASR::FunctionCall_t>(*actual)) {
+                trait_call_error("passing a runtime trait function result to an "
+                    "allocatable dummy is not implemented yet", actual->base.loc);
+            }
             if (!ASRUtils::is_trait_owner(source) ||
                     !ASR::is_a<ASR::Var_t>(*actual)) {
                 trait_call_error("an allocatable runtime trait dummy requires an "

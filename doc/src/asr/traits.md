@@ -414,9 +414,11 @@ Several references are evaluated once each and survive until the whole using
 construct completes, including an IF or DO header.
 
 A result variable may remain unallocated on a branch and may be inspected with
-`allocated` within its function. A function reference itself is not a variable:
-it cannot be an allocatable dummy actual (even INTENT(IN)) or a direct
-`allocated` argument. Borrowing or copying an unallocated result terminates
+`allocated` within its function. Passing a trait function result directly as an
+allocatable dummy actual is currently unsupported, for direct and indirect
+calls alike; this capability boundary is not a blanket classification of
+ordinary CLASS result association as invalid Fortran. A direct `allocated`
+inquiry requires a variable. Borrowing or copying an unallocated result terminates
 with an allocation-state diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
@@ -446,6 +448,8 @@ hidden allocation of an array/string-containing payload in normal and fast modes
 `traits_runtime_slot_01` checks all intents, nested forwarding, pointer/deep-copy
 behavior and exact dynamic FINAL counts. `_slot_02` checks completed attributes,
 renamed/re-exported contracts, readonly inquiry, and early-return ownership.
+`_slot_03` checks the same allocation-slot convention through procedure pointers
+and procedure dummies, including ordinary optional arguments.
 `traits_runtime_result_01` retains exact FINAL counts and payload scribbling for
 direct borrowing, owner assignment, nested forwarding and SOURCE initialization.
 `_result_02` adds pointer-target effects, multiple references, IF/DO construct
