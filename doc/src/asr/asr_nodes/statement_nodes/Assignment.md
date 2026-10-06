@@ -42,7 +42,10 @@ BLOCK and captures its `FunctionCall` with `move_allocation=true`.
 OUT argument is the temporary's allocation slot. No borrowed stack header
 escapes, and the temporary is finalized at construct completion.
 The verifier permits this form only for an unsaved local in a BLOCK/ASSOCIATE
-scope and an owning function call of the same declared contract. Ordinary
+scope and an owning function call of the same declared contract. The slot is
+not TARGET storage and the producing call must not reference it, including
+through actual arguments; capture cannot depend on its own previous allocation
+state or require the ordinary assignment alias-copy path. Ordinary
 trait assignment still uses [TraitAssignment](TraitAssignment.md): it copies
 the result and does not steal its observable finalization.
 

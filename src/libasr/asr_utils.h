@@ -4229,10 +4229,10 @@ public:
     bool found;
 
     ExprReferencesSymbolVisitor(ASR::symbol_t* sym) :
-        target_sym(sym), found(false) {}
+        target_sym(symbol_get_past_external(sym)), found(false) {}
 
     void visit_Var(const ASR::Var_t& x) {
-        if (x.m_v == target_sym) {
+        if (symbol_get_past_external(x.m_v) == target_sym) {
             found = true;
         }
     }

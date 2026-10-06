@@ -642,6 +642,10 @@ public:
                 variable->m_intent == intentType::Local &&
                 variable->m_storage == storage_typeType::Default && owner &&
                 (ASR::is_a<Block_t>(*owner) || ASR::is_a<AssociateBlock_t>(*owner));
+            require_id(!trait_result_capture || (!variable->m_target_attr &&
+                    !ASRUtils::expr_references_symbol(x.m_value, &variable->base)),
+                "asr.verify.trait_result.capture_nonalias",
+                "A result capture slot must not be targetable or referenced by its producing call");
         }
         require_id(!assign_target_type || !ASR::is_a<TraitObjectType_t>(
                 *ASRUtils::extract_type(assign_target_type)) || trait_result_capture,

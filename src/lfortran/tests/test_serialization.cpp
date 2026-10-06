@@ -2048,6 +2048,65 @@ end module
     }
 }
 
+TEST_CASE("Runtime trait captures reject aliasing input state before lowering") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module capture_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+contains
+function make(slot) result(object)
+    class(IValue), allocatable, intent(in) :: slot
+    class(IValue), allocatable :: object
+    if (allocated(slot)) error stop
+end function
+end module
+program capture
+use capture_m
+class(IValue), allocatable :: owner
+owner = make(owner)
+end program
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    LCompilers::pass_function_result_scope(al, *result.result, options.po);
+    REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("capture"));
+    auto *block = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(program->m_body[0])->m_m);
+    auto *capture = ASR::down_cast<ASR::Assignment_t>(block->m_body[0]);
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(capture->m_value);
+    auto *target = ASRUtils::EXPR2VAR(capture->m_target);
+    auto *alias = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+        al, target->base.base.loc, block->m_symtab, LCompilers::s2c(al, "alias"),
+        &target->base, LCompilers::s2c(al, "capture"), nullptr, 0,
+        target->m_name, ASR::accessType::Private));
+    CHECK(ASRUtils::expr_references_symbol(ASRUtils::EXPR(ASR::make_Var_t(
+        al, target->base.base.loc, alias)), &target->base));
+    SUBCASE("the capture cannot also be an input allocation slot") {
+        call->m_args[0].m_value = capture->m_target;
+    }
+    SUBCASE("targetable capture storage could alias a pointer actual") {
+        target->m_target_attr = true;
+    }
+    LCompilers::diag::Diagnostics invalid;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    INFO(invalid.render2());
+    REQUIRE(!invalid.diagnostics.empty());
+    CHECK(invalid.diagnostics.back().code == "asr.verify.trait_result.capture_nonalias");
+}
+
 TEST_CASE("Inherited assignment retains concrete or dynamic binding") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
