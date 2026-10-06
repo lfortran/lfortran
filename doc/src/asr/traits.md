@@ -373,6 +373,9 @@ components: freshly allocated elements are not finalized, while replacing a
 live component finalizes its old value before releasing that storage.
 An unallocated source component also destroys the old allocated component,
 including its nested owned storage, before making the destination unallocated.
+An array of an extended type finalizes each level in order: that level's own
+rank-appropriate FINAL, its components, then its parent array. Parent array
+finalizers retain the array's shape despite the enclosing child element stride.
 Same-type assignment retains the outer allocation; a changed dynamic type
 replaces it. Both cases replace the selected witness from the RHS, even when
 two conformances have the same concrete nominal type. Copying or forwarding an
@@ -401,7 +404,7 @@ MOLD: conversion to ordinary CLASS (including `class(*)`) or concrete storage
 is not implemented and is rejected before lowering.
 
 `traits_runtime_04` is the unchanged owning-value acceptance program.
-`traits_runtime_owning_01` through `_11` cover fresh initialization, MOLD,
+`traits_runtime_owning_01` through `_13` cover fresh initialization, MOLD,
 typed allocation, nested finalizers, pointer association, self/overlap,
 concrete results, completed attributes, component-defined assignment and bounded lifetimes.
 `traits_runtime_owning_separate_01` copies through a contract-only consumer

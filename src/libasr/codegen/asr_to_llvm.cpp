@@ -3228,10 +3228,6 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
-                        if (struct_sym != nullptr && !ASRUtils::is_class_type(element_type)) {
-                            llvm_symtab_finalizer.call_array_final_before_deallocate(tmp,
-                                ASRUtils::type_get_past_allocatable_pointer(cur_type), struct_sym);
-                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
@@ -28943,8 +28939,10 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         });
     };
     if (parent_component) {
-        n_elements = llvm_utils_->get_array_size(ptr,
-            get_llvm_type(arr_type, struct_sym), arr_type, &asr_to_llvm_visitor_);
+        n_elements = arr_t->m_physical_type == ASR::DescriptorArray
+            ? llvm_utils_->get_descriptor_array_size(ptr, get_llvm_type(arr_type, struct_sym))
+            : llvm_utils_->get_array_size(ptr,
+                get_llvm_type(arr_type, struct_sym), arr_type, &asr_to_llvm_visitor_);
         final_data = builder_->CreateBitCast(LLVM::lfortran_malloc(builder_->getContext(),
                 *llvm_utils_->module, *builder_,
                 builder_->CreateMul(n_elements, llvm::ConstantInt::get(i64, final_elem_size))),

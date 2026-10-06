@@ -1102,7 +1102,6 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
-            call_final_of_allocatable_array_local(v, llvm_var, struct_sym);
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
             // elements: each of them is an entity of its own.
@@ -1132,42 +1131,22 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * An unsaved allocated allocatable array local of a procedure or BLOCK
-         * construct is deallocated when the scope ends (F2018 9.7.3.2), and
-         * a deallocated entity is finalized (F2018 7.5.6.3), so call its
-         * FINAL procedures before the memory is freed. Main program
-         * variables are not finalized when execution terminates (7.5.6.4).
-         * Polymorphic variables are finalized through their vtable.
-         */
-        void call_final_of_allocatable_array_local(ASR::Variable_t* const v,
-                llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
-            // `llvm_var` is the array descriptor.
-            if (struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
-            if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
-            ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
-            if (!ASRUtils::is_array(t_past)) { return; }
-            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(t_past))
-                    || ASRUtils::is_class_type(ASRUtils::extract_type(t_past))) { return; }
-            ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
-            if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
-            check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
-                call_array_final_procedures(llvm_var, t_past, struct_sym,
-                    ASRUtils::extract_n_dims_from_ttype(t_past));
-            });
-        }
-
-        /**
          * @param elements_are_entities The elements of the array `ptr` are
          *        finalized one by one as scalar entities, rather than the
          *        array as one entity.
          */
         void check_userDefinedFinalizer_then_finalize(llvm::Value* ptr, ASR::ttype_t* type, ASR::Struct_t* struct_sym, bool in_struct,
                 bool elements_are_entities = false){
+            if (elements_are_entities && !ASRUtils::is_allocatable_or_pointer(type)
+                    && ASRUtils::is_array(type) && struct_sym
+                    && !ASRUtils::is_class_type(ASRUtils::extract_type(type))) {
+                finalize_array(ptr, type, struct_sym, true);
+                return;
+            }
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
-            // Allocatable scalars are handled by finalize_allocatable. An
-            // allocatable array component is deallocated (and so finalized)
-            // with the structure that it is a component of.
+            // Allocatable scalars are handled by finalize_allocatable; arrays
+            // finalize each type level and its components in finalize_array.
             if (invoke_user_finalizers_ && struct_sym != nullptr
                     && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
@@ -1183,21 +1162,11 @@ class ASRToLLVMVisitor;
                         call_final_procedure(select_final_procedure(struct_sym, 0),
                             ptr, v_type_past, struct_sym);
                     }
-                } else if (!ASRUtils::is_allocatable(type)) {
-                    call_array_final_procedures(ptr, v_type_past, struct_sym,
-                        elements_are_entities ? 0 : rank);
-                } else if (in_struct
-                        && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
-                    check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
-                        // A component's descriptor outlives its allocated data.
-                        auto* data = builder_->CreateLoad(
-                            get_llvm_type(ASRUtils::extract_type(v_type_past), struct_sym)->getPointerTo(),
-                            llvm_utils_->create_gep2(
-                                get_llvm_type(v_type_past, struct_sym), ptr, 0));
-                        llvm_utils_->create_if_else(builder_->CreateIsNotNull(data), [&]() {
-                            call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
-                        }, [](){});
-                    });
+                } else if (!ASRUtils::is_allocatable(type)
+                        && ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
+                    call_final_procedure(select_final_procedure(struct_sym,
+                            elements_are_entities ? 0 : rank),
+                        ptr, v_type_past, struct_sym);
                 }
             }
 
@@ -1252,33 +1221,39 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * Calls the final subroutines that finalize the array `ptr` of type
-         * `struct_sym` (F2018 7.5.6.2): step 1 calls the
-         * one of `struct_sym` whose dummy argument has rank `rank` (with the
-         * whole array), or else an elemental one (for every element). By
-         * step 3 the parent component, an array of the parent type of the
-         * same shape, is then finalized in the same way with the final
-         * subroutines of the parent type, and so on up to the root type.
-         * The other components (step 2) are finalized element by element by
-         * finalize_struct(), which therefore calls no final subroutine of a
-         * parent type for an array element.
+         * Finalize a nonpolymorphic array without freeing its data buffer.
+         * Each level's own FINAL precedes its components, and the parent
+         * array is finalized afterward (F2018 7.5.6.2, ordered steps 1-3).
+         * The original element layout is retained for the strided parents.
          *
          * @param rank 0 when the elements of the array are finalized as
          *        scalar entities of their own, otherwise the array's rank.
          */
-        void call_array_final_procedures(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+        void finalize_array_entity(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
                 ASR::Struct_t* const struct_sym, const int rank) {
-            if (ASRUtils::is_class_type(ASRUtils::extract_type(arr_type))) {
-                // The elements of a polymorphic array are finalized as their
-                // dynamic type through the vtable.
-                call_final_procedure(select_final_procedure(struct_sym, rank), ptr,
-                    arr_type, struct_sym);
-                return;
-            }
-            for (ASR::Struct_t* st = struct_sym; st != nullptr; st = get_parent_struct(st)) {
-                call_final_procedure(select_final_procedure(st, rank), ptr, arr_type,
-                    struct_sym, st);
-            }
+            auto* arr = ASR::down_cast<ASR::Array_t>(arr_type);
+            LCOMPILERS_ASSERT(!ASRUtils::is_class_type(arr->m_type));
+            if (!is_finalizable_type(arr->m_type, struct_sym, false)) return;
+            auto* element_type = get_llvm_type(arr->m_type, struct_sym);
+            auto* array_type = get_llvm_type(arr_type, struct_sym);
+            bool descriptor = arr->m_physical_type == ASR::DescriptorArray;
+            llvm::Value* data = descriptor
+                ? builder_->CreateLoad(element_type->getPointerTo(),
+                    llvm_utils_->create_gep2(array_type, ptr, 0))
+                : builder_->CreateBitCast(ptr, element_type->getPointerTo());
+            llvm_utils_->create_if_else(builder_->CreateIsNotNull(data), [&]() {
+                auto* size = descriptor
+                    ? llvm_utils_->get_descriptor_array_size(ptr, array_type)
+                    : llvm_utils_->get_array_size(ptr, array_type, arr_type, &asr_to_llvm_visitor_);
+                for (auto* level = struct_sym; level; level = get_parent_struct(level)) {
+                    if (invoke_user_finalizers_) {
+                        call_final_procedure(select_final_procedure(level, rank),
+                            ptr, arr_type, struct_sym, level);
+                    }
+                    free_array_structs(data, ASR::down_cast<ASR::StructType_t>(arr->m_type),
+                        struct_sym, size, level);
+                }
+            }, [](){});
         }
 
         /// Calls the final subroutine `final_fn`, whose dummy argument is a
@@ -1296,8 +1271,9 @@ class ASRToLLVMVisitor;
                 data_ptr = builder_->CreateBitCast(
                     ptr, elem_llvm_type->getPointerTo());
             }
-            llvm::Value* array_size = llvm_utils_->get_array_size(
-                ptr, arr_llvm_type, arr_type, &asr_to_llvm_visitor_);
+            llvm::Value* array_size = arr_t->m_physical_type == ASR::DescriptorArray
+                ? llvm_utils_->get_descriptor_array_size(ptr, arr_llvm_type)
+                : llvm_utils_->get_array_size(ptr, arr_llvm_type, arr_type, &asr_to_llvm_visitor_);
             auto iter_type = llvm::Type::getInt64Ty(builder_->getContext());
             // Allocated in the entry block: DEALLOCATE can be inside a loop.
             auto* iter = llvm_utils_->CreateAlloca(iter_type, nullptr, "final_iter");
@@ -1558,7 +1534,8 @@ class ASRToLLVMVisitor;
          * @param t array ASR type
          * @param struct_sym if it's an array of struct. nullptr otherwise.
          */
-        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
+        void finalize_array(llvm::Value* arr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
+                bool elements_are_entities = false){
             auto *const arr_t            = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(t));
             auto *const arr_llvm_t       = get_llvm_type(t, struct_sym);
             auto *const arrayType_llvm_t = get_llvm_type(arr_t->m_type, struct_sym);
@@ -1570,7 +1547,8 @@ class ASRToLLVMVisitor;
 
             switch(arr_t->m_physical_type){
                 case ASR::DescriptorArray : { // e.g. `{ {i32, i64*}*, i32, %dimension_descriptor*, i1, i32 }`
-                    std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym);
+                    std::string const cache_key = "descriptorArray_"+get_type_key(t, struct_sym)
+                        + (elements_are_entities ? "__element_entities" : "");
                     if(is_cached(cache_key)){
                         call_cached_finalizer(cache_key, {arr});
                         return;
@@ -1588,7 +1566,11 @@ class ASRToLLVMVisitor;
                         insert_BB_for_readability("Calculate_arraySize");
                         return llvm_utils_->get_descriptor_array_size(arr, arr_llvm_t);
                     };
-                    if(arr_t->m_type->type == ASR::StructType){
+                    if (arr_t->m_type->type == ASR::StructType
+                            && !ASRUtils::is_class_type(arr_t->m_type)) {
+                        finalize_array_entity(arr, &arr_t->base, struct_sym,
+                            elements_are_entities ? 0 : arr_t->n_dims);
+                    } else if(arr_t->m_type->type == ASR::StructType){
                         check_if_allocated_then_finalize(data, arr_t->m_type, struct_sym,[&](){
                             free_array_data(data, arr_t->m_type, struct_sym, descriptor_size_lazy);});
                     } else {
@@ -1605,7 +1587,13 @@ class ASRToLLVMVisitor;
                                                           get_llvm_type(&arr_t->base, struct_sym);
                     verify(arr, llvm_type_verify_against);
                     auto const data = arr;
-                    free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                    if (arr_t->m_type->type == ASR::StructType
+                            && !ASRUtils::is_class_type(arr_t->m_type)) {
+                        finalize_array_entity(arr, &arr_t->base, struct_sym,
+                            elements_are_entities ? 0 : arr_t->n_dims);
+                    } else {
+                        free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                    }
                     free_array_ptr_to_consecutive_data(data, arr_t->m_type);
                     break;
                 }
@@ -1613,7 +1601,13 @@ class ASRToLLVMVisitor;
                 case ASR::FixedSizeArray :{
                     verify(arr, get_llvm_type(&arr_t->base, struct_sym)->getPointerTo());
                     auto const data = builder_->CreateBitCast(arr, array_data_ptr_type);
-                    free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                    if (arr_t->m_type->type == ASR::StructType
+                            && !ASRUtils::is_class_type(arr_t->m_type)) {
+                        finalize_array_entity(arr, &arr_t->base, struct_sym,
+                            elements_are_entities ? 0 : arr_t->n_dims);
+                    } else {
+                        free_array_data(data, arr_t->m_type, struct_sym, array_size_lazy);
+                    }
                 }
                 break;
                 default :
@@ -1631,7 +1625,7 @@ class ASRToLLVMVisitor;
          * @param array_element The struct is an element of an array that is
          * being finalized, rather than a scalar entity of its own. The parent
          * component of an array is itself an array (F2018 7.5.6.2 step 3),
-         * whose final subroutines call_array_final_procedures() calls, so no
+         * whose ordered phases finalize_array_entity() handles, so no
          * final subroutine of a parent type is called for the element here.
          */
         void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
@@ -1731,7 +1725,25 @@ class ASRToLLVMVisitor;
                 builder_->SetInsertPoint(finalize_bb);
             }
 
-            // Finalize members
+            finalize_struct_components(ptr, struct_sym);
+
+            // Finalize Parent (F2018 7.5.6.2 step 3).
+            if(struct_sym->m_parent){
+                ASR::Struct_t* const parent_struct = get_parent_struct(struct_sym);
+                if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct, false)) {
+                    insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
+                    llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
+                        llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
+                    if (!array_element) {
+                        call_scalar_final_procedure(parent_ptr, parent_struct);
+                    }
+                    finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct, array_element);
+                }
+            }
+            END_CACHE(checkPoint_BB);
+        }
+
+        void finalize_struct_components(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
             bool is_bindc = (struct_sym->m_abi == ASR::abiType::BindC) || struct_sym->m_is_sequence;
             for (int i = 0; i < (int)struct_sym->n_members; i++){
                 auto const member_variable =  ASR::down_cast<ASR::Variable_t>(struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
@@ -1752,26 +1764,6 @@ class ASRToLLVMVisitor;
                 check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
             }
 
-            // Finalize Parent (F2018 7.5.6.2 step 3): the parent component is
-            // finalized as an entity of the parent type, which starts with
-            // the final subroutine of the parent type.
-            if(struct_sym->m_parent){
-                ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-                if(is_finalizable_type(parent_struct->m_struct_signature, parent_struct, false)) {
-                    insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
-                    llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
-                        llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
-                    // The parent component of an array element is finalized
-                    // as part of the parent component of the array by
-                    // call_array_final_procedures().
-                    if (!array_element) {
-                        call_scalar_final_procedure(parent_ptr, parent_struct);
-                    }
-                    finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct, array_element);
-                }
-                /// Parent is inlined -- Not allocated separately.
-            }
-            END_CACHE(checkPoint_BB);
         }
 
         void finalize_list(llvm::Value* const ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
@@ -2138,11 +2130,13 @@ class ASRToLLVMVisitor;
          * @param struct_t   should be the underlying ASR struct type of the array.
          * @param struct_sym current struct_sym if the array is of struct type.
          * @param array_size is the size of the array.
+         * @param component_level Finalize only this level's own components.
          *
          */ 
-        void free_array_structs(llvm::Value* const data_ptr, ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym, llvm::Value* array_size){
+        void free_array_structs(llvm::Value* const data_ptr, ASR::StructType_t* const struct_t, ASR::Struct_t* const struct_sym,
+                llvm::Value* array_size, ASR::Struct_t* component_level = nullptr){
             auto const iter_llvm_type =llvm::Type::getInt64Ty(builder_->getContext());
-            auto const iter = builder_->CreateAlloca(iter_llvm_type, nullptr, "arrSize_iter");
+            auto const iter = llvm_utils_->CreateAlloca(iter_llvm_type, nullptr, "arrSize_iter");
             builder_->CreateStore(llvm::ConstantInt::get(iter_llvm_type, -1 , true), iter);
 
             auto const cond_fn = [&](){ // while(++arrSize_iter < array_size)
@@ -2155,6 +2149,7 @@ class ASRToLLVMVisitor;
             bool is_class_type = ASRUtils::non_unlimited_polymorphic_class(&struct_t->base);
             bool is_unlimited_polymorphic_class =
                 ASRUtils::is_unlimited_polymorphic_type(&struct_t->base);
+            LCOMPILERS_ASSERT(!component_level || (!is_class_type && !is_unlimited_polymorphic_class));
 
             if (is_unlimited_polymorphic_class) {
                 finalize_upoly_array_elements(data_ptr, struct_t, struct_sym, array_size);
@@ -2172,7 +2167,11 @@ class ASRToLLVMVisitor;
                     auto const struct_type_llvm = get_llvm_type(&struct_t->base, struct_sym);
                     struct_element = llvm_utils_->create_ptr_gep2(struct_type_llvm, data_ptr, loaded_iter);
                 }
-                if (is_finalizable_type(&struct_t->base, struct_sym, false)) {
+                if (component_level) {
+                    auto* level_type = get_llvm_type(component_level->m_struct_signature, component_level);
+                    finalize_struct_components(builder_->CreateBitCast(
+                        struct_element, level_type->getPointerTo()), component_level);
+                } else if (is_finalizable_type(&struct_t->base, struct_sym, false)) {
                     finalize_struct(struct_element, &struct_t->base, struct_sym, /*array_element=*/true);
                 }
             };
@@ -2860,16 +2859,6 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * F2018 7.5.6.2 steps 1 and 3 for the array `ptr` being deallocated:
-         * see call_array_final_procedures().
-         */
-        void call_array_final_before_deallocate(llvm::Value* const ptr,
-                ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
-            call_array_final_procedures(ptr, arr_type, struct_sym,
-                ASRUtils::extract_n_dims_from_ttype(arr_type));
-        }
-
-        /**
          * Finalize nested allocatable components before explicit deallocate.
          * This ensures nested allocatables are freed before the outer structure.
          */
@@ -2880,6 +2869,10 @@ class ASRToLLVMVisitor;
                 case ASR::Array: {
                     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(t_past);
                     if (arr_t->m_type->type != ASR::StructType) { return; }
+                    if (!ASRUtils::is_class_type(arr_t->m_type)) {
+                        finalize_array_entity(ptr, t_past, struct_sym, arr_t->n_dims);
+                        return;
+                    }
 
                     if (ASRUtils::is_class_type(arr_t->m_type)
                         && ASRUtils::is_unlimited_polymorphic_type(arr_t->m_type)) {
