@@ -1049,13 +1049,3 @@ semantic error: runtime trait result cleanup with unchecked dynamic lifecycle ef
      |
 2506 |                 call observe(make())
      |                              ^^^^^^ 
-
-ASR verify pass error: Function result_is_not_a_function_slot doesn't depend on make but is found in its dependency list.
-    --> tests/errors/continue_compilation_traits_01.f90:2497:5 - 2499:18
-     |
-2497 |        subroutine result_is_not_a_function_slot()
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-2499 |        end subroutine
-     | ...^^^^^^^^^^^^^^^^^^ failed here

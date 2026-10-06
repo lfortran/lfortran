@@ -1982,6 +1982,72 @@ end module
     }
 }
 
+TEST_CASE("Runtime trait call recovery retains valid dependencies and later scopes") {
+    namespace ASR = LCompilers::ASR;
+    const std::string prefix = R"(
+module recovery_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+contains
+function make() result(object)
+    class(IValue), allocatable :: object
+end function
+logical function has_value(slot)
+    class(IValue), allocatable, intent(in) :: slot
+    has_value = allocated(slot)
+end function
+subroutine invalid()
+)";
+    const std::string suffix = R"(
+end subroutine
+subroutine valid()
+    class(IValue), allocatable :: owner
+    if (has_value(owner)) error stop 2
+end subroutine
+end module
+)";
+    for (const std::string statement : {
+            "if (has_value(make())) error stop 1\n",
+            "block\nif (has_value(make())) error stop 1\nend block\n",
+            "associate(flag => 1)\nif (has_value(make())) error stop 1\nend associate\n"}) {
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, prefix + statement + suffix,
+            diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        CHECK(diagnostics.has_error());
+        for (const auto &diagnostic : diagnostics.diagnostics) {
+            CHECK(diagnostic.code.find("asr.verify.") != 0);
+        }
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            result.result->m_symtab->get_symbol("recovery_m"));
+        auto *invalid = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("invalid"));
+        auto *valid = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("valid"));
+        CHECK(invalid->n_dependencies == 0);
+        REQUIRE(valid->n_dependencies == 1);
+        CHECK(std::string(valid->m_dependencies[0]) == "has_value");
+        LCompilers::diag::Diagnostics verified;
+        CHECK(LCompilers::asr_verify(*result.result, true, verified));
+        auto text = LCompilers::asr_to_text(*result.result);
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(al, text, "recovered_trait_call.asr",
+            loaded_lm, verified);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, verified));
+    }
+}
+
 TEST_CASE("Inherited assignment retains concrete or dynamic binding") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
