@@ -19,6 +19,18 @@ cmake -E copy_directory tests/asr $dest/tests/asr
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest
 
+# Runtime trait CTests need these drivers and their Fortran/C fixtures,
+# not the whole integration test suite.
+cmake -E make_directory $dest/integration_tests
+cmake -E copy \
+    integration_tests/traits_runtime_separate_01.py \
+    integration_tests/traits_runtime_separate_01*.f90 \
+    integration_tests/traits_runtime_owning_separate_01*.f90 \
+    integration_tests/traits_runtime_owning_failure_01.py \
+    integration_tests/traits_runtime_owning_failure_01.f90 \
+    integration_tests/traits_runtime_owning_failure_01.c \
+    $dest/integration_tests
+
 # Create the tarball
 cmake -E make_directory dist
 cmake -E tar cfz dist/$dest.tar.gz $dest
