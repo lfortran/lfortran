@@ -24695,14 +24695,7 @@ public:
                                 }
                             }
                         } else {
-                            // convert_class_to_type below loads a pointer or
-                            // allocatable class array itself.
-                            bool is_class_to_type_array = orig_arg &&
-                                ASRUtils::is_array(orig_arg->m_type) &&
-                                ASRUtils::is_class_type(ASRUtils::extract_type(arg->m_type)) &&
-                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type));
                             if( orig_arg &&
-                                !is_class_to_type_array &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                 LLVM::is_llvm_pointer(*arg->m_type) &&
                                 !(ASRUtils::is_unlimited_polymorphic_type(arg->m_type) &&
@@ -24723,7 +24716,11 @@ public:
                                     tmp = builder->CreateBitCast(tmp, llvm_orig_arg_type->getPointerTo());
                                 }
                             }
-                            if (is_class_to_type_array) {
+                            if (orig_arg &&
+                                ASRUtils::is_array(orig_arg->m_type) &&
+                                ASRUtils::is_array(arg->m_type) &&
+                                ASRUtils::is_class_type(ASRUtils::extract_type(arg->m_type)) &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
                                 tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                     al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                             }
@@ -26027,20 +26024,6 @@ public:
             return new_descriptor;
         }
         
-        if (ASRUtils::is_array(arg_type) &&
-                (ASRUtils::extract_physical_type(arg_type) == ASR::PointerArray ||
-                 ASRUtils::extract_physical_type(arg_type) == ASR::UnboundedPointerArray)) {
-            // class_value points to the polymorphic wrapper of the first
-            // element, whose data field holds the contiguous elements.
-            llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
-                arg, ASRUtils::extract_type(arg_type), module.get());
-            llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                llvm_utils->create_gep2(wrapper_type, class_value, 1));
-            llvm::Type* dest_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                dest_arg, dest_type, module.get());
-            return builder->CreateBitCast(data_ptr, dest_llvm_type);
-        }
-
         if (LLVM::is_llvm_pointer(*arg_type)) {
             check_and_allocate_scalar(arg, dest_arg, dest_type);
         }
