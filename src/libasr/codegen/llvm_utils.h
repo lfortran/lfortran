@@ -1189,7 +1189,14 @@ class ASRToLLVMVisitor;
                 } else if (in_struct
                         && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
                     check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
-                        call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
+                        // A component's descriptor outlives its allocated data.
+                        auto* data = builder_->CreateLoad(
+                            get_llvm_type(ASRUtils::extract_type(v_type_past), struct_sym)->getPointerTo(),
+                            llvm_utils_->create_gep2(
+                                get_llvm_type(v_type_past, struct_sym), ptr, 0));
+                        llvm_utils_->create_if_else(builder_->CreateIsNotNull(data), [&]() {
+                            call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
+                        }, [](){});
                     });
                 }
             }
@@ -3203,7 +3210,7 @@ class ASRToLLVMVisitor;
                 bool initialize_copy = false);
             void call_struct_copy(llvm::Value* vptr, llvm::Value* source,
                 llvm::Value* destination, bool initialize_copy,
-                bool initialize_storage = false, bool defined_components = false);
+                bool initialize_storage, bool defined_components);
             llvm::GlobalVariable* create_value_lifecycle(llvm::Module* module,
                 const std::string& name, llvm::Function* initialize_copy,
                 llvm::Function* release);
@@ -3229,7 +3236,7 @@ class ASRToLLVMVisitor;
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false, bool finalize_dest = true);
+                bool use_defined_assignment, bool finalize_dest);
 
             // Copy dimension descriptors and rank from src to dest array descriptor.
             void copy_dimension_descriptors(

@@ -3931,8 +3931,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     } else {
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
-                                alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
-                                module);
+                                ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
+                                module, use_defined_assignment, finalize_dest);
                     }
                 } else if(ASRUtils::is_string_only(alloc_type->m_type)){ //non-primitive type (vector)
                     lfortran_str_copy(dest, src,
@@ -3946,7 +3946,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else if (ASRUtils::is_unlimited_polymorphic_type(src_expr)) {
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_allocatable(asr_dest_type)) {
@@ -3954,7 +3954,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else {
                     LLVM::CreateStore(*builder, src, dest);
                 }
@@ -4000,7 +4000,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     src = CreateLoad2(target_llvm_type, src);
                     deepcopy(src_expr, src, dest,
                         ASRUtils::extract_type(asr_dest_type), asr_dest_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else {
                     if (!ASRUtils::is_value_constant(src_expr) && ASRUtils::is_class_type(asr_dest_type)) {
                         if (ASRUtils::is_class_type(asr_src_type)) {
@@ -10789,8 +10789,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(struct_sym);
 
-            if (ASRUtils::is_allocatable(src_expr) && !is_upoly
-                    && !(is_src_class || is_dest_class)) {
+            bool reallocates_elements = ASRUtils::is_allocatable(src_expr) && !is_upoly
+                && !(is_src_class || is_dest_class);
+            if (reallocates_elements) {
                 // Check if src_data is not null before realloc operations
                 // (For upoly and class arrays, reallocation is handled in
                 // their dedicated deepcopy blocks below)
@@ -10800,8 +10801,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                     llvm::Value* total_memory = builder->CreateMul(num_elements,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
-                    // Finalize nested allocatable members of old dest elements
-                    // before freeing the data buffer, to avoid leaking them.
+                    // Finalize the old array, not its freshly allocated replacement.
+                    if (finalize_dest) {
+                        llvm_utils->create_if_else(builder->CreateIsNotNull(dest_data), [&]() {
+                            finalizer_instnace.call_array_final_before_deallocate(
+                                dest, src_ty, struct_sym);
+                        }, [](){});
+                    }
                     finalizer_instnace.finalize_before_deallocate(
                         dest, src_ty, struct_sym, false);
                     llvm_utils->lfortran_free(dest_data);
@@ -10998,8 +11004,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             struct_sym, dest_elem_ptr, elem_type, false);
                     }
                     llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
-                        elem_type, ASRUtils::extract_type(dest_ty), module,
-                        false, finalize_dest);
+                        ASRUtils::extract_type(dest_ty), elem_type, module,
+                        use_defined_assignment, finalize_dest && !reallocates_elements);
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
