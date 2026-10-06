@@ -1514,6 +1514,17 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             //just to update names of changed symbols of Struct
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Struct(x);
             ASR::Struct_t& ss = const_cast<ASR::Struct_t&>(x);
+            // FINAL procedures are referenced by the type, rather than by
+            // an explicit call. Keep their original descriptor interface for
+            // finalization; a data-only specialization cannot replace it.
+            for (size_t i = 0; i < x.n_member_functions; i++) {
+                ASR::symbol_t* final_sym = x.m_symtab->parent->get_symbol(
+                    x.m_member_functions[i]);
+                if (final_sym) {
+                    not_to_be_erased.insert(
+                        ASRUtils::symbol_get_past_external(final_sym));
+                }
+            }
             for (size_t i = 0; i < x.n_members; i++) {
                 ASR::symbol_t* old_sym = x.m_symtab->get_symbol(x.m_members[i]);
                 if (v.proc2newproc.find(old_sym) != v.proc2newproc.end()) {
