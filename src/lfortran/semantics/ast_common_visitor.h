@@ -8513,11 +8513,9 @@ public:
                             break;
                         }
                     }
-                    AST::var_sym_t* s = x.m_syms;
-                    std::string sym = to_lower(s->m_name);
-                    ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
-                    if ( orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl) ) {
-                        ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                    for (size_t j = 0; j < x.n_syms; j++) {
+                        AST::var_sym_t* s = &x.m_syms[j];
+                        std::string sym = to_lower(s->m_name);
                         // Check if intent is used on a non-argument variable
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
@@ -8539,7 +8537,11 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
-                        orig_decl_variable->m_intent = s_intent;
+                        ASR::symbol_t* orig_decl = current_scope->get_symbol(sym);
+                        if ( orig_decl && ASR::is_a<ASR::Variable_t>(*orig_decl) ) {
+                            ASR::Variable_t* orig_decl_variable = ASR::down_cast<ASR::Variable_t>(orig_decl);
+                            orig_decl_variable->m_intent = s_intent;
+                        }
                     }
                 } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
                     AST::AttrNamelist_t* attr_namelist =

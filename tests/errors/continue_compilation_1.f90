@@ -2128,6 +2128,19 @@ module component_init_host_scope_in_continue_compilation_1_m
     end type
 end module
 
+subroutine intent_list_assignment_error(x, y)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
+
+subroutine intent_list_non_dummy_error(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
+end subroutine intent_list_non_dummy_error
+
 subroutine non_dummy_intent_statement(x)
     implicit none
     integer :: x, y

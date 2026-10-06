@@ -928,10 +928,16 @@ semantic error: component `cihs_l` cannot be referenced in a component declarati
 2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
      |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
 
-semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-    --> tests/errors/continue_compilation_1.f90:2134:19
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
+    --> tests/errors/continue_compilation_1.f90:2141:22
      |
-2134 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+2141 |     intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
+     |                      ^ 'y' is not a dummy argument
+
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+    --> tests/errors/continue_compilation_1.f90:2147:19
+     |
+2147 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
      |                   ^ 'y' is not a dummy argument
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3100,3 +3106,9 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Cannot assign to an intent(in) variable `y`
+    --> tests/errors/continue_compilation_1.f90:2135:5
+     |
+2135 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+     |     ^ 
