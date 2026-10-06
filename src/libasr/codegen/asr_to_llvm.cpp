@@ -3183,26 +3183,14 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
-                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
-                        if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
-                            ASR::Function_t *final_proc = select_final_procedure(struct_sym, 0);
-                            if (final_proc) {
-                                ASR::symbol_t* final_sym = &final_proc->base;
-                                uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                                if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
-                                    llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                    // Finalizers take type(T), not class(T). For class
-                                    // variables, load the concrete data pointer (field 1)
-                                    // from the class wrapper {vptr, data*}.
-                                    llvm::Value* final_arg = tmp;
-                                    if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                                        llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                                        llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-                                        final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
-                                    }
-                                    builder->CreateCall(final_fn, {final_arg});
-                                }
-                            }
+                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3).
+                        // A polymorphic entity is finalized as its dynamic type
+                        // by finalize_before_deallocate, through the finalizer in
+                        // its vtable, so the final procedures of the declared
+                        // type are not called here as well.
+                        if (struct_sym != nullptr &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                            llvm_symtab_finalizer.call_scalar_final_procedure(tmp, struct_sym);
                         }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
