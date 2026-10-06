@@ -1282,8 +1282,7 @@ class ASRToLLVMVisitor;
             };
             auto body_fn = [&]() {
                 auto* idx = builder_->CreateLoad(iter_type, iter);
-                auto* elem = llvm_utils_->create_ptr_gep2(
-                    elem_llvm_type, data_ptr, idx);
+                auto* elem = get_array_element(ptr, arr_type, struct_sym, data_ptr, idx);
                 // The parent component is at the start of the element, so
                 // a final subroutine of a parent type gets the element.
                 builder_->CreateCall(final_fn, {builder_->CreateBitCast(elem,
@@ -1306,6 +1305,14 @@ class ASRToLLVMVisitor;
         void call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
                 llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
                 ASR::Struct_t* const final_struct);
+
+        /**
+         * The element `idx`, in array element order, of the array `ptr` of
+         * type `arr_type` whose data is `data`. The elements of an array with
+         * a descriptor, such as a section, need not be adjacent.
+         */
+        llvm::Value* get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+                ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx);
 
         void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
@@ -2798,6 +2805,19 @@ class ASRToLLVMVisitor;
          * see call_array_final_procedures().
          */
         void call_array_final_before_deallocate(llvm::Value* const ptr,
+                ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
+            call_array_final_procedures(ptr, arr_type, struct_sym,
+                ASRUtils::extract_n_dims_from_ttype(arr_type));
+        }
+
+        /**
+         * F2018 7.5.6.3 p7: a nonpointer, nonallocatable INTENT(OUT) array
+         * dummy argument `ptr` is finalized when the procedure is invoked.
+         * Steps 1 and 3 of 7.5.6.2, see call_array_final_procedures(). The
+         * intent_out_deallocate pass finalizes the components of the
+         * elements (step 2).
+         */
+        void call_array_final_of_intent_out(llvm::Value* const ptr,
                 ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
             call_array_final_procedures(ptr, arr_type, struct_sym,
                 ASRUtils::extract_n_dims_from_ttype(arr_type));
