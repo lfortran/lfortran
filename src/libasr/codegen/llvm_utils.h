@@ -1123,19 +1123,28 @@ class ASRToLLVMVisitor;
          * An unsaved allocated allocatable local of a procedure or BLOCK
          * construct is deallocated when the scope ends (F2018 9.7.3.2), and
          * a deallocated entity is finalized (F2018 7.5.6.3), so call its
-         * scalar FINAL procedure before the memory is freed. Main program
+         * FINAL procedures before the memory is freed. Main program
          * variables are not finalized when execution terminates (7.5.6.4).
          * Polymorphic variables are finalized through their vtable.
          */
         void call_final_of_allocatable_local(ASR::Variable_t* const v,
                 llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
-            // `llvm_var` is the loaded pointer to the allocated struct.
-            if (struct_sym == nullptr || struct_sym->n_member_functions == 0) { return; }
+            // `llvm_var` is the loaded pointer to the allocated struct, or
+            // the descriptor of the array.
+            if (struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
             if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
-            if (!ASR::is_a<ASR::StructType_t>(*t_past) || ASRUtils::is_class_type(t_past)) { return; }
+            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(t_past))
+                    || ASRUtils::is_class_type(ASRUtils::extract_type(t_past))) { return; }
             ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
             if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
+            if (ASRUtils::is_array(t_past)) {
+                check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
+                    call_array_final_procedures(llvm_var, t_past, struct_sym,
+                        ASRUtils::extract_n_dims_from_ttype(t_past));
+                });
+                return;
+            }
             check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
                 // A scalar entity is finalized by the FINAL procedure with
                 // a scalar dummy argument, elemental or not (7.5.6.2).
@@ -1156,24 +1165,33 @@ class ASRToLLVMVisitor;
                 bool elements_are_entities = false){
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
-            // Allocatable types are handled by the deallocate path.
+            // Allocatable types are handled by the deallocate path, except
+            // for an allocatable array component, which is deallocated (and
+            // so finalized) with the structure that it is a component of.
             if (invoke_user_finalizers_ && struct_sym != nullptr
-                    && !ASRUtils::is_allocatable(type)
-                    && struct_sym->n_member_functions > 0) {
+                    && !ASRUtils::is_pointer(type)
+                    && chain_has_final_procedure(struct_sym)) {
                 ASR::ttype_t* v_type_past =
                     ASRUtils::type_get_past_allocatable_pointer(type);
-                if (ASRUtils::is_pointer(type)) {
-                    finalize(ptr, type, struct_sym, in_struct);
-                    return;
-                }
                 // F2018 7.5.6.2 step 1: the final subroutine whose dummy
                 // argument has the rank of the entity, or else an elemental
                 // one called for every element.  A nonelemental final
                 // subroutine of any other rank is not called.
                 int rank = ASRUtils::extract_n_dims_from_ttype(v_type_past);
-                ASR::Function_t* final_proc = select_final_procedure(struct_sym,
-                    elements_are_entities ? 0 : rank);
-                call_final_procedure(final_proc, ptr, v_type_past, struct_sym);
+                if (rank == 0) {
+                    if (!ASRUtils::is_allocatable(type)) {
+                        call_final_procedure(select_final_procedure(struct_sym, 0),
+                            ptr, v_type_past, struct_sym);
+                    }
+                } else if (!ASRUtils::is_allocatable(type)) {
+                    call_array_final_procedures(ptr, v_type_past, struct_sym,
+                        elements_are_entities ? 0 : rank);
+                } else if (in_struct
+                        && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
+                    check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                        call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
+                    });
+                }
             }
 
             finalize(ptr, type, struct_sym, in_struct);
@@ -1184,9 +1202,15 @@ class ASRToLLVMVisitor;
          * `ptr` of type `type` (past allocatable/pointer). For an array, a
          * dummy argument of the array's rank receives the whole array;
          * otherwise `final_proc` is called for every element.
+         *
+         * @param final_struct The type that `final_proc` is a final
+         *        subroutine of: `struct_sym` (the default) or one of its
+         *        ancestors, whose final subroutine then finalizes the parent
+         *        component of that type (F2018 7.5.6.2 step 3).
          */
         void call_final_procedure(ASR::Function_t* const final_proc, llvm::Value* const ptr,
-                ASR::ttype_t* const type, ASR::Struct_t* const struct_sym) {
+                ASR::ttype_t* const type, ASR::Struct_t* const struct_sym,
+                ASR::Struct_t* const final_struct = nullptr) {
             if (final_proc == nullptr) return;
             uint32_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) == llvm_symtab_fn_.end()) return;
@@ -1195,11 +1219,58 @@ class ASRToLLVMVisitor;
             int dummy_rank = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(final_proc->m_args[0]));
             if (rank == 0) {
-                builder_->CreateCall(final_fn, {ptr});
+                builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr,
+                    final_fn->getFunctionType()->getParamType(0))});
             } else if (dummy_rank == rank) {
-                call_array_final(final_fn, final_proc, ptr, type, struct_sym);
+                call_array_final(final_fn, final_proc, ptr, type, struct_sym,
+                    final_struct == nullptr ? struct_sym : final_struct);
             } else {
                 call_final_per_element(final_fn, ptr, type, struct_sym);
+            }
+        }
+
+        /// The parent type of `struct_sym`, or nullptr if it has none.
+        static ASR::Struct_t* get_parent_struct(ASR::Struct_t* const struct_sym) {
+            if (struct_sym->m_parent == nullptr) return nullptr;
+            return ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
+        }
+
+        /// Whether `struct_sym` or one of its ancestors has a final subroutine.
+        static bool chain_has_final_procedure(ASR::Struct_t* struct_sym) {
+            for (; struct_sym != nullptr; struct_sym = get_parent_struct(struct_sym)) {
+                if (struct_sym->n_member_functions > 0) return true;
+            }
+            return false;
+        }
+
+        /**
+         * Calls the final subroutines that finalize the array `ptr` of type
+         * `struct_sym` (F2018 7.5.6.2): step 1 calls the
+         * one of `struct_sym` whose dummy argument has rank `rank` (with the
+         * whole array), or else an elemental one (for every element). By
+         * step 3 the parent component, an array of the parent type of the
+         * same shape, is then finalized in the same way with the final
+         * subroutines of the parent type, and so on up to the root type.
+         * The other components (step 2) are finalized element by element by
+         * finalize_struct(), which therefore calls no final subroutine of a
+         * parent type for an array element.
+         *
+         * @param rank 0 when the elements of the array are finalized as
+         *        scalar entities of their own, otherwise the array's rank.
+         */
+        void call_array_final_procedures(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+                ASR::Struct_t* const struct_sym, const int rank) {
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(arr_type))) {
+                // The elements of a polymorphic array are finalized as their
+                // dynamic type through the vtable.
+                call_final_procedure(select_final_procedure(struct_sym, rank), ptr,
+                    arr_type, struct_sym);
+                return;
+            }
+            for (ASR::Struct_t* st = struct_sym; st != nullptr; st = get_parent_struct(st)) {
+                call_final_procedure(select_final_procedure(st, rank), ptr, arr_type,
+                    struct_sym, st);
             }
         }
 
@@ -1236,7 +1307,10 @@ class ASRToLLVMVisitor;
                 auto* idx = builder_->CreateLoad(iter_type, iter);
                 auto* elem = llvm_utils_->create_ptr_gep2(
                     elem_llvm_type, data_ptr, idx);
-                builder_->CreateCall(final_fn, {elem});
+                // The parent component is at the start of the element, so
+                // a final subroutine of a parent type gets the element.
+                builder_->CreateCall(final_fn, {builder_->CreateBitCast(elem,
+                    final_fn->getFunctionType()->getParamType(0))});
             };
             llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
         }
@@ -1246,9 +1320,15 @@ class ASRToLLVMVisitor;
          * rank of the array `ptr`, with the whole array.
          *
          * @param arr_type ASR array type of `ptr` (a fixed-size or descriptor array).
+         * @param final_struct The type that `final_proc` is a final subroutine
+         *        of. If it is an ancestor of `struct_sym`, the final subroutine
+         *        gets the parent component of that type of the array: the
+         *        parent components are not adjacent in memory, so they are
+         *        copied to a temporary array for the call and back after it.
          */
         void call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
-                llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym);
+                llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
+                ASR::Struct_t* const final_struct);
 
         void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
@@ -1537,9 +1617,9 @@ class ASRToLLVMVisitor;
         /**
          * @param array_element The struct is an element of an array that is
          * being finalized, rather than a scalar entity of its own. The parent
-         * component of an array is itself an array (F2018 7.5.6.2 step 3), so
-         * a final subroutine of the parent type applies to the element only
-         * if it is elemental.
+         * component of an array is itself an array (F2018 7.5.6.2 step 3),
+         * whose final subroutines call_array_final_procedures() calls, so no
+         * final subroutine of a parent type is called for the element here.
          */
         void finalize_struct(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,
                 const bool array_element = false){
@@ -1668,7 +1748,12 @@ class ASRToLLVMVisitor;
                     insert_BB_for_readability((std::string("Finalize_parent_struct_\"") + parent_struct->m_name + "\"").c_str());
                     llvm::Value* const parent_ptr = llvm_utils_->create_gep2(
                         llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0);
-                    call_scalar_final_procedure(parent_ptr, parent_struct, array_element);
+                    // The parent component of an array element is finalized
+                    // as part of the parent component of the array by
+                    // call_array_final_procedures().
+                    if (!array_element) {
+                        call_scalar_final_procedure(parent_ptr, parent_struct);
+                    }
                     finalize_struct(parent_ptr, parent_struct->m_struct_signature, parent_struct, array_element);
                 }
                 /// Parent is inlined -- Not allocated separately.
@@ -2726,31 +2811,11 @@ class ASRToLLVMVisitor;
          * entity of that type (F2018 7.5.6.2).
          * Only the type's own final subroutines are considered: those of its
          * parent type apply to the parent component.
-         *
-         * With `array_element`, the struct is an element of an array being
-         * finalized. An array is finalized by a final subroutine of its rank
-         * or else by an elemental one, so the subroutine is called on the
-         * element only when it is elemental and the type has no final
-         * subroutine for an array (the rank of the array is not known here).
          */
-        void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym,
-                const bool array_element = false) {
+        void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
             if (!invoke_user_finalizers_) return;
             ASR::Function_t* const final_proc = select_final_procedure(struct_sym, 0);
             if (final_proc == nullptr) return;
-            if (array_element) {
-                if (!ASRUtils::is_elemental(&final_proc->base)) return;
-                for (size_t i = 0; i < struct_sym->n_member_functions; i++) {
-                    ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(
-                        struct_sym->m_member_functions[i]);
-                    if (final_sym == nullptr) continue;
-                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                    if (ASR::is_a<ASR::Function_t>(*final_sym) && ASRUtils::is_array(
-                            ASRUtils::expr_type(ASR::down_cast<ASR::Function_t>(final_sym)->m_args[0]))) {
-                        return;
-                    }
-                }
-            }
             uint32_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                 llvm::Function* const fn = llvm_symtab_fn_[fh];
@@ -2782,15 +2847,13 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * F2018 7.5.6.2 step 1 for the array `ptr` being deallocated: calls
-         * the final subroutine whose dummy argument has the array's rank with
-         * the whole array, or else an elemental one for every element. A
-         * nonelemental final subroutine of another rank is not called.
+         * F2018 7.5.6.2 steps 1 and 3 for the array `ptr` being deallocated:
+         * see call_array_final_procedures().
          */
         void call_array_final_before_deallocate(llvm::Value* const ptr,
                 ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
-            call_final_procedure(select_final_procedure(struct_sym,
-                ASRUtils::extract_n_dims_from_ttype(arr_type)), ptr, arr_type, struct_sym);
+            call_array_final_procedures(ptr, arr_type, struct_sym,
+                ASRUtils::extract_n_dims_from_ttype(arr_type));
         }
 
         /**
