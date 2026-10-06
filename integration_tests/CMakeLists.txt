@@ -3751,6 +3751,7 @@ RUN(NAME traits_runtime_owning_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all
 RUN(NAME traits_runtime_owning_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_03_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_05 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_04_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_failure_01 LABELS llvm NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_owning_failure_01.c)

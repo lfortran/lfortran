@@ -2762,9 +2762,10 @@ ASR::symbol_t* resolve_struct_defined_assignment_proc(ASR::Struct_t* s) {
             ASRUtils::symbol_get_past_external(custom_op->m_procs[ip]);
         ASR::symbol_t* candidate;
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*assign_proc)) {
+            auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(assign_proc);
+            if (binding->m_is_deferred) continue;
             candidate = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                    assign_proc)->m_proc);
+                binding->m_proc);
         } else {
             candidate = assign_proc;
         }

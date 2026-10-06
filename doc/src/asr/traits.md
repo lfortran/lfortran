@@ -382,7 +382,7 @@ procedures are rejected because the contract does not promise pure dynamic
 lifecycle effects.
 
 `traits_runtime_04` is the unchanged owning-value acceptance program.
-`traits_runtime_owning_01` through `_04` cover fresh initialization, MOLD,
+`traits_runtime_owning_01` through `_05` cover fresh initialization, MOLD,
 typed allocation, nested finalizers, pointer association, self/overlap,
 concrete results, completed attributes, component-defined assignment and bounded lifetimes.
 `traits_runtime_owning_separate_01` copies through a contract-only consumer
