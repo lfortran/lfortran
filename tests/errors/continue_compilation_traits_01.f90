@@ -2314,3 +2314,51 @@ contains
         allocate(ordinary, mold=view)
     end subroutine
 end module
+
+module traits_owning_pure_nested_boundary_m
+    use traits_owning_boundaries_m
+contains
+    pure subroutine nested_allocation()
+        block
+            class(IValue), allocatable :: owner
+            block
+                allocate(Item :: owner)
+            end block
+        end block
+    end subroutine
+    pure subroutine nested_assignment()
+        block
+            class(IValue), allocatable :: owner
+            block
+                owner = Item(7)
+            end block
+        end block
+    end subroutine
+    pure subroutine nested_deallocation()
+        block
+            class(IValue), allocatable :: owner
+            associate(marker => 1)
+                block
+                    deallocate(owner)
+                end block
+            end associate
+        end block
+    end subroutine
+    pure subroutine associate_automatic_cleanup()
+        associate(marker => 1)
+            block
+                class(IValue), allocatable :: owner
+                allocate(Item :: owner)
+            end block
+        end associate
+    end subroutine
+    pure subroutine nested_message(view, result)
+        class(IValue), intent(in) :: view
+        integer, intent(out) :: result
+        block
+            associate(marker => 1)
+                result = view%value()
+            end associate
+        end block
+    end subroutine
+end module

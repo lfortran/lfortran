@@ -903,3 +903,33 @@ semantic error: allocating ordinary storage from a runtime trait source or mold 
      |
 2314 |         allocate(ordinary, mold=view)
      |                                 ^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2325:17
+     |
+2325 |                 allocate(Item :: owner)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait assignment with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2333:17
+     |
+2333 |                 owner = Item(7)
+     |                 ^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait deallocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2342:21
+     |
+2342 |                     deallocate(owner)
+     |                     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2351:17
+     |
+2351 |                 allocate(Item :: owner)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: call to impure trait procedure 'value' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2360:26
+     |
+2360 |                 result = view%value()
+     |                          ^^^^^^^^^^^^ 

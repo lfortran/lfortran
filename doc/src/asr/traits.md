@@ -390,7 +390,8 @@ type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
 options are rejected rather than ignored. Allocation failure terminates, including
 failure while initializing/copying owned components. Owning operations in PURE
 procedures are rejected because the contract does not promise pure dynamic
-lifecycle effects.
+lifecycle effects. Executable BLOCK and ASSOCIATE bodies obey the same policy,
+including nested owner assignment and explicit or implicit cleanup.
 Ordinary allocation cannot take a trait owner or borrowed view as SOURCE or
 MOLD: conversion to ordinary CLASS (including `class(*)`) or concrete storage
 is not implemented and is rejected before lowering.

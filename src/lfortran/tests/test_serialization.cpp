@@ -10,6 +10,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/asr_verify.h>
 #include <libasr/asr_text.h>
 #include <libasr/pass/pass_utils.h>
@@ -1607,6 +1608,29 @@ end module
     SUBCASE("one cleanup cannot destroy an owner twice") {
         deallocate->m_vars[1] = deallocate->m_vars[0];
         rejects("asr.verify.trait_owner.duplicate_cleanup");
+    }
+    SUBCASE("executable blocks retain ownership side effects") {
+        auto* implicit = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al,
+            deallocate->base.base.loc, deallocate->m_vars, deallocate->n_vars));
+        for (ASR::stmt_t* statement : {&typed->base, &copy->base,
+                &deallocate->base, implicit}) {
+            auto* block = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
+                statement->base.loc, al.make_new<LCompilers::SymbolTable>(function->m_symtab),
+                LCompilers::s2c(al, "inner"), &statement, 1));
+            auto* call = ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                statement->base.loc, -1, block));
+            auto* associate = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(al,
+                statement->base.loc, al.make_new<LCompilers::SymbolTable>(function->m_symtab),
+                LCompilers::s2c(al, "outer"), &call, 1));
+            auto* outer = ASRUtils::STMT(ASR::make_AssociateBlockCall_t(al,
+                statement->base.loc, associate));
+            ASR::SideEffectFinder finder;
+            finder.visit_stmt(*outer);
+            CHECK(finder.found);
+            CHECK(finder.loc.first == statement->base.loc.first);
+            CHECK(finder.description.find("unchecked dynamic lifecycle effects")
+                != std::string::npos);
+        }
     }
     SUBCASE("a copy cannot change the declared contract") {
         from_view->m_value = function->m_args[1];

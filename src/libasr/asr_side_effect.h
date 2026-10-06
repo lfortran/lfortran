@@ -27,6 +27,25 @@ public:
         description = desc;
     }
 
+    template <typename Scope>
+    void visit_executable_body(const Scope &scope) {
+        for (size_t i = 0; i < scope.n_body && !found; i++) {
+            visit_stmt(*scope.m_body[i]);
+        }
+    }
+
+    void visit_BlockCall(const BlockCall_t &x) {
+        if (found) return;
+        visit_executable_body(*down_cast<Block_t>(
+            ASRUtils::symbol_get_past_external(x.m_m)));
+    }
+
+    void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
+        if (found) return;
+        visit_executable_body(*down_cast<AssociateBlock_t>(
+            ASRUtils::symbol_get_past_external(x.m_m)));
+    }
+
     void visit_Print(const Print_t &x) {
         if (found) return;
         mark_found(x.base.base.loc, "PRINT statement");
@@ -155,14 +174,24 @@ public:
             "runtime trait assignment with unchecked dynamic lifecycle effects");
     }
 
-    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
-        for (size_t i = 0; i < x.n_vars && !found; i++) {
-            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_vars[i]))) {
-                mark_found(x.base.base.loc,
+    void check_trait_deallocation(const Location &location,
+            expr_t **vars, size_t n_vars) {
+        for (size_t i = 0; i < n_vars && !found; i++) {
+            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(vars[i]))) {
+                mark_found(location,
                     "runtime trait deallocation with unchecked dynamic lifecycle effects");
             }
         }
+    }
+
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        check_trait_deallocation(x.base.base.loc, x.m_vars, x.n_vars);
         if (!found) BaseWalkVisitor::visit_ExplicitDeallocate(x);
+    }
+
+    void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
+        check_trait_deallocation(x.base.base.loc, x.m_vars, x.n_vars);
+        if (!found) BaseWalkVisitor::visit_ImplicitDeallocate(x);
     }
 };
 
