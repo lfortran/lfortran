@@ -10819,16 +10819,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                     llvm::Value* total_memory = builder->CreateMul(num_elements,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
-                    // Finalize the old array, not its freshly allocated replacement.
-                    if (finalize_dest) {
-                        llvm_utils->create_if_else(builder->CreateIsNotNull(dest_data), [&]() {
-                            finalizer_instnace.call_array_final_before_deallocate(
-                                dest, src_ty, struct_sym);
-                        }, [](){});
-                    }
-                    finalizer_instnace.finalize_before_deallocate(
-                        dest, src_ty, struct_sym, false);
-                    llvm_utils->lfortran_free(dest_data);
+                    auto* destroy = finalizer_instnace.get_raw_finalizer(
+                        src_ty, struct_sym, finalize_dest);
+                    llvm_utils->create_if_else(builder->CreateIsNotNull(dest_data), [&]() {
+                        builder->CreateCall(destroy,
+                            {builder->CreateBitCast(dest, llvm_utils->i8_ptr)});
+                    }, [](){});
                     llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
                     llvm::Value* reloaded_dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
                                             llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
@@ -11435,7 +11431,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                         llvm::Value* data_not_null = builder->CreateICmpNE(
                                             dest_data, llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()));
                                         llvm_utils->create_if_else(data_not_null, [&]() {
-                                            llvm_utils->lfortran_free(dest_data);
+                                            if (ASR::is_a<ASR::StructType_t>(
+                                                    *ASRUtils::extract_type(member_type))) {
+                                                auto* member_struct = ASR::down_cast<ASR::Struct_t>(
+                                                    ASRUtils::symbol_get_past_external(
+                                                        ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration));
+                                                auto* destroy = finalizer_instnace.get_raw_finalizer(
+                                                    ASRUtils::type_get_past_allocatable_pointer(member_type),
+                                                    member_struct, finalize_dest);
+                                                builder->CreateCall(destroy,
+                                                    {builder->CreateBitCast(dest_descr, llvm_utils->i8_ptr)});
+                                            } else {
+                                                llvm_utils->lfortran_free(dest_data);
+                                            }
                                         }, [](){});
                                         llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest_descr, llvm_data_type);
                                     }
