@@ -380,6 +380,8 @@ already formed view never consults the receiver's visible implementations.
 Finalization belongs to the dynamic concrete payload, not to each view.
 Live destruction finalizes allocated concrete components recursively; snapshot
 disposal releases the same component storage without invoking user finalizers.
+Storage-only cleanup at image termination applies to the whole enclosing value,
+not just to components or variables with an ALLOCATABLE declaration.
 Unsaved owners are cleaned up on normal procedure and BLOCK exit. No
 main-program/image-termination finalization guarantee is added.
 

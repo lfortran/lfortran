@@ -1051,6 +1051,12 @@ class ASRToLLVMVisitor;
         std::map<std::pair<bool, std::string>, llvm::Function*>     type_finalizer_cache_;
         bool invoke_user_finalizers_ = true;
 
+        struct RestoreMode {
+            bool &mode;
+            bool saved;
+            ~RestoreMode() { mode = saved; }
+        };
+
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
@@ -1086,23 +1092,16 @@ class ASRToLLVMVisitor;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
+            RestoreMode restore{invoke_user_finalizers_, invoke_user_finalizers_};
+            auto* const owner = ASRUtils::get_asr_owner(&v->base);
+            if (ASR::is_a<ASR::Program_t>(*owner) || ASR::is_a<ASR::Module_t>(*owner)) {
+                // Image teardown releases the whole value's storage without FINAL.
+                invoke_user_finalizers_ = false;
+            }
             insert_BB_for_readability((std::string("Finalize_Variable_") + v->m_name).c_str());
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
-            auto* const owner = ASRUtils::get_asr_owner(&v->base);
-            auto* const value_type = ASRUtils::type_get_past_allocatable(v->m_type);
-            if (ASRUtils::is_allocatable(v->m_type)
-                    && ASR::is_a<ASR::StructType_t>(*value_type)
-                    && !ASRUtils::is_class_type(value_type)
-                    && (ASR::is_a<ASR::Program_t>(*owner)
-                        || ASR::is_a<ASR::Module_t>(*owner))) {
-                // Image teardown releases storage, not a live Fortran entity.
-                auto* release = get_storage_release_fn(v->m_type, struct_sym);
-                builder_->CreateCall(release,
-                    {builder_->CreateBitCast(llvm_var, llvm_utils_->i8_ptr)});
-                return;
-            }
             call_final_of_allocatable_array_local(v, llvm_var, struct_sym);
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
@@ -2958,7 +2957,7 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * Finalize a save variable of struct type at program exit.
+         * Release a save variable's storage at program exit, without FINAL.
          *
          * A procedure's save variable outlives every call, so
          * `not_finalizable_variable` keeps it out of that procedure's own
@@ -2971,6 +2970,8 @@ class ASRToLLVMVisitor;
          * @param ptr llvm global holding it
          */
         void finalize_saved_struct_variable(ASR::Variable_t* const v, llvm::Value* const ptr){
+            RestoreMode restore{invoke_user_finalizers_, invoke_user_finalizers_};
+            invoke_user_finalizers_ = false;
             ASR::Struct_t* const struct_sym = get_struct_sym(v);
             if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
             insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
@@ -3002,11 +3003,7 @@ class ASRToLLVMVisitor;
 
         llvm::Function* get_raw_finalizer(ASR::ttype_t* const type,
                 ASR::Struct_t* const struct_sym, bool invoke_user_finalizers) {
-            struct RestoreMode {
-                bool &mode;
-                bool saved;
-                ~RestoreMode() { mode = saved; }
-            } restore{invoke_user_finalizers_, invoke_user_finalizers_};
+            RestoreMode restore{invoke_user_finalizers_, invoke_user_finalizers_};
             invoke_user_finalizers_ = invoke_user_finalizers;
             LCOMPILERS_ASSERT(type)
             const std::string cache_key = get_type_key(type, struct_sym)+"_for_UPoly";
