@@ -928,18 +928,29 @@ public:
             if (!ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(dummy->m_type))) continue;
             std::string message;
-            if (ASRUtils::is_allocatable(dummy->m_type)) {
-                message = "allocatable runtime trait dummy slots are not implemented yet";
-            } else if (ASRUtils::is_pointer(dummy->m_type)) {
+            bool slot = ASRUtils::is_trait_owner(dummy->m_type);
+            if (ASRUtils::is_pointer(dummy->m_type)) {
                 message = "pointer runtime trait objects are not implemented yet";
-            } else if (!ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) {
+            } else if ((!slot && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) ||
+                    dummy->n_codims) {
                 message = "runtime trait objects currently require a scalar dummy";
             } else if (dummy->m_storage != ASR::storage_typeType::Default ||
                     dummy->m_symbolic_value || dummy->m_value) {
                 message = "runtime trait dummies cannot have saved or initialized storage";
-            } else if (dummy->m_intent != ASR::intentType::In ||
+            } else if (slot && (dummy->m_presence != ASR::presenceType::Required ||
+                    dummy->m_value_attr)) {
+                message = "optional or value allocatable runtime trait dummies "
+                    "are not implemented yet";
+            } else if (slot && ASRUtils::get_FunctionType(function)->m_abi ==
+                    ASR::abiType::BindC) {
+                message = "bind(c) allocatable runtime trait dummies are not implemented yet";
+            } else if (slot && dummy->m_intent == ASR::intentType::Out &&
+                    ASRUtils::get_FunctionType(function)->m_pure) {
+                message = "runtime trait intent(out) cleanup with unchecked dynamic "
+                    "lifecycle effects is not allowed inside a pure procedure";
+            } else if (!slot && (dummy->m_intent != ASR::intentType::In ||
                     dummy->m_presence != ASR::presenceType::Required ||
-                    dummy->m_value_attr) {
+                    dummy->m_value_attr)) {
                 message = "runtime trait dummies currently require intent(in) "
                     "without optional or value";
             }

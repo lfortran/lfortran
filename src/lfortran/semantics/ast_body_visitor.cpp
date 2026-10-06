@@ -3934,6 +3934,9 @@ public:
                 trait_call_error("runtime trait allocation requires a scalar allocatable owner",
                     arg.loc);
             }
+            if (ASRUtils::EXPR2VAR(arg.m_a)->m_intent == ASR::intentType::In) {
+                trait_call_error("cannot allocate an intent(in) runtime trait slot", arg.loc);
+            }
             if ((source && mold) || (arg.m_type && (source || mold))) {
                 trait_call_error("allocation requires exactly one of a type specifier, "
                     "source or mold", x.base.base.loc);
@@ -4430,6 +4433,10 @@ public:
         }
 
         ASR::Variable_t* tmp_v = ASR::down_cast<ASR::Variable_t>(tmp_sym);
+        if (ASRUtils::is_trait_owner(tmp_v->m_type) &&
+                tmp_v->m_intent == ASR::intentType::In) {
+            trait_call_error("cannot deallocate an intent(in) runtime trait slot", loc);
+        }
         if( ASR::is_a<ASR::Allocatable_t>(*tmp_v->m_type) &&
             tmp_v->m_storage != ASR::storage_typeType::Save ) {
             // If it is not allocatable, it can also be a pointer

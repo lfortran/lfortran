@@ -22982,11 +22982,24 @@ public:
     void adapt_runtime_trait_argument(ASR::expr_t *&actual, ASR::expr_t *dummy) {
         auto *target = ASRUtils::expr_type(dummy);
         auto *source = ASRUtils::expr_type(actual);
-        if (!ASR::is_a<ASR::TraitObjectType_t>(*target)) {
+        if (!ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(target))) {
             if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(source))) {
                 tmp = nullptr;
                 trait_call_error("conversion from a runtime trait view to a non-trait "
                     "dummy is not implemented yet", actual->base.loc);
+            }
+            return;
+        }
+        if (ASRUtils::is_trait_owner(target)) {
+            if (!ASRUtils::is_trait_owner(source) ||
+                    !ASR::is_a<ASR::Var_t>(*actual)) {
+                trait_call_error("an allocatable runtime trait dummy requires an "
+                    "allocatable actual of the same declared trait contract", actual->base.loc);
+            }
+            if (ASRUtils::trait_runtime_contract(source) !=
+                    ASRUtils::trait_runtime_contract(target)) {
+                trait_call_error("an allocatable runtime trait dummy requires the same "
+                    "declared trait contract for every intent", actual->base.loc);
             }
             return;
         }

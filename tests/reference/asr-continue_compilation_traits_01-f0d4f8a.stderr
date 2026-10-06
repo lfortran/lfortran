@@ -464,12 +464,6 @@ semantic error: runtime trait dummies cannot have saved or initialized storage
 2109 |         class(IValue), intent(in) :: object
      |                                      ^^^^^^ 
 
-semantic error: allocatable runtime trait dummy slots are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2113:38
-     |
-2113 |         class(IValue), intent(in) :: object
-     |                                      ^^^^^^ 
-
 semantic error: Cannot set dimension for variable of non-numerical type
     --> tests/errors/continue_compilation_traits_01.f90:2118:9
      |
@@ -504,24 +498,6 @@ semantic error: allocatable runtime trait function results are not implemented y
 2163 |        end function
      | ...^^^^^^^^^^^^^^^^ 
 
-semantic error: allocatable runtime trait dummy slots are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2165:52
-     |
-2165 |         class(IValue), allocatable, intent(out) :: owner
-     |                                                    ^^^^^ 
-
-semantic error: allocatable runtime trait dummy slots are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2168:54
-     |
-2168 |         class(IValue), allocatable, intent(inout) :: owner
-     |                                                      ^^^^^ 
-
-semantic error: allocatable runtime trait dummy slots are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2171:51
-     |
-2171 |         class(IValue), allocatable, intent(in) :: owner
-     |                                                   ^^^^^ 
-
 semantic error: runtime trait objects currently require a scalar dummy
     --> tests/errors/continue_compilation_traits_01.f90:2239:26
      |
@@ -543,6 +519,30 @@ semantic error: incompatible declarations of trait method 'count': argument 'a' 
      |
 2272 |        end interface
      | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: optional or value allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2449:51
+     |
+2449 |         class(IValue), allocatable, intent(in) :: slot
+     |                                                   ^^^^ 
+
+semantic error: optional or value allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2453:58
+     |
+2453 |         class(IValue), allocatable, intent(in), value :: slot
+     |                                                          ^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2456:52
+     |
+2456 |         class(IValue), allocatable, intent(out) :: slot
+     |                                                    ^^^^ 
+
+semantic error: bind(c) allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2459:54
+     |
+2459 |         class(IValue), allocatable, intent(inout) :: slot
+     |                                                      ^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
@@ -933,3 +933,81 @@ semantic error: call to impure trait procedure 'value' is not allowed inside a P
      |
 2360 |                 result = view%value()
      |                          ^^^^^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2398:24
+     |
+2398 |         call read_slot(child)
+     |                        ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2402:25
+     |
+2402 |         call write_slot(child)
+     |                         ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2406:27
+     |
+2406 |         call replace_slot(child)
+     |                           ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2410:27
+     |
+2410 |         call unknown_slot(child)
+     |                           ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2414:24
+     |
+2414 |         call read_slot(combined)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2418:24
+     |
+2418 |         call read_slot(other)
+     |                        ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2422:24
+     |
+2422 |         call read_slot(concrete)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2426:24
+     |
+2426 |         call read_slot(view)
+     |                        ^^^^ 
+
+semantic error: cannot allocate an intent(in) runtime trait slot
+    --> tests/errors/continue_compilation_traits_01.f90:2430:9
+     |
+2430 |         allocate(Item :: slot)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `slot`
+    --> tests/errors/continue_compilation_traits_01.f90:2434:9
+     |
+2434 |         slot = Item(7)
+     |         ^^^^ 
+
+semantic error: cannot deallocate an intent(in) runtime trait slot
+    --> tests/errors/continue_compilation_traits_01.f90:2438:20
+     |
+2438 |         deallocate(slot)
+     |                    ^^^^ 
+
+semantic error: Argument `slot` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2442:27
+     |
+2442 |         call replace_slot(slot)
+     |                           ^^^^ 
+
+semantic error: Argument `slot` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2446:25
+     |
+2446 |         call write_slot(slot)
+     |                         ^^^^ 

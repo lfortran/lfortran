@@ -14,9 +14,15 @@ TraitObjectType(symbol contract)
 `contract` references the canonical `TraitRuntimeContract`, through a visible
 symbol. Its slot interfaces describe all ordinary arguments and results.
 A bare view is a required, nonpointer, nonallocatable scalar `intent(in)` dummy.
-`Allocatable(TraitObjectType)` instead denotes a scalar local, saved, module or
-BLOCK owner. Erased function results and allocatable dummy slots remain
-unsupported. `TraitPack` creates compiler-borrowed concrete views; forwarding
+`Allocatable(TraitObjectType)` instead denotes scalar owning storage: a local,
+saved, module or BLOCK variable, or an allocatable dummy's caller-owned slot.
+Every dummy intent requires the same canonical declared contract and an
+allocatable actual; child contracts and concrete allocatables are not covariant
+slots. INTENT(IN) permits inquiry and borrowing but cannot define the slot.
+INTENT(OUT) entry cleanup uses the ordinary `intent_out_deallocate` pass.
+Dummies are never destroyed at callee scope exit. Optional and BIND(C) slots,
+unproved PURE output cleanup, and erased function results remain unsupported.
+`TraitPack` creates compiler-borrowed concrete views; forwarding
 uses the original variable. `TraitBorrow` borrows an allocated owner. None of
 these operations copies the payload or transfers ownership.
 

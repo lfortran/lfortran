@@ -2362,3 +2362,100 @@ contains
         end block
     end subroutine
 end module
+
+module traits_slot_invariance_m
+    use traits_owning_boundaries_m, only: IValue, Item
+    implicit none
+    abstract interface, extends(IValue) :: IChild
+    end interface
+    abstract interface :: IEqual
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: IMarker
+        function marker() result(r)
+            integer :: r
+        end function
+    end interface
+    abstract interface, extends(IValue + IMarker) :: ICombined
+    end interface
+contains
+    subroutine read_slot(slot)
+        class(IValue), allocatable, intent(in) :: slot
+    end subroutine
+    subroutine write_slot(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+    end subroutine
+    subroutine replace_slot(slot)
+        class(IValue), allocatable, intent(out) :: slot
+    end subroutine
+    subroutine unknown_slot(slot)
+        class(IValue), allocatable :: slot
+    end subroutine
+    subroutine child_in()
+        class(IChild), allocatable :: child
+        call read_slot(child)
+    end subroutine
+    subroutine child_inout()
+        class(IChild), allocatable :: child
+        call write_slot(child)
+    end subroutine
+    subroutine child_out()
+        class(IChild), allocatable :: child
+        call replace_slot(child)
+    end subroutine
+    subroutine child_unspecified()
+        class(IChild), allocatable :: child
+        call unknown_slot(child)
+    end subroutine
+    subroutine combined_in()
+        class(ICombined), allocatable :: combined
+        call read_slot(combined)
+    end subroutine
+    subroutine equal_signature_is_not_same_contract()
+        class(IEqual), allocatable :: other
+        call read_slot(other)
+    end subroutine
+    subroutine concrete_slot()
+        type(Item), allocatable :: concrete
+        call read_slot(concrete)
+    end subroutine
+    subroutine borrowed_slot(view)
+        class(IValue), intent(in) :: view
+        call read_slot(view)
+    end subroutine
+    subroutine input_allocation(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        allocate(Item :: slot)
+    end subroutine
+    subroutine input_assignment(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        slot = Item(7)
+    end subroutine
+    subroutine input_deallocation(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        deallocate(slot)
+    end subroutine
+    subroutine input_to_output(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        call replace_slot(slot)
+    end subroutine
+    subroutine input_to_inout(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        call write_slot(slot)
+    end subroutine
+    subroutine optional_slot(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        optional :: slot
+    end subroutine
+    subroutine value_slot(slot)
+        class(IValue), allocatable, intent(in), value :: slot
+    end subroutine
+    pure subroutine pure_output_cleanup(slot)
+        class(IValue), allocatable, intent(out) :: slot
+    end subroutine
+    subroutine bindc_slot(slot) bind(c)
+        class(IValue), allocatable, intent(inout) :: slot
+    end subroutine
+end module

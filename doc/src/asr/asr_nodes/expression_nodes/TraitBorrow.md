@@ -11,6 +11,8 @@ TraitBorrow(expr owner, ttype type)
 ```
 
 `owner` is a scalar variable of `Allocatable(TraitObjectType(contract))`.
+It may be an allocatable dummy slot, including INTENT(IN); borrowing neither
+defines that slot nor changes which scope owns its allocation.
 `type` is a bare view of that same canonical contract, visible in the borrowing
 scope. The source's selected witness and concrete dynamic type remain unchanged,
 regardless of other conformances visible at the borrowing site.

@@ -7,8 +7,8 @@ templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
 The LLVM backend also supports borrowed scalar runtime views and bounded scalar
-allocatable ownership. Erased factory results, allocatable dummy slots and
-pointer views are separate stages, not part of this owning-storage slice.
+allocatable ownership and invariant allocatable dummy slots. Erased factory
+results and pointer views remain separate stages.
 
 ## Declaring a contract
 
@@ -255,8 +255,8 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 `function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
 oracle checks the concrete computations through the default compilation pipeline.
 
-The broader proposal is not yet implemented. In particular, owning trait results
-and dummy slots, pointer trait objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
+The broader proposal is not yet implemented. In particular, owning trait results,
+pointer trait objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
@@ -388,9 +388,21 @@ not just to components or variables with an ALLOCATABLE declaration.
 Unsaved owners are cleaned up on normal procedure and BLOCK exit. No
 main-program/image-termination finalization guarantee is added.
 
-This is **not all of R2**. Functions returning `class(I), allocatable` and
-allocatable trait dummy slots (including `intent(in)`) receive explicit semantic
-NYIs pending R2b's result/slot ABI. Trait arrays, pointers, components, ASSOCIATE
+Scalar `class(I), allocatable` dummies share the caller's actual allocation slot
+for IN, OUT, INOUT and unspecified INTENT. All four are invariant: an actual
+must be allocatable and have the same canonical declared trait contract.
+Renamed imports are equivalent; child/composed contracts, concrete allocatables
+and nonallocatable views are not allocation slots of the parent contract.
+INTENT(IN) permits `allocated` on an unallocated actual, and borrowing once
+allocated, but not allocation, assignment or deallocation. INTENT(OUT) finalizes
+and deallocates the old actual before the first executable statement, and may
+return without allocating. Nested calls forward the original slot without
+copying a header. Callee scope exit never destroys a dummy's allocation.
+Optional, VALUE and BIND(C) slots, and PURE dynamic OUT-entry cleanup, remain
+explicit semantic NYIs.
+
+This is **not all of R2**. Functions returning `class(I), allocatable` still
+receive an explicit semantic NYI pending the result ABI. Trait arrays, pointers, components, ASSOCIATE
 views, projections, `move_alloc`, inspection, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
@@ -412,6 +424,9 @@ compiled before its providers, and checks alternate selected conformances,
 same-spelled distinct nominal types, callback linkage and exact explicit
 deallocation boundaries. The allocation-failure CTests inject failure at every
 hidden allocation of an array/string-containing payload in normal and fast modes.
+`traits_runtime_slot_01` checks all intents, nested forwarding, pointer/deep-copy
+behavior and exact dynamic FINAL counts. `_slot_02` checks completed attributes,
+renamed/re-exported contracts, readonly inquiry, and early-return ownership.
 Standard CLASS oracles are separate; the more demanding nested oracle is
 GFortran-only while legacy CLASS assignment finalization remains incomplete.
 

@@ -1827,16 +1827,17 @@ public:
             "A borrowed payload's nominal type must match its selected witness");
     }
 
-    ttype_t *verify_trait_owner(expr_t *owner, const Location &loc) {
+    ttype_t *verify_trait_owner(expr_t *owner, const Location &loc,
+            bool defining = true) {
         auto *type = typed_expr_type(owner);
         require_with_loc_id(owner && ASR::is_a<Var_t>(*owner) &&
                 ASRUtils::is_trait_owner(type),
             "asr.verify.trait_owner.storage",
             "An owning operation requires a scalar allocatable trait variable", loc);
         auto *variable = ASRUtils::EXPR2VAR(owner);
-        require_with_loc_id(variable->m_intent == intentType::Local,
-            "asr.verify.trait_owner.local",
-            "An owning operation cannot define a borrowed view or an escaping dummy/result slot", loc);
+        require_with_loc_id(!defining || variable->m_intent != intentType::In,
+            "asr.verify.trait_owner.definable",
+            "An owning operation cannot define an intent(in) allocation slot", loc);
         visit_expr(*owner);
         auto *saved_scope = current_symtab;
         current_symtab = variable->m_parent_symtab;
@@ -1884,7 +1885,7 @@ public:
     }
 
     void visit_TraitBorrow(const TraitBorrow_t &x) {
-        auto *owner_type = verify_trait_owner(x.m_owner, x.base.base.loc);
+        auto *owner_type = verify_trait_owner(x.m_owner, x.base.base.loc, false);
         require_id(x.m_type && ASR::is_a<TraitObjectType_t>(*x.m_type),
             "asr.verify.trait_borrow.type", "Borrowing cannot transfer ownership");
         visit_ttype(*x.m_type);
@@ -2602,6 +2603,9 @@ public:
             bool borrowed = ASR::is_a<TraitObjectType_t>(*x.m_type) &&
                 dummy && x.m_storage == storage_typeType::Default &&
                 x.m_intent == intentType::In;
+            bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
+                x.m_storage == storage_typeType::Default &&
+                ASRUtils::is_arg_dummy(x.m_intent);
             bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
                 x.m_intent == intentType::Local && x.m_parent_symtab &&
                 x.m_parent_symtab->asr_owner &&
@@ -2609,11 +2613,20 @@ public:
                 (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
                 !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
                     x.m_parent_symtab->asr_owner));
-            require_id((borrowed || owner) && x.m_presence == presenceType::Required &&
+            require_id((borrowed || owner || slot) && x.m_presence == presenceType::Required &&
                     !x.m_value_attr && !x.m_symbolic_value && !x.m_value &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Trait storage must be a required read-only dummy or a scalar, initially unallocated local owner");
+                "Trait storage must be a required read-only view, a scalar allocatable dummy slot, "
+                "or an initially unallocated local owner");
+            if (slot) {
+                auto *function = ASR::down_cast2<Function_t>(x.m_parent_symtab->asr_owner);
+                auto *signature = ASRUtils::get_FunctionType(function);
+                require_id(signature->m_abi != abiType::BindC &&
+                        !(signature->m_pure && x.m_intent == intentType::Out),
+                    "asr.verify.trait_owner.slot_effects",
+                    "An allocatable trait slot requires the source ABI and proven entry effects");
+            }
         }
         std::string current_name_copy = current_name;
         current_name = x.m_name;
@@ -3098,17 +3111,21 @@ public:
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
         // TODO: check that every allocated variable is deallocated.
-        verify_trait_deallocation(x);
+        verify_trait_deallocation(x, true);
         BaseWalkVisitor::visit_ImplicitDeallocate(x);
     }
 
     template <typename T>
-    void verify_trait_deallocation(const T &x) {
+    void verify_trait_deallocation(const T &x, bool implicit = false) {
         std::set<symbol_t*> owners;
         for (size_t i = 0; i < x.n_vars; i++) {
             auto *type = typed_expr_type(x.m_vars[i]);
             if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
             verify_trait_owner(x.m_vars[i], x.base.base.loc);
+            require_id(!implicit ||
+                    ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent == intentType::Local,
+                "asr.verify.trait_owner.caller_lifetime",
+                "Implicit scope cleanup must not destroy a caller-owned dummy slot or result");
             require_id(owners.insert(&ASRUtils::EXPR2VAR(x.m_vars[i])->base).second,
                 "asr.verify.trait_owner.duplicate_cleanup",
                 "One deallocation cannot destroy the same owner twice");
@@ -3658,6 +3675,22 @@ public:
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
+                if (actual_type && (ASR::is_a<TraitObjectType_t>(
+                        *ASRUtils::extract_type(formal_type)) ||
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)))) {
+                    bool slot = ASRUtils::is_trait_owner(formal_type);
+                    require_with_loc_id(
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(formal_type)) &&
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)) &&
+                        (slot ? ASRUtils::is_trait_owner(actual_type) &&
+                            ASR::is_a<Var_t>(*passed_arg_expr)
+                            : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
+                        ASRUtils::check_equal_type(formal_type, actual_type,
+                            func->m_args[i], passed_arg_expr),
+                        "asr.verify.trait_owner.argument",
+                        "Trait arguments require the same declared contract and explicit slot or borrow association",
+                        passed_arg_expr->base.loc);
+                }
                 // Derived type arguments are skipped for the same reason
                 // as in the signature check above, and this also covers a
                 // polymorphic argument passed as a pointer or allocatable,

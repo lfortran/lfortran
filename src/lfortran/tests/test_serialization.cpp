@@ -1338,7 +1338,7 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     SUBCASE("borrowed dummy is not an owner") {
         auto *var = ASRUtils::EXPR2VAR(observe->m_args[0]);
         var->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var->base.base.loc, var->m_type));
-        rejects("asr.verify.call.actual_allocatable_matches_formal");
+        rejects("asr.verify.trait_owner.argument");
     }
     SUBCASE("borrowed view is not a plain local") {
         ASRUtils::EXPR2VAR(observe->m_args[0])->m_intent = ASR::intentType::Local;
@@ -1646,7 +1646,7 @@ end module
     }
     SUBCASE("rejected escaping storage does not poison a later local owner") {
         for (const std::string bad : {
-                "subroutine bad(owner)\nclass(IValue), allocatable, intent(out) :: owner\nend subroutine\n",
+                "subroutine bad(owner)\nclass(IValue), allocatable, optional, intent(out) :: owner\nend subroutine\n",
                 "function bad() result(owner)\nclass(IValue), allocatable :: owner\nend function\n"}) {
             std::string recovering_source = source.substr(0, source.find("subroutine exercise")) +
                 bad + "subroutine good()\nclass(IValue), allocatable :: owner\n"
@@ -1671,6 +1671,137 @@ end module
             LCompilers::diag::Diagnostics valid;
             CHECK(LCompilers::asr_verify(*recovered.result, true, valid));
         }
+    }
+}
+
+TEST_CASE("Runtime trait allocation slots retain canonical association and lifetime") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_slot_serialization_m
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface, extends(IValue) :: IChild
+end interface
+type :: Payload
+    integer :: n = 5
+end type
+implements IValue :: Payload
+    procedure, pass :: value => get
+end implements
+contains
+integer function get(self)
+    class(Payload), intent(in) :: self
+    get = self%n
+end function
+subroutine observe(view)
+    class(IValue), intent(in) :: view
+end subroutine
+subroutine read_slot(slot)
+    class(IValue), allocatable, intent(in) :: slot
+    if (allocated(slot)) call observe(slot)
+end subroutine
+subroutine write_slot(slot)
+    class(IValue), allocatable, intent(inout) :: slot
+    allocate(Payload :: slot)
+    slot = Payload(7)
+    deallocate(slot)
+end subroutine
+subroutine out_slot(slot)
+    class(IValue), allocatable, intent(out) :: slot
+end subroutine
+subroutine client(slot, child, view)
+    class(IValue), allocatable :: slot
+    class(IChild), allocatable, intent(in) :: child
+    class(IValue), intent(in) :: view
+    call read_slot(slot)
+    call write_slot(slot)
+    call out_slot(slot)
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_slot_serialization_m"));
+    auto *client = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("client"));
+    auto *write = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("write_slot"));
+    auto *call = ASR::down_cast<ASR::SubroutineCall_t>(client->m_body[0]);
+    CHECK(ASR::is_a<ASR::Var_t>(*call->m_args[0].m_value));
+    CHECK(ASRUtils::EXPR2VAR(client->m_args[0])->m_intent == ASR::intentType::Unspecified);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text retain slot qualifiers and intents") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_slots.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("even an input slot is invariant") {
+        call->m_args[0].m_value = client->m_args[1];
+        rejects("asr.verify.trait_owner.argument");
+    }
+    SUBCASE("a borrowed view is not an allocation slot") {
+        call->m_args[0].m_value = client->m_args[2];
+        rejects("asr.verify.trait_owner.argument");
+    }
+    SUBCASE("input slots cannot be allocated, assigned or deallocated") {
+        ASRUtils::EXPR2VAR(write->m_args[0])->m_intent = ASR::intentType::In;
+        auto **body = write->m_body;
+        for (size_t i = 0; i < 3; i++) {
+            auto *statement = body[i];
+            write->m_body = &statement;
+            write->n_body = 1;
+            rejects("asr.verify.trait_owner.definable");
+        }
+    }
+    SUBCASE("scope cleanup cannot own the caller's slot") {
+        auto *slot = write->m_args[0];
+        auto *cleanup = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+            al, slot->base.loc, &slot, 1));
+        write->m_body = &cleanup;
+        write->n_body = 1;
+        rejects("asr.verify.trait_owner.caller_lifetime");
+    }
+    SUBCASE("implicit output cleanup cannot forge purity") {
+        auto *out = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("out_slot"));
+        ASRUtils::get_FunctionType(out)->m_pure = true;
+        rejects("asr.verify.trait_owner.slot_effects");
+    }
+    SUBCASE("allocation slots cannot forge a C ABI") {
+        ASRUtils::get_FunctionType(write)->m_abi = ASR::abiType::BindC;
+        rejects("asr.verify.trait_owner.slot_effects");
     }
 }
 
@@ -1825,7 +1956,7 @@ end program
         auto *view = ASR::down_cast<ASR::TraitObjectType_t>(
             LCompilers::ASRUtils::expr_type(observe->m_args[0]));
         view->m_contract = module->m_symtab->get_symbol("ivalue");
-        code = "asr.verify.call.actual_type_matches_formal";
+        code = "asr.verify.trait_owner.argument";
     }
     LCompilers::diag::Diagnostics invalid;
     CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
@@ -1869,8 +2000,14 @@ contains
                 auto result = LCompilers::LFortran::ast_to_asr(
                     al, *parsed.result, diagnostics, nullptr, false, options, lm);
                 INFO(diagnostics.render2());
-                if (!recovery) CHECK_FALSE(result.ok);
-                CHECK(diagnostics.has_error());
+                bool valid_slot = attribute == "allocatable :: object";
+                if (valid_slot) {
+                    CHECK(result.ok);
+                    CHECK_FALSE(diagnostics.has_error());
+                } else {
+                    if (!recovery) CHECK_FALSE(result.ok);
+                    CHECK(diagnostics.has_error());
+                }
                 if (result.ok) {
                     LCompilers::diag::Diagnostics valid;
                     CHECK(LCompilers::asr_verify(*result.result, true, valid));
