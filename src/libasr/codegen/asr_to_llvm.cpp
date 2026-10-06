@@ -7465,7 +7465,10 @@ public:
         }
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
-        llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        // The variables of the main program, and those of modules, are not
+        // finalized when the program terminates (F2018 7.5.6.4): their
+        // memory is freed without calling final subroutines.
+        llvm_symtab_finalizer.finalize_symtab(x.m_symtab, false);
         finalize_list_call_arg_allocas();
         // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
@@ -7474,7 +7477,7 @@ public:
                 auto &sym = name_sym_pair.second;
                 if(ASR::is_a<ASR::Module_t>(*sym)){
                     llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab, false);
                 }
             }
         }
