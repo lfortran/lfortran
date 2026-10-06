@@ -565,7 +565,9 @@ if (WITH_RUNTIME_LIBRARY)
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"
-    "${CMAKE_SOURCE_DIR}/src/runtime/"
+    # Do not reuse a runtime cache from an existing in-source build.
+    "-S" "${CMAKE_SOURCE_DIR}/src/runtime"
+    "-B" "${CMAKE_BINARY_DIR}/src/runtime"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
 
   add_dependencies(configure_runtime lfortran)

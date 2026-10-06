@@ -1662,6 +1662,17 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 }
 
 
+std::string get_c_compiler(const std::string &default_compiler)
+{
+    if (char *env_CC = std::getenv("LFORTRAN_CC")) {
+        return env_CC;
+    }
+    if (char *env_CC = std::getenv("CC")) {
+        return env_CC;
+    }
+    return default_compiler;
+}
+
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
@@ -1725,9 +1736,7 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-	    std::string CC = "cc";
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            std::string CC = get_c_compiler("cc");
             std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
             int err = system(cmd.c_str());
             if (err) {
@@ -1851,9 +1860,7 @@ int compile_to_object_file_c(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-	    std::string CC = "cc";
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            std::string CC = get_c_compiler("cc");
             std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
             int err = system(cmd.c_str());
             if (err) {
@@ -1891,9 +1898,9 @@ int compile_to_object_file_c(const std::string &infile,
             out << src;
         }
 
-        std::string CXX = "gcc";
+        std::string CC = get_c_compiler("gcc");
         std::string options = " -I" + rtlib_header_dir;
-        std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cfile;
+        std::string cmd = CC + " " + options + " -o " + outfile + " -c " + cfile;
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -2324,8 +2331,8 @@ int link_executable(const std::vector<std::string> &infiles,
         }
 #endif
     } else if (backend == Backend::c) {
-        std::string CXX = "gcc";
-        std::string cmd = CXX + " -o " + outfile + " ";
+        std::string CC = get_c_compiler("gcc");
+        std::string cmd = CC + " -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
         std::string runtime_lib = "lfortran_runtime";
         for (auto &s : infiles) {
