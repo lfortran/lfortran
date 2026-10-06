@@ -421,7 +421,7 @@ FINALIZE_SYMTABLE_modules_36:                     ; preds = %return
   br label %Finalize_Variable_settings
 
 Finalize_Variable_settings:                       ; preds = %FINALIZE_SYMTABLE_modules_36
-  call void @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings.4* %settings)
+  call void @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01(%modules_36_fpm_main_01.fpm_run_settings.4* %settings)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }

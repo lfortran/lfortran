@@ -252,87 +252,21 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
 define internal void @finalize_descriptorArray_Array_1_StructType__tt_4(%array.1* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
-  %2 = alloca i32, align 4
-  %3 = alloca i64, align 8
-  %4 = getelementptr %array.1, %array.1* %0, i32 0, i32 0
-  %5 = load %tt.4*, %tt.4** %4, align 8
-  %6 = icmp ne %tt.4* %5, null
-  br i1 %6, label %is_allocated.then, label %is_allocated.else
+  %2 = getelementptr %array.1, %array.1* %0, i32 0, i32 0
+  %3 = load %tt.4*, %tt.4** %2, align 8
+  %4 = ptrtoint %tt.4* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
 
-is_allocated.then:                                ; preds = %entry
-  br label %Calculate_arraySize
-
-Calculate_arraySize:                              ; preds = %is_allocated.then
-  %7 = getelementptr %array.1, %array.1* %0, i32 0, i32 8
-  %8 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %7, i32 0, i32 0
-  %9 = getelementptr %array.1, %array.1* %0, i32 0, i32 3
-  %10 = load i8, i8* %9, align 1
-  %11 = zext i8 %10 to i32
-  store i64 1, i64* %3, align 8
-  store i32 0, i32* %2, align 4
-  br label %loop.head
-
-loop.head:                                        ; preds = %loop.body, %Calculate_arraySize
-  %12 = load i32, i32* %2, align 4
-  %13 = icmp slt i32 %12, %11
-  br i1 %13, label %loop.body, label %loop.end
-
-loop.body:                                        ; preds = %loop.head
-  %14 = load i32, i32* %2, align 4
-  %15 = load i64, i64* %3, align 8
-  %16 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %8, i32 %14
-  %17 = getelementptr %dimension_descriptor, %dimension_descriptor* %16, i32 0, i32 1
-  %18 = load i64, i64* %17, align 8
-  %19 = mul i64 %15, %18
-  store i64 %19, i64* %3, align 8
-  %20 = add i32 %14, 1
-  store i32 %20, i32* %2, align 4
-  br label %loop.head
-
-loop.end:                                         ; preds = %loop.head
-  %21 = load i64, i64* %3, align 8
-  call void @finalize_array_data_StructType__tt_4(%tt.4* %5, i64 %21)
-  br label %is_allocated.ifcont
-
-is_allocated.else:                                ; preds = %entry
-  br label %is_allocated.ifcont
-
-is_allocated.ifcont:                              ; preds = %is_allocated.else, %loop.end
-  %22 = ptrtoint %tt.4* %5 to i64
-  %23 = icmp ne i64 %22, 0
-  br i1 %23, label %then, label %else
-
-then:                                             ; preds = %is_allocated.ifcont
-  %24 = bitcast %tt.4* %5 to i8*
-  call void @_lfortran_free_alloc(i8* %1, i8* %24)
+then:                                             ; preds = %entry
+  %6 = bitcast %tt.4* %3 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
   br label %ifcont
 
-else:                                             ; preds = %is_allocated.ifcont
+else:                                             ; preds = %entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  ret void
-}
-
-define internal void @finalize_array_data_StructType__tt_4(%tt.4* %0, i64 %1) {
-entry:
-  %arrSize_iter = alloca i64, align 8
-  store i64 -1, i64* %arrSize_iter, align 8
-  br label %Finalize_array_of_structs.head
-
-Finalize_array_of_structs.head:                   ; preds = %Finalize_array_of_structs.body, %entry
-  %2 = load i64, i64* %arrSize_iter, align 8
-  %3 = add i64 %2, 1
-  store i64 %3, i64* %arrSize_iter, align 8
-  %4 = icmp slt i64 %3, %1
-  br i1 %4, label %Finalize_array_of_structs.body, label %Finalize_array_of_structs.end
-
-Finalize_array_of_structs.body:                   ; preds = %Finalize_array_of_structs.head
-  %5 = load i64, i64* %arrSize_iter, align 8
-  %6 = getelementptr inbounds %tt.4, %tt.4* %0, i64 %5
-  br label %Finalize_array_of_structs.head
-
-Finalize_array_of_structs.end:                    ; preds = %Finalize_array_of_structs.head
   ret void
 }
 
