@@ -5,6 +5,6 @@ contains
     subroutine s(n, v)
         integer(8), intent(in) :: n
         integer(8), intent(in) :: v(n)
-        print *, minloc(v)
+        if (any(minloc(v) /= [2])) error stop
     end subroutine s
 end program arrays_132
