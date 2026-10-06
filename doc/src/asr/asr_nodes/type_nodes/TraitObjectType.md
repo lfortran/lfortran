@@ -23,6 +23,9 @@ INTENT(OUT) entry cleanup uses the ordinary `intent_out_deallocate` pass.
 Dummies are never destroyed at callee scope exit. A scalar allocatable function
 result uses `ReturnVar` before normal result lowering, then a hidden OUT slot.
 The caller owns its returned value until its innermost using construct completes.
+Importing an explicit function interface as `ExternalUndefined` preserves this
+Fortran calling convention and ownership; the provider's concrete declarations
+are not needed in the caller.
 Optional and BIND(C) slots, and unproved PURE output/result cleanup, remain
 unsupported.
 `TraitPack` creates compiler-borrowed concrete views; forwarding

@@ -457,6 +457,37 @@ weakening the extension's direct-borrowed-result checks.
 Standard CLASS oracles are separate; the more demanding nested oracle is
 GFortran-only while legacy CLASS assignment finalization remains incomplete.
 
+### Independently compiled factories
+
+An ordinary explicit interface can publish an allocatable trait factory:
+
+```fortran
+interface
+    function make_value(choice) result(object)
+        import IValue
+        integer, intent(in) :: choice
+        class(IValue), allocatable :: object
+    end function
+end interface
+```
+
+The provider can keep its unrelated concrete types, conformances and FINAL
+procedures private. Callers require only the contract. Imported explicit
+interfaces retain the same source calling convention when their ASR linkage
+state becomes `ExternalUndefined`; this is not a second return ABI.
+The selected witness and concrete nominal lifecycle travel in the owned value,
+without asking the consumer to rediscover an implementation.
+
+The unchanged `traits_runtime_07` gate exercises subroutine OUT factories,
+not function results. `traits_runtime_factory_01` separately exercises genuine
+function results, immediate borrowing, independent copies, SOURCE construction,
+nested forwarding, dynamic-type replacement and precise private FINAL calls.
+Its native driver freezes the provider archive, hides its module files, and
+then compiles the consumer and late driver with only contract/consumer modules.
+Both runtime selection orders observe 17 and 29, and the archive hash is checked
+after client compilation, linking and execution. Normal/fast native CTests and
+their complete source-archive fixture closure are registered.
+
 ## Compiler representation
 
 Three ASR symbol kinds preserve the semantic distinction from templates:

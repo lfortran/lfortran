@@ -2650,7 +2650,9 @@ public:
             if (slot || result) {
                 auto *signature = ASRUtils::get_FunctionType(function);
                 require_id(signature->m_abi != abiType::BindC &&
-                        (!result || signature->m_abi == abiType::Source) &&
+                        (!result || ((signature->m_abi == abiType::Source ||
+                            signature->m_abi == abiType::ExternalUndefined) &&
+                            !ASRUtils::is_bare_implicit_interface(*signature))) &&
                         !(signature->m_pure && (result || x.m_intent == intentType::Out)),
                     "asr.verify.trait_owner.slot_effects",
                     "An allocatable trait slot or result requires the source ABI and proven lifecycle effects");

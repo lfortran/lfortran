@@ -31,6 +31,9 @@ cmake -E copy \
     integration_tests/traits_runtime_owning_failure_01.c \
     integration_tests/traits_runtime_result_02.py \
     integration_tests/traits_runtime_result_02.f90 \
+    integration_tests/traits_runtime_factory_01.py \
+    integration_tests/traits_runtime_factory_01*.f90 \
+    integration_tests/traits_runtime_07*.f90 \
     $dest/integration_tests
 
 # Create the tarball

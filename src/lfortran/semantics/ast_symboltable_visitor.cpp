@@ -925,7 +925,9 @@ public:
                     result->n_codims) {
                 message = "runtime trait function results require uninitialized "
                     "scalar allocatable storage";
-            } else if (signature->m_abi != ASR::abiType::Source) {
+            } else if ((signature->m_abi != ASR::abiType::Source &&
+                        signature->m_abi != ASR::abiType::ExternalUndefined) ||
+                    ASRUtils::is_bare_implicit_interface(*signature)) {
                 message = "runtime trait function results require the Fortran source ABI";
             } else if (signature->m_pure) {
                 message = "runtime trait function results with unchecked dynamic "

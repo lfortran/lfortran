@@ -1914,6 +1914,11 @@ end module
             CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
             CHECK(before == LCompilers::asr_to_text(*result.result));
         }
+        SUBCASE("imported explicit factories retain the Fortran result ABI") {
+            module->m_symtab->mark_all_variables_external(al);
+            CHECK(ASRUtils::get_FunctionType(factory)->m_abi == ASR::abiType::ExternalUndefined);
+            CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+        }
     }
     SUBCASE("capture becomes a shared OUT-slot call, not a pointer or value copy") {
         LCompilers::pass_create_subroutine_from_function(al, *result.result, options.po);
