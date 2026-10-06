@@ -11337,9 +11337,9 @@ public:
             context, *module, *builder, array_name);
         auto check_index = [&](llvm::Value* cond, llvm::Value* index, size_t dim,
                 llvm::Value* lbound, llvm::Value* ubound) {
-            cond = builder->CreateAnd(cond, builder->CreateOr(
-                builder->CreateICmpSLT(index, lbound),
-                builder->CreateICmpSGT(index, ubound)));
+            llvm::Value* below = builder->CreateICmpSLT(index, lbound);
+            llvm::Value* above = builder->CreateICmpSGT(index, ubound);
+            cond = builder->CreateAnd(cond, builder->CreateOr(below, above));
             llvm_utils->generate_runtime_error(cond,
                 "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
                 {LLVMUtils::RuntimeLabel("", {section.base.base.loc})},
@@ -11366,11 +11366,13 @@ public:
             llvm::Value* l = builder->CreateSExtOrTrunc(lbs[i], idx_type);
             llvm::Value* u = builder->CreateSExtOrTrunc(ubs[i], idx_type);
             llvm::Value* s = builder->CreateSExtOrTrunc(ds[i], idx_type);
-            llvm::Value* not_empty = builder->CreateOr(
-                builder->CreateAnd(builder->CreateICmpSGT(s, zero),
-                    builder->CreateICmpSLE(l, u)),
-                builder->CreateAnd(builder->CreateICmpSLT(s, zero),
-                    builder->CreateICmpSGE(l, u)));
+            llvm::Value* s_positive = builder->CreateICmpSGT(s, zero);
+            llvm::Value* l_le_u = builder->CreateICmpSLE(l, u);
+            llvm::Value* ascending = builder->CreateAnd(s_positive, l_le_u);
+            llvm::Value* s_negative = builder->CreateICmpSLT(s, zero);
+            llvm::Value* l_ge_u = builder->CreateICmpSGE(l, u);
+            llvm::Value* descending = builder->CreateAnd(s_negative, l_ge_u);
+            llvm::Value* not_empty = builder->CreateOr(ascending, descending);
             // A zero stride selects nothing; divide by one instead of zero.
             llvm::Value* safe_s = builder->CreateSelect(
                 builder->CreateICmpEQ(s, zero), llvm::ConstantInt::get(idx_type, 1), s);
