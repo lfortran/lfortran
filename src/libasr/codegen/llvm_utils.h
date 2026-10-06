@@ -1090,7 +1090,20 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
-            call_final_of_allocatable_local(v, llvm_var, struct_sym);
+            auto* const owner = ASRUtils::get_asr_owner(&v->base);
+            auto* const value_type = ASRUtils::type_get_past_allocatable(v->m_type);
+            if (ASRUtils::is_allocatable(v->m_type)
+                    && ASR::is_a<ASR::StructType_t>(*value_type)
+                    && !ASRUtils::is_class_type(value_type)
+                    && (ASR::is_a<ASR::Program_t>(*owner)
+                        || ASR::is_a<ASR::Module_t>(*owner))) {
+                // Image teardown releases storage, not a live Fortran entity.
+                auto* release = get_storage_release_fn(v->m_type, struct_sym);
+                builder_->CreateCall(release,
+                    {builder_->CreateBitCast(llvm_var, llvm_utils_->i8_ptr)});
+                return;
+            }
+            call_final_of_allocatable_array_local(v, llvm_var, struct_sym);
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
             // elements: each of them is an entity of its own.
@@ -1120,39 +1133,28 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * An unsaved allocated allocatable local of a procedure or BLOCK
+         * An unsaved allocated allocatable array local of a procedure or BLOCK
          * construct is deallocated when the scope ends (F2018 9.7.3.2), and
          * a deallocated entity is finalized (F2018 7.5.6.3), so call its
          * FINAL procedures before the memory is freed. Main program
          * variables are not finalized when execution terminates (7.5.6.4).
          * Polymorphic variables are finalized through their vtable.
          */
-        void call_final_of_allocatable_local(ASR::Variable_t* const v,
+        void call_final_of_allocatable_array_local(ASR::Variable_t* const v,
                 llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
             // `llvm_var` is the loaded pointer to the allocated struct, or
             // the descriptor of the array.
             if (struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
             if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
+            if (!ASRUtils::is_array(t_past)) { return; }
             if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(t_past))
                     || ASRUtils::is_class_type(ASRUtils::extract_type(t_past))) { return; }
             ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
             if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
-            if (ASRUtils::is_array(t_past)) {
-                check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
-                    call_array_final_procedures(llvm_var, t_past, struct_sym,
-                        ASRUtils::extract_n_dims_from_ttype(t_past));
-                });
-                return;
-            }
             check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
-                // A scalar entity is finalized by the FINAL procedure with
-                // a scalar dummy argument, elemental or not (7.5.6.2).
-                ASR::Function_t* const final_fn = select_final_procedure(struct_sym, 0);
-                if (final_fn == nullptr) { return; }
-                uint32_t const fh = get_hash((ASR::asr_t*)final_fn);
-                LCOMPILERS_ASSERT(llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end());
-                builder_->CreateCall(llvm_symtab_fn_[fh], {llvm_var});
+                call_array_final_procedures(llvm_var, t_past, struct_sym,
+                    ASRUtils::extract_n_dims_from_ttype(t_past));
             });
         }
 
@@ -1165,9 +1167,9 @@ class ASRToLLVMVisitor;
                 bool elements_are_entities = false){
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
-            // Allocatable types are handled by the deallocate path, except
-            // for an allocatable array component, which is deallocated (and
-            // so finalized) with the structure that it is a component of.
+            // Allocatable scalars are handled by finalize_allocatable. An
+            // allocatable array component is deallocated (and so finalized)
+            // with the structure that it is a component of.
             if (invoke_user_finalizers_ && struct_sym != nullptr
                     && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
@@ -1353,8 +1355,14 @@ class ASRToLLVMVisitor;
                     }
                     auto const checkPoint_BB = 
                     START_CACHE(cache_key, ptr);
-                    check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() { 
-                        finalize(ptr, t_past, struct_sym, in_struct);
+                    check_if_allocated_then_finalize(ptr, t, struct_sym, [&]() {
+                        if (ASR::is_a<ASR::StructType_t>(*t_past)
+                                && !ASRUtils::is_class_type(t_past)) {
+                            check_userDefinedFinalizer_then_finalize(
+                                ptr, t_past, struct_sym, in_struct);
+                        } else {
+                            finalize(ptr, t_past, struct_sym, in_struct);
+                        }
                         free_allocatable_ptr(ptr, t, struct_sym, in_struct);
                         
                     });
@@ -2918,7 +2926,12 @@ class ASRToLLVMVisitor;
                 case ASR::StructType: {
                     auto t_past_ptr = ASRUtils::type_get_past_pointer(t); // Pointer variables doesn't get finalized (This function handles deallocation) -- bypass it
                     if (!is_finalizable_type(t_past_ptr, struct_sym, in_struct)) { return; }
-                    finalize(ptr, t_past_ptr, struct_sym, in_struct);
+                    if (ASRUtils::is_pointer(t) && !ASRUtils::is_class_type(t_past)) {
+                        check_userDefinedFinalizer_then_finalize(
+                            ptr, t_past, struct_sym, in_struct);
+                    } else {
+                        finalize(ptr, t_past_ptr, struct_sym, in_struct);
+                    }
                     return;
                 }
                 default:

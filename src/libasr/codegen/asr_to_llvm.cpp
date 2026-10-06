@@ -3196,15 +3196,6 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
-                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3).
-                        // A polymorphic entity is finalized as its dynamic type
-                        // by finalize_before_deallocate, through the finalizer in
-                        // its vtable, so the final procedures of the declared
-                        // type are not called here as well.
-                        if (struct_sym != nullptr &&
-                                !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                            llvm_symtab_finalizer.call_scalar_final_procedure(tmp, struct_sym);
-                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
                         if( ASRUtils::is_pointer(cur_type) || 

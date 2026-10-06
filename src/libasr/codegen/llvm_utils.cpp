@@ -11169,10 +11169,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                         ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration));
                                 llvm::Value *old = dest_member;
                                 llvm_utils->create_if_else(builder->CreateIsNotNull(old), [&]() {
-                                    if (!ASRUtils::is_class_type(ASRUtils::extract_type(member_type))) {
-                                        call_struct_finalize_fn(old, ASRUtils::extract_type(member_type),
-                                            member_struct);
-                                    }
                                     finalizer_instnace.finalize_before_deallocate(
                                         old, member_type, member_struct, true);
                                 }, [](){});

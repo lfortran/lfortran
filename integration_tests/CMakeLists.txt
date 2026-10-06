@@ -3764,6 +3764,8 @@ RUN(NAME traits_runtime_owning_05 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all
 RUN(NAME traits_runtime_owning_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_07 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_07_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_08 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_08_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_04_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_failure_01 LABELS llvm NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_owning_failure_01.c)

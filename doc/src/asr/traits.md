@@ -374,6 +374,8 @@ replaces it. Both cases replace the selected witness from the RHS, even when
 two conformances have the same concrete nominal type. Copying or forwarding an
 already formed view never consults the receiver's visible implementations.
 Finalization belongs to the dynamic concrete payload, not to each view.
+Live destruction finalizes allocated concrete components recursively; snapshot
+disposal releases the same component storage without invoking user finalizers.
 Unsaved owners are cleaned up on normal procedure and BLOCK exit. No
 main-program/image-termination finalization guarantee is added.
 
@@ -389,7 +391,7 @@ procedures are rejected because the contract does not promise pure dynamic
 lifecycle effects.
 
 `traits_runtime_04` is the unchanged owning-value acceptance program.
-`traits_runtime_owning_01` through `_07` cover fresh initialization, MOLD,
+`traits_runtime_owning_01` through `_08` cover fresh initialization, MOLD,
 typed allocation, nested finalizers, pointer association, self/overlap,
 concrete results, completed attributes, component-defined assignment and bounded lifetimes.
 `traits_runtime_owning_separate_01` copies through a contract-only consumer
