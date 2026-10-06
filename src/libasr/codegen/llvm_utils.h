@@ -1142,8 +1142,7 @@ class ASRToLLVMVisitor;
          */
         void call_final_of_allocatable_array_local(ASR::Variable_t* const v,
                 llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
-            // `llvm_var` is the loaded pointer to the allocated struct, or
-            // the descriptor of the array.
+            // `llvm_var` is the array descriptor.
             if (struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
             if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
