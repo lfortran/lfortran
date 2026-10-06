@@ -89,12 +89,15 @@ public:
         // which intent(out) does, so it is given intent(inout) and the rest of
         // what intent(out) does on entry instead. Every call finalizes what it
         // passes for the result before the call when that is not a new
-        // result variable (see finalize_result_argument).
+        // result variable (see finalize_result_argument). Allocatable results
+        // keep OUT: their slot is initially empty and entry deallocation is
+        // already handled by intent_out_deallocate.
         void handle_finalizable_result(ASR::Function_t &x) {
             LCOMPILERS_ASSERT(x.n_args > 0);
             ASR::expr_t* result = x.m_args[x.n_args - 1];
             ASR::Variable_t* result_var = ASRUtils::EXPR2VAR(result);
             if (result_var->m_intent != ASR::intentType::Out ||
+                    ASRUtils::is_allocatable(result_var->m_type) ||
                     !ASRUtils::is_finalizable_function_result(
                         result_var->m_type, result_var->m_type_declaration)) {
                 return;
@@ -476,6 +479,8 @@ public :
 // allocatable.
 static void finalize_result_argument(Allocator &al, ASR::expr_t* result,
         SymbolTable* scope, Vec<ASR::stmt_t*> &out) {
+    // Owning trait results retain the ordinary allocatable OUT-entry cleanup.
+    if (ASRUtils::is_trait_owner(ASRUtils::expr_type(result))) return;
     Vec<ASR::stmt_t*> finalization;
     finalization.reserve(al, 1);
     finalize_entity(al, result, scope, finalization);
@@ -704,7 +709,8 @@ public :
             pass_result.push_back(al, assign);
             return;
         }
-        if(PassUtils::is_non_primitive_return_type(x->m_type)
+        if(ASRUtils::is_trait_owner(x->m_type)
+            || PassUtils::is_non_primitive_return_type(x->m_type)
             || PassUtils::is_aggregate_or_array_type(x->m_type)){
 
             // Create variable in current_scope to be holding the return.
@@ -1084,7 +1090,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     PassUtils::is_aggregate_or_array_type(array_t->m_type);
             }
 
-            return PassUtils::is_aggregate_or_array_type(m_value);
+            return ASRUtils::is_trait_owner(fc->m_type) ||
+                PassUtils::is_aggregate_or_array_type(m_value);
         }
 
         // `p => f(...)`, where the result of `f` is finalized after the

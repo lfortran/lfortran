@@ -1112,6 +1112,12 @@ namespace Allocated {
                 " allocatable argument", loc);
             return nullptr;
         }
+        if (ASRUtils::is_trait_owner(ASRUtils::expr_type(args.p[0])) &&
+                !ASR::is_a<ASR::Var_t>(*args.p[0])) {
+            append_error(diag, "allocated requires an allocatable variable, "
+                "not a runtime trait function result", args.p[0]->base.loc);
+            return nullptr;
+        }
         return ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
                 args.p, args.n, 0, logical, nullptr);

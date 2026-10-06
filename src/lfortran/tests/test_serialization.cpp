@@ -14,6 +14,9 @@
 #include <libasr/asr_verify.h>
 #include <libasr/asr_text.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/function_result_scope.h>
+#include <libasr/pass/create_subroutine_from_function.h>
+#include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/utils.h>
 #include <lfortran/ast_to_src.h>
 
@@ -1647,7 +1650,7 @@ end module
     SUBCASE("rejected escaping storage does not poison a later local owner") {
         for (const std::string bad : {
                 "subroutine bad(owner)\nclass(IValue), allocatable, optional, intent(out) :: owner\nend subroutine\n",
-                "function bad() result(owner)\nclass(IValue), allocatable :: owner\nend function\n"}) {
+                "pure function bad() result(owner)\nclass(IValue), allocatable :: owner\nend function\n"}) {
             std::string recovering_source = source.substr(0, source.find("subroutine exercise")) +
                 bad + "subroutine good()\nclass(IValue), allocatable :: owner\n"
                 "allocate(Payload :: owner)\nend subroutine\nend module\n";
@@ -1801,6 +1804,175 @@ end module
     }
     SUBCASE("allocation slots cannot forge a C ABI") {
         ASRUtils::get_FunctionType(write)->m_abi = ASR::abiType::BindC;
+        rejects("asr.verify.trait_owner.slot_effects");
+    }
+}
+
+TEST_CASE("Runtime trait results retain scoped ownership through result lowering") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_result_serialization_m
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+type :: Payload
+    integer :: n = 17
+end type
+implements IValue :: Payload
+    procedure, pass :: value => get
+end implements
+contains
+integer function get(self)
+    class(Payload), intent(in) :: self
+    get = self%n
+end function
+function make(fill) result(object)
+    logical, intent(in) :: fill
+    class(IValue), allocatable :: object
+    if (fill) allocate(Payload :: object)
+end function
+subroutine observe(view)
+    class(IValue), intent(in) :: view
+end subroutine
+logical function ready(view)
+    class(IValue), intent(in) :: view
+    ready = view%value() == 17
+end function
+logical function keep(value)
+    logical, intent(in) :: value
+    keep = value
+end function
+subroutine exercise()
+    call observe(make(.true.))
+    if (keep(ready(make(.true.)))) return
+    associate (value => keep(ready(make(.true.))))
+        if (.not. value) error stop
+    end associate
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_result_serialization_m"));
+    auto *factory = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("make"));
+    auto *exercise = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("exercise"));
+    auto *return_var = ASRUtils::EXPR2VAR(factory->m_return_var);
+    REQUIRE(exercise->n_body == 3);
+    CHECK(return_var->m_intent == ASR::intentType::ReturnVar);
+    LCompilers::pass_function_result_scope(al, *result.result, options.po);
+    REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *scope_call = ASR::down_cast<ASR::BlockCall_t>(exercise->m_body[0]);
+    auto *block = ASR::down_cast<ASR::Block_t>(scope_call->m_m);
+    REQUIRE(block->n_body == 2);
+    auto *capture = ASR::down_cast<ASR::Assignment_t>(block->m_body[0]);
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(capture->m_value);
+    auto *temporary = ASRUtils::EXPR2VAR(capture->m_target);
+    CHECK(capture->m_move_allocation);
+    CHECK(ASRUtils::is_trait_owner(temporary->m_type));
+    CHECK(temporary->m_parent_symtab == block->m_symtab);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("scoped capture survives named and positional serialization") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_results.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+        SUBCASE("result scope re-entry does not recapture an owned temporary") {
+            auto before = LCompilers::asr_to_text(*result.result);
+            LCompilers::pass_function_result_scope(al, *result.result, options.po);
+            CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+            CHECK(before == LCompilers::asr_to_text(*result.result));
+        }
+    }
+    SUBCASE("capture becomes a shared OUT-slot call, not a pointer or value copy") {
+        LCompilers::pass_create_subroutine_from_function(al, *result.result, options.po);
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+        CHECK(factory->m_return_var == nullptr);
+        CHECK(return_var->m_intent == ASR::intentType::Out);
+        CHECK(factory->n_args == 2);
+        bool saw_call = false;
+        for (size_t i = 0; i < block->n_body; i++) {
+            CHECK_FALSE(ASR::is_a<ASR::Assignment_t>(*block->m_body[i]));
+            CHECK_FALSE(ASR::is_a<ASR::Associate_t>(*block->m_body[i]));
+            if (!ASR::is_a<ASR::SubroutineCall_t>(*block->m_body[i])) continue;
+            auto *lowered = ASR::down_cast<ASR::SubroutineCall_t>(block->m_body[i]);
+            if (ASRUtils::symbol_get_past_external(lowered->m_name) != &factory->base) continue;
+            saw_call = true;
+            REQUIRE(lowered->n_args == 2);
+            CHECK(ASRUtils::EXPR2VAR(lowered->m_args[1].m_value) == temporary);
+        }
+        CHECK(saw_call);
+        LCompilers::pass_intent_out_deallocate(al, *result.result, options.po);
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+        REQUIRE(ASR::is_a<ASR::If_t>(*factory->m_body[0]));
+        auto *entry = ASR::down_cast<ASR::If_t>(factory->m_body[0]);
+        REQUIRE(entry->n_body == 1);
+        REQUIRE(ASR::is_a<ASR::ExplicitDeallocate_t>(*entry->m_body[0]));
+    }
+    SUBCASE("ordinary assignment cannot masquerade as capture") {
+        capture->m_move_allocation = false;
+        rejects("asr.verify.trait_owner.value_copy");
+    }
+    SUBCASE("a move cannot steal another variable's allocation") {
+        capture->m_value = capture->m_target;
+        rejects("asr.verify.trait_owner.value_copy");
+    }
+    SUBCASE("capture cannot escape through SAVE") {
+        temporary->m_storage = ASR::storage_typeType::Save;
+        rejects("asr.verify.trait_owner.value_copy");
+    }
+    SUBCASE("a factory result cannot be a borrowed header") {
+        call->m_type = ASRUtils::extract_type(call->m_type);
+        rejects("asr.verify.trait_owner.value_copy");
+    }
+    SUBCASE("callee scope cleanup cannot destroy the actual returned result") {
+        auto *value = factory->m_return_var;
+        auto *cleanup = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+            al, value->base.loc, &value, 1));
+        factory->m_body = &cleanup;
+        factory->n_body = 1;
+        rejects("asr.verify.trait_owner.caller_lifetime");
+    }
+    SUBCASE("result cleanup effects remain visible through an executable block") {
+        factory->m_side_effect_free = true;
+        ASR::SideEffectFinder finder;
+        finder.visit_stmt(*exercise->m_body[0]);
+        CHECK(finder.found);
+        CHECK(finder.description.find("unchecked dynamic lifecycle effects") != std::string::npos);
+    }
+    SUBCASE("a result declaration cannot forge purity") {
+        ASRUtils::get_FunctionType(factory)->m_pure = true;
         rejects("asr.verify.trait_owner.slot_effects");
     }
 }

@@ -20,8 +20,11 @@ Every dummy intent requires the same canonical declared contract and an
 allocatable actual; child contracts and concrete allocatables are not covariant
 slots. INTENT(IN) permits inquiry and borrowing but cannot define the slot.
 INTENT(OUT) entry cleanup uses the ordinary `intent_out_deallocate` pass.
-Dummies are never destroyed at callee scope exit. Optional and BIND(C) slots,
-unproved PURE output cleanup, and erased function results remain unsupported.
+Dummies are never destroyed at callee scope exit. A scalar allocatable function
+result uses `ReturnVar` before normal result lowering, then a hidden OUT slot.
+The caller owns its returned value until its innermost using construct completes.
+Optional and BIND(C) slots, and unproved PURE output/result cleanup, remain
+unsupported.
 `TraitPack` creates compiler-borrowed concrete views; forwarding
 uses the original variable. `TraitBorrow` borrows an allocated owner. None of
 these operations copies the payload or transfers ownership.

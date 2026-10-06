@@ -35,6 +35,17 @@ frontend decides the conversion, and the backend only lowers what it is given.
 An array assignment is a whole-array operation, not a loop: the `array_op`
 pass turns it into loops later.
 
+An allocatable trait function result has one narrow internal move form.
+`function_result_scope` declares an owning temporary in the using construct's
+BLOCK and captures its `FunctionCall` with `move_allocation=true`.
+`subroutine_from_function` replaces that capture with a call whose hidden
+OUT argument is the temporary's allocation slot. No borrowed stack header
+escapes, and the temporary is finalized at construct completion.
+The verifier permits this form only for an unsaved local in a BLOCK/ASSOCIATE
+scope and an owning function call of the same declared contract. Ordinary
+trait assignment still uses [TraitAssignment](TraitAssignment.md): it copies
+the result and does not steal its observable finalization.
+
 ## Examples
 
 ```clojure

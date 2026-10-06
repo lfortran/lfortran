@@ -2913,6 +2913,9 @@ bool struct_needs_finalization(ASR::symbol_t* struct_sym) {
 
 bool is_finalizable_function_result(ASR::ttype_t* type,
         ASR::symbol_t* struct_sym) {
+    if (ASRUtils::is_trait_owner(type)) {
+        return true;
+    }
     if (type == nullptr || ASRUtils::is_array(type) ||
             ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ||
             !ASR::is_a<ASR::StructType_t>(*type) ||

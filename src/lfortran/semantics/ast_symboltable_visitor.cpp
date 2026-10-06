@@ -915,10 +915,26 @@ public:
         bool invalid = false;
         if (function.m_return_var && ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(function.m_return_var)))) {
-            diag.semantic_error_label(
-                "allocatable runtime trait function results are not implemented yet",
-                {function.m_return_var->base.loc}, "");
-            invalid = true;
+            auto *result = ASRUtils::EXPR2VAR(function.m_return_var);
+            auto *signature = ASRUtils::get_FunctionType(function);
+            std::string message;
+            if (!ASRUtils::is_trait_owner(result->m_type) ||
+                    result->m_storage != ASR::storage_typeType::Default ||
+                    result->m_presence != ASR::presenceType::Required ||
+                    result->m_value_attr || result->m_symbolic_value || result->m_value ||
+                    result->n_codims) {
+                message = "runtime trait function results require uninitialized "
+                    "scalar allocatable storage";
+            } else if (signature->m_abi != ASR::abiType::Source) {
+                message = "runtime trait function results require the Fortran source ABI";
+            } else if (signature->m_pure) {
+                message = "runtime trait function results with unchecked dynamic "
+                    "lifecycle effects are not allowed in pure procedures";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {result->base.base.loc}, "");
+                invalid = true;
+            }
         }
         for (size_t i = 0; i < function.n_args; i++) {
             auto *symbol = ASRUtils::symbol_get_past_external(

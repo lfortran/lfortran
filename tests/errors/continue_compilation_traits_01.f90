@@ -2459,3 +2459,52 @@ contains
         class(IValue), allocatable, intent(inout) :: slot
     end subroutine
 end module
+
+module traits_result_boundaries_m
+    use traits_owning_boundaries_m
+    implicit none
+contains
+    function make() result(object)
+        class(IValue), allocatable :: object
+        allocate(Item :: object)
+    end function
+    subroutine read_slot(slot)
+        class(IValue), allocatable, intent(in) :: slot
+    end subroutine
+    logical function has_value(slot)
+        class(IValue), allocatable, intent(in) :: slot
+        has_value = allocated(slot)
+    end function
+    pure subroutine observe(view)
+        class(IValue), intent(in) :: view
+    end subroutine
+    function unowned_result() result(object)
+        class(IValue) :: object
+    end function
+    function saved_result() result(object)
+        class(IValue), allocatable :: object
+        save :: object
+    end function
+    pure function pure_result() result(object)
+        class(IValue), allocatable :: object
+    end function
+    function bindc_result() result(object) bind(c)
+        class(IValue), allocatable :: object
+    end function
+    subroutine result_is_not_a_slot()
+        call read_slot(make())
+    end subroutine
+    subroutine result_is_not_a_function_slot()
+        if (has_value(make())) error stop
+    end subroutine
+    subroutine result_is_not_an_inquiry_variable()
+        if (allocated(make())) error stop
+    end subroutine
+    pure subroutine nested_result_cleanup()
+        block
+            associate(marker => 1)
+                call observe(make())
+            end associate
+        end block
+    end subroutine
+end module

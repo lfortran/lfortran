@@ -316,6 +316,7 @@ namespace LCompilers {
 
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
             return  is_aggregate_or_array_type(var) ||
+                    ASRUtils::is_trait_owner(ASRUtils::expr_type(var)) ||
                     is_non_primitive_return_type(ASRUtils::expr_type(var));
         }
 

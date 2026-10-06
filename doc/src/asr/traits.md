@@ -7,8 +7,8 @@ templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
 The LLVM backend also supports borrowed scalar runtime views and bounded scalar
-allocatable ownership and invariant allocatable dummy slots. Erased factory
-results and pointer views remain separate stages.
+allocatable ownership, invariant allocatable dummy slots, and scalar allocatable
+function results. Pointer views remain a separate stage.
 
 ## Declaring a contract
 
@@ -255,8 +255,8 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 `function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
 oracle checks the concrete computations through the default compilation pipeline.
 
-The broader proposal is not yet implemented. In particular, owning trait results,
-pointer trait objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
+The broader proposal is not yet implemented. In particular, pointer trait
+objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
@@ -336,7 +336,7 @@ compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
 provider archive. It is registered in CTest in normal and fast configurations.
 
-## Scalar allocatable ownership (R2a)
+## Scalar allocatable ownership, slots and results (R2)
 
 A local, module, saved local, or BLOCK entity can own one scalar value:
 
@@ -401,8 +401,27 @@ copying a header. Callee scope exit never destroys a dummy's allocation.
 Optional, VALUE and BIND(C) slots, and PURE dynamic OUT-entry cleanup, remain
 explicit semantic NYIs.
 
-This is **not all of R2**. Functions returning `class(I), allocatable` still
-receive an explicit semantic NYI pending the result ABI. Trait arrays, pointers, components, ASSOCIATE
+Scalar functions returning `class(I), allocatable` return one owned value.
+The existing `function_result_scope` and `subroutine_from_function` passes put
+it in a caller-owned slot of the innermost using executable construct. The
+result is excluded from callee local destruction, including early RETURN.
+Immediate readonly borrowing lasts through the call; assignment and SOURCE
+initialization make independent values. The result is then finalized, even
+after an owning assignment. Moving it unconditionally into the user destination
+would omit an observable FINAL and is not permitted. Pointer-component
+association remains shared, including observable FINAL effects on its target.
+Several references are evaluated once each and survive until the whole using
+construct completes, including an IF or DO header.
+
+A result variable may remain unallocated on a branch and may be inspected with
+`allocated` within its function. A function reference itself is not a variable:
+it cannot be an allocatable dummy actual (even INTENT(IN)) or a direct
+`allocated` argument. Borrowing or copying an unallocated result terminates
+with an allocation-state diagnostic instead of reading a null header. PURE
+and non-Fortran-ABI trait results are not implemented because their dynamic
+lifecycle effects and calling conventions have not been established.
+
+Trait arrays, pointers, components, ASSOCIATE
 views, projections, `move_alloc`, inspection, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
@@ -427,6 +446,14 @@ hidden allocation of an array/string-containing payload in normal and fast modes
 `traits_runtime_slot_01` checks all intents, nested forwarding, pointer/deep-copy
 behavior and exact dynamic FINAL counts. `_slot_02` checks completed attributes,
 renamed/re-exported contracts, readonly inquiry, and early-return ownership.
+`traits_runtime_result_01` retains exact FINAL counts and payload scribbling for
+direct borrowing, owner assignment, nested forwarding and SOURCE initialization.
+`_result_02` adds pointer-target effects, multiple references, IF/DO construct
+boundaries, early RETURN, loop reuse, and native invalid-result-state gates.
+GFortran 16 skips FINAL for a directly borrowed allocatable result; that known
+limitation does not change the required F2018 7.5.6.3p5 lifetime. The separate
+`_result_01_oracle` covers its passing assignment/SOURCE portions, without
+weakening the extension's direct-borrowed-result checks.
 Standard CLASS oracles are separate; the more demanding nested oracle is
 GFortran-only while legacy CLASS assignment finalization remains incomplete.
 

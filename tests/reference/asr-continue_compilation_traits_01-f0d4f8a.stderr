@@ -488,16 +488,6 @@ semantic error: standalone pointer attribute declaration requires `--implicit-in
 2129 |         pointer :: object
      |         ^^^^^^^^^^^^^^^^^ 
 
-semantic error: allocatable runtime trait function results are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2160:5 - 2163:16
-     |
-2160 |        function unsupported_factory() result(owner)
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-2163 |        end function
-     | ...^^^^^^^^^^^^^^^^ 
-
 semantic error: runtime trait objects currently require a scalar dummy
     --> tests/errors/continue_compilation_traits_01.f90:2239:26
      |
@@ -543,6 +533,30 @@ semantic error: bind(c) allocatable runtime trait dummies are not implemented ye
      |
 2459 |         class(IValue), allocatable, intent(inout) :: slot
      |                                                      ^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2482:26
+     |
+2482 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2485:39
+     |
+2485 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
+
+semantic error: runtime trait function results with unchecked dynamic lifecycle effects are not allowed in pure procedures
+    --> tests/errors/continue_compilation_traits_01.f90:2489:39
+     |
+2489 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
+
+semantic error: runtime trait function results require the Fortran source ABI
+    --> tests/errors/continue_compilation_traits_01.f90:2492:39
+     |
+2492 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
@@ -1011,3 +1025,37 @@ semantic error: Argument `slot` with intent(in) passed to a dummy argument with 
      |
 2446 |         call write_slot(slot)
      |                         ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2495:24
+     |
+2495 |         call read_slot(make())
+     |                        ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2498:23
+     |
+2498 |         if (has_value(make())) error stop
+     |                       ^^^^^^ 
+
+semantic error: allocated requires an allocatable variable, not a runtime trait function result
+    --> tests/errors/continue_compilation_traits_01.f90:2501:23
+     |
+2501 |         if (allocated(make())) error stop
+     |                       ^^^^^^ 
+
+semantic error: runtime trait result cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2506:30
+     |
+2506 |                 call observe(make())
+     |                              ^^^^^^ 
+
+ASR verify pass error: Function result_is_not_a_function_slot doesn't depend on make but is found in its dependency list.
+    --> tests/errors/continue_compilation_traits_01.f90:2497:5 - 2499:18
+     |
+2497 |        subroutine result_is_not_a_function_slot()
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2499 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ failed here

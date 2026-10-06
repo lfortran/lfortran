@@ -14881,6 +14881,13 @@ public:
             case ASR::ttypeType::StructType: {
                 return ASRUtils::duplicate_type(al, return_type);
             }
+            case ASR::ttypeType::TraitObjectType: {
+                auto *contract = ASRUtils::trait_runtime_contract(return_type);
+                auto *reference = make_operator_proc_visible(
+                    &contract->base, "trait", current_scope);
+                ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+                return ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc, reference));
+            }
             default: {
                 return return_type;
             }
@@ -16094,6 +16101,9 @@ public:
         if (declared_result != implicit_call_result_types.end()) {
             return_type = declared_result->second;
         }
+        if (ASRUtils::is_trait_owner(return_type)) {
+            return_type = handle_return_type(return_type, loc, args);
+        }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
@@ -16172,7 +16182,10 @@ public:
             if (val && ASR::is_a<ASR::FunctionCall_t>(*val)) {
                 ASR::ttype_t* ret_type = ASRUtils::expr_type(val);
                 ASR::ttype_t* base_type = ASRUtils::type_get_past_array(ret_type);
+                // Keep the using construct intact until result lifetime
+                // scoping, including scalar calls around an owning result.
                 if (ASRUtils::is_array(ret_type) ||
+                    ASRUtils::contains_finalizable_function_reference(val) ||
                     ASR::is_a<ASR::StructType_t>(*base_type)) {
                     new_args.push_back(al, arg);
                     continue;

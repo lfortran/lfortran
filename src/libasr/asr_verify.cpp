@@ -627,10 +627,26 @@ public:
         // target and value types are unrelated by design.
         ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
         ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        bool trait_result_capture = false;
+        if (ASRUtils::is_trait_owner(assign_target_type) && x.m_move_allocation &&
+                !x.m_realloc_lhs && !x.m_overloaded &&
+                ASR::is_a<Var_t>(*x.m_target) &&
+                ASR::is_a<FunctionCall_t>(*x.m_value) &&
+                ASRUtils::is_trait_owner(assign_value_type)) {
+            auto *variable = ASRUtils::EXPR2VAR(x.m_target);
+            auto *scope = variable->m_parent_symtab;
+            auto *owner = scope && scope->asr_owner &&
+                ASR::is_a<symbol_t>(*scope->asr_owner)
+                    ? ASR::down_cast<symbol_t>(scope->asr_owner) : nullptr;
+            trait_result_capture = scope == current_symtab &&
+                variable->m_intent == intentType::Local &&
+                variable->m_storage == storage_typeType::Default && owner &&
+                (ASR::is_a<Block_t>(*owner) || ASR::is_a<AssociateBlock_t>(*owner));
+        }
         require_id(!assign_target_type || !ASR::is_a<TraitObjectType_t>(
-                *ASRUtils::extract_type(assign_target_type)),
+                *ASRUtils::extract_type(assign_target_type)) || trait_result_capture,
             "asr.verify.trait_owner.value_copy",
-            "Trait storage requires explicit value-copy semantics, not header assignment");
+            "Trait assignment requires value-copy semantics; only scoped function-result capture can move ownership");
         if (!diagnostics.has_error() && x.m_overloaded == nullptr
                 && assign_target_type && assign_value_type
                 && !is_procedure_type(assign_target_type)
@@ -665,7 +681,7 @@ public:
                 "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
-        if (x.m_move_allocation) {
+        if (x.m_move_allocation && !trait_result_capture) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
@@ -1830,10 +1846,15 @@ public:
     ttype_t *verify_trait_owner(expr_t *owner, const Location &loc,
             bool defining = true) {
         auto *type = typed_expr_type(owner);
-        require_with_loc_id(owner && ASR::is_a<Var_t>(*owner) &&
+        require_with_loc_id(owner && (ASR::is_a<Var_t>(*owner) ||
+                (!defining && ASR::is_a<FunctionCall_t>(*owner))) &&
                 ASRUtils::is_trait_owner(type),
             "asr.verify.trait_owner.storage",
-            "An owning operation requires a scalar allocatable trait variable", loc);
+            "An owning operation requires a scalar allocatable trait slot or a borrowed function result", loc);
+        if (ASR::is_a<FunctionCall_t>(*owner)) {
+            visit_expr(*owner);
+            return ASRUtils::extract_type(type);
+        }
         auto *variable = ASRUtils::EXPR2VAR(owner);
         require_with_loc_id(!defining || variable->m_intent != intentType::In,
             "asr.verify.trait_owner.definable",
@@ -2590,11 +2611,16 @@ public:
     void visit_Variable(const Variable_t &x) {
         if (x.m_type && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
             bool dummy = false;
+            bool returned = false;
+            Function_t *function = nullptr;
             if (x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
                     ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
                     ASR::is_a<Function_t>(*ASR::down_cast<symbol_t>(
                         x.m_parent_symtab->asr_owner))) {
-                auto *function = ASR::down_cast2<Function_t>(x.m_parent_symtab->asr_owner);
+                function = ASR::down_cast2<Function_t>(x.m_parent_symtab->asr_owner);
+                returned = function->m_return_var &&
+                    ASR::is_a<Var_t>(*function->m_return_var) &&
+                    ASR::down_cast<Var_t>(function->m_return_var)->m_v == &x.base;
                 for (size_t i = 0; i < function->n_args; i++) {
                     dummy |= function->m_args[i] && ASR::is_a<Var_t>(*function->m_args[i]) &&
                         ASR::down_cast<Var_t>(function->m_args[i])->m_v == &x.base;
@@ -2606,6 +2632,8 @@ public:
             bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
                 x.m_storage == storage_typeType::Default &&
                 ASRUtils::is_arg_dummy(x.m_intent);
+            bool result = ASRUtils::is_trait_owner(x.m_type) && returned &&
+                x.m_storage == storage_typeType::Default && x.m_intent == intentType::ReturnVar;
             bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
                 x.m_intent == intentType::Local && x.m_parent_symtab &&
                 x.m_parent_symtab->asr_owner &&
@@ -2613,19 +2641,19 @@ public:
                 (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
                 !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
                     x.m_parent_symtab->asr_owner));
-            require_id((borrowed || owner || slot) && x.m_presence == presenceType::Required &&
+            require_id((borrowed || owner || slot || result) && x.m_presence == presenceType::Required &&
                     !x.m_value_attr && !x.m_symbolic_value && !x.m_value &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Trait storage must be a required read-only view, a scalar allocatable dummy slot, "
+                "Trait storage must be a required read-only view, a scalar allocatable slot/result, "
                 "or an initially unallocated local owner");
-            if (slot) {
-                auto *function = ASR::down_cast2<Function_t>(x.m_parent_symtab->asr_owner);
+            if (slot || result) {
                 auto *signature = ASRUtils::get_FunctionType(function);
                 require_id(signature->m_abi != abiType::BindC &&
-                        !(signature->m_pure && x.m_intent == intentType::Out),
+                        (!result || signature->m_abi == abiType::Source) &&
+                        !(signature->m_pure && (result || x.m_intent == intentType::Out)),
                     "asr.verify.trait_owner.slot_effects",
-                    "An allocatable trait slot requires the source ABI and proven entry effects");
+                    "An allocatable trait slot or result requires the source ABI and proven lifecycle effects");
             }
         }
         std::string current_name_copy = current_name;
@@ -4437,6 +4465,18 @@ public:
             std::string(to_fn->m_name) + "'");
     }
 
+    void visit_IntrinsicImpureFunction(const IntrinsicImpureFunction_t &x) {
+        if (x.m_impure_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                x.n_args == 1 && x.m_args &&
+                ASRUtils::is_trait_owner(typed_expr_type(x.m_args[0]))) {
+            require_id(ASR::is_a<Var_t>(*x.m_args[0]),
+                "asr.verify.trait_owner.inquiry_variable",
+                "An allocated inquiry requires a variable, not a function result");
+        }
+        BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
@@ -4568,6 +4608,14 @@ public:
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.
             ASR::ttype_t *returned = typed_expr_type(fn_->m_return_var);
+            if (returned && x.m_type &&
+                    (ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(returned)) ||
+                     ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type)))) {
+                require_id(ASRUtils::is_trait_owner(returned) &&
+                        ASRUtils::is_trait_owner(x.m_type),
+                    "asr.verify.trait_result.type",
+                    "A trait function call must preserve its owning result type");
+            }
             if (returned != nullptr && x.m_type != nullptr &&
                     !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                     !is_struct_like_type(returned) &&

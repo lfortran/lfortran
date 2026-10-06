@@ -135,6 +135,11 @@ public:
 
     void visit_FunctionCall(const FunctionCall_t &x) {
         if (found) return;
+        if (ASRUtils::is_trait_owner(x.m_type)) {
+            mark_found(x.base.base.loc,
+                "runtime trait result cleanup with unchecked dynamic lifecycle effects");
+            return;
+        }
         if (x.m_name && check_call(x.base.base.loc, x.m_name)) {
             return;
         }

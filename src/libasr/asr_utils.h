@@ -172,10 +172,11 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
 bool struct_needs_finalization(ASR::symbol_t* struct_sym);
 
 // Whether a function result of type `type`, declared by `struct_sym`, is one
-// that F2018 7.5.6.3 p5 finalizes after the statement that references the
-// function: a nonpointer, nonallocatable, nonpolymorphic scalar of a derived
-// type whose finalization does anything. Such a result is not finalized when
-// the function is invoked, as an intent(out) dummy argument would be.
+// that F2018 7.5.6.3 p5 finalizes after its using construct: an ordinary
+// nonpointer, nonallocatable, nonpolymorphic derived scalar whose finalization
+// does anything, or an owning scalar trait result with dynamic lifecycle.
+// Ordinary results suppress intent(out) entry finalization; allocatable trait
+// results instead use an initially empty caller-owned OUT slot.
 bool is_finalizable_function_result(ASR::ttype_t* type,
         ASR::symbol_t* struct_sym);
 

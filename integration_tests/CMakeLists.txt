@@ -3778,6 +3778,10 @@ RUN(NAME traits_runtime_slot_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-p
 # This full ordinary CLASS oracle still fails a pre-existing FINAL assertion.
 RUN(NAME traits_runtime_slot_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_slot_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# The existing ordinary CLASS allocatable-result lifetime is not yet complete.
+RUN(NAME traits_runtime_result_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_owning_04_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_failure_01 LABELS llvm NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_owning_failure_01.c)
