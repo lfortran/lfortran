@@ -45,7 +45,7 @@ contains
     end function
     function relay(n, link) result(object)
         integer, intent(in) :: n
-        integer, target, intent(in) :: link
+        integer, target, intent(inout) :: link
         class(IValue), allocatable :: object
         object = make(n, link)
     end function
@@ -75,7 +75,7 @@ contains
         iterations = 2
     end function
     subroutine early_return(link)
-        integer, target, intent(in) :: link
+        integer, target, intent(inout) :: link
         if (matches(make(-47, link), -37)) then
             if (finals /= 7 .or. link /= 10) error stop 7
             return
