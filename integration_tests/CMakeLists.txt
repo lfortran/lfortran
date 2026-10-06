@@ -4025,6 +4025,8 @@ RUN(NAME finalization_37 LABELS gfortran llvm)
 RUN(NAME finalization_38 LABELS gfortran llvm)
 RUN(NAME finalization_16 LABELS gfortran llvm)
 RUN(NAME finalization_17 LABELS gfortran llvm)
+RUN(NAME finalization_18 LABELS gfortran llvm)
+RUN(NAME finalization_19 LABELS gfortran llvm)
 
 RUN(NAME read_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN read_02_data.txt)

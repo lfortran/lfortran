@@ -10017,7 +10017,44 @@ public:
             // (including byte→element stride conversion) is already handled
             // in the prologue above. No additional stride conversion needed.
         }
+        finalize_intent_out_array_args(x);
         declare_local_vars(x);
+    }
+
+    /**
+     * Calls the final subroutines of the nonpointer, nonallocatable
+     * INTENT(OUT) array dummy arguments of derived type of `x`, which are
+     * finalized when the procedure is invoked (F2018 7.5.6.3 p7). The
+     * intent_out_deallocate pass finalizes the components of the elements.
+     * A polymorphic array is not finalized yet (#14078).
+     */
+    void finalize_intent_out_array_args(const ASR::Function_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t* const sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* const v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Out || !ASRUtils::is_array(v->m_type)
+                    || ASRUtils::is_allocatable_or_pointer(v->m_type)) continue;
+            ASR::ttype_t* const elem_type = ASRUtils::type_get_past_array(v->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*elem_type)
+                    || ASRUtils::is_class_type(elem_type)) continue;
+            // An assumed-size array of a finalizable type cannot be
+            // INTENT(OUT) (C839), and its size is not known.
+            if (ASRUtils::extract_physical_type(v->m_type)
+                    != ASR::array_physical_typeType::DescriptorArray) {
+                ASR::dimension_t* dims = nullptr;
+                const size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, dims);
+                if (n_dims == 0 || dims[n_dims - 1].m_length == nullptr) continue;
+            }
+            ASR::Struct_t* const struct_sym = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            uint32_t const h = get_hash((ASR::asr_t*)v);
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            llvm::Value* const ptr = llvm_symtab[h];
+            llvm_symtab_finalizer.call_array_final_of_intent_out(ptr, v->m_type, struct_sym);
+        }
     }
 
     inline void free_strings_to_be_deallocated(size_t start_n) {
@@ -28676,6 +28713,33 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
     }
 }
 
+/// Defined here to use the array descriptor API.
+llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+        ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx) {
+    ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
+    llvm::Type* const elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+    if (arr_t->m_physical_type != ASR::array_physical_typeType::DescriptorArray) {
+        return llvm_utils_->create_ptr_gep2(elem_llvm_type, data, idx);
+    }
+    llvm::Type* const i64 = llvm::Type::getInt64Ty(builder_->getContext());
+    llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
+    llvm::Value* const dim_des_arr = llvm_utils_->arr_api->get_pointer_to_dimension_descriptor_array(
+        arr_llvm_type, ptr);
+    llvm::Value* pos = builder_->CreateSExtOrTrunc(
+        llvm_utils_->arr_api->get_offset(arr_llvm_type, ptr), i64);
+    llvm::Value* rest = builder_->CreateSExtOrTrunc(idx, i64);
+    for (size_t r = 0; r < arr_t->n_dims; r++) {
+        llvm::Value* const dim = llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), r);
+        llvm::Value* const extent = builder_->CreateSExtOrTrunc(
+            llvm_utils_->arr_api->get_dimension_size(dim_des_arr, dim), i64);
+        llvm::Value* const stride = builder_->CreateSExtOrTrunc(llvm_utils_->arr_api->get_stride(
+            llvm_utils_->arr_api->get_pointer_to_dimension_descriptor(dim_des_arr, dim)), i64);
+        pos = builder_->CreateAdd(pos, builder_->CreateMul(builder_->CreateSRem(rest, extent), stride));
+        rest = builder_->CreateSDiv(rest, extent);
+    }
+    return llvm_utils_->create_ptr_gep2(elem_llvm_type, data, pos);
+}
+
 /// Defined here to evaluate the bounds of an array whose shape is not
 /// constant with `ASRToLLVMVisitor::visit_expr_wrapper()`.
 void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
@@ -28686,9 +28750,12 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         ASRUtils::expr_type(final_proc->m_args[0]));
     llvm::Type* const param_type = final_fn->getFunctionType()->getParamType(0);
     llvm::Type* const elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+    llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
     const bool dummy_is_descriptor = ASRUtils::extract_physical_type(dummy_type)
         == ASR::array_physical_typeType::DescriptorArray;
     const bool parent_component = final_struct != struct_sym;
+    const bool is_descriptor = arr_t->m_physical_type
+        == ASR::array_physical_typeType::DescriptorArray;
     llvm::Value* data = nullptr;
     switch (arr_t->m_physical_type) {
         case ASR::array_physical_typeType::DescriptorArray:
@@ -28697,7 +28764,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
                 return;
             }
             data = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
-                llvm_utils_->arr_api->get_pointer_to_data(get_llvm_type(arr_type, struct_sym), ptr));
+                llvm_utils_->arr_api->get_pointer_to_data(arr_llvm_type, ptr));
             break;
         case ASR::array_physical_typeType::FixedSizeArray:
         case ASR::array_physical_typeType::PointerArray:
@@ -28706,76 +28773,81 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         default:
             throw CodeGenError("finalization of an array of this physical type is not implemented yet");
     }
-    // The parent components of the array are copied to the temporary array
-    // `final_data` of the parent type for the call, and back after it.
+    llvm::Type* const i64 = llvm::Type::getInt64Ty(builder_->getContext());
+    // The lower bound and the extent of every dimension of the array.
+    std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
+    llvm::Value* const dim_des_arr = is_descriptor
+        ? llvm_utils_->arr_api->get_pointer_to_dimension_descriptor_array(arr_llvm_type, ptr) : nullptr;
+    for (size_t r = 0; r < arr_t->n_dims; r++) {
+        if (is_descriptor) {
+            llvm::Value* const dim = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(builder_->getContext()), r);
+            llvm_dims.push_back({llvm_utils_->arr_api->get_lower_bound(
+                    llvm_utils_->arr_api->get_pointer_to_dimension_descriptor(dim_des_arr, dim)),
+                llvm_utils_->arr_api->get_dimension_size(dim_des_arr, dim)});
+        } else {
+            asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_start, true);
+            llvm::Value* const start = asr_to_llvm_visitor_.tmp;
+            asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_length, true);
+            llvm_dims.push_back({start, asr_to_llvm_visitor_.tmp});
+        }
+    }
+    // The final subroutine gets a contiguous temporary array `final_data`
+    // when the elements of the array are not adjacent: for the parent
+    // components of the array, which are at the start of its elements, or
+    // for an array with a descriptor and a dummy argument without one. The
+    // elements are copied to it for the call, and back after it.
+    const bool copy = parent_component || (is_descriptor && !dummy_is_descriptor);
     llvm::Type* const final_elem_llvm_type = parent_component
         ? get_llvm_type(final_struct->m_struct_signature, final_struct) : elem_llvm_type;
     const uint64_t final_elem_size = llvm_utils_->module->getDataLayout()
         .getTypeAllocSize(final_elem_llvm_type);
-    llvm::Type* const i64 = llvm::Type::getInt64Ty(builder_->getContext());
     llvm::Value* final_data = data;
     llvm::Value* n_elements = nullptr;
-    auto const copy_parent_components = [&](const bool copy_in) {
+    auto const copy_elements = [&](const bool copy_in) {
         // Allocated in the entry block: the finalization can be inside a loop.
-        llvm::Value* const iter = llvm_utils_->CreateAlloca(i64, nullptr, "parent_copy_iter");
+        llvm::Value* const iter = llvm_utils_->CreateAlloca(i64, nullptr, "final_copy_iter");
         builder_->CreateStore(llvm::ConstantInt::get(i64, -1, true), iter);
-        llvm_utils_->create_loop(copy_in ? "Copy_in_parent_components"
-                : "Copy_out_parent_components", [&]() {
+        llvm_utils_->create_loop(copy_in ? "Copy_in_final_arg" : "Copy_out_final_arg", [&]() {
             llvm::Value* const next = builder_->CreateAdd(builder_->CreateLoad(i64, iter),
                 llvm::ConstantInt::get(i64, 1));
             builder_->CreateStore(next, iter);
             return builder_->CreateICmpSLT(next, n_elements);
         }, [&]() {
             llvm::Value* const idx = builder_->CreateLoad(i64, iter);
-            // The parent component is at the start of the element.
-            llvm::Value* const parent = llvm_utils_->create_ptr_gep2(elem_llvm_type, data, idx);
+            llvm::Value* const elem = get_array_element(ptr, arr_type, struct_sym, data, idx);
             llvm::Value* const copy = llvm_utils_->create_ptr_gep2(final_elem_llvm_type, final_data, idx);
-            builder_->CreateMemCpy(copy_in ? copy : parent, llvm::MaybeAlign(),
-                copy_in ? parent : copy, llvm::MaybeAlign(), final_elem_size);
+            builder_->CreateMemCpy(copy_in ? copy : elem, llvm::MaybeAlign(),
+                copy_in ? elem : copy, llvm::MaybeAlign(), final_elem_size);
         });
     };
-    if (parent_component) {
-        n_elements = llvm_utils_->get_array_size(ptr,
-            get_llvm_type(arr_type, struct_sym), arr_type, &asr_to_llvm_visitor_);
+    if (copy) {
+        n_elements = builder_->CreateSExtOrTrunc(llvm_utils_->get_array_size(ptr,
+            arr_llvm_type, arr_type, &asr_to_llvm_visitor_), i64);
         final_data = builder_->CreateBitCast(LLVM::lfortran_malloc(builder_->getContext(),
                 *llvm_utils_->module, *builder_,
                 builder_->CreateMul(n_elements, llvm::ConstantInt::get(i64, final_elem_size))),
             final_elem_llvm_type->getPointerTo());
-        copy_parent_components(true);
+        copy_elements(true);
     }
     if (!dummy_is_descriptor) {
         builder_->CreateCall(final_fn, {builder_->CreateBitCast(final_data, param_type)});
     } else {
-        // Describe the array with a descriptor of the dummy's type.
+        // Describe the contiguous array with a descriptor of the dummy's type.
         llvm::Type* const desc_type = get_llvm_type(dummy_type, final_struct);
         llvm::Value* const desc = llvm_utils_->arr_api->create_descriptor_alloca(desc_type, "final_arg_desc");
-        if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-            // The shape of the array is the one in its descriptor.
-            builder_->CreateMemCpy(desc, llvm::MaybeAlign(), ptr, llvm::MaybeAlign(),
-                llvm_utils_->module->getDataLayout().getTypeAllocSize(desc_type));
-        } else {
-            builder_->CreateStore(llvm::Constant::getNullValue(desc_type), desc);
-        }
+        builder_->CreateStore(llvm::Constant::getNullValue(desc_type), desc);
         builder_->CreateStore(llvm::ConstantInt::get(i64, final_elem_size),
             llvm_utils_->create_gep2(desc_type, desc, 1));
         builder_->CreateStore(builder_->CreateBitCast(final_data,
                 llvm::cast<llvm::StructType>(desc_type)->getElementType(0)),
             llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
-        if (arr_t->m_physical_type != ASR::array_physical_typeType::DescriptorArray) {
-            std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
-            for (size_t r = 0; r < arr_t->n_dims; r++) {
-                asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_start, true);
-                llvm::Value* const start = asr_to_llvm_visitor_.tmp;
-                asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_length, true);
-                llvm_dims.push_back({start, asr_to_llvm_visitor_.tmp});
-            }
-            llvm_utils_->arr_api->fill_array_details(desc_type, desc, final_elem_llvm_type,
-                arr_t->n_dims, llvm_dims, llvm_utils_->module, false);
-        }
+        llvm_utils_->arr_api->fill_array_details(desc_type, desc, final_elem_llvm_type,
+            arr_t->n_dims, llvm_dims, llvm_utils_->module, false);
         builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
     }
-    if (parent_component) {
-        copy_parent_components(false);
+    if (copy) {
+        copy_elements(false);
         llvm_utils_->lfortran_free_nocheck(final_data);
     }
 }
