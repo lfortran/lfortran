@@ -3028,6 +3028,47 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_array_section_");
     }
 
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        bool is_section = ASR::is_a<ASR::ArraySection_t>(*x->m_v);
+        bool is_vector_subscript = ASR::is_a<ASR::ArrayItem_t>(*x->m_v) &&
+            ASRUtils::is_array_indexed_with_array_indices(
+                ASR::down_cast<ASR::ArrayItem_t>(x->m_v));
+        if( !(is_section || is_vector_subscript) ||
+            !ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x->m_v))) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_StructInstanceMember(x);
+            return ;
+        }
+        // A polymorphic temporary is allocated with the declared type, which
+        // is too small for the elements of an extended dynamic type copied
+        // into it. A component taken from the section is one of the
+        // declared type, so a copy of just that part is enough.
+        const Location& loc = x->m_v->base.loc;
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &(x->m_v);
+        if( is_section ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(
+                ASR::down_cast<ASR::ArraySection_t>(x->m_v));
+        } else {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(
+                ASR::down_cast<ASR::ArrayItem_t>(x->m_v));
+        }
+        current_expr = current_expr_copy;
+        ASR::ttype_t* declared_type = ASRUtils::make_StructType_t_util(al, loc,
+            ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(x->m_v)), true);
+        ASR::ttype_t* tmp_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+            ASRUtils::create_array_type_with_empty_dims(al,
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_v)),
+                declared_type)));
+        ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, is_section ? "_array_section_" : "_array_item_",
+            tmp_type, x->m_v);
+        insert_allocate_stmt_for_array(al, array_var_temporary, x->m_v, current_body);
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, array_var_temporary, x->m_v, nullptr, exprs_with_target)));
+        x->m_v = array_var_temporary;
+    }
+
     void replace_ArrayTranspose(ASR::ArrayTranspose_t* x) {
         replace_current_expr(x, "_array_transpose_");
     }
