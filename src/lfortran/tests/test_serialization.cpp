@@ -1442,6 +1442,7 @@ subroutine exercise(view, other_view)
     class(IOther), intent(in) :: other_view
     type(Payload) :: data
     class(IValue), allocatable :: owner, copy
+    class(*), allocatable :: erased
     allocate(Payload :: owner)
     deallocate(owner)
     allocate(owner, source=data)
@@ -1564,6 +1565,27 @@ end module
         ASR::alloc_arg_t arg{};
         arg.loc = typed->base.base.loc;
         arg.m_a = typed->m_target;
+        function->m_body[0] = ASRUtils::STMT(ASR::make_Allocate_t(al,
+            arg.loc, &arg, 1, nullptr, nullptr, nullptr));
+        rejects("asr.verify.trait_owner.explicit_protocol");
+    }
+    SUBCASE("ordinary allocation cannot source an owner or borrowed trait") {
+        for (auto* source : {typed->m_target, function->m_args[0]}) {
+            ASR::alloc_arg_t arg{};
+            arg.loc = typed->base.base.loc;
+            arg.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc,
+                function->m_symtab->get_symbol("erased")));
+            function->m_body[0] = ASRUtils::STMT(ASR::make_Allocate_t(al,
+                arg.loc, &arg, 1, nullptr, nullptr, source));
+            rejects("asr.verify.trait_owner.explicit_protocol");
+        }
+    }
+    SUBCASE("ordinary allocation cannot use an unconverted trait mold type") {
+        ASR::alloc_arg_t arg{};
+        arg.loc = typed->base.base.loc;
+        arg.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc,
+            function->m_symtab->get_symbol("erased")));
+        arg.m_type = ASRUtils::expr_type(function->m_args[0]);
         function->m_body[0] = ASRUtils::STMT(ASR::make_Allocate_t(al,
             arg.loc, &arg, 1, nullptr, nullptr, nullptr));
         rejects("asr.verify.trait_owner.explicit_protocol");

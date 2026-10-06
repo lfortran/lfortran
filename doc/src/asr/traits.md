@@ -391,6 +391,9 @@ options are rejected rather than ignored. Allocation failure terminates, includi
 failure while initializing/copying owned components. Owning operations in PURE
 procedures are rejected because the contract does not promise pure dynamic
 lifecycle effects.
+Ordinary allocation cannot take a trait owner or borrowed view as SOURCE or
+MOLD: conversion to ordinary CLASS (including `class(*)`) or concrete storage
+is not implemented and is rejected before lowering.
 
 `traits_runtime_04` is the unchanged owning-value acceptance program.
 `traits_runtime_owning_01` through `_10` cover fresh initialization, MOLD,

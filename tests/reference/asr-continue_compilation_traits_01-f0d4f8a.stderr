@@ -867,3 +867,39 @@ semantic error: concrete select type inspection of runtime trait views is not im
      |
 2229 |         select type(owner)
      |                     ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2286:33
+     |
+2286 |         allocate(erased, source=owner)
+     |                                 ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2292:31
+     |
+2292 |         allocate(erased, mold=owner)
+     |                               ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2298:35
+     |
+2298 |         allocate(ordinary, source=owner)
+     |                                   ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2304:33
+     |
+2304 |         allocate(ordinary, mold=owner)
+     |                                 ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2309:33
+     |
+2309 |         allocate(erased, source=view)
+     |                                 ^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2314:33
+     |
+2314 |         allocate(ordinary, mold=view)
+     |                                 ^^^^ 

@@ -2275,3 +2275,42 @@ end module
 module traits_after_component_bounds_error_m
     integer :: marker = 17
 end module
+
+module traits_owning_ordinary_allocation_boundary_m
+    use traits_owning_boundaries_m
+contains
+    subroutine erased_source()
+        class(IValue), allocatable :: owner
+        class(*), allocatable :: erased
+        allocate(Item :: owner)
+        allocate(erased, source=owner)
+    end subroutine
+    subroutine erased_mold()
+        class(IValue), allocatable :: owner
+        class(*), allocatable :: erased
+        allocate(Item :: owner)
+        allocate(erased, mold=owner)
+    end subroutine
+    subroutine declared_source()
+        class(IValue), allocatable :: owner
+        class(Item), allocatable :: ordinary
+        allocate(Item :: owner)
+        allocate(ordinary, source=owner)
+    end subroutine
+    subroutine declared_mold()
+        class(IValue), allocatable :: owner
+        class(Item), allocatable :: ordinary
+        allocate(Item :: owner)
+        allocate(ordinary, mold=owner)
+    end subroutine
+    subroutine borrowed_source(view)
+        class(IValue), intent(in) :: view
+        class(*), allocatable :: erased
+        allocate(erased, source=view)
+    end subroutine
+    subroutine borrowed_mold(view)
+        class(IValue), intent(in) :: view
+        type(Item), allocatable :: ordinary
+        allocate(ordinary, mold=view)
+    end subroutine
+end module

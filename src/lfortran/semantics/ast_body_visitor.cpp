@@ -3961,6 +3961,14 @@ public:
             return;
         }
 
+        for (auto* value : {source, mold}) {
+            if (value && ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(value)))) {
+                trait_call_error("allocating ordinary storage from a runtime trait "
+                    "source or mold is not implemented yet", value->base.loc);
+            }
+        }
+
         // When source is a FunctionCall, materialize it into a temporary
         // variable so the function is called only once. Without this, the
         // source expression is duplicated into ArrayBound, ArraySize,

@@ -1928,11 +1928,14 @@ public:
         verify_trait_copy_source(x.m_value, type, x.m_witness, x.base.base.loc);
     }
 
-    void reject_implicit_trait_storage(expr_t *value, const Location &loc) {
-        auto *type = typed_expr_type(value);
+    void reject_implicit_trait_type(ttype_t *type, const Location &loc) {
         require_with_loc_id(!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type)),
             "asr.verify.trait_owner.explicit_protocol",
             "Trait storage requires checked allocation, copying and cleanup operations", loc);
+    }
+
+    void reject_implicit_trait_storage(expr_t *value, const Location &loc) {
+        reject_implicit_trait_type(typed_expr_type(value), loc);
     }
 
     void visit_ReAlloc(const ReAlloc_t &x) {
@@ -5314,6 +5317,9 @@ public:
 
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
+            if (x.m_source) {
+                reject_implicit_trait_storage(x.m_source, x.m_source->base.loc);
+            }
             for( size_t i = 0; i < x.n_args; i++ ) {
                 reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
                 require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
@@ -5321,6 +5327,7 @@ public:
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
                 ASR::ttype_t* alloc_arg_type = x.m_args[i].m_type;
+                reject_implicit_trait_type(alloc_arg_type, x.m_args[i].loc);
                 if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
                     require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
                         "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
