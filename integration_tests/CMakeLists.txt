@@ -4021,6 +4021,7 @@ RUN(NAME finalization_34 LABELS gfortran llvm)
 RUN(NAME finalization_35 LABELS gfortran llvm)
 RUN(NAME finalization_36 LABELS gfortran llvm)
 RUN(NAME finalization_37 LABELS gfortran llvm)
+RUN(NAME finalization_38 LABELS gfortran llvm)
 RUN(NAME finalization_16 LABELS gfortran llvm)
 RUN(NAME finalization_17 LABELS gfortran llvm)
 

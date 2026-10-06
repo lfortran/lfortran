@@ -1117,7 +1117,7 @@ class ASRToLLVMVisitor;
             ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
             if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
             if (ASRUtils::is_array(t_past)) {
-                check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
+                check_if_array_allocated_then_finalize(llvm_var, t_past, struct_sym, [&]() {
                     call_array_final_procedures(llvm_var, t_past, struct_sym,
                         ASRUtils::extract_n_dims_from_ttype(t_past));
                 });
@@ -1165,7 +1165,7 @@ class ASRToLLVMVisitor;
                         elements_are_entities ? 0 : rank);
                 } else if (in_struct
                         && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
-                    check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                    check_if_array_allocated_then_finalize(ptr, v_type_past, struct_sym, [&]() {
                         call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
                     });
                 }
@@ -2366,6 +2366,27 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(t->isPointerTy(), "Expected a pointer type")
             auto const null_ptr_const = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(t));
             llvm_utils_->create_if_else(builder_->CreateICmpNE(ptr, null_ptr_const), fin, [](){}, "is_allocated");
+        }
+
+        /**
+         * Calls `fin` if the allocatable array with the descriptor `ptr` is
+         * allocated. The descriptor of an allocatable array exists whether it
+         * is allocated or not, so its data pointer is checked as well.
+         * @param arr_type ASR array type of `ptr` (past allocatable).
+         */
+        template <typename finProcess>
+        void check_if_array_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+                ASR::Struct_t* const struct_sym, finProcess fin){
+            LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_type)
+                == ASR::array_physical_typeType::DescriptorArray)
+            check_if_allocated_then_finalize(ptr, arr_type, struct_sym, [&]() {
+                llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
+                llvm::Type* const data_type = get_llvm_type(
+                    ASRUtils::type_get_past_array(arr_type), struct_sym)->getPointerTo();
+                llvm::Value* const data = llvm_utils_->CreateLoad2(data_type,
+                    llvm_utils_->create_gep2(arr_llvm_type, ptr, 0));
+                check_if_allocated_then_finalize(data, data_type, fin);
+            });
         }
 
         /// Gets Struct (if any) from Variable
