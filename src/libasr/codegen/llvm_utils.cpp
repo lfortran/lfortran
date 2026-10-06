@@ -1909,7 +1909,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+        llvm::ConstantInt::get(context, llvm::APInt(32, idx, true))};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 

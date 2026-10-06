@@ -41,6 +41,11 @@ if (WITH_LLVM)
     set(SRC ${SRC}
         test_llvm.cpp
     )
+    # Match the LLVM sources: LLVMUtils exposes legacy compatibility APIs.
+    if (NOT MSVC)
+        set_source_files_properties(test_llvm.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
+    endif()
 endif()
 
 if (WITH_LSP)

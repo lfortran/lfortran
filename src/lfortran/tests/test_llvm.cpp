@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <limits>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -39,6 +40,47 @@ using LCompilers::CompilerOptions;
 // Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
 // FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
 #ifndef __EMSCRIPTEN__
+
+#include <libasr/codegen/llvm_utils.h>
+
+TEST_CASE("LLVM pointer GEP indices preserve signed offsets") {
+    llvm::LLVMContext context;
+    llvm::IRBuilder<> builder(context);
+    CompilerOptions options;
+    std::string derived_name;
+    std::map<std::string, llvm::StructType*> derived_types, derived_contexts;
+    std::vector<std::string> struct_stack;
+    std::map<std::string, std::string> parents;
+    std::map<std::string, std::map<std::string, int>> members;
+    std::unordered_map<std::uint32_t,
+        std::unordered_map<std::string, llvm::Type*>> array_arguments;
+    std::map<std::string, std::pair<llvm::Type*, llvm::Type*>> function_arguments;
+    std::map<uint64_t, llvm::Value*> symbols;
+    LCompilers::LLVMUtils utils(context, &builder, derived_name, derived_types,
+        derived_contexts, struct_stack, parents, members, options, array_arguments,
+        function_arguments, symbols);
+    llvm::Module module("pointer_indices", context);
+    auto *element_type = llvm::Type::getInt8Ty(context);
+    auto *function_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+        {utils.i8_ptr}, false);
+    auto *function = llvm::Function::Create(function_type,
+        llvm::Function::ExternalLinkage, "offsets", &module);
+    builder.SetInsertPoint(llvm::BasicBlock::Create(context, "entry", function));
+    for (int offset : {0, 1, -1, -2, std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::max()}) {
+        CAPTURE(offset);
+        auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(
+            utils.create_ptr_gep2(element_type, function->getArg(0), offset));
+        REQUIRE(gep);
+        REQUIRE(gep->getNumIndices() == 1);
+        auto *index = llvm::dyn_cast<llvm::ConstantInt>(gep->getOperand(1));
+        REQUIRE(index);
+        CHECK(index->getBitWidth() == 32);
+        CHECK(index->getSExtValue() == offset);
+        CHECK(index->getZExtValue() == static_cast<std::uint32_t>(offset));
+    }
+    builder.CreateRetVoid();
+}
 
 TEST_CASE("LLVM target configuration") {
     CompilerOptions default_options;
