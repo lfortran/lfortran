@@ -7416,6 +7416,7 @@
                                     [38 __implements_box_integer_witness_0]
                                     [__implements_box_integer_witness_0]
                                     Source
+                                    (16 box)
                                 ),
                             __trait_contract_integer:
                                 (TraitRuntimeContract

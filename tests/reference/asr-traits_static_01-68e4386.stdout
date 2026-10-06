@@ -875,6 +875,7 @@
                                     [16 __implements_largebox_ivalue_witness_0]
                                     [__implements_largebox_ivalue_witness_0]
                                     Source
+                                    (2 largebox)
                                 ),
                             __implements_smallbox_ivalue:
                                 (TraitImplementation
@@ -1012,6 +1013,7 @@
                                     [14 __implements_smallbox_ivalue_witness_0]
                                     [__implements_smallbox_ivalue_witness_0]
                                     Source
+                                    (2 smallbox)
                                 ),
                             __trait_contract_ivalue:
                                 (TraitRuntimeContract

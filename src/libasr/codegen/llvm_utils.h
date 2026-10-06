@@ -206,6 +206,9 @@ class ASRToLLVMVisitor;
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         void set_memory_debug(bool state);
         bool use_memory_debug();
+        constexpr const char *checked_allocation_attribute = "lcompilers.checked-allocation";
+        llvm::Value* get_allocator(llvm::LLVMContext &context, llvm::Module &module,
+            llvm::IRBuilder<> &builder);
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_malloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -808,6 +811,19 @@ class ASRToLLVMVisitor;
                 return llvm::StructType::get(context,
                     {i8_ptr, i8_ptr, i8_ptr->getPointerTo()}, false);
             }
+            enum class TraitLifecycleEntry { Initialize, Destroy, Assign, Discard };
+            llvm::Value* trait_field(llvm::Value* view, unsigned field);
+            llvm::Value* trait_lifecycle_call(llvm::Value* witness,
+                TraitLifecycleEntry entry, llvm::FunctionType* type,
+                const std::vector<llvm::Value*>& args);
+            void trait_error_if(llvm::Value* condition, const std::string& message);
+            llvm::Value* trait_malloc(llvm::Type* type);
+            llvm::Value* create_trait_value(llvm::Value* vptr,
+                llvm::Value* witness, llvm::Value* source);
+            void destroy_trait_value(llvm::Value* view);
+            void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot);
+            llvm::Value* value_lifecycle_function(llvm::Value* vptr,
+                unsigned entry, llvm::FunctionType* type);
 
             llvm::Value* get_type_identifier_for_polymorphic_type(ASR::expr_t* arg, llvm::Value* arg_val, 
                 ASR::symbol_t* struct_sym, llvm::Module* module, int class_type_id);
@@ -1031,7 +1047,8 @@ class ASRToLLVMVisitor;
         Allocator                                                   &al_;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
         std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
-        std::unordered_map<std::string, llvm::Function*>            type_finalizer_cache_;
+        std::map<std::pair<bool, std::string>, llvm::Function*>     type_finalizer_cache_;
+        bool invoke_user_finalizers_ = true;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
@@ -1100,7 +1117,7 @@ class ASRToLLVMVisitor;
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path.
-            if (struct_sym != nullptr
+            if (invoke_user_finalizers_ && struct_sym != nullptr
                     && !ASRUtils::is_allocatable(type)
                     && struct_sym->n_member_functions > 0) {
                 ASR::ttype_t* v_type_past =
@@ -1159,6 +1176,9 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
             switch (t_past->type) {
+                case ASR::TraitObjectType:
+                    llvm_utils_->destroy_trait_value(ptr);
+                    break;
                 case ASR::StructType:
                 case ASR::Array:{
                     std::string cache_key = get_type_key(t, struct_sym) + (in_struct ? "__in_struct":"");
@@ -1440,7 +1460,7 @@ class ASRToLLVMVisitor;
             verify(ptr, get_llvm_type(t, struct_sym)->getPointerTo());
             const std::string cache_key = get_type_key(t, struct_sym);
             if(is_cached(cache_key)){
-                builder_->CreateCall(type_finalizer_cache_[cache_key], {ptr});
+                builder_->CreateCall(cached_finalizer(cache_key), {ptr});
                 return;
             }
             const auto checkPoint_BB = 
@@ -1460,7 +1480,11 @@ class ASRToLLVMVisitor;
                                                         llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
                                                         llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table, 
                                                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
-                    llvm::Value* const finalizer_fn = builder_->CreateBitCast(finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                    llvm::Value* finalizer_fn = builder_->CreateBitCast(finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                    if (!invoke_user_finalizers_) {
+                        finalizer_fn = llvm_utils_->value_lifecycle_function(
+                            dispatch_table, 1, finalizer_fn_type);
+                    }
 
                     llvm::Value* const data = llvm_utils_->CreateLoad2(llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
                                     llvm_utils_->create_gep2(uPoly_llvm_t, ptr, 1));
@@ -1494,8 +1518,12 @@ class ASRToLLVMVisitor;
                         llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
                         llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table,
                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
-                    llvm::Value* const finalizer_fn = builder_->CreateBitCast(
+                    llvm::Value* finalizer_fn = builder_->CreateBitCast(
                         finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                    if (!invoke_user_finalizers_) {
+                        finalizer_fn = llvm_utils_->value_lifecycle_function(
+                            dispatch_table, 1, finalizer_fn_type);
+                    }
                     check_if_allocated_then_finalize(data, llvm_utils_->i8_ptr, [&]() {
                         builder_->CreateCall(finalizer_fn_type, finalizer_fn, {data});
                     });
@@ -1880,8 +1908,12 @@ class ASRToLLVMVisitor;
                     llvm_utils_->i8_ptr,
                     llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), vptr,
                         {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
-                llvm::Value* const finalizer_fn = builder_->CreateBitCast(
+                llvm::Value* finalizer_fn = builder_->CreateBitCast(
                     finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
+                if (!invoke_user_finalizers_) {
+                    finalizer_fn = llvm_utils_->value_lifecycle_function(
+                        vptr, 1, finalizer_fn_type);
+                }
 
                 auto const iter_type = llvm::Type::getInt64Ty(builder_->getContext());
                 auto const iter = builder_->CreateAlloca(iter_type, nullptr, "upoly_arr_iter");
@@ -1992,7 +2024,7 @@ class ASRToLLVMVisitor;
                     const std::string cache_key = "array_data_"+get_type_key(data_type, struct_sym);
                     llvm::Value* arr_size  = array_size();
                     if(is_cached(cache_key)){
-                        builder_->CreateCall(type_finalizer_cache_[cache_key], {data_ptr, arr_size});
+                        builder_->CreateCall(cached_finalizer(cache_key), {data_ptr, arr_size});
                         return;
                     }
                     auto const checkPoint_BB =
@@ -2090,7 +2122,12 @@ class ASRToLLVMVisitor;
         }
 
         bool is_cached(const std::string& cache_key) {
-            return type_finalizer_cache_.find(cache_key) != type_finalizer_cache_.end();
+            return type_finalizer_cache_.find({invoke_user_finalizers_, cache_key})
+                != type_finalizer_cache_.end();
+        }
+
+        llvm::Function* cached_finalizer(const std::string& cache_key) {
+            return type_finalizer_cache_.at({invoke_user_finalizers_, cache_key});
         }
 
         /**
@@ -2106,7 +2143,7 @@ class ASRToLLVMVisitor;
         llvm::BasicBlock* START_CACHE(const std::string &cache_key, SignatureArgs&&... signature_args) {
             static_assert((std::is_same_v<llvm::Value*, std::decay_t<SignatureArgs>> && ...));
 
-            LCOMPILERS_ASSERT_MSG(type_finalizer_cache_.find(cache_key) == type_finalizer_cache_.end(),
+            LCOMPILERS_ASSERT_MSG(!is_cached(cache_key),
                                 "Cache already exists, Please use it.")
 
             std::vector<llvm::Value**> args {&signature_args...};
@@ -2122,9 +2159,11 @@ class ASRToLLVMVisitor;
                 llvm::Type::getVoidTy(builder_->getContext()),
                 arg_types, false);
             auto *const finalizer_fn = llvm::Function::Create(finalizer_fn_type,
-                llvm::Function::InternalLinkage, "finalize_"+cache_key, llvm_utils_->module);
+                llvm::Function::InternalLinkage,
+                (invoke_user_finalizers_ ? "finalize_" : "release_") + cache_key,
+                llvm_utils_->module);
 
-            type_finalizer_cache_[cache_key] = finalizer_fn;
+            type_finalizer_cache_[{invoke_user_finalizers_, cache_key}] = finalizer_fn;
             builder_->CreateCall(finalizer_fn, {signature_args...}); // Insert call to the finalizer in the current block
             
             llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
@@ -2160,7 +2199,7 @@ class ASRToLLVMVisitor;
 
         llvm::Value* call_cached_finalizer(const std::string& cache_key,
                 const std::vector<llvm::Value*>& call_args) {
-            llvm::Function* fn = type_finalizer_cache_[cache_key];
+            llvm::Function* fn = cached_finalizer(cache_key);
             std::vector<llvm::Value*> fixed_args = call_args;
             llvm::FunctionType* fnty = fn->getFunctionType();
             for (size_t i = 0; i < fixed_args.size() && i < fnty->getNumParams(); i++) {
@@ -2235,6 +2274,11 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            if (ASRUtils::is_trait_owner(v->m_type) &&
+                    (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(
+                        v->m_parent_symtab->asr_owner)) ||
+                     ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                        v->m_parent_symtab->asr_owner)))) return true;
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
                 // Most non-local variables are not owned by this scope and must
@@ -2408,6 +2452,7 @@ class ASRToLLVMVisitor;
                 case ASR::Logical:
                 // An enumeration value is the integer it is stored as.
                 case ASR::EnumType:
+                case ASR::TraitObjectType:
                     return false;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
@@ -2499,6 +2544,7 @@ class ASRToLLVMVisitor;
                 case ASR::Logical:
                 case ASR::StructType:
                 case ASR::String:
+                case ASR::TraitObjectType:
                     return true;
                 case ASR::Array:
                     return is_finalizable_type_atomic(t_past, struct_sym, in_struct);
@@ -2721,10 +2767,26 @@ class ASRToLLVMVisitor;
          * @param struct_sym StructSymbol bounded to type type .
          */
         llvm::Function* get_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym = nullptr){
+            return get_raw_finalizer(type, struct_sym, true);
+        }
+
+        llvm::Function* get_storage_release_fn(ASR::ttype_t* const type,
+                ASR::Struct_t* const struct_sym = nullptr) {
+            return get_raw_finalizer(type, struct_sym, false);
+        }
+
+        llvm::Function* get_raw_finalizer(ASR::ttype_t* const type,
+                ASR::Struct_t* const struct_sym, bool invoke_user_finalizers) {
+            struct RestoreMode {
+                bool &mode;
+                bool saved;
+                ~RestoreMode() { mode = saved; }
+            } restore{invoke_user_finalizers_, invoke_user_finalizers_};
+            invoke_user_finalizers_ = invoke_user_finalizers;
             LCOMPILERS_ASSERT(type)
             const std::string cache_key = get_type_key(type, struct_sym)+"_for_UPoly";
             if(is_cached(cache_key)){
-                return type_finalizer_cache_[cache_key];
+                return cached_finalizer(cache_key);
             }
             /* Create function with agnostic argument type `i8*`*/
             /* It will convert i8* to the appropriate type to operate on */
@@ -2733,8 +2795,10 @@ class ASRToLLVMVisitor;
                 llvm::Type::getVoidTy(builder_->getContext()),
                 {llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo()}, false); /* void fn(i8* %ptr) */ 
             auto *const fn = llvm::Function::Create(fn_type,
-                llvm::Function::InternalLinkage, "finalize_"+cache_key, llvm_utils_->module);
-            type_finalizer_cache_[cache_key] = fn;            
+                llvm::Function::InternalLinkage,
+                (invoke_user_finalizers_ ? "finalize_" : "release_") + cache_key,
+                llvm_utils_->module);
+            type_finalizer_cache_[{invoke_user_finalizers_, cache_key}] = fn;
                 
                 
             llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
@@ -2924,10 +2988,19 @@ class ASRToLLVMVisitor;
             void fill_allocate_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
 
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
-                                                        llvm::Module* module);
+                llvm::Module* module, bool initialize_copy = false);
             void fill_struct_copy_body(ASR::symbol_t* struct_sym,
-                                    llvm::Function* func,
-                                    llvm::Module* module);
+                llvm::Function* func, llvm::Module* module,
+                bool initialize_copy = false);
+            void call_struct_copy(llvm::Value* vptr, llvm::Value* source,
+                llvm::Value* destination, bool initialize_copy,
+                bool initialize_storage = false, bool defined_components = false);
+            llvm::GlobalVariable* create_value_lifecycle(llvm::Module* module,
+                const std::string& name, llvm::Function* initialize_copy,
+                llvm::Function* release);
+
+            llvm::GlobalVariable* get_trait_lifecycle(
+                ASR::symbol_t* type_declaration, llvm::Module* module);
             
             llvm::Function* define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module); 
 

@@ -3766,7 +3766,7 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
         elif name.endswith("Constant") or name == "CompilerOptions":
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
-        elif name in ("TraitPack", "TraitReceiver", "TraitFunctionCall"):
+        elif name in ("TraitPack", "TraitReceiver", "TraitFunctionCall", "TraitBorrow"):
             self.emit("case ASR::exprType::%s: { return nullptr; }"
                     % name, 2, new_line=False)
         else:

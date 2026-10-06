@@ -1406,6 +1406,228 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     }
 }
 
+TEST_CASE("Runtime trait ownership round trips and storage proofs") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module owned_trait_serialization_m
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface :: IOther
+    function other() result(r)
+        integer :: r
+    end function
+end interface
+type :: Payload
+    integer :: n = 5
+end type
+type :: Other
+    integer :: n = 6
+end type
+implements IValue :: Payload
+    procedure, pass :: value => read_payload
+end implements
+class(IValue), allocatable :: stored
+contains
+function read_payload(self) result(r)
+    class(Payload), intent(in) :: self
+    integer :: r
+    r = self%n
+end function
+subroutine exercise(view, other_view)
+    class(IValue), intent(in) :: view
+    class(IOther), intent(in) :: other_view
+    type(Payload) :: data
+    class(IValue), allocatable :: owner, copy
+    allocate(Payload :: owner)
+    deallocate(owner)
+    allocate(owner, source=data)
+    copy = owner
+    stored = view
+    deallocate(owner, copy)
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("owned_trait_serialization_m"));
+    auto *function = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("exercise"));
+    auto *typed = ASR::down_cast<ASR::TraitAllocate_t>(function->m_body[0]);
+    auto *sourced = ASR::down_cast<ASR::TraitAllocate_t>(function->m_body[2]);
+    auto *copy = ASR::down_cast<ASR::TraitAssignment_t>(function->m_body[3]);
+    auto *from_view = ASR::down_cast<ASR::TraitAssignment_t>(function->m_body[4]);
+    auto *deallocate = ASR::down_cast<ASR::ExplicitDeallocate_t>(function->m_body[5]);
+    auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+        ASRUtils::symbol_get_past_external(typed->m_witness));
+    auto *borrow = ASR::down_cast<ASR::TraitBorrow_t>(copy->m_value);
+    auto *owner = ASRUtils::EXPR2VAR(typed->m_target);
+    CHECK_FALSE(typed->m_copy_value);
+    CHECK(sourced->m_copy_value);
+    CHECK(sourced->m_witness == typed->m_witness);
+    CHECK(copy->m_witness == nullptr);
+    CHECK(ASRUtils::is_trait_owner(owner->m_type));
+    CHECK(ASRUtils::symbol_get_past_external(witness->m_lifecycle.m_type_declaration) ==
+        module->m_symtab->get_symbol("payload"));
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text retain ownership and lifecycle") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "owned_traits.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("missing concrete lifecycle") {
+        witness->m_lifecycle.m_type_declaration = nullptr;
+        rejects("asr.verify.trait_witness.evidence_in_scope");
+    }
+    SUBCASE("layout-equal nominal lifecycle is not interchangeable") {
+        witness->m_lifecycle.m_type_declaration = module->m_symtab->get_symbol("other");
+        rejects("asr.verify.trait_witness.lifecycle");
+    }
+    SUBCASE("lifecycle must name a concrete type") {
+        witness->m_lifecycle.m_type_declaration = module->m_symtab->get_symbol("ivalue");
+        rejects("asr.verify.trait_witness.lifecycle");
+    }
+    SUBCASE("allocation requires a concrete witness or a source") {
+        typed->m_witness = nullptr;
+        rejects("asr.verify.trait_allocate.initialization");
+    }
+    SUBCASE("a typed allocation is not sourced initialization") {
+        typed->m_copy_value = true;
+        rejects("asr.verify.trait_allocate.initialization");
+    }
+    SUBCASE("typed allocation must agree with its selected witness") {
+        typed->m_type_declaration = module->m_symtab->get_symbol("other");
+        rejects("asr.verify.trait_allocate.nominal_type");
+    }
+    SUBCASE("abstract metadata cannot be used to construct an owner") {
+        ASR::down_cast<ASR::Struct_t>(
+            module->m_symtab->get_symbol("payload"))->m_is_abstract = true;
+        function->m_symtab->erase_symbol("data");
+        function->n_body = 1;
+        rejects("asr.verify.trait_owner.concrete_type");
+    }
+    SUBCASE("a concrete source needs selected conformance") {
+        sourced->m_witness = nullptr;
+        rejects("asr.verify.trait_owner.source");
+    }
+    SUBCASE("a selected witness cannot be an arbitrary symbol") {
+        sourced->m_witness = module->m_symtab->get_symbol("payload");
+        rejects("asr.verify.trait_borrow.witness");
+    }
+    SUBCASE("layout-equal source declarations do not supply nominal conformance") {
+        ASRUtils::EXPR2VAR(sourced->m_source)->m_type_declaration =
+            module->m_symtab->get_symbol("other");
+        rejects("asr.verify.trait_owner.nominal_type");
+    }
+    SUBCASE("ordinary assignment cannot duplicate ownership") {
+        function->m_body[3] = ASRUtils::STMT(ASR::make_Assignment_t(al,
+            copy->base.base.loc, copy->m_target, borrow->m_owner, nullptr, false, false));
+        rejects("asr.verify.trait_owner.value_copy");
+    }
+    SUBCASE("association cannot duplicate ownership") {
+        function->m_body[3] = ASRUtils::STMT(ASR::make_Associate_t(al,
+            copy->base.base.loc, copy->m_target, borrow->m_owner));
+        rejects("asr.verify.trait_owner.explicit_protocol");
+    }
+    SUBCASE("ordinary allocation cannot omit lifecycle evidence") {
+        ASR::alloc_arg_t arg{};
+        arg.loc = typed->base.base.loc;
+        arg.m_a = typed->m_target;
+        function->m_body[0] = ASRUtils::STMT(ASR::make_Allocate_t(al,
+            arg.loc, &arg, 1, nullptr, nullptr, nullptr));
+        rejects("asr.verify.trait_owner.explicit_protocol");
+    }
+    SUBCASE("nullification cannot discard an owned allocation") {
+        auto *target = typed->m_target;
+        function->m_body[0] = ASRUtils::STMT(ASR::make_Nullify_t(al,
+            typed->base.base.loc, &target, 1));
+        rejects("asr.verify.trait_owner.explicit_protocol");
+    }
+    SUBCASE("a borrowed view cannot be an assignment target") {
+        copy->m_target = function->m_args[0];
+        rejects("asr.verify.trait_owner.storage");
+    }
+    SUBCASE("cleanup cannot destroy borrowed storage") {
+        deallocate->m_vars[0] = function->m_args[0];
+        rejects("asr.verify.trait_owner.storage");
+    }
+    SUBCASE("one cleanup cannot destroy an owner twice") {
+        deallocate->m_vars[1] = deallocate->m_vars[0];
+        rejects("asr.verify.trait_owner.duplicate_cleanup");
+    }
+    SUBCASE("a copy cannot change the declared contract") {
+        from_view->m_value = function->m_args[1];
+        rejects("asr.verify.trait_owner.contract");
+    }
+    SUBCASE("owner null state cannot contain a borrowed initializer") {
+        owner->m_symbolic_value = function->m_args[0];
+        rejects("asr.verify.trait_view.borrowed_storage");
+    }
+    SUBCASE("a local cannot forge borrowed storage") {
+        owner->m_type = ASRUtils::extract_type(owner->m_type);
+        rejects("asr.verify.trait_view.borrowed_storage");
+    }
+    SUBCASE("rejected escaping storage does not poison a later local owner") {
+        for (const std::string &bad : {
+                "subroutine bad(owner)\nclass(IValue), allocatable, intent(out) :: owner\nend subroutine\n",
+                "function bad() result(owner)\nclass(IValue), allocatable :: owner\nend function\n"}) {
+            std::string recovering_source = source.substr(0, source.find("subroutine exercise")) +
+                bad + "subroutine good()\nclass(IValue), allocatable :: owner\n"
+                "allocate(Payload :: owner)\nend subroutine\nend module\n";
+            LCompilers::diag::Diagnostics errors;
+            options.continue_compilation = true;
+            auto ast = LCompilers::LFortran::parse(al, recovering_source, errors, options);
+            REQUIRE(ast.ok);
+            auto recovered = LCompilers::LFortran::ast_to_asr(
+                al, *ast.result, errors, nullptr, false, options, lm);
+            INFO(errors.render2());
+            REQUIRE(recovered.ok);
+            CHECK(errors.has_error());
+            auto *recovered_module = ASR::down_cast<ASR::Module_t>(
+                recovered.result->m_symtab->get_symbol("owned_trait_serialization_m"));
+            auto *good_symbol = recovered_module->m_symtab->get_symbol("good");
+            REQUIRE(good_symbol);
+            auto *good = ASR::down_cast<ASR::Function_t>(good_symbol);
+            REQUIRE(good->n_body == 1);
+            auto *local = ASR::down_cast<ASR::Variable_t>(good->m_symtab->get_symbol("owner"));
+            CHECK(local->m_intent == ASR::intentType::Local);
+            LCompilers::diag::Diagnostics valid;
+            CHECK(LCompilers::asr_verify(*recovered.result, true, valid));
+        }
+    }
+}
+
 TEST_CASE("Runtime trait combinations report their declaration boundary") {
     const std::string contracts = R"(
 module runtime_combo_contracts

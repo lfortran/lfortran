@@ -619,6 +619,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::PointerToCPtr:
         case ASR::exprType::GetPointer:
         case ASR::exprType::TraitPack:
+        case ASR::exprType::TraitBorrow:
         case ASR::exprType::TraitFunctionCall:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {

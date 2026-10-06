@@ -6,8 +6,9 @@ finite intrinsic-numeric type sets on generic procedures. Existing requirements,
 templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
-The LLVM backend also supports an initial borrowed runtime subset. This is not
-yet the full owning/pointer runtime-trait model.
+The LLVM backend also supports borrowed scalar runtime views and bounded scalar
+allocatable ownership. Erased factory results, allocatable dummy slots and
+pointer views are separate stages, not part of this owning-storage slice.
 
 ## Declaring a contract
 
@@ -250,8 +251,8 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 `function_call_in_declaration`, not LLVM integration coverage. A standard-Fortran
 oracle checks the concrete computations through the default compilation pipeline.
 
-The broader proposal is not yet implemented. In particular, owning/pointer trait
-objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
+The broader proposal is not yet implemented. In particular, owning trait results
+and dummy slots, pointer trait objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
@@ -303,7 +304,7 @@ attributes. A binding may be PURE even when its contract does not require it.
 View dummies currently require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
-completed procedure interface. Saved or initialized view storage is not
+completed procedure interface. Saved or initialized borrowed view storage is not
 supported. Trait arrays, projections, inline
 `class(A+B)`, aggregate results, generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
@@ -313,7 +314,7 @@ tests real implementation inheritance, not unrelated-trait discovery.
 Universal traits with generic methods remain eligible in that future model;
 type-set traits remain constraint-only.
 
-The private same-build/target LLVM representation is a stack header containing
+The private same-build/target LLVM borrowed representation is a stack header containing
 concrete CLASS lifecycle metadata, the original payload address, and an
 independent immutable witness pointer. Concrete inheritance and storage are
 unchanged. Contract slots are unrelated to concrete TBP table offsets.
@@ -330,6 +331,67 @@ arguments, identity, and borrowing lifetime. `traits_runtime_separate_01.py`
 compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
 provider archive. It is registered in CTest in normal and fast configurations.
+
+## Scalar allocatable ownership (R2a)
+
+A local, module, saved local, or BLOCK entity can own one scalar value:
+
+```fortran
+type(Box) :: box
+class(IValue), allocatable :: object, copy
+allocate(Box :: object)           ! default initialization
+deallocate(object)
+box%value = 17
+allocate(object, source=box)      ! intrinsic initialize-copy
+copy = object                    ! independent owned payload
+print *, observe(copy)           ! borrow; no ownership transfer
+deallocate(object, copy)
+```
+
+`SOURCE=` and intrinsic assignment accept exact nonpolymorphic concrete derived
+values with visible nominal conformance, or an already formed view/owner of the
+same contract. Ordinary concrete constructors and concrete function results use
+the existing result-storage/lifetime machinery. `MOLD=` selects the concrete
+type and witness but **does not copy values**; typed allocation likewise applies
+ordinary default initialization. `allocated` and explicit deallocation observe
+the normal unallocated state. Allocatable components are copied deeply, whereas
+pointer components retain association with their original targets.
+
+Assignment captures a complete intrinsic RHS snapshot before finalizing the
+old value, including self-assignment and RHS expressions reading the LHS.
+SOURCE and snapshot capture copy values without invoking component-defined
+assignment. Intrinsic assignment then invokes component-defined assignment
+where required, on the actual destination rather than the snapshot.
+Same-type assignment retains the outer allocation; a changed dynamic type
+replaces it. Both cases replace the selected witness from the RHS, even when
+two conformances have the same concrete nominal type. Copying or forwarding an
+already formed view never consults the receiver's visible implementations.
+Finalization belongs to the dynamic concrete payload, not to each view.
+Unsaved owners are cleaned up on normal procedure and BLOCK exit. No
+main-program/image-termination finalization guarantee is added.
+
+This is **not all of R2**. Functions returning `class(I), allocatable` and
+allocatable trait dummy slots (including `intent(in)`) receive explicit semantic
+NYIs pending R2b's result/slot ABI. Trait arrays, pointers, components, ASSOCIATE
+views, projections, `move_alloc`, inspection, and mutable receivers remain
+unsupported. Allocation currently accepts one object and one concrete
+type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
+options are rejected rather than ignored. Allocation failure terminates, including
+failure while initializing/copying owned components. Owning operations in PURE
+procedures are rejected because the contract does not promise pure dynamic
+lifecycle effects.
+
+`traits_runtime_04` is the unchanged owning-value acceptance program.
+`traits_runtime_owning_01` through `_04` cover fresh initialization, MOLD,
+typed allocation, nested finalizers, pointer association, self/overlap,
+concrete results, completed attributes, component-defined assignment and bounded lifetimes.
+`traits_runtime_owning_separate_01` copies through a contract-only consumer
+compiled before its providers, and checks alternate selected conformances,
+same-spelled distinct nominal types, callback linkage and exact explicit
+deallocation boundaries. The allocation-failure CTests inject failure at every
+hidden allocation of an array/string-containing payload in normal and fast modes.
+Standard CLASS oracles are separate; the more demanding nested oracle is
+GFortran-only while legacy CLASS assignment finalization remains incomplete.
 
 ## Compiler representation
 
@@ -385,9 +447,37 @@ The LLVM backend does not infer conformance or choose trait overloads.
 
 Runtime contracts use `TraitRuntimeContract` and `trait_slot` to retain all
 nominal origins, including coalesced messages and shared diamonds.
-`TraitWitness` records the selected conformance, typed adapters, and liveness
-dependencies. `TraitObjectType`, `TraitPack`, `TraitReceiver`,
+`TraitWitness` records the selected conformance, typed adapters, liveness
+dependencies, and a `trait_lifecycle` reference to the concrete nominal type.
+`TraitObjectType`, `TraitPack`, `TraitReceiver`,
 `TraitFunctionCall`, and `TraitSubroutineCall` make view identity, compiler
 borrowing, authorized recovery, and unresolved dispatch explicit. Only symbols
 own scopes. The existing frontend adapter builder normalizes receivers; no
 separate generic engine or backend conformance search is involved.
+
+Owners retain the ordinary `Allocatable` qualifier. `TraitBorrow` explicitly
+borrows an allocated owner. `TraitAllocate` distinguishes default initialization
+from sourced initialize-copy and preserves the typed allocation's nominal
+declaration and selected witness. `TraitAssignment` specifies snapshot-before-
+destruction, assignment to the actual LHS, and nonfinalizing snapshot release,
+not header assignment. Verification rejects
+incompatible/missing evidence, ownership duplication via ordinary assignment or
+association, borrowed cleanup, forged null initializers and escaping storage.
+AST, binary, module and named/positional ASR text round trips retain these proofs.
+
+The private owner header has three words (concrete vptr, raw payload, witness);
+it is not the two-word ordinary CLASS allocation. Witnesses reference immutable
+concrete-owned lifecycle descriptors whose helpers default-initialize,
+initialize-copy without defined assignment or finalization, assign into prepared
+or live storage, destroy a live raw value, and release snapshot storage without
+FINAL. The
+existing CLASS vptr slots 0/1/2 keep their copy/allocate/finalize contracts;
+the formerly reserved prefix at -2 references a separate value-lifecycle family.
+Its copy callback explicitly distinguishes prepared versus uninitialized
+storage, value capture versus component assignment, and fresh versus live
+destinations; its release callback omits user finalization. This propagates
+the checked operation into nested dynamic components instead of treating the
+legacy live-copy signature as a freshness proof.
+Status-less allocation helpers use a stack-local checked proxy of the ordinary
+or leak-tracking allocator; no allocator or ownership registry escapes into
+payloads. Backends only lower this checked protocol and target layout.

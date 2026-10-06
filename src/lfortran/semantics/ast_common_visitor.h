@@ -9153,7 +9153,11 @@ public:
                 if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
                     AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(x.m_vartype);
                     if (sym_type->m_type == AST::decl_typeType::TypeClass) {
-                        if (!is_argument && !is_allocatable && !is_pointer) {
+                        auto *declaration = sym_type->m_name
+                            ? ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(
+                                to_lower(sym_type->m_name))) : nullptr;
+                        bool trait_storage = declaration && ASR::is_a<ASR::Trait_t>(*declaration);
+                        if (!is_argument && !is_allocatable && !is_pointer && !trait_storage) {
                             diag.add(Diagnostic(
                                 "CLASS variable '" + std::string(s.m_name) + "' must be dummy, allocatable or pointer",
                                 Level::Error, Stage::Semantic, {
@@ -11835,12 +11839,14 @@ public:
                         ASR::trait_kindType::IntrinsicTypeSet) {
                     trait_call_error("a type-set trait cannot be used as a runtime class", loc);
                 }
-                if (is_pointer || is_allocatable) {
-                    trait_call_error("pointer and allocatable runtime trait objects "
-                        "are not implemented yet", loc);
+                if (is_pointer) {
+                    trait_call_error("pointer runtime trait objects are not implemented yet", loc);
                 }
-                if (!is_argument || dims.size() || is_assumed_rank) {
-                    trait_call_error("runtime trait objects currently require a scalar dummy", loc);
+                if (is_derived_type) {
+                    trait_call_error("runtime trait components are not implemented yet", loc);
+                }
+                if (dims.size() || is_assumed_rank) {
+                    trait_call_error("runtime trait arrays are not implemented yet", loc);
                 }
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 if (!contract) {
@@ -11859,7 +11865,9 @@ public:
                 ASR::symbol_t *reference = make_operator_proc_visible(
                     &contract->base, "trait", current_scope);
                 ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
-                return ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc, reference));
+                auto *view = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc, reference));
+                return is_allocatable
+                    ? ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, view)) : view;
             }
             // A deferred type argument of a template or a requirement is stored
             // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
@@ -22893,18 +22901,33 @@ public:
         auto *target = ASRUtils::expr_type(dummy);
         auto *source = ASRUtils::expr_type(actual);
         if (!ASR::is_a<ASR::TraitObjectType_t>(*target)) {
-            if (ASR::is_a<ASR::TraitObjectType_t>(*source)) {
+            if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(source))) {
                 tmp = nullptr;
                 trait_call_error("conversion from a runtime trait view to a non-trait "
                     "dummy is not implemented yet", actual->base.loc);
             }
             return;
         }
+        make_runtime_trait_view(actual, target);
+    }
+
+    void make_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target) {
+        auto *source = ASRUtils::expr_type(actual);
+        target = ASRUtils::extract_type(target);
         tmp = nullptr;
-        if (ASR::is_a<ASR::TraitObjectType_t>(*source)) {
-            if (!ASRUtils::types_equal(source, target, actual, dummy)) {
+        if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(source))) {
+            if (ASRUtils::trait_runtime_contract(source) !=
+                    ASRUtils::trait_runtime_contract(target)) {
                 trait_call_error("runtime trait view projections are not implemented yet",
                     actual->base.loc);
+            }
+            if (ASRUtils::is_allocatable(source)) {
+                auto *contract = ASRUtils::trait_runtime_contract(source);
+                auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+                    al, actual->base.loc, make_operator_proc_visible(
+                        &contract->base, "trait", current_scope)));
+                actual = ASRUtils::EXPR(ASR::make_TraitBorrow_t(
+                    al, actual->base.loc, actual, view_type));
             }
             return;
         }
@@ -22920,19 +22943,37 @@ public:
             trait_call_error("borrowing a runtime trait from this expression "
                 "is not implemented yet", actual->base.loc);
         }
+        auto *declaration = ASRUtils::get_struct_sym_from_struct_expr(actual);
+        auto *reference = select_runtime_trait_witness(target, declaration, actual->base.loc);
+        auto *contract = ASRUtils::trait_runtime_contract(target);
+        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+            al, actual->base.loc,
+            make_operator_proc_visible(&contract->base, "trait", current_scope)));
+        actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
+            al, actual->base.loc, actual, reference, view_type));
+    }
+
+    ASR::symbol_t *select_runtime_trait_witness(ASR::ttype_t *target,
+            ASR::symbol_t *declaration, const Location &loc, bool owning = false) {
+        declaration = ASRUtils::symbol_get_past_external(declaration);
+        if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) {
+            trait_call_error("runtime trait construction requires a resolved concrete derived type", loc);
+        }
+        if (owning && ASR::down_cast<ASR::Struct_t>(declaration)->m_is_abstract) {
+            trait_call_error("owning runtime trait construction cannot instantiate an abstract type", loc);
+        }
         auto *contract = ASRUtils::trait_runtime_contract(target);
         auto *trait = ASRUtils::symbol_get_past_external(contract->m_trait);
-        auto *declaration = ASRUtils::get_struct_sym_from_struct_expr(actual);
         ASR::TraitImplementation_t *selected = nullptr;
         bool projection = false;
         for (auto *implementation :
-                trait_implementations_for_type(declaration, actual->base.loc)) {
+                trait_implementations_for_type(declaration, loc)) {
             if (ASRUtils::symbol_get_past_external(implementation->m_trait) == trait) {
                 if (!selected) selected = implementation;
             } else {
                 auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
                     ASRUtils::symbol_get_past_external(implementation->m_trait)),
-                    actual->base.loc);
+                    loc);
                 for (auto *parent : hierarchy.traits) {
                     if (&parent->base == trait) projection = true;
                 }
@@ -22941,25 +22982,69 @@ public:
         if (!selected) {
             if (projection) {
                 trait_call_error("runtime trait view projections are not implemented yet",
-                    actual->base.loc);
+                    loc);
             }
             trait_call_error("no visible nominal implementation of trait '"
                 + std::string(ASRUtils::symbol_name(trait)) + "' for type '"
                 + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(declaration))
-                + "'", actual->base.loc);
+                + "'", loc);
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected);
         if (!witness) {
             trait_call_error("runtime dispatch for this trait implementation ABI "
-                "is not implemented yet", actual->base.loc);
+                "is not implemented yet", loc);
         }
         auto *reference = make_operator_proc_visible(&witness->base, "trait", current_scope);
         ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
-        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
-            al, actual->base.loc,
-            make_operator_proc_visible(&contract->base, "trait", current_scope)));
-        actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
-            al, actual->base.loc, actual, reference, view_type));
+        return reference;
+    }
+
+    ASR::symbol_t *prepare_runtime_trait_value(ASR::expr_t *&value, ASR::ttype_t *target) {
+        auto *type = ASRUtils::expr_type(value);
+        auto *scalar = ASRUtils::extract_type(type);
+        if (ASR::is_a<ASR::TraitObjectType_t>(*scalar)) {
+            make_runtime_trait_view(value, target);
+            return nullptr;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*scalar) || ASRUtils::is_array(type) ||
+                ASRUtils::is_class_type(scalar)) {
+            trait_call_error("owning runtime trait construction requires an exact "
+                "nonpolymorphic scalar derived value or the same trait contract",
+                value->base.loc);
+        }
+        auto *constant = ASRUtils::expr_value(value);
+        if (constant && ASR::is_a<ASR::StructConstant_t>(*constant)) value = constant;
+        return select_runtime_trait_witness(target,
+            ASRUtils::get_struct_sym_from_struct_expr(value), value->base.loc, true);
+    }
+
+    void check_runtime_trait_locals() {
+        std::vector<std::string> invalid;
+        for (const auto &entry : current_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
+            if (variable->m_intent != ASR::intentType::Local ||
+                    !ASR::is_a<ASR::TraitObjectType_t>(
+                        *ASRUtils::extract_type(variable->m_type))) continue;
+            std::string message;
+            if (ASRUtils::is_pointer(variable->m_type)) {
+                message = "pointer runtime trait objects are not implemented yet";
+            } else if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
+                message = "runtime trait arrays and coarrays are not implemented yet";
+            } else if (!ASRUtils::is_trait_owner(variable->m_type)) {
+                message = "runtime trait objects currently require a scalar dummy";
+            } else if (variable->m_symbolic_value || variable->m_value ||
+                    variable->m_presence != ASR::presenceType::Required ||
+                    variable->m_value_attr) {
+                message = "runtime trait owners require uninitialized scalar allocatable storage";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {variable->base.base.loc}, "");
+                invalid.push_back(entry.first);
+            }
+        }
+        for (auto &name : invalid) current_scope->erase_symbol(name);
+        if (!invalid.empty() && !compiler_options.continue_compilation) throw SemanticAbort();
     }
 
     void trait_call_arguments(ASR::Function_t *signature,

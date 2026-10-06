@@ -569,6 +569,10 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        require_id(!ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(target)) &&
+                !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(value)),
+            "asr.verify.trait_owner.explicit_protocol",
+            "An association cannot create another owner or an untracked borrowed trait header");
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }
@@ -623,6 +627,10 @@ public:
         // target and value types are unrelated by design.
         ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
         ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        require_id(!assign_target_type || !ASR::is_a<TraitObjectType_t>(
+                *ASRUtils::extract_type(assign_target_type)),
+            "asr.verify.trait_owner.value_copy",
+            "Trait storage requires explicit value-copy semantics, not header assignment");
         if (!diagnostics.has_error() && x.m_overloaded == nullptr
                 && assign_target_type && assign_value_type
                 && !is_procedure_type(assign_target_type)
@@ -1544,6 +1552,13 @@ public:
         require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
             "asr.verify.trait_witness.evidence",
             "A runtime implementation must declare its bindings", loc);
+        auto *lifecycle = ASRUtils::symbol_get_past_external(
+            witness.m_lifecycle.m_type_declaration);
+        require_with_loc_id(lifecycle && ASR::is_a<Struct_t>(*lifecycle) &&
+                lifecycle == ASRUtils::symbol_get_past_external(
+                    implementation->m_type_declaration),
+            "asr.verify.trait_witness.lifecycle",
+            "A witness must retain its exact concrete nominal lifecycle", loc);
         return implementation;
     }
 
@@ -1640,7 +1655,9 @@ public:
             "A runtime witness must own a unique scope in its defining conformance module");
         require_id(x.m_contract && x.m_implementation &&
                 symtab_in_scope(current_symtab, x.m_contract) &&
-                symtab_in_scope(current_symtab, x.m_implementation),
+                symtab_in_scope(current_symtab, x.m_implementation) &&
+                x.m_lifecycle.m_type_declaration &&
+                symtab_in_scope(current_symtab, x.m_lifecycle.m_type_declaration),
             "asr.verify.trait_witness.evidence_in_scope",
             "A runtime witness must reference visible contract and implementation evidence");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
@@ -1808,6 +1825,128 @@ public:
                 ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
             "asr.verify.trait_pack.nominal_type",
             "A borrowed payload's nominal type must match its selected witness");
+    }
+
+    ttype_t *verify_trait_owner(expr_t *owner, const Location &loc) {
+        auto *type = typed_expr_type(owner);
+        require_with_loc_id(owner && ASR::is_a<Var_t>(*owner) &&
+                ASRUtils::is_trait_owner(type),
+            "asr.verify.trait_owner.storage",
+            "An owning operation requires a scalar allocatable trait variable", loc);
+        auto *variable = ASRUtils::EXPR2VAR(owner);
+        require_with_loc_id(variable->m_intent == intentType::Local,
+            "asr.verify.trait_owner.local",
+            "An owning operation cannot define a borrowed view or an escaping dummy/result slot", loc);
+        visit_expr(*owner);
+        auto *saved_scope = current_symtab;
+        current_symtab = variable->m_parent_symtab;
+        visit_ttype(*type);
+        current_symtab = saved_scope;
+        return ASRUtils::extract_type(type);
+    }
+
+    void verify_trait_copy_source(expr_t *source, ttype_t *target,
+            symbol_t *selected_witness, const Location &loc) {
+        auto *type = typed_expr_type(source);
+        if (selected_witness) {
+            require_with_loc_id(type && ASR::is_a<StructType_t>(*ASRUtils::extract_type(type)) &&
+                    !ASRUtils::is_array(type) && !ASRUtils::is_class_type(ASRUtils::extract_type(type)),
+                "asr.verify.trait_owner.exact_scalar",
+                "A concrete owning source must be an exact nonpolymorphic scalar value", loc);
+            visit_expr(*source);
+            if (!check_external) return;
+            auto *witness = verify_trait_witness_reference(selected_witness, loc);
+            auto *implementation = verify_runtime_trait_evidence(*witness, loc);
+            require_with_loc_id(!ASR::down_cast<Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        witness->m_lifecycle.m_type_declaration))->m_is_abstract,
+                "asr.verify.trait_owner.concrete_type",
+                "An owning copy cannot instantiate an abstract concrete type", loc);
+            require_with_loc_id(ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(source)) ==
+                    ASRUtils::symbol_get_past_external(implementation->m_type_declaration) &&
+                    ASRUtils::symbol_get_past_external(witness->m_contract) ==
+                        &ASRUtils::trait_runtime_contract(target)->base,
+                "asr.verify.trait_owner.nominal_type",
+                "An owning value must match its selected nominal witness and target contract", loc);
+            return;
+        }
+        require_with_loc_id(type && ASR::is_a<TraitObjectType_t>(*type),
+            "asr.verify.trait_owner.source",
+            "An owning copy must explicitly borrow its source, not copy an ownership slot", loc);
+        visit_expr(*source);
+        visit_ttype(*type);
+        if (!check_external) return;
+        require_with_loc_id(ASRUtils::trait_runtime_contract(type) ==
+                ASRUtils::trait_runtime_contract(target),
+            "asr.verify.trait_owner.contract",
+            "An owning copy must retain the source's declared contract and selected witness", loc);
+    }
+
+    void visit_TraitBorrow(const TraitBorrow_t &x) {
+        auto *owner_type = verify_trait_owner(x.m_owner, x.base.base.loc);
+        require_id(x.m_type && ASR::is_a<TraitObjectType_t>(*x.m_type),
+            "asr.verify.trait_borrow.type", "Borrowing cannot transfer ownership");
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        require_id(ASRUtils::trait_runtime_contract(owner_type) ==
+                ASRUtils::trait_runtime_contract(x.m_type),
+            "asr.verify.trait_borrow.contract",
+            "Borrowing an owner must preserve its declared contract");
+    }
+
+    void visit_TraitAllocate(const TraitAllocate_t &x) {
+        auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
+        require_id((x.m_source || x.m_witness) &&
+                (!x.m_copy_value || x.m_source) &&
+                (bool(x.m_type_declaration) == !bool(x.m_source)),
+            "asr.verify.trait_allocate.initialization",
+            "Allocation requires a source or typed witness, and only SOURCE copies a value");
+        if (x.m_source) {
+            verify_trait_copy_source(x.m_source, type, x.m_witness, x.base.base.loc);
+        } else if (check_external) {
+            auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
+            verify_runtime_trait_evidence(*witness, x.base.base.loc);
+            require_id(symtab_in_scope(current_symtab, x.m_type_declaration) &&
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration) ==
+                    ASRUtils::symbol_get_past_external(witness->m_lifecycle.m_type_declaration),
+                "asr.verify.trait_allocate.nominal_type",
+                "Typed allocation must preserve its explicitly selected nominal type");
+            require_id(!ASR::down_cast<Struct_t>(ASRUtils::symbol_get_past_external(
+                    witness->m_lifecycle.m_type_declaration))->m_is_abstract,
+                "asr.verify.trait_owner.concrete_type",
+                "Typed allocation requires an instantiable concrete type");
+            require_id(ASRUtils::symbol_get_past_external(witness->m_contract) ==
+                    &ASRUtils::trait_runtime_contract(type)->base,
+                "asr.verify.trait_allocate.contract",
+                "Typed allocation requires a witness of the owner's exact contract");
+        }
+    }
+
+    void visit_TraitAssignment(const TraitAssignment_t &x) {
+        auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
+        verify_trait_copy_source(x.m_value, type, x.m_witness, x.base.base.loc);
+    }
+
+    void reject_implicit_trait_storage(expr_t *value, const Location &loc) {
+        auto *type = typed_expr_type(value);
+        require_with_loc_id(!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type)),
+            "asr.verify.trait_owner.explicit_protocol",
+            "Trait storage requires checked allocation, copying and cleanup operations", loc);
+    }
+
+    void visit_ReAlloc(const ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
+        }
+        BaseWalkVisitor::visit_ReAlloc(x);
+    }
+
+    void visit_Nullify(const Nullify_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            reject_implicit_trait_storage(x.m_vars[i], x.base.base.loc);
+        }
+        BaseWalkVisitor::visit_Nullify(x);
     }
 
     void visit_TraitReceiver(const TraitReceiver_t &x) {
@@ -2457,13 +2596,21 @@ public:
                         ASR::down_cast<Var_t>(function->m_args[i])->m_v == &x.base;
                 }
             }
-            require_id(ASR::is_a<TraitObjectType_t>(*x.m_type) &&
-                    dummy && x.m_storage == storage_typeType::Default &&
-                    x.m_intent == intentType::In && x.m_presence == presenceType::Required &&
+            bool borrowed = ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                dummy && x.m_storage == storage_typeType::Default &&
+                x.m_intent == intentType::In;
+            bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
+                x.m_intent == intentType::Local && x.m_parent_symtab &&
+                x.m_parent_symtab->asr_owner &&
+                ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
+                !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
+                    x.m_parent_symtab->asr_owner));
+            require_id((borrowed || owner) && x.m_presence == presenceType::Required &&
                     !x.m_value_attr && !x.m_symbolic_value && !x.m_value &&
-                    !x.m_type_declaration,
+                    !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Runtime trait storage is currently a required read-only borrowed dummy, not an owner");
+                "Trait storage must be a required read-only dummy or a scalar, initially unallocated local owner");
         }
         std::string current_name_copy = current_name;
         current_name = x.m_name;
@@ -2948,7 +3095,26 @@ public:
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
         // TODO: check that every allocated variable is deallocated.
+        verify_trait_deallocation(x);
         BaseWalkVisitor::visit_ImplicitDeallocate(x);
+    }
+
+    template <typename T>
+    void verify_trait_deallocation(const T &x) {
+        std::set<symbol_t*> owners;
+        for (size_t i = 0; i < x.n_vars; i++) {
+            auto *type = typed_expr_type(x.m_vars[i]);
+            if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
+            verify_trait_owner(x.m_vars[i], x.base.base.loc);
+            require_id(owners.insert(&ASRUtils::EXPR2VAR(x.m_vars[i])->base).second,
+                "asr.verify.trait_owner.duplicate_cleanup",
+                "One deallocation cannot destroy the same owner twice");
+        }
+    }
+
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        verify_trait_deallocation(x);
+        BaseWalkVisitor::visit_ExplicitDeallocate(x);
     }
 
     void check_var_external(const ASR::expr_t &x) {
@@ -5149,6 +5315,7 @@ public:
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
             for( size_t i = 0; i < x.n_args; i++ ) {
+                reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
                 require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +

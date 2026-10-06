@@ -17,7 +17,8 @@ target datalayout = "..."
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*)]
+@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
@@ -272,6 +273,108 @@ Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_c
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+define linkonce_odr void @_value_copy_38_module_call_subroutine_without_type_016_mytype(i8* %0, i8* %1, i1 %2, i1 %3, i1 %4) #2 {
+entry:
+  %5 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
+  %6 = bitcast i8* %1 to %module_call_subroutine_without_type_01.mytype.3*
+  br i1 %2, label %then, label %else
+
+then:                                             ; preds = %entry
+  %7 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %6, i32 0, i32 0
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br i1 %3, label %then1, label %else11
+
+then1:                                            ; preds = %ifcont
+  br i1 %4, label %then2, label %else6
+
+then2:                                            ; preds = %then1
+  %8 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %5, i32 0, i32 0
+  %9 = load float, float* %8, align 4
+  %10 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %6, i32 0, i32 0
+  br i1 true, label %then3, label %else4
+
+then3:                                            ; preds = %then2
+  store float %9, float* %10, align 4
+  br label %ifcont5
+
+else4:                                            ; preds = %then2
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %else4, %then3
+  br label %ifcont10
+
+else6:                                            ; preds = %then1
+  %11 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %5, i32 0, i32 0
+  %12 = load float, float* %11, align 4
+  %13 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %6, i32 0, i32 0
+  br i1 true, label %then7, label %else8
+
+then7:                                            ; preds = %else6
+  store float %12, float* %13, align 4
+  br label %ifcont9
+
+else8:                                            ; preds = %else6
+  br label %ifcont9
+
+ifcont9:                                          ; preds = %else8, %then7
+  br label %ifcont10
+
+ifcont10:                                         ; preds = %ifcont9, %ifcont5
+  br label %ifcont21
+
+else11:                                           ; preds = %ifcont
+  br i1 %4, label %then12, label %else16
+
+then12:                                           ; preds = %else11
+  %14 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %5, i32 0, i32 0
+  %15 = load float, float* %14, align 4
+  %16 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %6, i32 0, i32 0
+  br i1 true, label %then13, label %else14
+
+then13:                                           ; preds = %then12
+  store float %15, float* %16, align 4
+  br label %ifcont15
+
+else14:                                           ; preds = %then12
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %else14, %then13
+  br label %ifcont20
+
+else16:                                           ; preds = %else11
+  %17 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %5, i32 0, i32 0
+  %18 = load float, float* %17, align 4
+  %19 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %6, i32 0, i32 0
+  br i1 true, label %then17, label %else18
+
+then17:                                           ; preds = %else16
+  store float %18, float* %19, align 4
+  br label %ifcont19
+
+else18:                                           ; preds = %else16
+  br label %ifcont19
+
+ifcont19:                                         ; preds = %else18, %then17
+  br label %ifcont20
+
+ifcont20:                                         ; preds = %ifcont19, %ifcont15
+  br label %ifcont21
+
+ifcont21:                                         ; preds = %ifcont20, %ifcont10
+  ret void
+}
+
+define internal void @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly(i8* %0) {
+entry:
+  %1 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
+  ret void
+}
+
 define linkonce_odr void @_copy_38_module_call_subroutine_without_type_016_mytype(i8* %0, i8* %1) {
 entry:
   %2 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
@@ -292,23 +395,29 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_38_module_call_subroutine_without_type_016_mytype(i8** %0) {
+define linkonce_odr void @_allocate_struct_38_module_call_subroutine_without_type_016_mytype(i8** %0) #2 {
 entry:
+  %checked_allocator1 = alloca { i8*, i8*, i8*, i8* }, align 8
+  %checked_allocator = alloca { i8*, i8*, i8*, i8* }, align 8
   %1 = call i8* @_lfortran_get_default_allocator()
-  %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
-  store i8* %2, i8** %0, align 8
-  %3 = load i8*, i8** %0, align 8
-  %4 = bitcast i8* %3 to %module_call_subroutine_without_type_01.mytype.3_class*
-  %5 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %4 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
-  %6 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %4, i32 0, i32 1
-  %7 = call i8* @_lfortran_get_default_allocator()
-  %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %8, i8 0, i32 4, i1 false)
-  %9 = bitcast i8* %8 to %module_call_subroutine_without_type_01.mytype.3*
-  store %module_call_subroutine_without_type_01.mytype.3* %9, %module_call_subroutine_without_type_01.mytype.3** %6, align 8
-  %10 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %9, i32 0, i32 0
+  %2 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator to i8*
+  call void @_lcompilers_init_checked_allocator(i8* %2, i8* %1)
+  %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
+  store i8* %3, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 8
+  %5 = bitcast i8* %4 to %module_call_subroutine_without_type_01.mytype.3_class*
+  %6 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %5 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  %7 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %5, i32 0, i32 1
+  %8 = call i8* @_lfortran_get_default_allocator()
+  %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
+  call void @_lcompilers_init_checked_allocator(i8* %9, i8* %8)
+  %10 = call i8* @_lfortran_malloc_alloc(i8* %9, i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %10, i8 0, i32 4, i1 false)
+  %11 = bitcast i8* %10 to %module_call_subroutine_without_type_01.mytype.3*
+  store %module_call_subroutine_without_type_01.mytype.3* %11, %module_call_subroutine_without_type_01.mytype.3** %7, align 8
+  %12 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %11, i32 0, i32 0
   ret void
 }
 
@@ -317,6 +426,8 @@ entry:
   %1 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
   ret void
 }
+
+declare void @_lcompilers_init_checked_allocator(i8*, i8*)
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
 
@@ -391,3 +502,4 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
 attributes #1 = { argmemonly nounwind willreturn }
+attributes #2 = { "lcompilers.checked-allocation" }

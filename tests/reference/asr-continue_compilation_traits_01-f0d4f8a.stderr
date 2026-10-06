@@ -100,12 +100,6 @@ semantic error: a trait cannot be used as a concrete type; use a trait-constrain
 550 |     type(IValue) :: object
     |     ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: pointer and allocatable runtime trait objects are not implemented yet
-   --> tests/errors/continue_compilation_traits_01.f90:562:5
-    |
-562 |     class(IValue), allocatable :: object
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: missing implementation of trait method 'value'
    --> tests/errors/continue_compilation_traits_01.f90:638:5 - 641:1
     |
@@ -368,19 +362,19 @@ semantic error: type-set trait composition is not implemented yet
 1706 |     function unused{IValue + integer :: T}(x) result(r)
      |                     ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: CLASS variable 'object' must be dummy, allocatable or pointer
-    --> tests/errors/continue_compilation_traits_01.f90:1755:9
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:1755:26
      |
 1755 |         class(IValue) :: object
-     |         ^^^^^^^^^^^^^^^^^^^^^^^ 
+     |                          ^^^^^^ 
 
-semantic error: pointer and allocatable runtime trait objects are not implemented yet
+semantic error: pointer runtime trait objects are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:1902:5
      |
 1902 |     class(IValue), pointer :: object
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait objects currently require a scalar dummy
+semantic error: runtime trait arrays are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:1914:9
      |
 1914 |         class(IValue), intent(in) :: object(:)
@@ -470,7 +464,7 @@ semantic error: runtime trait dummies cannot have saved or initialized storage
 2109 |         class(IValue), intent(in) :: object
      |                                      ^^^^^^ 
 
-semantic error: pointer and allocatable runtime trait objects are not implemented yet
+semantic error: allocatable runtime trait dummy slots are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:2113:38
      |
 2113 |         class(IValue), intent(in) :: object
@@ -499,6 +493,46 @@ semantic error: standalone pointer attribute declaration requires `--implicit-in
      |
 2129 |         pointer :: object
      |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: allocatable runtime trait function results are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2160:5 - 2163:16
+     |
+2160 |        function unsupported_factory() result(owner)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2163 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: allocatable runtime trait dummy slots are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2165:52
+     |
+2165 |         class(IValue), allocatable, intent(out) :: owner
+     |                                                    ^^^^^ 
+
+semantic error: allocatable runtime trait dummy slots are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2168:54
+     |
+2168 |         class(IValue), allocatable, intent(inout) :: owner
+     |                                                      ^^^^^ 
+
+semantic error: allocatable runtime trait dummy slots are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2171:51
+     |
+2171 |         class(IValue), allocatable, intent(in) :: owner
+     |                                                   ^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:2239:26
+     |
+2239 |         class(IValue) :: owner
+     |                          ^^^^^ 
+
+semantic error: runtime trait components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2246:9
+     |
+2246 |         class(IValue), allocatable :: owner
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
@@ -751,3 +785,75 @@ semantic error: runtime dispatch for this trait implementation ABI is not implem
      |
 2078 |         r = observe(object)
      |                     ^^^^^^ 
+
+semantic error: runtime trait allocation requires a concrete type, source or mold
+    --> tests/errors/continue_compilation_traits_01.f90:2180:9
+     |
+2180 |         allocate(owner)
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'noconformance'
+    --> tests/errors/continue_compilation_traits_01.f90:2185:32
+     |
+2185 |         allocate(owner, source=source)
+     |                                ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'noconformance'
+    --> tests/errors/continue_compilation_traits_01.f90:2190:17
+     |
+2190 |         owner = source
+     |                 ^^^^^^ 
+
+semantic error: runtime trait allocation with multiple objects, stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2195:9
+     |
+2195 |         allocate(Item :: owner, stat=status)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait deallocation with stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2200:9
+     |
+2200 |         deallocate(owner, errmsg=message)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with multiple objects, stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2204:9
+     |
+2204 |         allocate(Item :: owner, copy)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: allocation requires exactly one of a type specifier, source or mold
+    --> tests/errors/continue_compilation_traits_01.f90:2209:9
+     |
+2209 |         allocate(owner, source=source, mold=source)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `view`
+    --> tests/errors/continue_compilation_traits_01.f90:2213:9
+     |
+2213 |         view = Item(9)
+     |         ^^^^ 
+
+semantic error: runtime trait allocation requires a scalar allocatable owner
+    --> tests/errors/continue_compilation_traits_01.f90:2217:9
+     |
+2217 |         allocate(Item :: view)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2221:9
+     |
+2221 |         allocate(Item :: owner)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: move_alloc for runtime trait owners is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2225:9
+     |
+2225 |         call move_alloc(owner, copy)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: concrete select type inspection of runtime trait views is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2229:21
+     |
+2229 |         select type(owner)
+     |                     ^^^^^ 

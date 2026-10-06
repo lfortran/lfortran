@@ -13,9 +13,17 @@ TraitObjectType(symbol contract)
 
 `contract` references the canonical `TraitRuntimeContract`, through a visible
 symbol. Its slot interfaces describe all ordinary arguments and results.
-The current implementation permits only required, nonpointer, nonallocatable,
-scalar `intent(in)` dummies. `TraitPack` creates compiler-borrowed views; forwarding
-uses the original variable. Neither operation owns or copies the payload.
+A bare view is a required, nonpointer, nonallocatable scalar `intent(in)` dummy.
+`Allocatable(TraitObjectType)` instead denotes a scalar local, saved, module or
+BLOCK owner. Erased function results and allocatable dummy slots remain
+unsupported. `TraitPack` creates compiler-borrowed concrete views; forwarding
+uses the original variable. `TraitBorrow` borrows an allocated owner. None of
+these operations copies the payload or transfers ownership.
+
+Owning allocation and assignment use `TraitAllocate` and `TraitAssignment`;
+ordinary deallocation statements release only verified owners. The verifier
+rejects ordinary header assignment, association and nullification that would
+duplicate or discard ownership.
 
 The LLVM representation carries concrete CLASS metadata, a payload address, and
 an independent selected witness. It is compiler-private, not a public ABI.

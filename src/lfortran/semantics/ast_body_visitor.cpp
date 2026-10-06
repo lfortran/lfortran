@@ -366,6 +366,16 @@ public:
             }
         }
 
+        try {
+            check_runtime_trait_locals();
+        } catch (const SemanticAbort &) {
+            current_scope = parent_scope;
+            from_block = false;
+            external_procedures = saved_external_procedures;
+            all_loops_blocks_nesting--;
+            throw;
+        }
+
         // Resolve postponed type-bound procedure calls in dimension
         // specifications (e.g., dimension(self%obj%nelements())).
         // In the body visitor all symbols are already resolved, so
@@ -3437,6 +3447,10 @@ public:
             this->visit_expr(*x.m_syms[i].m_initializer);
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
             ASR::ttype_t* tmp_type = ASRUtils::expr_type(tmp_expr);
+            if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(tmp_type))) {
+                trait_call_error("associate views of runtime trait objects are not implemented yet",
+                    tmp_expr->base.loc);
+            }
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
             bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr) ||
@@ -3788,6 +3802,11 @@ public:
                     } else {
                         ASR::symbol_t *v = current_scope->resolve_symbol(name_lower);
                         if (v) {
+                            auto *concrete = ASRUtils::symbol_get_past_external(v);
+                            if (!ASR::is_a<ASR::Struct_t>(*concrete)) {
+                                trait_call_error("allocation requires a concrete derived type",
+                                    x.m_args[i].m_start->base.loc);
+                            }
                             ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                             new_arg.m_type = struct_t;
                             new_arg.m_sym_subclass = v;
@@ -3895,6 +3914,51 @@ public:
                 mold = ASRUtils::EXPR(tmp);
                 set_string_len_if_needed(x, alloc_args_vec, mold_cond, mold);
             }
+        }
+
+        bool trait_allocation = false;
+        for (auto &arg : alloc_args_vec) {
+            trait_allocation |= ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(arg.m_a)));
+        }
+        if (trait_allocation) {
+            if (alloc_args_vec.size() != 1 || stat || errmsg ||
+                    x.n_keywords > (source ? 1u : 0u) + (mold ? 1u : 0u)) {
+                trait_call_error("runtime trait allocation with multiple objects, stat, "
+                    "errmsg or other options is not implemented yet", x.base.base.loc);
+            }
+            auto &arg = alloc_args_vec[0];
+            if (!ASR::is_a<ASR::Var_t>(*arg.m_a) ||
+                    !ASRUtils::is_allocatable(ASRUtils::expr_type(arg.m_a)) ||
+                    arg.n_dims || arg.n_codims) {
+                trait_call_error("runtime trait allocation requires a scalar allocatable owner",
+                    arg.loc);
+            }
+            if ((source && mold) || (arg.m_type && (source || mold))) {
+                trait_call_error("allocation requires exactly one of a type specifier, "
+                    "source or mold", x.base.base.loc);
+            }
+            ASR::symbol_t *witness = nullptr;
+            ASR::expr_t *view = source ? source : mold;
+            auto *type = ASRUtils::expr_type(arg.m_a);
+            if (view) {
+                witness = prepare_runtime_trait_value(view, type);
+            } else if (arg.m_sym_subclass) {
+                auto *concrete = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(arg.m_sym_subclass));
+                if (concrete->m_is_abstract) {
+                    trait_call_error("an abstract type cannot be allocated", arg.loc);
+                }
+                witness = select_runtime_trait_witness(type, arg.m_sym_subclass, arg.loc);
+            } else {
+                trait_call_error("runtime trait allocation requires a concrete type, "
+                    "source or mold", x.base.base.loc);
+            }
+            tmp = ASR::make_TraitAllocate_t(al, x.base.base.loc,
+                arg.m_a, view, witness, source != nullptr, arg.m_sym_subclass);
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+            return;
         }
 
         // When source is a FunctionCall, materialize it into a temporary
@@ -4379,12 +4443,23 @@ public:
     void visit_Deallocate(const AST::Deallocate_t& x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
+        std::set<ASR::symbol_t*> trait_owners;
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            if (x.n_keywords && ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
+                trait_call_error("runtime trait deallocation with stat, errmsg or other "
+                    "options is not implemented yet", x.base.base.loc);
+            }
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
+                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr)) &&
+                        !trait_owners.insert(ASRUtils::symbol_get_past_external(tmp_sym)).second) {
+                    trait_call_error("an owner cannot appear twice in one deallocation",
+                        tmp_expr->base.loc);
+                }
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
             } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
                 const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
@@ -7277,6 +7352,19 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(target)))) {
+            if (!ASRUtils::is_allocatable(ASRUtils::expr_type(target)) ||
+                    !ASR::is_a<ASR::Var_t>(*target)) {
+                trait_call_error("runtime trait assignment requires an allocatable owner",
+                    target->base.loc);
+            }
+            auto *witness = prepare_runtime_trait_value(value, ASRUtils::expr_type(target));
+            tmp = ASR::make_TraitAssignment_t(al, x.base.base.loc, target, value, witness);
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+            return;
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,

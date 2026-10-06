@@ -1344,15 +1344,25 @@ namespace MoveAlloc {
     static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
         if (x.n_args != 2) {
             ASRUtils::require_impl(false, "MoveAlloc takes exactly 2 arguments", x.base.base.loc, diagnostics);
+            return;
         }
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])), "First argument must be an allocatable type", x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(!ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_args[0])) &&
+            !ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_args[1])),
+            "Runtime trait ownership cannot use an unlowered move_alloc intrinsic",
+            x.base.base.loc, diagnostics);
     }
 
     static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         for (size_t i = 0; i < 2; i++) {
             ASR::symbol_t *sym = nullptr;
             ASR::expr_t* expr = args[i];
+            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(expr))) {
+                diag.semantic_error_label(
+                    "move_alloc for runtime trait owners is not implemented yet", {loc}, "");
+                return nullptr;
+            }
             
             if (expr->type == ASR::exprType::ArrayPhysicalCast) {
                 expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;

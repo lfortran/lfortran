@@ -10602,6 +10602,12 @@ struct TraitHierarchy {
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation);
+
+inline bool is_trait_owner(const ASR::ttype_t *type) {
+    return type && ASR::is_a<ASR::Allocatable_t>(*type) &&
+        ASR::is_a<ASR::TraitObjectType_t>(
+            *ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+}
 bool runtime_trait_method_supported(const ASR::Function_t &method);
 std::string nominal_symbol_name(const ASR::symbol_t *symbol);
 bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,

@@ -4,6 +4,7 @@
 #include <string>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
@@ -133,6 +134,24 @@ public:
         }
     };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    struct ProcedureScopeRecovery {
+        SymbolTableVisitor &visitor;
+        SymbolTable *scope;
+        std::vector<std::string> arguments;
+        int exceptions;
+        bool checking_traits = false;
+
+        ProcedureScopeRecovery(SymbolTableVisitor &v)
+            : visitor(v), scope(v.current_scope), arguments(v.current_procedure_args),
+              exceptions(std::uncaught_exceptions()) {}
+
+        ~ProcedureScopeRecovery() {
+            if (checking_traits && std::uncaught_exceptions() > exceptions) {
+                visitor.current_scope = scope;
+                visitor.current_procedure_args = std::move(arguments);
+            }
+        }
+    };
     // Names of the symbols an INSTANTIATE statement adds to the specification
     // part of the module being visited. They are entities of that module, so
     // their accessibility comes from its PUBLIC/PRIVATE statements, which are
@@ -721,6 +740,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_runtime_trait_locals();
         // Update access of use-associated ExternalSymbol entries based on the
         // final dflt_access (set by private/public statements processed above).
         // use statements are processed before private/public, so ExternalSymbols
@@ -868,6 +888,13 @@ public:
 
     void check_runtime_trait_dummies(const ASR::Function_t &function) {
         bool invalid = false;
+        if (function.m_return_var && ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(function.m_return_var)))) {
+            diag.semantic_error_label(
+                "allocatable runtime trait function results are not implemented yet",
+                {function.m_return_var->base.loc}, "");
+            invalid = true;
+        }
         for (size_t i = 0; i < function.n_args; i++) {
             auto *symbol = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
@@ -876,10 +903,10 @@ public:
             if (!ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(dummy->m_type))) continue;
             std::string message;
-            if (ASRUtils::is_pointer(dummy->m_type) ||
-                    ASRUtils::is_allocatable(dummy->m_type)) {
-                message = "pointer and allocatable runtime trait objects "
-                    "are not implemented yet";
+            if (ASRUtils::is_allocatable(dummy->m_type)) {
+                message = "allocatable runtime trait dummy slots are not implemented yet";
+            } else if (ASRUtils::is_pointer(dummy->m_type)) {
+                message = "pointer runtime trait objects are not implemented yet";
             } else if (!ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) {
                 message = "runtime trait objects currently require a scalar dummy";
             } else if (dummy->m_storage != ASR::storage_typeType::Default ||
@@ -1116,6 +1143,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        check_runtime_trait_locals();
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
@@ -1867,6 +1895,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        ProcedureScopeRecovery procedure_scope_recovery(*this);
         // Restored on exit: a subroutine nested in a template (e.g. a deferred
         // interface body) must not end the enclosing template's context.
         bool is_template_copy = is_template;
@@ -2326,7 +2355,10 @@ public:
             is_requirement, init_deterministic, init_side_effect_free);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        procedure_scope_recovery.checking_traits = true;
         check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
+        check_runtime_trait_locals();
+        procedure_scope_recovery.checking_traits = false;
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
@@ -2485,6 +2517,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        ProcedureScopeRecovery procedure_scope_recovery(*this);
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -3199,7 +3232,10 @@ public:
         }
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        procedure_scope_recovery.checking_traits = true;
         check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
+        check_runtime_trait_locals();
+        procedure_scope_recovery.checking_traits = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
@@ -4533,10 +4569,14 @@ public:
         std::string name = current_scope->get_unique_name(
             std::string(implementation->m_name) + "_witness");
         auto *witness_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::trait_lifecycle_t lifecycle;
+        lifecycle.loc = loc;
+        lifecycle.m_type_declaration = implementation->m_type_declaration;
         auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
             al, loc, witness_scope, s2c(al, name),
             make_operator_proc_visible(&contract->base, "trait", current_scope),
-            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source));
+            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
+            lifecycle));
         current_scope->add_symbol(name, &witness->base);
         Vec<ASR::symbol_t*> procedures;
         Vec<char*> dependencies;

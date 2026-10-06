@@ -558,7 +558,7 @@ module traits_runtime_unimplemented_01_m
             integer :: res
         end function
     end interface
-    ! This guard is temporary until runtime trait objects are implemented.
+    ! Scalar owning storage is now valid; unsupported escapes are tested below.
     class(IValue), allocatable :: object
 end module
 
@@ -2128,4 +2128,121 @@ contains
         class(IValue), intent(in) :: object
         pointer :: object
     end subroutine
+end module
+
+module traits_owning_boundaries_m
+    implicit none
+    abstract interface :: IValue
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    type :: Item
+        integer :: n = 7
+    end type
+    type :: NoConformance
+        integer :: n = 7
+    end type
+    implements IValue :: Item
+        procedure, pass :: value => read_item
+    end implements
+contains
+    function read_item(self) result(r)
+        class(Item), intent(in) :: self
+        integer :: r
+        r = self%n
+    end function
+end module
+
+module traits_owning_escape_boundary_m
+    use traits_owning_boundaries_m
+contains
+    function unsupported_factory() result(owner)
+        class(IValue), allocatable :: owner
+        allocate(Item :: owner)
+    end function
+    subroutine unsupported_out_slot(owner)
+        class(IValue), allocatable, intent(out) :: owner
+    end subroutine
+    subroutine unsupported_inout_slot(owner)
+        class(IValue), allocatable, intent(inout) :: owner
+    end subroutine
+    subroutine unsupported_in_slot(owner)
+        class(IValue), allocatable, intent(in) :: owner
+    end subroutine
+end module
+
+module traits_owning_body_boundary_m
+    use traits_owning_boundaries_m
+contains
+    subroutine allocation_needs_type()
+        class(IValue), allocatable :: owner
+        allocate(owner)
+    end subroutine
+    subroutine allocation_needs_conformance()
+        class(IValue), allocatable :: owner
+        type(NoConformance) :: source
+        allocate(owner, source=source)
+    end subroutine
+    subroutine assignment_needs_conformance()
+        class(IValue), allocatable :: owner
+        type(NoConformance) :: source
+        owner = source
+    end subroutine
+    subroutine unsupported_allocation_status()
+        class(IValue), allocatable :: owner
+        integer :: status
+        allocate(Item :: owner, stat=status)
+    end subroutine
+    subroutine unsupported_deallocation_status()
+        class(IValue), allocatable :: owner
+        character(80) :: message
+        deallocate(owner, errmsg=message)
+    end subroutine
+    subroutine unsupported_multiple_allocation()
+        class(IValue), allocatable :: owner, copy
+        allocate(Item :: owner, copy)
+    end subroutine
+    subroutine incompatible_initializers()
+        class(IValue), allocatable :: owner
+        type(Item) :: source
+        allocate(owner, source=source, mold=source)
+    end subroutine
+    subroutine borrowed_storage_is_readonly(view)
+        class(IValue), intent(in) :: view
+        view = Item(9)
+    end subroutine
+    subroutine borrowed_storage_cannot_be_allocated(view)
+        class(IValue), intent(in) :: view
+        allocate(Item :: view)
+    end subroutine
+    pure subroutine unsupported_pure_lifecycle()
+        class(IValue), allocatable :: owner
+        allocate(Item :: owner)
+    end subroutine
+    subroutine unsupported_move()
+        class(IValue), allocatable :: owner, copy
+        call move_alloc(owner, copy)
+    end subroutine
+    subroutine no_inspection_yet()
+        class(IValue), allocatable :: owner
+        select type(owner)
+        type is (Item)
+        end select
+    end subroutine
+end module
+
+module traits_owning_unowned_boundary_m
+    use traits_owning_boundaries_m
+contains
+    subroutine no_implicit_owner()
+        class(IValue) :: owner
+    end subroutine
+end module
+
+module traits_owning_component_boundary_m
+    use traits_owning_boundaries_m, only: IValue
+    type :: Container
+        class(IValue), allocatable :: owner
+    end type
 end module

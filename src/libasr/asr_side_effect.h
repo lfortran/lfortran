@@ -144,6 +144,26 @@ public:
         if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
         BaseWalkVisitor::visit_TraitSubroutineCall(x);
     }
+
+    void visit_TraitAllocate(const TraitAllocate_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "runtime trait allocation with unchecked dynamic lifecycle effects");
+    }
+
+    void visit_TraitAssignment(const TraitAssignment_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "runtime trait assignment with unchecked dynamic lifecycle effects");
+    }
+
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars && !found; i++) {
+            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_vars[i]))) {
+                mark_found(x.base.base.loc,
+                    "runtime trait deallocation with unchecked dynamic lifecycle effects");
+            }
+        }
+        if (!found) BaseWalkVisitor::visit_ExplicitDeallocate(x);
+    }
 };
 
 } // namespace ASR

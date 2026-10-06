@@ -3743,6 +3743,23 @@ RUN(NAME traits_static_declaration_01 LABELS llvm c fortran NO_STD_F23)
 RUN(NAME traits_static_declaration_01_oracle LABELS gfortran llvm c fortran)
 RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_owning_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_failure_01 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_owning_failure_01.c)
+RUN(NAME traits_runtime_owning_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_owning_separate_01_contracts.f90
+        traits_runtime_owning_separate_01_types.f90
+        traits_runtime_owning_separate_01_consumer.f90
+        traits_runtime_owning_separate_01_a.f90 traits_runtime_owning_separate_01_b.f90)
 RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_borrow_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME derived_type_borrow_01 LABELS gfortran llvm fortran)

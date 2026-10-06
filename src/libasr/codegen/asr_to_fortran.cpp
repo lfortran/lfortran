@@ -1093,6 +1093,30 @@ public:
         visit_expr(*x.m_payload);
     }
 
+    void visit_TraitBorrow(const ASR::TraitBorrow_t &x) {
+        visit_expr(*x.m_owner);
+    }
+
+    void visit_TraitAllocate(const ASR::TraitAllocate_t &x) {
+        visit_expr(*x.m_target);
+        std::string result = indent + "allocate(";
+        if (!x.m_source) {
+            result += std::string(ASRUtils::symbol_name(x.m_type_declaration)) + " :: " + src;
+        } else {
+            result += src + (x.m_copy_value ? ", source=" : ", mold=");
+            visit_expr(*x.m_source);
+            result += src;
+        }
+        src = result + ")\n";
+    }
+
+    void visit_TraitAssignment(const ASR::TraitAssignment_t &x) {
+        visit_expr(*x.m_target);
+        std::string result = indent + src + " = ";
+        visit_expr(*x.m_value);
+        src = result + src + "\n";
+    }
+
     void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {
         visit_expr(*x.m_view);
         src = "trait_receiver(" + src + ")";

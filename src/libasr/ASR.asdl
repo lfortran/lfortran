@@ -17,6 +17,13 @@ trait_binding
 trait_slot
     = (symbol* origins, symbol procedure)
 
+-- Concrete, not conformance, identity of the scalar owned-value protocol.
+-- Its callbacks default-initialize raw storage, initialize-copy without
+-- finalizing the destination, assign to prepared/live storage, destroy a live
+-- value, and release a compiler snapshot without user finalization.
+trait_lifecycle
+    = (symbol type_declaration)
+
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
@@ -49,7 +56,7 @@ symbol
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
     | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
-    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi)
+    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -115,6 +122,14 @@ stmt
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
     | TraitSubroutineCall(symbol name, int slot, call_arg* args)
+    -- SOURCE initialize-copies; MOLD and typed allocation default-initialize.
+    -- Concrete sources and typed allocation carry selected witness evidence;
+    -- an already formed view carries its own witness.
+    | TraitAllocate(expr target, expr? source, symbol? witness, bool copy_value, symbol? type_declaration)
+    -- Capture an intrinsic fresh RHS snapshot before destroying the old value.
+    -- Assign to the actual destination, release the snapshot without FINAL,
+    -- retain same-type outer storage and replace the selected witness.
+    | TraitAssignment(expr target, expr value, symbol? witness)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -243,6 +258,8 @@ expr
     | TraitReceiver(expr view, symbol witness, symbol type_declaration, ttype type)
     -- args[0] is the borrowed view, including for a nopass implementation.
     | TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
+    -- Borrow an allocated scalar owner without transferring ownership.
+    | TraitBorrow(expr owner, ttype type)
 
 ttype
     = Integer(int kind)
