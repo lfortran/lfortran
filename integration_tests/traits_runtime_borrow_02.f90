@@ -13,6 +13,8 @@ module traits_runtime_borrow_02_m
     end type
     type :: Holder
         type(Payload) :: item
+        type(Payload), pointer :: pointer_item
+        type(Payload), allocatable :: allocated_item
     end type
     implements IValue :: Payload
         procedure, pass :: value => read_value
@@ -54,6 +56,16 @@ program traits_runtime_borrow_02
     if (observe(scalar) /= 31) error stop 4
     alias => scalar
     if (observe(alias) /= 31) error stop 5
+    container%pointer_item => scalar
+    if (observe(container%pointer_item) /= 31) error stop 7
+    scalar%n = 37
+    if (observe(container%pointer_item) /= 37) error stop 8
+    nullify(container%pointer_item)
+    allocate(container%allocated_item)
+    container%allocated_item%n = 47
+    expected = c_loc(container%allocated_item%n)
+    if (observe(container%allocated_item) /= 47) error stop 9
+    deallocate(container%allocated_item)
     allocate(allocation)
     allocation%n = 41
     expected = c_loc(allocation%n)

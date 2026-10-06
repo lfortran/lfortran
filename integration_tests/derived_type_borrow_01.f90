@@ -7,6 +7,8 @@ module derived_type_borrow_01_m
     end type
     type :: Holder
         type(Payload) :: item
+        type(Payload), pointer :: pointer_item
+        type(Payload), allocatable :: allocated_item
     end type
 contains
     function observe(object) result(r)
@@ -40,6 +42,19 @@ program derived_type_borrow_01
     if (observe(scalar) /= 31) error stop 4
     alias => scalar
     if (observe(alias) /= 31) error stop 5
+    container%pointer_item => scalar
+    if (observe(container%pointer_item) /= 31) error stop 7
+    scalar%n = 37
+    if (observe(container%pointer_item) /= 37) error stop 8
+    nullify(container%pointer_item)
+    allocate(container%allocated_item)
+    container%allocated_item%n = 47
+    expected = c_loc(container%allocated_item%n)
+    ! The ordinary TARGET-dummy control uses an alias of the same owned payload.
+    alias => container%allocated_item
+    if (observe(alias) /= 47) error stop 9
+    nullify(alias)
+    deallocate(container%allocated_item)
     allocate(allocation)
     allocation%n = 41
     expected = c_loc(allocation%n)
