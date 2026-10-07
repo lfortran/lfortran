@@ -15119,6 +15119,22 @@ public:
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
             ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+            // A generic binding inherited from a parent type names a specific
+            // binding, which an extended type may override. Resolve that
+            // binding name in the declared type of the passed object, so the
+            // call uses the overriding binding (and its interface).
+            if (is_dt_present && args.size() >= 1 &&
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                        ASRUtils::expr_type(args[0].m_value)))) {
+                SymbolTable* scope = current_scope;
+                final_sym_past_ext = ASRUtils::symbol_get_past_external(
+                    resolve_deriv_type_proc(loc,
+                        ASRUtils::symbol_name(final_sym_past_ext), "",
+                        args[0].m_value,
+                        ASRUtils::extract_type(ASRUtils::expr_type(args[0].m_value)),
+                        scope));
+            }
             bool is_nopass_method = false;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
                 is_nopass_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
