@@ -354,7 +354,7 @@ namespace RandomNumber {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+           ASRUtils::extract_type(arg_types[0]),
            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -379,15 +379,15 @@ namespace RandomNumber {
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
             }
-            ASR::stmt_t* func_call = b.CallIntrinsicSubroutine(scope, {ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0]))},
+            ASR::stmt_t* func_call = b.CallIntrinsicSubroutine(scope, {ASRUtils::extract_type(arg_types[0])},
                                     {b.ArrayItem_01(args[0], do_loop_variables)}, 0, RandomNumber::instantiate_RandomNumber);
             fn_name = scope->get_unique_name(fn_name, false);
             body.push_back(al, PassUtils::create_do_loop_helper_random_number(al, loc, do_loop_variables, s, args[0],
-                    ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
+                    ASRUtils::extract_type(arg_types[0]),
                     b.ArrayItem_01(args[0], do_loop_variables), func_call, 1));
         } else {
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
-            body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+            body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, ASRUtils::extract_type(arg_types[0]))));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
