@@ -4611,6 +4611,10 @@ public:
             }
         }
 
+        // Lowering the indices and the bounds may visit struct members
+        // (e.g. `a(b%i)`), which would overwrite the derived type of the
+        // array element, so it is saved here and restored afterwards.
+        std::string array_der_type_name = current_der_type_name;
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         {
@@ -4777,6 +4781,7 @@ public:
                                                     check_for_bounds, array_name, infile);
             }
         }
+        current_der_type_name = array_der_type_name;
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
             current_der_type_name = get_type_key(
                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)));
