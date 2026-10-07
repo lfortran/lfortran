@@ -556,9 +556,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to avoid calling the function more than once
                 if (ASR::is_a<ASR::FunctionCall_t>(*arg_expr)) {
                     std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_functioncall_");
+                    ASR::symbol_t* arg_expr_decl = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_expr_type))) {
+                        arg_expr_decl = ASRUtils::import_struct_sym_as_external(
+                            al, x.m_args[i].loc, arg_expr, scope);
+                    }
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                         x.m_args[i].loc, dummy_variable_name, al, scope,
-                        arg_expr_type, ASR::intentType::Local);
+                        arg_expr_type, ASR::intentType::Local, arg_expr_decl);
                     ASR::stmt_t* assignment = ASRUtils::STMT(
                             ASRUtils::make_Assignment_t_util(al, x.m_args[i].loc, dummy_variable,
                                 arg_expr, nullptr, false, ASRUtils::is_array(arg_expr_type)));
