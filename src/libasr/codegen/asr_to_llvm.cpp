@@ -377,6 +377,48 @@ private:
         return builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
     }
 
+    // The data of a polymorphic array descriptor is a single class wrapper
+    // {vptr, data*}, while a nonpolymorphic array descriptor points to the
+    // elements directly. To move the allocation of a nonpolymorphic array
+    // into a polymorphic one, wrap the source's elements in a new class
+    // wrapper whose vptr records the source's declared type, store it into
+    // the source descriptor viewed with the polymorphic descriptor type, and
+    // return that view so that it can be moved like a polymorphic source.
+    llvm::Value* wrap_array_data_for_polymorphic_move(ASR::expr_t* value_expr,
+            llvm::Type* value_array_type, llvm::Value* value,
+            llvm::Type* target_array_type, llvm::Type* wrapper_type) {
+        ASR::ttype_t* value_el_asr_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(value_expr));
+        llvm::Type* value_el_type = llvm_utils->get_el_type(
+            value_expr, value_el_asr_type, module.get());
+        llvm::Value* value_data = llvm_utils->CreateLoad2(
+            value_el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(value_array_type, value));
+        llvm::DataLayout data_layout(module->getDataLayout());
+        llvm::Value* wrapper = builder->CreateBitCast(
+            LLVMArrUtils::lfortran_malloc(context, *module, *builder,
+                llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                    data_layout.getTypeAllocSize(wrapper_type))),
+            wrapper_type->getPointerTo());
+        if (ASR::is_a<ASR::StructType_t>(*value_el_asr_type)) {
+            struct_api->store_class_vptr(
+                ASRUtils::get_struct_sym_from_struct_expr(value_expr),
+                wrapper, module.get());
+        } else {
+            struct_api->store_intrinsic_type_vptr(value_el_asr_type,
+                ASRUtils::extract_kind_from_ttype_t(value_el_asr_type),
+                wrapper, module.get());
+        }
+        builder->CreateStore(
+            builder->CreateBitCast(value_data,
+                llvm::cast<llvm::StructType>(wrapper_type)->getElementType(1)),
+            llvm_utils->create_gep2(wrapper_type, wrapper, 1));
+        value = builder->CreateBitCast(value, target_array_type->getPointerTo());
+        builder->CreateStore(wrapper,
+            arr_descr->get_pointer_to_data(target_array_type, value));
+        return value;
+    }
+
 public:
     diag::Diagnostics &diag;
     llvm::LLVMContext &context;
@@ -14186,6 +14228,13 @@ public:
                     // require the destination's lower bound to be reset to 1
                     // in every dimension; that pass therefore also sets
                     // m_realloc_lhs=true to distinguish the two cases.
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                            !ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
+                            !ASRUtils::is_character(*value_type)) {
+                        value = wrap_array_data_for_polymorphic_move(x.m_value,
+                            source_array_type, value, target_array_type, target_el_type);
+                        source_array_type = target_array_type;
+                    }
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
                 } else if (ASRUtils::is_pointer(target_type)) {
                     // Pointer targets may be associated with non-contiguous
