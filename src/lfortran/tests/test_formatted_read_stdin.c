@@ -26,6 +26,7 @@ int main(void)
     fclose(in);
     if (!freopen(path, "r", stdin)) {
         fprintf(stderr, "cannot redirect stdin to %s\n", path);
+        remove(path);
         return 2;
     }
 
