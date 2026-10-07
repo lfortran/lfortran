@@ -56,7 +56,7 @@ symbol
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
     | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
-    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle)
+    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle, symbol* projections)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -264,6 +264,8 @@ expr
     | TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
     -- Borrow an allocated scalar owner without transferring ownership.
     | TraitBorrow(expr owner, ttype type)
+    -- Select an already chosen witness's direct parent view.
+    | TraitProject(expr view, int parent, ttype type)
 
 ttype
     = Integer(int kind)

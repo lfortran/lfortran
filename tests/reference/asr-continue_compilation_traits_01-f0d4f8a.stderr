@@ -786,7 +786,7 @@ semantic error: concrete select type inspection of runtime trait views is not im
 1959 |         select type(object)
      |                     ^^^^^^ 
 
-semantic error: runtime trait view projections are not implemented yet
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
     --> tests/errors/continue_compilation_traits_01.f90:1981:22
      |
 1981 |         call consume(object)
@@ -1175,3 +1175,117 @@ semantic error: Argument `view` with intent(in) passed to a dummy argument with 
      |
 2678 |         call pure_change(view)
      |                          ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2733:24
+     |
+2733 |         call read_slot(combined)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2734:25
+     |
+2734 |         call write_slot(combined)
+     |                         ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2735:27
+     |
+2735 |         call replace_slot(combined)
+     |                           ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2736:27
+     |
+2736 |         call unknown_slot(combined)
+     |                           ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2741:28
+     |
+2741 |         call write_pointer(child)
+     |                            ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2742:30
+     |
+2742 |         call replace_pointer(child)
+     |                              ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2743:30
+     |
+2743 |         call unknown_pointer(child)
+     |                              ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2744:28
+     |
+2744 |         call write_pointer(combined)
+     |                            ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2745:30
+     |
+2745 |         call replace_pointer(combined)
+     |                              ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2746:30
+     |
+2746 |         call unknown_pointer(combined)
+     |                              ^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2752:18
+     |
+2752 |         child => parent
+     |                  ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2753:19
+     |
+2753 |         parent => unrelated
+     |                   ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2754:25
+     |
+2754 |         call read_child(parent)
+     |                         ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2755:21
+     |
+2755 |         call borrow(unrelated)
+     |                     ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2756:31
+     |
+2756 |         if (associated(child, parent)) error stop
+     |                               ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2757:32
+     |
+2757 |         if (associated(parent, unrelated)) error stop
+     |                                ^^^^^^^^^ 
+
+semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
+    --> tests/errors/continue_compilation_traits_01.f90:2758:13
+     |
+2758 |         if (associated(parent, null(child))) error stop
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a runtime trait pointer target requires the target or pointer attribute
+    --> tests/errors/continue_compilation_traits_01.f90:2763:20
+     |
+2763 |         pointer => view
+     |                    ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2767:24
+     |
+2767 |         call read_slot(child)
+     |                        ^^^^^ 

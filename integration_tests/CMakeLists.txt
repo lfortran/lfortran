@@ -3763,6 +3763,15 @@ RUN(NAME traits_runtime_pointer_separate_01 LABELS llvm llvm2 NO_STD_F23
 RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_05 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_05_contracts.f90 traits_runtime_05_provider.f90
+        traits_runtime_05_consumer.f90 traits_runtime_05_alternative_impl.f90
+        traits_runtime_05_alternative.f90)
+RUN(NAME traits_runtime_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_projection_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_projection_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_projection_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_owning_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

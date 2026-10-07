@@ -9,7 +9,7 @@ Provider-owned runtime evidence for one explicitly selected nominal conformance.
 ```text
 TraitWitness(symbol_table symtab, identifier name, symbol contract,
     symbol implementation, symbol* procedures, identifier* dependencies, abi abi,
-    trait_lifecycle lifecycle)
+    trait_lifecycle lifecycle, symbol* projections)
 ```
 
 `implementation` identifies the original `TraitImplementation`; its nominal
@@ -28,6 +28,15 @@ import externalization updates this field and the owned implementation functions
 Its descriptor belongs to that concrete type, independently of this selected
 conformance; multiple witnesses do not introduce multiple payload finalizers.
 See [trait_lifecycle](../helper_nodes/trait_lifecycle.md).
+
+`projections` retains one provider-owned witness per direct parent of the
+declared contract, in parent declaration order. A projected witness uses the
+same original implementation and concrete lifecycle, but its own correctly
+typed adapters for that parent's messages. Eligible parent witnesses may exist
+even when additional child methods cannot be dispatched at runtime. The
+immutable table appends these
+parent-table references after its lifecycle and message entries. A consumer
+therefore weakens a view without discovering or reselecting conformance.
 
 The immutable table has strong provider-owned linkage. Imports reference that
 table rather than emitting an arbitrary weak alternative. Same-build/target

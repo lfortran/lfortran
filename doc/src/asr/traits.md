@@ -309,7 +309,7 @@ View dummies currently require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
-supported. Trait arrays, projections, inline
+supported. Trait arrays, inline
 `class(A+B)`, aggregate results, generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection is a
@@ -516,7 +516,8 @@ their complete source-archive fixture closure are registered.
 ## Persistent scalar pointer views (R3)
 
 Scalar `class(I), pointer` variables support association to concrete TARGET or
-POINTER storage, allocatable TARGET owners, and pointers of the same contract:
+POINTER storage, allocatable TARGET owners, and pointers with the same contract
+or a known nominal child contract:
 
 ```fortran
 type(Box), target :: object
@@ -534,7 +535,9 @@ life of an automatic variable, temporary, or deallocated owner.
 
 Pointer dummies support all intents. OUT/INOUT association changes affect the
 actual pointer; IN protects association, not the target. An IN pointer dummy
-may also receive an eligible nonpointer TARGET. `associated` checks association
+may also receive an eligible nonpointer TARGET or a pointer with a known
+nominal child contract. Defining pointer dummies remain invariant.
+`associated` checks association
 and, with a target argument, payload identity. Disassociated dynamic calls are
 diagnosed at runtime. Saved descriptors retain association across calls.
 PURE procedures obey the ordinary base-object restrictions on pointer
@@ -555,8 +558,60 @@ LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
 contract-only consumer before its providers, then checks forwarding against a
 frozen provider archive in normal and fast modes.
 Pointer results, allocation/deallocation through
-trait pointers, arrays/components, projections and concrete inspection remain
+trait pointers, arrays/components, inline combinations and concrete inspection remain
 subsequent work.
+
+## Named parent projections (R3)
+
+A named child view can weaken to any declared nominal parent, including members
+of named combinations and transitive or diamond paths. Compatible independent
+message origins remain nominally distinct even when they share a callable slot.
+Equal signatures alone never allow a conversion to an unrelated trait, and a
+parent view cannot strengthen to a child.
+
+```fortran
+abstract interface, extends(IValue + ILabel) :: ICombined
+end interface
+class(ICombined), pointer :: combined
+class(IValue), pointer :: parent
+! After combined is associated with a live target:
+parent => combined
+```
+
+Projection retains the original payload address, concrete lifecycle and
+provider-selected implementation. It neither searches imports for another
+implementation nor changes association of the source pointer. Borrowed
+arguments, persistent pointer association, readonly pointer dummy arguments,
+and `associated(parent, child)` use the same checked nominal relation.
+Disassociated pointers project to disassociated pointers; dereferencing a
+borrowed pointer or owner still requires a live target or allocation.
+
+Owning assignment and SOURCE/MOLD allocation can copy through a parent view.
+The copy has independent owning storage and retains the selected provider's
+parent witness and concrete lifecycle. Allocatable dummy slots remain invariant
+for **every** intent, as do defining pointer dummy slots: these are storage
+associations, not value projections. A concrete value can erase directly to a
+parent through a visible child conformance. Runtime-ineligible extra child
+messages do not prevent an eligible parent subset from being used.
+
+Semantics emits successive `TraitProject` expressions with explicit direct
+parent indices, after `TraitBorrow` when a value borrow is required. Each
+`TraitWitness` records provider-owned parent witnesses in declaration order;
+every projected table uses the original `TraitImplementation` and its own typed
+adapters. LLVM only copies the nonowning header and selects the recorded table.
+Parent tables have static provider lifetime; projection needs no heap allocation
+or reference counting. Serialization, verification and externalization preserve
+these references independently of consumer imports.
+
+`traits_runtime_05` checks a contracts-only consumer against a frozen provider
+archive and physically hidden implementation module. Importing an alternative
+implementation affects fresh erasure, not existing projected views or owning
+copies. `traits_runtime_06` checks diamond/coalesced origins and exact receiver
+addresses. `traits_runtime_projection_01` checks nullable and readonly pointer
+arguments, returned aliases, deep copies and exact finalization through parent
+views; `_02` checks eligible subsets of runtime-ineligible children.
+Inline `class(A+B)` equivalence, concrete SELECT TYPE and generic runtime methods
+remain explicit NYIs and separate subsequent stages.
 
 ## Compiler representation
 

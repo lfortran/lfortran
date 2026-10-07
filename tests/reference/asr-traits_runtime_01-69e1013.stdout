@@ -571,6 +571,7 @@
                                     [__implements_directvalue_ivalue_witness_0]
                                     Source
                                     (2 directvalue)
+                                    []
                                 ),
                             __implements_scaledvalue_ivalue:
                                 (TraitImplementation
@@ -711,6 +712,7 @@
                                     [__implements_scaledvalue_ivalue_witness_0]
                                     Source
                                     (2 scaledvalue)
+                                    []
                                 ),
                             __trait_contract_ivalue:
                                 (TraitRuntimeContract

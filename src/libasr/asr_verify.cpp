@@ -1740,6 +1740,23 @@ public:
                 symtab_in_scope(current_symtab, x.m_lifecycle.m_type_declaration),
             "asr.verify.trait_witness.evidence_in_scope",
             "A runtime witness must reference visible contract and implementation evidence");
+        require_id(!x.n_projections || x.m_projections,
+            "asr.verify.trait_witness.projections",
+            "A witness must retain its declared parent projection references");
+        for (size_t i = 0; i < x.n_projections; i++) {
+            auto *reference = x.m_projections[i];
+            require_id(reference && (ASR::is_a<TraitWitness_t>(*reference) ||
+                    ASR::is_a<ExternalSymbol_t>(*reference)),
+                "asr.verify.trait_witness.projection_kind",
+                "A parent projection must name a runtime witness");
+            auto *scope = ASR::is_a<TraitWitness_t>(*reference)
+                ? ASR::down_cast<TraitWitness_t>(reference)->m_symtab
+                : ASR::down_cast<ExternalSymbol_t>(reference)->m_parent_symtab;
+            require_id(scope && (ASR::is_a<ExternalSymbol_t>(*reference) || scope->parent) &&
+                    symtab_in_scope(current_symtab, reference),
+                "asr.verify.trait_witness.projection_in_scope",
+                "A parent witness must be visible from its provider");
+        }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         auto visit_adapters = [&]() {
             auto *parent = current_symtab;
@@ -1754,11 +1771,45 @@ public:
         auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
             ASRUtils::symbol_get_past_external(x.m_contract));
-        require_id(implementation->m_parent_symtab == current_symtab &&
-                ASRUtils::symbol_get_past_external(implementation->m_trait) ==
-                    ASRUtils::symbol_get_past_external(contract->m_trait),
+        auto *origin = ASRUtils::symbol_get_past_external(implementation->m_trait);
+        auto *target = ASRUtils::symbol_get_past_external(contract->m_trait);
+        require_id(origin && target && ASR::is_a<Trait_t>(*origin) &&
+                ASR::is_a<Trait_t>(*target),
             "asr.verify.trait_witness.conformance_origin",
-            "A runtime witness must preserve the exact contract and conformance origin");
+            "A runtime witness must retain resolved nominal trait declarations");
+        auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(origin),
+            x.base.base.loc);
+        bool provided = false;
+        for (auto *trait : hierarchy.traits) provided |= &trait->base == target;
+        require_id(implementation->m_parent_symtab == current_symtab && provided,
+            "asr.verify.trait_witness.conformance_origin",
+            "A runtime witness must preserve its original conformance and a guaranteed contract");
+        auto *trait = ASR::down_cast<Trait_t>(target);
+        require_id(x.n_projections == trait->n_parents,
+            "asr.verify.trait_witness.projections",
+            "A witness must retain every direct parent view in declaration order");
+        for (size_t i = 0; i < x.n_projections; i++) {
+            auto *reference = ASRUtils::symbol_get_past_external(x.m_projections[i]);
+            require_id(reference && ASR::is_a<TraitWitness_t>(*reference),
+                "asr.verify.trait_witness.projection_kind",
+                "A parent projection must name a runtime witness");
+            auto *parent = ASR::down_cast<TraitWitness_t>(reference);
+            auto *parent_contract = ASRUtils::symbol_get_past_external(parent->m_contract);
+            require_id(parent_contract && ASR::is_a<TraitRuntimeContract_t>(*parent_contract),
+                "asr.verify.trait_witness.projection_contract",
+                "A parent witness requires a runtime contract");
+            require_id(ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<TraitRuntimeContract_t>(parent_contract)->m_trait) ==
+                    ASRUtils::symbol_get_past_external(trait->m_parents[i]) &&
+                    ASRUtils::symbol_get_past_external(parent->m_implementation) ==
+                        &implementation->base &&
+                    parent->m_symtab && parent->m_symtab->parent == current_symtab &&
+                    parent->m_abi == x.m_abi &&
+                    ASRUtils::symbol_get_past_external(parent->m_lifecycle.m_type_declaration) ==
+                        ASRUtils::symbol_get_past_external(x.m_lifecycle.m_type_declaration),
+                "asr.verify.trait_witness.projection_origin",
+                "A projection must retain the parent's contract, selected implementation and lifecycle");
+        }
         std::set<symbol_t*> procedures;
         for (size_t i = 0; i < x.n_procedures; i++) {
             auto *procedure = verify_runtime_trait_procedure(x.m_procedures[i],
@@ -1982,6 +2033,42 @@ public:
                 ASRUtils::trait_runtime_contract(x.m_type),
             "asr.verify.trait_borrow.contract",
             "Borrowing an owner must preserve its declared contract");
+    }
+
+    void visit_TraitProject(const TraitProject_t &x) {
+        auto *source = typed_expr_type(x.m_view);
+        require_id(source && x.m_type &&
+                ((ASR::is_a<TraitObjectType_t>(*source) &&
+                  ASR::is_a<TraitObjectType_t>(*x.m_type)) ||
+                 (ASRUtils::is_trait_pointer(source) &&
+                  ASRUtils::is_trait_pointer(x.m_type))),
+            "asr.verify.trait_project.view_kind",
+            "A projection preserves borrowed or nonowning pointer storage");
+        visit_expr(*x.m_view);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *source_contract = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitObjectType_t>(ASRUtils::extract_type(source))->m_contract);
+        auto *target_contract = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitObjectType_t>(ASRUtils::extract_type(x.m_type))->m_contract);
+        require_id(source_contract && target_contract &&
+                ASR::is_a<TraitRuntimeContract_t>(*source_contract) &&
+                ASR::is_a<TraitRuntimeContract_t>(*target_contract),
+            "asr.verify.trait_project.contract",
+            "A projection requires resolved source and result contracts");
+        auto *source_trait = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitRuntimeContract_t>(source_contract)->m_trait);
+        require_id(source_trait && ASR::is_a<Trait_t>(*source_trait),
+            "asr.verify.trait_project.contract",
+            "A projection requires a nominal source trait");
+        auto *trait = ASR::down_cast<Trait_t>(source_trait);
+        require_id(x.m_parent >= 0 && size_t(x.m_parent) < trait->n_parents &&
+                trait->m_parents &&
+                ASRUtils::symbol_get_past_external(trait->m_parents[x.m_parent]) ==
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<TraitRuntimeContract_t>(target_contract)->m_trait),
+            "asr.verify.trait_project.parent",
+            "A projection may select only its declared nominal parent");
     }
 
     ttype_t *verify_trait_pointer(expr_t *pointer, const Location &loc,
@@ -3879,7 +3966,8 @@ public:
                         ((ASRUtils::is_trait_pointer(actual_type) &&
                           (ASR::is_a<Var_t>(*passed_arg_expr) ||
                            (callee_param->m_intent == intentType::In &&
-                            ASR::is_a<PointerNullConstant_t>(*passed_arg_expr)))) ||
+                            (ASR::is_a<PointerNullConstant_t>(*passed_arg_expr) ||
+                             ASR::is_a<TraitProject_t>(*passed_arg_expr))))) ||
                          (callee_param->m_intent == intentType::In &&
                           ASR::is_a<TraitObjectType_t>(*actual_type) &&
                           ASRUtils::is_valid_pointer_assignment_target(passed_arg_expr)));

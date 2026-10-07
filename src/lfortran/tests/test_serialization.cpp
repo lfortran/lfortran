@@ -1499,6 +1499,226 @@ end module
     }
 }
 
+TEST_CASE("Named runtime projections preserve provider and storage proofs") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_projection_proofs_m
+abstract interface :: IBase
+    integer function value()
+    end function
+end interface
+abstract interface, extends(IBase) :: IChild
+end interface
+abstract interface, extends(IBase) :: IRight
+end interface
+abstract interface :: IAlias
+    integer function value()
+    end function
+end interface
+abstract interface, extends(IChild + IRight + IAlias) :: ICombined
+end interface
+abstract interface :: IUnrelated
+    integer function value()
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+type :: Other
+    integer :: n
+end type
+implements ICombined :: Payload
+    procedure, pass :: value => read_value
+end implements
+implements ICombined :: Other
+    procedure, pass :: value => read_other
+end implements
+contains
+integer function read_value(self)
+    type(Payload), intent(in) :: self
+    read_value = self%n
+end function
+integer function read_other(self)
+    type(Other), intent(in) :: self
+    read_other = self%n
+end function
+subroutine project(view, target)
+    class(ICombined), pointer, intent(in) :: view
+    class(IBase), pointer, intent(out) :: target
+    target => view
+end subroutine
+subroutine accept(view)
+    class(IBase), intent(in) :: view
+end subroutine
+subroutine borrow(view)
+    class(ICombined), intent(in) :: view
+    call accept(view)
+end subroutine
+subroutine readonly(view)
+    class(IBase), pointer, intent(in) :: view
+end subroutine
+subroutine pass_pointer(view)
+    class(ICombined), pointer, intent(in) :: view
+    call readonly(view)
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *scope = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_projection_proofs_m"))->m_symtab;
+    auto function = [&](const std::string &name) {
+        return ASR::down_cast<ASR::Function_t>(scope->get_symbol(name));
+    };
+    auto *contract = ASRUtils::trait_runtime_contract(scope->get_symbol("icombined"));
+    auto *base_contract = ASRUtils::trait_runtime_contract(scope->get_symbol("ibase"));
+    ASR::TraitImplementation_t *implementation = nullptr, *other = nullptr;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+        auto *impl = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        if (impl->m_type_declaration == scope->get_symbol("payload")) {
+            implementation = impl;
+        } else {
+            other = impl;
+        }
+    }
+    REQUIRE(implementation);
+    REQUIRE(other);
+    auto *witness = ASRUtils::trait_runtime_witness(*implementation, contract);
+    auto *base = ASRUtils::trait_runtime_witness(*implementation, base_contract);
+    REQUIRE(witness);
+    REQUIRE(base);
+    REQUIRE(witness->n_projections == 3);
+    CHECK(contract->n_slots == 1);
+    CHECK(contract->m_slots[0].n_origins == 2);
+    auto *child = ASR::down_cast<ASR::TraitWitness_t>(witness->m_projections[0]);
+    auto *right = ASR::down_cast<ASR::TraitWitness_t>(witness->m_projections[1]);
+    REQUIRE(child->n_projections == 1);
+    REQUIRE(right->n_projections == 1);
+    CHECK(child->m_projections[0] == &base->base);
+    CHECK(right->m_projections[0] == &base->base);
+    CHECK(base->m_implementation == witness->m_implementation);
+    auto *association = ASR::down_cast<ASR::TraitAssociate_t>(function("project")->m_body[0]);
+    auto *projection = ASR::down_cast<ASR::TraitProject_t>(association->m_value);
+    auto *intermediate = ASR::down_cast<ASR::TraitProject_t>(projection->m_view);
+    auto *borrow_projection = ASR::down_cast<ASR::TraitProject_t>(
+        ASR::down_cast<ASR::SubroutineCall_t>(function("borrow")->m_body[0])->m_args[0].m_value);
+    CHECK(ASRUtils::is_trait_pointer(projection->m_type));
+    CHECK(projection->m_parent == 0);
+    CHECK(intermediate->m_parent == 0);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text retain the shared diamond witness") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_projection.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("externalization preserves provider-owned parent references") {
+        scope->mark_all_variables_external(al);
+        CHECK(child->m_abi == ASR::abiType::ExternalUndefined);
+        CHECK(base->m_abi == ASR::abiType::ExternalUndefined);
+        CHECK(child->m_projections[0] == &base->base);
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*result.result, true, valid));
+        INFO(valid.render2());
+    }
+    SUBCASE("missing projection array rejects before dereference") {
+        witness->m_projections = nullptr;
+        rejects("asr.verify.trait_witness.projections");
+    }
+    SUBCASE("every declared parent needs a witness") {
+        witness->n_projections--;
+        rejects("asr.verify.trait_witness.projections");
+    }
+    SUBCASE("a parent reference cannot name a function") {
+        witness->m_projections[0] = &function("read_value")->base;
+        rejects("asr.verify.trait_witness.projection_kind");
+    }
+    SUBCASE("a parent reference requires a scope before scope lookup") {
+        auto broken = *child;
+        broken.m_symtab = nullptr;
+        witness->m_projections[0] = &broken.base;
+        rejects("asr.verify.trait_witness.projection_in_scope");
+    }
+    SUBCASE("parent declaration order is part of the table contract") {
+        std::swap(witness->m_projections[0], witness->m_projections[1]);
+        rejects("asr.verify.trait_witness.projection_origin");
+    }
+    SUBCASE("a projection cannot reselect another implementation") {
+        witness->m_projections[0] = &ASRUtils::trait_runtime_witness(
+            *other, ASRUtils::trait_runtime_contract(scope->get_symbol("ichild")))->base;
+        rejects("asr.verify.trait_witness.projection_origin");
+    }
+    SUBCASE("a projection cannot replace a parent with itself") {
+        witness->m_projections[0] = &witness->base;
+        rejects("asr.verify.trait_witness.projection_origin");
+    }
+    SUBCASE("a projection index cannot be negative") {
+        projection->m_parent = -1;
+        rejects("asr.verify.trait_project.parent");
+    }
+    SUBCASE("a projection index cannot exceed the direct parent count") {
+        projection->m_parent = 1;
+        rejects("asr.verify.trait_project.parent");
+    }
+    SUBCASE("equal signatures do not establish nominal parenthood") {
+        auto *unrelated = ASRUtils::trait_runtime_contract(scope->get_symbol("iunrelated"));
+        auto *type = ASR::down_cast<ASR::TraitObjectType_t>(
+            ASRUtils::extract_type(projection->m_type));
+        type->m_contract = ASRUtils::import_type_declaration(al, &unrelated->base,
+            function("project")->m_symtab);
+        rejects("asr.verify.trait_project.parent");
+    }
+    SUBCASE("a borrowed value cannot become a pointer without target proof") {
+        intermediate->m_view = function("borrow")->m_args[0];
+        rejects("asr.verify.trait_pointer.target");
+    }
+    SUBCASE("a projection cannot introduce owning storage") {
+        projection->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+            projection->base.base.loc, ASRUtils::extract_type(projection->m_type)));
+        rejects("asr.verify.trait_pointer.target");
+    }
+    SUBCASE("a missing projection source rejects before type lookup") {
+        borrow_projection->m_view = nullptr;
+        rejects("asr.verify.trait_project.view_kind");
+    }
+    SUBCASE("projection cannot change a borrowed value's storage category") {
+        borrow_projection->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+            al, borrow_projection->base.base.loc, borrow_projection->m_type));
+        rejects("asr.verify.trait_owner.argument");
+    }
+    SUBCASE("readonly pointer covariance cannot define a child pointer slot") {
+        ASRUtils::EXPR2VAR(function("readonly")->m_args[0])->m_intent = ASR::intentType::InOut;
+        rejects("asr.verify.trait_owner.argument");
+    }
+}
+
 TEST_CASE("Retained trait result stores preserve unique scoped ownership") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

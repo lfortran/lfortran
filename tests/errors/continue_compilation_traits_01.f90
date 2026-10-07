@@ -1963,7 +1963,7 @@ contains
     end subroutine
 end module traits_runtime_nyi_conversion_m
 
-module traits_runtime_nyi_projection_m
+module traits_runtime_strengthening_m
     implicit none
     abstract interface :: IValue
         function value() result(r)
@@ -1974,13 +1974,13 @@ module traits_runtime_nyi_projection_m
     end interface
 contains
     subroutine consume(object)
-        class(IValue), intent(in) :: object
+        class(IChild), intent(in) :: object
     end subroutine
     subroutine project(object)
-        class(IChild), intent(in) :: object
+        class(IValue), intent(in) :: object
         call consume(object)
     end subroutine
-end module traits_runtime_nyi_projection_m
+end module traits_runtime_strengthening_m
 
 module traits_runtime_nyi_combination_m
     implicit none
@@ -2679,5 +2679,91 @@ contains
     end subroutine
     pure subroutine polymorphic_out(view)
         class(IValue), pointer, intent(out) :: view
+    end subroutine
+end module
+
+module traits_projection_boundaries_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface, extends(IValue) :: IChild
+    end interface
+    abstract interface :: ILabel
+        integer function label()
+        end function
+    end interface
+    abstract interface, extends(IChild + ILabel) :: ICombined
+    end interface
+    abstract interface :: IUnrelated
+        integer function value()
+        end function
+    end interface
+contains
+    subroutine borrow(view)
+        class(IValue), intent(in) :: view
+    end subroutine
+    subroutine read_child(view)
+        class(IChild), pointer, intent(in) :: view
+    end subroutine
+    subroutine read_slot(slot)
+        class(IValue), allocatable, intent(in) :: slot
+    end subroutine
+    subroutine write_slot(slot)
+        class(IValue), allocatable, intent(inout) :: slot
+    end subroutine
+    subroutine replace_slot(slot)
+        class(IValue), allocatable, intent(out) :: slot
+    end subroutine
+    subroutine unknown_slot(slot)
+        class(IValue), allocatable :: slot
+    end subroutine
+    subroutine write_pointer(slot)
+        class(IValue), pointer, intent(inout) :: slot
+    end subroutine
+    subroutine replace_pointer(slot)
+        class(IValue), pointer, intent(out) :: slot
+    end subroutine
+    subroutine unknown_pointer(slot)
+        class(IValue), pointer :: slot
+    end subroutine
+    subroutine combined_owner_slots(combined)
+        class(ICombined), allocatable :: combined
+        call read_slot(combined)
+        call write_slot(combined)
+        call replace_slot(combined)
+        call unknown_slot(combined)
+    end subroutine
+    subroutine defining_pointer_slots(child, combined)
+        class(IChild), pointer :: child
+        class(ICombined), pointer :: combined
+        call write_pointer(child)
+        call replace_pointer(child)
+        call unknown_pointer(child)
+        call write_pointer(combined)
+        call replace_pointer(combined)
+        call unknown_pointer(combined)
+    end subroutine
+    subroutine strengthening(parent, child, unrelated)
+        class(IValue), pointer :: parent
+        class(IChild), pointer :: child
+        class(IUnrelated), pointer :: unrelated
+        child => parent
+        parent => unrelated
+        call read_child(parent)
+        call borrow(unrelated)
+        if (associated(child, parent)) error stop
+        if (associated(parent, unrelated)) error stop
+        if (associated(parent, null(child))) error stop
+    end subroutine
+    subroutine transient_target(view)
+        class(IChild), intent(in) :: view
+        class(IValue), pointer :: pointer
+        pointer => view
+    end subroutine
+    subroutine pointer_is_not_an_owner(child)
+        class(IChild), pointer :: child
+        call read_slot(child)
     end subroutine
 end module

@@ -620,6 +620,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::GetPointer:
         case ASR::exprType::TraitPack:
         case ASR::exprType::TraitBorrow:
+        case ASR::exprType::TraitProject:
         case ASR::exprType::TraitFunctionCall:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
@@ -931,6 +932,10 @@ bool is_valid_pointer_assignment_target(ASR::expr_t* expr)
     if (ASR::is_a<ASR::TraitBorrow_t>(*expr)) {
         return is_valid_pointer_assignment_target(
             ASR::down_cast<ASR::TraitBorrow_t>(expr)->m_owner);
+    }
+    if (ASR::is_a<ASR::TraitProject_t>(*expr)) {
+        return is_valid_pointer_assignment_target(
+            ASR::down_cast<ASR::TraitProject_t>(expr)->m_view);
     }
     if (ASR::is_a<ASR::Var_t>(*expr)) {
         ASR::Variable_t* var = get_variable_from_symbol(
@@ -5745,12 +5750,16 @@ ASR::ttype_t* import_trait_type(Allocator &al, ASR::ttype_t* type, SymbolTable* 
     }
 }
 
-ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation)
+ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,
+        ASR::TraitRuntimeContract_t *contract)
 {
+    if (!contract) contract = trait_runtime_contract(implementation.m_trait);
+    if (!contract) return nullptr;
     for (const auto &entry : implementation.m_parent_symtab->get_scope()) {
         if (!ASR::is_a<ASR::TraitWitness_t>(*entry.second)) continue;
         auto *witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
-        if (symbol_get_past_external(witness->m_implementation) == &implementation.base) {
+        if (symbol_get_past_external(witness->m_implementation) == &implementation.base &&
+                symbol_get_past_external(witness->m_contract) == &contract->base) {
             return witness;
         }
     }

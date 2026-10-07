@@ -10647,7 +10647,8 @@ struct TraitHierarchy {
 
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
-ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation);
+ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,
+    ASR::TraitRuntimeContract_t *contract = nullptr);
 
 inline bool is_trait_owner(const ASR::ttype_t *type) {
     return type && ASR::is_a<ASR::Allocatable_t>(*type) &&

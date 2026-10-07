@@ -1100,6 +1100,13 @@ public:
         visit_expr(*x.m_owner);
     }
 
+    void visit_TraitProject(const ASR::TraitProject_t &x) {
+        visit_expr(*x.m_view);
+        auto *contract = ASRUtils::trait_runtime_contract(x.m_type);
+        src = "trait_project(" + src + ", " +
+            ASRUtils::symbol_name(contract->m_trait) + ")";
+    }
+
     void visit_TraitAllocate(const ASR::TraitAllocate_t &x) {
         visit_expr(*x.m_target);
         std::string result = indent + "allocate(";

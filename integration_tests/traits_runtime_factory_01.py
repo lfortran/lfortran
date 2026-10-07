@@ -1,4 +1,4 @@
-"""Freeze providers before compiling contract-only factory consumers."""
+"""Freeze providers before compiling contract-only factory/projection consumers."""
 
 import argparse
 import hashlib
@@ -16,12 +16,15 @@ def main():
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--work-dir", required=True)
     parser.add_argument("--fast", action="store_true")
-    parser.add_argument("--slots", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--slots", action="store_true")
+    mode.add_argument("--projections", action="store_true")
     parser.add_argument("--detect-leaks", action="store_true")
     args = parser.parse_args()
     compiler = Path(args.lfortran).resolve()
     sources = Path(__file__).resolve().parent
-    prefix = "traits_runtime_07" if args.slots else "traits_runtime_factory_01"
+    prefix = ("traits_runtime_05" if args.projections else
+              "traits_runtime_07" if args.slots else "traits_runtime_factory_01")
     work = Path(args.work_dir).resolve() / f"trait-factory-{os.getpid()}-{time.time_ns()}"
     work.mkdir(parents=True)
     environment = {**os.environ, "TMPDIR": str(work), "TMP": str(work), "TEMP": str(work)}
@@ -73,18 +76,22 @@ def main():
     run("archive", ["ar", "rcs", archive, *objects])
     frozen = digest(archive)
     archive_checks = {"before_clients": frozen}
+    frozen_files = {str(obj): digest(obj) for obj in objects}
     if not args.slots:
         hidden = {}
         for module in (work / "provider").rglob("*.mod"):
             hidden[str(module.relative_to(work))] = digest(module)
-            module.rename(module.with_suffix(".mod.hidden"))
+            module = module.rename(module.with_suffix(".mod.hidden"))
+            frozen_files[str(module)] = digest(module)
         assert hidden, "the private provider must have compiled its module"
         (work / "hidden-provider-modules.json").write_text(json.dumps(hidden, indent=2) + "\n")
 
     def check_archive(stage):
         archive_checks[stage] = digest(archive)
         assert archive_checks[stage] == frozen
+        assert all(digest(Path(path)) == value for path, value in frozen_files.items())
         (work / "archive.json").write_text(json.dumps(archive_checks, indent=2) + "\n")
+        (work / "provider-files.json").write_text(json.dumps(frozen_files, indent=2) + "\n")
 
     consumer, source, includes = compile_part("consumer", ["contracts"])
     check_archive("after_consumer")
@@ -96,12 +103,22 @@ def main():
     assert "TraitWitness" not in semantic and "TraitImplementation" not in semantic
     assert "TraitPack" not in semantic
     assert re.search(r"call i32 %", llvm), "dispatch must use the carried witness"
-    if not args.slots:
+    if args.projections:
+        assert "TraitProject" in semantic and "TraitAssociate" in semantic
+        assert "TraitBorrow" in semantic
+    elif not args.slots:
         assert "TraitBorrow" in semantic and "TraitAssignment" in semantic
         assert "ReturnVar" in semantic and "make_value" in semantic
         assert re.search(r"call (?:i8\*|ptr) %", llvm), "copy must use the private lifecycle"
         assert "hiddena" not in semantic.lower() and "hiddenb" not in semantic.lower()
-    driver_imports = ["contracts", "consumer", *providers] if args.slots else ["contracts", "consumer"]
+    extra_objects = []
+    if args.projections:
+        extra_objects.append(compile_part("alternative_impl", ["contracts"])[0])
+        extra_objects.append(compile_part("alternative", ["contracts", "alternative_impl"])[0])
+        check_archive("after_alternative")
+    driver_imports = (["contracts"] if args.projections else
+                      ["contracts", "consumer", *providers] if args.slots else
+                      ["contracts", "consumer"])
     driver, source, includes = compile_part("driver", driver_imports)
     check_archive("after_driver")
     if not args.slots:
@@ -112,11 +129,11 @@ def main():
         assert "TraitImplementation" not in semantic and "TraitWitness" not in semantic
         assert "hiddena" not in semantic.lower() and "hiddenb" not in semantic.lower()
     executable = work / "program"
-    run("link", [compiler, *flags, driver, consumer, archive, contracts, "-o", executable])
+    run("link", [compiler, *flags, driver, consumer, *extra_objects, archive, contracts, "-o", executable])
     check_archive("after_link")
     for name, arguments in [("first-a", []), ("first-b", ["select-second-first"])]:
         output = run(name, [executable, *arguments])
-        if not args.slots:
+        if not args.slots and not args.projections:
             assert re.search(r"factory results:\s+16\s+16\s+272\s+464\s+10", output), output
         if args.detect_leaks:
             assert "NO LEAKS FOUND" in output, output

@@ -4630,23 +4630,31 @@ public:
         contract->n_slots = slots.size();
     }
 
-    void create_runtime_trait_witness(ASR::TraitImplementation_t *implementation) {
-        auto *contract = ASRUtils::trait_runtime_contract(implementation->m_trait);
-        if (!contract) return;
-        for (size_t i = 0; i < implementation->n_bindings; i++) {
-            auto *procedure = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(implementation->m_bindings[i].m_procedure));
-            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
-            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return;
+    ASR::TraitWitness_t *create_runtime_trait_witness(
+            ASR::TraitImplementation_t *implementation,
+            ASR::TraitRuntimeContract_t *contract) {
+        if (!contract) return nullptr;
+        if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
+            return existing;
         }
         for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *binding = ASRUtils::find_trait_binding(
+                *implementation, contract->m_slots[i].m_origins[0]);
+            LCOMPILERS_ASSERT(binding);
+            auto *procedure = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(binding->m_procedure));
+            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
+            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return nullptr;
             auto *member = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(contract->m_slots[i].m_origins[0]));
-            if (!ASRUtils::runtime_trait_method_supported(*member)) return;
+            if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
         }
         const Location &loc = implementation->base.base.loc;
+        std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==
+                ASRUtils::symbol_get_past_external(contract->m_trait)
+            ? "" : "_" + std::string(ASRUtils::symbol_name(contract->m_trait));
         std::string name = current_scope->get_unique_name(
-            std::string(implementation->m_name) + "_witness");
+            std::string(implementation->m_name) + suffix + "_witness");
         auto *witness_scope = al.make_new<SymbolTable>(current_scope);
         ASR::trait_lifecycle_t lifecycle;
         lifecycle.loc = loc;
@@ -4655,7 +4663,7 @@ public:
             al, loc, witness_scope, s2c(al, name),
             make_operator_proc_visible(&contract->base, "trait", current_scope),
             &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
-            lifecycle));
+            lifecycle, nullptr, 0));
         current_scope->add_symbol(name, &witness->base);
         Vec<ASR::symbol_t*> procedures;
         Vec<char*> dependencies;
@@ -4676,6 +4684,20 @@ public:
         witness->n_procedures = procedures.size();
         witness->m_dependencies = dependencies.p;
         witness->n_dependencies = dependencies.size();
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(contract->m_trait));
+        Vec<ASR::symbol_t*> projections;
+        projections.reserve(al, trait->n_parents);
+        for (size_t i = 0; i < trait->n_parents; i++) {
+            auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
+            LCOMPILERS_ASSERT(parent_contract);
+            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract);
+            LCOMPILERS_ASSERT(parent_witness);
+            projections.push_back(al, &parent_witness->base);
+        }
+        witness->m_projections = projections.p;
+        witness->n_projections = projections.size();
+        return witness;
     }
 
     void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
@@ -5090,8 +5112,13 @@ public:
                 }
             }
             current_scope->add_symbol(name, implementation);
-            create_runtime_trait_witness(
-                ASR::down_cast<ASR::TraitImplementation_t>(implementation));
+            // A static-only child can still supply a runtime-eligible parent.
+            for (auto *provided : hierarchies[i].traits) {
+                create_runtime_trait_witness(
+                    ASR::down_cast<ASR::TraitImplementation_t>(implementation),
+                    ASRUtils::trait_runtime_contract(
+                        const_cast<ASR::symbol_t*>(&provided->base)));
+            }
         }
         for (const auto &entry : declared) {
             if (!used.count(entry.first)) {

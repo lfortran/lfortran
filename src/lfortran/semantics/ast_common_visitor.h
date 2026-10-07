@@ -18872,6 +18872,13 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        if (tgt_) {
+            auto *value = ASRUtils::expr_value(tgt_);
+            if (value && ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                trait_call_error("NULL() is not permitted as the TARGET= argument to 'associated'",
+                    x.base.base.loc);
+            }
+        }
         if (ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(ptr_))) &&
                 !ASRUtils::is_trait_pointer(ASRUtils::expr_type(ptr_))) {
@@ -18890,24 +18897,9 @@ public:
             }
             auto *target_type = ASRUtils::expr_type(tgt_);
             if (ASRUtils::is_trait_pointer(target_type)) {
-                if (ASRUtils::trait_runtime_contract(target_type) !=
-                        ASRUtils::trait_runtime_contract(ASRUtils::expr_type(ptr_))) {
-                    trait_call_error("associated runtime trait pointers require the same "
-                        "declared contract", tgt_->base.loc);
-                }
+                project_runtime_trait_view(tgt_, ASRUtils::expr_type(ptr_));
             } else {
                 make_runtime_trait_view(tgt_, ASRUtils::expr_type(ptr_));
-            }
-        }
-        if (tgt_ != nullptr) {
-            if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
-                if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
-                    diag.add(diag::Diagnostic(
-                        "NULL() is not permitted as the TARGET= argument to 'associated'",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
             }
         }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
@@ -23110,9 +23102,11 @@ public:
             check_runtime_trait_pointer_context(actual);
             auto intent = ASRUtils::EXPR2VAR(dummy)->m_intent;
             if (ASRUtils::is_trait_pointer(source)) {
-                if (ASRUtils::trait_runtime_contract(source) !=
+                if (intent == ASR::intentType::In) {
+                    project_runtime_trait_view(actual, target);
+                } else if (ASRUtils::trait_runtime_contract(source) !=
                         ASRUtils::trait_runtime_contract(target)) {
-                    trait_call_error("a runtime trait pointer dummy requires the same "
+                    trait_call_error("a defining runtime trait pointer dummy requires the same "
                         "declared trait contract", actual->base.loc);
                 }
                 if (intent != ASR::intentType::In &&
@@ -23164,11 +23158,6 @@ public:
         target = ASRUtils::extract_type(target);
         tmp = nullptr;
         if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(source))) {
-            if (ASRUtils::trait_runtime_contract(source) !=
-                    ASRUtils::trait_runtime_contract(target)) {
-                trait_call_error("runtime trait view projections are not implemented yet",
-                    actual->base.loc);
-            }
             if (ASRUtils::is_allocatable(source) || ASRUtils::is_trait_pointer(source)) {
                 auto *contract = ASRUtils::trait_runtime_contract(source);
                 auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
@@ -23177,6 +23166,7 @@ public:
                 actual = ASRUtils::EXPR(ASR::make_TraitBorrow_t(
                     al, actual->base.loc, actual, view_type));
             }
+            project_runtime_trait_view(actual, target);
             return;
         }
         auto *concrete = ASRUtils::extract_type(source);
@@ -23201,6 +23191,45 @@ public:
             al, actual->base.loc, actual, reference, view_type));
     }
 
+    void project_runtime_trait_view(ASR::expr_t *&value, ASR::ttype_t *target) {
+        auto *source_contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(value));
+        auto *target_contract = ASRUtils::trait_runtime_contract(target);
+        if (source_contract == target_contract) return;
+        auto *source_trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(source_contract->m_trait));
+        auto *target_trait = ASRUtils::symbol_get_past_external(target_contract->m_trait);
+        checked_trait_hierarchy(*source_trait, value->base.loc);
+        std::vector<size_t> path;
+        std::function<bool(ASR::Trait_t*)> find_path = [&](ASR::Trait_t *trait) {
+            for (size_t i = 0; i < trait->n_parents; i++) {
+                auto *parent = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(trait->m_parents[i]));
+                path.push_back(i);
+                if (&parent->base == target_trait || find_path(parent)) return true;
+                path.pop_back();
+            }
+            return false;
+        };
+        if (!find_path(source_trait)) {
+            trait_call_error("the declared runtime trait does not provide the required "
+                "parent contract '" + std::string(ASRUtils::symbol_name(target_trait)) + "'",
+                value->base.loc);
+        }
+        bool pointer = ASRUtils::is_trait_pointer(ASRUtils::expr_type(value));
+        for (size_t index : path) {
+            auto *parent = ASRUtils::trait_runtime_contract(source_trait->m_parents[index]);
+            auto *reference = ASRUtils::import_type_declaration(al, &parent->base, current_scope);
+            ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+            auto *type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+                al, value->base.loc, reference));
+            if (pointer) type = ASRUtils::TYPE(ASR::make_Pointer_t(al, value->base.loc, type));
+            value = ASRUtils::EXPR(ASR::make_TraitProject_t(
+                al, value->base.loc, value, index, type));
+            source_trait = ASR::down_cast<ASR::Trait_t>(
+                ASRUtils::symbol_get_past_external(parent->m_trait));
+        }
+    }
+
     ASR::asr_t *make_runtime_trait_association(ASR::expr_t *target,
             ASR::expr_t *value, const Location &loc) {
         auto *target_type = ASRUtils::expr_type(target);
@@ -23221,11 +23250,7 @@ public:
             }
             auto *source_type = ASRUtils::expr_type(value);
             if (ASRUtils::is_trait_pointer(source_type)) {
-                if (ASRUtils::trait_runtime_contract(source_type) !=
-                        ASRUtils::trait_runtime_contract(target_type)) {
-                    trait_call_error("runtime trait view projections are not implemented yet",
-                        value->base.loc);
-                }
+                project_runtime_trait_view(value, target_type);
             } else {
                 make_runtime_trait_view(value, target_type);
             }
@@ -23245,31 +23270,21 @@ public:
         auto *contract = ASRUtils::trait_runtime_contract(target);
         auto *trait = ASRUtils::symbol_get_past_external(contract->m_trait);
         ASR::TraitImplementation_t *selected = nullptr;
-        bool projection = false;
         for (auto *implementation :
                 trait_implementations_for_type(declaration, loc)) {
-            if (ASRUtils::symbol_get_past_external(implementation->m_trait) == trait) {
-                if (!selected) selected = implementation;
-            } else {
-                auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
-                    ASRUtils::symbol_get_past_external(implementation->m_trait)),
-                    loc);
-                for (auto *parent : hierarchy.traits) {
-                    if (&parent->base == trait) projection = true;
-                }
+            auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                ASRUtils::symbol_get_past_external(implementation->m_trait)), loc);
+            for (auto *parent : hierarchy.traits) {
+                if (&parent->base == trait && !selected) selected = implementation;
             }
         }
         if (!selected) {
-            if (projection) {
-                trait_call_error("runtime trait view projections are not implemented yet",
-                    loc);
-            }
             trait_call_error("no visible nominal implementation of trait '"
                 + std::string(ASRUtils::symbol_name(trait)) + "' for type '"
                 + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(declaration))
                 + "'", loc);
         }
-        auto *witness = ASRUtils::trait_runtime_witness(*selected);
+        auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
         if (!witness) {
             trait_call_error("runtime dispatch for this trait implementation ABI "
                 "is not implemented yet", loc);
