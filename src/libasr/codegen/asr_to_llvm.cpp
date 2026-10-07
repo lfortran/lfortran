@@ -3183,29 +3183,14 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
-                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3)
-                        if (struct_sym != nullptr && struct_sym->n_member_functions > 0) {
-                            for (size_t fi = 0; fi < struct_sym->n_member_functions; fi++) {
-                                std::string final_proc_name = struct_sym->m_member_functions[fi];
-                                ASR::symbol_t* final_sym = struct_sym->m_symtab->parent->get_symbol(final_proc_name);
-                                if (final_sym) {
-                                    final_sym = ASRUtils::symbol_get_past_external(final_sym);
-                                    uint32_t fh = get_hash((ASR::asr_t*)final_sym);
-                                    if (llvm_symtab_fn.find(fh) != llvm_symtab_fn.end()) {
-                                        llvm::Function* final_fn = llvm_symtab_fn[fh];
-                                        // Finalizers take type(T), not class(T). For class
-                                        // variables, load the concrete data pointer (field 1)
-                                        // from the class wrapper {vptr, data*}.
-                                        llvm::Value* final_arg = tmp;
-                                        if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                                            llvm::Value* data_field = llvm_utils->create_gep2(llvm_data_type, tmp, 1);
-                                            llvm::Type* expected_type = final_fn->getFunctionType()->getParamType(0);
-                                            final_arg = llvm_utils->CreateLoad2(expected_type, data_field);
-                                        }
-                                        builder->CreateCall(final_fn, {final_arg});
-                                    }
-                                }
-                            }
+                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3).
+                        // A polymorphic entity is finalized as its dynamic type
+                        // by finalize_before_deallocate, through the finalizer in
+                        // its vtable, so the final procedures of the declared
+                        // type are not called here as well.
+                        if (struct_sym != nullptr &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                            llvm_symtab_finalizer.call_scalar_final_procedure(tmp, struct_sym);
                         }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
@@ -3239,6 +3224,10 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
+                        if (struct_sym != nullptr && !ASRUtils::is_class_type(element_type)) {
+                            llvm_symtab_finalizer.call_array_final_before_deallocate(tmp,
+                                ASRUtils::type_get_past_allocatable_pointer(cur_type), struct_sym);
+                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
@@ -7476,7 +7465,10 @@ public:
         }
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
-        llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
+        // The variables of the main program, and those of modules, are not
+        // finalized when the program terminates (F2018 7.5.6.4): their
+        // memory is freed without calling final subroutines.
+        llvm_symtab_finalizer.finalize_symtab(x.m_symtab, false);
         finalize_list_call_arg_allocas();
         // Free globals if detecting leaks is ON, to print clean report
         if(compiler_options.detect_leaks){
@@ -7485,7 +7477,7 @@ public:
                 auto &sym = name_sym_pair.second;
                 if(ASR::is_a<ASR::Module_t>(*sym)){
                     llvm_symtab_finalizer.finalize_symtab(
-                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+                        ASR::down_cast<ASR::Module_t>(sym)->m_symtab, false);
                 }
             }
         }
@@ -9330,7 +9322,7 @@ public:
                         !ASRUtils::is_array(arg->m_type) &&
                         llvm_arg.getType()->isPointerTy()) {
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
-                            nullptr, arg->m_type, module.get());
+                            x.m_args[asr_arg_idx], arg->m_type, module.get());
                         llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
@@ -10025,7 +10017,44 @@ public:
             // (including byte→element stride conversion) is already handled
             // in the prologue above. No additional stride conversion needed.
         }
+        finalize_intent_out_array_args(x);
         declare_local_vars(x);
+    }
+
+    /**
+     * Calls the final subroutines of the nonpointer, nonallocatable
+     * INTENT(OUT) array dummy arguments of derived type of `x`, which are
+     * finalized when the procedure is invoked (F2018 7.5.6.3 p7). The
+     * intent_out_deallocate pass finalizes the components of the elements.
+     * A polymorphic array is not finalized yet (#14078).
+     */
+    void finalize_intent_out_array_args(const ASR::Function_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t* const sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* const v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Out || !ASRUtils::is_array(v->m_type)
+                    || ASRUtils::is_allocatable_or_pointer(v->m_type)) continue;
+            ASR::ttype_t* const elem_type = ASRUtils::type_get_past_array(v->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*elem_type)
+                    || ASRUtils::is_class_type(elem_type)) continue;
+            // An assumed-size array of a finalizable type cannot be
+            // INTENT(OUT) (C839), and its size is not known.
+            if (ASRUtils::extract_physical_type(v->m_type)
+                    != ASR::array_physical_typeType::DescriptorArray) {
+                ASR::dimension_t* dims = nullptr;
+                const size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, dims);
+                if (n_dims == 0 || dims[n_dims - 1].m_length == nullptr) continue;
+            }
+            ASR::Struct_t* const struct_sym = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            uint32_t const h = get_hash((ASR::asr_t*)v);
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            llvm::Value* const ptr = llvm_symtab[h];
+            llvm_symtab_finalizer.call_array_final_of_intent_out(ptr, v->m_type, struct_sym);
+        }
     }
 
     inline void free_strings_to_be_deallocated(size_t start_n) {
@@ -11552,7 +11581,21 @@ public:
                 section_wrapper), wrapper_ptr);
             builder->CreateStore(wrapper_ptr, data_field);
         }
-        builder->CreateStore(target, target_desc);
+        // A pointer array owns its descriptor: a local one on the stack of
+        // its own scope, a module one in static storage and a component one
+        // on the heap, freed with the enclosing object. The section
+        // descriptor above is a temporary of this procedure, so copy it into
+        // the descriptor the pointer owns. Storing its address instead would
+        // leave the pointer referring to a dead stack slot after return, and
+        // the finalizer of a derived type would free that stack slot.
+        llvm::Value* owned_desc = llvm_utils->CreateLoad2(
+            target_type->getPointerTo(), target_desc);
+        llvm_utils->create_if_else(builder->CreateIsNull(owned_desc), [&]() {
+            builder->CreateStore(target, target_desc);
+        }, [&]() {
+            builder->CreateStore(llvm_utils->CreateLoad2(target_type, target),
+                owned_desc);
+        });
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
@@ -28670,26 +28713,58 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
     }
 }
 
+/// Defined here to use the array descriptor API.
+llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+        ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx) {
+    ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
+    llvm::Type* const elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+    if (arr_t->m_physical_type != ASR::array_physical_typeType::DescriptorArray) {
+        return llvm_utils_->create_ptr_gep2(elem_llvm_type, data, idx);
+    }
+    llvm::Type* const i64 = llvm::Type::getInt64Ty(builder_->getContext());
+    llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
+    llvm::Value* const dim_des_arr = llvm_utils_->arr_api->get_pointer_to_dimension_descriptor_array(
+        arr_llvm_type, ptr);
+    llvm::Value* pos = builder_->CreateSExtOrTrunc(
+        llvm_utils_->arr_api->get_offset(arr_llvm_type, ptr), i64);
+    llvm::Value* rest = builder_->CreateSExtOrTrunc(idx, i64);
+    for (size_t r = 0; r < arr_t->n_dims; r++) {
+        llvm::Value* const dim = llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), r);
+        llvm::Value* const extent = builder_->CreateSExtOrTrunc(
+            llvm_utils_->arr_api->get_dimension_size(dim_des_arr, dim), i64);
+        llvm::Value* const stride = builder_->CreateSExtOrTrunc(llvm_utils_->arr_api->get_stride(
+            llvm_utils_->arr_api->get_pointer_to_dimension_descriptor(dim_des_arr, dim)), i64);
+        pos = builder_->CreateAdd(pos, builder_->CreateMul(builder_->CreateSRem(rest, extent), stride));
+        rest = builder_->CreateSDiv(rest, extent);
+    }
+    return llvm_utils_->create_ptr_gep2(elem_llvm_type, data, pos);
+}
+
 /// Defined here to evaluate the bounds of an array whose shape is not
 /// constant with `ASRToLLVMVisitor::visit_expr_wrapper()`.
 void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
-        llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
+        llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
+        ASR::Struct_t* const final_struct) {
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
     ASR::ttype_t* const dummy_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(final_proc->m_args[0]));
     llvm::Type* const param_type = final_fn->getFunctionType()->getParamType(0);
     llvm::Type* const elem_llvm_type = get_llvm_type(arr_t->m_type, struct_sym);
+    llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
     const bool dummy_is_descriptor = ASRUtils::extract_physical_type(dummy_type)
+        == ASR::array_physical_typeType::DescriptorArray;
+    const bool parent_component = final_struct != struct_sym;
+    const bool is_descriptor = arr_t->m_physical_type
         == ASR::array_physical_typeType::DescriptorArray;
     llvm::Value* data = nullptr;
     switch (arr_t->m_physical_type) {
         case ASR::array_physical_typeType::DescriptorArray:
-            if (dummy_is_descriptor) {
+            if (dummy_is_descriptor && !parent_component) {
                 builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr, param_type)});
                 return;
             }
             data = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
-                llvm_utils_->arr_api->get_pointer_to_data(get_llvm_type(arr_type, struct_sym), ptr));
+                llvm_utils_->arr_api->get_pointer_to_data(arr_llvm_type, ptr));
             break;
         case ASR::array_physical_typeType::FixedSizeArray:
         case ASR::array_physical_typeType::PointerArray:
@@ -28698,30 +28773,83 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         default:
             throw CodeGenError("finalization of an array of this physical type is not implemented yet");
     }
-    if (!dummy_is_descriptor) {
-        builder_->CreateCall(final_fn, {builder_->CreateBitCast(data, param_type)});
-        return;
-    }
-    // Describe the array with a descriptor of the dummy's type.
-    llvm::Type* const desc_type = get_llvm_type(dummy_type, struct_sym);
-    llvm::Value* const desc = llvm_utils_->arr_api->create_descriptor_alloca(desc_type, "final_arg_desc");
-    builder_->CreateStore(llvm::Constant::getNullValue(desc_type), desc);
-    builder_->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()),
-            llvm_utils_->module->getDataLayout().getTypeAllocSize(elem_llvm_type)),
-        llvm_utils_->create_gep2(desc_type, desc, 1));
-    builder_->CreateStore(builder_->CreateBitCast(data,
-            llvm::cast<llvm::StructType>(desc_type)->getElementType(0)),
-        llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
+    llvm::Type* const i64 = llvm::Type::getInt64Ty(builder_->getContext());
+    // The lower bound and the extent of every dimension of the array.
     std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
+    llvm::Value* const dim_des_arr = is_descriptor
+        ? llvm_utils_->arr_api->get_pointer_to_dimension_descriptor_array(arr_llvm_type, ptr) : nullptr;
     for (size_t r = 0; r < arr_t->n_dims; r++) {
-        asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_start, true);
-        llvm::Value* const start = asr_to_llvm_visitor_.tmp;
-        asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_length, true);
-        llvm_dims.push_back({start, asr_to_llvm_visitor_.tmp});
+        if (is_descriptor) {
+            llvm::Value* const dim = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(builder_->getContext()), r);
+            llvm_dims.push_back({llvm_utils_->arr_api->get_lower_bound(
+                    llvm_utils_->arr_api->get_pointer_to_dimension_descriptor(dim_des_arr, dim)),
+                llvm_utils_->arr_api->get_dimension_size(dim_des_arr, dim)});
+        } else {
+            asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_start, true);
+            llvm::Value* const start = asr_to_llvm_visitor_.tmp;
+            asr_to_llvm_visitor_.visit_expr_wrapper(arr_t->m_dims[r].m_length, true);
+            llvm_dims.push_back({start, asr_to_llvm_visitor_.tmp});
+        }
     }
-    llvm_utils_->arr_api->fill_array_details(desc_type, desc, elem_llvm_type,
-        arr_t->n_dims, llvm_dims, llvm_utils_->module, false);
-    builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
+    // The final subroutine gets a contiguous temporary array `final_data`
+    // when the elements of the array are not adjacent: for the parent
+    // components of the array, which are at the start of its elements, or
+    // for an array with a descriptor and a dummy argument without one. The
+    // elements are copied to it for the call, and back after it.
+    const bool copy = parent_component || (is_descriptor && !dummy_is_descriptor);
+    llvm::Type* const final_elem_llvm_type = parent_component
+        ? get_llvm_type(final_struct->m_struct_signature, final_struct) : elem_llvm_type;
+    const uint64_t final_elem_size = llvm_utils_->module->getDataLayout()
+        .getTypeAllocSize(final_elem_llvm_type);
+    llvm::Value* final_data = data;
+    llvm::Value* n_elements = nullptr;
+    auto const copy_elements = [&](const bool copy_in) {
+        // Allocated in the entry block: the finalization can be inside a loop.
+        llvm::Value* const iter = llvm_utils_->CreateAlloca(i64, nullptr, "final_copy_iter");
+        builder_->CreateStore(llvm::ConstantInt::get(i64, -1, true), iter);
+        llvm_utils_->create_loop(copy_in ? "Copy_in_final_arg" : "Copy_out_final_arg", [&]() {
+            llvm::Value* const next = builder_->CreateAdd(builder_->CreateLoad(i64, iter),
+                llvm::ConstantInt::get(i64, 1));
+            builder_->CreateStore(next, iter);
+            return builder_->CreateICmpSLT(next, n_elements);
+        }, [&]() {
+            llvm::Value* const idx = builder_->CreateLoad(i64, iter);
+            llvm::Value* const elem = get_array_element(ptr, arr_type, struct_sym, data, idx);
+            llvm::Value* const copy = llvm_utils_->create_ptr_gep2(final_elem_llvm_type, final_data, idx);
+            builder_->CreateMemCpy(copy_in ? copy : elem, llvm::MaybeAlign(),
+                copy_in ? elem : copy, llvm::MaybeAlign(), final_elem_size);
+        });
+    };
+    if (copy) {
+        n_elements = builder_->CreateSExtOrTrunc(llvm_utils_->get_array_size(ptr,
+            arr_llvm_type, arr_type, &asr_to_llvm_visitor_), i64);
+        final_data = builder_->CreateBitCast(LLVM::lfortran_malloc(builder_->getContext(),
+                *llvm_utils_->module, *builder_,
+                builder_->CreateMul(n_elements, llvm::ConstantInt::get(i64, final_elem_size))),
+            final_elem_llvm_type->getPointerTo());
+        copy_elements(true);
+    }
+    if (!dummy_is_descriptor) {
+        builder_->CreateCall(final_fn, {builder_->CreateBitCast(final_data, param_type)});
+    } else {
+        // Describe the contiguous array with a descriptor of the dummy's type.
+        llvm::Type* const desc_type = get_llvm_type(dummy_type, final_struct);
+        llvm::Value* const desc = llvm_utils_->arr_api->create_descriptor_alloca(desc_type, "final_arg_desc");
+        builder_->CreateStore(llvm::Constant::getNullValue(desc_type), desc);
+        builder_->CreateStore(llvm::ConstantInt::get(i64, final_elem_size),
+            llvm_utils_->create_gep2(desc_type, desc, 1));
+        builder_->CreateStore(builder_->CreateBitCast(final_data,
+                llvm::cast<llvm::StructType>(desc_type)->getElementType(0)),
+            llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
+        llvm_utils_->arr_api->fill_array_details(desc_type, desc, final_elem_llvm_type,
+            arr_t->n_dims, llvm_dims, llvm_utils_->module, false);
+        builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
+    }
+    if (copy) {
+        copy_elements(false);
+        llvm_utils_->lfortran_free_nocheck(final_data);
+    }
 }
 
 llvm::Value* LLVMUtils::get_descriptor_array_size(llvm::Value* array_ptr, llvm::Type* array_llvm_type){

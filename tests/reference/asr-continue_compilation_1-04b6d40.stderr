@@ -892,6 +892,48 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
 2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Initialization of `cihs_h` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2118:9
+     |
+2118 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: component `cihs_a` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2122:29
+     |
+2122 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+     |                             ^^^^^^ `cihs_a` is a component of the derived type being defined
+
+semantic error: component `cihs_c` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2126:29
+     |
+2126 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+     |                             ^^^^^^^^^ `cihs_c` is a component of the derived type being defined
+
+semantic error: component `cihs_n` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2130:27
+     |
+2130 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+     |                           ^^^^^^ `cihs_n` is a component of the derived type being defined
+
+semantic error: component `cihs_k` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2134:14
+     |
+2134 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+     |              ^^^^^^ `cihs_k` is a component of the derived type being defined
+
+semantic error: component `cihs_l` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2138:23
+     |
+2138 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+     |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_1.f90:2152:5
+     |
+2152 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+     |     ^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3059,14 +3101,8 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
 
-semantic error: type-spec in ALLOCATE must be a derived type name
-    --> tests/errors/continue_compilation_1.f90:2109:14
+semantic error: Cannot assign to an intent(in) variable `y`
+    --> tests/errors/continue_compilation_1.f90:2146:5
      |
-2109 |     allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
-     |              ^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference
-
-semantic error: type-spec in ALLOCATE must be a derived type name
-    --> tests/errors/continue_compilation_1.f90:2110:14
-     |
-2110 |     allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
-     |              ^^^^^^^^ type-spec in ALLOCATE must be a type name, not a component or element reference
+2146 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+     |     ^ 
