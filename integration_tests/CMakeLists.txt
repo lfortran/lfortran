@@ -584,6 +584,7 @@ RUN(NAME while_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME while_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME while_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME while_08 LABELS gfortran llvm)
+RUN(NAME while_09 LABELS gfortran llvm)
 
 RUN(NAME doloop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm fortran)
 RUN(NAME doloop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm mlir fortran)
