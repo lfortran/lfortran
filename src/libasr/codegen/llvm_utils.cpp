@@ -9984,7 +9984,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         initialize_copy->addFnAttr(LLVM::checked_allocation_attribute);
         auto saved_ip = builder->saveIP();
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", initialize_copy));
-        builder->CreateCall(copy_function, {initialize_copy->getArg(0), initialize_copy->getArg(1)});
+        std::vector<llvm::Value*> initialize_args;
+        for (llvm::Argument &arg : initialize_copy->args()) {
+            initialize_args.push_back(&arg);
+        }
+        builder->CreateCall(copy_function, {initialize_args[0], initialize_args[1]});
         builder->CreateRetVoid();
         builder->restoreIP(saved_ip);
         auto *release = finalizer_instnace.get_storage_release_fn(ttype);
@@ -10174,7 +10178,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     void LLVMUtils::trait_error_if(llvm::Value* condition, const std::string& message) {
         create_if_else(condition, [&]() {
-            auto *text = builder->CreateGlobalStringPtr(message + "\n");
+            auto *text = create_global_string_ptr(
+                context, *module, *builder, message + "\n");
             print_error(context, *module, *builder, {text});
             exit(context, *module, *builder, llvm::ConstantInt::get(getIntType(4), 1));
         }, [](){});
@@ -10299,7 +10304,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         auto *payload = llvm_utils->trait_malloc(payload_type);
         builder->CreateStore(llvm::Constant::getNullValue(payload_type), payload);
         allocate_struct_members(concrete, payload, concrete->m_struct_signature);
-        llvm::Value *source = initialize->getArg(0);
+        llvm::Value *source = &*initialize->arg_begin();
         llvm_utils->create_if_else(builder->CreateIsNotNull(source), [&]() {
             Allocator al(1024);
             auto *expr = ASRUtils::EXPR(ASR::make_Var_t(al, symbol->base.loc, symbol));
@@ -10319,8 +10324,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::GlobalValue::LinkOnceODRLinkage, name + "_assign", module);
         assign->addFnAttr(LLVM::checked_allocation_attribute);
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", assign));
-        auto *destination = builder->CreateBitCast(assign->getArg(0), payload_type->getPointerTo());
-        auto *snapshot = builder->CreateBitCast(assign->getArg(1), payload_type->getPointerTo());
+        std::vector<llvm::Value*> assign_args;
+        for (llvm::Argument &arg : assign->args()) {
+            assign_args.push_back(&arg);
+        }
+        auto *destination = builder->CreateBitCast(assign_args[0], payload_type->getPointerTo());
+        auto *snapshot = builder->CreateBitCast(assign_args[1], payload_type->getPointerTo());
         auto copy = [&](bool live) {
             Allocator al(1024);
             auto *expr = ASRUtils::EXPR(ASR::make_Var_t(al, symbol->base.loc, symbol));
@@ -10328,7 +10337,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 concrete->m_struct_signature, concrete->m_struct_signature, module,
                 true, live);
         };
-        llvm_utils->create_if_else(assign->getArg(2), [&]() { copy(true); },
+        llvm_utils->create_if_else(assign_args[2], [&]() { copy(true); },
             [&]() { copy(false); });
         builder->CreateRetVoid();
         std::vector<llvm::Constant*> entries;
