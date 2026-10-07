@@ -1,13 +1,5 @@
-Internal Compiler Error: Unhandled exception
-Traceback (most recent call last):
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7aedc4[0m
-[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a28a[0m
-[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", local address: 0x2a1c9[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x7319ca[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x86a241[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x8593ee[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x882bb6[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x127a571[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x12f71ca[0m
-[2m  Binary file "[0m[1m[35m$DIR/test-llvm11/src/bin/lfortran[39m[0m[2m", local address: 0x12f39b5[0m
-LCompilersException: visit_FileWrite() not implemented
+code generation error: an internal file that is a dummy argument is not supported by the C backend yet
+  --> tests/errors/write_internal_file_dummy_c.f90:13:15
+   |
+13 |         write(t, '(i0)') n
+   |               ^ 

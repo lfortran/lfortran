@@ -5,9 +5,9 @@
     "infile_hash": "0de9e2af3bf9b048c84a41e9f3a99326b52ed44280a16140f7268d0b",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "pass_parallel_canonicalize_parallel_dispatch-show_pass_error_01-479b2ba.stdout",
-    "stdout_hash": "bef9ca445ddec81b8e6052b8797007aa5c61c062be6182d38dc73384",
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "pass_parallel_canonicalize_parallel_dispatch-show_pass_error_01-479b2ba.stderr",
+    "stderr_hash": "a71d3def771a0100fd5eb41ef20e11bff0b8ab8d7292bb9527da22b1",
+    "returncode": 1
 }

@@ -875,46 +875,64 @@ semantic error: Variable `x` cannot have both the OPTIONAL and VALUE attribute b
      |                                          ^ 
 
 semantic error: Explicit shaped array with nonconstant bounds
-    --> tests/errors/continue_compilation_1.f90:2089:22
+    --> tests/errors/continue_compilation_1.f90:2081:22
      |
-2089 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
+2081 |         integer :: b(dtncb_m*2)  ! {Error} Explicit shaped array with nonconstant bounds
      |                      ^^^^^^^^^ 
 
+semantic error: Initialization of `pnc_y1` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2088:5
+     |
+2088 |     integer, parameter :: pnc_y1 = abs(pnc_bla)  ! {Error} Initialization of `pnc_y1` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization of `pnc_y2` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2089:5
+     |
+2089 |     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Initialization of `cihs_h` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2115:9
+    --> tests/errors/continue_compilation_1.f90:2107:9
      |
-2115 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+2107 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Initialization of `cihs_b` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2119:9
+semantic error: component `cihs_a` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2111:29
      |
-2119 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+2111 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+     |                             ^^^^^^ `cihs_a` is a component of the derived type being defined
 
-semantic error: Initialization of `cihs_d` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2123:9
+semantic error: component `cihs_c` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2115:29
      |
-2123 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+2115 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+     |                             ^^^^^^^^^ `cihs_c` is a component of the derived type being defined
 
-semantic error: Expecting a scalar integer or parameter annotated integer variable 
-    --> tests/errors/continue_compilation_1.f90:2127:27
+semantic error: component `cihs_n` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2119:27
      |
-2127 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
-     |                           ^^^^^^ 
+2119 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+     |                           ^^^^^^ `cihs_n` is a component of the derived type being defined
 
-semantic error: Parameter 'cihs_k' is a variable, which does not reduce to a constant expression
-    --> tests/errors/continue_compilation_1.f90:2131:14
+semantic error: component `cihs_k` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2123:14
      |
-2131 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
-     |              ^^^^^^ 
+2123 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+     |              ^^^^^^ `cihs_k` is a component of the derived type being defined
 
-semantic error: variable cannot appear in character length expression
-    --> tests/errors/continue_compilation_1.f90:2135:23
+semantic error: component `cihs_l` cannot be referenced in a component declaration
+    --> tests/errors/continue_compilation_1.f90:2127:23
      |
-2135 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
-     |                       ^^^^^^ 
+2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+     |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
+
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_1.f90:2141:5
+     |
+2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+     |     ^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -1956,7 +1974,7 @@ semantic error: Invalid substring syntax: use lower:upper instead of lower,upper
 588 |     print *, string(i,i)
     |              ^^^^^^^^^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found str
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found string
    --> tests/errors/continue_compilation_1.f90:590:14
     |
 590 |     allocate(strx)
@@ -3076,3 +3094,15 @@ semantic error: Unapplicable types for intrinsic function max
      |
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
+
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+    --> tests/errors/continue_compilation_1.f90:2094:34
+     |
+2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Cannot assign to an intent(in) variable `y`
+    --> tests/errors/continue_compilation_1.f90:2135:5
+     |
+2135 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+     |     ^ 

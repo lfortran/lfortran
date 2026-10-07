@@ -134,8 +134,8 @@ program continue_compilation_3
     i = foo
     !rewind_invalid_kwarg1
     rewind(end="world")
-
-
+    print *, ishft(3, 40)  !ishft_shift_too_large
+    print *, log(0.0)  !log_zero
     !sign_01
     print *, sign(1, 1_8)
     !specific_type_intrinsic

@@ -702,7 +702,7 @@
                                                                     Local
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                                    Save
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -731,7 +731,7 @@
                                                     sz]
                                                     []
                                                     Source
-                                                    Private
+                                                    Public
                                                     .false.
                                                     .false.
                                                     .false.
@@ -1621,7 +1621,7 @@
                                                                     Local
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
                                                                     (IntegerConstant 0 (Integer 4) Decimal)
-                                                                    Save
+                                                                    Default
                                                                     (Integer 4)
                                                                     ()
                                                                     Source
@@ -1663,7 +1663,7 @@
                                                     sz]
                                                     []
                                                     Source
-                                                    Private
+                                                    Public
                                                     .false.
                                                     .false.
                                                     .false.

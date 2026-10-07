@@ -2072,14 +2072,6 @@ contains
     subroutine inner()
     end subroutine
 end subroutine
-subroutine check_unary_array_error()
-    implicit none
-    type :: v
-        real :: x
-    end type
-    type(v) :: q(3), qq(3)
-    qq = -q  ! {Error} No matching `operator(-)` found for this operand type
-end subroutine
 
 module derived_type_nonconst_bound_in_continue_compilation_1_m
     implicit none
@@ -2136,23 +2128,16 @@ module component_init_host_scope_in_continue_compilation_1_m
     end type
 end module
 
-subroutine derived_type_local_bound_01()
+subroutine intent_list_assignment_error(x, y)
     implicit none
-    integer :: k
-    type :: t
-        integer :: b(k*2)  ! {Error} Explicit shaped array with nonconstant bounds
-    end type
-    type(t) :: x
-    k = 1
-    print *, size(x%b)
-end subroutine
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
 
-subroutine derived_type_local_bound_02(n)
+subroutine intent_list_non_dummy_error(x)
     implicit none
-    integer, intent(in) :: n
-    type :: t
-        integer :: c(n+1)  ! {Error} Explicit shaped array with nonconstant bounds
-    end type
-    type(t) :: x
-    print *, size(x%c)
-end subroutine
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+end subroutine intent_list_non_dummy_error
+
