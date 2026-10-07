@@ -417,6 +417,14 @@ association remains shared, including observable FINAL effects on its target.
 Several references are evaluated once each and survive until the whole using
 construct completes, including an IF or DO header.
 
+Scalar results evaluated repeatedly inside an implied-DO or an ordinary array
+expression are retained separately until that original construct completes.
+The late result pass appends `TraitRetain` after each consumer, transferring
+its header into a scope-local `TraitOwnerList` and clearing the reused slot.
+Conditional result-bearing arms are lowered to real branches first, preserving
+lazy evaluation and the enclosing construct's lifetime. These compiler-owned
+stores are not source-language trait arrays or components.
+
 A result variable may start unallocated and may be inspected with `allocated`
 within its function; a successful nonpointer return requires a defined value.
 A function reference is a value without the ALLOCATABLE attribute, even when

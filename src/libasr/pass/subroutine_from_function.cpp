@@ -683,6 +683,7 @@ public :
     // finalized when it is done (see scope_statement_results).
     bool statement_can_be_block = false;
     std::vector<ASR::symbol_t*> statement_results;
+    std::vector<ASR::stmt_t*> statement_retentions;
 
     // A new variable of the current scope for the result of `x`. It is
     // the result, and it is finalized when its scope ends: the scope of the
@@ -749,9 +750,31 @@ public :
             // variable of its own if the statement can be made a BLOCK.
             // Otherwise it reuses the variable, whose previous value is
             // finalized before the call (see finalize_result_argument).
+            // Deferred trait results instead move into the using scope's
+            // store after consumption, leaving their reusable slot empty.
             bool finalizable_result = is_call_with_finalizable_result(x);
+            bool retained_owner = ASRUtils::is_trait_owner(x->m_type);
             ASR::expr_t* result_var = nullptr;
-            if (finalizable_result && statement_can_be_block) {
+            if (retained_owner) {
+                result_var = create_finalizable_result_var(x);
+                auto *contract = ASRUtils::trait_runtime_contract(x->m_type);
+                std::string storage_name = current_scope->get_unique_name(
+                    "__libasr_retained_results");
+                auto *storage_type = ASRUtils::TYPE(ASR::make_TraitOwnerList_t(al,
+                    x->base.base.loc, ASRUtils::import_type_declaration(al,
+                        &contract->base, current_scope)));
+                auto *storage_symbol = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, x->base.base.loc, current_scope,
+                        s2c(al, storage_name), nullptr, 0, ASR::intentType::Local,
+                        nullptr, nullptr, ASR::storage_typeType::Default, storage_type,
+                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASR::presenceType::Required, false));
+                current_scope->add_symbol(storage_name, storage_symbol);
+                auto *storage = ASRUtils::EXPR(ASR::make_Var_t(
+                    al, x->base.base.loc, storage_symbol));
+                statement_retentions.push_back(ASRUtils::STMT(
+                    ASR::make_TraitRetain_t(al, x->base.base.loc, storage, result_var)));
+            } else if (finalizable_result && statement_can_be_block) {
                 result_var = create_finalizable_result_var(x);
                 statement_results.push_back(
                     ASR::down_cast<ASR::Var_t>(result_var)->m_v);
@@ -765,7 +788,9 @@ public :
             }
 
             /* Make Sure To Deallocate -- To Avoid Douple Allocation With Loops */
-            if(ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) { insert_implicit_deallocate(result_var); }
+            if (!retained_owner && ASRUtils::is_allocatable(ASRUtils::expr_type(result_var))) {
+                insert_implicit_deallocate(result_var);
+            }
 
             bool alloc_needed = false;
             if (ASRUtils::is_array(x->m_type) || PassUtils::is_non_primitive_return_type(x->m_type)) {
@@ -791,7 +816,7 @@ public :
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
                                                 nullptr, false, current_scope, std::nullopt, true));
-            if (finalizable_result && !statement_can_be_block) {
+            if (finalizable_result && !retained_owner && !statement_can_be_block) {
                 finalize_result_argument(al, result_var, current_scope,
                     pass_result);
             }
@@ -1039,12 +1064,15 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             bool statement_can_be_block_copy = replacer.statement_can_be_block;
             std::vector<ASR::symbol_t*> statement_results_copy;
             statement_results_copy.swap(replacer.statement_results);
+            std::vector<ASR::stmt_t*> statement_retentions_copy;
+            statement_retentions_copy.swap(replacer.statement_retentions);
             for (size_t i = 0; i < n_body; i++) {
                 parent_body = &body;
                 remove_original_statement = false;
                 replacer.statement_can_be_block =
                     ASRUtils::is_single_statement(*m_body[i]);
                 replacer.statement_results.clear();
+                replacer.statement_retentions.clear();
                 visit_stmt(*m_body[i]);
                 if (!replacer.statement_results.empty()) {
                     Vec<ASR::stmt_t*> statement;
@@ -1055,6 +1083,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     pass_result.n = 0;
                     if (!remove_original_statement) {
                         statement.push_back(al, m_body[i]);
+                    }
+                    for (auto *retention : replacer.statement_retentions) {
+                        statement.push_back(al, retention);
                     }
                     body.push_back(al, scope_statement_results(
                         m_body[i]->base.loc, statement));
@@ -1069,9 +1100,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 if (!remove_original_statement){
                     body.push_back(al, m_body[i]);
                 }
+                for (auto *retention : replacer.statement_retentions) {
+                    body.push_back(al, retention);
+                }
             }
             replacer.statement_can_be_block = statement_can_be_block_copy;
             replacer.statement_results.swap(statement_results_copy);
+            replacer.statement_retentions.swap(statement_retentions_copy);
             remove_original_statement = remove_original_statement_copy;
             m_body = body.p;
             n_body = body.size();

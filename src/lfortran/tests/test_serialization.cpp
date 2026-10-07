@@ -1410,6 +1410,120 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     }
 }
 
+TEST_CASE("Retained trait result stores preserve unique scoped ownership") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module retained_trait_results_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+abstract interface :: IOther
+    integer function other()
+    end function
+end interface
+contains
+subroutine exercise(other)
+    class(IOther), intent(in) :: other
+    block
+        class(IValue), allocatable :: owner
+    end block
+end subroutine
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto ast = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(ast.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *ast.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("retained_trait_results_m"));
+    auto *function = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("exercise"));
+    auto *block_call = ASR::down_cast<ASR::BlockCall_t>(function->m_body[0]);
+    auto *block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+    auto *owner = ASR::down_cast<ASR::Variable_t>(block->m_symtab->get_symbol("owner"));
+    const auto &loc = owner->base.base.loc;
+    auto *contract = ASRUtils::trait_runtime_contract(owner->m_type);
+    auto *storage_type = ASRUtils::TYPE(ASR::make_TraitOwnerList_t(al, loc,
+        ASRUtils::import_type_declaration(al, &contract->base, block->m_symtab)));
+    auto *storage_symbol = ASR::down_cast<ASR::symbol_t>(
+        ASRUtils::make_Variable_t_util(al, loc, block->m_symtab,
+            LCompilers::s2c(al, "retained"), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default, storage_type,
+            nullptr, ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false));
+    block->m_symtab->add_symbol("retained", storage_symbol);
+    auto *storage = ASR::down_cast<ASR::Variable_t>(storage_symbol);
+    auto *retention = ASRUtils::STMT(ASR::make_TraitRetain_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, storage_symbol)),
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, &owner->base))));
+    LCompilers::Vec<ASR::stmt_t*> body;
+    body.reserve(al, 1);
+    body.push_back(al, retention);
+    block->m_body = body.p;
+    block->n_body = body.size();
+    LCompilers::diag::Diagnostics valid;
+    REQUIRE(LCompilers::asr_verify(*result.result, true, valid));
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional round trips retain the ownership operation") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "retained_results.asr",
+                loaded_lm, loaded_diagnostics);
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        }
+        LCompilers::ASR::SideEffectFinder effects;
+        effects.visit_stmt(*retention);
+        CHECK(effects.found);
+    }
+    SUBCASE("a retained store cannot escape as saved storage") {
+        storage->m_storage = ASR::storage_typeType::Save;
+        rejects("asr.verify.trait_results.local_storage");
+    }
+    SUBCASE("a pointer target cannot be transferred into retained storage") {
+        owner->m_target_attr = true;
+        rejects("asr.verify.trait_results.ownership");
+    }
+    SUBCASE("retained storage cannot be copied") {
+        auto *value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, storage_symbol));
+        block->m_body[0] = ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, value, value, nullptr, false, false));
+        rejects("asr.verify.trait_results.no_copy");
+    }
+    SUBCASE("retained storage cannot be nested in a value container") {
+        storage->m_type = ASRUtils::TYPE(
+            ASR::make_List_t(al, loc, storage->m_type));
+        rejects("asr.verify.trait_results.local_storage");
+    }
+    SUBCASE("retained values must use the exact declared contract") {
+        auto *other = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(function->m_args[0]));
+        ASR::down_cast<ASR::TraitOwnerList_t>(storage->m_type)->m_contract =
+            ASRUtils::import_type_declaration(al, &other->base, block->m_symtab);
+        rejects("asr.verify.trait_results.contract_matches");
+    }
+    SUBCASE("wrong symbol kinds fail without an unchecked variable cast") {
+        auto *statement = ASR::down_cast<ASR::TraitRetain_t>(retention);
+        statement->m_owner = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &function->base));
+        rejects("asr.verify.trait_results.variables");
+    }
+}
+
 TEST_CASE("Runtime trait ownership round trips and storage proofs") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

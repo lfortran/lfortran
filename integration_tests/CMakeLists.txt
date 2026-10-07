@@ -3784,6 +3784,7 @@ RUN(NAME traits_runtime_slot_04_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_result_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_result_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_result_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 # The existing ordinary CLASS allocatable-result lifetime is not yet complete.
 RUN(NAME traits_runtime_result_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_07 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes

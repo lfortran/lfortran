@@ -316,6 +316,9 @@ public:
                 auto *contract = ASRUtils::trait_runtime_contract(const_cast<ASR::ttype_t*>(t));
                 r = "class(" + std::string(ASRUtils::symbol_name(contract->m_trait)) + ")";
                 break;
+            } case ASR::ttypeType::TraitOwnerList: {
+                r = "type(trait_result_storage)";
+                break;
             } case ASR::ttypeType::CPtr: {
                 r = "type(c_ptr)";
                 break;
@@ -1115,6 +1118,12 @@ public:
         std::string result = indent + src + " = ";
         visit_expr(*x.m_value);
         src = result + src + "\n";
+    }
+    void visit_TraitRetain(const ASR::TraitRetain_t &x) {
+        visit_expr(*x.m_storage);
+        std::string result = indent + "call trait_retain(" + src + ", ";
+        visit_expr(*x.m_owner);
+        src = result + src + ")\n";
     }
 
     void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {

@@ -76,6 +76,7 @@
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"
 "ttype.TraitObjectType" = "helper:LLVM type lowering"
+"ttype.TraitOwnerList" = "helper:LLVM type lowering"
 
 "attribute.Attribute" = "metadata"
 "tbind.Bind" = "metadata"

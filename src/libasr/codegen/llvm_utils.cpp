@@ -1049,6 +1049,9 @@ namespace LCompilers {
             case (ASR::ttypeType::TraitObjectType):
                 type = getTraitType()->getPointerTo();
                 break;
+            case (ASR::ttypeType::TraitOwnerList):
+                type = getTraitOwnerListType()->getPointerTo();
+                break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
@@ -1660,6 +1663,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::TraitObjectType):
                 llvm_type = getTraitType();
+                break;
+            case (ASR::ttypeType::TraitOwnerList):
+                llvm_type = getTraitOwnerListType();
                 break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
@@ -10204,6 +10210,37 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             lfortran_free(payload);
             lfortran_free(view);
         }, [](){});
+    }
+
+    void LLVMUtils::retain_trait_owner(llvm::Value* storage, llvm::Value* owner) {
+        auto *value = CreateLoad2(getTraitType()->getPointerTo(), owner);
+        create_if_else(builder->CreateIsNotNull(value), [&]() {
+            auto *head = create_gep2(getTraitOwnerListType(), storage, 0);
+            auto *link_type = getTraitOwnerLinkType();
+            auto *link = trait_malloc(link_type);
+            builder->CreateStore(CreateLoad2(i8_ptr, head),
+                create_gep2(link_type, link, 0));
+            builder->CreateStore(value, create_gep2(link_type, link, 1));
+            builder->CreateStore(builder->CreateBitCast(link, i8_ptr), head);
+            builder->CreateStore(llvm::Constant::getNullValue(
+                getTraitType()->getPointerTo()), owner);
+        }, [](){});
+    }
+
+    void LLVMUtils::release_trait_owners(llvm::Value* storage) {
+        auto *head = create_gep2(getTraitOwnerListType(), storage, 0);
+        auto *link_type = getTraitOwnerLinkType();
+        create_loop("Release_trait_results", [&]() {
+            return builder->CreateIsNotNull(CreateLoad2(i8_ptr, head));
+        }, [&]() {
+            auto *link = builder->CreateBitCast(
+                CreateLoad2(i8_ptr, head), link_type->getPointerTo());
+            builder->CreateStore(CreateLoad2(i8_ptr,
+                create_gep2(link_type, link, 0)), head);
+            destroy_trait_value(CreateLoad2(getTraitType()->getPointerTo(),
+                create_gep2(link_type, link, 1)));
+            lfortran_free(link);
+        });
     }
 
     void LLVMUtils::assign_trait_value(llvm::Value* slot, llvm::Value* snapshot) {

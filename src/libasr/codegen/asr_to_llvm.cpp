@@ -8944,7 +8944,10 @@ public:
             // as their allocated type. For class arrays `ptr` is an array
             // descriptor, so GEP-ing field 1 out of it would be a type error;
             // their elements are initialized when the array is allocated.
-            if (!LLVM::is_llvm_pointer(*v->m_type) &&
+            if (ASR::is_a<ASR::TraitOwnerList_t>(*v->m_type)) {
+                builder->CreateStore(llvm::Constant::getNullValue(
+                    llvm_utils->getTraitOwnerListType()), ptr);
+            } else if (!LLVM::is_llvm_pointer(*v->m_type) &&
                     !ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
@@ -27789,6 +27792,12 @@ public:
         auto *snapshot = trait_snapshot(x.m_value, true, x.m_witness);
         auto *slot = trait_owner_slot(x.m_target);
         llvm_utils->assign_trait_value(slot, snapshot);
+    }
+
+    void visit_TraitRetain(const ASR::TraitRetain_t &x) {
+        auto *storage = trait_owner_slot(x.m_storage);
+        auto *owner = trait_owner_slot(x.m_owner);
+        llvm_utils->retain_trait_owner(storage, owner);
     }
 
     void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {

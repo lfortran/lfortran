@@ -1451,6 +1451,8 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                 symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract));
             return "class(" + std::string(symbol_name(contract->m_trait)) + ")";
         }
+        case ASR::ttypeType::TraitOwnerList:
+            return "retained trait results";
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
             return ASRUtils::symbol_name(enum_type->m_enum_type);
@@ -2854,6 +2856,9 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             return "TraitView_" + std::string(symbol_name(get_asr_owner(contract)))
                 + "_" + symbol_name(contract);
         }
+        case ASR::ttypeType::TraitOwnerList:
+            return "TraitOwnerList_" + std::string(symbol_name(
+                ASR::down_cast<ASR::TraitOwnerList_t>(t)->m_contract));
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
@@ -3803,6 +3808,7 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::TraitObjectType:
+        case ASR::ttypeType::TraitOwnerList:
         case ASR::ttypeType::EnumType:
         case ASR::ttypeType::UnionType:
         case ASR::ttypeType::List:
@@ -4865,6 +4871,11 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract));
             break;
         }
+        case ASR::ttypeType::TraitOwnerList: {
+            t_ = TYPE(ASR::make_TraitOwnerList_t(al, t->base.loc,
+                ASR::down_cast<ASR::TraitOwnerList_t>(t)->m_contract));
+            break;
+        }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
@@ -5191,6 +5202,7 @@ static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::t
 static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR::ttype_t* t, const Location& loc) {
     switch (t->type) {
         case ASR::ttypeType::TraitObjectType:
+        case ASR::ttypeType::TraitOwnerList:
             return duplicate_type(al, t);
         case ASR::ttypeType::Array: {
             return duplicate_type_without_dims(al, ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
@@ -5763,6 +5775,12 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             && ASR::is_a<ASR::TraitObjectType_t>(*b)
             && symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(a)->m_contract)
                 == symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(b)->m_contract);
+    }
+    if (ASR::is_a<ASR::TraitOwnerList_t>(*a) || ASR::is_a<ASR::TraitOwnerList_t>(*b)) {
+        return ASR::is_a<ASR::TraitOwnerList_t>(*a)
+            && ASR::is_a<ASR::TraitOwnerList_t>(*b)
+            && symbol_get_past_external(ASR::down_cast<ASR::TraitOwnerList_t>(a)->m_contract)
+                == symbol_get_past_external(ASR::down_cast<ASR::TraitOwnerList_t>(b)->m_contract);
     }
     // If either argument is a polymorphic type, return true.
     if (ASRUtils::is_class_type(a)) {
@@ -6927,6 +6945,10 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
 
     ASR::asr_t* duplicate_TraitObjectType(ASR::TraitObjectType_t* x) {
         return ASR::make_TraitObjectType_t(al, x->base.base.loc,
+            import_type_declaration(al, x->m_contract, current_scope));
+    }
+    ASR::asr_t* duplicate_TraitOwnerList(ASR::TraitOwnerList_t* x) {
+        return ASR::make_TraitOwnerList_t(al, x->base.base.loc,
             import_type_declaration(al, x->m_contract, current_scope));
     }
 

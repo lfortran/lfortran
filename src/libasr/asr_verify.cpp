@@ -561,6 +561,17 @@ public:
     // Associating a procedure pointer fixes what every later call through it
     // is compiled against, so the procedure has to have the interface the
     // pointer was declared with.
+    static bool contains_retained_result_storage(ASR::ttype_t *type) {
+        if (!type) return false;
+        class FindStorage : public BaseWalkVisitor<FindStorage> {
+        public:
+            bool found = false;
+            void visit_TraitOwnerList(const TraitOwnerList_t &) { found = true; }
+        } visitor;
+        visitor.visit_ttype(*type);
+        return visitor.found;
+    }
+
     void visit_Associate(const Associate_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_Associate(x);
         if (!check_external || x.m_target == nullptr || x.m_value == nullptr) {
@@ -569,6 +580,10 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        require_id(!contains_retained_result_storage(target) &&
+                !contains_retained_result_storage(value),
+            "asr.verify.trait_results.no_copy",
+            "Retained-result storage cannot be copied or associated");
         require_id(!ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(target)) &&
                 !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(value)),
             "asr.verify.trait_owner.explicit_protocol",
@@ -627,6 +642,10 @@ public:
         // target and value types are unrelated by design.
         ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
         ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        require_id(!contains_retained_result_storage(assign_target_type) &&
+                !contains_retained_result_storage(assign_value_type),
+            "asr.verify.trait_results.no_copy",
+            "Retained-result storage cannot be copied or associated");
         bool trait_result_capture = false;
         if (ASRUtils::is_trait_owner(assign_target_type) && x.m_move_allocation &&
                 !x.m_realloc_lhs && !x.m_overloaded &&
@@ -1597,6 +1616,47 @@ public:
                 ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait,
             "asr.verify.trait_view.universal",
             "Only a universal trait may be a runtime view");
+    }
+
+    void visit_TraitOwnerList(const TraitOwnerList_t &x) {
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_results.contract_in_scope",
+            "Retained trait results must reference a visible runtime contract");
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+            require_id(contract && ASR::is_a<TraitRuntimeContract_t>(*contract),
+                "asr.verify.trait_results.contract",
+                "Retained trait results require a runtime contract");
+        }
+    }
+
+    void visit_TraitRetain(const TraitRetain_t &x) {
+        require_id(x.m_storage && x.m_owner &&
+                ASR::is_a<Var_t>(*x.m_storage) && ASR::is_a<Var_t>(*x.m_owner) &&
+                ASR::down_cast<Var_t>(x.m_storage)->m_v &&
+                ASR::down_cast<Var_t>(x.m_owner)->m_v &&
+                ASR::is_a<Variable_t>(*ASR::down_cast<Var_t>(x.m_storage)->m_v) &&
+                ASR::is_a<Variable_t>(*ASR::down_cast<Var_t>(x.m_owner)->m_v),
+            "asr.verify.trait_results.variables",
+            "Trait retention requires a local store and an owning temporary");
+        auto *storage = ASRUtils::EXPR2VAR(x.m_storage);
+        auto *owner = ASRUtils::EXPR2VAR(x.m_owner);
+        require_id(ASR::is_a<TraitOwnerList_t>(*storage->m_type) &&
+                ASRUtils::is_trait_owner(owner->m_type) &&
+                owner->m_intent == intentType::Local &&
+                owner->m_storage == storage_typeType::Default &&
+                !owner->m_target_attr &&
+                owner->m_parent_symtab == storage->m_parent_symtab,
+            "asr.verify.trait_results.ownership",
+            "Trait retention moves a non-target local owner into its own scope's store");
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<TraitOwnerList_t>(storage->m_type)->m_contract);
+            require_id(contract == &ASRUtils::trait_runtime_contract(owner->m_type)->base,
+                "asr.verify.trait_results.contract_matches",
+                "Retained owners must have the store's declared contract");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitRetain(x);
     }
 
     void visit_TraitRuntimeContract(const TraitRuntimeContract_t &x) {
@@ -2613,6 +2673,20 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        if (contains_retained_result_storage(x.m_type)) {
+            auto *scope_owner = x.m_parent_symtab ? x.m_parent_symtab->asr_owner : nullptr;
+            require_id(ASR::is_a<TraitOwnerList_t>(*x.m_type) &&
+                    x.m_intent == intentType::Local &&
+                    x.m_storage == storage_typeType::Default &&
+                    x.m_presence == presenceType::Required && !x.m_value_attr &&
+                    !x.m_target_attr && !x.m_symbolic_value && !x.m_value &&
+                    !x.m_type_declaration && !x.n_codims && scope_owner &&
+                    ASR::is_a<symbol_t>(*scope_owner) &&
+                    (ASR::is_a<Block_t>(*ASR::down_cast<symbol_t>(scope_owner)) ||
+                     ASR::is_a<AssociateBlock_t>(*ASR::down_cast<symbol_t>(scope_owner))),
+                "asr.verify.trait_results.local_storage",
+                "A retained-result store must be an initially empty local of an executable scope");
+        }
         if (x.m_type && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
             bool dummy = false;
             bool returned = false;

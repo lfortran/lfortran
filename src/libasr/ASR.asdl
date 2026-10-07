@@ -130,6 +130,8 @@ stmt
     -- Assign to the actual destination, release the snapshot without FINAL,
     -- retain same-type outer storage and replace the selected witness.
     | TraitAssignment(expr target, expr value, symbol? witness)
+    -- Transfer a consumed temporary into its using scope without finalizing it.
+    | TraitRetain(expr storage, expr owner)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -283,6 +285,8 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
     | TraitObjectType(symbol contract)
+    -- Compiler-owned retained results; each element owns a separate header.
+    | TraitOwnerList(symbol contract)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a

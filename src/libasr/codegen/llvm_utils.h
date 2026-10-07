@@ -812,6 +812,13 @@ class ASRToLLVMVisitor;
                 return llvm::StructType::get(context,
                     {i8_ptr, i8_ptr, i8_ptr->getPointerTo()}, false);
             }
+            llvm::StructType* getTraitOwnerListType() {
+                return llvm::StructType::get(context, {i8_ptr}, false);
+            }
+            llvm::StructType* getTraitOwnerLinkType() {
+                return llvm::StructType::get(context,
+                    {i8_ptr, getTraitType()->getPointerTo()}, false);
+            }
             enum class TraitLifecycleEntry { Initialize, Destroy, Assign, Discard };
             llvm::Value* trait_field(llvm::Value* view, unsigned field);
             llvm::Value* trait_lifecycle_call(llvm::Value* witness,
@@ -822,6 +829,8 @@ class ASRToLLVMVisitor;
             llvm::Value* create_trait_value(llvm::Value* vptr,
                 llvm::Value* witness, llvm::Value* source);
             void destroy_trait_value(llvm::Value* view);
+            void retain_trait_owner(llvm::Value* storage, llvm::Value* owner);
+            void release_trait_owners(llvm::Value* storage);
             void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot);
             llvm::Value* value_lifecycle_function(llvm::Value* vptr,
                 unsigned entry, llvm::FunctionType* type);
@@ -1481,6 +1490,9 @@ class ASRToLLVMVisitor;
         void finalize_type(llvm::Value* const var_ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable_or_pointer(t))
             switch (t->type) {
+                case ASR::TraitOwnerList:
+                    llvm_utils_->release_trait_owners(var_ptr);
+                    break;
                 case(ASR::String):
                     finalize_string(var_ptr, t);
                 break;
@@ -2669,6 +2681,8 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(!ASRUtils::is_allocatable_or_pointer(t), "Doesn't handle allocatable nor pointer")
 
             switch(t->type){
+                case ASR::TraitOwnerList:
+                    return true;
                 case ASR::Integer:
                 case ASR::Real:
                 case ASR::Complex:

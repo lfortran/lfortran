@@ -184,6 +184,10 @@ public:
         if (!found) mark_found(x.base.base.loc,
             "runtime trait assignment with unchecked dynamic lifecycle effects");
     }
+    void visit_TraitRetain(const TraitRetain_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "retained runtime trait results with unchecked dynamic lifecycle effects");
+    }
 
     void check_trait_deallocation(const Location &location,
             expr_t **vars, size_t n_vars) {

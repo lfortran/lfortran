@@ -5661,6 +5661,12 @@ ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type)
 ASR::ttype_t* import_trait_type(Allocator &al, ASR::ttype_t* type, SymbolTable* scope) {
     if (!type || !scope) return type;
     switch (type->type) {
+        case ASR::ttypeType::TraitOwnerList: {
+            auto *storage = ASR::down_cast<ASR::TraitOwnerList_t>(type);
+            auto *reference = import_type_declaration(al, storage->m_contract, scope);
+            return reference == storage->m_contract ? type :
+                TYPE(ASR::make_TraitOwnerList_t(al, type->base.loc, reference));
+        }
         case ASR::ttypeType::TraitObjectType: {
             auto *view = ASR::down_cast<ASR::TraitObjectType_t>(type);
             auto *reference = import_type_declaration(al, view->m_contract, scope);
@@ -5791,6 +5797,10 @@ bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
         void visit_TraitRuntimeContract(const ASR::TraitRuntimeContract_t &) {}
         void visit_TraitWitness(const ASR::TraitWitness_t &) {}
         void visit_TraitObjectType(const ASR::TraitObjectType_t &x) {
+            if (!found) loc = x.base.base.loc;
+            found = true;
+        }
+        void visit_TraitOwnerList(const ASR::TraitOwnerList_t &x) {
             if (!found) loc = x.base.base.loc;
             found = true;
         }
