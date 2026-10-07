@@ -136,6 +136,11 @@ only once, redirect to a log file and then examine the log file.
   compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
   or merge.
+- Quick's optimized LLVM 11 compiler owns the full normal/fast and Fortran 2023
+  suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
+  These modes are not just smoke selections.
+  PR Exhaustive checks add missing configurations without replaying Quick.
+  Main retains the original full matrix and mode coverage.
 - Third-party applications are **bug generators for integration tests**, not a
   PR regression suite. Run the application catalog on every push to `main`,
   never on ordinary, labeled or manually dispatched PR checks. This includes
@@ -157,6 +162,10 @@ only once, redirect to a log file and then examine the log file.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
+- The status-only aggregate may be disabled only after all Quick jobs are
+  required directly in branch protection. Follow the documented
+  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout; do not weaken protection to
+  remove a queue.
 
 See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
 and the distinction between capability tests and application validation.

@@ -392,6 +392,8 @@ head SHA:
 The PR is **done** when it is clean and `Quick checks` ran for the current
 PR revision, with every applicable job passed or shown to also fail on `main`.
 Quick includes the shared compiler compatibility jobs; those are not optional.
+Requested Exhaustive checks supplement Quick rather than replacing it;
+require both on the same current revision.
 Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
 Do not treat missing or all-skipped Quick checks as success.

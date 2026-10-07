@@ -53,8 +53,12 @@ if [[ $WIN != "1" ]]; then
     echo "NPROC: ${NPROC}"
 
     if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
-        if [[ $LFORTRAN_TEST_SUITE != "smoke" ]]; then
+        if [[ $MACOS != "1" ]]; then
             ./run_tests.py
+        else
+            if [[ $LFORTRAN_TEST_SUITE != "smoke" ]]; then
+                ./run_tests.py
+            fi
         fi
     fi
 

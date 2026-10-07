@@ -419,24 +419,95 @@ policy."
 
 #### CI coverage
 
-Pull requests normally run only **Quick checks**. The primary Linux/LLVM 11
-job runs the full reference and integration suites, including normal and
-`--fast` modes, GFortran, C/C++, Fortran and OpenMP. Secondary PR configurations
-use a stable feature-based smoke suite: macOS/LLVM 11 and Linux/LLVM 21, plus
-LLVM 7/23 compatibility checks. Existing required check names are retained.
-Windows keeps its native build and supported
-compile/link/run checks. Metal, CUDA-on-CPU and the compiler-to-WASM check remain
-enabled. Shared jobs add a Release LLVM 11 compiler for the Caffeine coarray
-backend, LLVM-to-WASM coverage, and no-LLVM/MLIR builds.
+Pull requests normally run only **Quick checks**. Quick owns the internal
+regression suites; Exhaustive adds configurations, not another copy of Quick.
+The shared compiler workflow has three explicit coverage roles:
 
-Quick also samples separate compilation, leak detection and Fortran 2023
-options, and runs the small single-invocation suite. It reuses the jobs in
-`Compiler-Compatibility-CI.yml` with `quick: true`. Ordinary PRs run only the
-small gate of the standalone Exhaustive workflow; its compiler jobs require
-an explicit request.
-The existing protected `Build LFortran to WASM and Upload` status aggregates
-all Quick jobs, including compatibility failures, without requiring a branch
-protection change.
+| Role | Native LLVM matrix | Other backend jobs |
+| --- | --- | --- |
+| `quick` | Linux 7/11/23 | Full LLVM-WASM, no-LLVM and MLIR suites |
+| `extra` | Linux 7/23 and macOS 22 | None: Quick already owns them |
+| `main` | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 | Original complete backend coverage |
+
+Quick distributes the full CPU modes over two existing builds rather than
+serializing them in one long job:
+
+| Compiler | Complete regression modes |
+| --- | --- |
+| Linux/LLVM 11 Release | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
+| Linux/LLVM 21 Debug | Separate compilation, submodules with separate compilation, and leak detection |
+
+Every registered LLVM test runs in each of these modes on its designated
+compiler. Moving the largest batch to an optimized compiler and balancing
+the remaining modes reduces the critical path without sampling those suites
+or adding another dependent job/queue.
+
+Linux/LLVM 11 Debug retains full reference coverage, platform smoke tests,
+and the full GFortran, C/C++, Fortran, direct-WASM, OpenMP and CUDA-on-CPU
+backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
+Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
+platform smoke coverage and
+the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
+build and supported compile/link/run checks. Caffeine/coarrays run on the
+Release LLVM 11 anchor. The standalone compiler-to-WASM build is also retained.
+
+Exhaustive PR checks run full compatibility suites on Linux LLVM 7/23 and
+full normal platform coverage on macOS LLVM 22, including Caffeine/coarrays.
+The distinct Kokkos/out-of-source and custom-install configurations use
+smoke tests to check those build/install paths; Quick already owns the full
+CPU mode suites. Standalone C++ builds, documentation/kernel tests, the
+Docker build/tests, JupyterLite and source packaging remain additional checks.
+Main retains its original full suites in these configurations, not smoke
+substitutes.
+
+Ordinary PRs run only the small gate of the standalone Exhaustive workflow;
+its compiler jobs require an explicit request.
+
+##### Required-check rollout
+
+By default, the existing protected `Build LFortran to WASM and Upload` status
+still aggregates every Quick job. This is safe with the existing branch
+protection, but its tiny final job can wait for a runner after all real work
+has finished. Changing its runner size cannot bypass account-wide concurrency
+limits.
+
+To eliminate that final runner job, first deploy this workflow version with
+the legacy gate still enabled. A repository administrator can then migrate
+to direct required checks. **Do not enable the variable before updating
+protection.** Keep all existing required checks, keep their expected GitHub
+Actions app binding, and add these seven Quick check contexts:
+
+```text
+Build LFortran to WASM
+Compiler compatibility / Test LLVM 7 (ubuntu-latest)
+Compiler compatibility / Test LLVM 11 (ubuntu-latest)
+Compiler compatibility / Test LLVM 23 (ubuntu-latest)
+Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)
+Compiler compatibility / Test without LLVM Backend
+Compiler compatibility / Test MLIR backend
+```
+
+Then set the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
+to `true`. Job names stay stable: the real WASM build and every compatibility
+job are required directly, and the legacy summary is skipped without a runner.
+The old summary requirement may remain, but it is no longer what enforces
+the underlying results. Exhaustive uses the
+distinct `Extended compiler checks` prefix, so an optional Exhaustive result
+cannot substitute for a required Quick result. Verify all required contexts
+on a fresh PR run before considering migration complete. Existing PRs may
+need their checks refreshed after a protection change.
+
+For rollback, clear the variable **but keep all direct requirements in place**.
+Changing a variable does not replace completed checks: an old direct-mode
+summary is still skipped, even if a compatibility job failed.
+Drain outstanding direct-mode runs, then rerun Quick for every active PR's
+current revision. Verify that the protected status comes from an executed,
+successful `quick_status` aggregate, not an old skipped result, before
+optionally removing any direct requirements. Leaving the direct requirements
+in place is safe and adds no runner work.
+
+Without this explicit migration, the workflow retains its safe aggregate
+default; code alone cannot remove its queue while preserving the old settings.
 
 **Third-party applications generate bugs for the integration suite; they are
 not a PR regression suite.** The application catalog runs on every push to
@@ -493,11 +564,12 @@ gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
 gh run watch <run-id> --repo <fork-owner>/lfortran
 ```
 
-Check that the run tested the intended head SHA. Both labeled and manually
-requested runs also invoke Quick in its full main-style mode, including the
-complete macOS suite, without cancelling ordinary Quick checks. They do not
-run the application catalog, publish or deploy. Manual fork runs need not
-appear among the upstream PR's checks.
+Check that the run tested the intended head SHA. Labeled PR runs supplement
+the existing Quick result and do not rebuild its full platform matrix. A
+manual standalone run also invokes normal Quick coverage, since that branch
+may have no PR run to rely on. Neither path runs the application catalog,
+publishes or deploys. Manual fork runs need not appear among the upstream
+PR's checks.
 
 To run the representative integration subset locally:
 

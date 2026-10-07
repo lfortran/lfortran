@@ -10,16 +10,11 @@ on:
     branches:
       - main
   workflow_call:
-    inputs:
-      full:
-        description: Run full platform suites for explicitly requested Exhaustive checks
-        type: boolean
-        default: false
 
 # Main runs stay independent per commit; only superseded PR runs are cancelled.
-# Full calls must neither cancel normal Quick checks nor their caller.
+# Manual callers use a commit SHA, distinct from ordinary PR concurrency groups.
 concurrency:
-  group: quick-${{ inputs.full && 'full' || 'default' }}-${{ github.event.number || github.sha }}
+  group: quick-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -31,13 +26,14 @@ jobs:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     env:
-      LFORTRAN_TEST_SUITE: ${{ github.event_name == 'pull_request' && !inputs.full && (matrix.os != 'ubuntu-latest' || matrix.llvm-version != '11') && 'smoke' || 'full' }}
+      LFORTRAN_TEST_SUITE: ${{ github.event_name == 'push' && 'full' || 'smoke' }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # PRs use smoke coverage on secondary platforms/LLVM versions.
-          # Main and tags retain the full original suites and LLVM versions.
+          # PRs keep Debug/platform smoke coverage here and run complete CPU
+          # modes on the optimized LLVM 11 compiler in compatibility below.
+          # Main and tags retain the original full platform suites.
           - os: macos-latest
             llvm-version: "11"
           - os: ubuntu-latest
@@ -150,18 +146,13 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
-      - name: Test representative option combinations
-        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.llvm-version == '11'
+      - name: Test full descriptor modes
+        if: github.event_name != 'push' && matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'
         shell: bash -e -l {0}
         run: |
-            cd integration_tests
-            NPROC=$(nproc)
-            ./run_tests.py -b llvm --smoke -sc -j${NPROC}
-            ./run_tests.py -b llvm_submodule --smoke -sc -j${NPROC}
-            ./run_tests.py -b llvm --smoke --detect-leaks -j${NPROC}
-            ./run_tests.py -b llvm --smoke --std=f23 -j${NPROC}
-            ./run_tests.py -b llvm --smoke --std=f23 -f -j${NPROC}
-            ./run_tests.py -b llvm_single_invocation -j${NPROC}
+            export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            bash ci/test_llvm_integration.sh --options
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}
@@ -337,10 +328,10 @@ jobs:
 
   compatibility:
     name: Compiler compatibility
-    if: github.event_name == 'pull_request' && !inputs.full
+    if: github.event_name != 'push'
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
-      quick: true
+      scope: quick
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM
@@ -434,11 +425,10 @@ jobs:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
   quick_status:
-    # Keep this existing protected check name, and make it cover every Quick
-    # job so the new compatibility checks cannot be bypassed at merge time.
+    # Keep the existing protection until every Quick job is required directly.
     name: Build LFortran to WASM and Upload
     needs: [Build, compatibility, build_to_wasm_and_upload]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -448,13 +438,12 @@ jobs:
           WASM_RESULT: ${{ needs.build_to_wasm_and_upload.result }}
           COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
           EVENT_NAME: ${{ github.event_name }}
-          FULL_COVERAGE: ${{ inputs.full }}
         run: |
           if [ "$BUILD_RESULT" != success ] || [ "$WASM_RESULT" != success ]; then
             echo "::error::Quick platform or WASM checks did not pass"
             exit 1
           fi
-          if [ "$EVENT_NAME" = pull_request ] && [ "$FULL_COVERAGE" != true ] && [ "$COMPATIBILITY_RESULT" != success ]; then
+          if [ "$EVENT_NAME" != push ] && [ "$COMPATIBILITY_RESULT" != success ]; then
             echo "::error::Quick compiler compatibility checks did not pass"
             exit 1
           fi

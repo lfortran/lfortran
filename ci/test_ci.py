@@ -130,25 +130,23 @@ class RunnerTests(unittest.TestCase):
     def test_protected_status_requires_compatibility_on_prs(self):
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         status = source.split("\n  quick_status:\n", 1)[1]
-        self.assertIn("name: Build LFortran to WASM and Upload\n", status)
         self.assertIn("needs: [Build, compatibility, build_to_wasm_and_upload]\n", status)
-        self.assertIn("if: ${{ !cancelled() }}", status)
+        self.assertIn("if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}", status)
         script = status.split("        run: |\n", 1)[1]
         cases = (
-            ("pull_request", "false", "success", "success", "success", True),
-            ("pull_request", "false", "success", "success", "failure", False),
-            ("pull_request", "false", "success", "success", "skipped", False),
-            ("pull_request", "false", "failure", "success", "success", False),
-            ("pull_request", "false", "success", "failure", "success", False),
-            ("pull_request", "true", "success", "success", "skipped", True),
-            ("pull_request", "true", "failure", "success", "skipped", False),
-            ("push", "false", "success", "success", "skipped", True),
-            ("workflow_dispatch", "true", "success", "success", "skipped", True),
-            ("push", "false", "skipped", "success", "skipped", False),
+            ("pull_request", "success", "success", "success", True),
+            ("pull_request", "success", "success", "failure", False),
+            ("pull_request", "success", "success", "skipped", False),
+            ("pull_request", "failure", "success", "success", False),
+            ("pull_request", "success", "failure", "success", False),
+            ("push", "success", "success", "skipped", True),
+            ("workflow_dispatch", "success", "success", "success", True),
+            ("workflow_dispatch", "success", "success", "skipped", False),
+            ("push", "skipped", "success", "skipped", False),
         )
-        for event, full, build, wasm, compatibility, success in cases:
-            with self.subTest(event=event, full=full, build=build, wasm=wasm, compatibility=compatibility):
-                env = dict(os.environ, EVENT_NAME=event, FULL_COVERAGE=full, BUILD_RESULT=build,
+        for event, build, wasm, compatibility, success in cases:
+            with self.subTest(event=event, build=build, wasm=wasm, compatibility=compatibility):
+                env = dict(os.environ, EVENT_NAME=event, BUILD_RESULT=build,
                            WASM_RESULT=wasm, COMPATIBILITY_RESULT=compatibility)
                 result = subprocess.run(["bash"], input=script, env=env,
                                         capture_output=True, text=True)
@@ -197,7 +195,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         condition = re.search(r"^\s*if: (.+)$", step, re.MULTILINE).group(1)
         self.assertEqual(condition,
             "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' "
-            "&& !inputs.quick && (matrix.llvm-version == '11' || matrix.llvm-version == '19' "
+            "&& inputs.scope == 'main' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' "
             "|| contains(matrix.os, 'macos')) }}")
         self.assertNotIn("--quick", step)
         self.assertIn('LAPACK_MODE="full"', step)
@@ -208,26 +206,91 @@ class WorkflowPolicyTests(unittest.TestCase):
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
         self.assertIn("./run_tests.py -b metal -j3", quick)
         self.assertIn("./run_tests.py -b cuda_cpu -j3", quick)
-        self.assertIn("quick: true", quick)
+        self.assertIn("scope: quick", quick)
         caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
         caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
-        self.assertIn("if: ${{ !inputs.quick || matrix.llvm-version == '11' }}", caffeine)
+        self.assertIn("if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}", caffeine)
         self.assertIn("run: ci/test_caffeine.sh --verify-all-passes", caffeine)
         self.assertNotIn("github.event_name", caffeine)
 
-    def test_full_quick_does_not_cancel_or_duplicate_normal_quick(self):
+    def test_quick_and_extra_roles_do_not_repeat_platform_builds(self):
+        workflows = ROOT / ".github/workflows"
+        quick = (workflows / "Quick-Checks-CI.yml").read_text()
+        extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
+        self.assertIn("group: quick-${{ github.event.number || github.sha }}", quick)
+        self.assertIn("if: github.event_name != 'push'", quick)
+        self.assertNotIn("inputs.full", quick)
+        self.assertNotIn("LFORTRAN_CI_RELEASE", quick)
+        expression = re.search(r"^\s*LFORTRAN_TEST_SUITE: (.+)$", quick, re.MULTILINE).group(1)
+        self.assertEqual(expression, "${{ github.event_name == 'push' && 'full' || 'smoke' }}")
+        self.assertNotIn("full_quick:", extra)
+        replay = extra.split("\n  quick:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
+        self.assertIn("github.event_name == 'workflow_dispatch'", replay)
+        self.assertNotIn("github.event_name != 'push'", replay)
+        self.assertIn("name: Extended compiler checks", extra)
+        self.assertNotIn("name: Compiler compatibility\n", extra)
+
+    def test_coverage_matrix_preserves_main_and_bounds_extra(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        matrix = re.search(r"llvm-version: \$\{\{ fromJSON\('([^']+)'\)\[inputs.scope\]", source)
+        self.assertIsNotNone(matrix)
+        roles = json.loads(matrix.group(1))
+        self.assertEqual(roles, {
+            "quick": ["7", "11", "23"],
+            "extra": ["7", "23"],
+            "main": ["7", "8", "10", "11", "15", "17", "18", "19", "21", "22", "23"],
+        })
+        self.assertIn('"os":"macos-latest","llvm-version":"22"', source)
+        self.assertIn("inputs.scope == 'quick' && fromJSON('[]')", source)
+        for job in ("test_llvm_wasm", "test_without_llvm", "test_mlir"):
+            body = source.split(f"\n  {job}:\n", 1)[1]
+            body = re.split(r"\n  [\w-]+:\n", body, maxsplit=1)[0]
+            self.assertIn("if: inputs.scope == 'quick' || inputs.scope == 'main'", body)
+        wasm = source.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
+        self.assertIn("./run_tests.py -b llvm_wasm llvm_wasm_emcc\n", wasm)
+        self.assertNotIn("--smoke", wasm)
+
+    def test_quick_owns_full_cpu_regressions(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        reference = source.split("      - name: Test Release reference coverage\n", 1)[1]
+        reference = reference.split("      - name: Test LLVM integration tests\n", 1)[0]
+        self.assertIn("inputs.scope == 'quick' && matrix.llvm-version == '11'", reference)
+        self.assertIn("./run_tests.py\n", reference)
+        integration = source.split("      - name: Test LLVM integration tests\n", 1)[1]
+        integration = integration.split("      - name: Test coarray", 1)[0]
+        self.assertIn('[[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]', integration)
+        self.assertIn("bash ci/test_llvm_integration.sh --core", integration)
+        self.assertIn("export WIN=0 MACOS=1 LFORTRAN_TEST_SUITE=full", integration)
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        options = quick.split("      - name: Test full descriptor modes\n", 1)[1]
+        options = options.split("\n      - ", 1)[0]
+        self.assertIn("github.event_name != 'push' && matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'", options)
+        self.assertIn("bash ci/test_llvm_integration.sh --options", options)
+
+    def test_direct_check_rollout_keeps_distinct_stable_names(self):
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
-        self.assertIn("group: quick-${{ inputs.full && 'full' || 'default' }}-", source)
-        self.assertIn("if: github.event_name == 'pull_request' && !inputs.full", source)
-        self.assertIn("FULL_COVERAGE: ${{ inputs.full }}", source)
-        expression = re.search(r"^\s*LFORTRAN_TEST_SUITE: (.+)$", source, re.MULTILINE).group(1)
-        self.assertIn("github.event_name == 'pull_request' && !inputs.full", expression)
-        self.assertNotIn("LFORTRAN_CI_RELEASE", source)
+        wasm = source.split("\n  build_to_wasm_and_upload:\n", 1)[1].split("\n  quick_status:", 1)[0]
+        gate = source.split("\n  quick_status:\n", 1)[1]
+        self.assertIn("name: Build LFortran to WASM\n", wasm)
+        self.assertIn("name: Build LFortran to WASM and Upload\n", gate)
+        self.assertNotIn("vars.", wasm)
+        self.assertIn("!cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true'", gate)
+        documentation = (ROOT / "doc/src/installation.md").read_text()
+        required = documentation.split("```text\n", 1)[1].split("```", 1)[0].splitlines()
+        self.assertEqual(required, [
+            "Build LFortran to WASM",
+            "Compiler compatibility / Test LLVM 7 (ubuntu-latest)",
+            "Compiler compatibility / Test LLVM 11 (ubuntu-latest)",
+            "Compiler compatibility / Test LLVM 23 (ubuntu-latest)",
+            "Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)",
+            "Compiler compatibility / Test without LLVM Backend",
+            "Compiler compatibility / Test MLIR backend",
+        ])
 
     def test_exhaustive_gate_reads_current_labels(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         self.assertIn("types: [opened, reopened, synchronize]", source)
-        gate = source.split("\n  gate:\n", 1)[1].split("\n  full_quick:\n", 1)[0]
+        gate = source.split("\n  gate:\n", 1)[1].split("\n  quick:\n", 1)[0]
         script = gate.split("        run: |\n", 1)[1]
         with tempfile.TemporaryDirectory(prefix="lfortran-ci-gate-") as temporary:
             directory = Path(temporary)
@@ -269,8 +332,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                 continue
             self.assertIn("needs: gate", body, name)
             self.assertIn("needs.gate.outputs.run == 'true'", body, name)
-        self.assertIn("full: true", source)
-        self.assertIn("quick: false", source)
+        self.assertIn("scope: ${{ github.event_name == 'push' && 'main' || 'extra' }}", source)
 
     def test_label_controller_never_executes_pr_code(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-Label-CI.yml").read_text()
@@ -322,6 +384,7 @@ class QuickScriptTests(unittest.TestCase):
         cases = (
             ("linux-default", "0", "0", "11", None, True, 4),
             ("linux-full", "0", "0", "11", "full", True, 4),
+            ("linux-smoke", "0", "0", "11", "smoke", True, 4),
             ("mac-full", "0", "1", "11", "full", True, 2),
             ("mac-smoke", "0", "1", "11", "smoke", False, 2),
             ("recent-llvm", "0", "0", "21", "smoke", False, 4),
@@ -361,6 +424,84 @@ class QuickScriptTests(unittest.TestCase):
                 for args in integration_calls:
                     self.assertNotIn("", args)
                     self.assertEqual("--smoke" in args, suite == "smoke")
+
+    def test_balanced_quick_jobs_run_every_cpu_mode_without_smoke(self):
+        quick_calls = []
+        for suite, mode in (("full", ""), ("smoke", ""), ("smoke", "--core"), ("smoke", "--options")):
+            with self.subTest(suite=suite, mode=mode):
+                self.calls.write_text("")
+                self.env.update(LFORTRAN_TEST_SUITE=suite, LFORTRAN_LLVM_VERSION="11", NPROC="3")
+                command = ["bash", str(ROOT / "ci/test_llvm_integration.sh")]
+                if mode:
+                    command.append(mode)
+                result = subprocess.run(command, cwd=self.directory, env=self.env,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
+                self.assertEqual(len(calls), 3 if mode == "--options" else 7)
+                for args in calls:
+                    self.assertEqual("--smoke" in args, suite == "smoke" and not mode)
+                if mode:
+                    quick_calls.extend(calls)
+        expected = (
+            ["-b", "llvm", "-sc", "-j3"],
+            ["-b", "llvm_submodule", "-sc", "-j3"],
+            ["-b", "llvm", "--detect-leaks", "-j3"],
+            ["-b", "llvm", "--std=f23", "-j3"],
+            ["-b", "llvm", "-f", "--std=f23", "-j3"],
+            ["-b", "llvm_single_invocation", "-j3"],
+            ["-b", "llvm", "llvm2", "llvm_rtlib", "llvm_nopragma",
+             "llvm_integer_8", "llvmImplicit", "-j3"],
+            ["-b", "llvm", "llvmImplicit", "-f", "-j3"],
+        )
+        for args in expected:
+            self.assertEqual(quick_calls.count(args), 1)
+        self.assertEqual(len(quick_calls), 10)
+
+    def test_invalid_core_arguments_fail_before_running_tests(self):
+        self.env.update(NPROC="3", LFORTRAN_LLVM_VERSION="11")
+        for arguments in (["--unknown"], ["--core", "--unknown"], ["--core", "--options"]):
+            with self.subTest(arguments=arguments):
+                result = subprocess.run(
+                    ["bash", str(ROOT / "ci/test_llvm_integration.sh"), *arguments],
+                    cwd=self.directory, env=self.env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("usage:", result.stderr)
+                self.assertFalse(self.calls.exists())
+
+    def test_installation_variants_keep_main_full_and_prs_supplementary(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
+        blocks = re.split(r"(?m)^  ([\w-]+):\n", source.split("\njobs:\n", 1)[1])
+        jobs = dict(zip(blocks[1::2], blocks[2::2]))
+        (self.directory / "src").mkdir(exist_ok=True)
+        (self.directory / "src/integration_tests").symlink_to(self.directory / "integration_tests")
+        steps = (
+            ("debug_outOfSource", "Test option combinations", 3),
+            ("release", "Test Linux", 6),
+        )
+        for job, step, count in steps:
+            body = jobs[job].split(f"      - name: {step}\n", 1)[1]
+            body = body.split("\n      - ", 1)[0]
+            script = body.split("        run: |\n", 1)[1]
+            for event in ("push", "pull_request", "workflow_dispatch"):
+                with self.subTest(job=job, event=event):
+                    self.calls.write_text("")
+                    env = dict(self.env, GITHUB_EVENT_NAME=event)
+                    result = subprocess.run(["bash", "-e", "-o", "pipefail"],
+                        input=script, cwd=self.directory, env=env,
+                        capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+                    integration = [args for path, args in calls
+                                   if path == str(self.directory / "integration_tests/run_tests.py")]
+                    reference = [args for path, args in calls
+                                 if path == str(self.directory / "run_tests.py")]
+                    self.assertEqual(len(integration), count)
+                    self.assertEqual(len(reference), 2 if job == "release" and event == "push" else 0)
+                    for args in integration:
+                        if args != ["-m"]:
+                            self.assertEqual("--smoke" in args, event != "push")
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

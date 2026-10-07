@@ -60,21 +60,19 @@ jobs:
           esac
           echo "run=$run" >> "$GITHUB_OUTPUT"
 
-  full_quick:
-    name: Full platform checks
+  quick:
+    name: Quick coverage for standalone run
     needs: gate
-    if: needs.gate.outputs.run == 'true' && github.event_name != 'push'
+    if: needs.gate.outputs.run == 'true' && github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/Quick-Checks-CI.yml
-    with:
-      full: true
 
   compatibility:
-    name: Compiler compatibility
+    name: Extended compiler checks
     needs: gate
     if: needs.gate.outputs.run == 'true'
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
-      quick: false
+      scope: ${{ github.event_name == 'push' && 'main' || 'extra' }}
 
   debug_outOfSource:
     name: Check Out-of-Source Debug build
@@ -130,10 +128,14 @@ jobs:
         run: |
             export PATH="$(pwd)/inst/bin:$PATH"
             NPROC=$(nproc)
+            selection=()
+            if [[ "$GITHUB_EVENT_NAME" != "push" ]]; then
+                selection=(--smoke)
+            fi
             cd src/integration_tests
-            ./run_tests.py -b llvm -sc -j${NPROC}
-            ./run_tests.py -b llvm_submodule -sc -j${NPROC}
-            ./run_tests.py -b llvm --detect-leaks -j${NPROC}
+            ./run_tests.py -b llvm -sc -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm_submodule -sc -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm --detect-leaks -j${NPROC} "${selection[@]}"
 
       - name: Test C++ compiler build
         shell: bash -e -l {0}
@@ -207,16 +209,21 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ctest
-            ./run_tests.py
-            ./run_tests.py -vh
+            selection=()
+            if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+                ./run_tests.py
+                ./run_tests.py -vh
+            else
+                selection=(--smoke)
+            fi
             cd integration_tests
             ./run_tests.py -m
             NPROC=$(nproc)
-            ./run_tests.py -b llvm -j${NPROC}
-            ./run_tests.py -b llvm -f -j${NPROC}
-            ./run_tests.py -b llvm_single_invocation -j${NPROC}
-            ./run_tests.py -b llvm --std=f23 -j${NPROC}
-            ./run_tests.py -b llvm -f --std=f23 -j${NPROC}
+            ./run_tests.py -b llvm -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm -f -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm_single_invocation -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm --std=f23 -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm -f --std=f23 -j${NPROC} "${selection[@]}"
 
       - name: Test Installation
         shell: bash -e -l {0}

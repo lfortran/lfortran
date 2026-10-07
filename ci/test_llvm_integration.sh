@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
 # LLVM-backend integration tests for full and PR compatibility CI.
 #
-# Used on LLVM versions that do not run the third-party suite. Covers the
-# LLVM option combinations from Quick checks (ci/test.sh) plus separate
-# compilation and leak detection.
+# Quick splits full CPU modes across its existing LLVM 11 (--core) and
+# LLVM 21 (--options) builds. Other versions retain the compatibility suite.
 set -ex
+
+if [[ $# -gt 1 ]]; then
+    echo "usage: $0 [--core|--options]" >&2
+    exit 2
+fi
+MODE=${1:-}
+case "$MODE" in
+    ""|--core|--options) ;;
+    *) echo "usage: $0 [--core|--options]" >&2; exit 2 ;;
+esac
+if [[ -n "$MODE" ]]; then
+    export LFORTRAN_TEST_SUITE=full
+fi
 
 NPROC=${NPROC:-$(nproc)}
 echo "NPROC: ${NPROC}"
@@ -26,10 +38,19 @@ selection=()
 if [[ "${LFORTRAN_TEST_SUITE:-full}" == "smoke" ]]; then
     selection=(--smoke)
 fi
-./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm -sc -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm_submodule -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm_submodule -sc -j"${NPROC}" "${selection[@]}"
-./run_tests.py -b llvm --detect-leaks -j"${NPROC}" "${selection[@]}"
+if [[ "$MODE" != "--options" ]]; then
+    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}" "${selection[@]}"
+    ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}" "${selection[@]}"
+    ./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}" "${selection[@]}"
+    ./run_tests.py -b llvm_submodule -j"${NPROC}" "${selection[@]}"
+fi
+if [[ "$MODE" != "--core" ]]; then
+    ./run_tests.py -b llvm -sc -j"${NPROC}" "${selection[@]}"
+    ./run_tests.py -b llvm_submodule -sc -j"${NPROC}" "${selection[@]}"
+    ./run_tests.py -b llvm --detect-leaks -j"${NPROC}" "${selection[@]}"
+fi
+if [[ "$MODE" == "--core" ]]; then
+    ./run_tests.py -b llvm --std=f23 -j"${NPROC}"
+    ./run_tests.py -b llvm -f --std=f23 -j"${NPROC}"
+    ./run_tests.py -b llvm_single_invocation -j"${NPROC}"
+fi

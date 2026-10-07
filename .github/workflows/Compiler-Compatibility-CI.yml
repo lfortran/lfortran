@@ -3,17 +3,18 @@ name: Compiler compatibility
 on:
   workflow_call:
     inputs:
-      quick:
-        description: Use representative PR coverage instead of full suites
-        type: boolean
-        default: false
+      scope:
+        description: "Coverage role: quick, extra, or main"
+        type: string
+        default: main
 
 permissions:
   contents: read
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 15.0
-  LFORTRAN_TEST_SUITE: ${{ inputs.quick && 'smoke' || 'full' }}
+  LFORTRAN_CI_SCOPE: ${{ inputs.scope }}
+  LFORTRAN_TEST_SUITE: ${{ inputs.scope == 'quick' && 'smoke' || 'full' }}
 
 jobs:
   test_llvm:
@@ -22,14 +23,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # this is only run on ubuntu intentionally (except macOS LLVM 22)
         os: ["ubuntu-latest"]
-        # Quick keeps its existing required check names, including LLVM 21.
-        # Add the oldest/newest LLVM and one Release coarray-backend lane.
-        # Every main push and manual full run keeps the complete matrix.
-        llvm-version: ${{ inputs.quick && fromJSON('["7","11","23"]') || fromJSON('["7","8","10","11","15","17","18","19","21","22","23"]') }}
+        # Quick owns the full regression modes on LLVM 11/21. Extra coverage
+        # broadens the endpoint LLVM versions and macOS, without repeating it.
+        # An unknown scope has no matrix, rather than silently selecting main.
+        llvm-version: ${{ fromJSON('{"quick":["7","11","23"],"extra":["7","23"],"main":["7","8","10","11","15","17","18","19","21","22","23"]}')[inputs.scope] }}
         python-version: ["3.10"]
-        include: ${{ inputs.quick && fromJSON('[]') || fromJSON('[{"os":"macos-latest","llvm-version":"22","python-version":"3.10"}]') }}
+        include: ${{ inputs.scope == 'quick' && fromJSON('[]') || fromJSON('[{"os":"macos-latest","llvm-version":"22","python-version":"3.10"}]') }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -199,19 +199,20 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
 
       - name: Install libunwind
-        if: matrix.llvm-version > 11 && contains(matrix.os, 'ubuntu')
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
         run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Build
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Enable runtime stacktraces for the integration-test configurations,
-            # retaining the existing build settings for LLVM 11/19 and macOS.
+            # The Quick LLVM 11 anchor uses the same runtime-stacktrace support
+            # as the main Release regression job. Other main settings stay put.
             # When enabled, linking with -g requires llvm-dwarfdump and the
             # Python debug-map conversion scripts.
             STACKTRACE_FLAG=""
-            if [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
+            if [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]] || \
+               [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
             fi
             cmake . -GNinja \
@@ -231,7 +232,7 @@ jobs:
 
       - name: Test third party codes
         shell: bash -e -l {0}
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !inputs.quick && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.scope == 'main' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             LAPACK_MODE="smoke"
@@ -250,21 +251,39 @@ jobs:
         shell: bash -e -l {0}
         run: ctest --output-on-failure
 
+      - name: Test Release reference coverage
+        if: inputs.scope == 'quick' && matrix.llvm-version == '11'
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+
       - name: Test LLVM integration tests
         shell: bash -e -l {0}
-        if: ${{ matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos') }}
+        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (inputs.scope == 'extra' && contains(matrix.os, 'macos')) || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
-            bash ci/test_llvm_integration.sh
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                export WIN=0 MACOS=1 LFORTRAN_TEST_SUITE=full
+                shell ci/test.sh
+            elif [[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]; then
+                bash ci/test_llvm_integration.sh --core
+            else
+                bash ci/test_llvm_integration.sh
+            fi
 
       - name: Test coarray runtime with Caffeine
-        if: ${{ !inputs.quick || matrix.llvm-version == '11' }}
+        if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
         shell: bash -e -l {0}
         run: ci/test_caffeine.sh --verify-all-passes
 
   test_llvm_wasm:
     name: Test LLVM 19 WASM (ubuntu-latest)
+    if: inputs.scope == 'quick' || inputs.scope == 'main'
     runs-on: ubuntu-latest
     # llvm_wasm / llvm_wasm_emcc need a Debug build with WITH_TARGET_WASM.
     # Kept separate from Test LLVM 19 so third-party codes use a Release
@@ -367,14 +386,11 @@ jobs:
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
-            selection=()
-            if [[ "$LFORTRAN_TEST_SUITE" == "smoke" ]]; then
-                selection=(--smoke)
-            fi
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc "${selection[@]}"
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
   test_without_llvm:
     name: Test without LLVM Backend
+    if: inputs.scope == 'quick' || inputs.scope == 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -395,6 +411,7 @@ jobs:
 
   test_mlir:
     name: Test MLIR backend
+    if: inputs.scope == 'quick' || inputs.scope == 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
