@@ -25089,7 +25089,8 @@ public:
                 case AST::LtE: op = ASR::LtE; break;
                 case AST::Gt: op = ASR::Gt; break;
                 case AST::GtE: op = ASR::GtE; break;
-                default: LCOMPILERS_ASSERT(false);
+                default: trait_call_error("comparison operator not implemented",
+                    x.base.base.loc);
             }
             type_set_binary(left, right, ASR::down_cast<ASR::type_set_operation_t>(
                 ASR::make_TypeSetComparison_t(al, x.base.base.loc, op)), x.base.base.loc);
