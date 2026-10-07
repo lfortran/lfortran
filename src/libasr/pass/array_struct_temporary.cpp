@@ -2678,7 +2678,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
      *     DO while (.true.)
      *      temp1 = x == skip_tokens
      *      temp2 = Any(temp1)
-     *          if (temp2 == .false.) exit
+     *          if (.not. temp2) exit
      *      ...
      *     END DO
      */
@@ -2690,7 +2690,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         visit_expr(*x.m_test);
         if (!while_test_body_.empty()){ // Temps Created! 
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
-            while_test_body_.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            while_test_body_.push_back(al, builder.If(builder.Not(x.m_test), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 while_test_body_.push_back(al, x.m_body[i]);
             }
