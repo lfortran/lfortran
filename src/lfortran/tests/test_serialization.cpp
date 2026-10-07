@@ -2237,7 +2237,7 @@ end module
     SUBCASE("a nonallocatable view is not a slot") {
         call->m_args[0].m_value = exercise->m_args[0];
     }
-    SUBCASE("a result actual cannot bypass the current slot capability boundary") {
+    SUBCASE("a result actual is not an allocatable slot variable") {
         auto *type = ASRUtils::expr_type(call->m_args[0].m_value);
         call->m_args[0].m_value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
             call->base.base.loc, module->m_symtab->get_symbol("make"), nullptr,

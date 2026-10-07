@@ -23024,8 +23024,8 @@ public:
             }
             if (ASRUtils::is_trait_owner(source) &&
                     ASR::is_a<ASR::FunctionCall_t>(*actual)) {
-                trait_call_error("passing a runtime trait function result to an "
-                    "allocatable dummy is not implemented yet", actual->base.loc);
+                trait_call_error("a function reference is not an allocatable variable",
+                    actual->base.loc);
             }
             if (!ASRUtils::is_trait_owner(source) ||
                     !ASR::is_a<ASR::Var_t>(*actual)) {

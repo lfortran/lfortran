@@ -1026,13 +1026,13 @@ semantic error: Argument `slot` with intent(in) passed to a dummy argument with 
 2446 |         call write_slot(slot)
      |                         ^^^^ 
 
-semantic error: passing a runtime trait function result to an allocatable dummy is not implemented yet
+semantic error: a function reference is not an allocatable variable
     --> tests/errors/continue_compilation_traits_01.f90:2495:24
      |
 2495 |         call read_slot(make())
      |                        ^^^^^^ 
 
-semantic error: passing a runtime trait function result to an allocatable dummy is not implemented yet
+semantic error: a function reference is not an allocatable variable
     --> tests/errors/continue_compilation_traits_01.f90:2498:23
      |
 2498 |         if (has_value(make())) error stop
@@ -1062,7 +1062,7 @@ semantic error: an allocatable runtime trait dummy requires an allocatable actua
 2538 |         if (query(view)) error stop
      |                   ^^^^ 
 
-semantic error: passing a runtime trait function result to an allocatable dummy is not implemented yet
+semantic error: a function reference is not an allocatable variable
     --> tests/errors/continue_compilation_traits_01.f90:2543:19
      |
 2543 |         if (query(make())) error stop

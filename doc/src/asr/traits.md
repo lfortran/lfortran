@@ -417,13 +417,14 @@ association remains shared, including observable FINAL effects on its target.
 Several references are evaluated once each and survive until the whole using
 construct completes, including an IF or DO header.
 
-A result variable may remain unallocated on a branch and may be inspected with
-`allocated` within its function. Passing a trait function result directly as an
-allocatable dummy actual is currently unsupported, for direct and indirect
-calls alike; this capability boundary is not a blanket classification of
-ordinary CLASS result association as invalid Fortran. A direct `allocated`
-inquiry requires a variable. Borrowing or copying an unallocated result terminates
-with an allocation-state diagnostic instead of reading a null header. PURE
+A result variable may start unallocated and may be inspected with `allocated`
+within its function; a successful nonpointer return requires a defined value.
+A function reference is a value without the ALLOCATABLE attribute, even when
+its result variable has that attribute (F2018 8.5.3 Note 1). It therefore cannot
+be an allocatable dummy actual, for direct or indirect calls alike
+(15.5.2.6p2). A direct `allocated` inquiry requires a variable. Invalid borrowing
+or copying of an unallocated result terminates with an allocation-state
+diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
