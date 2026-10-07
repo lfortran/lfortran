@@ -193,7 +193,7 @@ public:
                         if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
                         }
-                        x_ptr->m_type = new_type;
+                        x_ptr->m_type = ASRUtils::import_trait_type(al, new_type, x.m_parent_symtab);
                     }
                 }
             }
@@ -213,6 +213,7 @@ public:
 class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes> {
     private:
         Allocator &al;
+        SymbolTable* current_scope = nullptr;
         std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
 
         // The interface `sym` names, if it was turned into a subroutine.
@@ -236,13 +237,29 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
             : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP) {}
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            auto *saved_scope = current_scope;
+            current_scope = x.m_symtab;
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_TranslationUnit(x);
+            current_scope = saved_scope;
+        }
+
+        void visit_symbol(const ASR::symbol_t &x) {
+            auto *saved_scope = current_scope;
+            current_scope = ASRUtils::symbol_symtab(&x);
+            if (!current_scope) current_scope = ASRUtils::symbol_parent_symtab(&x);
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_symbol(x);
+            current_scope = saved_scope;
+        }
+
         void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
             ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
             ASR::Function_t* to_fn = transformed_interface(x.m_to);
             if (to_fn == nullptr) {
                 return;
             }
-            const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
+                ASRUtils::import_trait_type(al, to_fn->m_function_signature, current_scope);
         }
 
         // The type of the procedure variable `x` declared by a transformed
@@ -259,7 +276,7 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                 new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
             }
-            return new_type;
+            return ASRUtils::import_trait_type(al, new_type, x.m_parent_symtab);
         }
 
         void visit_Variable(const ASR::Variable_t &x) {
@@ -282,7 +299,8 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             ASR::ttype_t* new_type = transformed_procedure_variable_type(
                 *ASR::down_cast<ASR::Variable_t>(member));
             if (new_type != nullptr) {
-                const_cast<ASR::StructInstanceMember_t&>(x).m_type = new_type;
+                const_cast<ASR::StructInstanceMember_t&>(x).m_type =
+                    ASRUtils::import_trait_type(al, new_type, current_scope);
             }
         }
 };

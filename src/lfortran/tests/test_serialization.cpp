@@ -1817,6 +1817,73 @@ end module
     }
 }
 
+TEST_CASE("Imported trait procedure signatures keep visible canonical contracts") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module imported_trait_factory_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+interface
+    function make() result(object)
+        import IValue
+        class(IValue), allocatable :: object
+    end function
+end interface
+end module
+module imported_trait_factory_user_m
+use imported_trait_factory_m, only: factory_interface => make
+implicit none
+type :: Holder
+    procedure(factory_interface), pointer, nopass :: factory => null()
+end type
+type(Holder) :: object
+procedure(factory_interface), pointer :: factory
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "imported_trait_factory_user_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto ast = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(ast.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *ast.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("imported_trait_factory_m"));
+    auto *consumer = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("imported_trait_factory_user_m"));
+    auto *original = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("make"));
+    auto contract_reference = [](ASR::ttype_t *type) {
+        auto *signature = ASR::down_cast<ASR::FunctionType_t>(
+            ASRUtils::type_get_past_pointer(type));
+        return ASR::down_cast<ASR::TraitObjectType_t>(
+            ASRUtils::extract_type(signature->m_return_var_type))->m_contract;
+    };
+    auto *original_contract = contract_reference(original->m_function_signature);
+    CHECK(ASRUtils::is_visible_from(original_contract, original->m_symtab));
+    auto *canonical = ASRUtils::symbol_get_past_external(original_contract);
+    auto *factory = ASR::down_cast<ASR::Variable_t>(consumer->m_symtab->get_symbol("factory"));
+    auto *object = ASR::down_cast<ASR::Variable_t>(consumer->m_symtab->get_symbol("object"));
+    auto *layout = ASR::down_cast<ASR::StructType_t>(object->m_type);
+    REQUIRE(layout->n_data_member_types == 1);
+    for (auto *type : {factory->m_type, layout->m_data_member_types[0]}) {
+        auto *reference = contract_reference(type);
+        CHECK(ASRUtils::is_visible_from(reference, consumer->m_symtab));
+        CHECK(ASRUtils::symbol_get_past_external(reference) == canonical);
+    }
+    CHECK(contract_reference(original->m_function_signature) == original_contract);
+    LCompilers::diag::Diagnostics valid;
+    CHECK(LCompilers::asr_verify(*result.result, true, valid));
+}
+
 TEST_CASE("Runtime trait results retain scoped ownership through result lowering") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

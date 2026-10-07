@@ -488,6 +488,12 @@ state becomes `ExternalUndefined`; this is not a second return ABI.
 The selected witness and concrete nominal lifecycle travel in the owned value,
 without asking the consumer to rediscover an implementation.
 
+Procedure pointers, procedure dummies and procedure-pointer components can use
+these imported factory interfaces. Their types retain canonical contract
+references visible in the declaring or expression scope, including after
+optional-argument, array-argument and hidden-result lowering.
+`traits_runtime_result_03` covers re-exports and nested scopes along those paths.
+
 The unchanged `traits_runtime_07` gate exercises subroutine OUT factories,
 not function results. `traits_runtime_factory_01` separately exercises genuine
 function results, immediate borrowing, independent copies, SOURCE construction,

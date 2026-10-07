@@ -383,7 +383,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
         ASR::ttype_t* new_type = ASRUtils::TYPE(
-            ASRUtils::ExprStmtWithScopeDuplicator(al, scope).
+            ASRUtils::ExprStmtWithScopeDuplicator(al, v->m_parent_symtab).
                 duplicate_FunctionType(ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)))));
         if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
@@ -850,12 +850,28 @@ class UpdateProcedureEntityTypes:
     public:
 
         Allocator& al;
+        SymbolTable* current_scope = nullptr;
         std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed;
         std::set<ASR::symbol_t*> retyped;
 
         UpdateProcedureEntityTypes(Allocator& al_,
             std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed_) :
             al{al_}, transformed{transformed_} {}
+
+        void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+            auto *saved_scope = current_scope;
+            current_scope = x.m_symtab;
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_TranslationUnit(x);
+            current_scope = saved_scope;
+        }
+
+        void visit_symbol(const ASR::symbol_t& x) {
+            auto *saved_scope = current_scope;
+            current_scope = ASRUtils::symbol_symtab(&x);
+            if (!current_scope) current_scope = ASRUtils::symbol_parent_symtab(&x);
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_symbol(x);
+            current_scope = saved_scope;
+        }
 
         void visit_Variable(const ASR::Variable_t& x) {
             ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
@@ -872,8 +888,9 @@ class UpdateProcedureEntityTypes:
                     *ASRUtils::type_get_past_pointer(xx.m_type)) ) {
                 return;
             }
-            ASR::ttype_t* signature = ASR::down_cast<ASR::Function_t>(
-                decl)->m_function_signature;
+            ASR::ttype_t* signature = ASRUtils::import_trait_type(al,
+                ASR::down_cast<ASR::Function_t>(decl)->m_function_signature,
+                xx.m_parent_symtab);
             if( ASRUtils::is_pointer(xx.m_type) ) {
                 xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
                     al, xx.base.base.loc, signature));
@@ -896,7 +913,19 @@ class UpdateProcedureEntityTypes:
                 return;
             }
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
-                ASR::down_cast<ASR::Function_t>(to)->m_function_signature;
+                ASRUtils::import_trait_type(al,
+                    ASR::down_cast<ASR::Function_t>(to)->m_function_signature,
+                    current_scope);
+        }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_StructInstanceMember(x);
+            auto *member = ASRUtils::symbol_get_past_external(x.m_m);
+            if (member && retyped.count(member)) {
+                const_cast<ASR::StructInstanceMember_t&>(x).m_type =
+                    ASRUtils::import_trait_type(al, ASRUtils::symbol_type(member),
+                        current_scope);
+            }
         }
 
         void visit_Function(const ASR::Function_t& x) {

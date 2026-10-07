@@ -724,7 +724,8 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                     if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
                         new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, var->base.base.loc, new_type));
                     }
-                    var->m_type = new_type;
+                    var->m_type = ASRUtils::import_trait_type(v.al,
+                        new_type, var->m_parent_symtab);
                 }
             }
         }
@@ -1179,7 +1180,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         if (ASR::is_a<ASR::Pointer_t>(*call_var->m_type)) {
                             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, call_var->base.base.loc, new_type));
                         }
-                        call_var->m_type = new_type;
+                        call_var->m_type = ASRUtils::import_trait_type(v.al,
+                            new_type, call_var->m_parent_symtab);
                         xx.m_name = new_x_name;
                         xx.m_original_name = new_x_name;
                         std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
@@ -1410,12 +1412,25 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             current_scope = current_scope_copy;
         }
 
+        void prepare_procedure_variable(ASR::symbol_t* name) {
+            auto *symbol = ASRUtils::symbol_get_past_external(name);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) return;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(symbol);
+            auto *interface_symbol = ASRUtils::symbol_get_past_external(variable->m_type_declaration);
+            if (v.proc2newproc.count(interface_symbol) && !v.proc2newproc.count(symbol)) {
+                // Result scopes can be visited before the enclosing pointer declaration.
+                visit_Variable(*variable);
+            }
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            prepare_procedure_variable(x.m_name);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
             visit_Call(x);
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            prepare_procedure_variable(x.m_name);
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
             visit_Call(x);
         }
@@ -1449,18 +1464,20 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::expr_t* sym_val = x.m_symbolic_value;
                 ASR::expr_t* m_val = x.m_value;
                 ASR::Function_t * subrout = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(new_sym));
+                ASR::ttype_t* signature = ASRUtils::import_trait_type(v.al,
+                    subrout->m_function_signature, x.m_parent_symtab);
                 if (x.m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*x.m_symbolic_value)) {
                     ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(x.m_symbolic_value);
-                    pnc->m_type = subrout->m_function_signature;
+                    pnc->m_type = signature;
                     sym_val = (ASR::expr_t*) pnc;
                 }
                 if (x.m_value && ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                     ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(x.m_value);
-                    pnc->m_type = subrout->m_function_signature;
+                    pnc->m_type = signature;
                     m_val = (ASR::expr_t*) pnc;
                 }
                 std::string new_sym_name = x.m_parent_symtab->get_unique_name(x.m_name);
-                ASR::ttype_t* new_var_type = subrout->m_function_signature;
+                ASR::ttype_t* new_var_type = signature;
                 if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                     new_var_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, x.base.base.loc, new_var_type));
                 }
@@ -1506,7 +1523,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 ASR::StructInstanceMember_t& sim = const_cast<ASR::StructInstanceMember_t&>(x);
                 sim.m_m = new_func_sym_;
-                sim.m_type = ASRUtils::symbol_type(new_func_sym_);
+                sim.m_type = ASRUtils::import_trait_type(v.al,
+                    ASRUtils::symbol_type(new_func_sym_), current_scope);
             }
         }
 

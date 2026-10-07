@@ -4492,7 +4492,8 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     if (!ASR::is_a<ASR::Struct_t>(*definition) &&
             !ASR::is_a<ASR::Enum_t>(*definition) &&
             !ASR::is_a<ASR::Union_t>(*definition) &&
-            !ASR::is_a<ASR::Function_t>(*definition)) {
+            !ASR::is_a<ASR::Function_t>(*definition) &&
+            !ASR::is_a<ASR::TraitRuntimeContract_t>(*definition)) {
         return type_declaration;
     }
 
@@ -4508,6 +4509,13 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     if (owner == nullptr) return type_declaration;
     for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
         if (s == owner) return definition;
+    }
+    if (ASR::is_a<ASR::TraitRuntimeContract_t>(*definition)) {
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            for (const auto &entry : s->get_scope()) {
+                if (symbol_get_past_external(entry.second) == definition) return entry.second;
+            }
+        }
     }
     std::string name = symbol_name(definition);
     // Reuse a name already standing for this type in the scope chain.
@@ -4557,6 +4565,10 @@ static inline void set_cptr_type_declaration(ASR::ttype_t* type,
     }
 }
 
+// Copy only type paths whose trait contracts need a visible reference in scope.
+// This includes nested procedure signatures without changing their interfaces.
+ASR::ttype_t* import_trait_type(Allocator &al, ASR::ttype_t* type, SymbolTable* scope);
+
 inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
@@ -4568,6 +4580,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    a_type = import_trait_type(al, a_type, a_parent_symtab);
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
@@ -6911,6 +6924,11 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
     SymbolTable* current_scope;
     bool use_resolve_symbol = false;
     ExprStmtWithScopeDuplicator(Allocator &al, SymbolTable* current_scope): BaseExprStmtDuplicator(al), current_scope(current_scope) {}
+
+    ASR::asr_t* duplicate_TraitObjectType(ASR::TraitObjectType_t* x) {
+        return ASR::make_TraitObjectType_t(al, x->base.base.loc,
+            import_type_declaration(al, x->m_contract, current_scope));
+    }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
         std::string name = ASRUtils::symbol_name(x->m_v);

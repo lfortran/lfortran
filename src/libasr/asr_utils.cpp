@@ -2087,7 +2087,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         }
         value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
-            member_ext, member_type, value);
+            member_ext, import_trait_type(al, member_type, current_scope), value);
     }
 }
 
@@ -5656,6 +5656,79 @@ ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type)
 {
     return ASR::down_cast<ASR::TraitRuntimeContract_t>(symbol_get_past_external(
         ASR::down_cast<ASR::TraitObjectType_t>(extract_type(view_type))->m_contract));
+}
+
+ASR::ttype_t* import_trait_type(Allocator &al, ASR::ttype_t* type, SymbolTable* scope) {
+    if (!type || !scope) return type;
+    switch (type->type) {
+        case ASR::ttypeType::TraitObjectType: {
+            auto *view = ASR::down_cast<ASR::TraitObjectType_t>(type);
+            auto *reference = import_type_declaration(al, view->m_contract, scope);
+            return reference == view->m_contract ? type :
+                TYPE(ASR::make_TraitObjectType_t(al, type->base.loc, reference));
+        }
+        case ASR::ttypeType::Allocatable: {
+            auto *owner = ASR::down_cast<ASR::Allocatable_t>(type);
+            auto *element = import_trait_type(al, owner->m_type, scope);
+            return element == owner->m_type ? type :
+                TYPE(ASR::make_Allocatable_t(al, type->base.loc, element));
+        }
+        case ASR::ttypeType::Pointer: {
+            auto *pointer = ASR::down_cast<ASR::Pointer_t>(type);
+            auto *element = import_trait_type(al, pointer->m_type, scope);
+            return element == pointer->m_type ? type :
+                TYPE(ASR::make_Pointer_t(al, type->base.loc, element));
+        }
+        case ASR::ttypeType::Array: {
+            auto *array = ASR::down_cast<ASR::Array_t>(type);
+            auto *element = import_trait_type(al, array->m_type, scope);
+            return element == array->m_type ? type :
+                TYPE(ASR::make_Array_t(al, type->base.loc, element, array->m_dims,
+                    array->n_dims, array->m_physical_type, array->m_memory_space));
+        }
+        case ASR::ttypeType::StructType: {
+            auto *structure = ASR::down_cast<ASR::StructType_t>(type);
+            Vec<ASR::ttype_t*> data_members, member_functions;
+            data_members.reserve(al, structure->n_data_member_types);
+            member_functions.reserve(al, structure->n_member_function_types);
+            bool changed = false;
+            for (size_t i = 0; i < structure->n_data_member_types; i++) {
+                auto *member = import_trait_type(al, structure->m_data_member_types[i], scope);
+                changed |= member != structure->m_data_member_types[i];
+                data_members.push_back(al, member);
+            }
+            for (size_t i = 0; i < structure->n_member_function_types; i++) {
+                auto *member = import_trait_type(al, structure->m_member_function_types[i], scope);
+                changed |= member != structure->m_member_function_types[i];
+                member_functions.push_back(al, member);
+            }
+            if (!changed) return type;
+            return TYPE(ASR::make_StructType_t(al, type->base.loc,
+                data_members.p, data_members.size(), member_functions.p,
+                member_functions.size(), structure->m_is_cstruct,
+                structure->m_is_unlimited_polymorphic));
+        }
+        case ASR::ttypeType::FunctionType: {
+            auto *signature = ASR::down_cast<ASR::FunctionType_t>(type);
+            auto *result = import_trait_type(al, signature->m_return_var_type, scope);
+            Vec<ASR::ttype_t*> arguments;
+            arguments.reserve(al, signature->n_arg_types);
+            bool changed = result != signature->m_return_var_type;
+            for (size_t i = 0; i < signature->n_arg_types; i++) {
+                auto *argument = import_trait_type(al, signature->m_arg_types[i], scope);
+                changed |= argument != signature->m_arg_types[i];
+                arguments.push_back(al, argument);
+            }
+            if (!changed) return type;
+            return TYPE(ASR::make_FunctionType_t(al, type->base.loc,
+                arguments.p, arguments.size(), result, signature->m_abi,
+                signature->m_deftype, signature->m_bindc_name, signature->m_elemental,
+                signature->m_pure, signature->m_module, signature->m_inline,
+                signature->m_static, signature->m_restrictions, signature->n_restrictions,
+                signature->m_is_restriction, signature->m_exec_space));
+        }
+        default: return type;
+    }
 }
 
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation)

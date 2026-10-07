@@ -10595,6 +10595,9 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     }
+                    variable_added_to_symtab->m_type = ASRUtils::import_trait_type(
+                        al, variable_added_to_symtab->m_type,
+                        variable_added_to_symtab->m_parent_symtab);
 
                     if (!is_implicitly_declared) {
                         // An implicit dimension statement can declare array dimensions containing
@@ -12254,7 +12257,8 @@ public:
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
-                type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+                type = ASRUtils::import_trait_type(al,
+                    ASR::down_cast<ASR::Function_t>(v)->m_function_signature, current_scope);
             }
             } // else (named procedure interface)
             if (is_pointer) {
@@ -13548,7 +13552,8 @@ public:
             ASR::ttype_t* struct_t_mem_type = ASRUtils::symbol_type(v);
             ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                        al, v_expr->base.loc, v_expr, v_ext, struct_t_mem_type, nullptr));
+                        al, v_expr->base.loc, v_expr, v_ext,
+                        ASRUtils::import_trait_type(al, struct_t_mem_type, current_scope), nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
             if (is_assumed_rank) {
@@ -16137,7 +16142,8 @@ public:
         call_args.from_pointer_n_copy(al, args.p, args.size());
         if( is_dt_present ) {
             dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
+                al, loc, args.p[0].m_value, v,
+                ASRUtils::import_trait_type(al, ASRUtils::symbol_type(v), current_scope), nullptr));
             ASR::call_arg_t* actuals = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, actuals, n_call_args, dt);
@@ -21738,7 +21744,7 @@ public:
                 ASR::ttype_t *type = ASRUtils::symbol_type(f2);
                 base = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, v_expr,
                     ASRUtils::import_struct_instance_member(al, v, current_scope),
-                    type, nullptr));
+                    ASRUtils::import_trait_type(al, type, current_scope), nullptr));
             }
 
             tmp = ASR::make_CoarrayRef_t(
@@ -26986,7 +26992,8 @@ public:
                     }
                 }
                 tmp = ASR::make_StructInstanceMember_t(
-                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
+                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext,
+                    ASRUtils::import_trait_type(al, tmp2_mem_type, current_scope), value);
                 make_ArrayItem_from_struct_m_args(
                     x_m_member[i].m_args, x_m_member[i].n_args, ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
@@ -27081,7 +27088,8 @@ public:
                 }
             }
 
-            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, value);
+            tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
+                tmp2_m_m_ext, ASRUtils::import_trait_type(al, tmp2_mem_type, current_scope), value);
             if(x_n_member != x_member_count){ // From `funCallOrArray` -- id is a member [x_n_member] --Last item could be an arrayItem
                 LCOMPILERS_ASSERT(x_member_count == x_n_member + 1)
                 make_ArrayItem_from_struct_m_args(

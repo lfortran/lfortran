@@ -3975,7 +3975,8 @@ public:
                         return t;
                     };
 
-                var->m_type = replace_deferred_struct_type(var_type);
+                var->m_type = ASRUtils::import_trait_type(al,
+                    replace_deferred_struct_type(var_type), var->m_parent_symtab);
                 if (var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
                     ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
                     ptr_null->m_type = var->m_type;
