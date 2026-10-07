@@ -938,6 +938,10 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
     pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    // Character dummies get their hidden length arguments whatever passes
+    // were selected, as in the LLVM backend.
+    pass_manager.apply_string_length_arguments(al, &asr, compiler_options.po,
+        diagnostics);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }

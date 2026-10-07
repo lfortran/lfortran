@@ -1251,6 +1251,10 @@ namespace LCompilers {
                     type = type_original->getPointerTo();
                 } else if (LLVM::is_value_dummy_passed_by_value(*arg)) {
                     type = get_type_from_ttype_t_util(x.m_args[i], arg->m_type, module);
+                } else if (ASRUtils::is_string_dummy_with_hidden_length(
+                        *ASRUtils::get_FunctionType(x), *arg)) {
+                    // The data pointer; the length is a hidden argument.
+                    type = character_type;
                 } else {
                     type = type_original;
                 }
