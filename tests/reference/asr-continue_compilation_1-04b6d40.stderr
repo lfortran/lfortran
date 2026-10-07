@@ -893,45 +893,45 @@ semantic error: Initialization of `pnc_y2` must reduce to a compile time constan
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Initialization of `cihs_h` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2107:9
+    --> tests/errors/continue_compilation_1.f90:2118:9
      |
-2107 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+2118 |         integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: component `cihs_a` cannot be referenced in a component declaration
-    --> tests/errors/continue_compilation_1.f90:2111:29
+    --> tests/errors/continue_compilation_1.f90:2122:29
      |
-2111 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+2122 |         integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
      |                             ^^^^^^ `cihs_a` is a component of the derived type being defined
 
 semantic error: component `cihs_c` cannot be referenced in a component declaration
-    --> tests/errors/continue_compilation_1.f90:2115:29
+    --> tests/errors/continue_compilation_1.f90:2126:29
      |
-2115 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+2126 |         integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
      |                             ^^^^^^^^^ `cihs_c` is a component of the derived type being defined
 
 semantic error: component `cihs_n` cannot be referenced in a component declaration
-    --> tests/errors/continue_compilation_1.f90:2119:27
+    --> tests/errors/continue_compilation_1.f90:2130:27
      |
-2119 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+2130 |         integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
      |                           ^^^^^^ `cihs_n` is a component of the derived type being defined
 
 semantic error: component `cihs_k` cannot be referenced in a component declaration
-    --> tests/errors/continue_compilation_1.f90:2123:14
+    --> tests/errors/continue_compilation_1.f90:2134:14
      |
-2123 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+2134 |         real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
      |              ^^^^^^ `cihs_k` is a component of the derived type being defined
 
 semantic error: component `cihs_l` cannot be referenced in a component declaration
-    --> tests/errors/continue_compilation_1.f90:2127:23
+    --> tests/errors/continue_compilation_1.f90:2138:23
      |
-2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+2138 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
      |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
 
 semantic error: Intent attribute can only be applied to procedure arguments
-    --> tests/errors/continue_compilation_1.f90:2141:5
+    --> tests/errors/continue_compilation_1.f90:2152:5
      |
-2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+2152 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
      |     ^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3102,7 +3102,7 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
 
 semantic error: Cannot assign to an intent(in) variable `y`
-    --> tests/errors/continue_compilation_1.f90:2135:5
+    --> tests/errors/continue_compilation_1.f90:2146:5
      |
-2135 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+2146 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
      |     ^ 

@@ -2098,6 +2098,17 @@ function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
 
+subroutine test_type_spec()
+    type :: t
+        integer :: k = 5
+    end type
+    class(t), allocatable :: y
+    integer :: arr(3)
+
+    allocate(zzz%t :: y)       ! {Error} type-spec in ALLOCATE must be a derived type name
+    allocate(arr(1)%t :: y)    ! {Error} type-spec in ALLOCATE must be a derived type name
+end subroutine test_type_spec
+
 module component_init_host_scope_in_continue_compilation_1_m
     implicit none
     integer :: cihs_h = 3
@@ -2140,4 +2151,3 @@ subroutine intent_list_non_dummy_error(x)
     integer :: x, y
     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
 end subroutine intent_list_non_dummy_error
-
