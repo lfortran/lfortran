@@ -3311,8 +3311,9 @@ class ReplaceExprWithTemporaryVisitor:
             return;
         }
         
-        // Create condition variable 'c' which is a scalar logical
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        // Create condition variable 'c' with the condition's own logical type
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(x.m_test));
         char* c_name = s2c(al, current_scope->get_unique_name("_while_cond"));
         ASR::symbol_t* c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
                 current_scope, c_name, 
