@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            m:
+            overloaded_unary_array_01_m:
                 (Module
                     (SymbolTable
                         2
@@ -17,7 +17,7 @@
                                                     4
                                                     1_v_x
                                                     3 x
-                                                    m
+                                                    overloaded_unary_array_01_m
                                                     [v]
                                                     x
                                                     Public
@@ -206,7 +206,7 @@
                                     Public
                                 )
                         })
-                    m
+                    overloaded_unary_array_01_m
                     ()
                     []
                     .false.
@@ -224,7 +224,7 @@
                                     5
                                     1_v_x
                                     3 x
-                                    m
+                                    overloaded_unary_array_01_m
                                     [v]
                                     x
                                     Public
@@ -234,7 +234,7 @@
                                     5
                                     neg
                                     2 neg
-                                    m
+                                    overloaded_unary_array_01_m
                                     []
                                     neg
                                     Public
@@ -314,7 +314,7 @@
                                     5
                                     v
                                     2 v
-                                    m
+                                    overloaded_unary_array_01_m
                                     []
                                     v
                                     Public
@@ -324,14 +324,14 @@
                                     5
                                     ~sub
                                     2 ~sub
-                                    m
+                                    overloaded_unary_array_01_m
                                     []
                                     ~sub
                                     Public
                                 )
                         })
                     p
-                    [m]
+                    [overloaded_unary_array_01_m]
                     [(Assignment
                         (StructInstanceMember
                             (Var 5 q)

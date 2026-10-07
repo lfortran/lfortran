@@ -1,4 +1,4 @@
-module m
+module overloaded_unary_array_01_m
 implicit none
 type :: v
     real :: x = 0
@@ -12,8 +12,9 @@ elemental type(v) function neg(a)
     neg%x = -a%x
 end function
 end module
+
 program p
-use m
+use overloaded_unary_array_01_m
 implicit none
 type(v) :: q(3), qq(3)
 q%x = 2
