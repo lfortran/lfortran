@@ -1,0 +1,13 @@
+{
+    "basename": "pass_function_call_in_declaration-func_call_in_decl_02-da56ae5",
+    "cmd": "lfortran --pass=function_call_in_declaration --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/func_call_in_decl_02.f90",
+    "infile_hash": "edafd3b19bf4e2f44c9535dca0a7a1fa882477982bda90b65c0dd954",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_function_call_in_declaration-func_call_in_decl_02-da56ae5.stdout",
+    "stdout_hash": "af10efc87f3989dc805bcf44addec2f27f8e70104b759b9b028df4a7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
