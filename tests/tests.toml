@@ -4882,6 +4882,10 @@ filename = "char1.f90"
 fortran = true
 
 [[test]]
+filename = "../integration_tests/char_equiv_sc.f90"
+run = true
+
+[[test]]
 filename = "implicit_interface_external_decl.f90"
 fortran = true
 options = "--implicit-interface"

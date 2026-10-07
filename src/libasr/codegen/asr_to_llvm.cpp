@@ -6745,8 +6745,10 @@ public:
                 bool is_const = (x.m_storage == ASR::storage_typeType::Parameter);
                 if (!external) {
                     std::string initial_string_value;
-                    if (x.m_symbolic_value) {
-                        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_symbolic_value));
+                    ASR::expr_t* sym_val = x.m_symbolic_value ? ASRUtils::expr_value(x.m_symbolic_value) : nullptr;
+                        
+                    if (sym_val && ASR::is_a<ASR::StringConstant_t>(*sym_val)) {
+                        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(sym_val);
                         int64_t len; ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, len);
                         initial_string_value = std::string(str_const->m_s, len);
                     } else {
