@@ -15,11 +15,19 @@ extern void _lfortran_formatted_read(
  */
 int main(void)
 {
-    FILE *in = fopen("test_formatted_read_stdin_data.txt", "w");
-    if (!in) return 2;
+    const char *path = "test_formatted_read_stdin_data.txt";
+
+    FILE *in = fopen(path, "w");
+    if (!in) {
+        fprintf(stderr, "cannot create %s\n", path);
+        return 2;
+    }
     fputs("4 2 \n", in);
     fclose(in);
-    if (!freopen("test_formatted_read_stdin_data.txt", "r", stdin)) return 2;
+    if (!freopen(path, "r", stdin)) {
+        fprintf(stderr, "cannot redirect stdin to %s\n", path);
+        return 2;
+    }
 
     int32_t i = 0, iostat = 0;
     char advance[] = "yes";
@@ -31,6 +39,15 @@ int main(void)
         1, NULL, 0,
         (int32_t)0, (int32_t)2, &i);
 
-    printf("i = %d (iostat = %d)\n", i, iostat);
-    return i == 42 ? 0 : 1;
+    remove(path);
+
+    if (iostat != 0) {
+        fprintf(stderr, "expected iostat == 0, got %d\n", iostat);
+        return 1;
+    }
+    if (i != 42) {
+        fprintf(stderr, "expected 42 (BLANK='NULL'), got %d\n", i);
+        return 1;
+    }
+    return 0;
 }
