@@ -847,6 +847,7 @@ RUN(NAME arrays_reshape_45 LABELS llvm) # gfortran segfaults on reshape () of po
 RUN(NAME arrays_reshape_46 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_47 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_48 LABELS gfortran llvm)
+RUN(NAME arrays_reshape_49 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
