@@ -12449,7 +12449,7 @@ LFORTRAN_API void _lfortran_formatted_read(
     ...)
 {
     InputSource inputSource = {};
-    bool unit_file_bin, blank_zero;
+    bool unit_file_bin = false, blank_zero = false;
     int pad_mode;
     inputSource.access_id = 0;
     inputSource.record_len = 0;
