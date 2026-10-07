@@ -4613,6 +4613,7 @@ RUN(NAME optional_14 LABELS gfortran llvm)
 RUN(NAME optional_15 LABELS gfortran llvm)
 RUN(NAME optional_16 LABELS gfortran llvm)
 RUN(NAME optional_17 LABELS gfortran llvm)
+RUN(NAME optional_18 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
