@@ -9366,9 +9366,8 @@ public:
                     // For other non-BindC functions with value attribute,
                     // create a local copy so modifications to the
                     // parameter don't affect the caller's variable.
-                    // Skip CPtr: it is already passed by value at
-                    // the call site and handled by the existing
-                    // is_cptr_dummy_passed_by_value path.
+                    // CPtr is handled below: it is passed as the
+                    // void* itself, not as a pointer to it.
                     if (LLVM::is_value_dummy_passed_by_value(*arg)) {
                         llvm::Value* local_copy = builder->CreateAlloca(
                             llvm_arg.getType(), nullptr,
@@ -9386,6 +9385,12 @@ public:
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
                         builder->CreateStore(loaded, local_copy);
+                        llvm_sym = local_copy;
+                    }
+                    if (is_cptr_dummy_in_local_storage(arg)) {
+                        llvm::Value* local_copy = builder->CreateAlloca(
+                            llvm_arg.getType(), nullptr, std::string(arg->m_name) + "_value");
+                        builder->CreateStore(llvm_sym, local_copy);
                         llvm_sym = local_copy;
                     }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
@@ -10471,7 +10476,8 @@ public:
         int reduce_loads = 0;
         if( ASR::is_a<ASR::Var_t>(*cptr) ) {
             ASR::Variable_t* cptr_var = ASRUtils::EXPR2VAR(cptr);
-            reduce_loads = cptr_var->m_intent == ASRUtils::intent_in;
+            reduce_loads = cptr_var->m_intent == ASRUtils::intent_in &&
+                !is_cptr_dummy_in_local_storage(cptr_var);
         }
         if( ASRUtils::is_array(ASRUtils::expr_type(fptr)) ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -10712,7 +10718,7 @@ public:
             bool load_cptr = true;
             if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
                 ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
-                load_cptr = !is_cptr_dummy_passed_by_value(p_var)
+                load_cptr = !is_cptr_dummy_held_by_value(p_var)
                     && !(p_var->m_storage == ASR::storage_typeType::Parameter
                         && p_var->m_value != nullptr);
             } else if (ASR::is_a<ASR::CPtr_t>(*p_type)
@@ -10759,7 +10765,7 @@ public:
             bool load_tgt = false;
             if (ASR::is_a<ASR::Var_t>(*x.m_tgt)) {
                 ASR::Variable_t* t_var = ASRUtils::EXPR2VAR(x.m_tgt);
-                load_tgt = !is_cptr_dummy_passed_by_value(t_var);
+                load_tgt = !is_cptr_dummy_held_by_value(t_var);
             }
             if (load_tgt) {
                 llvm::Type* t_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -17852,6 +17858,19 @@ public:
               (x->m_intent == ASR::intentType::Unspecified && !x->m_value_attr));
     }
 
+    // A VALUE type(c_ptr) dummy of a non-bind(c) procedure is copied into
+    // local storage on entry (see declare_args), so, like a local variable,
+    // it is held as a void**.
+    inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t* x) const {
+        return is_cptr_dummy_passed_by_value(x) && x->m_value_attr &&
+            x->m_abi != ASR::abiType::BindC;
+    }
+
+    // Any other type(c_ptr) dummy passed by value is held as the void* itself.
+    inline bool is_cptr_dummy_held_by_value(const ASR::Variable_t* x) const {
+        return is_cptr_dummy_passed_by_value(x) && !is_cptr_dummy_in_local_storage(x);
+    }
+
     inline void fetch_val(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         llvm::Value* x_v;
@@ -17862,7 +17881,7 @@ public:
             tmp = x_v;
             return;
         }
-        if (is_cptr_dummy_passed_by_value(x)) {
+        if (is_cptr_dummy_held_by_value(x)) {
             // type(c_ptr) dummy arguments that are passed by value
             // are already the pointer value and must not be loaded.
             tmp = x_v;
@@ -24727,7 +24746,17 @@ public:
 
                             if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
                                      && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
-                                if ( orig_arg_intent != ASRUtils::intent_out &&
+                                if (is_cptr_dummy_in_local_storage(arg)) {
+                                    // A VALUE dummy is held in local
+                                    // storage (a void**): pass its address
+                                    // to a CPtr dummy passed by reference,
+                                    // and its value otherwise.
+                                    if (!ASR::is_a<ASR::CPtr_t>(*orig_arg->m_type) ||
+                                            is_cptr_dummy_passed_by_value(orig_arg)) {
+                                        llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                                        tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                    }
+                                } else if ( orig_arg_intent != ASRUtils::intent_out &&
                                         arg->m_intent == intent_local ) {
                                     // Local variable of type
                                     // CPtr is a void**, so we
@@ -24736,6 +24765,14 @@ public:
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
                             } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
+                                if (ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
+                                        is_cptr_dummy_in_local_storage(arg) &&
+                                        is_cptr_dummy_passed_by_value(orig_arg)) {
+                                    // A VALUE dummy is held in local
+                                    // storage (a void**).
+                                    llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                                    tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                }
                                 // A procedure variable stored in memory (a
                                 // local or a pointer) passes the procedure it
                                 // holds to a dummy that is not a pointer.
