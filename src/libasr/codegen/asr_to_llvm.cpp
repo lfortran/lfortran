@@ -9989,13 +9989,13 @@ public:
                 ptr_loads = 2;
                 for( int i = 0; i < n_dims; i++ ) {
                     if( m_dims[i].m_start ) {
-                        visit_expr_wrapper(m_dims[i].m_start);
+                        visit_expr_wrapper(m_dims[i].m_start, true);
                         lbs.push_back(al, tmp);
                     } else {
                         lbs.push_back(al, nullptr);
                     }
                     if( m_dims[i].m_length ) {
-                        visit_expr_wrapper(m_dims[i].m_length);
+                        visit_expr_wrapper(m_dims[i].m_length, true);
                         lengths.push_back(al, tmp);
                     } else {
                         lengths.push_back(al, nullptr);
