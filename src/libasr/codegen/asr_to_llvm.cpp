@@ -6601,6 +6601,14 @@ public:
             if (alias_target->getType() != type->getPointerTo()) {
                 alias_target = llvm::ConstantExpr::getBitCast(alias_target, type->getPointerTo());
             }
+            if (external) {
+                // The alias is defined in the translation unit that owns the
+                // variable, and an alias cannot point to a declaration. Address
+                // the shared storage directly, so that LLVM sees both names
+                // access the same object.
+                llvm_symtab[h] = alias_target;
+                return;
+            }
             llvm::GlobalAlias* alias = llvm::GlobalAlias::create(type, 0, llvm::GlobalValue::ExternalLinkage, llvm_var_name, alias_target, module.get());
             llvm_symtab[h] = alias;
             return;
