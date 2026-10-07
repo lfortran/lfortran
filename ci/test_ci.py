@@ -355,7 +355,7 @@ class QuickScriptTests(unittest.TestCase):
         self.env = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
                         CI_CALLS=str(self.calls))
         for name in (
-            "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
+            "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
             "expr2", "modules_15", "intrinsics_04", "intrinsics_04s",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
             "bin/make", "bin/ctest", "bin/pip",
@@ -502,6 +502,41 @@ class QuickScriptTests(unittest.TestCase):
                     for args in integration:
                         if args != ["-m"]:
                             self.assertEqual("--smoke" in args, event != "push")
+
+    def test_full_integration_builds_enable_runtime_stacktraces(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        build = source.split("      - name: Build\n", 1)[1].split("\n      - ", 1)[0]
+        script = build.split("        run: |\n", 1)[1]
+        cases = (
+            ("quick", "ubuntu-latest", "7", True),
+            ("quick", "ubuntu-latest", "11", True),
+            ("quick", "ubuntu-latest", "23", True),
+            ("extra", "ubuntu-latest", "7", True),
+            ("extra", "ubuntu-latest", "23", True),
+            ("extra", "macos-latest", "22", True),
+            ("main", "ubuntu-latest", "7", True),
+            ("main", "ubuntu-latest", "11", False),
+            ("main", "ubuntu-latest", "19", False),
+            ("main", "ubuntu-latest", "21", True),
+            ("main", "ubuntu-latest", "22", True),
+            ("main", "ubuntu-latest", "23", True),
+            ("main", "macos-latest", "22", False),
+        )
+        for scope, platform, llvm, enabled in cases:
+            with self.subTest(scope=scope, platform=platform, llvm=llvm):
+                self.calls.write_text("")
+                rendered = script.replace("${{ matrix.os }}", platform)
+                rendered = rendered.replace("${{ matrix.llvm-version }}", llvm)
+                env = dict(self.env, LFORTRAN_CI_SCOPE=scope, CONDA_PREFIX=str(self.directory))
+                result = subprocess.run(
+                    ["bash", "-e", "-o", "pipefail"], input=rendered,
+                    cwd=self.directory, env=env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+                cmake = [args for path, args in calls if path == str(self.bin / "cmake")]
+                self.assertEqual(len(cmake), 2)
+                self.assertEqual("-DWITH_RUNTIME_STACKTRACE=yes" in cmake[0], enabled)
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

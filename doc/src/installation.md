@@ -453,6 +453,7 @@ Release LLVM 11 anchor. The standalone compiler-to-WASM build is also retained.
 
 Exhaustive PR checks run full compatibility suites on Linux LLVM 7/23 and
 full normal platform coverage on macOS LLVM 22, including Caffeine/coarrays.
+These compilers enable runtime stacktraces for the `-g` integration regressions.
 The distinct Kokkos/out-of-source and custom-install configurations use
 smoke tests to check those build/install paths; Quick already owns the full
 CPU mode suites. Standalone C++ builds, documentation/kernel tests, the

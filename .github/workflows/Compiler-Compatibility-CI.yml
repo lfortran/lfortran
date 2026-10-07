@@ -206,13 +206,13 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # The Quick LLVM 11 anchor uses the same runtime-stacktrace support
-            # as the main Release regression job. Other main settings stay put.
-            # When enabled, linking with -g requires llvm-dwarfdump and the
-            # Python debug-map conversion scripts.
+            # PR compiler matrices include -g integration regressions, which
+            # need runtime stacktraces. Keep main's application-only build
+            # settings unchanged. Linking with -g also needs llvm-dwarfdump
+            # and the Python debug-map conversion scripts.
             STACKTRACE_FLAG=""
-            if [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]] || \
-               [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" || "$LFORTRAN_CI_SCOPE" == "extra" ]] || \
+               [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
                 STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
             fi
             cmake . -GNinja \
