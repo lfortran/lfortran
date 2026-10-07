@@ -3332,7 +3332,7 @@ static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
 static inline ASR::ttype_t* make_opaque_procedure_type(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type) {
     return ASRUtils::TYPE(ASR::make_FunctionType_t(al, loc, nullptr, 0,
-        return_type, ASR::abiType::BindC, ASR::deftypeType::ImplicitInterface,
+        return_type, ASR::abiType::Source, ASR::deftypeType::ImplicitInterface,
         nullptr, false, false, false, false, false, nullptr, 0, false,
         ASR::exec_spaceType::Host));
 }

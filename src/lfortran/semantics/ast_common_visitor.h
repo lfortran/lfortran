@@ -5825,7 +5825,7 @@ public:
                     current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                     nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                     false);
                 current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
                 to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
@@ -5841,7 +5841,7 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ext_access,
+                ASR::abiType::Source, ext_access,
                 ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
@@ -9236,7 +9236,7 @@ public:
                             f->m_symtab, s2c(al, return_var_name), variable_dependencies_vec.p,
                             variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                            ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                             false);
                         f->m_symtab->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
                         f->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -19822,7 +19822,7 @@ public:
         ASR::symbol_t* fn = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Function_t_util(al, loc, fn_scope, s2c(al, name),
                 nullptr, 0, nullptr, 0, nullptr, 0, nullptr,
-                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::ImplicitInterface, nullptr, false, false,
                 false, false, false, nullptr, 0, false, false, false));
         sym_scope->add_or_overwrite_symbol(name, fn);
@@ -19847,7 +19847,7 @@ public:
                     ASRUtils::intent_return_var, nullptr, nullptr,
                     ASR::storage_typeType::Default,
                     ASRUtils::type_get_past_allocatable_pointer(return_type),
-                    nullptr, ASR::abiType::BindC, ASR::Public,
+                    nullptr, ASR::abiType::Source, ASR::Public,
                     ASR::presenceType::Required, false));
             fn_scope->add_symbol(return_var_name, rv);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv));
@@ -19855,7 +19855,7 @@ public:
         ASR::symbol_t* fn = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Function_t_util(al, loc, fn_scope, s2c(al, name),
                 nullptr, 0, nullptr, 0, nullptr, 0, return_var,
-                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::ImplicitInterface, nullptr, false, false,
                 false, false, false, nullptr, 0, false, false, false));
         owner_scope->add_or_overwrite_symbol(name, fn);
@@ -20003,21 +20003,23 @@ public:
             }
             var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
         }
-        // A character *expression* actual argument (a concatenation with
-        // a runtime-length operand, a substring with computed bounds, ...)
-        // has a `DeferredLength` string type. A variable may only be
-        // `DeferredLength` when it is allocatable or a pointer, so the
-        // dummy synthesized for it takes the assumed-length form the
-        // callee would have declared: `character(len=*)`. A length given by
-        // an expression of the caller (`character(len=n)`) is passed the same
-        // way, and must not tie the interface to the caller's scope.
+        // The length of a character dummy of a procedure without an
+        // explicit interface is not known here, so the dummy synthesized for
+        // a character actual takes the assumed-length form:
+        // `character(len=*)`. The callee receives the length of the actual,
+        // which is neither truncated to the length of an earlier actual that
+        // shares the interface nor tied to the caller's scope (for
+        // `character(len=n)`). A character *expression* actual (a
+        // concatenation with a runtime-length operand, a substring with
+        // computed bounds, ...) has a `DeferredLength` string type, which
+        // only an allocatable or pointer may carry, so it is passed the same
+        // way.
         if (!ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
             ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
             if (ASR::is_a<ASR::String_t>(*elem_type)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
                 if (str_type->m_len_kind == ASR::DeferredLength ||
-                        (str_type->m_len_kind == ASR::ExpressionLength && str_type->m_len &&
-                         !ASR::is_a<ASR::IntegerConstant_t>(*str_type->m_len))) {
+                        str_type->m_len_kind == ASR::ExpressionLength) {
                     ASR::ttype_t* assumed_len_type = ASRUtils::TYPE(ASR::make_String_t(
                         al, elem_type->base.loc, str_type->m_kind, nullptr,
                         ASR::AssumedLength, str_type->m_physical_type));
@@ -20169,7 +20171,7 @@ public:
                         iface_scope, s2c(al, ret_name), nullptr, 0,
                         ASRUtils::intent_return_var, nullptr, nullptr,
                         ASR::storage_typeType::Default, ft->m_return_var_type, nullptr,
-                        ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false);
+                        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false);
                     iface_scope->add_symbol(ret_name, ASR::down_cast<ASR::symbol_t>(ret_var));
                     iface_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                         ASR::down_cast<ASR::symbol_t>(ret_var)));
@@ -20177,7 +20179,7 @@ public:
                 ASR::asr_t* iface_func = ASRUtils::make_Function_t_util(al, loc,
                     iface_scope, s2c(al, iface_name), nullptr, 0,
                     nullptr, 0, nullptr, 0, iface_return,
-                    ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::abiType::Source, ASR::accessType::Public,
                     ASR::deftypeType::Interface, nullptr, false, false,
                     false, false, false, nullptr, 0, false, false, false);
                 sym_scope->add_symbol(iface_name, ASR::down_cast<ASR::symbol_t>(iface_func));
@@ -20191,7 +20193,7 @@ public:
                 fn_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
                 nullptr, nullptr, ASR::storage_typeType::Default, var_type, type_decl,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false));
             fn_scope->add_or_overwrite_symbol(arg_name, v);
             dummies.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, v)));
@@ -20206,7 +20208,7 @@ public:
                 fn_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                 nullptr, nullptr, ASR::storage_typeType::Default, return_type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
             fn_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
@@ -20216,7 +20218,7 @@ public:
         ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
             al, loc, fn_scope, s2c(al, iface_name), nullptr, 0,
             dummies.p, dummies.size(), nullptr, 0, to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false));
         sym_scope->add_symbol(iface_name, iface);
