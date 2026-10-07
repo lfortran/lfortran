@@ -3653,11 +3653,14 @@ public:
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(func_sym);
             if (var->m_type_declaration) {
                 auto *interface_symbol = ASRUtils::symbol_get_past_external(var->m_type_declaration);
-                require_id(interface_symbol && ASR::is_a<Function_t>(*interface_symbol),
-                    "asr.verify.call.procedure_interface",
-                    "A procedure variable call requires a declared function interface");
-                auto *declared = ASR::down_cast<Function_t>(interface_symbol);
-                if (!ASRUtils::is_bare_implicit_interface(*declared)) func = declared;
+                // Module loading verifies local structure before resolving imports.
+                if (check_external || interface_symbol) {
+                    require_id(interface_symbol && ASR::is_a<Function_t>(*interface_symbol),
+                        "asr.verify.call.procedure_interface",
+                        "A procedure variable call requires a declared function interface");
+                    auto *declared = ASR::down_cast<Function_t>(interface_symbol);
+                    if (!ASRUtils::is_bare_implicit_interface(*declared)) func = declared;
+                }
             }
             if (is_method) {
                 require(var->m_pass_attr != ASR::pass_attrType::NotMethod,
