@@ -924,6 +924,14 @@ bool is_valid_pointer_assignment_target(ASR::expr_t* expr)
     if (expr == nullptr || ASR::is_a<ASR::IfExp_t>(*expr)) {
         return false;
     }
+    if (ASR::is_a<ASR::TraitPack_t>(*expr)) {
+        return is_valid_pointer_assignment_target(
+            ASR::down_cast<ASR::TraitPack_t>(expr)->m_payload);
+    }
+    if (ASR::is_a<ASR::TraitBorrow_t>(*expr)) {
+        return is_valid_pointer_assignment_target(
+            ASR::down_cast<ASR::TraitBorrow_t>(expr)->m_owner);
+    }
     if (ASR::is_a<ASR::Var_t>(*expr)) {
         ASR::Variable_t* var = get_variable_from_symbol(
             ASR::down_cast<ASR::Var_t>(expr)->m_v);

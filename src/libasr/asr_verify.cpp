@@ -1970,7 +1970,10 @@ public:
     }
 
     void visit_TraitBorrow(const TraitBorrow_t &x) {
-        auto *owner_type = verify_trait_owner(x.m_owner, x.base.base.loc, false);
+        auto *source_type = typed_expr_type(x.m_owner);
+        auto *owner_type = ASRUtils::is_trait_pointer(source_type)
+            ? verify_trait_pointer(x.m_owner, x.base.base.loc, false)
+            : verify_trait_owner(x.m_owner, x.base.base.loc, false);
         require_id(x.m_type && ASR::is_a<TraitObjectType_t>(*x.m_type),
             "asr.verify.trait_borrow.type", "Borrowing cannot transfer ownership");
         visit_ttype(*x.m_type);
@@ -1979,6 +1982,54 @@ public:
                 ASRUtils::trait_runtime_contract(x.m_type),
             "asr.verify.trait_borrow.contract",
             "Borrowing an owner must preserve its declared contract");
+    }
+
+    ttype_t *verify_trait_pointer(expr_t *pointer, const Location &loc,
+            bool defining) {
+        auto *type = typed_expr_type(pointer);
+        require_with_loc_id(pointer && ASR::is_a<Var_t>(*pointer) &&
+                ASRUtils::is_trait_pointer(type),
+            "asr.verify.trait_pointer.storage",
+            "A trait pointer operation requires a scalar pointer variable", loc);
+        auto *variable = ASRUtils::get_variable_from_symbol(
+            ASR::down_cast<Var_t>(pointer)->m_v);
+        require_with_loc_id(variable &&
+                (!defining || variable->m_intent != intentType::In),
+            "asr.verify.trait_pointer.definable",
+            "An intent(in) trait pointer cannot change association", loc);
+        visit_expr(*pointer);
+        return ASRUtils::extract_type(type);
+    }
+
+    void verify_trait_pointer_value(expr_t *value, ttype_t *target,
+            const Location &loc) {
+        auto *type = typed_expr_type(value);
+        require_with_loc_id(type &&
+                (ASR::is_a<TraitObjectType_t>(*type) ||
+                 ASRUtils::is_trait_pointer(type)) &&
+                ASRUtils::is_valid_pointer_assignment_target(value),
+            "asr.verify.trait_pointer.target",
+            "A persistent trait view requires an existing target or pointer", loc);
+        visit_expr(*value);
+        if (!check_external) return;
+        require_with_loc_id(ASRUtils::trait_runtime_contract(type) ==
+                ASRUtils::trait_runtime_contract(target),
+            "asr.verify.trait_pointer.contract",
+            "Pointer association must preserve the declared trait contract", loc);
+    }
+
+    void visit_TraitAssociate(const TraitAssociate_t &x) {
+        auto *type = verify_trait_pointer(x.m_target, x.base.base.loc, true);
+        if (x.m_value) verify_trait_pointer_value(x.m_value, type, x.base.base.loc);
+    }
+
+    void visit_PointerAssociated(const PointerAssociated_t &x) {
+        if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_ptr)) &&
+                !ASR::is_a<PointerNullConstant_t>(*x.m_ptr)) {
+            auto *type = verify_trait_pointer(x.m_ptr, x.base.base.loc, false);
+            if (x.m_tgt) verify_trait_pointer_value(x.m_tgt, type, x.base.base.loc);
+        }
+        BaseWalkVisitor::visit_PointerAssociated(x);
     }
 
     void visit_TraitAllocate(const TraitAllocate_t &x) {
@@ -2033,7 +2084,11 @@ public:
 
     void visit_Nullify(const Nullify_t &x) {
         for (size_t i = 0; i < x.n_vars; i++) {
-            reject_implicit_trait_storage(x.m_vars[i], x.base.base.loc);
+            if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_vars[i]))) {
+                verify_trait_pointer(x.m_vars[i], x.base.base.loc, true);
+            } else {
+                reject_implicit_trait_storage(x.m_vars[i], x.base.base.loc);
+            }
         }
         BaseWalkVisitor::visit_Nullify(x);
     }
@@ -2712,6 +2767,21 @@ public:
                 ASRUtils::is_arg_dummy(x.m_intent);
             bool result = ASRUtils::is_trait_owner(x.m_type) && returned &&
                 x.m_storage == storage_typeType::Default && x.m_intent == intentType::ReturnVar;
+            bool pointer = ASRUtils::is_trait_pointer(x.m_type) && !returned &&
+                ((dummy && x.m_storage == storage_typeType::Default &&
+                  ASRUtils::is_arg_dummy(x.m_intent)) ||
+                 (!dummy && x.m_intent == intentType::Local &&
+                  x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
+                  ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                  !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
+                      x.m_parent_symtab->asr_owner)) &&
+                  !ASR::is_a<Union_t>(*ASR::down_cast<symbol_t>(
+                      x.m_parent_symtab->asr_owner)) &&
+                  (x.m_storage == storage_typeType::Default ||
+                   x.m_storage == storage_typeType::Save)));
+            bool null_initialized = pointer && !dummy &&
+                (!x.m_symbolic_value || ASR::is_a<PointerNullConstant_t>(*x.m_symbolic_value)) &&
+                (!x.m_value || ASR::is_a<PointerNullConstant_t>(*x.m_value));
             bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
                 x.m_intent == intentType::Local && x.m_parent_symtab &&
                 x.m_parent_symtab->asr_owner &&
@@ -2719,13 +2789,15 @@ public:
                 (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
                 !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
                     x.m_parent_symtab->asr_owner));
-            require_id((borrowed || owner || slot || result) && x.m_presence == presenceType::Required &&
-                    !x.m_value_attr && !x.m_symbolic_value && !x.m_value &&
+            require_id((borrowed || owner || slot || result || pointer) &&
+                    x.m_presence == presenceType::Required &&
+                    !x.m_value_attr &&
+                    ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
                 "Trait storage must be a required read-only view, a scalar allocatable slot/result, "
                 "or an initially unallocated local owner");
-            if (slot || result) {
+            if (slot || result || (pointer && dummy)) {
                 auto *signature = ASRUtils::get_FunctionType(function);
                 require_id(signature->m_abi != abiType::BindC &&
                         (!result || ((signature->m_abi == abiType::Source ||
@@ -3802,17 +3874,30 @@ public:
                         *ASRUtils::extract_type(formal_type)) ||
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)))) {
                     bool slot = ASRUtils::is_trait_owner(formal_type);
+                    bool pointer = ASRUtils::is_trait_pointer(formal_type);
+                    bool pointer_actual = pointer &&
+                        ((ASRUtils::is_trait_pointer(actual_type) &&
+                          (ASR::is_a<Var_t>(*passed_arg_expr) ||
+                           (callee_param->m_intent == intentType::In &&
+                            ASR::is_a<PointerNullConstant_t>(*passed_arg_expr)))) ||
+                         (callee_param->m_intent == intentType::In &&
+                          ASR::is_a<TraitObjectType_t>(*actual_type) &&
+                          ASRUtils::is_valid_pointer_assignment_target(passed_arg_expr)));
                     require_with_loc_id(
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(formal_type)) &&
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)) &&
                         (slot ? ASRUtils::is_trait_owner(actual_type) &&
                             ASR::is_a<Var_t>(*passed_arg_expr)
+                            : pointer ? pointer_actual
                             : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
                         ASRUtils::check_equal_type(formal_type, actual_type,
                             func->m_args[i], passed_arg_expr),
                         "asr.verify.trait_owner.argument",
                         "Trait arguments require the same declared contract and explicit slot or borrow association",
                         passed_arg_expr->base.loc);
+                    if (pointer && callee_param->m_intent != intentType::In) {
+                        verify_trait_pointer(passed_arg_expr, passed_arg_expr->base.loc, true);
+                    }
                 }
                 // Derived type arguments are skipped for the same reason
                 // as in the signature check above, and this also covers a

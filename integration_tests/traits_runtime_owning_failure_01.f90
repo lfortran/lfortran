@@ -25,7 +25,8 @@ program traits_runtime_owning_failure_01
     implicit none
     type(Payload) :: source
     type(Payload), allocatable :: absent
-    class(IValue), allocatable :: owner
+    class(IValue), allocatable, target :: owner
+    class(IValue), pointer :: view => null()
     integer :: count
     interface
         subroutine start_failures() bind(c)
@@ -46,6 +47,12 @@ program traits_runtime_owning_failure_01
     case (3)
         deallocate(owner)
         error stop 3
+    case (4)
+        print *, view%value()
+        error stop 8
+    case (5)
+        view => owner
+        error stop 9
     end select
     allocate(source%numbers(3))
     source%numbers = [1, 2, 3]

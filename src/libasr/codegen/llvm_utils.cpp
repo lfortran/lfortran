@@ -186,11 +186,10 @@ namespace LCompilers {
             });
         }
         bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
-            /*
-                True : When Pointer or Allocatable, if and only if it's not a standalond string type.
-            */
+            // Strings and trait pointers carry inline descriptors instead.
             return (ASR::is_a<ASR::Pointer_t>(asr_type) ||
                     ASR::is_a<ASR::Allocatable_t>(asr_type)) &&
+                    !ASRUtils::is_trait_pointer(&asr_type) &&
                     !ASRUtils::is_string_only(const_cast<ASR::ttype_t*>(&asr_type));
         }
 
@@ -959,7 +958,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
-                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
+                    type = getTraitType()->getPointerTo();
+                } else if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType (fntype*)
                     // The extra indirection for by-reference passing is handled in convert_args
                     type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi,
@@ -1721,6 +1722,10 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
+                if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
+                    llvm_type = getTraitType();
+                    break;
+                }
                 bool is_pointer_;
                 if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType

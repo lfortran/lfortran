@@ -132,6 +132,8 @@ stmt
     | TraitAssignment(expr target, expr value, symbol? witness)
     -- Transfer a consumed temporary into its using scope without finalizing it.
     | TraitRetain(expr storage, expr owner)
+    -- Copy a nonowning view into a pointer descriptor, or disassociate it.
+    | TraitAssociate(expr target, expr? value)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)

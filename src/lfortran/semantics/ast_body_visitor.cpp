@@ -217,38 +217,6 @@ public:
             data_structure, lm
         ), asr{unit}, from_block{false} {}
 
-    ASR::symbol_t* extract_assignment_base_symbol(ASR::expr_t* expr) {
-        switch (expr->type) {
-            case ASR::exprType::Var: {
-                return ASR::down_cast<ASR::Var_t>(expr)->m_v;
-            }
-            case ASR::exprType::StructInstanceMember: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
-            }
-            case ASR::exprType::ArrayItem: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
-            }
-            case ASR::exprType::ArraySection: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
-            }
-            case ASR::exprType::ArrayPhysicalCast: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
-            }
-            case ASR::exprType::Cast: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
-            }
-            case ASR::exprType::ComplexRe: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::ComplexRe_t>(expr)->m_arg);
-            }
-            case ASR::exprType::ComplexIm: {
-                return extract_assignment_base_symbol(ASR::down_cast<ASR::ComplexIm_t>(expr)->m_arg);
-            }
-            default: {
-                return nullptr;
-            }
-        }
-    }
-
     bool selector_has_constant_or_non_definable_base(ASR::expr_t* expr) {
         ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
         if (!base_sym) {
@@ -3243,6 +3211,11 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(target_type)) ||
+                ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(value_type))) {
+            tmp = make_runtime_trait_association(target, value, x.base.base.loc);
+            return;
+        }
         tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
@@ -10768,6 +10741,15 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(tmp_expr))) {
+                check_runtime_trait_pointer_context(tmp_expr, true);
+            }
+            if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(tmp_expr)) &&
+                    ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                    ASRUtils::EXPR2VAR(tmp_expr)->m_intent == ASR::intentType::In) {
+                trait_call_error("cannot change association of an intent(in) runtime trait pointer",
+                    tmp_expr->base.loc);
+            }
             if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr)) || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(tmp_expr))) {
                 if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     arg_vec.push_back(al, tmp_expr);

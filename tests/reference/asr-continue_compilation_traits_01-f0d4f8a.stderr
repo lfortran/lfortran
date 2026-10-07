@@ -368,12 +368,6 @@ semantic error: runtime trait objects currently require a scalar dummy
 1755 |         class(IValue) :: object
      |                          ^^^^^^ 
 
-semantic error: pointer runtime trait objects are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:1902:5
-     |
-1902 |     class(IValue), pointer :: object
-     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: runtime trait arrays are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:1914:9
      |
@@ -557,6 +551,12 @@ semantic error: runtime trait function results require the Fortran source ABI
      |
 2492 |         class(IValue), allocatable :: object
      |                                       ^^^^^^ 
+
+semantic error: an intent(out) dummy of a pure procedure cannot be polymorphic
+    --> tests/errors/continue_compilation_traits_01.f90:2681:48
+     |
+2681 |         class(IValue), pointer, intent(out) :: view
+     |                                                ^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
@@ -1097,3 +1097,81 @@ semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecyc
      |
 2599 |             call clear_sub(slot)
      |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a runtime trait pointer target requires the target or pointer attribute
+    --> tests/errors/continue_compilation_traits_01.f90:2634:17
+     |
+2634 |         view => object
+     |                 ^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2639:9
+     |
+2639 |         view => object
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2640:17
+     |
+2640 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: Argument `view` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2641:21
+     |
+2641 |         call change(view)
+     |                     ^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires a pointer actual
+    --> tests/errors/continue_compilation_traits_01.f90:2645:21
+     |
+2645 |         call change(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait assignment requires an allocatable owner
+    --> tests/errors/continue_compilation_traits_01.f90:2650:9
+     |
+2650 |         view = object
+     |         ^^^^ 
+
+semantic error: associated requires a pointer argument
+    --> tests/errors/continue_compilation_traits_01.f90:2654:24
+     |
+2654 |         if (associated(view)) error stop
+     |                        ^^^^ 
+
+semantic error: a runtime trait target requires a runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2659:33
+     |
+2659 |         if (associated(pointer, view)) error stop
+     |                                 ^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2663:18
+     |
+2663 |         local => shared
+     |                  ^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2664:17
+     |
+2664 |         nullify(shared_view)
+     |                 ^^^^^^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2669:18
+     |
+2669 |         local => object
+     |                  ^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2673:17
+     |
+2673 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: Argument `view` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2678:26
+     |
+2678 |         call pure_change(view)
+     |                          ^^^^ 

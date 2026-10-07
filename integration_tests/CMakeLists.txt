@@ -3752,6 +3752,14 @@ RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)
 RUN(NAME traits_static_declaration_01 LABELS llvm c fortran NO_STD_F23)
 RUN(NAME traits_static_declaration_01_oracle LABELS gfortran llvm c fortran)
 RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_pointer_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# Ordinary CLASS ASSOCIATED with allocatable targets has a pre-existing LLVM failure.
+RUN(NAME traits_runtime_pointer_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_pointer_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_pointer_separate_01_contracts.f90
+        traits_runtime_pointer_separate_01_consumer.f90
+        traits_runtime_pointer_separate_01_a.f90 traits_runtime_pointer_separate_01_b.f90)
 RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_04_oracle LABELS gfortran llvm)

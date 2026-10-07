@@ -2744,6 +2744,8 @@ class ASRToLLVMVisitor;
         bool is_finalizable_type_pointer(ASR::Pointer_t* const t, [[maybe_unused]] ASR::Struct_t* const struct_sym, const bool in_struct){
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable_pointer(&t->base);
             switch(t_past->type){
+                case ASR::TraitObjectType:
+                    return false;
                 case ASR::Array:{
                     const bool in_struct_descr_arr = in_struct && ASRUtils::is_array_physically_descriptor(t_past);
                     const bool upoly_descr_array = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(t_past)) 

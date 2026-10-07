@@ -947,26 +947,31 @@ public:
                     *ASRUtils::extract_type(dummy->m_type))) continue;
             std::string message;
             bool slot = ASRUtils::is_trait_owner(dummy->m_type);
-            if (ASRUtils::is_pointer(dummy->m_type)) {
-                message = "pointer runtime trait objects are not implemented yet";
-            } else if ((!slot && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) ||
+            bool pointer = ASRUtils::is_trait_pointer(dummy->m_type);
+            if ((!slot && !pointer && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) ||
                     dummy->n_codims) {
                 message = "runtime trait objects currently require a scalar dummy";
             } else if (dummy->m_storage != ASR::storage_typeType::Default ||
                     dummy->m_symbolic_value || dummy->m_value) {
                 message = "runtime trait dummies cannot have saved or initialized storage";
-            } else if (slot && (dummy->m_presence != ASR::presenceType::Required ||
+            } else if ((slot || pointer) && (dummy->m_presence != ASR::presenceType::Required ||
                     dummy->m_value_attr)) {
-                message = "optional or value allocatable runtime trait dummies "
-                    "are not implemented yet";
-            } else if (slot && ASRUtils::get_FunctionType(function)->m_abi ==
+                message = pointer
+                    ? "optional or value pointer runtime trait dummies are not implemented yet"
+                    : "optional or value allocatable runtime trait dummies are not implemented yet";
+            } else if ((slot || pointer) && ASRUtils::get_FunctionType(function)->m_abi ==
                     ASR::abiType::BindC) {
-                message = "bind(c) allocatable runtime trait dummies are not implemented yet";
+                message = pointer
+                    ? "bind(c) pointer runtime trait dummies are not implemented yet"
+                    : "bind(c) allocatable runtime trait dummies are not implemented yet";
             } else if (slot && dummy->m_intent == ASR::intentType::Out &&
                     ASRUtils::get_FunctionType(function)->m_pure) {
                 message = "runtime trait intent(out) cleanup with unchecked dynamic "
                     "lifecycle effects is not allowed inside a pure procedure";
-            } else if (!slot && (dummy->m_intent != ASR::intentType::In ||
+            } else if (pointer && dummy->m_intent == ASR::intentType::Out &&
+                    ASRUtils::get_FunctionType(function)->m_pure) {
+                message = "an intent(out) dummy of a pure procedure cannot be polymorphic";
+            } else if (!slot && !pointer && (dummy->m_intent != ASR::intentType::In ||
                     dummy->m_presence != ASR::presenceType::Required ||
                     dummy->m_value_attr)) {
                 message = "runtime trait dummies currently require intent(in) "

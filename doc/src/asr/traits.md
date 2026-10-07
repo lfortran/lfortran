@@ -8,7 +8,7 @@ type-bound procedures keep their existing meanings.
 
 The LLVM backend also supports borrowed scalar runtime views and bounded scalar
 allocatable ownership, invariant allocatable dummy slots, and scalar allocatable
-function results. Pointer views remain a separate stage.
+function results, and persistent nonowning scalar pointer views.
 
 ## Declaring a contract
 
@@ -256,7 +256,7 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-objects, mutable receivers, associated types, unrestricted intrinsic capabilities,
+results, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types, trait initializers, and generic-method runtime dispatch
 are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
@@ -436,7 +436,7 @@ diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
-Trait arrays, pointers, components, ASSOCIATE
+Trait arrays, pointer results, components, ASSOCIATE
 views, projections, `move_alloc`, inspection, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
@@ -512,6 +512,51 @@ then compiles the consumer and late driver with only contract/consumer modules.
 Both runtime selection orders observe 17 and 29, and the archive hash is checked
 after client compilation, linking and execution. Normal/fast native CTests and
 their complete source-archive fixture closure are registered.
+
+## Persistent scalar pointer views (R3)
+
+Scalar `class(I), pointer` variables support association to concrete TARGET or
+POINTER storage, allocatable TARGET owners, and pointers of the same contract:
+
+```fortran
+type(Box), target :: object
+class(IValue), pointer :: view => null(), alias => null()
+view => object
+alias => view
+nullify(view)
+```
+
+Each pointer has its own nonowning descriptor. `alias` still designates `object`
+after `view` is nullified or reassociated, and sees later updates to that target.
+Neither pointer scope exit nor association changes copy or finalize the payload.
+The usual Fortran target-lifetime rules apply: a pointer does not prolong the
+life of an automatic variable, temporary, or deallocated owner.
+
+Pointer dummies support all intents. OUT/INOUT association changes affect the
+actual pointer; IN protects association, not the target. An IN pointer dummy
+may also receive an eligible nonpointer TARGET. `associated` checks association
+and, with a target argument, payload identity. Disassociated dynamic calls are
+diagnosed at runtime. Saved descriptors retain association across calls.
+PURE procedures obey the ordinary base-object restrictions on pointer
+association and pointer-dummy actuals. Their polymorphic pointer dummies cannot
+have INTENT(OUT); the PURE association controls use INTENT(INOUT).
+
+Semantics emits `TraitAssociate` rather than copying an ownership header.
+The LLVM descriptor is an inline three-word header, passed by address to
+pointer dummies. It has no separately allocated wrapper that could escape a
+callee or be shared accidentally by independent aliases. `TraitBorrow` supplies
+an associated pointer's read-only view, retaining its selected witness.
+
+`traits_runtime_pointer_01` covers unrelated implementations, aliases, returned
+OUT association, saved descriptors, PURE controls, null inquiry, owner borrowing
+and exact owner finalization. Its standard-Fortran oracle is GFortran-only:
+ordinary CLASS association inquiry on allocatable targets has a pre-existing
+LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
+contract-only consumer before its providers, then checks forwarding against a
+frozen provider archive in normal and fast modes.
+Pointer results, allocation/deallocation through
+trait pointers, arrays/components, projections and concrete inspection remain
+subsequent work.
 
 ## Compiler representation
 

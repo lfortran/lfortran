@@ -1410,6 +1410,95 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     }
 }
 
+TEST_CASE("Runtime trait pointer associations preserve target and intent proofs") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_pointer_proofs_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+abstract interface :: IOther
+    integer function other()
+    end function
+end interface
+type :: Cell
+    integer :: n
+end type
+implements IValue :: Cell
+    procedure, pass :: value => read_cell
+end implements
+contains
+integer function read_cell(self)
+    class(Cell), intent(in) :: self
+    read_cell = self%n
+end function
+subroutine bind(view, object, other)
+    class(IValue), pointer, intent(out) :: view
+    type(Cell), target, intent(inout) :: object
+    class(IOther), pointer, intent(in) :: other
+    view => object
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_pointer_proofs_m"));
+    auto *function = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("bind"));
+    auto *association = ASR::down_cast<ASR::TraitAssociate_t>(function->m_body[0]);
+    auto *pointer = ASRUtils::EXPR2VAR(function->m_args[0]);
+    auto *object = ASRUtils::EXPR2VAR(function->m_args[1]);
+    LCompilers::diag::Diagnostics valid;
+    REQUIRE(LCompilers::asr_verify(*result.result, true, valid));
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional round trips retain association semantics") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_pointer.asr",
+                loaded_lm, loaded_diagnostics);
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        }
+    }
+    SUBCASE("a transient concrete borrow is not a persistent pointer target") {
+        object->m_target_attr = false;
+        rejects("asr.verify.trait_pointer.target");
+    }
+    SUBCASE("intent in protects pointer association rather than its target") {
+        pointer->m_intent = ASR::intentType::In;
+        rejects("asr.verify.trait_pointer.definable");
+    }
+    SUBCASE("association cannot invent an unrelated trait contract") {
+        association->m_value = function->m_args[2];
+        rejects("asr.verify.trait_pointer.contract");
+    }
+    SUBCASE("a nonvariable target rejects before unchecked casts") {
+        association->m_target = ASRUtils::EXPR(
+            ASR::make_Var_t(al, association->base.base.loc, &function->base));
+        rejects("asr.verify.trait_pointer.storage");
+    }
+}
+
 TEST_CASE("Retained trait result stores preserve unique scoped ownership") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
@@ -2559,7 +2648,8 @@ contains
                 auto result = LCompilers::LFortran::ast_to_asr(
                     al, *parsed.result, diagnostics, nullptr, false, options, lm);
                 INFO(diagnostics.render2());
-                bool valid_slot = attribute == "allocatable :: object";
+                bool valid_slot = attribute == "allocatable :: object" ||
+                    attribute == "pointer :: object";
                 if (valid_slot) {
                     CHECK(result.ok);
                     CHECK_FALSE(diagnostics.has_error());

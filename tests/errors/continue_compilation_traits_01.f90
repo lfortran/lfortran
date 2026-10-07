@@ -2600,3 +2600,84 @@ contains
         end associate
     end subroutine
 end module
+
+module traits_pointer_boundaries_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    type :: Cell
+        integer :: n
+    end type
+    implements IValue :: Cell
+        procedure, pass :: value => read_cell
+    end implements
+    type(Cell), target :: shared
+    class(IValue), pointer :: shared_view
+contains
+    integer function read_cell(self)
+        class(Cell), intent(in) :: self
+        read_cell = self%n
+    end function
+    subroutine change(view)
+        class(IValue), pointer, intent(out) :: view
+        nullify(view)
+    end subroutine
+    pure subroutine pure_change(view)
+        class(IValue), pointer, intent(inout) :: view
+        nullify(view)
+    end subroutine
+    subroutine missing_target()
+        class(IValue), pointer :: view
+        type(Cell) :: object
+        view => object
+    end subroutine
+    subroutine readonly_pointer(view, object)
+        class(IValue), pointer, intent(in) :: view
+        type(Cell), target :: object
+        view => object
+        nullify(view)
+        call change(view)
+    end subroutine
+    subroutine missing_pointer_actual(object)
+        type(Cell), target :: object
+        call change(object)
+    end subroutine
+    subroutine value_assignment(view, object)
+        class(IValue), pointer :: view
+        type(Cell) :: object
+        view = object
+    end subroutine
+    subroutine nonpointer_inquiry(view)
+        class(IValue), intent(in) :: view
+        if (associated(view)) error stop
+    end subroutine
+    subroutine ordinary_pointer_inquiry(view, pointer)
+        class(IValue), pointer :: view
+        type(Cell), pointer :: pointer
+        if (associated(pointer, view)) error stop
+    end subroutine
+    pure subroutine host_association()
+        class(IValue), pointer :: local
+        local => shared
+        nullify(shared_view)
+    end subroutine
+    pure subroutine readonly_target(object)
+        type(Cell), target, intent(in) :: object
+        class(IValue), pointer :: local
+        local => object
+    end subroutine
+    pure integer function function_pointer(view)
+        class(IValue), pointer, intent(inout) :: view
+        nullify(view)
+        function_pointer = 0
+    end function
+    pure subroutine pointer_forwarding(view)
+        class(IValue), pointer, intent(in) :: view
+        call pure_change(view)
+    end subroutine
+    pure subroutine polymorphic_out(view)
+        class(IValue), pointer, intent(out) :: view
+    end subroutine
+end module

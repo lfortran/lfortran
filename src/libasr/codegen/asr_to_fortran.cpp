@@ -1126,6 +1126,17 @@ public:
         src = result + src + ")\n";
     }
 
+    void visit_TraitAssociate(const ASR::TraitAssociate_t &x) {
+        visit_expr(*x.m_target);
+        std::string result = indent + src + " => ";
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        } else {
+            src = "null()";
+        }
+        src = result + src + "\n";
+    }
+
     void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {
         visit_expr(*x.m_view);
         src = "trait_receiver(" + src + ")";

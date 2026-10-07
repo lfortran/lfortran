@@ -28,17 +28,28 @@ Fortran calling convention and ownership; the provider's concrete declarations
 are not needed in the caller.
 Optional and BIND(C) slots, and unproved PURE output/result cleanup, remain
 unsupported.
+`Pointer(TraitObjectType)` denotes a persistent nonowning view, with an
+independent association descriptor. `TraitAssociate` copies an existing target
+view into that descriptor; NULLIFY resets it. Pointer IN protects association,
+not the target. Defining pointer dummies require a pointer actual; pointer IN
+can also receive an eligible concrete TARGET or allocatable TARGET owner.
+As in ordinary Fortran, a PURE procedure cannot have a polymorphic INTENT(OUT)
+dummy, even when it is a pointer.
 `TraitPack` creates compiler-borrowed concrete views; forwarding
-uses the original variable. `TraitBorrow` borrows an allocated owner. None of
+uses the original variable. `TraitBorrow` borrows an allocated owner or an
+associated pointer. None of
 these operations copies the payload or transfers ownership.
 
 Owning allocation and assignment use `TraitAllocate` and `TraitAssignment`;
 ordinary deallocation statements release only verified owners. The verifier
-rejects ordinary header assignment, association and nullification that would
-duplicate or discard ownership.
+rejects ordinary header assignment and association that would duplicate or
+discard ownership. NULLIFY is allowed only for definable pointer descriptors.
 
 The LLVM representation carries concrete CLASS metadata, a payload address, and
 an independent selected witness. It is compiler-private, not a public ABI.
+Pointer descriptors are inline headers passed by address, whereas owning
+allocation slots hold independently allocated headers. Pointer descriptor
+cleanup never destroys the target or its selected witness.
 Type-set traits cannot form views. Generic-method universal traits remain a
 future runtime implementation stage, not a permanently excluded trait category.
 

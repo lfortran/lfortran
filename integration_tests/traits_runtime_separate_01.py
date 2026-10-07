@@ -14,11 +14,18 @@ def main():
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--work-dir", required=True)
     parser.add_argument("--fast", action="store_true")
-    parser.add_argument("--owning", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--owning", action="store_true")
+    mode.add_argument("--pointers", action="store_true")
     args = parser.parse_args()
     compiler = str(Path(args.lfortran).resolve())
     sources = Path(__file__).resolve().parent
-    prefix = "traits_runtime_owning_separate_01" if args.owning else "traits_runtime_separate_01"
+    if args.owning:
+        prefix = "traits_runtime_owning_separate_01"
+    elif args.pointers:
+        prefix = "traits_runtime_pointer_separate_01"
+    else:
+        prefix = "traits_runtime_separate_01"
     work = Path(args.work_dir).resolve() / f"runtime-traits-{os.getpid()}"
     work.mkdir(parents=True)
     environment = os.environ.copy()
@@ -66,6 +73,9 @@ def main():
             assert "TraitAssignment" in semantic and "TraitBorrow" in semantic
             assert "TraitWitness" not in semantic, "consumer must not know implementers"
             assert re.search(r"call (?:i8\*|ptr) %", llvm), "copy must use the carried lifecycle"
+        if args.pointers:
+            assert "TraitAssociate" in semantic and "TraitBorrow" in semantic
+            assert "TraitWitness" not in semantic, "pointer forwarding must not know implementers"
 
         provider_imports = ["contracts"]
         provider_objects = []
@@ -84,7 +94,7 @@ def main():
             run([compiler, *flags, *includes, "--show-llvm", source], directory, output)
         llvm = (directory / "driver.ll").read_text()
         metadata = re.findall(r"^@([^ ]*Type_Info_[^ ]*) = ", llvm, re.MULTILINE)
-        if not args.owning:
+        if not args.owning and not args.pointers:
             assert any("traits_runtime_separate_01_a_m" in name for name in metadata)
             assert any("traits_runtime_separate_01_b_m" in name for name in metadata)
         executable = work / "program"

@@ -11925,9 +11925,6 @@ public:
                         ASR::trait_kindType::IntrinsicTypeSet) {
                     trait_call_error("a type-set trait cannot be used as a runtime class", loc);
                 }
-                if (is_pointer) {
-                    trait_call_error("pointer runtime trait objects are not implemented yet", loc);
-                }
                 if (is_derived_type) {
                     trait_call_error("runtime trait components are not implemented yet", loc);
                 }
@@ -11952,6 +11949,7 @@ public:
                     &contract->base, "trait", current_scope);
                 ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
                 auto *view = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc, reference));
+                if (is_pointer) return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, view));
                 return is_allocatable
                     ? ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, view)) : view;
             }
@@ -18865,7 +18863,8 @@ public:
             }
             null_ptr_type_ = current_variable_type_;
         }
-        return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
+        return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_,
+            mold_ ? mold_ : current_struct_type_var_expr);
     }
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
@@ -18873,6 +18872,33 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        if (ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(ptr_))) &&
+                !ASRUtils::is_trait_pointer(ASRUtils::expr_type(ptr_))) {
+            trait_call_error("associated requires a pointer argument", ptr_->base.loc);
+        }
+        if (tgt_ && ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(tgt_))) &&
+                !ASRUtils::is_trait_pointer(ASRUtils::expr_type(ptr_))) {
+            trait_call_error("a runtime trait target requires a runtime trait pointer",
+                tgt_->base.loc);
+        }
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(ptr_)) && tgt_) {
+            if (!ASRUtils::is_valid_pointer_assignment_target(tgt_)) {
+                trait_call_error("an associated target requires the target or pointer attribute",
+                    tgt_->base.loc);
+            }
+            auto *target_type = ASRUtils::expr_type(tgt_);
+            if (ASRUtils::is_trait_pointer(target_type)) {
+                if (ASRUtils::trait_runtime_contract(target_type) !=
+                        ASRUtils::trait_runtime_contract(ASRUtils::expr_type(ptr_))) {
+                    trait_call_error("associated runtime trait pointers require the same "
+                        "declared contract", tgt_->base.loc);
+                }
+            } else {
+                make_runtime_trait_view(tgt_, ASRUtils::expr_type(ptr_));
+            }
+        }
         if (tgt_ != nullptr) {
             if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
                 if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
@@ -23008,6 +23034,67 @@ public:
         return copy;
     }
 
+    ASR::symbol_t* extract_assignment_base_symbol(ASR::expr_t* expr) {
+        switch (expr->type) {
+            case ASR::exprType::Var:
+                return ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            case ASR::exprType::StructInstanceMember:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+            case ASR::exprType::ArrayItem:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+            case ASR::exprType::ArraySection:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+            case ASR::exprType::ArrayPhysicalCast:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+            case ASR::exprType::Cast:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+            case ASR::exprType::ComplexRe:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::ComplexRe_t>(expr)->m_arg);
+            case ASR::exprType::ComplexIm:
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::ComplexIm_t>(expr)->m_arg);
+            default:
+                return nullptr;
+        }
+    }
+
+    void check_runtime_trait_pointer_context(ASR::expr_t *value, bool defining = false) {
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) return;
+        ASR::Function_t *function = nullptr;
+        for (auto *scope = current_scope; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                function = ASR::down_cast2<ASR::Function_t>(scope->asr_owner);
+                break;
+            }
+        }
+        if (!function || !ASRUtils::get_FunctionType(function)->m_pure) {
+            if (defining) {
+                current_function_side_effect_free = false;
+                current_function_deterministic = false;
+            }
+            return;
+        }
+        auto *base = extract_assignment_base_symbol(value);
+        auto *variable = base ? ASRUtils::get_variable_from_symbol(base) : nullptr;
+        bool local = false;
+        if (variable) {
+            for (auto *scope = variable->m_parent_symtab; scope; scope = scope->parent) {
+                if (scope == function->m_symtab) {
+                    local = true;
+                    break;
+                }
+                if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                        ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) break;
+            }
+        }
+        if (!variable || !local || variable->m_intent == ASR::intentType::In ||
+                (function->m_return_var && ASRUtils::is_arg_dummy(variable->m_intent) &&
+                 ASRUtils::is_pointer(variable->m_type))) {
+            trait_call_error("this target cannot appear in a runtime trait pointer "
+                "association context in a pure procedure", value->base.loc);
+        }
+    }
+
     void adapt_runtime_trait_argument(ASR::expr_t *&actual, ASR::expr_t *dummy) {
         auto *target = ASRUtils::expr_type(dummy);
         auto *source = ASRUtils::expr_type(actual);
@@ -23017,6 +23104,34 @@ public:
                 trait_call_error("conversion from a runtime trait view to a non-trait "
                     "dummy is not implemented yet", actual->base.loc);
             }
+            return;
+        }
+        if (ASRUtils::is_trait_pointer(target)) {
+            check_runtime_trait_pointer_context(actual);
+            auto intent = ASRUtils::EXPR2VAR(dummy)->m_intent;
+            if (ASRUtils::is_trait_pointer(source)) {
+                if (ASRUtils::trait_runtime_contract(source) !=
+                        ASRUtils::trait_runtime_contract(target)) {
+                    trait_call_error("a runtime trait pointer dummy requires the same "
+                        "declared trait contract", actual->base.loc);
+                }
+                if (intent != ASR::intentType::In &&
+                        (!ASR::is_a<ASR::Var_t>(*actual) ||
+                         ASRUtils::EXPR2VAR(actual)->m_intent == ASR::intentType::In)) {
+                    trait_call_error("a defining runtime trait pointer dummy requires "
+                        "a definable pointer actual", actual->base.loc);
+                }
+                return;
+            }
+            if (intent != ASR::intentType::In) {
+                trait_call_error("a defining runtime trait pointer dummy requires "
+                    "a pointer actual", actual->base.loc);
+            }
+            if (!ASRUtils::is_valid_pointer_assignment_target(actual)) {
+                trait_call_error("a runtime trait pointer actual requires a target "
+                    "or pointer", actual->base.loc);
+            }
+            make_runtime_trait_view(actual, target);
             return;
         }
         if (ASRUtils::is_trait_owner(target)) {
@@ -23054,7 +23169,7 @@ public:
                 trait_call_error("runtime trait view projections are not implemented yet",
                     actual->base.loc);
             }
-            if (ASRUtils::is_allocatable(source)) {
+            if (ASRUtils::is_allocatable(source) || ASRUtils::is_trait_pointer(source)) {
                 auto *contract = ASRUtils::trait_runtime_contract(source);
                 auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
                     al, actual->base.loc, make_operator_proc_visible(
@@ -23084,6 +23199,38 @@ public:
             make_operator_proc_visible(&contract->base, "trait", current_scope)));
         actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
             al, actual->base.loc, actual, reference, view_type));
+    }
+
+    ASR::asr_t *make_runtime_trait_association(ASR::expr_t *target,
+            ASR::expr_t *value, const Location &loc) {
+        auto *target_type = ASRUtils::expr_type(target);
+        if (!ASRUtils::is_trait_pointer(target_type) ||
+                !ASR::is_a<ASR::Var_t>(*target)) {
+            trait_call_error("runtime trait association requires a scalar trait pointer", loc);
+        }
+        if (ASRUtils::EXPR2VAR(target)->m_intent == ASR::intentType::In) {
+            trait_call_error("cannot change association of an intent(in) runtime trait pointer", loc);
+        }
+        check_runtime_trait_pointer_context(target, true);
+        if (value && ASR::is_a<ASR::PointerNullConstant_t>(*value)) value = nullptr;
+        if (value) {
+            check_runtime_trait_pointer_context(value);
+            if (!ASRUtils::is_valid_pointer_assignment_target(value)) {
+                trait_call_error("a runtime trait pointer target requires the target "
+                    "or pointer attribute", value->base.loc);
+            }
+            auto *source_type = ASRUtils::expr_type(value);
+            if (ASRUtils::is_trait_pointer(source_type)) {
+                if (ASRUtils::trait_runtime_contract(source_type) !=
+                        ASRUtils::trait_runtime_contract(target_type)) {
+                    trait_call_error("runtime trait view projections are not implemented yet",
+                        value->base.loc);
+                }
+            } else {
+                make_runtime_trait_view(value, target_type);
+            }
+        }
+        return ASR::make_TraitAssociate_t(al, loc, target, value);
     }
 
     ASR::symbol_t *select_runtime_trait_witness(ASR::ttype_t *target,
@@ -23160,8 +23307,13 @@ public:
                     !ASR::is_a<ASR::TraitObjectType_t>(
                         *ASRUtils::extract_type(variable->m_type))) continue;
             std::string message;
-            if (ASRUtils::is_pointer(variable->m_type)) {
-                message = "pointer runtime trait objects are not implemented yet";
+            if (ASRUtils::is_trait_pointer(variable->m_type)) {
+                if ((variable->m_symbolic_value &&
+                        !ASR::is_a<ASR::PointerNullConstant_t>(*variable->m_symbolic_value)) ||
+                        (variable->m_value &&
+                        !ASR::is_a<ASR::PointerNullConstant_t>(*variable->m_value))) {
+                    message = "runtime trait pointer initialization requires null()";
+                }
             } else if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
                 message = "runtime trait arrays and coarrays are not implemented yet";
             } else if (!ASRUtils::is_trait_owner(variable->m_type)) {

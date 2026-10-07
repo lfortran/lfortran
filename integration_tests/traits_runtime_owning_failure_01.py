@@ -55,11 +55,13 @@ def main():
         for mode, message in (
                 (1, "cannot copy an unallocated concrete runtime trait source"),
                 (2, "cannot allocate an already allocated runtime trait object"),
-                (3, "cannot deallocate an unallocated runtime trait object")):
+                (3, "cannot deallocate an unallocated runtime trait object"),
+                (4, "cannot borrow a disassociated runtime trait pointer"),
+                (5, "cannot borrow an unallocated runtime trait object")):
             status, output = run([work / "program"],
                                 {**environment, "LFORTRAN_TEST_FAILURE_MODE": str(mode)})
             assert status == 1 and message in output, (mode, status, output)
-        print(f"all {count} allocation failures and three invalid states terminate cleanly")
+        print(f"all {count} allocation failures and five invalid states terminate cleanly")
     finally:
         shutil.rmtree(work)
 

@@ -26,6 +26,7 @@ cmake -E copy \
     integration_tests/traits_runtime_separate_01.py \
     integration_tests/traits_runtime_separate_01*.f90 \
     integration_tests/traits_runtime_owning_separate_01*.f90 \
+    integration_tests/traits_runtime_pointer_separate_01*.f90 \
     integration_tests/traits_runtime_owning_failure_01.py \
     integration_tests/traits_runtime_owning_failure_01.f90 \
     integration_tests/traits_runtime_owning_failure_01.c \

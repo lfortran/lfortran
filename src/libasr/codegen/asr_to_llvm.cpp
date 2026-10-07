@@ -2946,6 +2946,11 @@ public:
 
     void visit_Nullify(const ASR::Nullify_t& x) {
         for( size_t i = 0; i < x.n_vars; i++ ) {
+            if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_vars[i]))) {
+                builder->CreateStore(llvm::Constant::getNullValue(
+                    llvm_utils->getTraitType()), trait_owner_slot(x.m_vars[i]));
+                continue;
+            }
             ASR::symbol_t* tmp_sym;
             llvm::Value *target;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_vars[i])) {
@@ -7056,6 +7061,10 @@ public:
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
+        if (ASRUtils::is_trait_pointer(x.m_type)) {
+            tmp = llvm::Constant::getNullValue(llvm_utils->getTraitType());
+            return;
+        }
         llvm::Type* value_type;
 
         value_type = ASRUtils::is_array(x.m_type)?
@@ -8947,6 +8956,11 @@ public:
             if (ASR::is_a<ASR::TraitOwnerList_t>(*v->m_type)) {
                 builder->CreateStore(llvm::Constant::getNullValue(
                     llvm_utils->getTraitOwnerListType()), ptr);
+            } else if (ASRUtils::is_trait_pointer(v->m_type)) {
+                if (v->m_storage != ASR::storage_typeType::Save) {
+                    builder->CreateStore(llvm::Constant::getNullValue(
+                        llvm_utils->getTraitType()), ptr);
+                }
             } else if (!LLVM::is_llvm_pointer(*v->m_type) &&
                     !ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
@@ -10604,6 +10618,18 @@ public:
     void visit_PointerAssociated(const ASR::PointerAssociated_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_ptr))) {
+            auto *view = trait_owner_slot(x.m_ptr);
+            auto *payload = llvm_utils->trait_field(view, 1);
+            auto *associated = builder->CreateIsNotNull(payload);
+            if (x.m_tgt) {
+                auto *target = trait_owner_slot(x.m_tgt);
+                associated = builder->CreateAnd(associated, builder->CreateICmpEQ(
+                    payload, llvm_utils->trait_field(target, 1)));
+            }
+            tmp = associated;
             return;
         }
         llvm::AllocaInst *res = llvm_utils->CreateAlloca(
@@ -17839,6 +17865,11 @@ public:
     }
 
     inline void fetch_var(ASR::Variable_t* x) {
+        if (ASRUtils::is_trait_pointer(x->m_type)) {
+            uint32_t hash = get_hash((ASR::asr_t*)x);
+            tmp = llvm_symtab.at(hash);
+            return;
+        }
         // Only do for constant variables
         if (x->m_value && x->m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x->m_value, true);
@@ -24543,11 +24574,18 @@ public:
 
             if (x.m_args[i].m_value &&
                     (ASR::is_a<ASR::TraitObjectType_t>(*expr_type(x.m_args[i].m_value))
+                     || ASRUtils::is_trait_pointer(expr_type(x.m_args[i].m_value))
                      || ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value))) {
                 int64_t saved_loads = ptr_loads;
                 ptr_loads = 0;
                 visit_expr_wrapper(x.m_args[i].m_value, true);
                 ptr_loads = saved_loads;
+                if (ASRUtils::is_trait_pointer(expr_type(x.m_args[i].m_value)) &&
+                        ASR::is_a<ASR::PointerNullConstant_t>(*x.m_args[i].m_value)) {
+                    auto *storage = get_call_arg_alloca(llvm_utils->getTraitType());
+                    builder->CreateStore(tmp, storage);
+                    tmp = storage;
+                }
                 if (ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value)) {
                     tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
                         ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc,
@@ -27733,9 +27771,24 @@ public:
 
     void visit_TraitBorrow(const ASR::TraitBorrow_t &x) {
         auto *slot = trait_owner_slot(x.m_owner);
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_owner))) {
+            llvm_utils->trait_error_if(
+                builder->CreateIsNull(llvm_utils->trait_field(slot, 1)),
+                "cannot borrow a disassociated runtime trait pointer");
+            tmp = slot;
+            return;
+        }
         tmp = llvm_utils->CreateLoad2(llvm_utils->getTraitType()->getPointerTo(), slot);
         llvm_utils->trait_error_if(builder->CreateIsNull(tmp),
             "cannot borrow an unallocated runtime trait object");
+    }
+
+    void visit_TraitAssociate(const ASR::TraitAssociate_t &x) {
+        auto *type = llvm_utils->getTraitType();
+        llvm::Value *value = x.m_value
+            ? llvm_utils->CreateLoad2(type, trait_owner_slot(x.m_value))
+            : llvm::Constant::getNullValue(type);
+        builder->CreateStore(value, trait_owner_slot(x.m_target));
     }
 
     llvm::Value *trait_snapshot(ASR::expr_t *source, bool copy_value,

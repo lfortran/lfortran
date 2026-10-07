@@ -10655,6 +10655,12 @@ inline bool is_trait_owner(const ASR::ttype_t *type) {
             *ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
 }
 
+inline bool is_trait_pointer(const ASR::ttype_t *type) {
+    return type && ASR::is_a<ASR::Pointer_t>(*type) &&
+        ASR::is_a<ASR::TraitObjectType_t>(
+            *ASR::down_cast<ASR::Pointer_t>(type)->m_type);
+}
+
 inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
     for (size_t i = 0; i < function.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*function.m_args[i])) continue;
