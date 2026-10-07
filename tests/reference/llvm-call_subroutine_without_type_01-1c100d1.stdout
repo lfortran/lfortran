@@ -18,7 +18,7 @@ target datalayout = "..."
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*)]
-@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
@@ -172,7 +172,7 @@ define i32 @main(i32 %0, i8** %1) {
   store %module_call_subroutine_without_type_01.mytype.3* %10, %module_call_subroutine_without_type_01.mytype.3** %9, align 8
   %11 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %9, align 8
   %12 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %7 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
   %13 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %11, i32 0, i32 0
   %14 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
   %15 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %14 to i64
@@ -253,7 +253,7 @@ ifcont2:                                          ; preds = %ifcont
   %55 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
   %56 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %55 to void (%module_call_subroutine_without_type_01.mytype.3_class*)***
   %57 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)**, void (%module_call_subroutine_without_type_01.mytype.3_class*)*** %56, align 8
-  %58 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %57, i32 3
+  %58 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %57, i32 4
   %59 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %58, align 8
   call void %59(%module_call_subroutine_without_type_01.mytype.3_class* %55)
   br label %return
@@ -408,7 +408,7 @@ entry:
   %4 = load i8*, i8** %0, align 8
   %5 = bitcast i8* %4 to %module_call_subroutine_without_type_01.mytype.3_class*
   %6 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_38_module_call_subroutine_without_type_016_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
@@ -477,21 +477,14 @@ entry:
   br i1 %6, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
-  %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 2
+  %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 3
   %8 = load i8*, i32 (...)** %7, align 8
   %9 = bitcast i8* %8 to void (i8*)*
-  %10 = bitcast i32 (...)** %2 to i8**
-  %11 = getelementptr inbounds i8*, i8** %10, i32 -2
-  %12 = load i8*, i8** %11, align 8
-  %13 = bitcast i8* %12 to i8**
-  %14 = getelementptr inbounds i8*, i8** %13, i32 1
-  %15 = load i8*, i8** %14, align 8
-  %16 = bitcast i8* %15 to void (i8*)*
-  %17 = icmp ne i8* %5, null
-  br i1 %17, label %is_allocated.then1, label %is_allocated.else
+  %10 = icmp ne i8* %5, null
+  br i1 %10, label %is_allocated.then1, label %is_allocated.else
 
 is_allocated.then1:                               ; preds = %is_allocated.then
-  call void %16(i8* %5)
+  call void %9(i8* %5)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %is_allocated.then

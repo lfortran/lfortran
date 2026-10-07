@@ -29,11 +29,11 @@ target datalayout = "..."
 @_Name_fpm_build_settings = private unnamed_addr constant [19 x i8] c"fpm_build_settings\00", align 1
 @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*)]
-@_VTable_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
+@_VTable_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
 @_Name_fpm_run_settings = private unnamed_addr constant [17 x i8] c"fpm_run_settings\00", align 1
 @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* inttoptr (i64 64 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*) }, align 8
 @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*)]
-@_VTable_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr unnamed_addr constant { [5 x i8*] } { [5 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
+@_VTable_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*)] }, align 8
 
 define i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
 .entry:
@@ -407,7 +407,7 @@ define i32 @main(i32 %0, i8** %1) {
   %20 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %19, i32 0, i32 0
   store i32 0, i32* %20, align 4
   %21 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %2, i32 0, i32 0
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_22_modules_36_fpm_main_0116_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %21, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_22_modules_36_fpm_main_0116_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %21, align 8
   %22 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %2, i32 0, i32 1
   store %modules_36_fpm_main_01.fpm_run_settings.4* %settings, %modules_36_fpm_main_01.fpm_run_settings.4** %22, align 8
   store i32 1, i32* %call_arg_value, align 4
@@ -566,7 +566,7 @@ entry:
   %4 = load i8*, i8** %0, align 8
   %5 = bitcast i8* %4 to %modules_36_fpm_main_01.fpm_build_settings.3_class*
   %6 = bitcast %modules_36_fpm_main_01.fpm_build_settings.3_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_22_modules_36_fpm_main_0118_fpm_build_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_22_modules_36_fpm_main_0118_fpm_build_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3_class, %modules_36_fpm_main_01.fpm_build_settings.3_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
@@ -1228,7 +1228,7 @@ entry:
   %4 = load i8*, i8** %0, align 8
   %5 = bitcast i8* %4 to %modules_36_fpm_main_01.fpm_run_settings.4_class*
   %6 = bitcast %modules_36_fpm_main_01.fpm_run_settings.4_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [5 x i8*] }, { [5 x i8*] }* @_VTable_22_modules_36_fpm_main_0116_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_22_modules_36_fpm_main_0116_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*

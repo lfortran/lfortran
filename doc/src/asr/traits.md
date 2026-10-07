@@ -583,8 +583,9 @@ concrete-owned lifecycle descriptors whose helpers default-initialize,
 initialize-copy without defined assignment or finalization, assign into prepared
 or live storage, destroy a live raw value, and release snapshot storage without
 FINAL. The
-existing CLASS vptr slots 0/1/2 keep their copy/allocate/finalize contracts;
-the formerly reserved prefix at -2 references a separate value-lifecycle family.
+existing CLASS vptr slots 0/1/2 keep their copy/allocate/finalize contracts.
+Slot 3 releases storage without user finalization, and the formerly reserved
+prefix at -2 references a separate value-lifecycle family.
 Its copy callback explicitly distinguishes prepared versus uninitialized
 storage, value capture versus component assignment, and fresh versus live
 destinations; its release callback omits user finalization. This propagates

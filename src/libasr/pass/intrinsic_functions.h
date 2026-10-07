@@ -667,7 +667,45 @@ create_trig(Tanh, tanh, tanh)
 create_trig(Asinh, asinh, asinh)
 create_trig(Acosh, acosh, acosh)
 create_trig(Atanh, atanh, atanh)
-create_trig(Log, log, log)
+
+namespace Log {
+    static inline ASR::expr_t *eval_Log(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& diag) {
+        LCOMPILERS_ASSERT(args.size() == 1);
+        double rv = -1;
+        if( ASRUtils::extract_value(args[0], rv) ) {
+            if (rv <= 0.0) {
+                append_error(diag, "Argument of `log` cannot be less than or equal to zero", loc);
+                return nullptr;
+            }
+            double val = std::log(rv);
+            return ASRUtils::make_RealConstant_util(al, loc, val, t);
+        } else {
+            std::complex<double> crv;
+            if( ASRUtils::extract_value(args[0], crv) ) {
+                if (crv == std::complex<double>(0.0, 0.0)) {
+                    append_error(diag, "Complex argument of `log` cannot be zero", loc);
+                    return nullptr;
+                }
+                std::complex<double> val = std::log(crv);
+                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                    al, loc, val.real(), val.imag(), t));
+            }
+        }
+        return nullptr;
+    }
+    static inline ASR::expr_t* instantiate_Log(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args,int64_t overload_id,
+            int index_kind)  {
+        ASR::ttype_t* arg_type = arg_types[0];
+        return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "log", arg_type, return_type, new_args, overload_id,
+            index_kind);
+    }
+}
 
 namespace MathIntrinsicFunction{
     static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
@@ -2373,12 +2411,19 @@ namespace Dreal {
 namespace Ishft {
 
     static ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        int64_t bit_size = 8 * (int64_t)kind;
+        if (val2 > bit_size || val2 < -bit_size) {
+            append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
+            return nullptr;
+        }
         int64_t val;
-        if (val2 <= 0) {        // For logical shift val1 is treated as unsigned
+        if (val2 == bit_size || val2 == -bit_size) {
+            val = 0;
+        } else if (val2 <= 0) {        // For logical shift val1 is treated as unsigned
             val2 = val2 * -1;
             if (kind == 1) { 
                 val = (uint8_t) val1 >> val2;

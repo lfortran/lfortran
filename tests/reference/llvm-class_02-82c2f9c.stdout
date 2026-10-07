@@ -10,7 +10,7 @@ target datalayout = "..."
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
 @_Type_Info_13_class_circle26_circle = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_13_class_circle26_circle = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_13_class_circle26_circle to i8*), i8* bitcast (void (i8*)* @release_StructType__circle_3_of_class_circle2_for_UPoly to i8*)]
-@_VTable_13_class_circle26_circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_13_class_circle26_circle to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_13_class_circle26_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_13_class_circle26_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_13_class_circle26_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (float (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
+@_VTable_13_class_circle26_circle = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_13_class_circle26_circle to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_13_class_circle26_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_13_class_circle26_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_13_class_circle26_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (float (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [31 x i8] c"S-DESC-K1-12,R4,S-DESC-K1-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
@@ -47,7 +47,7 @@ define void @__module_class_circle2_circle_print(%class_circle2.circle.3_class* 
   %area = alloca float, align 4
   %1 = bitcast %class_circle2.circle.3_class* %this to float (%class_circle2.circle.3_class*)***
   %2 = load float (%class_circle2.circle.3_class*)**, float (%class_circle2.circle.3_class*)*** %1, align 8
-  %3 = getelementptr inbounds float (%class_circle2.circle.3_class*)*, float (%class_circle2.circle.3_class*)** %2, i32 3
+  %3 = getelementptr inbounds float (%class_circle2.circle.3_class*)*, float (%class_circle2.circle.3_class*)** %2, i32 4
   %4 = load float (%class_circle2.circle.3_class*)*, float (%class_circle2.circle.3_class*)** %3, align 8
   %5 = call float %4(%class_circle2.circle.3_class* %this)
   store float %5, float* %area, align 4
@@ -97,7 +97,7 @@ define void @__module_class_circle2__xx_lcompilers_changed_main_xx() {
   %3 = getelementptr %class_circle2.circle.3, %class_circle2.circle.3* %c, i32 0, i32 0
   store float 1.500000e+00, float* %3, align 4
   %4 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %0, i32 0, i32 0
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_13_class_circle26_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_13_class_circle26_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %4, align 8
   %5 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %0, i32 0, i32 1
   store %class_circle2.circle.3* %c, %class_circle2.circle.3** %5, align 8
   call void @__module_class_circle2_circle_print(%class_circle2.circle.3_class* %0)
@@ -245,7 +245,7 @@ entry:
   %4 = load i8*, i8** %0, align 8
   %5 = bitcast i8* %4 to %class_circle2.circle.3_class*
   %6 = bitcast %class_circle2.circle.3_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_13_class_circle26_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_13_class_circle26_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %class_circle2.circle.3_class, %class_circle2.circle.3_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*

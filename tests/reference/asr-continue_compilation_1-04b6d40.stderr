@@ -928,6 +928,12 @@ semantic error: component `cihs_l` cannot be referenced in a component declarati
 2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
      |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
 
+semantic error: Intent attribute can only be applied to procedure arguments
+    --> tests/errors/continue_compilation_1.f90:2141:5
+     |
+2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+     |     ^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3094,3 +3100,9 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
      |
 2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
      |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+
+semantic error: Cannot assign to an intent(in) variable `y`
+    --> tests/errors/continue_compilation_1.f90:2135:5
+     |
+2135 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+     |     ^ 
