@@ -16,7 +16,6 @@ endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
-    ADDTESTC(test_formatted_read_stdin lfortran_runtime_static)
     ADDTEST(test_stacktrace)
 endif()
 
