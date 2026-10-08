@@ -1,5 +1,0 @@
-warning: Change of value in conversion from 'real(8)' to 'real(4)'
-  --> tests/../integration_tests/parameter_22.f90:10:30
-   |
-10 | real(4), parameter :: x(2) = [1d0, 0.1d0]
-   |                              ^^^^^^^^^^^^ 

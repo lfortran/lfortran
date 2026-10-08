@@ -1858,7 +1858,7 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/parameter_22.f90"
-asr = true
+semantics_only_cc = true
 
 # IntegerToReal
 [[test]]
