@@ -1318,8 +1318,17 @@ contains
     end function
     function apply{IValue :: Q}(object) result(r)
         type(Q), intent(in) :: object
-        integer :: r
-        r = object%value() + 13
+        integer :: r, base
+        base = 13
+        block
+            integer :: local
+            local = base
+            block
+                integer :: base
+                base = object%value()
+                r = local + base
+            end block
+        end block
     end function
     function forward{IValue :: T, IValue :: U}(view, object, other) result(r)
         class(IAlgorithm), intent(in) :: view

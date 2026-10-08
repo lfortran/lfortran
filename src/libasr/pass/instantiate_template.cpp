@@ -1101,18 +1101,20 @@ public:
     }
 };
 
-// An associate block of a template procedure is instantiated as an
-// associate block of the instantiated procedure, so `new_scope` corresponds
-// to `old_scope` of the template. Returns the instantiated scope that
+// A block of a template procedure is instantiated as a block of the
+// instantiated procedure, so `new_scope` corresponds to `old_scope` of the
+// template. Returns the instantiated scope that
 // corresponds to `scope`, a scope enclosing `old_scope`, by leaving the
-// associate blocks between them; other scopes are left to the callers.
+// blocks between them; other scopes are left to the callers.
 static SymbolTable* instantiated_enclosing_scope(SymbolTable* old_scope,
         SymbolTable* new_scope, SymbolTable* scope) {
     while (old_scope != nullptr && old_scope != scope
             && old_scope->asr_owner != nullptr
             && ASR::is_a<ASR::symbol_t>(*old_scope->asr_owner)
-            && ASR::is_a<ASR::AssociateBlock_t>(
-                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner))) {
+            && (ASR::is_a<ASR::AssociateBlock_t>(
+                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner)) ||
+                ASR::is_a<ASR::Block_t>(
+                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner)))) {
         LCOMPILERS_ASSERT(new_scope->parent != nullptr);
         old_scope = old_scope->parent;
         new_scope = new_scope->parent;
@@ -1168,12 +1170,13 @@ public:
         }
 
         // if passed as instantiation's argument. Members of a derived type
-        // (components and type-bound procedures) live in the type's own
-        // namespace, so a substitution for a same-named symbol elsewhere in
-        // the template must not replace them.
+        // (components and type-bound procedures) and block locals live in
+        // their own scopes, so a substitution for a same-named symbol
+        // elsewhere in the template must not replace them.
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
-        bool is_struct_member = owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner);
-        if (!is_struct_member && symbol_subs.find(sym_name) != symbol_subs.end()) {
+        bool is_scoped_local = owner != nullptr && (ASR::is_a<ASR::Struct_t>(*owner) ||
+            ASR::is_a<ASR::Block_t>(*owner) || ASR::is_a<ASR::AssociateBlock_t>(*owner));
+        if (!is_scoped_local && symbol_subs.find(sym_name) != symbol_subs.end()) {
             ASR::symbol_t* added_sym = symbol_subs[sym_name];
             std::string added_sym_name = ASRUtils::symbol_name(added_sym);
             if (new_scope->resolve_symbol(added_sym_name)) {
@@ -1221,6 +1224,9 @@ public:
             case (ASR::symbolType::AssociateBlock) : {
                 ASR::AssociateBlock_t* x = ASR::down_cast<ASR::AssociateBlock_t>(sym);
                 return instantiate_AssociateBlock(x);
+            }
+            case (ASR::symbolType::Block) : {
+                return instantiate_Block(ASR::down_cast<ASR::Block_t>(sym));
             }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
@@ -1332,6 +1338,15 @@ public:
         new_scope = al.make_new<SymbolTable>(target_scope);
         instantiate_local_symbols(x->m_symtab);
         ASR::symbol_t* b = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(
+            al, x->base.base.loc, new_scope, s2c(al, new_sym_name), nullptr, 0));
+        target_scope->add_symbol(new_sym_name, b);
+        return b;
+    }
+
+    ASR::symbol_t* instantiate_Block(ASR::Block_t* x) {
+        new_scope = al.make_new<SymbolTable>(target_scope);
+        instantiate_local_symbols(x->m_symtab);
+        ASR::symbol_t* b = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
             al, x->base.base.loc, new_scope, s2c(al, new_sym_name), nullptr, 0));
         target_scope->add_symbol(new_sym_name, b);
         return b;
@@ -1752,10 +1767,11 @@ public:
             // The global scope encloses every instantiation.
             return var_sym;
         }
-        if (host != nullptr && ASR::is_a<ASR::Function_t>(*host)
+        if (host != nullptr && (ASR::is_a<ASR::Function_t>(*host) ||
+                ASR::is_a<ASR::Block_t>(*host) || ASR::is_a<ASR::AssociateBlock_t>(*host))
                 && source_scope != nullptr && source_scope != host_scope) {
-            // A variable of an enclosing procedure, used by host association
-            // in an internal procedure. The instantiated scopes are nested
+            // A variable of an enclosing procedure or block, used by host
+            // association. The instantiated scopes are nested
             // like the template's, so the host's instantiation is as many
             // levels up from target_scope as host_scope is from source_scope.
             SymbolTable* s = source_scope;
@@ -2254,8 +2270,13 @@ public:
             if (ASR::is_a<ASR::AssociateBlock_t>(*sym_i)) {
                 // Part of this procedure's body, so it shares its
                 // dependencies.
-                instantiate_AssociateBlock(ASR::down_cast<ASR::AssociateBlock_t>(sym_i),
+                instantiate_scoped_body(ASR::down_cast<ASR::AssociateBlock_t>(sym_i),
                     ASR::down_cast<ASR::AssociateBlock_t>(new_sym_i));
+                continue;
+            }
+            if (ASR::is_a<ASR::Block_t>(*sym_i)) {
+                instantiate_scoped_body(ASR::down_cast<ASR::Block_t>(sym_i),
+                    ASR::down_cast<ASR::Block_t>(new_sym_i));
                 continue;
             }
 
@@ -2287,8 +2308,8 @@ public:
         return body;
     }
 
-    void instantiate_AssociateBlock(ASR::AssociateBlock_t* x,
-            ASR::AssociateBlock_t* new_b) {
+    template <typename Block>
+    void instantiate_scoped_body(Block* x, Block* new_b) {
         SymbolTable* outer_old_scope = old_scope;
         SymbolTable* outer_new_scope = new_scope;
         old_scope = x->m_symtab;
@@ -2783,6 +2804,12 @@ public:
         ASR::symbol_t* m = new_scope->get_symbol(ASRUtils::symbol_name(x->m_m));
         LCOMPILERS_ASSERT(m != nullptr && ASR::is_a<ASR::AssociateBlock_t>(*m));
         return ASR::make_AssociateBlockCall_t(al, x->base.base.loc, m);
+    }
+
+    ASR::asr_t* duplicate_BlockCall(ASR::BlockCall_t* x) {
+        ASR::symbol_t* m = new_scope->get_symbol(ASRUtils::symbol_name(x->m_m));
+        LCOMPILERS_ASSERT(m != nullptr && ASR::is_a<ASR::Block_t>(*m));
+        return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, m);
     }
 
     ASR::asr_t* duplicate_Assignment(ASR::Assignment_t *x) {

@@ -23145,8 +23145,15 @@ public:
         return types;
     }
 
-    void check_trait_erased_storage(const ASR::Function_t &function) {
-        for (const auto &entry : function.m_symtab->get_scope()) {
+    void check_trait_erased_storage(const SymbolTable &scope) {
+        for (const auto &entry : scope.get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*entry.second)) {
+                check_trait_erased_storage(*ASR::down_cast<ASR::Block_t>(entry.second)->m_symtab);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*entry.second)) {
+                check_trait_erased_storage(*ASR::down_cast<ASR::AssociateBlock_t>(entry.second)->m_symtab);
+            } else if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(entry.second)->m_symtab);
+            }
             if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
             auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
             if (!ASRUtils::is_type_parameter(*ASRUtils::extract_type(variable->m_type))) continue;
@@ -23160,6 +23167,10 @@ public:
                     "mutable arguments are not implemented yet", variable->base.base.loc);
             }
         }
+    }
+
+    void check_trait_erased_storage(const ASR::Function_t &function) {
+        check_trait_erased_storage(*function.m_symtab);
     }
 
     ASR::TraitErasure_t *create_trait_erasure(ASR::Template_t &generic,
@@ -25146,14 +25157,27 @@ public:
     void instantiate_pending_bodies() {
         // Binding can discover more specializations. Finish every signature
         // and recursive backedge before materializing any of their bodies.
+        std::set<size_t> failed_bindings;
         do {
             type_set_bindings_changed = false;
             for (size_t i = 0; i < pending_body_instantiations.size(); i++) {
+                if (failed_bindings.count(i)) continue;
                 auto p = pending_body_instantiations[i];
-                bind_pending_body(p);
+                auto *saved_scope = current_scope;
+                try {
+                    bind_pending_body(p);
+                } catch (const SemanticAbort &) {
+                    current_scope = saved_scope;
+                    if (!compiler_options.continue_compilation) throw;
+                    failed_bindings.insert(i);
+                    continue;
+                }
                 pending_body_instantiations[i] = std::move(p);
             }
         } while (type_set_bindings_changed);
+        // Report independent invalid providers too, but never instantiate or
+        // publish bodies with an incomplete substitution environment.
+        if (!failed_bindings.empty()) throw SemanticAbort();
         std::vector<BodyInstantiationState> states(
             pending_body_instantiations.size(), BodyInstantiationState::Pending);
         for (size_t i = 0; i < pending_body_instantiations.size(); i++) {

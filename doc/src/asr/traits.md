@@ -142,6 +142,9 @@ scoped nominal proof while a forwarding consumer is still generic. Instantiation
 turns it into a checked concrete `TraitPack`, another scoped deferred pack, or a
 verified projection of an already-erased argument. LLVM only lowers the
 resulting explicit descriptors and calls.
+Ordinary `BLOCK` scopes use that same instantiator for static and erased
+entries, retaining scoped locals, host references, dependencies and cleanup on
+normal completion, `EXIT` and `RETURN`.
 Erasure verification validates both procedure declarations before comparing
 their signatures, including argument-symbol kinds, independently of symbol
 visitation order and compiler assertions.
@@ -159,7 +162,8 @@ The current erased subset deliberately excludes:
   arguments, mutable generic dummies, local `T` storage and `T`-valued results.
   Borrowing an existing scalar actual does not supply those ownership semantics.
   The same storage checks apply to helpers reached by erased instantiation, not
-  just the public method's own declarations.
+  just the public method's own declarations, and descend into nested `BLOCK`
+  and `ASSOCIATE` scopes.
 - Independent multi-trait constraints on one erased binder. A binder must
   normalize to one runtime-admissible nominal trait; named children and redundant
   ancestor constraints retain their nominal meaning. This does **not** limit

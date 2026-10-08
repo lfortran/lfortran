@@ -3781,6 +3781,8 @@ RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_runtime_generic_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_matrix_client.f90)
+RUN(NAME traits_runtime_generic_block_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_block_01_oracle LABELS gfortran)
 RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_static_bindc_01_m.f90)
 RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)

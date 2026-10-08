@@ -1945,6 +1945,12 @@ semantic error: a select type association with a nondefinable selector cannot ap
      |                              ^^^^^^^^^^^^^^^^^ 
 
 semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3618:28
+     |
+3618 |                 type(T) :: scratch
+     |                            ^^^^^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3543:20
      |
 3543 |         type(U) :: copy

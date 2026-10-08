@@ -3597,3 +3597,27 @@ contains
         end select
     end subroutine
 end module
+
+! R3G-03: a nested BLOCK cannot hide unsupported erased local T storage.
+module traits_generic_runtime_block_storage
+    use traits_generic_nominal_left, only: IValue, IAlgorithm
+    implicit none
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        block
+            integer :: local
+            local = 1
+            block
+                type(T) :: scratch
+                r = local
+            end block
+        end block
+    end function
+end module
