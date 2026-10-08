@@ -227,6 +227,22 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // A non-optional scalar integer, real or logical VALUE dummy
+        // argument is passed by value (the same convention as GFortran).
+        // VALUE dummies with the bind(c) ABI follow the C ABI and are
+        // lowered by the bind(c) specific code paths instead.
+        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || v.m_abi == ASR::abiType::BindC ||
+                    v.m_presence == ASR::presenceType::Optional ||
+                    !ASRUtils::is_arg_dummy(v.m_intent)) {
+                return false;
+            }
+            return ASR::is_a<ASR::Integer_t>(*v.m_type) ||
+                   ASR::is_a<ASR::UnsignedInteger_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Real_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Logical_t>(*v.m_type);
+        }
+
         // Returns the terminator of `bb`, or nullptr when `bb` is not
         // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
         // block without a terminator from LLVM 23 on, so inspect the last
@@ -1028,8 +1044,21 @@ class ASRToLLVMVisitor;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
         std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
         std::unordered_map<std::string, llvm::Function*>            type_finalizer_cache_;
+        /**
+         * Whether the code being generated calls final subroutines. It does
+         * not when the program terminates: the entities that exist then are
+         * not finalized (F2018 7.5.6.4), only their memory is freed.
+         */
+        bool                                                        call_final_subroutines_ = true;
 
     public:
+        /// The vtable slot of the function that finalizes an object of the
+        /// dynamic type of a polymorphic entity, relative to the vtable pointer.
+        static constexpr int vtable_finalize_slot = 2;
+        /// The vtable slot of the function that frees the memory of the object
+        /// without calling final subroutines.
+        static constexpr int vtable_free_slot = 3;
+
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
             std::map<uint64_t, llvm::Function*> &llvm_symtab_fn)  
@@ -1109,7 +1138,7 @@ class ASRToLLVMVisitor;
                 llvm::Value* const llvm_var, ASR::Struct_t* const struct_sym){
             // `llvm_var` is the loaded pointer to the allocated struct, or
             // the descriptor of the array.
-            if (struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
+            if (!call_final_subroutines_ || struct_sym == nullptr || !chain_has_final_procedure(struct_sym)) { return; }
             if (v->m_intent != ASR::Local || !ASRUtils::is_allocatable(v->m_type)) { return; }
             ASR::ttype_t* const t_past = ASRUtils::type_get_past_allocatable(v->m_type);
             if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(t_past))
@@ -1117,7 +1146,7 @@ class ASRToLLVMVisitor;
             ASR::symbol_t* const owner = ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner);
             if (!ASR::is_a<ASR::Function_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) { return; }
             if (ASRUtils::is_array(t_past)) {
-                check_if_allocated_then_finalize(llvm_var, v->m_type, struct_sym, [&]() {
+                check_if_array_allocated_then_finalize(llvm_var, t_past, struct_sym, [&]() {
                     call_array_final_procedures(llvm_var, t_past, struct_sym,
                         ASRUtils::extract_n_dims_from_ttype(t_past));
                 });
@@ -1146,7 +1175,7 @@ class ASRToLLVMVisitor;
             // Allocatable types are handled by the deallocate path, except
             // for an allocatable array component, which is deallocated (and
             // so finalized) with the structure that it is a component of.
-            if (struct_sym != nullptr && !ASRUtils::is_pointer(type)
+            if (call_final_subroutines_ && struct_sym != nullptr && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
                 ASR::ttype_t* v_type_past =
                     ASRUtils::type_get_past_allocatable_pointer(type);
@@ -1165,7 +1194,7 @@ class ASRToLLVMVisitor;
                         elements_are_entities ? 0 : rank);
                 } else if (in_struct
                         && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
-                    check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                    check_if_array_allocated_then_finalize(ptr, v_type_past, struct_sym, [&]() {
                         call_array_final_procedures(ptr, v_type_past, struct_sym, rank);
                     });
                 }
@@ -1188,7 +1217,7 @@ class ASRToLLVMVisitor;
         void call_final_procedure(ASR::Function_t* const final_proc, llvm::Value* const ptr,
                 ASR::ttype_t* const type, ASR::Struct_t* const struct_sym,
                 ASR::Struct_t* const final_struct = nullptr) {
-            if (final_proc == nullptr) return;
+            if (final_proc == nullptr || !call_final_subroutines_) return;
             uint32_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) == llvm_symtab_fn_.end()) return;
             llvm::Function* final_fn = llvm_symtab_fn_[fh];
@@ -1282,8 +1311,7 @@ class ASRToLLVMVisitor;
             };
             auto body_fn = [&]() {
                 auto* idx = builder_->CreateLoad(iter_type, iter);
-                auto* elem = llvm_utils_->create_ptr_gep2(
-                    elem_llvm_type, data_ptr, idx);
+                auto* elem = get_array_element(ptr, arr_type, struct_sym, data_ptr, idx);
                 // The parent component is at the start of the element, so
                 // a final subroutine of a parent type gets the element.
                 builder_->CreateCall(final_fn, {builder_->CreateBitCast(elem,
@@ -1306,6 +1334,14 @@ class ASRToLLVMVisitor;
         void call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
                 llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
                 ASR::Struct_t* const final_struct);
+
+        /**
+         * The element `idx`, in array element order, of the array `ptr` of
+         * type `arr_type` whose data is `data`. The elements of an array with
+         * a descriptor, such as a section, need not be adjacent.
+         */
+        llvm::Value* get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+                ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx);
 
         void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
@@ -1620,7 +1656,7 @@ class ASRToLLVMVisitor;
                     llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
                                                         llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
                                                         llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table, 
-                                                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                                                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), vtable_finalizer_slot(), false)}));
                     llvm::Value* const finalizer_fn = builder_->CreateBitCast(finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
 
                     llvm::Value* const data = llvm_utils_->CreateLoad2(llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
@@ -1654,7 +1690,7 @@ class ASRToLLVMVisitor;
                     llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
                         llvm::Type::getInt8Ty(builder_->getContext())->getPointerTo(),
                         llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), dispatch_table,
-                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), vtable_finalizer_slot(), false)}));
                     llvm::Value* const finalizer_fn = builder_->CreateBitCast(
                         finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
                     check_if_allocated_then_finalize(data, llvm_utils_->i8_ptr, [&]() {
@@ -2048,7 +2084,7 @@ class ASRToLLVMVisitor;
                 llvm::Value* const finalizer_fn_i8ptr = llvm_utils_->CreateLoad2(
                     llvm_utils_->i8_ptr,
                     llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), vptr,
-                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), 2, false)}));
+                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), vtable_finalizer_slot(), false)}));
                 llvm::Value* const finalizer_fn = builder_->CreateBitCast(
                     finalizer_fn_i8ptr, finalizer_fn_type->getPointerTo());
 
@@ -2253,10 +2289,29 @@ class ASRToLLVMVisitor;
                     key += "_of_";
                     key += module->m_name;
                 }
+                // Only a derived type can have final subroutines, so only
+                // its finalizer depends on `call_final_subroutines_`.
+                if (!call_final_subroutines_) {
+                    key += "_no_final";
+                }
             } else {
                 key += ASRUtils::get_type_code(t_past, false, false, false);
             }
             return key; 
+        }
+
+        /// Generates code with `fin` that calls final subroutines or not.
+        template <typename Fn>
+        void with_final_subroutines(const bool call_final_subroutines, Fn fin) {
+            const bool saved = call_final_subroutines_;
+            call_final_subroutines_ = call_final_subroutines;
+            fin();
+            call_final_subroutines_ = saved;
+        }
+
+        /// The vtable slot of the finalizer function of the current mode.
+        int vtable_finalizer_slot() const {
+            return call_final_subroutines_ ? vtable_finalize_slot : vtable_free_slot;
         }
 
         bool is_cached(const std::string& cache_key) {
@@ -2366,6 +2421,27 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(t->isPointerTy(), "Expected a pointer type")
             auto const null_ptr_const = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(t));
             llvm_utils_->create_if_else(builder_->CreateICmpNE(ptr, null_ptr_const), fin, [](){}, "is_allocated");
+        }
+
+        /**
+         * Calls `fin` if the allocatable array with the descriptor `ptr` is
+         * allocated. The descriptor of an allocatable array exists whether it
+         * is allocated or not, so its data pointer is checked as well.
+         * @param arr_type ASR array type of `ptr` (past allocatable).
+         */
+        template <typename finProcess>
+        void check_if_array_allocated_then_finalize(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
+                ASR::Struct_t* const struct_sym, finProcess fin){
+            LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_type)
+                == ASR::array_physical_typeType::DescriptorArray)
+            check_if_allocated_then_finalize(ptr, arr_type, struct_sym, [&]() {
+                llvm::Type* const arr_llvm_type = get_llvm_type(arr_type, struct_sym);
+                llvm::Type* const data_type = get_llvm_type(
+                    ASRUtils::type_get_past_array(arr_type), struct_sym)->getPointerTo();
+                llvm::Value* const data = llvm_utils_->CreateLoad2(data_type,
+                    llvm_utils_->create_gep2(arr_llvm_type, ptr, 0));
+                check_if_allocated_then_finalize(data, data_type, fin);
+            });
         }
 
         /// Gets Struct (if any) from Variable
@@ -2762,7 +2838,7 @@ class ASRToLLVMVisitor;
          */
         void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
             ASR::Function_t* const final_proc = select_final_procedure(struct_sym, 0);
-            if (final_proc == nullptr) return;
+            if (final_proc == nullptr || !call_final_subroutines_) return;
             uint32_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                 llvm::Function* const fn = llvm_symtab_fn_[fh];
@@ -2798,6 +2874,19 @@ class ASRToLLVMVisitor;
          * see call_array_final_procedures().
          */
         void call_array_final_before_deallocate(llvm::Value* const ptr,
+                ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
+            call_array_final_procedures(ptr, arr_type, struct_sym,
+                ASRUtils::extract_n_dims_from_ttype(arr_type));
+        }
+
+        /**
+         * F2018 7.5.6.3 p7: a nonpointer, nonallocatable INTENT(OUT) array
+         * dummy argument `ptr` is finalized when the procedure is invoked.
+         * Steps 1 and 3 of 7.5.6.2, see call_array_final_procedures(). The
+         * intent_out_deallocate pass finalizes the components of the
+         * elements (step 2).
+         */
+        void call_array_final_of_intent_out(llvm::Value* const ptr,
                 ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym) {
             call_array_final_procedures(ptr, arr_type, struct_sym,
                 ASRUtils::extract_n_dims_from_ttype(arr_type));
@@ -2868,7 +2957,12 @@ class ASRToLLVMVisitor;
         }
 
 
-        void finalize_symtab(SymbolTable* symtab){
+        /**
+         * @param call_final_subroutines False when the program terminates:
+         *        the variables are then not finalized (F2018 7.5.6.4), only
+         *        their memory is freed.
+         */
+        void finalize_symtab(SymbolTable* symtab, const bool call_final_subroutines = true){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
             auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
@@ -2876,12 +2970,14 @@ class ASRToLLVMVisitor;
 
 
             auto MAP = symtab->get_scope();
-            for(auto &str_sym_pair : MAP){
-                ASR::symbol_t* const sym = str_sym_pair.second;
-                if (is_variable(sym)){
-                    finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
+            with_final_subroutines(call_final_subroutines, [&]() {
+                for(auto &str_sym_pair : MAP){
+                    ASR::symbol_t* const sym = str_sym_pair.second;
+                    if (is_variable(sym)){
+                        finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
+                    }
                 }
-            }
+            });
             LCOMPILERS_ASSERT([&]() { check_all_caches_done_properly(); return true;}());
         }
 
@@ -2902,15 +2998,19 @@ class ASRToLLVMVisitor;
             ASR::Struct_t* const struct_sym = get_struct_sym(v);
             if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
             insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
-            check_userDefinedFinalizer_then_finalize(ptr, v->m_type, struct_sym, false);
+            // The program is terminating, so the variable is not finalized
+            // (F2018 7.5.6.4): only its memory is freed.
+            with_final_subroutines(false, [&]() {
+                check_userDefinedFinalizer_then_finalize(ptr, v->m_type, struct_sym, false);
+            });
         }
 
-        // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*)` below 
-        llvm::Function* get_UPoly_finalize_fn(ASR::Struct_t* const struct_sym){
+        // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*, bool)` below
+        llvm::Function* get_UPoly_finalize_fn(ASR::Struct_t* const struct_sym, const bool call_final_subroutines){
             ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);
-            return get_UPoly_finalize_fn(&struct_t->base, struct_sym);
+            return get_UPoly_finalize_fn(&struct_t->base, struct_sym, call_final_subroutines);
         }
-        
+
         /**
          * @brief Get a finalizer function for a type that's gonna be used with unlimited polymorphic type.
          *
@@ -2918,8 +3018,22 @@ class ASRToLLVMVisitor;
          * We need to return a function that should be able to finalize an integer type that is gonna be wrapped in an unlimited polymorphic wrapper. 
          * @param type The type we're allocating the Upoly against. 
          * @param struct_sym StructSymbol bounded to type type .
+         * @param call_final_subroutines Whether the function calls the final
+         *        subroutines (for `vtable_finalize_slot`) or only frees the
+         *        memory (for `vtable_free_slot`).
          */
-        llvm::Function* get_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym = nullptr){
+        llvm::Function* get_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym,
+                const bool call_final_subroutines){
+            llvm::Function* fn = nullptr;
+            with_final_subroutines(call_final_subroutines, [&]() {
+                fn = create_UPoly_finalize_fn(type, struct_sym);
+            });
+            return fn;
+        }
+
+    private:
+        /// get_UPoly_finalize_fn() in the current mode.
+        llvm::Function* create_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym){
             LCOMPILERS_ASSERT(type)
             const std::string cache_key = get_type_key(type, struct_sym)+"_for_UPoly";
             if(is_cached(cache_key)){
