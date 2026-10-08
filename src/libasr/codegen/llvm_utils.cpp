@@ -1232,7 +1232,7 @@ namespace LCompilers {
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
-                    // For bind(c) array dummies (including implicit interfaces), handle
+                    // For bind(c) array dummies, handle
                     // based on the physical type specified in the ASR.
                     ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
                     if (phys_type == ASR::array_physical_typeType::DescriptorArray ||

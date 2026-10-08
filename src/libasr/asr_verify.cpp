@@ -938,10 +938,11 @@ public:
                 "asr.verify.function.implicit_interface_has_no_body",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
                 "so it must have no body");
-            require_id(function_type->m_abi == ASR::abiType::BindC,
-                "asr.verify.function.implicit_interface_is_bindc",
+            require_id(function_type->m_abi == ASR::abiType::Source
+                    || function_type->m_abi == ASR::abiType::ExternalUndefined,
+                "asr.verify.function.implicit_interface_is_source",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
-                "so its abi must be BindC");
+                "so its abi must be Source or ExternalUndefined");
         }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
