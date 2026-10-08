@@ -171,9 +171,11 @@ only once, redirect to a log file and then examine the log file.
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
 - The status-only aggregate may be disabled only after all Quick jobs are
-  required directly in branch protection. Follow the documented
-  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout; do not weaken protection to
-  remove a queue.
+  required directly in branch protection: retain all four platform contexts
+  and add the seven compatibility/backend contexts. Follow the documented
+  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout and rollback; a conditionally
+  skipped aggregate does not block merging and no longer protects its
+  dependencies. Do not weaken protection to remove a queue.
 
 See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
 and the distinction between capability tests and application validation.

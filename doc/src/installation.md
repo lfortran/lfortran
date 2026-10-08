@@ -486,10 +486,16 @@ limits.
 To eliminate that final runner job, first deploy this workflow version with
 the legacy gate still enabled. A repository administrator can then migrate
 to direct required checks. **Do not enable the variable before updating
-protection.** Keep all existing required checks, keep their expected GitHub
-Actions app binding, and add these seven Quick check contexts:
+protection.** Keep the four existing platform requirements and add the seven
+compatibility/backend requirements below, retaining the expected GitHub Actions
+app binding (currently app ID `15368`). All eleven real-work contexts must
+remain required, in addition to the legacy aggregate during the transition:
 
 ```text
+LFortran CI (OS=macos-latest, LLVM=11)
+LFortran CI (OS=ubuntu-latest, LLVM=11)
+LFortran CI (OS=ubuntu-latest, LLVM=21)
+LFortran CI (OS=windows-2025, LLVM=11)
 Build LFortran to WASM
 Compiler compatibility / Test LLVM 7 (ubuntu-latest)
 Compiler compatibility / Test LLVM 11 (ubuntu-latest)
@@ -499,24 +505,38 @@ Compiler compatibility / Test without LLVM Backend
 Compiler compatibility / Test MLIR backend
 ```
 
-Then set the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
-to `true`. Job names stay stable: the real WASM build and every compatibility
-job are required directly, and the legacy summary is skipped without a runner.
-The old summary requirement may remain, but it is no longer what enforces
-the underlying results. Exhaustive uses the
+Verify those requirements and their app binding on a fresh PR run **before**
+setting the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
+to `true`. Then verify another fresh PR run with all eleven contexts still
+required. Job names stay stable; the legacy summary is skipped without a runner.
+Only after verifying direct protection may an administrator remove the old
+`Build LFortran to WASM and Upload` requirement. Do not remove any of the four
+platform requirements: they own backend, GPU, reference and full descriptor-mode
+coverage that the compatibility jobs do not replace. Exhaustive uses the
 distinct `Extended compiler checks` prefix, so an optional Exhaustive result
-cannot substitute for a required Quick result. Verify all required contexts
-on a fresh PR run before considering migration complete. Existing PRs may
-need their checks refreshed after a protection change.
+cannot substitute for a required Quick result. Existing PRs may need their
+checks refreshed after a protection change; a manual-dispatch run alone is
+not evidence that a PR's required checks are satisfied.
+
+A [conditionally skipped job reports success and does not block merging even
+when required](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
+Thus the old aggregate requirement may remain while its job is skipped, but
+then it provides **no protection** for failed dependencies. This differs from a
+missing check or a [whole workflow skipped by branch/path/commit filtering,
+whose required checks remain pending](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+Do not rely on a skipped summary to validate the migration.
 
 For rollback, clear the variable **but keep all direct requirements in place**.
+Restore the legacy aggregate requirement, with its GitHub Actions app binding,
+if it was removed.
 Changing a variable does not replace completed checks: an old direct-mode
 summary is still skipped, even if a compatibility job failed.
 Drain outstanding direct-mode runs, then rerun Quick for every active PR's
 current revision. Verify that the protected status comes from an executed,
 successful `quick_status` aggregate, not an old skipped result, before
-optionally removing any direct requirements. Leaving the direct requirements
-in place is safe and adds no runner work.
+optionally removing the seven newly added direct requirements. Keep the four
+platform requirements throughout rollback as well. Leaving all eleven direct
+requirements in place is safe and adds no runner work.
 
 Without this explicit migration, the workflow retains its safe aggregate
 default; code alone cannot remove its queue while preserving the old settings.

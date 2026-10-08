@@ -324,9 +324,18 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("name: Build LFortran to WASM and Upload\n", gate)
         self.assertNotIn("vars.", wasm)
         self.assertIn("!cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true'", gate)
+        platform = source.split("\n  Build:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
+        self.assertIn("name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})", platform)
+        platforms = re.findall(r'- os: ([\w-]+)\n\s+llvm-version: "(\d+)"', platform)
+        self.assertEqual(platforms, [
+            ("macos-latest", "11"), ("ubuntu-latest", "11"),
+            ("ubuntu-latest", "21"), ("windows-2025", "11"),
+        ])
         documentation = (ROOT / "doc/src/installation.md").read_text()
         required = documentation.split("```text\n", 1)[1].split("```", 1)[0].splitlines()
         self.assertEqual(required, [
+            f"LFortran CI (OS={platform}, LLVM={llvm})" for platform, llvm in platforms
+        ] + [
             "Build LFortran to WASM",
             "Compiler compatibility / Test LLVM 7 (ubuntu-latest)",
             "Compiler compatibility / Test LLVM 11 (ubuntu-latest)",
