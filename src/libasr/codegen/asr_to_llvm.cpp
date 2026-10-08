@@ -14256,6 +14256,16 @@ public:
                         value = wrap_array_data_for_polymorphic_move(x.m_value,
                             source_array_type, value, target_array_type, target_el_type);
                         source_array_type = target_array_type;
+                    } else if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                            source_array_type != target_array_type) {
+                        // Both are polymorphic: the descriptors differ only in
+                        // the declared type of the class wrapper {vptr, data*},
+                        // whose vptr keeps the dynamic type. Move the wrapper
+                        // through the source descriptor viewed with the
+                        // destination's descriptor type.
+                        value = builder->CreateBitCast(value,
+                            target_array_type->getPointerTo());
+                        source_array_type = target_array_type;
                     }
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
                 } else if (ASRUtils::is_pointer(target_type)) {
