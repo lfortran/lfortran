@@ -244,8 +244,15 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
+            micromamba create --yes --file ci/environment_gfortran.yml
+            micromamba run -n lf-gfortran bash -e -c '
+                command -v gfortran
+                gfortran --version
+                test "$(command -v gfortran)" = "$CONDA_PREFIX/bin/gfortran"
+                test "$(gfortran -dumpfullversion)" = "13.4.0"
+                cd integration_tests
+                ./run_tests.py -b gfortran
+            '
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
         shell: bash -e -l {0}
