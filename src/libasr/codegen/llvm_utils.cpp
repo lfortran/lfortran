@@ -1212,8 +1212,10 @@ namespace LCompilers {
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
-                // We pass all arguments as pointers for now,
-                // except bind(C) value arguments that are passed by value
+                // We pass all arguments as pointers for now, except
+                // bind(C) value arguments and the VALUE dummies selected
+                // by LLVM::is_value_dummy_passed_by_value(), which are
+                // passed by value
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
@@ -1247,6 +1249,8 @@ namespace LCompilers {
                     is_array_type = false;
                 } else if (is_array_type) {
                     type = type_original->getPointerTo();
+                } else if (LLVM::is_value_dummy_passed_by_value(*arg)) {
+                    type = get_type_from_ttype_t_util(x.m_args[i], arg->m_type, module);
                 } else {
                     type = type_original;
                 }
@@ -9956,13 +9960,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Constant*> slots;
         llvm::Function* copy_function = define_intrinsic_type_copy_function(ttype, module);
         llvm::Function* allocate_function = define_intrinsic_type_allocate_function(ttype, module);
-        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr);
+        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, true);
+        llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, false);
         slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
         slots.push_back(llvm::ConstantExpr::getBitCast(intrinsic_type_info.at(
             ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)), llvm_utils->i8_ptr));  // Type Info
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_finalize_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -10012,12 +10020,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
-        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t);
+        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
+        llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, false);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(allocate_array_members_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_finalize_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
