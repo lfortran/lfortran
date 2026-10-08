@@ -25455,7 +25455,9 @@ public:
                                     && ASRUtils::is_allocatable(arg_type)
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
                                     && (orig_arg->m_intent == ASR::intentType::Out
-                                        || orig_arg->m_intent == ASR::intentType::InOut)))
+                                        || orig_arg->m_intent == ASR::intentType::InOut
+                                        || ASR::is_a<ASR::StructType_t>(
+                                            *ASRUtils::extract_type(arg_type)))))
                             && value->getType()->isPointerTy()
                             && !ASRUtils::is_character(*arg_type)) {
                                 if (ASRUtils::is_class_type(

@@ -1974,10 +1974,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       // A component is passed as it is to a procedure,
+                       // which may define the dummy, e.g. `h%item` with an
+                       // allocatable `item` bound to a dummy without intent.
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
+                         (is_call ||
+                          (!ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                           !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))))) &&
                        !ASR::is_a<ASR::PointerNullConstant_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);

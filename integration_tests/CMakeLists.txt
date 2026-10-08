@@ -5051,6 +5051,7 @@ RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_
 RUN(NAME allocatable_component_struct_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)
 RUN(NAME allocatable_component_scalar_use_01 LABELS gfortran llvm)
+RUN(NAME allocatable_component_arg_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
