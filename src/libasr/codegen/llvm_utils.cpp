@@ -1259,10 +1259,7 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
-                if( (arg->m_intent == ASRUtils::intent_out ||
-                     arg->m_intent == ASRUtils::intent_inout ||
-                     (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
-                    ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
+                if( LLVM::is_cptr_dummy_passed_by_reference(*arg) ) {
                     type = type->getPointerTo();
                 }
                 std::uint32_t m_h;
