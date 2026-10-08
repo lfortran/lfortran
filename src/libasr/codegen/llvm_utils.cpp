@@ -10551,6 +10551,26 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(struct_sym);
 
+            // F2018 7.5.6.3 p1: the old value of `dest` is finalized as an
+            // array, with the final subroutine matching its rank or an
+            // elemental one, before it is freed or overwritten. Its elements
+            // are therefore not finalized one by one in the copy loop below.
+            if (finalize_dest && !ASRUtils::is_pointer(dest_ty) && !is_upoly
+                    && !(is_src_class || is_dest_class)) {
+                ASR::ttype_t* dest_arr_type = ASRUtils::type_get_past_allocatable_pointer(dest_ty);
+                if (is_descriptor_array) {
+                    llvm::Value* dest_data_not_null = builder->CreateICmpNE(
+                        dest_data, llvm::Constant::getNullValue(dest_data->getType()));
+                    llvm_utils->create_if_else(dest_data_not_null, [&]() {
+                        finalizer_instnace.call_array_final_before_deallocate(
+                            dest, dest_arr_type, struct_sym);
+                    }, [](){});
+                } else {
+                    finalizer_instnace.call_array_final_before_deallocate(
+                        dest, dest_arr_type, struct_sym);
+                }
+            }
+
             if (ASRUtils::is_allocatable(src_expr) && !is_upoly
                     && !(is_src_class || is_dest_class)) {
                 // Check if src_data is not null before realloc operations
@@ -10751,7 +10771,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
                         elem_type, ASRUtils::extract_type(dest_ty), module,
-                        false, finalize_dest);
+                        false, false);
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
@@ -11073,7 +11093,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
-                            module);
+                            module, false, finalize_dest);
                         }, [&]() {
                             if (is_alloc_scalar_intrinsic) {
                                 // The source component is unallocated, so the
@@ -11139,6 +11159,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                         llvm::Value* data_not_null = builder->CreateICmpNE(
                                             dest_data, llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()));
                                         llvm_utils->create_if_else(data_not_null, [&]() {
+                                            if (finalize_dest && ASR::is_a<ASR::StructType_t>(*mem_elem_type)
+                                                    && !ASRUtils::is_class_type(mem_elem_type)) {
+                                                finalizer_instnace.call_array_final_before_deallocate(dest_descr,
+                                                    ASRUtils::type_get_past_allocatable(member_type),
+                                                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                                                        ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration)));
+                                            }
                                             llvm_utils->lfortran_free(dest_data);
                                         }, [](){});
                                         llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest_descr, llvm_data_type);
