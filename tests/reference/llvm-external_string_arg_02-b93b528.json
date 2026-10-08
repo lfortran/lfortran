@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-external_string_arg_02-b93b528",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/external_string_arg_02.f90",
+    "infile_hash": "63f24521d5bd3aa8c33d830801d0ba4165c5731f1f7a322787c6df37",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-external_string_arg_02-b93b528.stdout",
+    "stdout_hash": "29ee29b2d3ad058e239559b5d22d397a31013d9fd8af585f305096b8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
