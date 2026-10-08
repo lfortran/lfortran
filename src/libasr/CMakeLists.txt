@@ -198,6 +198,24 @@ if (WITH_LLVM)
         target_link_libraries(asr lldWasm lldCommon)
     endif()
 endif()
+if (WITH_LIRIC)
+    # Compile the existing LLVM codegen against liric compatibility headers.
+    add_library(asr_liric STATIC
+        codegen/evaluator.cpp
+        codegen/asr_to_llvm.cpp
+        codegen/llvm_array_utils.cpp
+        codegen/llvm_utils.cpp
+        codegen/liric_bridge.cpp
+    )
+    target_include_directories(asr_liric BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
+    target_include_directories(asr_liric BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+    target_link_libraries(asr_liric lfortran_utils p::liric)
+    # Keep compatibility codegen symbols hidden; the bridge exports entry points.
+    target_compile_options(asr_liric PRIVATE -fvisibility=hidden)
+    if (NOT MSVC)
+        target_compile_options(asr_liric PRIVATE -Wno-deprecated-declarations)
+    endif()
+endif()
 
 # Install the dwarf_convert.py and dat_convert.py
 install(

@@ -34,6 +34,10 @@ if (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM)
 add_executable(lfortran ${LFORTRAN_SRC})
 target_include_directories(lfortran PRIVATE "tpl")
 target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
+if (WITH_LIRIC)
+    # Link asr_liric after runtime to resolve _lfortran_stan
+    target_link_libraries(lfortran asr_liric lfortran_runtime_static)
+endif()
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
