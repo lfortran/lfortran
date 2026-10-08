@@ -7297,7 +7297,8 @@ public:
                 throw SemanticAbort();
             }
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(y)),
+                real_type, diag);
         };
         if (ASR::is_a<ASR::Cast_t>(*target)) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
