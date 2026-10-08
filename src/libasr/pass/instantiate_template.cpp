@@ -2479,7 +2479,7 @@ public:
         auto *type = ASRUtils::import_trait_type(al, x->m_type, new_scope);
         auto selected = symbol_subs.find(ASRUtils::trait_deferred_pack_key(*x));
         LCOMPILERS_ASSERT(selected != symbol_subs.end());
-        auto *evidence = ASRUtils::symbol_get_past_external(selected->second);
+        [[maybe_unused]] auto *evidence = ASRUtils::symbol_get_past_external(selected->second);
         auto *actual_type = ASRUtils::expr_type(payload);
         if (ASR::is_a<ASR::TypeParameter_t>(*actual_type)) {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::TraitConstraint_t>(*evidence));
@@ -2489,7 +2489,7 @@ public:
         if (ASR::is_a<ASR::TraitObjectType_t>(*actual_type)) {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::TraitRuntimeContract_t>(*evidence));
             std::vector<int64_t> mapping;
-            bool implied = ASRUtils::trait_projection_slots(
+            [[maybe_unused]] bool implied = ASRUtils::trait_projection_slots(
                 *ASRUtils::trait_runtime_contract(actual_type),
                 *ASRUtils::trait_runtime_contract(type), mapping);
             LCOMPILERS_ASSERT(implied);
