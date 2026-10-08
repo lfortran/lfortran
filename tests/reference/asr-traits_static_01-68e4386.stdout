@@ -877,6 +877,7 @@
                                     Source
                                     (2 largebox)
                                     []
+                                    []
                                 ),
                             __implements_smallbox_ivalue:
                                 (TraitImplementation
@@ -1016,6 +1017,7 @@
                                     Source
                                     (2 smallbox)
                                     []
+                                    []
                                 ),
                             __trait_contract_ivalue:
                                 (TraitRuntimeContract
@@ -1120,6 +1122,7 @@
                                     2 ivalue
                                     [([5 __trait_member_ivalue_get_value]
                                     5 __trait_ivalue_get_value)]
+                                    .false.
                                 ),
                             __trait_member_ivalue_get_value:
                                 (ExternalSymbol

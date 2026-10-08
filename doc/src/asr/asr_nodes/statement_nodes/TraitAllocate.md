@@ -23,7 +23,8 @@ for SOURCE; MOLD and typed allocation default-initialize rather than copying
 source values.
 
 The operation requires an unallocated target and establishes a fully initialized
-three-word owning header with independent payload storage. Failed allocation,
+contract-sized owning header, including its selected inline method slots, with
+independent payload storage. Failed allocation,
 including component allocation, terminates; STAT/ERRMSG are not represented or
 silently ignored. No ordinary two-word CLASS wrapper is used as the trait header.
 Verification checks owner state category, canonical contract, nominal type and

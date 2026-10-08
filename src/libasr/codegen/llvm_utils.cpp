@@ -959,7 +959,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
                 if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
-                    type = getTraitType()->getPointerTo();
+                    type = getTraitType(t2)->getPointerTo();
                 } else if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType (fntype*)
                     // The extra indirection for by-reference passing is handled in convert_args
@@ -1048,7 +1048,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::TraitObjectType):
-                type = getTraitType()->getPointerTo();
+                type = getTraitType(asr_type)->getPointerTo();
                 break;
             case (ASR::ttypeType::TraitOwnerList):
                 type = getTraitOwnerListType()->getPointerTo();
@@ -1663,7 +1663,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::TraitObjectType):
-                llvm_type = getTraitType();
+                llvm_type = getTraitType(asr_type);
                 break;
             case (ASR::ttypeType::TraitOwnerList):
                 llvm_type = getTraitOwnerListType();
@@ -1723,7 +1723,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
-                    llvm_type = getTraitType();
+                    llvm_type = getTraitType(t2);
                     break;
                 }
                 bool is_pointer_;
@@ -10158,7 +10158,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     llvm::Value* LLVMUtils::trait_field(llvm::Value* view, unsigned field) {
         auto *type = getTraitType();
+        view = builder->CreateBitCast(view, type->getPointerTo());
         return CreateLoad2(type->getElementType(field), create_gep2(type, view, field));
+    }
+
+    llvm::Value* LLVMUtils::trait_method_address(llvm::Value* view, size_t slot) {
+        return create_ptr_gep2(i8_ptr,
+            builder->CreateBitCast(view, i8_ptr->getPointerTo()), slot + 3);
     }
 
     llvm::Value* LLVMUtils::value_lifecycle_function(llvm::Value* vptr,
@@ -10170,11 +10176,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return builder->CreateBitCast(function, type->getPointerTo());
     }
 
-    llvm::Value* LLVMUtils::trait_lifecycle_call(llvm::Value* witness,
+    llvm::Value* LLVMUtils::trait_lifecycle_call(llvm::Value* lifecycle,
             TraitLifecycleEntry entry, llvm::FunctionType* type,
             const std::vector<llvm::Value*>& args) {
-        auto *lifecycle = CreateLoad2(i8_ptr, witness);
-        lifecycle = builder->CreateBitCast(lifecycle, i8_ptr->getPointerTo());
         auto *callback = CreateLoad2(i8_ptr,
             create_ptr_gep2(i8_ptr, lifecycle, static_cast<int>(entry)));
         callback = builder->CreateBitCast(callback, type->getPointerTo());
@@ -10198,16 +10202,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return builder->CreateBitCast(data, type->getPointerTo());
     }
 
-    llvm::Value* LLVMUtils::create_trait_value(llvm::Value* vptr,
-            llvm::Value* witness, llvm::Value* source) {
+    llvm::Value* LLVMUtils::create_trait_value(llvm::StructType* type,
+            llvm::Value* view, llvm::Value* source) {
         auto *initialize = llvm::FunctionType::get(i8_ptr, {i8_ptr}, false);
-        auto *payload = trait_lifecycle_call(witness, TraitLifecycleEntry::Initialize,
+        auto *payload = trait_lifecycle_call(trait_field(view, 2), TraitLifecycleEntry::Initialize,
             initialize, {source});
-        auto *view = trait_malloc(getTraitType());
-        builder->CreateStore(vptr, create_gep2(getTraitType(), view, 0));
-        builder->CreateStore(payload, create_gep2(getTraitType(), view, 1));
-        builder->CreateStore(witness, create_gep2(getTraitType(), view, 2));
-        return view;
+        auto *copy = trait_malloc(type);
+        builder->CreateStore(CreateLoad2(type, view), copy);
+        builder->CreateStore(payload, create_gep2(type, copy, 1));
+        return copy;
     }
 
     void LLVMUtils::destroy_trait_value(llvm::Value* view) {
@@ -10223,6 +10226,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
 
     void LLVMUtils::retain_trait_owner(llvm::Value* storage, llvm::Value* owner) {
+        owner = builder->CreateBitCast(owner, getTraitType()->getPointerTo()->getPointerTo());
         auto *value = CreateLoad2(getTraitType()->getPointerTo(), owner);
         create_if_else(builder->CreateIsNotNull(value), [&]() {
             auto *head = create_gep2(getTraitOwnerListType(), storage, 0);
@@ -10253,21 +10257,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         });
     }
 
-    void LLVMUtils::assign_trait_value(llvm::Value* slot, llvm::Value* snapshot) {
-        auto *type = getTraitType();
+    void LLVMUtils::assign_trait_value(llvm::Value* slot, llvm::Value* snapshot,
+            llvm::StructType* type) {
         auto *old = CreateLoad2(type->getPointerTo(), slot);
         auto *witness = trait_field(snapshot, 2);
         auto *source = trait_field(snapshot, 1);
         auto *assign = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
             {i8_ptr, i8_ptr, llvm::Type::getInt1Ty(context)}, false);
         auto apply = [&](llvm::Value *destination, bool live) {
+            auto *payload = trait_field(destination, 1);
             trait_lifecycle_call(witness, TraitLifecycleEntry::Assign, assign,
-                {trait_field(destination, 1), source,
+                {payload, source,
                     llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), live)});
-            builder->CreateStore(witness, create_gep2(type, destination, 2));
+            builder->CreateStore(CreateLoad2(type, snapshot), destination);
+            builder->CreateStore(payload, create_gep2(type, destination, 1));
         };
         auto initialize = [&]() {
-            auto *value = create_trait_value(trait_field(snapshot, 0), witness,
+            auto *value = create_trait_value(type, snapshot,
                 llvm::Constant::getNullValue(i8_ptr));
             apply(value, false);
             builder->CreateStore(value, slot);

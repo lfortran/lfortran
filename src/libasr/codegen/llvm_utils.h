@@ -808,9 +808,13 @@ class ASRToLLVMVisitor;
                 llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
-            llvm::StructType* getTraitType() {
-                return llvm::StructType::get(context,
-                    {i8_ptr, i8_ptr, i8_ptr->getPointerTo()}, false);
+            llvm::StructType* getTraitType(size_t slots = 0) {
+                std::vector<llvm::Type*> fields = {i8_ptr, i8_ptr, i8_ptr->getPointerTo()};
+                fields.insert(fields.end(), slots, i8_ptr);
+                return llvm::StructType::get(context, fields, false);
+            }
+            llvm::StructType* getTraitType(ASR::ttype_t* type) {
+                return getTraitType(ASRUtils::trait_runtime_contract(type)->n_slots);
             }
             llvm::StructType* getTraitOwnerListType() {
                 return llvm::StructType::get(context, {i8_ptr}, false);
@@ -821,17 +825,19 @@ class ASRToLLVMVisitor;
             }
             enum class TraitLifecycleEntry { Initialize, Destroy, Assign, Discard };
             llvm::Value* trait_field(llvm::Value* view, unsigned field);
-            llvm::Value* trait_lifecycle_call(llvm::Value* witness,
+            llvm::Value* trait_method_address(llvm::Value* view, size_t slot);
+            llvm::Value* trait_lifecycle_call(llvm::Value* lifecycle,
                 TraitLifecycleEntry entry, llvm::FunctionType* type,
                 const std::vector<llvm::Value*>& args);
             void trait_error_if(llvm::Value* condition, const std::string& message);
             llvm::Value* trait_malloc(llvm::Type* type);
-            llvm::Value* create_trait_value(llvm::Value* vptr,
-                llvm::Value* witness, llvm::Value* source);
+            llvm::Value* create_trait_value(llvm::StructType* type,
+                llvm::Value* view, llvm::Value* source);
             void destroy_trait_value(llvm::Value* view);
             void retain_trait_owner(llvm::Value* storage, llvm::Value* owner);
             void release_trait_owners(llvm::Value* storage);
-            void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot);
+            void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot,
+                llvm::StructType* type);
             llvm::Value* value_lifecycle_function(llvm::Value* vptr,
                 unsigned entry, llvm::FunctionType* type);
 

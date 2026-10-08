@@ -3769,6 +3769,15 @@ RUN(NAME traits_runtime_05 LABELS llvm llvm2 NO_STD_F23
         traits_runtime_05_consumer.f90 traits_runtime_05_alternative_impl.f90
         traits_runtime_05_alternative.f90)
 RUN(NAME traits_runtime_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# Inline trait conjunctions are an extension; standard Fortran controls are separate.
+RUN(NAME traits_runtime_08 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_combination_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_combination_01_contracts.f90 traits_runtime_combination_01_provider.f90
+        traits_runtime_combination_01_reordered.f90 traits_runtime_combination_01_consumer.f90
+        traits_runtime_combination_01_alternative_impl.f90 traits_runtime_combination_01_alternative.f90)
+RUN(NAME traits_runtime_combination_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_combination_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_projection_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_projection_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_projection_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

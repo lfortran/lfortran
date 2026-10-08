@@ -949,7 +949,10 @@ public:
         require_id(trait_scope_owner != nullptr &&
                 (ASR::is_a<ASR::Module_t>(*trait_scope_owner) ||
                  ASR::is_a<ASR::Program_t>(*trait_scope_owner) ||
-                 ASR::is_a<ASR::Template_t>(*trait_scope_owner)),
+                 ASR::is_a<ASR::Template_t>(*trait_scope_owner) ||
+                 (ASR::is_a<ASR::Function_t>(*trait_scope_owner) &&
+                  ASRUtils::trait_runtime_contract(const_cast<symbol_t*>(&x.base)) &&
+                  ASRUtils::trait_runtime_contract(const_cast<symbol_t*>(&x.base))->m_anonymous)),
             "asr.verify.trait.scope_is_module",
             "Traits must be declared in a module, program or defining template scope");
         if (ASR::is_a<ASR::Template_t>(*trait_scope_owner)) {
@@ -1570,16 +1573,42 @@ public:
         return procedure;
     }
 
+    void verify_runtime_trait_adapter_receiver(const Function_t &procedure) {
+        class ReceiverUse : public ASR::BaseWalkVisitor<ReceiverUse> {
+        public:
+            symbol_t *receiver;
+            bool escapes = false;
+            explicit ReceiverUse(symbol_t *receiver) : receiver(receiver) {}
+            void visit_Var(const Var_t &x) {
+                escapes |= ASRUtils::symbol_get_past_external(x.m_v) == receiver;
+            }
+            void visit_TraitReceiver(const TraitReceiver_t &x) {
+                if (x.m_view && ASR::is_a<Var_t>(*x.m_view) &&
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<Var_t>(x.m_view)->m_v) == receiver) return;
+                ASR::BaseWalkVisitor<ReceiverUse>::visit_TraitReceiver(x);
+            }
+        } uses(&ASRUtils::EXPR2VAR(procedure.m_args[0])->base);
+        for (const auto &entry : procedure.m_symtab->get_scope()) uses.visit_symbol(*entry.second);
+        for (size_t i = 0; i < procedure.n_body; i++) uses.visit_stmt(*procedure.m_body[i]);
+        require_with_loc_id(!uses.escapes,
+            "asr.verify.trait_witness.receiver_prefix",
+            "A transferable adapter may use only the concrete prefix of its erased receiver",
+            procedure.base.base.loc);
+    }
+
     TraitImplementation_t *verify_runtime_trait_evidence(const TraitWitness_t &witness,
             const Location &loc) {
         auto *contract_symbol = ASRUtils::symbol_get_past_external(witness.m_contract);
         auto *impl_symbol = ASRUtils::symbol_get_past_external(witness.m_implementation);
         require_with_loc_id(contract_symbol && ASR::is_a<TraitRuntimeContract_t>(*contract_symbol) &&
-                impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol),
+                ((impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol) &&
+                  !witness.n_components) || (!impl_symbol && witness.n_components &&
+                  witness.m_components)),
             "asr.verify.trait_witness.evidence",
             "A runtime witness requires a contract and nominal implementation", loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(contract_symbol);
-        auto *implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+        TraitImplementation_t *implementation = nullptr;
         require_with_loc_id(!contract->n_slots || contract->m_slots,
             "asr.verify.trait_contract.complete",
             "A runtime contract must declare its slots", loc);
@@ -1588,16 +1617,49 @@ public:
                 witness.n_dependencies == witness.n_procedures,
             "asr.verify.trait_witness.complete",
             "A runtime witness must implement and retain every slot", loc);
-        require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
-            "asr.verify.trait_witness.evidence",
-            "A runtime implementation must declare its bindings", loc);
         auto *lifecycle = ASRUtils::symbol_get_past_external(
             witness.m_lifecycle.m_type_declaration);
-        require_with_loc_id(lifecycle && ASR::is_a<Struct_t>(*lifecycle) &&
-                lifecycle == ASRUtils::symbol_get_past_external(
-                    implementation->m_type_declaration),
+        require_with_loc_id(lifecycle && ASR::is_a<Struct_t>(*lifecycle),
             "asr.verify.trait_witness.lifecycle",
             "A witness must retain its exact concrete nominal lifecycle", loc);
+        if (impl_symbol) {
+            implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+            require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
+                "asr.verify.trait_witness.evidence",
+                "A runtime implementation must declare its bindings", loc);
+            require_with_loc_id(!contract->m_anonymous &&
+                    lifecycle == ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+                "asr.verify.trait_witness.lifecycle",
+                "A nominal witness must retain its original implementation and lifecycle", loc);
+        } else {
+            require_with_loc_id(contract->m_anonymous && !witness.n_projections,
+                "asr.verify.trait_witness.combination",
+                "Only an anonymous contract composes independently selected witnesses", loc);
+            auto requirements = ASRUtils::trait_contract_requirements(*contract);
+            require_with_loc_id(witness.n_components == requirements.size(),
+                "asr.verify.trait_witness.components",
+                "A combination must retain evidence for every normalized nominal requirement", loc);
+            for (size_t i = 0; i < witness.n_components; i++) {
+                auto *symbol = ASRUtils::symbol_get_past_external(witness.m_components[i]);
+                require_with_loc_id(symbol && ASR::is_a<TraitWitness_t>(*symbol),
+                    "asr.verify.trait_witness.component_kind",
+                    "Combination evidence must reference nominal witnesses", loc);
+                auto *component = ASR::down_cast<TraitWitness_t>(symbol);
+                require_with_loc_id(component->m_symtab && component->m_symtab->parent &&
+                        component->m_implementation && !component->n_components,
+                    "asr.verify.trait_witness.component_kind",
+                    "Combination components must be original nominal evidence, not recursive compositions", loc);
+                auto *original = verify_runtime_trait_evidence(*component, loc);
+                auto *provided = ASR::down_cast<TraitRuntimeContract_t>(
+                    ASRUtils::symbol_get_past_external(component->m_contract));
+                require_with_loc_id(!provided->m_anonymous &&
+                        ASRUtils::symbol_get_past_external(provided->m_trait) == requirements[i] &&
+                        ASRUtils::symbol_get_past_external(component->m_lifecycle.m_type_declaration) == lifecycle,
+                    "asr.verify.trait_witness.component_origin",
+                    "A component must prove its original nominal requirement for the same concrete payload", loc);
+                if (!implementation) implementation = original;
+            }
+        }
         return implementation;
     }
 
@@ -1652,7 +1714,8 @@ public:
         if (check_external) {
             auto *contract = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<TraitOwnerList_t>(storage->m_type)->m_contract);
-            require_id(contract == &ASRUtils::trait_runtime_contract(owner->m_type)->base,
+            require_id(ASRUtils::trait_contracts_equal(
+                    contract, &ASRUtils::trait_runtime_contract(owner->m_type)->base),
                 "asr.verify.trait_results.contract_matches",
                 "Retained owners must have the store's declared contract");
         }
@@ -1689,6 +1752,21 @@ public:
             }
             auto hierarchy = verify_trait_hierarchy(
                 *ASR::down_cast<Trait_t>(trait_symbol), x.base.base.loc);
+            if (x.m_anonymous) {
+                auto *trait = ASR::down_cast<Trait_t>(trait_symbol);
+                auto requirements = ASRUtils::trait_contract_requirements(x);
+                require_id(trait->m_access == accessType::Private &&
+                        trait->m_symtab->get_scope().empty() && requirements.size() >= 2 &&
+                        ASRUtils::normalized_trait_requirements(requirements) == requirements,
+                    "asr.verify.trait_contract.combination",
+                    "An anonymous contract is a canonical antichain of original nominal traits");
+                for (auto *required : requirements) {
+                    auto *contract = ASRUtils::trait_runtime_contract(required);
+                    require_id(contract && !contract->m_anonymous,
+                        "asr.verify.trait_contract.nominal_requirements",
+                        "Anonymous combinations retain original nominal contracts, not synthetic names");
+                }
+            }
             std::map<std::string, size_t> indices;
             std::vector<std::vector<symbol_t*>> expected;
             for (auto *member : hierarchy.members) {
@@ -1733,9 +1811,9 @@ public:
                 !id_symtab_map.count(x.m_symtab->counter),
             "asr.verify.trait_witness.scope",
             "A runtime witness must own a unique scope in its defining conformance module");
-        require_id(x.m_contract && x.m_implementation &&
+        require_id(x.m_contract && (x.m_implementation || x.n_components) &&
                 symtab_in_scope(current_symtab, x.m_contract) &&
-                symtab_in_scope(current_symtab, x.m_implementation) &&
+                (!x.m_implementation || symtab_in_scope(current_symtab, x.m_implementation)) &&
                 x.m_lifecycle.m_type_declaration &&
                 symtab_in_scope(current_symtab, x.m_lifecycle.m_type_declaration),
             "asr.verify.trait_witness.evidence_in_scope",
@@ -1743,6 +1821,9 @@ public:
         require_id(!x.n_projections || x.m_projections,
             "asr.verify.trait_witness.projections",
             "A witness must retain its declared parent projection references");
+        require_id(!x.n_components || x.m_components,
+            "asr.verify.trait_witness.components",
+            "Combination witnesses must retain their original component references");
         for (size_t i = 0; i < x.n_projections; i++) {
             auto *reference = x.m_projections[i];
             require_id(reference && (ASR::is_a<TraitWitness_t>(*reference) ||
@@ -1771,6 +1852,11 @@ public:
         auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
             ASRUtils::symbol_get_past_external(x.m_contract));
+        for (size_t i = 0; i < x.n_components; i++) {
+            require_id(symtab_in_scope(current_symtab, x.m_components[i]),
+                "asr.verify.trait_witness.component_in_scope",
+                "Original combination witnesses must be visible at concrete construction");
+        }
         auto *origin = ASRUtils::symbol_get_past_external(implementation->m_trait);
         auto *target = ASRUtils::symbol_get_past_external(contract->m_trait);
         require_id(origin && target && ASR::is_a<Trait_t>(*origin) &&
@@ -1781,11 +1867,12 @@ public:
             x.base.base.loc);
         bool provided = false;
         for (auto *trait : hierarchy.traits) provided |= &trait->base == target;
-        require_id(implementation->m_parent_symtab == current_symtab && provided,
+        require_id(contract->m_anonymous ||
+                (implementation->m_parent_symtab == current_symtab && provided),
             "asr.verify.trait_witness.conformance_origin",
             "A runtime witness must preserve its original conformance and a guaranteed contract");
         auto *trait = ASR::down_cast<Trait_t>(target);
-        require_id(x.n_projections == trait->n_parents,
+        require_id(x.n_projections == (contract->m_anonymous ? 0 : trait->n_parents),
             "asr.verify.trait_witness.projections",
             "A witness must retain every direct parent view in declaration order");
         for (size_t i = 0; i < x.n_projections; i++) {
@@ -1835,13 +1922,30 @@ public:
             require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                 "asr.verify.trait_witness.signature",
                 "A runtime witness adapter must match its slot: " + mismatch.message);
+            verify_runtime_trait_adapter_receiver(*procedure);
             for (size_t j = 0; j < contract->m_slots[i].n_origins; j++) {
-                auto *binding = ASRUtils::find_trait_binding(
-                    *implementation, contract->m_slots[i].m_origins[j]);
+                TraitImplementation_t *selected = nullptr;
+                auto *binding = ASRUtils::runtime_trait_binding(
+                    x, contract->m_slots[i].m_origins[j], selected);
                 require_id(binding != nullptr,
                     "asr.verify.trait_witness.origin_covered",
                     "A runtime witness must prove every nominal origin of a slot");
-                verify_runtime_binding(*implementation, *binding);
+                verify_runtime_binding(*selected, *binding);
+                TraitImplementation_t *first_implementation = nullptr;
+                auto *first = ASRUtils::runtime_trait_binding(
+                    x, contract->m_slots[i].m_origins[0], first_implementation);
+                require_id(first && ASRUtils::trait_bindings_equal(*first, *binding),
+                    "asr.verify.trait_witness.coalesced_binding",
+                    "All independent origins of a combined callable must agree on procedure and receiver");
+                for (size_t k = 0; k < x.n_components; k++) {
+                    auto *component = ASR::down_cast<TraitWitness_t>(
+                        ASRUtils::symbol_get_past_external(x.m_components[k]));
+                    auto *other = ASRUtils::runtime_trait_binding(
+                        *component, contract->m_slots[i].m_origins[j], selected);
+                    require_id(!other || ASRUtils::trait_bindings_equal(*binding, *other),
+                        "asr.verify.trait_witness.coalesced_binding",
+                        "Overlapping selected combination evidence must agree");
+                }
             }
         }
         visit_adapters();
@@ -1940,8 +2044,8 @@ public:
         auto *type = ASRUtils::expr_type(x.m_payload);
         auto *scalar = ASRUtils::extract_type(type);
         require_id(ASR::is_a<TraitObjectType_t>(*x.m_type) &&
-                &ASRUtils::trait_runtime_contract(x.m_type)->base ==
-                    ASRUtils::symbol_get_past_external(witness->m_contract) &&
+                ASRUtils::trait_contracts_equal(
+                    &ASRUtils::trait_runtime_contract(x.m_type)->base, witness->m_contract) &&
                 ASR::is_a<StructType_t>(*scalar) && !ASRUtils::is_array(type) &&
                 !ASRUtils::is_class_type(scalar),
             "asr.verify.trait_pack.exact_scalar",
@@ -2002,8 +2106,8 @@ public:
             require_with_loc_id(ASRUtils::symbol_get_past_external(
                         ASRUtils::get_struct_sym_from_struct_expr(source)) ==
                     ASRUtils::symbol_get_past_external(implementation->m_type_declaration) &&
-                    ASRUtils::symbol_get_past_external(witness->m_contract) ==
-                        &ASRUtils::trait_runtime_contract(target)->base,
+                    ASRUtils::trait_contracts_equal(witness->m_contract,
+                        &ASRUtils::trait_runtime_contract(target)->base),
                 "asr.verify.trait_owner.nominal_type",
                 "An owning value must match its selected nominal witness and target contract", loc);
             return;
@@ -2014,8 +2118,7 @@ public:
         visit_expr(*source);
         visit_ttype(*type);
         if (!check_external) return;
-        require_with_loc_id(ASRUtils::trait_runtime_contract(type) ==
-                ASRUtils::trait_runtime_contract(target),
+        require_with_loc_id(ASRUtils::trait_contracts_equal(type, target),
             "asr.verify.trait_owner.contract",
             "An owning copy must retain the source's declared contract and selected witness", loc);
     }
@@ -2029,8 +2132,7 @@ public:
             "asr.verify.trait_borrow.type", "Borrowing cannot transfer ownership");
         visit_ttype(*x.m_type);
         if (!check_external) return;
-        require_id(ASRUtils::trait_runtime_contract(owner_type) ==
-                ASRUtils::trait_runtime_contract(x.m_type),
+        require_id(ASRUtils::trait_contracts_equal(owner_type, x.m_type),
             "asr.verify.trait_borrow.contract",
             "Borrowing an owner must preserve its declared contract");
     }
@@ -2056,19 +2158,33 @@ public:
                 ASR::is_a<TraitRuntimeContract_t>(*target_contract),
             "asr.verify.trait_project.contract",
             "A projection requires resolved source and result contracts");
-        auto *source_trait = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<TraitRuntimeContract_t>(source_contract)->m_trait);
-        require_id(source_trait && ASR::is_a<Trait_t>(*source_trait),
-            "asr.verify.trait_project.contract",
-            "A projection requires a nominal source trait");
-        auto *trait = ASR::down_cast<Trait_t>(source_trait);
-        require_id(x.m_parent >= 0 && size_t(x.m_parent) < trait->n_parents &&
-                trait->m_parents &&
-                ASRUtils::symbol_get_past_external(trait->m_parents[x.m_parent]) ==
-                    ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<TraitRuntimeContract_t>(target_contract)->m_trait),
+        auto *from = ASR::down_cast<TraitRuntimeContract_t>(source_contract);
+        auto *to = ASR::down_cast<TraitRuntimeContract_t>(target_contract);
+        auto *source_trait = ASRUtils::symbol_get_past_external(from->m_trait);
+        auto *target_trait = ASRUtils::symbol_get_past_external(to->m_trait);
+        require_id(source_trait && target_trait && ASR::is_a<Trait_t>(*source_trait) &&
+                ASR::is_a<Trait_t>(*target_trait),
+            "asr.verify.trait_project.contract", "Projection contracts require resolved traits");
+        verify_trait_hierarchy(*ASR::down_cast<Trait_t>(source_trait), x.base.base.loc);
+        verify_trait_hierarchy(*ASR::down_cast<Trait_t>(target_trait), x.base.base.loc);
+        require_id(ASRUtils::trait_contract_implies(*from, *to),
             "asr.verify.trait_project.parent",
-            "A projection may select only its declared nominal parent");
+            "A projection may select only guaranteed original nominal requirements");
+        std::vector<int64_t> expected;
+        require_id(ASRUtils::trait_projection_slots(*from, *to, expected) &&
+                x.n_slots == expected.size() && (!x.n_slots || x.m_slots),
+            "asr.verify.trait_project.slots",
+            "A projection must explicitly map every target callable from the source view");
+        for (size_t i = 0; i < x.n_slots; i++) {
+            require_id(x.m_slots[i].m_source == expected[i],
+                "asr.verify.trait_project.slot_origin",
+                "A projection slot must preserve every target origin and its selected implementation");
+            auto *source_procedure = verify_runtime_trait_slot(*from, x.m_slots[i].m_source, x.base.base.loc);
+            auto *target_procedure = verify_runtime_trait_slot(*to, i, x.base.base.loc);
+            auto mismatch = ASRUtils::trait_method_mismatch(*source_procedure, *target_procedure, 1, 1);
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                "asr.verify.trait_project.signature", "Projection must preserve the ordinary callable signature");
+        }
     }
 
     ttype_t *verify_trait_pointer(expr_t *pointer, const Location &loc,
@@ -2099,8 +2215,7 @@ public:
             "A persistent trait view requires an existing target or pointer", loc);
         visit_expr(*value);
         if (!check_external) return;
-        require_with_loc_id(ASRUtils::trait_runtime_contract(type) ==
-                ASRUtils::trait_runtime_contract(target),
+        require_with_loc_id(ASRUtils::trait_contracts_equal(type, target),
             "asr.verify.trait_pointer.contract",
             "Pointer association must preserve the declared trait contract", loc);
     }
@@ -2140,8 +2255,8 @@ public:
                     witness->m_lifecycle.m_type_declaration))->m_is_abstract,
                 "asr.verify.trait_owner.concrete_type",
                 "Typed allocation requires an instantiable concrete type");
-            require_id(ASRUtils::symbol_get_past_external(witness->m_contract) ==
-                    &ASRUtils::trait_runtime_contract(type)->base,
+            require_id(ASRUtils::trait_contracts_equal(witness->m_contract,
+                    &ASRUtils::trait_runtime_contract(type)->base),
                 "asr.verify.trait_allocate.contract",
                 "Typed allocation requires a witness of the owner's exact contract");
         }
@@ -2194,8 +2309,8 @@ public:
             "asr.verify.trait_receiver.nominal_type",
             "Concrete recovery requires a scalar trait view");
         visit_ttype(*view_type);
-        require_id(&ASRUtils::trait_runtime_contract(view_type)->base ==
-                    ASRUtils::symbol_get_past_external(witness->m_contract) &&
+        require_id(ASRUtils::trait_contracts_equal(
+                    &ASRUtils::trait_runtime_contract(view_type)->base, witness->m_contract) &&
                 ASR::is_a<StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) &&
                 x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration) &&
                 ASRUtils::symbol_get_past_external(x.m_type_declaration) ==

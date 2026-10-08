@@ -21,6 +21,7 @@ payload, reselect conformance, allocate an owner, or invoke FINAL. Reassociating
 or nullifying one pointer therefore leaves independently associated aliases
 unchanged. The usual Fortran target-lifetime and PURE restrictions still apply.
 
-The LLVM pointer descriptor is an inline three-word trait header. A null payload
+The LLVM pointer descriptor has a common three-word prefix and inline selected
+method slots sized by its normalized declared contract. A null payload
 denotes disassociation. Pointer dummies receive its address, so OUT/INOUT
 association changes update the caller without exposing a callee-local wrapper.

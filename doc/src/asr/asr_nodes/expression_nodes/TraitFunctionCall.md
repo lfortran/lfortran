@@ -17,5 +17,5 @@ scalar integer result type in the initial runtime subset.
 
 Verification checks the slot against the actual view's canonical contract and
 then applies ordinary call checks. Calls remain dynamic in ASR and serialized
-modules. LLVM loads the known witness slot and uses the ordinary function ABI,
+modules. LLVM loads the known inline selected slot and uses the ordinary function ABI,
 without conformance lookup or receiver-name inference.

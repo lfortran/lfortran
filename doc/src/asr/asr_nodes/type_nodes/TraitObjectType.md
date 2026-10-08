@@ -45,11 +45,13 @@ ordinary deallocation statements release only verified owners. The verifier
 rejects ordinary header assignment and association that would duplicate or
 discard ownership. NULLIFY is allowed only for definable pointer descriptors.
 
-The LLVM representation carries concrete CLASS metadata, a payload address, and
-an independent selected witness. It is compiler-private, not a public ABI.
+The LLVM representation carries a three-word common prefix (concrete CLASS
+metadata, payload address, concrete lifecycle) followed by one inline selected
+method address per declared contract slot. It is compiler-private, not a public ABI.
 Pointer descriptors are inline headers passed by address, whereas owning
 allocation slots hold independently allocated headers. Pointer descriptor
-cleanup never destroys the target or its selected witness.
+cleanup never destroys the target. All method storage belongs to the descriptor;
+association and projection cannot leave pointers into another view's stack frame.
 Type-set traits cannot form views. Generic-method universal traits remain a
 future runtime implementation stage, not a permanently excluded trait category.
 

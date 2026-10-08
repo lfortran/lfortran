@@ -17,6 +17,9 @@ trait_binding
 trait_slot
     = (symbol* origins, symbol procedure)
 
+trait_projection_slot
+    = (int source)
+
 -- Concrete, not conformance, identity of the scalar owned-value protocol.
 -- Its callbacks default-initialize raw storage, initialize-copy without
 -- finalizing the destination, assign to prepared/live storage, destroy a live
@@ -55,8 +58,8 @@ symbol
     | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types)
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
-    | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
-    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle, symbol* projections)
+    | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots, bool anonymous)
+    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol? implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle, symbol* projections, symbol* components)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -264,8 +267,8 @@ expr
     | TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
     -- Borrow an allocated scalar owner without transferring ownership.
     | TraitBorrow(expr owner, ttype type)
-    -- Select an already chosen witness's direct parent view.
-    | TraitProject(expr view, int parent, ttype type)
+    -- Copy selected slots into a view of guaranteed nominal requirements.
+    | TraitProject(expr view, trait_projection_slot* slots, ttype type)
 
 ttype
     = Integer(int kind)

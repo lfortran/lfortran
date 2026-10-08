@@ -20,3 +20,8 @@ The expression is directly addressable. Ordinary argument-temporary passes
 must not replace it with an owning copy. Normal call lowering can wrap it as
 an ordinary concrete CLASS receiver when the implementation requires one.
 This is not a source-level unchecked cast or trait-discovery operation.
+
+An adapter may use its erased argument only through this recovery operation.
+The verifier rejects other uses, including redispatch through the original
+contract's slots. Thus a projected view may carry the exact same method address
+while owning fewer slots: recovery reads only the common concrete-data prefix.

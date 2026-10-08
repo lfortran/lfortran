@@ -314,7 +314,7 @@ public:
                 break;
             } case ASR::ttypeType::TraitObjectType: {
                 auto *contract = ASRUtils::trait_runtime_contract(const_cast<ASR::ttype_t*>(t));
-                r = "class(" + std::string(ASRUtils::symbol_name(contract->m_trait)) + ")";
+                r = "class(" + ASRUtils::trait_contract_name(*contract) + ")";
                 break;
             } case ASR::ttypeType::TraitOwnerList: {
                 r = "type(trait_result_storage)";
@@ -928,6 +928,11 @@ public:
     }
 
     void visit_Trait(const ASR::Trait_t &x) {
+        auto *contract = ASRUtils::trait_runtime_contract(const_cast<ASR::symbol_t*>(&x.base));
+        if (contract && contract->m_anonymous) {
+            src = "";
+            return;
+        }
         if (!for_compilation && x.m_kind == ASR::trait_kindType::UniversalTrait &&
                 ASRUtils::trait_runtime_contract(const_cast<ASR::symbol_t*>(&x.base))) {
             std::string r = indent + "abstract interface";
@@ -1074,7 +1079,7 @@ public:
 
     void visit_TraitRuntimeContract(const ASR::TraitRuntimeContract_t &x) {
         std::string r = indent + "! runtime trait contract " +
-            ASRUtils::symbol_name(x.m_trait) + "\n";
+            ASRUtils::trait_contract_name(x) + "\n";
         for (size_t i = 0; i < x.n_slots; i++) {
             r += indent + "!   slot " + std::to_string(i) + ":";
             for (size_t j = 0; j < x.m_slots[i].n_origins; j++) {
@@ -1089,7 +1094,8 @@ public:
 
     void visit_TraitWitness(const ASR::TraitWitness_t &x) {
         src = indent + "! selected runtime witness " + x.m_name + " for " +
-            ASRUtils::symbol_name(x.m_implementation) + "\n";
+            (x.m_implementation ? ASRUtils::symbol_name(x.m_implementation)
+                : "composed nominal evidence") + "\n";
     }
 
     void visit_TraitPack(const ASR::TraitPack_t &x) {
@@ -1104,7 +1110,7 @@ public:
         visit_expr(*x.m_view);
         auto *contract = ASRUtils::trait_runtime_contract(x.m_type);
         src = "trait_project(" + src + ", " +
-            ASRUtils::symbol_name(contract->m_trait) + ")";
+            ASRUtils::trait_contract_name(*contract) + ")";
     }
 
     void visit_TraitAllocate(const ASR::TraitAllocate_t &x) {

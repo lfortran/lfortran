@@ -12,7 +12,8 @@ trait_lifecycle = (symbol type_declaration)
 
 This record belongs to a `TraitWitness` but references the canonical concrete
 type, not a trait or conformance identity. Verification requires agreement with
-the witness's `TraitImplementation`. Abstract compile-only evidence is allowed;
+the witness's `TraitImplementation`, or with every original component witness
+of an anonymous conjunction. Abstract compile-only evidence is allowed;
 owning construction additionally requires an instantiable type.
 
 Private concrete-owned helpers default-initialize raw storage, initialize-copy

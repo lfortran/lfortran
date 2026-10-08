@@ -901,6 +901,7 @@ static std::string intent_to_str(ASR::intentType intent) {
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 
 static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym, bool show_kind = false);
+std::string trait_contract_name(const ASR::TraitRuntimeContract_t &contract);
 
 static inline char *symbol_name(const ASR::symbol_t *f);
 
@@ -1449,7 +1450,7 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         case ASR::ttypeType::TraitObjectType: {
             auto *contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(
                 symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(t)->m_contract));
-            return "class(" + std::string(symbol_name(contract->m_trait)) + ")";
+            return "class(" + trait_contract_name(*contract) + ")";
         }
         case ASR::ttypeType::TraitOwnerList:
             return "retained trait results";
@@ -5756,6 +5757,9 @@ static inline bool cptr_type_declarations_match(ASR::ttype_t* left_type,
 //   check_for_dimensions: If true, also compare array dimensions.
 //
 // Returns true if the types are structurally equal.
+bool trait_contracts_equal(ASR::symbol_t *left, ASR::symbol_t *right);
+bool trait_contracts_equal(ASR::ttype_t *left, ASR::ttype_t *right);
+
 inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions) {
     // TODO: If anyone of the input or argument is derived type then
@@ -5773,14 +5777,14 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
     if (ASR::is_a<ASR::TraitObjectType_t>(*a) || ASR::is_a<ASR::TraitObjectType_t>(*b)) {
         return ASR::is_a<ASR::TraitObjectType_t>(*a)
             && ASR::is_a<ASR::TraitObjectType_t>(*b)
-            && symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(a)->m_contract)
-                == symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(b)->m_contract);
+            && trait_contracts_equal(ASR::down_cast<ASR::TraitObjectType_t>(a)->m_contract,
+                ASR::down_cast<ASR::TraitObjectType_t>(b)->m_contract);
     }
     if (ASR::is_a<ASR::TraitOwnerList_t>(*a) || ASR::is_a<ASR::TraitOwnerList_t>(*b)) {
         return ASR::is_a<ASR::TraitOwnerList_t>(*a)
             && ASR::is_a<ASR::TraitOwnerList_t>(*b)
-            && symbol_get_past_external(ASR::down_cast<ASR::TraitOwnerList_t>(a)->m_contract)
-                == symbol_get_past_external(ASR::down_cast<ASR::TraitOwnerList_t>(b)->m_contract);
+            && trait_contracts_equal(ASR::down_cast<ASR::TraitOwnerList_t>(a)->m_contract,
+                ASR::down_cast<ASR::TraitOwnerList_t>(b)->m_contract);
     }
     // If either argument is a polymorphic type, return true.
     if (ASRUtils::is_class_type(a)) {
@@ -10649,6 +10653,16 @@ ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,
     ASR::TraitRuntimeContract_t *contract = nullptr);
+std::vector<ASR::symbol_t*> normalized_trait_requirements(
+    const std::vector<ASR::symbol_t*> &traits);
+std::vector<ASR::symbol_t*> trait_contract_requirements(
+    const ASR::TraitRuntimeContract_t &contract);
+bool trait_contract_implies(const ASR::TraitRuntimeContract_t &source,
+    const ASR::TraitRuntimeContract_t &target);
+bool trait_projection_slots(const ASR::TraitRuntimeContract_t &source,
+    const ASR::TraitRuntimeContract_t &target, std::vector<int64_t> &slots);
+const ASR::trait_binding_t *runtime_trait_binding(const ASR::TraitWitness_t &witness,
+    ASR::symbol_t *member, ASR::TraitImplementation_t *&implementation);
 
 inline bool is_trait_owner(const ASR::ttype_t *type) {
     return type && ASR::is_a<ASR::Allocatable_t>(*type) &&

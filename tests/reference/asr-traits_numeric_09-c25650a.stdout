@@ -7418,6 +7418,7 @@
                                     Source
                                     (16 box)
                                     []
+                                    []
                                 ),
                             __trait_contract_integer:
                                 (TraitRuntimeContract
@@ -7522,6 +7523,7 @@
                                     16 integer
                                     [([19 __trait_member_integer_value]
                                     19 __trait_integer_value)]
+                                    .false.
                                 ),
                             __trait_member_integer_value:
                                 (ExternalSymbol

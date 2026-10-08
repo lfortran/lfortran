@@ -1982,7 +1982,7 @@ contains
     end subroutine
 end module traits_runtime_strengthening_m
 
-module traits_runtime_nyi_combination_m
+module traits_runtime_combination_unknown_m
     implicit none
     abstract interface :: IValue
         function value() result(r)
@@ -1996,14 +1996,14 @@ module traits_runtime_nyi_combination_m
     end interface
 contains
     subroutine combined_view(object)
-        class(IValue + ITag), intent(in) :: object
+        class(IValue + IMissing), intent(in) :: object
     end subroutine
     function combined_function(object) result(r)
-        class(IValue + ITag), intent(in) :: object
+        class(IMissing + ITag), intent(in) :: object
         integer :: r
         r = 0
     end function
-end module traits_runtime_nyi_combination_m
+end module traits_runtime_combination_unknown_m
 
 module traits_runtime_impure_function_m
     implicit none
@@ -2766,4 +2766,212 @@ contains
         class(IChild), pointer :: child
         call read_slot(child)
     end subroutine
+end module
+
+! Anonymous conjunctions preserve original nominal obligations and storage slots.
+module traits_runtime_combination_negative_m
+    implicit none
+    abstract interface :: A
+        integer function value()
+        end function
+    end interface
+    abstract interface :: B
+        integer function label()
+        end function
+    end interface
+    abstract interface :: D
+        integer function extra()
+        end function
+    end interface
+    abstract interface :: Alias
+        integer function value()
+        end function
+    end interface
+    abstract interface, extends(A + B) :: Child
+    end interface
+    type :: Box
+        integer :: n
+    end type
+    implements Child + D + Alias :: Box
+        procedure, pass :: value => read_value
+        procedure, nopass :: label => read_label
+        procedure, nopass :: extra => read_extra
+    end implements
+contains
+    integer function read_value(self)
+        type(Box), intent(in) :: self
+        read_value = self%n
+    end function
+    integer function read_label()
+        read_label = 101
+    end function
+    integer function read_extra()
+        read_extra = 202
+    end function
+    subroutine need_combination(view)
+        class(A + B), intent(in) :: view
+    end subroutine
+    subroutine need_alias(view)
+        class(Alias), intent(in) :: view
+    end subroutine
+    subroutine need_child(view)
+        class(Child), pointer, intent(in) :: view
+    end subroutine
+    subroutine need_named(view)
+        class(Child), intent(in) :: view
+    end subroutine
+    subroutine cannot_strengthen(view, duplicate)
+        class(A), intent(in) :: view
+        class(A + A), intent(in) :: duplicate
+        call need_combination(view)
+        call need_alias(duplicate)
+    end subroutine
+    subroutine cannot_discover(view)
+        class(A + B), pointer :: view
+        class(Child), pointer :: named
+        class(A + B + D), pointer :: richer
+        class(A + Alias), pointer :: independent
+        class(Child), allocatable :: owned
+        named => view
+        richer => view
+        independent => view
+        call need_child(view)
+        call need_named(view)
+        owned = view
+        allocate(owned, source=view)
+    end subroutine
+    subroutine slot_in(view)
+        class(A + B), allocatable, intent(in) :: view
+    end subroutine
+    subroutine slot_inout(view)
+        class(B + A), allocatable, intent(inout) :: view
+    end subroutine
+    subroutine slot_out(view)
+        class(A + B), allocatable, intent(out) :: view
+    end subroutine
+    subroutine slot_unspecified(view)
+        class(B + A), allocatable :: view
+    end subroutine
+    subroutine invariant_owners(named, richer)
+        class(Child), allocatable :: named
+        class(A + B + D), allocatable :: richer
+        call slot_in(named)
+        call slot_inout(named)
+        call slot_out(named)
+        call slot_unspecified(named)
+        call slot_in(richer)
+        call slot_inout(richer)
+        call slot_out(richer)
+        call slot_unspecified(richer)
+    end subroutine
+    subroutine pointer_inout(view)
+        class(B + A), pointer, intent(inout) :: view
+    end subroutine
+    subroutine pointer_out(view)
+        class(A + B), pointer, intent(out) :: view
+    end subroutine
+    subroutine pointer_unspecified(view)
+        class(B + A), pointer :: view
+    end subroutine
+    subroutine invariant_pointers(named, richer)
+        class(Child), pointer :: named
+        class(A + B + D), pointer :: richer
+        call pointer_inout(named)
+        call pointer_out(named)
+        call pointer_unspecified(named)
+        call pointer_inout(richer)
+        call pointer_out(richer)
+        call pointer_unspecified(richer)
+    end subroutine
+    subroutine readonly_pointer(view, source)
+        class(A + B), pointer, intent(in) :: view
+        type(Box), target, intent(in) :: source
+        view => source
+        nullify(view)
+    end subroutine
+end module
+
+module traits_runtime_combination_missing_m
+    use traits_runtime_combination_negative_m, only: A, B
+    implicit none
+    type :: OnlyA
+        integer :: n
+    end type
+    implements A :: OnlyA
+        procedure, pass :: value => read_value
+    end implements
+contains
+    integer function read_value(self)
+        type(OnlyA), intent(in) :: self
+        read_value = self%n
+    end function
+    subroutine construct(object)
+        type(OnlyA), target :: object
+        class(A + B), pointer :: view
+        class(A + B), allocatable :: owner
+        view => object
+        owner = object
+        allocate(OnlyA :: owner)
+    end subroutine
+end module
+
+module traits_runtime_combination_conflicting_m
+    use traits_runtime_combination_negative_m, only: A, Alias
+    implicit none
+    type :: Box
+        integer :: n
+    end type
+    implements A :: Box
+        procedure, pass :: value => first
+    end implements
+    implements Alias :: Box
+        procedure, pass :: value => second
+    end implements
+contains
+    integer function first(self)
+        type(Box), intent(in) :: self
+        first = self%n
+    end function
+    integer function second(self)
+        type(Box), intent(in) :: self
+        second = self%n + 100
+    end function
+    subroutine construct(object)
+        type(Box), target :: object
+        class(A + Alias), pointer :: view
+        view => object
+    end subroutine
+end module
+
+module traits_runtime_combination_signature_m
+    use traits_runtime_combination_negative_m, only: A
+    implicit none
+    abstract interface :: IPure
+        pure integer function value()
+        end function
+    end interface
+    class(A + IPure), pointer :: conflict
+end module
+
+module traits_runtime_combination_declarations_m
+    use traits_runtime_combination_negative_m, only: A, B, Box
+    implicit none
+    abstract interface :: INumeric
+        integer | real
+    end interface
+    class(A + Box), pointer :: not_a_trait
+    class(A + INumeric), pointer :: not_universal
+    type :: Holder
+        class(A + B), pointer :: component
+    end type
+contains
+    subroutine arrays(view)
+        class(A + B), intent(in) :: view(:)
+    end subroutine
+    subroutine bare_local()
+        class(A + B) :: view
+    end subroutine
+    function pointer_result() result(view)
+        class(A + B), pointer :: view
+    end function
 end module

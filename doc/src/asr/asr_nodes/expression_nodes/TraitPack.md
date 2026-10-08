@@ -18,4 +18,6 @@ AST-to-ASR selects conformance under the normal explicit implementation-module
 visibility policy and diagnoses conflicting witnesses. LLVM fills a stack
 header without allocating, copying, or finalizing the payload. Forwarding an
 existing view of the same contract uses `Var`, not another `TraitPack`.
-Unknown polymorphic actuals and projections are explicitly unsupported.
+Anonymous construction retains the selected evidence for every original
+nominal requirement. Known-parent/subset weakening uses `TraitProject`, not a
+new pack. Unknown polymorphic actuals remain unsupported.

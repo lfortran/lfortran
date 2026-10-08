@@ -27,7 +27,6 @@ class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
     std::map<SymbolTable*, std::vector<const AST::Implements_t*>>
         pending_trait_implementations;
-    bool traits_warning_emitted = false;
     struct ClassProcInfo {
         std::string name;
         Location loc;
@@ -771,6 +770,8 @@ public:
                     co->m_access = dflt_access;
                 }
             } else if (ASR::is_a<ASR::Trait_t>(*item.second)) {
+                auto *contract = ASRUtils::trait_runtime_contract(item.second);
+                if (contract && contract->m_anonymous) continue;
                 ASR::down_cast<ASR::Trait_t>(item.second)->m_access =
                     assgnd_access.count(item.first)
                         ? assgnd_access[item.first] : dflt_access;
@@ -2563,7 +2564,8 @@ public:
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
         for (size_t i=0; i<n; i++) {
-            if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
+            if (AST::is_a<AST::AttrType_t>(*attributes[i]) ||
+                    AST::is_a<AST::AttrTraitClass_t>(*attributes[i])) {
                 if (found) {
                     diag.add(diag::Diagnostic(
                         "Return type declared twice",
@@ -2571,7 +2573,11 @@ public:
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
                 } else {
-                    r = AST::down_cast<AST::AttrType_t>(attributes[i]);
+                    r = AST::is_a<AST::AttrTraitClass_t>(*attributes[i])
+                        ? AST::down_cast2<AST::AttrType_t>(AST::make_AttrType_t(al,
+                            attributes[i]->base.loc, AST::decl_typeType::TypeType,
+                            nullptr, 0, attributes[i], nullptr, AST::symbolType::None))
+                        : AST::down_cast<AST::AttrType_t>(attributes[i]);
                     found = true;
                 }
             }
@@ -2982,6 +2988,15 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
+                    if (return_type->m_attr &&
+                            AST::is_a<AST::AttrTraitClass_t>(*return_type->m_attr)) {
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, 0);
+                        type = determine_type(x.base.base.loc, return_var_name,
+                            return_type->m_attr, false, false, dims, nullptr,
+                            type_decl, current_procedure_abi_type);
+                        break;
+                    }
                     if (return_type->m_attr && return_type->m_attr && return_type->m_attr->type == AST::decl_attributeType::AttrType) {
                         AST::AttrType_t *return_attr_type = AST::down_cast<AST::AttrType_t>(return_type->m_attr);
 
@@ -4285,15 +4300,6 @@ public:
         throw SemanticAbort();
     }
 
-    void warn_traits_extension(const Location &loc) {
-        if (traits_warning_emitted) return;
-        diag.semantic_warning_label(
-            "traits are an experimental LFortran extension; use ordinary "
-            "derived types and procedures for portable Fortran",
-            {loc}, "LFortran extension");
-        traits_warning_emitted = true;
-    }
-
     ASR::Trait_t *resolve_trait(const std::string &name, const Location &loc) {
         ASR::symbol_t *symbol = current_scope->resolve_symbol(to_lower(name));
         if (!symbol || !ASR::is_a<ASR::Trait_t>(
@@ -4302,43 +4308,6 @@ public:
         }
         return ASR::down_cast<ASR::Trait_t>(
             ASRUtils::symbol_get_past_external(symbol));
-    }
-
-    ASR::symbol_t *reference_trait_member(ASR::symbol_t *member,
-            SymbolTable *scope, const Location &loc) {
-        member = ASRUtils::symbol_get_past_external(member);
-        ASR::symbol_t *definition = ASRUtils::get_asr_owner(member);
-        LCOMPILERS_ASSERT(definition && ASR::is_a<ASR::Trait_t>(*definition));
-        auto *trait = ASR::down_cast<ASR::Trait_t>(definition);
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(definition);
-        if (!owner || !ASR::is_a<ASR::Module_t>(*owner)) {
-            trait_error("trait declarations currently require a module scope", loc);
-        }
-        for (const auto &entry : scope->get_scope()) {
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*entry.second) &&
-                    ASRUtils::symbol_get_past_external(entry.second) == member) {
-                return entry.second;
-            }
-        }
-        std::string name = scope->get_unique_name(
-            "__trait_member_" + std::string(trait->m_name) + "_" +
-            ASRUtils::symbol_name(member));
-        Vec<char*> scopes;
-        scopes.reserve(al, 1);
-        scopes.push_back(al, trait->m_name);
-        ASR::symbol_t *reference = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_ExternalSymbol_t(al, loc, scope, s2c(al, name), member,
-                ASRUtils::symbol_name(owner), scopes.p, scopes.size(),
-                ASRUtils::symbol_name(member), ASR::accessType::Private));
-        scope->add_symbol(name, reference);
-        bool same_module = false;
-        for (SymbolTable *s = scope; s; s = s->parent) {
-            if (s == ASRUtils::symbol_symtab(owner)) same_module = true;
-        }
-        if (!same_module) {
-            ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
-        }
-        return reference;
     }
 
     Vec<ASR::ttype_t*> resolve_type_set_members(
@@ -4536,100 +4505,6 @@ public:
         tmp = &trait->base;
     }
 
-    ASR::symbol_t *normalize_trait_requirement(ASR::Function_t *member,
-            ASR::ttype_t *receiver_type, const std::string &type_name,
-            SymbolTable *scope, const Location &loc, bool restriction) {
-        ASRUtils::SymbolDuplicator duplicator(al);
-        ASR::symbol_t *copy = duplicator.duplicate_Function(member, scope);
-        if (!copy) {
-            trait_error("cannot construct the generic interface for '" +
-                std::string(member->m_name) + "'", loc);
-        }
-        ASR::Function_t *procedure = ASR::down_cast<ASR::Function_t>(copy);
-        std::string procedure_name = scope->get_unique_name(
-            "__trait_" + type_name + "_" + member->m_name);
-        procedure->m_name = s2c(al, procedure_name);
-        procedure->m_access = ASR::accessType::Private;
-        std::string receiver_name = procedure->m_symtab->get_unique_name("self");
-        ASR::symbol_t *receiver = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc,
-                procedure->m_symtab, s2c(al, receiver_name), nullptr, 0,
-                ASR::intentType::In, nullptr, nullptr,
-                ASR::storage_typeType::Default,
-                ASRUtils::duplicate_type(al, receiver_type),
-                nullptr, ASR::abiType::Source, ASR::accessType::Private,
-                ASR::presenceType::Required, false));
-        procedure->m_symtab->add_symbol(receiver_name, receiver);
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, procedure->n_args + 1);
-        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, receiver)));
-        for (size_t i = 0; i < procedure->n_args; i++) {
-            args.push_back(al, procedure->m_args[i]);
-        }
-        procedure->m_args = args.p;
-        procedure->n_args = args.size();
-        ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(procedure);
-        procedure->m_function_signature = ASRUtils::TYPE(
-            ASRUtils::make_FunctionType_t_util(al,
-                procedure->base.base.loc, procedure->m_args,
-                procedure->n_args, procedure->m_return_var,
-                signature, procedure->m_symtab));
-        ASRUtils::get_FunctionType(procedure)->m_is_restriction = restriction;
-        scope->add_symbol(procedure_name, copy);
-        return copy;
-    }
-
-    ASR::symbol_t *normalize_trait_requirement(ASR::Function_t *member,
-            ASR::symbol_t *type_symbol, SymbolTable *scope, const Location &loc) {
-        return normalize_trait_requirement(member, ASRUtils::symbol_type(type_symbol),
-            ASRUtils::symbol_name(type_symbol), scope, loc, true);
-    }
-
-    void create_runtime_trait_contract(ASR::Trait_t *trait) {
-        const Location &loc = trait->base.base.loc;
-        auto hierarchy = checked_trait_hierarchy(*trait, loc);
-        for (auto *member : hierarchy.members) {
-            if (!ASRUtils::runtime_trait_method_supported(
-                    *ASR::down_cast<ASR::Function_t>(member))) return;
-        }
-        auto *scope = al.make_new<SymbolTable>(current_scope);
-        std::string name = current_scope->get_unique_name(
-            "__trait_contract_" + std::string(trait->m_name));
-        auto *contract = ASR::down_cast2<ASR::TraitRuntimeContract_t>(
-            ASR::make_TraitRuntimeContract_t(al, loc, scope, s2c(al, name),
-                &trait->base, nullptr, 0));
-        current_scope->add_symbol(name, &contract->base);
-        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
-            al, loc, &contract->base));
-        std::map<std::string, size_t> indices;
-        std::vector<Vec<ASR::symbol_t*>> origins;
-        Vec<ASR::trait_slot_t> slots;
-        slots.reserve(al, hierarchy.members.size());
-        for (auto *member : hierarchy.members) {
-            auto *method = ASR::down_cast<ASR::Function_t>(member);
-            auto inserted = indices.emplace(method->m_name, slots.size());
-            if (inserted.second) {
-                ASR::trait_slot_t slot;
-                slot.loc = method->base.base.loc;
-                slot.m_origins = nullptr;
-                slot.n_origins = 0;
-                slot.m_procedure = normalize_trait_requirement(method, view_type,
-                    trait->m_name, scope, loc, false);
-                slots.push_back(al, slot);
-                origins.emplace_back();
-                origins.back().reserve(al, 1);
-            }
-            origins[inserted.first->second].push_back(al,
-                reference_trait_member(member, scope, loc));
-        }
-        for (size_t i = 0; i < slots.size(); i++) {
-            slots.p[i].m_origins = origins[i].p;
-            slots.p[i].n_origins = origins[i].size();
-        }
-        contract->m_slots = slots.p;
-        contract->n_slots = slots.size();
-    }
-
     ASR::TraitWitness_t *create_runtime_trait_witness(
             ASR::TraitImplementation_t *implementation,
             ASR::TraitRuntimeContract_t *contract) {
@@ -4663,7 +4538,7 @@ public:
             al, loc, witness_scope, s2c(al, name),
             make_operator_proc_visible(&contract->base, "trait", current_scope),
             &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
-            lifecycle, nullptr, 0));
+            lifecycle, nullptr, 0, nullptr, 0));
         current_scope->add_symbol(name, &witness->base);
         Vec<ASR::symbol_t*> procedures;
         Vec<char*> dependencies;

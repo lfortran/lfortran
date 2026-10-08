@@ -572,6 +572,7 @@
                                     Source
                                     (2 directvalue)
                                     []
+                                    []
                                 ),
                             __implements_scaledvalue_ivalue:
                                 (TraitImplementation
@@ -713,6 +714,7 @@
                                     Source
                                     (2 scaledvalue)
                                     []
+                                    []
                                 ),
                             __trait_contract_ivalue:
                                 (TraitRuntimeContract
@@ -817,6 +819,7 @@
                                     2 ivalue
                                     [([5 __trait_member_ivalue_value]
                                     5 __trait_ivalue_value)]
+                                    .false.
                                 ),
                             __trait_member_ivalue_value:
                                 (ExternalSymbol

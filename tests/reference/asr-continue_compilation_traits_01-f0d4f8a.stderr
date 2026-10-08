@@ -390,11 +390,11 @@ semantic error: runtime trait dummies currently require intent(in) without optio
 1927 |         class(IValue), intent(inout) :: object
      |                                         ^^^^^^ 
 
-semantic error: runtime trait combinations are not implemented yet
+semantic error: 'imissing' is not a visible trait
     --> tests/errors/continue_compilation_traits_01.f90:1999:9
      |
-1999 |         class(IValue + ITag), intent(in) :: object
-     |         ^^^^^^^^^^^^^^^^^^^^ 
+1999 |         class(IValue + IMissing), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'object' not defined
     --> tests/errors/continue_compilation_traits_01.f90:1998:5 - 2000:18
@@ -406,11 +406,11 @@ semantic error: Dummy argument 'object' not defined
 2000 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait combinations are not implemented yet
+semantic error: 'imissing' is not a visible trait
     --> tests/errors/continue_compilation_traits_01.f90:2002:9
      |
-2002 |         class(IValue + ITag), intent(in) :: object
-     |         ^^^^^^^^^^^^^^^^^^^^ 
+2002 |         class(IMissing + ITag), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:2046:9
@@ -557,6 +557,58 @@ semantic error: an intent(out) dummy of a pure procedure cannot be polymorphic
      |
 2681 |         class(IValue), pointer, intent(out) :: view
      |                                                ^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': pure, elemental or abi attributes differ
+    --> tests/errors/continue_compilation_traits_01.f90:2953:5
+     |
+2953 |     class(A + IPure), pointer :: conflict
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'box' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:2962:5
+     |
+2962 |     class(A + Box), pointer :: not_a_trait
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be used as a runtime class
+    --> tests/errors/continue_compilation_traits_01.f90:2963:5
+     |
+2963 |     class(A + INumeric), pointer :: not_universal
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2965:9
+     |
+2965 |         class(A + B), pointer :: component
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait arrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2969:9
+     |
+2969 |         class(A + B), intent(in) :: view(:)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'view' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:2968:5 - 2970:18
+     |
+2968 |        subroutine arrays(view)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2970 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:2972:25
+     |
+2972 |         class(A + B) :: view
+     |                         ^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2975:34
+     |
+2975 |         class(A + B), pointer :: view
+     |                                  ^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
@@ -1289,3 +1341,177 @@ semantic error: an allocatable runtime trait dummy requires an allocatable actua
      |
 2767 |         call read_slot(child)
      |                        ^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+b'
+    --> tests/errors/continue_compilation_traits_01.f90:2826:31
+     |
+2826 |         call need_combination(view)
+     |                               ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'alias'
+    --> tests/errors/continue_compilation_traits_01.f90:2827:25
+     |
+2827 |         call need_alias(duplicate)
+     |                         ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2835:18
+     |
+2835 |         named => view
+     |                  ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+b+d'
+    --> tests/errors/continue_compilation_traits_01.f90:2836:19
+     |
+2836 |         richer => view
+     |                   ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+alias'
+    --> tests/errors/continue_compilation_traits_01.f90:2837:24
+     |
+2837 |         independent => view
+     |                        ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2838:25
+     |
+2838 |         call need_child(view)
+     |                         ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2839:25
+     |
+2839 |         call need_named(view)
+     |                         ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2840:17
+     |
+2840 |         owned = view
+     |                 ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2841:32
+     |
+2841 |         allocate(owned, source=view)
+     |                                ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2858:22
+     |
+2858 |         call slot_in(named)
+     |                      ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2859:25
+     |
+2859 |         call slot_inout(named)
+     |                         ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2860:23
+     |
+2860 |         call slot_out(named)
+     |                       ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2861:31
+     |
+2861 |         call slot_unspecified(named)
+     |                               ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2862:22
+     |
+2862 |         call slot_in(richer)
+     |                      ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2863:25
+     |
+2863 |         call slot_inout(richer)
+     |                         ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2864:23
+     |
+2864 |         call slot_out(richer)
+     |                       ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2865:31
+     |
+2865 |         call slot_unspecified(richer)
+     |                               ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2879:28
+     |
+2879 |         call pointer_inout(named)
+     |                            ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2880:26
+     |
+2880 |         call pointer_out(named)
+     |                          ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2881:34
+     |
+2881 |         call pointer_unspecified(named)
+     |                                  ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2882:28
+     |
+2882 |         call pointer_inout(richer)
+     |                            ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2883:26
+     |
+2883 |         call pointer_out(richer)
+     |                          ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2884:34
+     |
+2884 |         call pointer_unspecified(richer)
+     |                                  ^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2889:9
+     |
+2889 |         view => source
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2890:17
+     |
+2890 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2912:17
+     |
+2912 |         view => object
+     |                 ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2913:17
+     |
+2913 |         owner = object
+     |                 ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2914:9
+     |
+2914 |         allocate(OnlyA :: owner)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: conflicting implementations of combined trait method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:2942:17
+     |
+2942 |         view => object
+     |                 ^^^^^^ 

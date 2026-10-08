@@ -1611,12 +1611,11 @@ end module
     CHECK(base->m_implementation == witness->m_implementation);
     auto *association = ASR::down_cast<ASR::TraitAssociate_t>(function("project")->m_body[0]);
     auto *projection = ASR::down_cast<ASR::TraitProject_t>(association->m_value);
-    auto *intermediate = ASR::down_cast<ASR::TraitProject_t>(projection->m_view);
     auto *borrow_projection = ASR::down_cast<ASR::TraitProject_t>(
         ASR::down_cast<ASR::SubroutineCall_t>(function("borrow")->m_body[0])->m_args[0].m_value);
     CHECK(ASRUtils::is_trait_pointer(projection->m_type));
-    CHECK(projection->m_parent == 0);
-    CHECK(intermediate->m_parent == 0);
+    REQUIRE(projection->n_slots == 1);
+    CHECK(projection->m_slots[0].m_source == 0);
     auto rejects = [&](const std::string &code) {
         LCompilers::diag::Diagnostics invalid;
         CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
@@ -1680,12 +1679,12 @@ end module
         rejects("asr.verify.trait_witness.projection_origin");
     }
     SUBCASE("a projection index cannot be negative") {
-        projection->m_parent = -1;
-        rejects("asr.verify.trait_project.parent");
+        projection->m_slots[0].m_source = -1;
+        rejects("asr.verify.trait_project.slot_origin");
     }
-    SUBCASE("a projection index cannot exceed the direct parent count") {
-        projection->m_parent = 1;
-        rejects("asr.verify.trait_project.parent");
+    SUBCASE("a projection index cannot exceed the source slot count") {
+        projection->m_slots[0].m_source = 1;
+        rejects("asr.verify.trait_project.slot_origin");
     }
     SUBCASE("equal signatures do not establish nominal parenthood") {
         auto *unrelated = ASRUtils::trait_runtime_contract(scope->get_symbol("iunrelated"));
@@ -1696,7 +1695,7 @@ end module
         rejects("asr.verify.trait_project.parent");
     }
     SUBCASE("a borrowed value cannot become a pointer without target proof") {
-        intermediate->m_view = function("borrow")->m_args[0];
+        projection->m_view = function("borrow")->m_args[0];
         rejects("asr.verify.trait_pointer.target");
     }
     SUBCASE("a projection cannot introduce owning storage") {
@@ -2742,7 +2741,226 @@ end module
     CHECK(deferred.dispatch_binding->m_is_deferred);
 }
 
-TEST_CASE("Runtime trait combinations report their declaration boundary") {
+TEST_CASE("Anonymous runtime combinations retain nominal and slot proofs") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module combination_proofs_m
+abstract interface :: A
+    integer function first()
+    end function
+end interface
+abstract interface :: B
+    integer function second()
+    end function
+end interface
+abstract interface :: D
+    integer function third()
+    end function
+end interface
+abstract interface :: Alias
+    integer function first()
+    end function
+end interface
+abstract interface, extends(A + B + Alias) :: Child
+end interface
+abstract interface :: Unrelated
+    integer function first()
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+implements A + B + D + Alias :: Payload
+    procedure, pass :: first => read_first
+    procedure, pass :: second => read_second
+    procedure, nopass :: third => read_third
+end implements
+contains
+integer function read_first(self)
+    type(Payload), intent(in) :: self
+    read_first = self%n
+end function
+integer function read_second(self)
+    type(Payload), intent(in) :: self
+    read_second = 2*self%n
+end function
+integer function read_third()
+    read_third = 101
+end function
+subroutine pack(payload, view)
+    type(Payload), target, intent(in) :: payload
+    class(A + B + D + Alias), pointer, intent(out) :: view
+    view => payload
+end subroutine
+subroutine project(view, target)
+    class(D + Alias + B + A), pointer, intent(in) :: view
+    class(B + A + Alias), pointer, intent(out) :: target
+    target => view
+end subroutine
+subroutine repeated(view)
+    class(A + A), intent(in) :: view
+end subroutine
+end module
+module combination_reordered_m
+use combination_proofs_m, only: W => D, X => Alias, Y => B, Z => A
+contains
+subroutine accept(view)
+    class(W + X + Y + Z), intent(in) :: view
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source.substr(0, source.find("module combination_reordered_m")));
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *scope = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("combination_proofs_m"))->m_symtab;
+    auto function = [&](const std::string &name) {
+        return ASR::down_cast<ASR::Function_t>(scope->get_symbol(name));
+    };
+    auto *pack = ASR::down_cast<ASR::TraitPack_t>(
+        ASR::down_cast<ASR::TraitAssociate_t>(function("pack")->m_body[0])->m_value);
+    auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+        ASRUtils::symbol_get_past_external(pack->m_witness));
+    auto *projection = ASR::down_cast<ASR::TraitProject_t>(
+        ASR::down_cast<ASR::TraitAssociate_t>(function("project")->m_body[0])->m_value);
+    auto *from = ASRUtils::trait_runtime_contract(pack->m_type);
+    auto *to = ASRUtils::trait_runtime_contract(projection->m_type);
+    auto *target_trait = ASR::down_cast<ASR::Trait_t>(
+        ASRUtils::symbol_get_past_external(to->m_trait));
+    REQUIRE(witness->n_components == 4);
+    CHECK(witness->m_implementation == nullptr);
+    CHECK(witness->n_projections == 0);
+    CHECK(from->m_anonymous);
+    CHECK(from->n_slots == 3);
+    CHECK(from->m_slots[0].n_origins == 2);
+    REQUIRE(projection->n_slots == 2);
+    CHECK(projection->m_slots[0].m_source == 0);
+    CHECK(projection->m_slots[1].m_source == 1);
+    auto *other_module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("combination_reordered_m"));
+    auto *accept = ASR::down_cast<ASR::Function_t>(other_module->m_symtab->get_symbol("accept"));
+    CHECK(ASRUtils::trait_contracts_equal(pack->m_type, ASRUtils::expr_type(accept->m_args[0])));
+    CHECK_FALSE(ASRUtils::trait_contracts_equal(&to->base,
+        &ASRUtils::trait_runtime_contract(scope->get_symbol("child"))->base));
+    auto *repeated = ASRUtils::trait_runtime_contract(
+        ASRUtils::expr_type(function("repeated")->m_args[0]));
+    CHECK(repeated == ASRUtils::trait_runtime_contract(scope->get_symbol("a")));
+    CHECK_FALSE(repeated->m_anonymous);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text round trips retain explicit provenance") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_combinations.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("externalization preserves all selected components") {
+        scope->mark_all_variables_external(al);
+        CHECK(witness->m_abi == ASR::abiType::ExternalUndefined);
+        for (size_t i = 0; i < witness->n_components; i++) {
+            CHECK(ASR::down_cast<ASR::TraitWitness_t>(ASRUtils::symbol_get_past_external(
+                witness->m_components[i]))->m_abi == ASR::abiType::ExternalUndefined);
+        }
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    }
+    SUBCASE("anonymous parent order is canonical, not local spelling order") {
+        std::swap(target_trait->m_parents[0], target_trait->m_parents[1]);
+        rejects("asr.verify.trait_contract.combination");
+    }
+    SUBCASE("duplicate requirements cannot silently discard another obligation") {
+        target_trait->m_parents[1] = target_trait->m_parents[0];
+        rejects("asr.verify.trait_contract.combination");
+    }
+    SUBCASE("independent equivalent origins cannot be dropped") {
+        to->m_slots[0].n_origins--;
+        rejects("asr.verify.trait_contract.origins");
+    }
+    SUBCASE("missing original component array rejects before dereference") {
+        witness->m_components = nullptr;
+        rejects("asr.verify.trait_witness.components");
+    }
+    SUBCASE("each original nominal obligation needs evidence") {
+        witness->n_components--;
+        rejects("asr.verify.trait_witness.components");
+    }
+    SUBCASE("component scopes must exist before symbol lookup") {
+        auto broken = *ASR::down_cast<ASR::TraitWitness_t>(
+            ASRUtils::symbol_get_past_external(witness->m_components[0]));
+        broken.m_symtab = nullptr;
+        witness->m_components[0] = &broken.base;
+        rejects("asr.verify.trait_witness.component_kind");
+    }
+    SUBCASE("components cannot recursively select the combined witness") {
+        witness->m_components[0] = &witness->base;
+        rejects("asr.verify.trait_witness.component_kind");
+    }
+    SUBCASE("component order follows original nominal requirements") {
+        std::swap(witness->m_components[0], witness->m_components[1]);
+        rejects("asr.verify.trait_witness.component_origin");
+    }
+    SUBCASE("every projected target slot must be recorded") {
+        projection->n_slots--;
+        rejects("asr.verify.trait_project.slots");
+    }
+    SUBCASE("missing slot mapping rejects before dereference") {
+        projection->m_slots = nullptr;
+        rejects("asr.verify.trait_project.slots");
+    }
+    SUBCASE("a projection cannot silently substitute a same-signature method") {
+        projection->m_slots[0].m_source = projection->m_slots[1].m_source;
+        rejects("asr.verify.trait_project.slot_origin");
+    }
+    SUBCASE("a conjunction cannot acquire a named child") {
+        auto *view = ASR::down_cast<ASR::TraitObjectType_t>(ASRUtils::extract_type(projection->m_type));
+        view->m_contract = &ASRUtils::trait_runtime_contract(scope->get_symbol("child"))->base;
+        rejects("asr.verify.trait_project.parent");
+    }
+    SUBCASE("unsupported backends reject executable anonymous views") {
+        LCompilers::diag::Diagnostics unsupported;
+        CHECK(ASRUtils::reject_runtime_traits(*result.result, unsupported, "C"));
+        REQUIRE(unsupported.diagnostics.size() == 1);
+        CHECK(unsupported.render2().find(
+            "runtime trait dispatch is not implemented by the C backend") != std::string::npos);
+    }
+    SUBCASE("a transferable adapter cannot redispatch through the old header layout") {
+        auto *adapter = ASR::down_cast<ASR::Function_t>(witness->m_procedures[0]);
+        LCompilers::Vec<ASR::call_arg_t> args;
+        args.reserve(al, 1);
+        args.push_back(al, {adapter->base.base.loc, adapter->m_args[0]});
+        auto *call = ASRUtils::EXPR(ASR::make_TraitFunctionCall_t(al,
+            adapter->base.base.loc, from->m_slots[0].m_procedure, 0, args.p, args.size(),
+            ASRUtils::expr_type(adapter->m_return_var)));
+        ASR::down_cast<ASR::Assignment_t>(adapter->m_body[0])->m_value = call;
+        rejects("asr.verify.trait_witness.receiver_prefix");
+    }
+}
+
+TEST_CASE("Runtime trait combinations support each declaration scope") {
     const std::string contracts = R"(
 module runtime_combo_contracts
 abstract interface :: A
@@ -2771,9 +2989,9 @@ end module
         REQUIRE(parsed.ok);
         auto result = LCompilers::LFortran::ast_to_asr(
             al, *parsed.result, diagnostics, nullptr, false, options, lm);
-        CHECK_FALSE(result.ok);
-        CHECK(diagnostics.render2().find(
-            "runtime trait combinations are not implemented yet") != std::string::npos);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
     }
 }
 

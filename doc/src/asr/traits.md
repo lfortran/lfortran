@@ -305,12 +305,11 @@ Dynamic calls obey the contract's PURE attribute: a PURE consumer cannot call
 an impure message, and each binding must preserve required PURE and ELEMENTAL
 attributes. A binding may be PURE even when its contract does not require it.
 
-View dummies currently require explicit `intent(in)` and cannot be pointer,
+Bare borrowed view dummies require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
-supported. Trait arrays, inline
-`class(A+B)`, aggregate results, generic methods, and adoption from unknown
+supported. Trait arrays, aggregate method results, generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection is a
 later stage: eventual TYPE IS tests nominal concrete identity, and CLASS IS
@@ -318,9 +317,9 @@ tests real implementation inheritance, not unrelated-trait discovery.
 Universal traits with generic methods remain eligible in that future model;
 type-set traits remain constraint-only.
 
-The private same-build/target LLVM borrowed representation is a stack header containing
-concrete CLASS lifecycle metadata, the original payload address, and an
-independent immutable witness pointer. Concrete inheritance and storage are
+The private same-build/target LLVM borrowed representation is a stack descriptor
+containing concrete CLASS metadata, the original payload address, a concrete
+lifecycle pointer, and independently selected inline method slots. Concrete inheritance and storage are
 unchanged. Contract slots are unrelated to concrete TBP table offsets.
 Verification checks referenced slot interfaces and witness evidence at each
 use, independently of the order of their defining modules and consumers.
@@ -437,7 +436,7 @@ and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
 Trait arrays, pointer results, components, ASSOCIATE
-views, projections, `move_alloc`, inspection, and mutable receivers remain
+views, `move_alloc`, inspection, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
 options are rejected rather than ignored. Allocation failure terminates, including
@@ -545,8 +544,8 @@ association and pointer-dummy actuals. Their polymorphic pointer dummies cannot
 have INTENT(OUT); the PURE association controls use INTENT(INOUT).
 
 Semantics emits `TraitAssociate` rather than copying an ownership header.
-The LLVM descriptor is an inline three-word header, passed by address to
-pointer dummies. It has no separately allocated wrapper that could escape a
+The LLVM descriptor contains a three-word prefix and its own inline method
+slots, passed by address to pointer dummies. It has no separately allocated wrapper that could escape a
 callee or be shared accidentally by independent aliases. `TraitBorrow` supplies
 an associated pointer's read-only view, retaining its selected witness.
 
@@ -558,7 +557,7 @@ LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
 contract-only consumer before its providers, then checks forwarding against a
 frozen provider archive in normal and fast modes.
 Pointer results, allocation/deallocation through
-trait pointers, arrays/components, inline combinations and concrete inspection remain
+trait pointers, arrays/components and concrete inspection remain
 subsequent work.
 
 ## Named parent projections (R3)
@@ -594,14 +593,15 @@ associations, not value projections. A concrete value can erase directly to a
 parent through a visible child conformance. Runtime-ineligible extra child
 messages do not prevent an eligible parent subset from being used.
 
-Semantics emits successive `TraitProject` expressions with explicit direct
-parent indices, after `TraitBorrow` when a value borrow is required. Each
-`TraitWitness` records provider-owned parent witnesses in declaration order;
-every projected table uses the original `TraitImplementation` and its own typed
-adapters. LLVM only copies the nonowning header and selects the recorded table.
-Parent tables have static provider lifetime; projection needs no heap allocation
-or reference counting. Serialization, verification and externalization preserve
-these references independently of consumer imports.
+Semantics emits `TraitProject` with an explicit source-slot map for the target
+contract, after `TraitBorrow` when a value borrow is required. Verification
+proves the nominal weakening and checks every retained slot origin. LLVM copies
+the common prefix and selected method addresses into the target descriptor.
+These addresses refer to the original provider's typed adapters, which may
+recover the receiver only through its concrete prefix. They cannot depend on
+the original view's larger method layout. Projection needs no heap allocation,
+parent-table link or reference counting. Serialization, verification and
+externalization preserve these proofs independently of consumer imports.
 
 `traits_runtime_05` checks a contracts-only consumer against a frozen provider
 archive and physically hidden implementation module. Importing an alternative
@@ -610,8 +610,71 @@ copies. `traits_runtime_06` checks diamond/coalesced origins and exact receiver
 addresses. `traits_runtime_projection_01` checks nullable and readonly pointer
 arguments, returned aliases, deep copies and exact finalization through parent
 views; `_02` checks eligible subsets of runtime-ineligible children.
-Inline `class(A+B)` equivalence, concrete SELECT TYPE and generic runtime methods
-remain explicit NYIs and separate subsequent stages.
+Concrete SELECT TYPE and generic runtime methods remain separate subsequent stages.
+
+## General anonymous runtime combinations (R3)
+
+`class(A+B)` denotes an anonymous conjunction of the original nominal contracts,
+not a new named trait or a structural signature. It is available wherever a
+supported scalar runtime view, pointer, allocatable entity, dummy, or allocatable
+result can be declared, including explicit interfaces and function prefixes.
+
+```fortran
+class(IValue + ILabel), pointer :: forward => null()
+class(ILabel + IValue), pointer :: reverse => null()
+class(IValue + ILabel), allocatable :: owner
+! concrete has visible explicit conformance to both contracts:
+forward => concrete
+reverse => forward
+owner = reverse
+```
+
+Order and repetition do not change the contract. Redundant ancestors normalize
+through declared ancestry: `A+A` is `A`, and `Child+A` is `Child` when `Child`
+extends `A`. Independent same-signature requirements are not discarded; their
+nominal origins remain obligations even when their callable slot coalesces.
+A named `Child` extending `A+B` remains distinct from `A+B`: knowing its parents
+never establishes the child. Renamed imports and separately compiled
+declarations compare original nominal identities, with deterministic slot order.
+Fresh concrete construction must prove every requirement and diagnose
+disagreeing implementations of a coalesced message.
+
+An existing view may weaken to **any guaranteed subset conjunction**, including
+one declared only in a client compiled after its provider. Both `A+B+D -> A+B`
+and named `Child -> A+B` work without exposing private provider modules,
+rebuilding providers, or specializing their bodies. The view's selected method
+addresses and concrete lifecycle are copied directly; alternate conformances
+visible in the client affect only fresh concrete erasure, never a received view.
+No unrelated trait is discovered from a possible dynamic concrete type.
+
+Each descriptor owns exactly its declared method-slot storage. Pointer
+association copies that storage rather than a pointer to a temporary method
+table. Consequently aliases survive return of a projection helper, source
+reassociation and NULLIFY while their actual Fortran target remains alive.
+Saved pointers follow the same protocol. Owning copies allocate independent
+payload and descriptor storage, preserve the chosen methods, and retain the
+existing snapshot/finalization and function-result lifetimes. Projection
+allocates neither a cache entry nor a separately managed method table.
+
+Allocation-slot dummies remain invariant for **all intents**. Defining pointer
+slots are invariant too; readonly pointer target association can weaken.
+Independently declared `A+B` and `B+A` slots are equivalent, but a named child
+or stronger conjunction is not a weaker conjunction's allocation/defining
+pointer slot.
+
+`traits_runtime_08` checks reversed/duplicate syntax, direct construction,
+borrowing, NULL-IN, saved pointers and exact receiver addresses.
+`traits_runtime_combination_01` and its native `--combinations` gate compile the
+provider first, archive it, physically hide its staged source and private
+modfiles, then compile late reordered clients. Both different concrete layouts,
+diamonds, independent origins, non-first PASS, NOPASS, selected alternatives,
+all slot intents, surviving aliases and exact FINAL counts are checked; provider
+archive/object/module hashes are checked at each boundary.
+`_02` checks owning combinations, subsets, prefixed and indirect results,
+repeated/conditional retention, saved owners and BLOCK cleanup. `_03` checks
+opposite import orders, same-spelled distinct original traits, agreed coalesced
+bindings and zero-method conjunctions. Standard Fortran controls remain separate
+because `class(A+B)` is an extension, not GFortran syntax.
 
 ## Compiler representation
 
@@ -667,8 +730,12 @@ The LLVM backend does not infer conformance or choose trait overloads.
 
 Runtime contracts use `TraitRuntimeContract` and `trait_slot` to retain all
 nominal origins, including coalesced messages and shared diamonds.
+Explicit anonymous provenance records a normalized, parent-only conjunction;
+neither equality nor weakening recognizes generated symbol names.
 `TraitWitness` records the selected conformance, typed adapters, liveness
 dependencies, and a `trait_lifecycle` reference to the concrete nominal type.
+Concrete conjunction construction instead records original component witnesses
+and reuses the existing binding-agreement and adapter machinery.
 `TraitObjectType`, `TraitPack`, `TraitReceiver`,
 `TraitFunctionCall`, and `TraitSubroutineCall` make view identity, compiler
 borrowing, authorized recovery, and unresolved dispatch explicit. Only symbols
@@ -685,8 +752,10 @@ incompatible/missing evidence, ownership duplication via ordinary assignment or
 association, borrowed cleanup, forged null initializers and escaping storage.
 AST, binary, module and named/positional ASR text round trips retain these proofs.
 
-The private owner header has three words (concrete vptr, raw payload, witness);
-it is not the two-word ordinary CLASS allocation. Witnesses reference immutable
+The private owner descriptor has a common three-word prefix (concrete vptr, raw
+payload, lifecycle) followed by one method address per declared slot; it is not
+the two-word ordinary CLASS allocation. Its size is determined by the verified
+contract, not the dynamic concrete type. Witnesses reference immutable
 concrete-owned lifecycle descriptors whose helpers default-initialize,
 initialize-copy without defined assignment or finalization, assign into prepared
 or live storage, destroy a live raw value, and release snapshot storage without

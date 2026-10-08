@@ -35,6 +35,7 @@ cmake -E copy \
     integration_tests/traits_runtime_factory_01.py \
     integration_tests/traits_runtime_factory_01*.f90 \
     integration_tests/traits_runtime_05*.f90 \
+    integration_tests/traits_runtime_combination_01*.f90 \
     integration_tests/traits_runtime_07*.f90 \
     $dest/integration_tests
 
