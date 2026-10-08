@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--sysroot")
     parser.add_argument("--work-dir", required=True)
     parser.add_argument("--fast", action="store_true")
+    parser.add_argument("--detect-leaks", action="store_true")
     args = parser.parse_args()
     sources = Path(__file__).resolve().parent
     compiler = str(Path(args.lfortran).resolve())
@@ -27,6 +28,8 @@ def main():
     flags = ["--verify-all-passes", "--no-color"]
     if args.fast:
         flags.append("--fast")
+    if args.detect_leaks:
+        flags.append("--detect-leaks")
     cc_flags = ["-isysroot", args.sysroot] if args.sysroot else []
 
     def run(command, env=environment):
@@ -45,6 +48,8 @@ def main():
             assert status == 0, output
         status, output = run([work / "program"])
         assert status == 0, output
+        if args.detect_leaks:
+            assert "NO LEAKS FOUND" in output, output
         match = re.search(r"owning allocations:\s*(\d+)", output)
         assert match, output
         count = int(match.group(1))

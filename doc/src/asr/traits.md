@@ -457,7 +457,9 @@ concrete results, completed attributes, component-defined assignment and bounded
 compiled before its providers, and checks alternate selected conformances,
 same-spelled distinct nominal types, callback linkage and exact explicit
 deallocation boundaries. The allocation-failure CTests inject failure at every
-hidden allocation of an array/string-containing payload in normal and fast modes.
+hidden allocation of an array/string-containing payload in normal, fast and
+leak-detection modes. The debug-mode hooks delegate to the original allocator
+so allocation failure injection does not bypass leak tracking.
 `traits_runtime_slot_01` checks all intents, nested forwarding, pointer/deep-copy
 behavior and exact dynamic FINAL counts. `_slot_02` checks completed attributes,
 renamed/re-exported contracts, readonly inquiry, and early-return ownership.

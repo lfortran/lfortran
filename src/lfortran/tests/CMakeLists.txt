@@ -190,6 +190,17 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                         --work-dir ${CMAKE_BINARY_DIR}/tests/output
                         ${runtime_trait_flags} ${owning_cc_flags}
                 )
+                if (mode STREQUAL "normal")
+                    add_test(
+                        NAME test_runtime_trait_owning_allocation_failure_leaks
+                        COMMAND ${LFORTRAN_TEST_PYTHON}
+                            ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_owning_failure_01.py
+                            --lfortran $<TARGET_FILE:lfortran>
+                            --cc ${CMAKE_C_COMPILER}
+                            --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                            --detect-leaks ${owning_cc_flags}
+                    )
+                endif()
                 add_test(
                     NAME test_runtime_trait_pointer_separate_${mode}
                     COMMAND ${LFORTRAN_TEST_PYTHON}
