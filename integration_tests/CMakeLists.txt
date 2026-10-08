@@ -3772,6 +3772,8 @@ RUN(NAME traits_runtime_generic_01_forward LABELS llvm llvm2 NO_STD_F23 ISOLATE_
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
         traits_runtime_generic_01_forwarding.f90 traits_runtime_generic_01_matrix_client.f90)
 RUN(NAME traits_runtime_generic_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_02_debug FILE traits_runtime_generic_02 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --verify-all-passes -g ISOLATE_MODULES)
 RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_03_ops.f90

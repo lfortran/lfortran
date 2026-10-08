@@ -23888,13 +23888,22 @@ public:
         return nullptr;
     }
 
+    std::string trait_specialization_name(SymbolTable *target, std::string name) {
+        auto *owner = target->asr_owner;
+        if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                ASR::is_a<ASR::TraitErasure_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            name = std::string(ASR::down_cast2<ASR::TraitErasure_t>(owner)->m_name) + "_" + name;
+        }
+        return target->get_unique_name(name);
+    }
+
     ASR::symbol_t *instantiate_trait_signature(SymbolTable *target,
             ASR::Template_t *generic,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
             const std::vector<TraitEvidence> &evidence,
             std::map<std::string, ASR::symbol_t*> symbols) {
         ASR::symbol_t *procedure = generic->m_symtab->get_symbol(generic->m_name);
-        std::string name = target->get_unique_name("__instantiated_" +
+        std::string name = trait_specialization_name(target, "__instantiated_" +
             std::string(generic->m_name));
         size_t n_diagnostics = diag.diagnostics.size();
         auto previous = target->get_scope();
@@ -25037,7 +25046,7 @@ public:
                     break;
                 }
                 if (forwarded) continue;
-                std::string name = target->get_unique_name(
+                std::string name = trait_specialization_name(target,
                     "__instantiated_" + std::string(ASRUtils::symbol_name(procedure)));
                 size_t n_diagnostics = diag.diagnostics.size();
                 auto previous = target->get_scope();
