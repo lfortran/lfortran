@@ -3549,3 +3549,51 @@ contains
         r = 0
     end function
 end module
+
+! R3G-01: every defining I/O specifier preserves the selector's readonly state.
+module traits_inspection_readonly_io
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    type :: Box
+        integer :: n
+        logical :: flag
+        character(80) :: text
+    end type
+contains
+    subroutine inspect(view)
+        class(IValue), intent(in) :: view
+        integer :: item
+        select type (concrete => view)
+        type is (Box)
+            inquire(iolength=concrete%n) 7
+            inquire(unit=20, number=concrete%n)
+            inquire(unit=20, opened=concrete%flag)
+            inquire(unit=20, name=concrete%text)
+            inquire(unit=20, name=concrete%text(1:10))
+            inquire(unit=20, iomsg=concrete%text)
+            open(newunit=concrete%n, status="scratch")
+            open(unit=20, iostat=concrete%n)
+            open(unit=20, iomsg=concrete%text)
+            close(20, iostat=concrete%n)
+            close(20, iomsg=concrete%text)
+            rewind(20, iostat=concrete%n)
+            rewind(20, iomsg=concrete%text)
+            backspace(20, iostat=concrete%n)
+            backspace(20, iomsg=concrete%text)
+            endfile(20, iostat=concrete%n)
+            endfile(20, iomsg=concrete%text)
+            flush(20, iostat=concrete%n)
+            flush(20, iomsg=concrete%text)
+            read(20, "(i1)", advance="no", size=concrete%n) item
+            read(20, *, iostat=concrete%n) item
+            write(20, *, iostat=concrete%n) item
+            write(concrete%text(1:10), "(i1)") item
+            associate (index => concrete%n)
+                write(20, *) (item, index=1,2)
+            end associate
+        end select
+    end subroutine
+end module

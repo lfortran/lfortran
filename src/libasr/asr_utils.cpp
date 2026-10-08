@@ -6159,6 +6159,10 @@ ASR::Variable_t *association_variable(ASR::expr_t *expr) {
             return association_variable(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
         case ASR::exprType::ArraySection:
             return association_variable(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        case ASR::exprType::StringItem:
+            return association_variable(ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+        case ASR::exprType::StringSection:
+            return association_variable(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
         case ASR::exprType::ArrayPhysicalCast:
             return association_variable(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
         case ASR::exprType::Cast:

@@ -852,6 +852,11 @@ not. Allocation-slot actuals, pointer reassociation, and `nullify(concrete)` are
 invalid. The name preserves source definability: a nonpointer INTENT(IN) borrowed
 selector and an expression selector cannot be modified, including through
 components, defining actual arguments, nested inspection, or input statements.
+Defining I/O specifiers are included: `INQUIRE` outputs (including `IOLENGTH`),
+`IOSTAT`, `IOMSG`, `SIZE`, `ID` on data transfers, and `NEWUNIT`. Internal-file
+output and I/O implied-do indices also require definable associations.
+Input-only `UNIT`/`FILE` specifiers and `INQUIRE(IOLENGTH=...)` output-list
+expressions can still read a readonly selector.
 POINTER, INTENT(IN) protects the original pointer association, not its target;
 target mutation through inspection is permitted subject to ordinary PURE
 restrictions. Pointer association to an eligible concrete target retains that

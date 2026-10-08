@@ -6219,14 +6219,118 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
-    void visit_FileRead(const FileRead_t &x) {
-        for (size_t i = 0; i < x.n_values; i++) {
-            auto *association = ASRUtils::association_variable(x.m_values[i]);
-            require_id(!association || association->m_intent != intentType::In,
+    void verify_association_definable(expr_t *value) {
+        auto *association = ASRUtils::association_variable(value);
+        if (association) {
+            require_with_loc_id(association->m_intent != intentType::In,
                 "asr.verify.association.definable",
-                "A read-only data association cannot be an input item");
+                "A read-only construct association cannot appear in a variable definition context",
+                value->base.loc);
+        }
+    }
+
+    void verify_io_item_definable(expr_t *item, bool input) {
+        if (!item) return;
+        if (ASR::is_a<ImpliedDoLoop_t>(*item)) {
+            auto *loop = ASR::down_cast<ImpliedDoLoop_t>(item);
+            verify_association_definable(loop->m_var);
+            for (size_t i = 0; i < loop->n_values; i++) {
+                verify_io_item_definable(loop->m_values[i], input);
+            }
+        } else if (!input && ASR::is_a<StringFormat_t>(*item)) {
+            auto *format = ASR::down_cast<StringFormat_t>(item);
+            for (size_t i = 0; i < format->n_args; i++) {
+                verify_io_item_definable(format->m_args[i], false);
+            }
+        } else if (input) {
+            verify_association_definable(item);
+        }
+    }
+
+    void visit_FileRead(const FileRead_t &x) {
+        for (auto *output : {x.m_iostat, x.m_iomsg, x.m_size, x.m_id}) {
+            verify_association_definable(output);
+        }
+        for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], true);
+        if (x.m_nml && check_external) {
+            auto *group = ASRUtils::symbol_get_past_external(x.m_nml);
+            require(group && ASR::is_a<Namelist_t>(*group), "FileRead requires a namelist group");
+            auto *namelist = ASR::down_cast<Namelist_t>(group);
+            for (size_t i = 0; i < namelist->n_var_list; i++) {
+                auto *variable = ASRUtils::get_variable_from_symbol(
+                    ASRUtils::symbol_get_past_external(namelist->m_var_list[i]));
+                require_id(!variable || variable->m_storage != storage_typeType::Association ||
+                        variable->m_intent != intentType::In,
+                    "asr.verify.association.definable",
+                    "A read-only construct association cannot be a namelist input item");
+            }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
+    }
+
+    void visit_FileWrite(const FileWrite_t &x) {
+        for (auto *output : {x.m_iostat, x.m_iomsg, x.m_id}) {
+            verify_association_definable(output);
+        }
+        auto *unit_type = typed_expr_type(x.m_unit);
+        if (unit_type && ASRUtils::is_character(*unit_type)) verify_association_definable(x.m_unit);
+        for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], false);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
+    void visit_FileInquire(const FileInquire_t &x) {
+        for (auto *output : {x.m_iostat, x.m_exist, x.m_opened, x.m_number,
+                x.m_named, x.m_name, x.m_access, x.m_sequential, x.m_direct,
+                x.m_form, x.m_formatted, x.m_unformatted, x.m_recl, x.m_nextrec,
+                x.m_blank, x.m_position, x.m_action, x.m_read, x.m_write,
+                x.m_readwrite, x.m_delim, x.m_pad, x.m_flen, x.m_blocksize,
+                x.m_convert, x.m_carriagecontrol, x.m_size, x.m_pos, x.m_iolength,
+                x.m_decimal, x.m_sign, x.m_encoding, x.m_stream, x.m_iomsg,
+                x.m_round, x.m_pending, x.m_asynchronous}) {
+            verify_association_definable(output);
+        }
+        for (size_t i = 0; i < x.n_iolength_vars; i++) {
+            verify_io_item_definable(x.m_iolength_vars[i], false);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileInquire(x);
+    }
+
+    void visit_FileOpen(const FileOpen_t &x) {
+        // NEWUNIT is defined by the preceding explicit call; this node takes
+        // the resulting unit number, just like OPEN(UNIT=...).
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileOpen(x);
+    }
+
+    void visit_FileClose(const FileClose_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileClose(x);
+    }
+
+    void visit_FileBackspace(const FileBackspace_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileBackspace(x);
+    }
+
+    void visit_FileRewind(const FileRewind_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRewind(x);
+    }
+
+    void visit_FileEndfile(const FileEndfile_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileEndfile(x);
+    }
+
+    void visit_Flush(const Flush_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_Flush(x);
     }
 
     void verify_sync_stat_list(const std::string &stmt_name, const Location &loc, ASR::expr_t *stat, ASR::expr_t *errmsg,

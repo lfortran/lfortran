@@ -5023,9 +5023,21 @@ contains
     end subroutine
     integer function readonly(view)
         class(IValue), intent(in) :: view
+        integer :: length, status, item
+        character(80) :: buffer
         select type (concrete => view)
         type is (Cell)
             readonly = concrete%n
+            inquire(iolength=length) concrete%n
+            open(unit=20, status="scratch", iostat=length, iomsg=buffer)
+            close(20, iostat=length, iomsg=buffer)
+            rewind(20, iostat=length, iomsg=buffer)
+            backspace(20, iostat=length, iomsg=buffer)
+            endfile(20, iostat=length, iomsg=buffer)
+            flush(20, iostat=length, iomsg=buffer)
+            read(20, '(i1)', advance="no", size=length, iostat=status, iomsg=buffer) item
+            write(20, '(i1)', iostat=length, iomsg=buffer) concrete%n
+            write(buffer, '(i1)') concrete%n
         class default
             readonly = 0
         end select
@@ -5159,6 +5171,89 @@ end module
             al, assignment->base.base.loc, 1,
             ASRUtils::TYPE(ASR::make_Integer_t(al, assignment->base.base.loc, 4))));
         rejects("asr.verify.association.definable");
+    }
+    SUBCASE("readonly IO definition contexts reject malformed ASR") {
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(readonly_guard->m_body[1]);
+        auto *inquire = ASR::down_cast<ASR::FileInquire_t>(readonly_guard->m_body[2]);
+        std::vector<ASR::expr_t**> outputs = {
+            &inquire->m_iostat, &inquire->m_exist, &inquire->m_opened, &inquire->m_number,
+            &inquire->m_named, &inquire->m_name, &inquire->m_access, &inquire->m_sequential,
+            &inquire->m_direct, &inquire->m_form, &inquire->m_formatted, &inquire->m_unformatted,
+            &inquire->m_recl, &inquire->m_nextrec, &inquire->m_blank, &inquire->m_position,
+            &inquire->m_action, &inquire->m_read, &inquire->m_write, &inquire->m_readwrite,
+            &inquire->m_delim, &inquire->m_pad, &inquire->m_flen, &inquire->m_blocksize,
+            &inquire->m_convert, &inquire->m_carriagecontrol, &inquire->m_size, &inquire->m_pos,
+            &inquire->m_iolength, &inquire->m_decimal, &inquire->m_sign, &inquire->m_encoding,
+            &inquire->m_stream, &inquire->m_iomsg, &inquire->m_round, &inquire->m_pending,
+            &inquire->m_asynchronous
+        };
+        for (size_t i = 3; i < readonly_guard->n_body; i++) {
+            auto *statement = readonly_guard->m_body[i];
+            switch (statement->type) {
+                case ASR::stmtType::FileOpen: {
+                    auto *io = ASR::down_cast<ASR::FileOpen_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::FileClose: {
+                    auto *io = ASR::down_cast<ASR::FileClose_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::FileRewind: {
+                    auto *io = ASR::down_cast<ASR::FileRewind_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::FileBackspace: {
+                    auto *io = ASR::down_cast<ASR::FileBackspace_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::FileEndfile: {
+                    auto *io = ASR::down_cast<ASR::FileEndfile_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::Flush: {
+                    auto *io = ASR::down_cast<ASR::Flush_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg});
+                    break;
+                }
+                case ASR::stmtType::FileRead: {
+                    auto *io = ASR::down_cast<ASR::FileRead_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg,
+                        &io->m_size, &io->m_id, &io->m_values[0]});
+                    break;
+                }
+                case ASR::stmtType::FileWrite: {
+                    auto *io = ASR::down_cast<ASR::FileWrite_t>(statement);
+                    outputs.insert(outputs.end(), {&io->m_iostat, &io->m_iomsg, &io->m_id});
+                    break;
+                }
+                default: break;
+            }
+        }
+        CHECK(outputs.size() == 60);
+        for (auto **output : outputs) {
+            auto *saved = *output;
+            *output = assignment->m_value;
+            rejects("asr.verify.association.definable");
+            *output = saved;
+        }
+        inquire->m_iolength = assignment->m_value;
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics invalid;
+            LCompilers::LocationManager text_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "readonly_inquire.asr", text_lm, invalid);
+            REQUIRE(loaded.ok);
+            CHECK_FALSE(LCompilers::asr_verify(*loaded.result, true, invalid));
+            REQUIRE(!invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code == "asr.verify.association.definable");
+        }
     }
 }
 

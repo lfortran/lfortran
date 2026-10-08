@@ -3818,6 +3818,8 @@ RUN(NAME traits_runtime_inspection_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify
 RUN(NAME traits_runtime_inspection_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_inspection_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_inspection_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_io_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_io_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_inspection_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_inspection_03_oracle LABELS gfortran)
 RUN(NAME traits_runtime_inspection_04_oracle LABELS gfortran)

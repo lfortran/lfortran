@@ -1800,6 +1800,150 @@ semantic error: no visible nominal implementation of trait 'ivalue' for generic 
 3425 |         r = algorithm%apply(1)
      |             ^^^^^^^^^^^^^^^^^^ 
 
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3571:30
+     |
+3571 |             inquire(iolength=concrete%n) 7
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3572:37
+     |
+3572 |             inquire(unit=20, number=concrete%n)
+     |                                     ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3573:37
+     |
+3573 |             inquire(unit=20, opened=concrete%flag)
+     |                                     ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3574:35
+     |
+3574 |             inquire(unit=20, name=concrete%text)
+     |                                   ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3575:35
+     |
+3575 |             inquire(unit=20, name=concrete%text(1:10))
+     |                                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3576:36
+     |
+3576 |             inquire(unit=20, iomsg=concrete%text)
+     |                                    ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3577:26
+     |
+3577 |             open(newunit=concrete%n, status="scratch")
+     |                          ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3578:34
+     |
+3578 |             open(unit=20, iostat=concrete%n)
+     |                                  ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3579:33
+     |
+3579 |             open(unit=20, iomsg=concrete%text)
+     |                                 ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3580:30
+     |
+3580 |             close(20, iostat=concrete%n)
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3581:29
+     |
+3581 |             close(20, iomsg=concrete%text)
+     |                             ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3582:31
+     |
+3582 |             rewind(20, iostat=concrete%n)
+     |                               ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3583:30
+     |
+3583 |             rewind(20, iomsg=concrete%text)
+     |                              ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3584:34
+     |
+3584 |             backspace(20, iostat=concrete%n)
+     |                                  ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3585:33
+     |
+3585 |             backspace(20, iomsg=concrete%text)
+     |                                 ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3586:32
+     |
+3586 |             endfile(20, iostat=concrete%n)
+     |                                ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3587:31
+     |
+3587 |             endfile(20, iomsg=concrete%text)
+     |                               ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3588:30
+     |
+3588 |             flush(20, iostat=concrete%n)
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3589:29
+     |
+3589 |             flush(20, iomsg=concrete%text)
+     |                             ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3590:49
+     |
+3590 |             read(20, "(i1)", advance="no", size=concrete%n) item
+     |                                                 ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3591:32
+     |
+3591 |             read(20, *, iostat=concrete%n) item
+     |                                ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3592:33
+     |
+3592 |             write(20, *, iostat=concrete%n) item
+     |                                 ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3593:19
+     |
+3593 |             write(concrete%text(1:10), "(i1)") item
+     |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3595:30
+     |
+3595 |                 write(20, *) (item, index=1,2)
+     |                              ^^^^^^^^^^^^^^^^^ 
+
 semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3543:20
      |

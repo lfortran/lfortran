@@ -592,6 +592,7 @@ public:
                 }
 
                 if ( m_arg_str == std::string("newunit") ) {
+                    check_association_definable(a_newunit);
                     Vec<AST::fnarg_t> args;
                     args.reserve(al, 0);
                     AST::fnarg_t arg;
@@ -736,6 +737,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iostat);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
                 if (!ASRUtils::is_variable(a_iostat)) {
                     diag.add(Diagnostic(
@@ -764,6 +766,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iomsg);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
                 if (!ASRUtils::is_variable(a_iomsg)) {
                     diag.add(Diagnostic(
@@ -1191,6 +1194,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iostat);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
                 if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
                         diag.add(Diagnostic(
@@ -1211,6 +1215,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iomsg);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
                 if( a_iomsg->type != ASR::exprType::Var ||
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
@@ -1332,6 +1337,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iostat);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
                 if( a_iostat->type != ASR::exprType::Var ||
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
@@ -1354,6 +1360,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iomsg);
                 ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
                 if (a_iomsg->type != ASR::exprType::Var ||
                     !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
@@ -1400,6 +1407,18 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
+    }
+
+    void check_io_item_definable(ASR::expr_t *item, bool input) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            auto *loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+            check_association_definable(loop->m_var);
+            for (size_t i = 0; i < loop->n_values; i++) {
+                check_io_item_definable(loop->m_values[i], input);
+            }
+        } else if (input) {
+            check_association_definable(item);
+        }
     }
 
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
@@ -2019,6 +2038,7 @@ public:
                 iostat_explicit = true;
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iostat);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
                 if (!ASRUtils::is_variable(a_iostat)) {
                     diag.add(Diagnostic(
@@ -2056,6 +2076,7 @@ public:
                 iomsg_explicit = true;
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
+                check_association_definable(a_iomsg);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
                 if (!ASRUtils::is_variable(a_iomsg)) {
                     diag.add(Diagnostic(
@@ -2092,6 +2113,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_size = ASRUtils::EXPR(tmp);
+                check_association_definable(a_size);
                 ASR::ttype_t* a_size_type = ASRUtils::expr_type(a_size);
                 if( a_size->type != ASR::exprType::Var ||
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_size_type))) ) {
@@ -2113,6 +2135,7 @@ public:
                 }
                 this->visit_expr(*kwarg.m_value);
                 a_id = ASRUtils::EXPR(tmp);
+                check_association_definable(a_id);
                 ASR::ttype_t* a_id_type = ASRUtils::expr_type(a_id);
                 if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_id_type))) {
                         diag.add(Diagnostic(
@@ -2471,6 +2494,7 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
+            check_io_item_definable(expr, _type == AST::decl_stmtType::Read);
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -2484,6 +2508,14 @@ public:
         }
         if (_type == AST::decl_stmtType::Read) {
             for (auto *value : a_values_vec) check_association_definable(value);
+            if (a_nml) {
+                auto *group = ASR::down_cast<ASR::Namelist_t>(
+                    ASRUtils::symbol_get_past_external(a_nml));
+                for (size_t i = 0; i < group->n_var_list; i++) {
+                    check_association_definable(ASRUtils::EXPR(ASR::make_Var_t(
+                        al, loc, group->m_var_list[i])));
+                }
+            }
         } else if (a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
             check_association_definable(a_unit);
         }
@@ -2991,6 +3023,10 @@ public:
                 args[argname2idx[m_arg_str]] = ASRUtils::EXPR(tmp);
             }
         }
+        for (const auto &name : {"iostat", "iomsg"}) {
+            auto index = argname2idx.find(name);
+            if (index != argname2idx.end()) check_association_definable(args[index->second]);
+        }
     }
 
     void visit_Rewind(const AST::Rewind_t& x) {
@@ -3108,6 +3144,9 @@ public:
         Vec<ASR::expr_t*> iolength_args; iolength_args.reserve(al, 0);
         std::string node_name = "Inquire";
         fill_args_for_rewind_inquire_flush(x, 39, args, 40, argname2idx, node_name);
+        for (size_t i = 2; i < args.size(); i++) {
+            if (i != 3) check_association_definable(args[i]);
+        }
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
@@ -3144,6 +3183,7 @@ public:
             for (size_t i = 0; i < x.n_values; i++) {
                 this->visit_expr(*x.m_values[i]);
                 ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+                check_io_item_definable(expr, false);
                 iolength_args.push_back(al, expr);
             }
         }
