@@ -1977,9 +1977,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        // A component is passed as it is to a procedure,
                        // which may define the dummy, e.g. `h%item` with an
                        // allocatable `item` bound to a dummy without intent.
+                       // A VALUE dummy gets a copy of the actual, so the
+                       // copy is still made for it.
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
-                         (is_call ||
+                         ((is_call && !(dummy && dummy->m_value_attr)) ||
                           (!ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
                            !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))))) &&
                        !ASR::is_a<ASR::PointerNullConstant_t>(
