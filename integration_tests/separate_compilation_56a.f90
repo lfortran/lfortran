@@ -1,4 +1,14 @@
-module separate_compilation_56a_module
+module separate_compilation_56a
 implicit none
-integer :: base = 40
+contains
+    elemental real function f(x)
+        real, intent(in) :: x
+        f = 2.0 * x
+    end function
+
+    elemental subroutine s(x, y)
+        real, intent(in) :: x
+        real, intent(out) :: y
+        y = x + 1.0
+    end subroutine
 end module
