@@ -243,6 +243,25 @@ class ASRToLLVMVisitor;
                    ASR::is_a<ASR::Logical_t>(*v.m_type);
         }
 
+        // A scalar VALUE dummy of derived type of a procedure without the
+        // bind(c) ABI is passed by reference, and the callee copies the
+        // actual argument into a local variable (F2018 15.5.2.4). Each
+        // scalar class pointer component of the copy gets its own class
+        // wrapper, which the callee frees when it returns. (An optional
+        // VALUE dummy is made non-optional by an ASR pass.)
+        static inline bool is_struct_value_dummy_copied(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || !ASRUtils::is_arg_dummy(v.m_intent) ||
+                    !ASR::is_a<ASR::StructType_t>(*v.m_type) ||
+                    ASRUtils::is_class_type(v.m_type)) {
+                return false;
+            }
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                v.m_parent_symtab->asr_owner);
+            return ASR::is_a<ASR::Function_t>(*owner) &&
+                ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(owner))->m_abi
+                    != ASR::abiType::BindC;
+        }
+
         // A type(c_ptr) dummy argument that is intent(out), intent(inout),
         // or of unspecified intent without VALUE is passed by reference
         // (`void**`); any other type(c_ptr) dummy is passed by value
@@ -923,6 +942,23 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
+            // A scalar class pointer is a heap-allocated class wrapper
+            // {vptr, data*} owned by the pointer (freed by nullify and
+            // finalization). Make the class pointer stored at `dest` hold
+            // the contents of `src_wrapper` in its own wrapper, as pointer
+            // assignment does, or be null if `src_wrapper` is null.
+            void copy_class_pointer_wrapper(llvm::Value* src_wrapper, llvm::Value* dest,
+                llvm::Type* wrapper_type);
+
+            // Calls `fn` with the address of each scalar class pointer
+            // component stored in the object `ptr` of type `struct_sym`
+            // (including those of its parent and of its nested derived-type
+            // components that are neither allocatable nor pointers), and
+            // the type of its class wrapper. Returns whether there are any;
+            // with `ptr` null, only returns that.
+            bool visit_class_pointer_components(ASR::Struct_t* struct_sym, llvm::Value* ptr,
+                llvm::Module* module, const std::function<void(llvm::Value*, llvm::Type*)>& fn);
+
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
 
@@ -1130,6 +1166,16 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                // A dummy argument is not finalized (F2018 7.5.6.3): only
+                // free the class wrappers that the procedure's copy owns.
+                llvm_utils_->visit_class_pointer_components(struct_sym, llvm_var,
+                    llvm_utils_->module, [&](llvm::Value* slot, llvm::Type* wrapper_type) {
+                        llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(
+                            wrapper_type->getPointerTo(), slot));
+                    });
+                return;
+            }
             call_final_of_allocatable_local(v, llvm_var, struct_sym);
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
@@ -2514,6 +2560,9 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                return false;
+            }
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
                 // Most non-local variables are not owned by this scope and must

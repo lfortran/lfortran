@@ -9373,6 +9373,8 @@ public:
                     // parameter don't affect the caller's variable.
                     // CPtr is handled below: it is passed as the
                     // void* itself, not as a pointer to it.
+                    LCOMPILERS_ASSERT(!LLVM::is_struct_value_dummy_copied(*arg) ||
+                        llvm_arg.getType()->isPointerTy());
                     if (LLVM::is_value_dummy_passed_by_value(*arg)) {
                         llvm::Value* local_copy = builder->CreateAlloca(
                             llvm_arg.getType(), nullptr,
@@ -9386,10 +9388,27 @@ public:
                         llvm_arg.getType()->isPointerTy()) {
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_args[asr_arg_idx], arg->m_type, module.get());
-                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
-                        builder->CreateStore(loaded, local_copy);
+                        builder->CreateStore(
+                            llvm_utils->CreateLoad2(val_type, llvm_sym), local_copy);
+                        if (LLVM::is_struct_value_dummy_copied(*arg)) {
+                            // The copy must not share the class wrappers of
+                            // the actual's class pointer components.
+                            llvm_utils->visit_class_pointer_components(
+                                ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                                    ASRUtils::get_struct_sym_from_struct_expr(
+                                        x.m_args[asr_arg_idx]))),
+                                local_copy, module.get(),
+                                [&](llvm::Value* slot, llvm::Type* wrapper_type) {
+                                    llvm::Value* src_wrapper = llvm_utils->CreateLoad2(
+                                        wrapper_type->getPointerTo(), slot);
+                                    builder->CreateStore(llvm::ConstantPointerNull::get(
+                                        wrapper_type->getPointerTo()), slot);
+                                    llvm_utils->copy_class_pointer_wrapper(
+                                        src_wrapper, slot, wrapper_type);
+                                });
+                        }
                         llvm_sym = local_copy;
                     }
                     if (LLVM::is_cptr_dummy_in_local_storage(*arg)) {

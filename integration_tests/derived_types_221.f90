@@ -112,6 +112,41 @@ subroutine check_unlimited()
     end select
 end subroutine
 
+subroutine assign_by_value(v, w)
+    type(t), value :: v
+    type(t), intent(in) :: w
+    v = w
+    if (associated(w%p)) then
+        if (v%p%i /= w%p%i) error stop
+    else
+        if (associated(v%p)) error stop
+    end if
+end subroutine
+
+subroutine repoint_by_value(v, y)
+    type(t), value :: v
+    type(s), target, intent(in) :: y
+    v%p => y
+    if (v%p%i /= 2) error stop
+end subroutine
+
+subroutine check_value_dummy(x, y)
+    type(s), target, intent(in) :: x, y
+    type(t) :: a, b, e
+    integer :: k
+    a%p => x
+    b%p => y
+    call assign_by_value(a, b)
+    if (.not. associated(a%p, x)) error stop
+    do k = 1, 10
+        call assign_by_value(a, e)
+    end do
+    if (.not. associated(a%p, x)) error stop
+    call repoint_by_value(a, y)
+    if (.not. associated(a%p, x)) error stop
+    if (a%p%i /= 1) error stop
+end subroutine
+
 end module
 
 program derived_types_221
@@ -129,6 +164,7 @@ call check_array_constructor(x)
 call check_array_assignment(x, y)
 call check_allocate_source(x, y)
 call check_unlimited()
+call check_value_dummy(x, y)
 if (x%i /= 1 .or. y%i /= 2) error stop
 print *, "ok"
 end program
