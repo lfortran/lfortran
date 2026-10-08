@@ -11269,7 +11269,50 @@ public:
         llvm::Type* idx_type = arr_descr->get_index_type();
         unsigned idx_bits = idx_type->getIntegerBitWidth();
         ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
-        if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
+        ASR::ArraySection_t* value_section_no_desc = nullptr;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+            ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+            if (ASRUtils::extract_physical_type(ASRUtils::expr_type(value_section->m_v)) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+                value_section_no_desc = value_section;
+            }
+        }
+        if (value_section_no_desc != nullptr) {
+            // The data pointer is the address of the first element of the
+            // section, computed by indexing the base array at the lower
+            // bound of each sliced dimension.
+            ASR::ArraySection_t* value_section = value_section_no_desc;
+            Vec<ASR::array_index_t> first_args;
+            first_args.reserve(al, value_section->n_args);
+            for (size_t vi = 0; vi < value_section->n_args; vi++) {
+                ASR::array_index_t& vidx = value_section->m_args[vi];
+                ASR::array_index_t first_arg;
+                first_arg.loc = vidx.loc;
+                first_arg.m_left = nullptr;
+                first_arg.m_step = nullptr;
+                if (vidx.m_step == nullptr) {
+                    first_arg.m_right = vidx.m_right;
+                } else {
+                    LCOMPILERS_ASSERT(vidx.m_left != nullptr);
+                    first_arg.m_right = vidx.m_left;
+                }
+                first_args.push_back(al, first_arg);
+            }
+            ASR::expr_t* first_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
+                value_section->base.base.loc, value_section->m_v,
+                first_args.p, first_args.n, ASRUtils::extract_type(value_type),
+                ASR::arraystorageType::ColMajor, nullptr));
+            // Only the address of the first element is computed here, the
+            // element is not accessed.
+            int64_t ptr_loads_copy = ptr_loads;
+            bool bounds_checking_copy = compiler_options.po.bounds_checking;
+            ptr_loads = 0;
+            compiler_options.po.bounds_checking = false;
+            visit_expr(*first_elem);
+            compiler_options.po.bounds_checking = bounds_checking_copy;
+            ptr_loads = ptr_loads_copy;
+            value_data = tmp;
+        } else if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
             ASR::ttype_t* value_desc_asr_type = value_type;
             if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
                 ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
