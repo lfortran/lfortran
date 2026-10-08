@@ -137,6 +137,10 @@ only once, redirect to a log file and then examine the log file.
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
   or merge.
+  Caffeine's own LFortran unit tests and all coarray capability tests always run.
+  Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
+  use the same input comparison on every event, validate conservatively when
+  inputs cannot be determined, and retain full reference validation in Exhaustive.
 - Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
   Every full Quick suite runs with assertions and per-pass ASR verification.

@@ -419,8 +419,8 @@ policy."
 
 #### CI coverage
 
-Pull requests normally run only **Quick checks**. Quick runs exactly the same
-builds, test suites and selections on PRs, main pushes, release tags and manual
+Pull requests normally run only **Quick checks**. Quick uses the same
+builds, test suites and selection rules on PRs, main pushes, release tags and manual
 runs. Publishing steps remain push-only. Main runs Quick plus Exhaustive.
 Exhaustive adds configurations and broader suites, never another invocation
 of Quick, and runs identically on main, on labeled PRs and on manual dispatch.
@@ -562,10 +562,38 @@ with real applications, and in every explicitly requested Exhaustive run.
 There is no automatic exception for changes to serialization, finalization,
 I/O or GPU lowering.
 
-Caffeine is different: it supplies the coarray runtime backend. Building it
-and running the coarray capability checks remains part of Quick, just as
+Caffeine is different: it supplies the coarray runtime backend. Building it,
+running its own LFortran-compiled unit tests and running every registered coarray
+capability test remain part of Quick, just as
 Metal and CUDA-on-CPU integration tests validate particular backends and
 platforms. Toolchain/runtime dependencies are not the application catalog.
+
+`ci/test_caffeine.sh` uses Caffeine 0.8.2 and its generated `run-fpm.sh` wrapper,
+which selects LFortran and the GASNet runner. Unit tests use four images;
+the PRIF smoke test and integration tests keep their existing image settings.
+The missing-tool installer uses the same `fpm=0.12.0` pin as the application
+harness. A failed installed tool or unit test is an error, not a reason to
+skip coverage or reinstall speculatively.
+
+Only the Linux **GFortran/OpenCoarrays reference validation** is source-dependent
+in Quick. The shared workflow supplies `LFORTRAN_COARRAY_BASE` (the PR base SHA
+or push's previous SHA) and `LFORTRAN_COARRAY_HEAD` (the actual checkout SHA).
+`ci/coarray_tests.py` shares the harness's manifest parser and compares registered
+primary and `EXTRAFILES` sources, including edits, additions, renames and deletions.
+Changed coarray registrations, harness/environment inputs or relevant CMake
+dependencies also request reference validation. Unrelated integration registrations
+and compiler-only changes do not. The same comparison rule applies on every event;
+there is no reduced PR-only LFortran selection.
+
+When those inputs are demonstrably unchanged, neither shared-workflow setup nor
+the Caffeine script installs OpenMPI/OpenCoarrays for Quick, and no `caf`/`cafrun`
+checks run. Caffeine uses GASNet's SMP conduit, not MPI. Missing or inconsistent
+history (including manual runs, new refs or unavailable push bases), dirty
+checkouts and unresolved source dependencies log **conservative reference
+validation**, never an unexplained skip. Invalid test registrations fail explicitly.
+Standalone/default and Exhaustive invocations always request full Linux reference
+validation. macOS retains its existing no-OpenCoarrays behavior; Caffeine unit,
+smoke and all LFortran integration tests still run.
 
 When an application finds a compiler bug, reduce the failure to a registered
 integration regression in the relevant modes, fix the compiler, and verify

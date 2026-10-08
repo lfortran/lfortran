@@ -50,7 +50,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6=hb85ec53_102
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
@@ -147,7 +147,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.10
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.10' || '' }}
             binutils=2.45.1
             zstd-static=1.5.7
 
@@ -191,7 +191,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6=hb85ec53_102
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -289,4 +289,9 @@ jobs:
       - name: Test coarray runtime with Caffeine
         if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
         shell: bash -e -l {0}
+        env:
+          # Compare actual checkout inputs on PRs and pushes alike. Missing
+          # history (including manual/tag runs) requests conservative validation.
+          LFORTRAN_COARRAY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          LFORTRAN_COARRAY_HEAD: ${{ github.sha }}
         run: ci/test_caffeine.sh --verify-all-passes
