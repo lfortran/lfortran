@@ -162,6 +162,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     list(APPEND runtime_trait_flags --fast)
                 endif()
                 add_test(
+                    NAME test_paper_functional_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_paper_functional.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags}
+                )
+                add_test(
                     NAME test_runtime_trait_separate_${mode}
                     COMMAND ${LFORTRAN_TEST_PYTHON}
                         ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_separate_01.py

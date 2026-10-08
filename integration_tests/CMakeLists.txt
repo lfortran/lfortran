@@ -187,7 +187,18 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            if (RUN_TEST_DRIVER)
+                find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
+                if (NOT LFORTRAN_TEST_PYTHON)
+                    message(FATAL_ERROR "TEST_DRIVER requires Python")
+                endif()
+                add_test(NAME ${name} COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/${RUN_TEST_DRIVER}
+                    --executable $<TARGET_FILE:${name}>
+                    --source ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90)
+            else()
+                add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            endif()
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
@@ -268,7 +279,7 @@ endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC ISOLATE_MODULES)
-    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
+    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES TEST_DRIVER)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -3906,6 +3917,12 @@ RUN(NAME traits_static_02 LABELS llvm NO_STD_F23)
 RUN(NAME traits_static_03 LABELS llvm NO_STD_F23)
 RUN(NAME traits_static_03_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_04 LABELS llvm NO_STD_F23)
+RUN(NAME traits_paper_functional1 FILE traits_paper_functional/functional1
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_functional2 FILE traits_paper_functional/functional2
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_02 LABELS llvm llvm2 NO_STD_F23

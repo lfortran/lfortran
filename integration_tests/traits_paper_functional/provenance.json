@@ -1,0 +1,35 @@
+{
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "fb6ee9bb104dadf9aee3b01e4e71fada9245e08c",
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21"
+  },
+  "fixtures": [
+    {
+      "corpus_id": "functional1",
+      "source_path": "Code/Fortran/functional1.f90",
+      "file": "functional1.f90",
+      "sha256": "1d2edfe92ea41958e0671fefccad774b1c9ae519078825071156c349199b609f"
+    },
+    {
+      "corpus_id": "functional2",
+      "source_path": "Code/Fortran/functional2.f90",
+      "file": "functional2.f90",
+      "sha256": "05d98eb6f43b20cd9f53f610301c6fecd96677babe6662f504c7093dd5c5a7e6"
+    }
+  ],
+  "preservation": "Byte-for-byte copies, including original module names and whitespace.",
+  "acceptance": {
+    "stdin_choices": [1, 2],
+    "integer_result": 3,
+    "real_result": "3.0",
+    "modes": ["normal", "fast"],
+    "driver": "../traits_paper_functional.py"
+  },
+  "qualifications": [
+    "These proposed-language programs are not standard Fortran or GFortran oracles.",
+    "functional2 omits IMPORT real64 in average_real64. Existing LFortran host-name visibility accepts it; the milestone does not change interface-body host-association rules.",
+    "The separate procedure-value regression admits real32 explicitly to test the paper's real32 callable alias; the functional fixtures retain their original integer|real(real64) contract."
+  ]
+}
