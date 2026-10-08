@@ -45,6 +45,8 @@ program traits_procedure_value_01_oracle
     procedure(sum_integer), pointer :: isum
     procedure(sum_real64), pointer :: dsum
     procedure(copy_integer), pointer :: copy
+    ! GFortran can crash on a procedure pointer declared inside BLOCK.
+    procedure(sum_real32), pointer :: ssum
     integer :: copied
     real(real32) :: stot(2)
     real(real64) :: dtot(2)
@@ -57,7 +59,6 @@ program traits_procedure_value_01_oracle
     dtot(2) = dsum([2.d0,4.d0,6.d0,8.d0])
     if (any(abs(dtot - [15.d0,20.d0]) > 1.d-12)) error stop 3
     block
-        procedure(sum_real32), pointer :: ssum
         ssum => sum_real32
         if (evaluations /= 3) error stop 4
         stot(1) = ssum([1.,2.,3.,4.,5.])
