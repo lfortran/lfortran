@@ -9,4 +9,6 @@ program transfer_14
     if (transfer(epsilon(1d0) * tiny(1d0), 1_i8) /= 1_i8) error stop 4
     if (transfer(nearest(0d0, 1d0), 1_i8) /= 1_i8) error stop 5
     if (transfer(transfer(1_i8, 1d0), 1_i8) /= 1_i8) error stop 6
+    print "(ES15.7)", epsilon(1.0)*tiny(1.0), nearest(0.0,1.0), transfer(1_i4,1.0)
+    print "(ES24.16)", epsilon(1d0)*tiny(1d0), nearest(0d0,1d0), transfer(1_i8,1d0)
 end program transfer_14

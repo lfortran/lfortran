@@ -20,8 +20,7 @@ contains
 ! notString
     ! The following line causes an 'Unhandled Exception'.
     notstring_results = [(notstring (notstring_dataa(i)), i=1, size (notstring_dataa))]
-    print *, merge ('passed', 'failed',  &
-        all (notstring_results == notstring_expected))
+    if (any(notstring_results /= notstring_expected)) error stop
 
   end subroutine
 

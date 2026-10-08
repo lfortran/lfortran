@@ -527,6 +527,12 @@ filename = "warnings/format_a_integer_01.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "warnings/common_block_do_loop.f"
+asr_implicit_typing = true
+obj = true
+options = "--fixed-form"
+
+[[test]]
 filename = "preprocessor1.f90"
 asr_preprocess = true
 
@@ -761,6 +767,10 @@ run = true
 
 [[test]]
 filename = "../integration_tests/write_22.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/array_section_14.f90"
 run = true
 
 [[test]]

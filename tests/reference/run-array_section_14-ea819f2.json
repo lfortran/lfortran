@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_section_14-ea819f2",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/array_section_14.f90",
+    "infile_hash": "64f42e9a496c74eb906b054701d06f60310d5ba0d637e51c186ea26b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-array_section_14-ea819f2.stdout",
+    "stdout_hash": "24d8a6588ebbf9d617489309d887521f186423da8f3755d6e84f68b7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

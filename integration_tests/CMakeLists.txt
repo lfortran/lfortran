@@ -5866,3 +5866,18 @@ RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
 
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
+
+# Exact I/O paths from #7775, #7049 and #6124.
+RUN(NAME read_substring_unit_666 LABELS gfortran llvm
+    COPY_TO_BIN read_substring_unit_666.f90)
+foreach(test_name string_97 string_97_FAST string_97_STD_F23)
+    if (TEST ${test_name})
+        set_tests_properties(${test_name} PROPERTIES PASS_REGULAR_EXPRESSION "^ a b c\n$")
+    endif()
+endforeach()
+foreach(test_name transfer_14 transfer_14_FAST transfer_14_STD_F23)
+    if (TEST ${test_name})
+        set_tests_properties(${test_name} PROPERTIES PASS_REGULAR_EXPRESSION
+        "^  1[.]4012985E-45\n  1[.]4012985E-45\n  1[.]4012985E-45\n  4[.]9406564584124654-324\n  4[.]9406564584124654-324\n  4[.]9406564584124654-324\n$")
+    endif()
+endforeach()
