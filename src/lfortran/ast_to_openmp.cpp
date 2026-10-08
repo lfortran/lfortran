@@ -826,6 +826,16 @@ public:
         this->visit_expr(*x.m_right);
         s.append(")");
     }
+    void visit_GenericProcedureValue(const GenericProcedureValue_t &x) {
+        std::string r = std::string(x.m_name) + "{";
+        for (size_t i = 0; i < x.n_args; i++) {
+            this->visit_decl_attribute(*x.m_args[i]);
+            if (i) r += ", ";
+            r += s;
+        }
+        s = r + "}";
+    }
+
     void visit_FuncCallOrArray(const FuncCallOrArray_t &x) {
         std::string r = "";
         r.append(x.m_func);

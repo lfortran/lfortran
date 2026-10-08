@@ -4009,6 +4009,11 @@ public:
         }
     }
 
+    void visit_GenericProcedureValue(const GenericProcedureValue_t &x) {
+        s = std::string(x.m_name) + format_generic_args(x.m_args, x.n_args);
+        last_expr_precedence = 13;
+    }
+
     void visit_FuncCallOrArray(const FuncCallOrArray_t &x) {
         std::string r;
         if (x.n_member > 0) {

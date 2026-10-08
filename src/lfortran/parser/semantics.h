@@ -2674,6 +2674,18 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
         /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size());
 }
+
+static inline ast_t* generic_procedure_value(Allocator &al, Location &loc,
+        ast_t* name, const Vec<ast_t*>& args) {
+    Vec<decl_attribute_t*> attributes;
+    attributes.reserve(al, args.size());
+    for (auto* arg : args) {
+        attributes.push_back(al, down_cast<decl_attribute_t>(arg));
+    }
+    return make_GenericProcedureValue_t(al, loc, name2char(name),
+        attributes.p, attributes.size());
+}
+
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), empty_vecast(), l)
 #define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \

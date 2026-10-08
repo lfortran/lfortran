@@ -2908,6 +2908,16 @@ public:
 
         // The symbol `v` must be a Variable
         ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
+        if (ASR::is_a<ASR::Template_t>(*vpast)) {
+            auto* generic = ASR::down_cast<ASR::Template_t>(vpast);
+            ASR::symbol_t* procedure = generic->m_symtab->get_symbol(generic->m_name);
+            if (procedure && ASR::is_a<ASR::Function_t>(*procedure)) {
+                diag.semantic_error_label("generic procedure '" + var_name +
+                    "' requires explicit type arguments when used as a procedure value",
+                    {loc}, "");
+                throw SemanticAbort();
+            }
+        }
         if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
             ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
             // Check if this variable needs casting due to select type block
@@ -21282,6 +21292,41 @@ public:
         return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift, n, w, out_type);
     }
 
+    void visit_GenericProcedureValue(const AST::GenericProcedureValue_t &x) {
+        const Location& loc = x.base.base.loc;
+        std::string name = to_lower(x.m_name);
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+            current_scope->resolve_symbol(name));
+        if (symbol && ASR::is_a<ASR::Function_t>(*symbol)) {
+            auto* owner = ASRUtils::get_asr_owner(symbol);
+            if (owner && ASR::is_a<ASR::Template_t>(*owner)) symbol = owner;
+        }
+        if (!symbol || !ASR::is_a<ASR::Template_t>(*symbol)) {
+            trait_call_error("'" + name + "' is not a generic procedure", loc);
+        }
+        auto* generic = ASR::down_cast<ASR::Template_t>(symbol);
+        ASR::symbol_t* procedure = generic->m_symtab->get_symbol(generic->m_name);
+        if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure)) {
+            trait_call_error("'" + name + "' is not a generic procedure", loc);
+        }
+        ASR::symbol_t* specialization = nullptr;
+        if (!trait_constraints(generic).empty()) {
+            Vec<ASR::call_arg_t> no_actuals;
+            no_actuals.reserve(al, 0);
+            specialization = prepare_trait_procedure_call(generic,
+                ASR::down_cast<ASR::Function_t>(procedure), no_actuals,
+                x.m_args, x.n_args, loc);
+        } else {
+            std::string instantiated = handle_templated(name,
+                ASRUtils::is_owned_by_template(current_scope), x.m_args, x.n_args, loc);
+            specialization = current_scope->resolve_symbol(instantiated);
+        }
+        specialization = make_operator_proc_visible(specialization, "generic", current_scope);
+        ASRUtils::insert_module_dependency(specialization, al, current_module_dependencies);
+        ADD_ASR_DEPENDENCIES(current_scope, specialization, current_function_dependencies);
+        tmp = ASR::make_Var_t(al, loc, specialization);
+    }
+
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         // An actual argument of the form `( cond ? a : b )` is a conditional
         // argument (R1526). It is expanded before the reference is resolved,
@@ -24979,7 +25024,7 @@ public:
             }
         }
 
-        ASR::symbol_t *s = temp->m_symtab->resolve_symbol(func_name);
+        ASR::symbol_t *s = temp->m_symtab->get_symbol(temp->m_name);
 
         SymbolTable *target_scope = current_scope;
         if (is_nested) {

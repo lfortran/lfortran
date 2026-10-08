@@ -73,6 +73,48 @@ cannot determine a type parameter, provide it explicitly.
 See `integration_tests/traits_static_01.f90` for a complete example with two
 unrelated implementing types and checked runtime results.
 
+### Explicit procedure values
+
+Without an ordinary actual-argument list, braces select a procedure itself,
+not a call or a function result:
+
+```fortran
+procedure(sum_real64), pointer :: dsum
+dsum => numeric_sum{real(real64)}
+```
+
+All generic type arguments must be explicit. The same checked constraints,
+kind resolution, specialization cache, and queued body instantiation used by
+ordinary generic calls apply, including renamed imports and private recursive
+helpers in separately compiled modules. Association then uses the ordinary
+procedure pointer's explicit interface; incompatible argument/result types,
+ranks, intents, optionality, `VALUE`, or required purity are diagnosed.
+
+A callable alias can be local to an `ASSOCIATE` construct:
+
+```fortran
+associate(ssum => numeric_sum{real(real32)})
+    total = ssum([1., 2., 3.])
+end associate
+```
+
+The generic's constraint must admit `real(real32)` for this example.
+The alias is not a definable procedure pointer. Taking a procedure value does
+not execute it. `GenericProcedureValue` preserves the source distinction in
+the AST; semantics specializes through the existing template machinery and
+produces an ordinary procedure `Var`, without a new backend ABI.
+
+`traits_procedure_value_01` and its standard-Fortran oracle cover values,
+pointer association, callable aliases, and dummy procedures;
+`traits_procedure_value_02` covers renamed, separately compiled generics.
+The byte-preserved paper `functional1.f90` and `functional2.f90` fixtures live
+in `integration_tests/traits_paper_functional/`, with provenance and known
+paper qualifications beside them. Their driver supplies both original stdin
+choices and checks integer `3` and real `3.0` in normal and fast modes.
+Each fixture has private module output, preserving the authors' shared module
+name without parallel-build collisions. These extension fixtures are not
+claimed to compile with GFortran.
+
 ## Generic messages
 
 A trait message may use the same constrained generic-procedure syntax:

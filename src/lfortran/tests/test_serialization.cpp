@@ -182,6 +182,62 @@ end program
         LCompilers::LFortran::pickle(*reparsed.result));
 }
 
+TEST_CASE("Generic procedure values preserve syntax and serialize references") {
+    const std::string source = R"(
+module generic_values
+implicit none
+contains
+function first{integer | real(8) :: T}(x) result(r)
+type(T), intent(in) :: x(:)
+type(T) :: r
+r = x(1)
+end function
+end module
+program consumer
+use generic_values
+implicit none
+procedure(first_integer), pointer :: p
+integer :: result
+abstract interface
+function first_integer(x) result(r)
+integer, intent(in) :: x(:)
+integer :: r
+end function
+end interface
+p => first{integer}
+associate(f => first{integer})
+    result = f([1, 2])
+end associate
+end program
+)";
+    ast_ser(source);
+    asr_ser(source);
+    Allocator al(256*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("p => first{integer}") != std::string::npos);
+    CHECK(printed.find("first{integer}(") == std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto lowered = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(lowered.ok);
+    auto* program = LCompilers::ASR::down_cast<LCompilers::ASR::Program_t>(
+        lowered.result->m_symtab->get_symbol("consumer"));
+    REQUIRE(program->n_body == 2);
+    auto* association = LCompilers::ASR::down_cast<LCompilers::ASR::Associate_t>(
+        program->m_body[0]);
+    REQUIRE(LCompilers::ASR::is_a<LCompilers::ASR::Var_t>(*association->m_value));
+    auto* value = LCompilers::ASR::down_cast<LCompilers::ASR::Var_t>(
+        association->m_value);
+    CHECK(LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(
+        *LCompilers::ASRUtils::symbol_get_past_external(value->m_v)));
+}
+
 static const std::string numeric_trait_source = R"(
 module numeric_contracts
 implicit none

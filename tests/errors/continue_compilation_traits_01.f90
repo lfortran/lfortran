@@ -3777,3 +3777,118 @@ contains
         p => null((q))
     end subroutine
 end module
+
+module traits_procedure_value_errors
+    implicit none
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface
+    abstract interface
+        function integer_vector(x) result(s)
+            integer, intent(in) :: x(:)
+            integer :: s
+        end function
+        function real_vector(x) result(s)
+            real(8), intent(in) :: x(:)
+            real(8) :: s
+        end function
+        function integer_scalar(x) result(s)
+            integer, intent(in) :: x
+            integer :: s
+        end function
+        function integer_out(x) result(s)
+            integer, intent(out) :: x(:)
+            integer :: s
+        end function
+        function integer_optional(x) result(s)
+            integer, optional, intent(in) :: x(:)
+            integer :: s
+        end function
+        pure function integer_pure(x) result(s)
+            integer, intent(in) :: x(:)
+            integer :: s
+        end function
+        function integer_value(x) result(s)
+            integer, value, intent(in) :: x
+            integer :: s
+        end function
+    end interface
+contains
+    function total{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function
+    function ordinary(x) result(s)
+        integer, intent(in) :: x(:)
+        integer :: s
+        s = x(1)
+    end function
+    function identity{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x
+        type(T) :: s
+        s = x
+    end function
+    subroutine missing_type_arguments()
+        procedure(integer_vector), pointer :: p
+        p => total
+    end subroutine
+    subroutine empty_type_arguments()
+        procedure(integer_vector), pointer :: p
+        p => total{}
+    end subroutine
+    subroutine too_many_type_arguments()
+        procedure(integer_vector), pointer :: p
+        p => total{integer, integer}
+    end subroutine
+    subroutine non_type_argument()
+        procedure(integer_vector), pointer :: p
+        p => total{4}
+    end subroutine
+    subroutine wrong_kind()
+        procedure(real_vector), pointer :: p
+        p => total{real(4)}
+    end subroutine
+    subroutine wrong_return_type()
+        procedure(integer_vector), pointer :: p
+        p => total{real(8)}
+    end subroutine
+    subroutine wrong_rank()
+        procedure(integer_scalar), pointer :: p
+        p => total{integer}
+    end subroutine
+    subroutine wrong_intent()
+        procedure(integer_out), pointer :: p
+        p => total{integer}
+    end subroutine
+    subroutine wrong_optional()
+        procedure(integer_optional), pointer :: p
+        p => total{integer}
+    end subroutine
+    subroutine wrong_purity()
+        procedure(integer_pure), pointer :: p
+        p => total{integer}
+    end subroutine
+    subroutine wrong_value_attribute()
+        procedure(integer_value), pointer :: p
+        p => identity{integer}
+    end subroutine
+    subroutine nongeneric_value()
+        procedure(integer_vector), pointer :: p
+        p => ordinary{integer}
+    end subroutine
+    subroutine ordinary_interface_mismatch()
+        procedure(real_vector), pointer :: p
+        p => ordinary
+    end subroutine
+    subroutine redefine_callable_alias()
+        associate(f => total{integer})
+            f => total{integer}
+        end associate
+    end subroutine
+    subroutine nullify_callable_alias()
+        associate(f => total{integer})
+            nullify(f)
+        end associate
+    end subroutine
+end module

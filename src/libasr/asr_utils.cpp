@@ -6681,6 +6681,11 @@ static InterfaceMismatch argument_mismatch(const std::string &what, size_t i,
             which + " must agree with '" + std::string(decl_arg->m_name) +
             "' on the OPTIONAL attribute"};
     }
+    if (arg->m_value_attr != decl_arg->m_value_attr) {
+        return {true, "argument_value_matches",
+            which + " must agree with '" + std::string(decl_arg->m_name) +
+            "' on the VALUE attribute"};
+    }
     ASR::ttype_t *type = arg->m_type;
     ASR::ttype_t *decl_type = decl_arg->m_type;
     if (type == nullptr || decl_type == nullptr) return {};

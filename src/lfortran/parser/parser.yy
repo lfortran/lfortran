@@ -2620,6 +2620,10 @@ designator
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
     | id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
+    | id "{" instantiate_symbol_list "}" {
+            $$ = generic_procedure_value(p.m_a, @$, $1, $3); }
+    | id "{" "}" {
+            $$ = generic_procedure_value(p.m_a, @$, $1, empty_vecast()); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }

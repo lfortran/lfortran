@@ -3232,6 +3232,8 @@ public:
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         check_association_definable(target);
+        check_assignment_to_constant_variable(extract_assignment_base_symbol(target),
+            x.base.base.loc);
         if (ASR::is_a<ASR::Var_t>(*target) && ASRUtils::association_variable(target)) {
             trait_call_error("a select type associate name is not a pointer", target->base.loc);
         }
@@ -3460,7 +3462,27 @@ public:
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target,
                     cast_procedure(value, target_func_type, target_decl));
             } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
+                auto* expected = const_cast<ASR::Function_t*>(
+                    ASRUtils::get_function_from_expr(target));
+                auto* actual = const_cast<ASR::Function_t*>(
+                    ASRUtils::get_function_from_expr(value));
+                if (actual && expected) {
+                    auto mismatch = ASRUtils::interface_mismatch(
+                        "procedure pointer target", actual, expected, actual->n_args, true);
+                    if (mismatch.mismatch) {
+                        trait_call_error("interface mismatch in procedure pointer assignment: " +
+                            mismatch.message, x.base.base.loc);
+                    }
+                }
+                if (target_func_type->m_pure && !value_func_type->m_pure) {
+                    trait_call_error("a pure procedure pointer requires a pure target",
+                        x.base.base.loc);
+                }
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+            }
+            if (!tmp) {
+                trait_call_error("interface mismatch in procedure pointer assignment",
+                    x.base.base.loc);
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
@@ -3492,6 +3514,8 @@ public:
             }
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
+            bool procedure_alias = ASR::is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(tmp_type));
             bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr) ||
                 selector_has_constant_or_non_definable_base(tmp_expr);
 
@@ -3503,7 +3527,9 @@ public:
             // designator cases below, which alias the associate name to the
             // selector's storage, may therefore apply. The parentheses are
             // dropped by visit_Parenthesis, so this is decided on the AST.
-            if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
+            if (procedure_alias) {
+                create_associate_stmt = true;
+            } else if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
                 if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                     ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                     if (variable->m_storage != ASR::storage_typeType::Parameter) {
@@ -3604,6 +3630,11 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type, nullptr, nullptr, name);
             ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, x.base.base.loc, tmp_expr, current_scope);
+            if (procedure_alias) {
+                auto* procedure = const_cast<ASR::Function_t*>(
+                    ASRUtils::get_function_from_expr(tmp_expr));
+                struct_sym = make_operator_proc_visible(&procedure->base, "associate", current_scope);
+            }
             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                  ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, struct_sym,
@@ -3617,7 +3648,7 @@ public:
                     ? ASR::intentType::Local : ASR::intentType::In;
                 variable->m_target_attr = ASRUtils::association_has_target(tmp_expr);
             }
-            if (selector_is_constant) {
+            if (selector_is_constant || procedure_alias) {
                 non_definable_associate_variables.insert(associate_sym);
             }
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
@@ -11004,6 +11035,8 @@ public:
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
             check_association_definable(tmp_expr);
+            check_assignment_to_constant_variable(extract_assignment_base_symbol(tmp_expr),
+                x.base.base.loc);
             if (ASR::is_a<ASR::Var_t>(*tmp_expr) && ASRUtils::association_variable(tmp_expr)) {
                 trait_call_error("a select type associate name is not a pointer",
                     tmp_expr->base.loc);

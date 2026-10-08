@@ -229,6 +229,7 @@ expr
     | Nil()
     | InferImpliedDoLoop(expr* values, identifier var, expr start, expr end,
         expr? increment)
+    | GenericProcedureValue(identifier name, decl_attribute* args)
 
 
 -- All statement nodes have an optional trivia?, here is the meaning:
