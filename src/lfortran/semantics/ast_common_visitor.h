@@ -17366,13 +17366,24 @@ public:
                                         std::to_string(array_size), {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
+                int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
+                if (pad_size == 0) {
+                    diag.add(Diagnostic("reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array",
+                                        Level::Error, Stage::Semantic, {Label("`pad` has size zero, but `shape` specifies size of " +
+                                        std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                        std::to_string(array_size), {pad->base.loc})}));
+                    throw SemanticAbort();
+                }
             }
             if (array_value && pad_value) {
                 ASR::ttype_t* a_type = ASRUtils::expr_type(array_value);
                 a_type = ASRUtils::type_get_past_pointer(a_type);
                 ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
                 int64_t value_size = ASRUtils::get_fixed_size_of_array(a_type);
-                if (value_size != -1 && new_shape_size > value_size) {
+                int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_value));
+                // Padding needs a non-empty `pad`; otherwise `source` is
+                // left unpadded so that it is not folded below
+                if (value_size != -1 && new_shape_size > value_size && pad_size > 0) {
                     Vec<ASR::expr_t*> elements;
                     elements.reserve(al, new_shape_size);
                     ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
@@ -17381,8 +17392,7 @@ public:
                         elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
                     }
                     int64_t diff = new_shape_size - value_size;
-                    int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_value));
-                    for (int64_t i = 0; i < diff && pad_size > 0; i++) {
+                    for (int64_t i = 0; i < diff; i++) {
                         elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
                     }
                     size_t curr_idx = elements.size();

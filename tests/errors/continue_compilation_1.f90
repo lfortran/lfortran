@@ -2148,3 +2148,8 @@ subroutine intent_in_bound_before_decl_error(a, nz)
     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
     a = 1
 end subroutine intent_in_bound_before_decl_error
+
+subroutine reshape_zero_size_pad_error()
+    implicit none
+    print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+end subroutine reshape_zero_size_pad_error
