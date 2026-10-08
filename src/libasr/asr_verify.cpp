@@ -3071,7 +3071,8 @@ public:
                     !x.m_value && !x.m_value_attr && !x.n_codims && value,
                 "asr.verify.association.storage",
                 "A data association is a once-bound scalar construct local, not an owner or pointer");
-            require_id(ASRUtils::association_is_definable(value) || x.m_intent == intentType::In,
+            require_id(!check_external || ASRUtils::association_is_definable(value) ||
+                    x.m_intent == intentType::In,
                 "asr.verify.association.definable",
                 "A data association must preserve its selector's nondefinability");
             require_id(!check_external || !x.m_target_attr || ASRUtils::association_has_target(value),

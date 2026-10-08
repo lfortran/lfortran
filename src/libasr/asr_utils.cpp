@@ -5966,7 +5966,8 @@ ASR::Variable_t *association_variable(ASR::expr_t *expr) {
     if (!expr) return nullptr;
     switch (expr->type) {
         case ASR::exprType::Var: {
-            auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            auto *variable = get_variable_from_symbol(symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v));
             return variable && variable->m_storage == ASR::storage_typeType::Association
                 ? variable : nullptr;
         }
@@ -6034,7 +6035,8 @@ bool association_is_definable(ASR::expr_t *value) {
         return variable->m_intent != ASR::intentType::In;
     }
     if (!ASR::is_a<ASR::Var_t>(*value)) return false;
-    auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(value)->m_v);
+    auto *variable = get_variable_from_symbol(symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(value)->m_v));
     return variable && variable->m_storage != ASR::storage_typeType::Parameter &&
         (variable->m_intent != ASR::intentType::In || is_pointer(variable->m_type));
 }
@@ -6044,7 +6046,8 @@ bool association_has_target(ASR::expr_t *value) {
     if (auto *source = association_source(value)) return association_has_target(source);
     if (association_variable(value)) return is_valid_pointer_assignment_target(value);
     if (!ASR::is_a<ASR::Var_t>(*value)) return false;
-    auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(value)->m_v);
+    auto *variable = get_variable_from_symbol(symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(value)->m_v));
     return variable && (variable->m_target_attr || is_pointer(variable->m_type));
 }
 

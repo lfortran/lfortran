@@ -4664,6 +4664,21 @@ TEST_CASE("Topological sorting mod_int") {
     CHECK(LCompilers::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_2", "mod_1", "mod_4", "mod_3" }));
 }
 
+TEST_CASE("Runtime trait association queries preserve unresolved imports") {
+    using namespace LCompilers;
+    Allocator al(4096);
+    Location loc{1, 1};
+    auto *scope = al.make_new<SymbolTable>(nullptr);
+    auto *external = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+        al, loc, scope, s2c(al, "shared"), nullptr, s2c(al, "provider"),
+        nullptr, 0, s2c(al, "shared"), ASR::accessType::Public));
+    scope->add_symbol("shared", external);
+    auto *variable = ASRUtils::EXPR(ASR::make_Var_t(al, loc, external));
+    CHECK(ASRUtils::association_variable(variable) == nullptr);
+    CHECK_FALSE(ASRUtils::association_is_definable(variable));
+    CHECK_FALSE(ASRUtils::association_has_target(variable));
+}
+
 TEST_CASE("Runtime trait inspection preserves guarded data associations") {
     using namespace LCompilers;
     const std::string source = R"(
