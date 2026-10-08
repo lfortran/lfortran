@@ -70,7 +70,7 @@ TEST_CASE("LLVM pointer GEP indices preserve signed offsets") {
             std::numeric_limits<int>::max()}) {
         CAPTURE(offset);
         auto *gep = llvm::dyn_cast<llvm::GetElementPtrInst>(
-            utils.create_ptr_gep2(element_type, function->getArg(0), offset));
+            utils.create_ptr_gep2(element_type, &*function->arg_begin(), offset));
         REQUIRE(gep);
         REQUIRE(gep->getNumIndices() == 1);
         auto *index = llvm::dyn_cast<llvm::ConstantInt>(gep->getOperand(1));
