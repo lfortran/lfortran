@@ -9421,6 +9421,11 @@ public:
                         } else {
                             symbol_variable->m_type = type;
                         }
+                        if (is_argument && s_intent != ASRUtils::intent_unspecified) {
+                            // The dummy was referenced (e.g. in an array bound)
+                            // before this declaration gave it an explicit intent
+                            symbol_variable->m_intent = s_intent;
+                        }
                         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))
                             || ASR::is_a<ASR::UnionType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
                             symbol_variable->m_type_declaration = type_declaration;
@@ -15594,47 +15599,19 @@ public:
                         // mutate the callee signature here; only rewrite the actual argument.
                         if (callee_is_external_symbol) {
                             expected_phys = ASR::array_physical_typeType::PointerArray;
-                            expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                         }
+                        // The actual argument is sequence associated with the dummy, so the
+                        // dummy's bounds are never part of the argument's type. Drop them:
+                        // they belong to the callee and may reference symbols (FunctionParam,
+                        // getters of module variables) that the caller must not depend on.
+                        expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
+                            al, array_arg_idx[i], expected_phys, true);
                         ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(expected_arg_type));
 
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
 
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
-
-                        // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                        SetChar temp_function_dependencies;
-                        ASRUtils::ReplaceFunctionParamWithArg r(al, args.p, args.n);
-                        ASRUtils::CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-                        bool valid_symbols = true;
-                        Vec<ASR::dimension_t> dimensions_; dimensions_.reserve(al, array_t->n_dims);
-                        for (size_t i = 0; i < array_t->n_dims; i++) {
-                            ASR::dimension_t dim;
-                            dim.loc = array_t->m_dims[i].loc;
-                            dim.m_start = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_start);
-                            dim.m_length = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_length);
-                            valid_symbols = c.check_and_update_symbols(dim.m_length) && c.check_and_update_symbols(dim.m_start);
-                            if (!valid_symbols) {
-                                break;
-                            }
-                            dimensions_.push_back(al, dim);
-                        }
-                        if (valid_symbols) {
-                            for (size_t i = 0; i < array_t->n_dims; i++) {
-                                array_t->m_dims[i] = dimensions_[i];
-                            }
-                            for (size_t i = 0; i < temp_function_dependencies.n; i++) {
-                                current_function_dependencies.push_back(al, temp_function_dependencies[i]);
-                            }
-                        } else {
-                            expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, array_arg_idx[i], expected_phys, true
-                            );
-                            expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
-                                ASRUtils::type_get_past_pointer(expected_arg_type));
-                            array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
-                        }
 
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
                                                         ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
