@@ -20077,7 +20077,27 @@ public:
                 ptr_loads = ptr_loads_copy;
 
                 ASR::ttype_t* elem_type = ASRUtils::expr_type(idl->m_values[vi]);
-                if (is_string) {
+                if (is_string && ASRUtils::is_character(*elem_type)) {
+                    std::string rt_name = "_lfortran_string_read_str";
+                    llvm::Function* str_fn = module->getFunction(rt_name);
+                    if (!str_fn) {
+                        llvm::FunctionType* ft = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context),
+                            { character_type,
+                              llvm::Type::getInt64Ty(context),
+                              character_type,
+                              llvm::Type::getInt64Ty(context),
+                              llvm::Type::getInt64Ty(context)->getPointerTo()
+                            }, false);
+                        str_fn = llvm::Function::Create(ft,
+                            llvm::Function::ExternalLinkage, rt_name, module.get());
+                    }
+                    llvm::Value* dest_data, *dest_len;
+                    std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
+                        ASRUtils::get_string_type(elem_type), elem_ptr);
+                    builder->CreateCall(str_fn, {str_src_data, str_src_len,
+                        dest_data, dest_len, str_offset});
+                } else if (is_string) {
                     llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
                         idl->m_values[vi], elem_type, module.get());
                     llvm::Value* size_one = llvm::ConstantInt::get(
@@ -20669,15 +20689,20 @@ public:
                         }
                     }
                     // General case: generate a loop to read elements one by one
-                    // This handles multi-dimensional arrays like (a(i,j), j=1,n)
-                    // and struct member references like (s%spec(j)%num, j=1,n).
+                    // This handles multi-dimensional arrays like (a(i,j), j=1,n),
+                    // struct member references like (s%spec(j)%num, j=1,n)
+                    // and plain scalar variables like (value, j=1,n).
                     {
                         bool can_handle = (idl->n_values >= 1);
                         for (size_t vi = 0; vi < idl->n_values && can_handle; vi++) {
+                            ASR::ttype_t* item_type = ASRUtils::expr_type(idl->m_values[vi]);
                             can_handle =
                                 ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[vi]) ||
                                 ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[vi]) ||
-                                ASR::is_a<ASR::StructInstanceMember_t>(*idl->m_values[vi]);
+                                ASR::is_a<ASR::StructInstanceMember_t>(*idl->m_values[vi]) ||
+                                (ASR::is_a<ASR::Var_t>(*idl->m_values[vi]) &&
+                                    !ASRUtils::is_array(item_type) &&
+                                    !ASRUtils::is_allocatable_or_pointer(item_type));
                         }
                         if (can_handle) {
                             generate_read_implied_do_loop(idl, unit_val, iostat,
