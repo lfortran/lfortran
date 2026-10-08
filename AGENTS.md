@@ -131,16 +131,20 @@ only once, redirect to a log file and then examine the log file.
 
 ### CI policy
 
-- `Quick checks` is the normal PR gate. It runs full Linux LLVM/reference
-  coverage and representative checks on every platform, plus shared compiler
-  compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
+- `Quick checks` is the normal PR gate and runs the same builds, tests and
+  selections on PRs, main, release tags and manual runs. It runs full Linux
+  LLVM/reference coverage and representative checks on every platform, plus
+  shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
   or merge.
 - Quick's optimized LLVM 11 compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
   These modes are not just smoke selections.
-  PR Exhaustive checks add missing configurations without replaying Quick.
-  Main retains the original full matrix and mode coverage.
+  Exhaustive checks add missing configurations without replaying Quick.
+  LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
+  Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
+  coverage belong to supplemental Exhaustive jobs, preserving the original
+  main coverage without making Quick slower on main.
 - Third-party applications are **bug generators for integration tests**, not a
   PR regression suite. Run the application catalog on every push to `main`,
   never on ordinary, labeled or manually dispatched PR checks. This includes
@@ -152,7 +156,8 @@ only once, redirect to a log file and then examine the log file.
 - Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
   checks. Do not apply it automatically based on files or compiler subsystems
   touched. It does not enable the application catalog on a PR. Manual dispatch
-  in a fork is an alternative; verify its tested SHA and result there.
+  in a fork is an alternative; dispatch Quick separately if it has not run on
+  that revision, and verify both tested SHAs and results.
 - Every main push keeps the full compiler matrix and application validation.
   Main runs are not automatically cancelled or coalesced; maintainers may
   manually cancel older runs while keeping the latest. Release-tag workflows

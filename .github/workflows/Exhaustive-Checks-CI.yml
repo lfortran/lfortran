@@ -60,12 +60,6 @@ jobs:
           esac
           echo "run=$run" >> "$GITHUB_OUTPUT"
 
-  quick:
-    name: Quick coverage for standalone run
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/Quick-Checks-CI.yml
-
   compatibility:
     name: Extended compiler checks
     needs: gate
@@ -73,6 +67,47 @@ jobs:
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
       scope: ${{ github.event_name == 'push' && 'main' || 'extra' }}
+
+  platform:
+    name: Full platform coverage (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
+    runs-on: ${{ matrix.os }}
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    env:
+      MACOSX_DEPLOYMENT_TARGET: 26.0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            llvm-version: "11"
+          - os: ubuntu-latest
+            llvm-version: "11"
+          - os: ubuntu-latest
+            llvm-version: "21"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Build platform compiler
+        uses: ./.github/actions/build-platform
+        with:
+          os: ${{ matrix.os }}
+          llvm-version: ${{ matrix.llvm-version }}
+
+      - name: Test full platform coverage
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                export MACOS=1 NPROC=3
+                ./run_tests.py
+            else
+                export MACOS=0
+            fi
+            bash ci/test_llvm_integration.sh --platform
 
   debug_outOfSource:
     name: Check Out-of-Source Debug build

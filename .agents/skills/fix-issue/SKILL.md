@@ -421,7 +421,10 @@ Exhaustive workflow; subsequent pushes rerun it while the label remains.
 If labeling is unavailable, an explicitly requested manual run in the fork
 is an alternative:
 `gh workflow run Exhaustive-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Record its run ID, URL and head SHA in `state.md` and wait with
+Exhaustive never invokes Quick. If there is no successful Quick run for the
+same revision, also dispatch
+`gh workflow run Quick-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
+Record each run ID, URL and head SHA in `state.md` and wait with
 `gh run watch <run-id> --repo <login>/lfortran`; it may not appear in upstream
 `gh pr checks`. A push invalidates the old result. Extended-check failures
 go to the fix subagent like any other CI failure.

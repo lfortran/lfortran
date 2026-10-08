@@ -419,15 +419,22 @@ policy."
 
 #### CI coverage
 
-Pull requests normally run only **Quick checks**. Quick owns the internal
-regression suites; Exhaustive adds configurations, not another copy of Quick.
-The shared compiler workflow has three explicit coverage roles:
+Pull requests normally run only **Quick checks**. Quick runs exactly the same
+builds, test suites and selections on PRs, main pushes, release tags and manual
+runs. Publishing steps remain push-only. Exhaustive adds configurations and
+broader suites, never another invocation of Quick.
 
-| Role | Native LLVM matrix | Other backend jobs |
+The shared native compiler workflow has three explicit coverage roles:
+
+| Role | Caller | Native LLVM matrix |
 | --- | --- | --- |
-| `quick` | Linux 7/11/23 | Full LLVM-WASM, no-LLVM and MLIR suites |
-| `extra` | Linux 7/23 and macOS 22 | None: Quick already owns them |
-| `main` | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 | Original complete backend coverage |
+| `quick` | Quick on every event | Linux 7/11/23 |
+| `extra` | Exhaustive on PRs and manual runs | Linux 7/23 and macOS 22 |
+| `main` | Exhaustive on main and release-tag pushes | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 |
+
+Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
+They are not declared in Exhaustive or its shared compiler workflow, so there
+are no duplicate or skipped Exhaustive copies of these jobs.
 
 Quick distributes the full CPU modes over two existing builds rather than
 serializing them in one long job:
@@ -454,6 +461,13 @@ Release LLVM 11 anchor. The standalone compiler-to-WASM build is also retained.
 Exhaustive PR checks run full compatibility suites on Linux LLVM 7/23 and
 full normal platform coverage on macOS LLVM 22, including Caffeine/coarrays.
 These compilers enable runtime stacktraces for the `-g` integration regressions.
+Three supplemental platform builds also run full normal/fast suites on Linux
+LLVM 11/21 Debug and full normal/reference suites on macOS LLVM 11 Debug.
+These retain the full platform coverage that used to run only in main's Quick.
+Quick and Exhaustive share `.github/actions/build-platform` so these compiler
+configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
+alternate-backend or descriptor-mode suites; Linux references stay in Quick.
+
 The distinct Kokkos/out-of-source and custom-install configurations use
 smoke tests to check those build/install paths; Quick already owns the full
 CPU mode suites. Standalone C++ builds, documentation/kernel tests, the
@@ -556,21 +570,21 @@ the label remains present. Unrelated label changes do not replace the result.
 GitHub cannot rerun workflows older than 30 days; push a new commit or close
 and reopen an older PR before requesting these checks.
 
-Alternatively, explicitly dispatch extended compiler checks on your fork:
+Alternatively, explicitly dispatch checks on your fork. Run Quick as well if
+the same revision does not already have a successful Quick result:
 
 ```bash
+gh workflow run Quick-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
 gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
-gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
-    --branch <branch> --event workflow_dispatch
+gh run list --repo <fork-owner>/lfortran --branch <branch> --event workflow_dispatch
 gh run watch <run-id> --repo <fork-owner>/lfortran
 ```
 
-Check that the run tested the intended head SHA. Labeled PR runs supplement
-the existing Quick result and do not rebuild its full platform matrix. A
-manual standalone run also invokes normal Quick coverage, since that branch
-may have no PR run to rely on. Neither path runs the application catalog,
-publishes or deploys. Manual fork runs need not appear among the upstream
-PR's checks.
+Check both workflows' results and head SHAs. Labeled and manually dispatched
+Exhaustive runs are purely supplemental: neither invokes Quick. A green
+Exhaustive result alone does not imply a green Quick result. Manual runs do
+not run the application catalog, publish or deploy. Manual fork runs need not
+appear among the upstream PR's checks.
 
 To run the representative integration subset locally:
 
