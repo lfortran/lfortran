@@ -534,3 +534,15 @@ semantic error: Assignment to subroutine is not allowed
     |
 217 |         bpe = d
     |         ^^^ 
+
+semantic error: The leftmost part-ref in a data-ref cannot be a function reference
+   --> tests/errors/continue_compilation_3.f90:235:23
+    |
+235 |         print *, size(mk_13849(1)%a)
+    |                       ^^^^^^^^^^^^^ 
+
+semantic error: The leftmost part-ref in a data-ref cannot be a function reference
+   --> tests/errors/continue_compilation_3.f90:236:18
+    |
+236 |         print *, mk_13849(1)%a
+    |                  ^^^^^^^^^^^^^ 
