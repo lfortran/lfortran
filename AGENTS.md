@@ -141,6 +141,9 @@ only once, redirect to a log file and then examine the log file.
   Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
   use the same input comparison on every event, validate conservatively when
   inputs cannot be determined, and retain full reference validation in Exhaustive.
+  Data, support and unknown-path changes request reference validation by default;
+  only explicit compiler-source and simple standalone-test cases may skip it.
+  Do not infer arbitrary runtime file dependencies from a Fortran keyword list.
 - Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
   Every full Quick suite runs with assertions and per-pass ASR verification.

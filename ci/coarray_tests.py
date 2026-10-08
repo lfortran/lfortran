@@ -18,6 +18,7 @@ HARNESS_INPUTS = {
     ".github/workflows/Compiler-Compatibility-CI.yml",
     ".github/workflows/Quick-Checks-CI.yml",
 }
+COMPILER_SUFFIXES = {".asdl", ".c", ".cpp", ".h", ".hpp", ".py", ".re", ".yy"}
 
 
 def parse_tests(source):
@@ -80,22 +81,32 @@ def manifest_dependencies(source):
     )
 
 
-def check_source_dependencies(head, test):
-    sources = [test[0], *test[3].split()]
+def source_text(head, sources):
     tree = git("ls-tree", head, "--", *sources).splitlines()
     if len(tree) != len(sources) or any(not line.startswith(("100644 ", "100755 ")) for line in tree):
-        raise ValueError("missing or non-regular coarray source")
+        raise ValueError("missing or non-regular reference source")
     code = "\n".join(git("show", f"{head}:{path}") for path in sources)
     # This is a conservative guard, not a Fortran lexer. Only whole comment
     # lines are safe to discard: a quoted '!' can precede executable statements.
     # Keep strings and trailing comments, accepting false positives.
-    code = re.sub(r"(?m)^[ \t]*![^\n]*", "", code)
+    return re.sub(r"(?m)^[ \t]*![^\n]*", "", code)
+
+
+def check_source_dependencies(head, test):
+    sources = [test[0], *test[3].split()]
+    if any(PurePosixPath(path).suffix != ".f90" for path in sources):
+        raise ValueError("unknown coarray source forms/languages need reference validation")
+    if set(test[2].split()) - {"--coarray=true", "--separate-compilation"}:
+        raise ValueError("unknown coarray source options need reference validation")
+    code = source_text(head, sources)
     # Do not try to reconstruct split tokens or continued character literals.
     # Ordinary continuation between tokens (e.g. after a comma) remains safe.
     if re.search(r"(?m)\w&|^[ \t]*&", code):
         raise ValueError("continued coarray tokens may hide dependencies")
-    if re.search(r"(?im)^\s*#|\b(?:include|open|read|submodule|get_command_argument|"
-                 r"get_environment_variable|execute_command_line)\b", code):
+    if re.search(r"(?im)^\s*#|\b(?:include|open|read|inquire|close|backspace|endfile|"
+                 r"rewind|flush|wait|bind|submodule|get_command_argument|"
+                 r"get_environment_variable|execute_command_line)\b"
+                 r"|\bwrite\b(?!\s*\(\s*\*\s*,)", code):
         raise ValueError("coarray file dependencies need conservative reference validation")
     # Only trust a literal module declaration at the start of a line, not text
     # after a semicolon inside a string or trailing comment.
@@ -107,6 +118,34 @@ def check_source_dependencies(head, test):
     if (uses - modules - intrinsic or
             re.search(r"(?im)\buse\b[^\n]*(?:&|non_intrinsic)", code)):
         raise ValueError("unresolved coarray module dependencies need reference validation")
+
+
+def unrelated_source_change(base, head, path, manifests):
+    compiler = path.startswith("src/") and PurePosixPath(path).suffix in COMPILER_SUFFIXES
+    standalone = (PurePosixPath(path).parent == PurePosixPath("integration_tests") and
+                  PurePosixPath(path).suffix == ".f90")
+    if not compiler and not standalone:
+        return False
+    for revision, manifest in zip((base, head), manifests):
+        if not git("ls-tree", revision, "--", path).strip():
+            continue  # An addition/deletion must qualify on its existing side.
+        code = source_text(revision, [path])
+        if compiler:
+            continue
+        name = re.escape(PurePosixPath(path).stem)
+        registrations = re.findall(r"\bRUN\s*\(([^()]*)\)", re.sub(r"#[^\n]*", "", manifest))
+        if not any(re.fullmatch(rf"\s*NAME\s+{name}\s+LABELS(?:\s+\w+)+\s*", body)
+                   for body in registrations):
+            return False
+        # Only recognize simple main programs, never infer a support-file graph.
+        # Other source layouts, preprocessing and continuations stay conservative.
+        if (not re.fullmatch(r"\s*program[ \t]+(\w+)[ \t]*\n.*"
+                             r"^[ \t]*end[ \t]+program(?:[ \t]+\1)?\s*",
+                             code, re.IGNORECASE | re.MULTILINE | re.DOTALL) or
+                re.search(r"[#&;]|\b(?:module|submodule|subroutine|function|entry|"
+                          r"include|contains|interface)\b", code, re.IGNORECASE)):
+            return False
+    return True
 
 
 def reference_required(base, head):
@@ -143,6 +182,12 @@ def reference_required(base, head):
                 raise ValueError("unresolved CMake dependencies need reference validation")
         for test in after:
             check_source_dependencies(head, test)
+        # Runtime file names need not be literals, or even come from Fortran.
+        # Default data, support and unknown paths to reference validation instead
+        # of relying on the source guard to discover every possible dependency.
+        for path in sorted(changed - {MANIFEST}):
+            if not unrelated_source_change(base, head, path, (before_source, after_source)):
+                raise ValueError(f"changed data, support or unknown reference inputs: {path}")
         return False, "registered coarray sources and reference inputs are unchanged"
     except (OSError, subprocess.CalledProcessError, ValueError) as error:
         return True, f"conservative reference validation: {error}"

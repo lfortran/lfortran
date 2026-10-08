@@ -928,8 +928,9 @@ class CaffeineTests(unittest.TestCase):
         sentinel = self.directory / "OpenCoarrays"
         sentinel.mkdir()
         (sentinel / "unowned").touch()
-        (self.directory / "compiler.cpp").write_text("// compiler-only change\n")
-        self.commit("compiler.cpp")
+        (self.directory / "src").mkdir()
+        (self.directory / "src/compiler.cpp").write_text("// compiler-only change\n")
+        self.commit("src/compiler.cpp")
         result, calls = self.run_caffeine(CAF_IMAGES="3", LFORTRAN_TEST_SUITE="smoke")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assert_capability_coverage(calls, default_images="3")
@@ -1019,7 +1020,7 @@ class CaffeineTests(unittest.TestCase):
             (".github/workflows/Compiler-Compatibility-CI.yml", "# workflow edit\n"),
             (".github/workflows/Quick-Checks-CI.yml", "# caller edit\n"),
             ("integration_tests/unrelated.f90", "! unrelated integration edit\n"),
-            ("compiler.cpp", "// compiler edit\n"),
+            ("src/compiler.cpp", "// compiler edit\n"),
         )
         for path, addition in changes:
             with self.subTest(path=path):
@@ -1029,7 +1030,7 @@ class CaffeineTests(unittest.TestCase):
                 head = self.commit(path)
                 result = self.select_reference()
                 self.assertEqual(result.returncode, 0, result.stderr)
-                expected = path not in ("integration_tests/unrelated.f90", "compiler.cpp")
+                expected = path not in ("integration_tests/unrelated.f90", "src/compiler.cpp")
                 self.assertEqual(result.stdout, f"{str(expected).lower()}\n", result.stderr)
                 self.base = head
         for action in ("rename", "delete"):
@@ -1101,6 +1102,11 @@ class CaffeineTests(unittest.TestCase):
         for dependency in ("include 'shared.inc'", '#include "shared.h"',
                            "open(10, file='input.dat')", "use other_module",
                            "#define IMPORT use", "open &\n(10, file='input.dat')",
+                           "inquire(file='input.dat', exist=exists)",
+                           "write(10, *) value", "close(10, status='delete')",
+                           "flush(10)", "rewind(10)", "backspace(10)",
+                           "endfile(10)", "wait(10)",
+                           "subroutine input() bind(c)",
                            "call get_environment_variable('DATA', data)"):
             with self.subTest(dependency=dependency):
                 source.write_text("program coarrays_03\n" + dependency + "\nend program\n")
@@ -1150,6 +1156,196 @@ class CaffeineTests(unittest.TestCase):
                     self.assertTrue(any(call["command"] == command for call in calls))
                 self.base = self.git_run("rev-parse", "HEAD")
 
+    def test_inquire_and_fixed_form_data_changes_run_reference(self):
+        source = self.directory / "integration_tests/coarrays_03.f90"
+        data = self.directory / "input.dat"
+        original = self.manifest.read_text()
+        support = self.directory / "integration_tests/input_support.f"
+        support.write_text(
+            "      subroutine load_value(value)\n"
+            "      implicit none\n"
+            "      integer :: value\n"
+            "      o p e n(unit=10, file='input.dat')\n"
+            "      r e a d(10, *) value\n"
+            "      close(10)\n"
+            "      end\n"
+        )
+        for name, statements, before, after in (
+            ("inquire", "inquire(file='input.dat', size=value)", "42\n", "420\n"),
+            ("computed-inquire",
+             "character(9) :: path\npath = 'input' // '.dat'\n"
+             "inquire(file=path, size=value)", "42\n", "420\n"),
+            ("fixed-form-support", "call load_value(value)", "3\n", "4\n"),
+        ):
+            with self.subTest(case=name):
+                self.manifest.write_text(original.replace(
+                    "RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true)",
+                    "RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true EXTRAFILES input_support.f)"
+                    if name == "fixed-form-support" else
+                    "RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true)",
+                ))
+                source.write_text(
+                    "program coarrays_03\nimplicit none\ninteger :: value[*]\n" + statements +
+                    "\nprint *, value\nsync all\nif (value /= 3) error stop 1\nend program\n"
+                )
+                data.write_text(before)
+                self.base = self.commit("integration_tests", "input.dat")
+                data.write_text(after)
+                self.commit("input.dat")
+                self.assertEqual(self.git_run("diff", "--name-only", self.base, "HEAD"), "input.dat")
+                result = self.select_reference()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+                result, calls = self.run_caffeine()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assert_capability_coverage(calls)
+                for command in ("mpifort", "caf", "cafrun"):
+                    self.assertTrue(any(call["command"] == command for call in calls))
+
+    def test_file_queries_do_not_make_other_sources_unrelated(self):
+        source = self.directory / "integration_tests/coarrays_03.f90"
+        for path in ("src/compiler.cpp", "integration_tests/unrelated.f90"):
+            with self.subTest(path=path):
+                data = self.directory / path
+                data.parent.mkdir(parents=True, exist_ok=True)
+                if not data.exists():
+                    data.write_text("// compiler source\n")
+                source.write_text(
+                    "program coarrays_03\ninteger :: value[*]\n"
+                    f"inquire(file='{path}', size=value)\n"
+                    "sync all\nend program\n"
+                )
+                self.base = self.commit("integration_tests/coarrays_03.f90", path)
+                data.write_text(data.read_text() + "\n")
+                self.commit(path)
+                self.assertEqual(self.git_run("diff", "--name-only", self.base, "HEAD"), path)
+                result = self.select_reference()
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+
+    def test_data_support_and_unknown_paths_are_conservative_without_source_hints(self):
+        paths = (
+            "input.dat", "input", "input with spaces.bin", "input.f90", "compiler.cpp",
+            "integration_tests/input.dat", "integration_tests/data/input.csv",
+            "integration_tests/shared.inc", "integration_tests/input_support.f",
+            "integration_tests/preprocessed_support.F90", "integration_tests/input_support.c",
+            "integration_tests/input_support.f90", "tests/input.txt", "src/input.dat",
+            "settings.json",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                target = self.directory / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("unidentified input\n")
+                head = self.commit(path)
+                result = self.select_reference()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+                self.base = head
+        data = self.directory / "input.dat"
+        for action in ("edit", "rename", "delete"):
+            with self.subTest(action=action):
+                if action == "edit":
+                    data.write_text("changed input\n")
+                    self.commit("input.dat")
+                elif action == "rename":
+                    self.git_run("mv", "input.dat", "renamed.dat")
+                    self.git_run("commit", "-qm", "Rename data")
+                else:
+                    self.git_run("rm", "renamed.dat")
+                    self.git_run("commit", "-qm", "Delete data")
+                result = self.select_reference()
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+                self.base = self.git_run("rev-parse", "HEAD")
+
+    def test_unknown_coarray_source_forms_and_options_are_conservative(self):
+        original = self.manifest.read_text()
+        for index, (suffix, option) in enumerate((
+            (".f", ""), (".F", ""), (".for", ""), (".F90", ""), (".c", ""), (".inc", ""),
+            (".f90", "--fixed-form"), (".f90", "--cpp"), (".f90", "-Iincludes"),
+        )):
+            with self.subTest(suffix=suffix, option=option):
+                support = f"input_support_{index}{suffix}"
+                (self.directory / "integration_tests" / support).write_text("! support source\n")
+                self.manifest.write_text(original.replace(
+                    "--coarray=true)", f"--coarray=true {option} EXTRAFILES {support})",
+                ))
+                self.base = self.commit("integration_tests")
+                result = self.select_reference()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+
+    def test_only_simple_standalone_noncoarray_source_changes_can_skip_reference(self):
+        source = self.directory / "integration_tests/unrelated.f90"
+        original = source.read_text()
+        for body, expected in (
+            ("program unrelated\ninteger :: x\nx = 1\nend program\n", False),
+            ("module support\nend module\n", True),
+            ("subroutine support\nend subroutine\n", True),
+            ("function support()\nend function\n", True),
+            ("program unrelated\nend program\nmodule support\nend module\n", True),
+            ("program unrelated\ninclude 'shared.inc'\nend program\n", True),
+            ("#include \"shared.inc\"\nprogram unrelated\nend program\n", True),
+            ("program unrelated\ncontains\nsubroutine sub()\nend subroutine\nend program\n", True),
+            ("program unre&\n&lated\nend program\n", True),
+        ):
+            with self.subTest(body=body):
+                source.write_text(body)
+                self.commit("integration_tests/unrelated.f90")
+                result = self.select_reference()
+                self.assertEqual(result.stdout, f"{str(expected).lower()}\n", result.stderr)
+                source.write_text(original)
+                self.base = self.commit("integration_tests/unrelated.f90")
+        source.write_text("module support\nend module\n")
+        self.base = self.commit("integration_tests/unrelated.f90")
+        source.write_text(original)
+        self.commit("integration_tests/unrelated.f90")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "true\n", result.stderr)
+
+    def test_ambiguous_unrelated_source_files_and_read_failures_are_conservative(self):
+        source = self.directory / "integration_tests/unrelated.f90"
+        source.write_bytes(b"\xff\n")
+        self.commit("integration_tests/unrelated.f90")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "true\n", result.stderr)
+        self.assertIn("decode", result.stderr)
+        source.unlink()
+        source.symlink_to("coarrays_03.f90")
+        self.commit("integration_tests/unrelated.f90")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "true\n", result.stderr)
+        self.assertIn("non-regular", result.stderr)
+
+    def test_simple_noncoarray_additions_renames_and_deletions_keep_the_fast_path(self):
+        source = self.directory / "integration_tests/another.f90"
+        registration = "RUN(NAME another LABELS gfortran llvm)\n"
+        source.write_text("program another\nend program another\n")
+        self.manifest.write_text(self.manifest.read_text() + registration)
+        self.commit("integration_tests")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "false\n", result.stderr)
+        self.base = self.git_run("rev-parse", "HEAD")
+        self.git_run("mv", "integration_tests/another.f90", "integration_tests/renamed.f90")
+        self.manifest.write_text(self.manifest.read_text().replace(registration, registration.replace(
+            "another", "renamed",
+        )))
+        self.commit("integration_tests")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "false\n", result.stderr)
+        self.base = self.git_run("rev-parse", "HEAD")
+        self.git_run("rm", "integration_tests/renamed.f90")
+        self.manifest.write_text(self.manifest.read_text().replace(
+            registration.replace("another", "renamed"), "",
+        ))
+        self.commit("integration_tests")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "false\n", result.stderr)
+
     def test_ambiguous_module_dependencies_are_conservative(self):
         source = self.directory / "integration_tests/coarrays_03.f90"
         cases = (
@@ -1180,11 +1376,20 @@ class CaffeineTests(unittest.TestCase):
         for test in helper.parse_tests(manifest):
             for source in (test[0], *test[3].split()):
                 shutil.copyfile(ROOT / source, self.directory / source)
+        unrelated = self.directory / "integration_tests/expr_02.f90"
+        shutil.copyfile(INTEGRATION / "expr_02.f90", unrelated)
         self.base = self.commit("integration_tests")
-        (self.directory / "compiler.cpp").write_text("// compiler-only change\n")
-        self.commit("compiler.cpp")
+        (self.directory / "src").mkdir()
+        (self.directory / "src/compiler.cpp").write_text("// compiler-only change\n")
+        self.commit("src/compiler.cpp")
         result = self.select_reference()
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "false\n", result.stderr)
+        self.assertIn("unchanged", result.stderr)
+        self.base = self.git_run("rev-parse", "HEAD")
+        unrelated.write_text(unrelated.read_text() + "! unrelated regression edit\n")
+        self.commit("integration_tests/expr_02.f90")
+        result = self.select_reference()
         self.assertEqual(result.stdout, "false\n", result.stderr)
         self.assertIn("unchanged", result.stderr)
 

@@ -588,19 +588,34 @@ or push's previous SHA) and `LFORTRAN_COARRAY_HEAD` (the actual checkout SHA).
 `ci/coarray_tests.py` shares the harness's manifest parser and compares registered
 primary and `EXTRAFILES` sources, including edits, additions, renames and deletions.
 Changed coarray registrations, harness/environment inputs or relevant CMake
-dependencies also request reference validation. Unrelated integration registrations
-and compiler-only changes do not. The same comparison rule applies on every event;
-there is no reduced PR-only LFortran selection.
+dependencies also request reference validation. Other changed paths default to
+reference validation, including data files anywhere in the repository, unregistered
+sources, support files and unknown configuration. This does not depend on finding
+literal file names or particular I/O statements in the Fortran sources.
+Only regular compiler implementation files under `src/` with the explicit suffixes
+in `COMPILER_SUFFIXES`, and simple standalone non-coarray `.f90` programs with
+literal `RUN(NAME ... LABELS ...)` registrations, can skip this fallback. Both
+versions of a changed file must qualify; additions/deletions check the existing
+version. Module/procedure sources, preprocessing, continuations and more complex
+registrations are intentionally conservative, even when unrelated.
+Unrelated simple registrations in the manifest retain their fast path.
+The same comparison rule applies on every event; there is no reduced PR-only
+LFortran selection.
 
 When those inputs are demonstrably unchanged, neither shared-workflow setup nor
 the Caffeine script installs OpenMPI/OpenCoarrays for Quick, and no `caf`/`cafrun`
 checks run. Caffeine uses GASNet's SMP conduit, not MPI. Missing or inconsistent
 history (including manual runs, new refs or unavailable push bases), dirty
 checkouts and unresolved source dependencies log **conservative reference
-validation**, never an unexplained skip. The source dependency guard keeps quoted
-text and trailing comments rather than guessing where a Fortran comment starts.
-Split tokens and continued character literals request full reference validation;
-it does not attempt to parse arbitrary Fortran to prove dependencies unchanged.
+validation**, never an unexplained skip. Even the narrow source-change fast path
+requires ordinary free-form `.f90` coarray sources and known source options;
+fixed-form/preprocessed/other-language support and unknown options always request
+reference validation. The additional source guard keeps quoted text and trailing
+comments rather than guessing where a Fortran comment starts. File I/O (including
+`INQUIRE`), foreign bindings, split tokens and continued character literals request
+reference validation; only explicit standard-output `write(*, ...)` is exempt.
+These guards can request extra work, but are not a general Fortran dependency
+parser and never exempt data or unknown changed paths.
 Invalid test registrations fail explicitly.
 Standalone/default and Exhaustive invocations always request full Linux reference
 validation. macOS retains its existing no-OpenCoarrays behavior; Caffeine unit,
