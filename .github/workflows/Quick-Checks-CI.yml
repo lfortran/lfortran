@@ -9,16 +9,12 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
-# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
-# which eventually evaluates to: CI-7488 and 'sha' isn't used.
-# NOTE: `||` acts as a logical OR and a default operator both,
-# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
-# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
-# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
-# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
+# Main runs stay independent per commit; only superseded PR runs are cancelled.
+# Manual runs use a commit SHA, distinct from ordinary PR concurrency groups.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  group: quick-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -29,14 +25,14 @@ jobs:
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
+    env:
+      LFORTRAN_TEST_SUITE: smoke
     strategy:
       fail-fast: false
       matrix:
         include:
-          # macOS runs LLVM 11 only. A full integration-test pass costs ~7x
-          # more on the 3-core macOS runners than on Linux, and macOS + a
-          # recent LLVM is covered on every merge by the Exhaustive checks
-          # "Test LLVM 22 (macos-latest)" job.
+          # The same platform smoke and full CPU mode coverage runs on all
+          # events. Exhaustive adds full normal/fast platform suites.
           - os: macos-latest
             llvm-version: "11"
           - os: ubuntu-latest
@@ -50,89 +46,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
+      - name: Build platform compiler
+        uses: ./.github/actions/build-platform
         with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment.yml
-          create-args: >-
-            llvmdev=${{ matrix.llvm-version }}
-
-
-      - name: Install Windows Packages
-        if: contains(matrix.os, 'windows')
-        shell: bash -e -l {0}
-        run: |
-          micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1 zstd-static=1.5.5 zlib=1.2.13
-
-      - name: Install Linux / macOS Packages
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -e -l {0}
-        run: |
-          micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4  zlib=1.3.1 llvmdev=${{ matrix.llvm-version }}
-          if [[ "${{ matrix.os }}" == *ubuntu* ]]; then
-            micromamba install openmpi=5.0.6=hb85ec53_102
-          elif [[ "${{ matrix.os }}" == *macos* ]]; then
-            micromamba install openmpi=5.0.6=h31ce4ef_102
-          fi
-          if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
-            micromamba install zstd-static=1.5.6 nodejs=18.20.4 kokkos=4.4.01
-          elif [[ "${{ matrix.llvm-version }}" == "21" ]]; then
-            micromamba install zstd-static=1.5.7
-          fi
-          if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" != "11" ]]; then
-            micromamba install libunwind=1.7.2
-          fi
-          if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" == "11" ]]; then
-            micromamba install pandoc=3.1.13
-          fi
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
-
-      - name: Setup Platform
-        shell: bash -e -l {0}
-        run: |
-            echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
-            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-            echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+          os: ${{ matrix.os }}
+          llvm-version: ${{ matrix.llvm-version }}
 
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
-          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
+          echo "Concurrency Group: quick-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
-
-      - name: Build (Linux / macOS)
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        run: |
-            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
-            export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
-            export WIN=0
-            shell ci/build.sh
-
-      - name: Build (Windows)
-        if: contains(matrix.os, 'windows')
-        shell: cmd
-        run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
-            for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
-                call "%%i\VC\Auxiliary\Build\vcvars64.bat"
-            )
-            set CC=cl.exe
-            set CXX=cl.exe
-            set "PATH=%PATH:C:\mingw64\bin;=%"
-            shell ci\build.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
@@ -149,9 +75,13 @@ jobs:
         run: |
             ./test_lfortran_cmdline
 
-      # --std=f23, llvm -sc, --detect-leaks, llvm_single_invocation, and
-      # ci/test_cpp_version.sh run in Exhaustive checks (release /
-      # debug_outOfSource) on main and on PRs labeled Tests::Run-Exhaustive.
+      - name: Test full descriptor modes
+        if: matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            bash ci/test_llvm_integration.sh --options
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}
@@ -299,6 +229,11 @@ jobs:
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
 
+      - name: Test CI smoke selection
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        shell: bash -e -l {0}
+        run: python ci/test_ci.py
+
       - name: Check Bison Grammar for Essential Conflicts
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         shell: bash -e -l {0}
@@ -320,8 +255,196 @@ jobs:
         run: |
           python3 check_ai_commit_authorship.py
 
+  compatibility:
+    name: Compiler compatibility
+    uses: ./.github/workflows/Compiler-Compatibility-CI.yml
+    with:
+      scope: quick
+
+  # Preserve the public check names when moving these jobs out of the shared workflow.
+  test_llvm_wasm:
+    name: Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            llvmdev=19
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.4
+            openmpi=5.0.6=hb85ec53_102
+            xonsh=0.16.0
+            zlib=1.3.1
+            zstd-static=1.5.6
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest-19
+
+      - name: Install libunwind
+        run: micromamba install -y -n lf libunwind=1.7.2
+
+      - name: Setup WASI SDK
+        shell: bash -e -l {0}
+        run: |
+          mkdir -p $HOME/ext
+          cd $HOME/ext
+          curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
+          tar -xvf wasi-sdk.tar.gz
+          mv wasi-sdk-21.0 wasi-sdk
+          export WASI_SDK_PATH=$HOME/ext/wasi-sdk
+          echo $WASI_SDK_PATH
+          $WASI_SDK_PATH/bin/clang --version
+
+      - name: Install wasmtime
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
+          tar -xvf wasmtime.tar.gz
+          export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+          wasmtime --version
+
+      - name: Setup Emscripten SDK
+        shell: bash -e -l {0}
+        run: |
+          mkdir -p $HOME/ext
+          cd $HOME/ext
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/4.0.13.tar.gz
+          tar -xvf emsdk.tar.gz
+          mv emsdk-4.0.13 emsdk
+          export EMSDK_PATH=$HOME/ext/emsdk
+          echo $EMSDK_PATH
+          cd $EMSDK_PATH
+          ./emsdk install 3.1.35
+          ./emsdk activate 3.1.35
+
+      - name: Build Linux ( WASM )
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/ext/wasi-sdk
+            export EMSDK_PATH=$HOME/ext/emsdk
+            export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_TARGET_WASM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
+      - name: Test Linux ( WASM )
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/ext/wasi-sdk
+            export EMSDK_PATH=$HOME/ext/emsdk
+            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+            export WASMTIME_NEW_CLI=0
+            cd integration_tests
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+
+  test_without_llvm:
+    name: Compiler compatibility / Test without LLVM Backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - name: Test
+        shell: bash -e -l {0}
+        run: |
+          shell ci/test_without_llvm_backend.sh
+
+  test_mlir:
+    name: Compiler compatibility / Test MLIR backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            mlir=19.1.6
+            llvm=19.1.6
+            llvm-openmp=19.1.6
+            libunwind=1.7.2
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_MLIR=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b mlir -j1
+
   build_to_wasm_and_upload:
-    name: Build LFortran to WASM and Upload
+    name: Build LFortran to WASM
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v7
@@ -404,9 +527,36 @@ jobs:
             micromamba run -n xeus-lfortran-wasm-build node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
+        if: github.event_name == 'push'
         shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
 
+  quick_status:
+    # Keep the existing protection until every Quick job is required directly.
+    name: Build LFortran to WASM and Upload
+    needs: [Build, compatibility, test_llvm_wasm, test_without_llvm, test_mlir, build_to_wasm_and_upload]
+    if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require all Quick checks
+        env:
+          BUILD_RESULT: ${{ needs.Build.result }}
+          WASM_RESULT: ${{ needs.build_to_wasm_and_upload.result }}
+          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
+          LLVM_WASM_RESULT: ${{ needs.test_llvm_wasm.result }}
+          NO_LLVM_RESULT: ${{ needs.test_without_llvm.result }}
+          MLIR_RESULT: ${{ needs.test_mlir.result }}
+        run: |
+          if [ "$BUILD_RESULT" != success ] || \
+             [ "$COMPATIBILITY_RESULT" != success ] || \
+             [ "$LLVM_WASM_RESULT" != success ] || \
+             [ "$NO_LLVM_RESULT" != success ] || \
+             [ "$MLIR_RESULT" != success ] || \
+             [ "$WASM_RESULT" != success ]; then
+            echo "::error::Not all Quick checks passed"
+            exit 1
+          fi

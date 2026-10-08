@@ -1,0 +1,88 @@
+name: Build platform compiler
+description: Share the native platform compiler configuration between Quick and Exhaustive.
+
+inputs:
+  os:
+    description: GitHub runner label.
+    required: true
+  llvm-version:
+    description: LLVM version to build against.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: mamba-org/setup-micromamba@v2.0.2
+      with:
+        micromamba-version: '2.0.4-0'
+        environment-file: ci/environment.yml
+        create-args: >-
+          llvmdev=${{ inputs.llvm-version }}
+
+    - name: Install Windows Packages
+      if: contains(inputs.os, 'windows')
+      shell: bash -e -l {0}
+      run: |
+        micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1 zstd-static=1.5.5 zlib=1.2.13
+
+    - name: Install Linux / macOS Packages
+      if: contains(inputs.os, 'ubuntu') || contains(inputs.os, 'macos')
+      shell: bash -e -l {0}
+      run: |
+        micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4 zlib=1.3.1 llvmdev=${{ inputs.llvm-version }}
+        if [[ "${{ inputs.os }}" == *ubuntu* ]]; then
+          micromamba install openmpi=5.0.6=hb85ec53_102
+        elif [[ "${{ inputs.os }}" == *macos* ]]; then
+          micromamba install openmpi=5.0.6=h31ce4ef_102
+        fi
+        if [[ "${{ inputs.llvm-version }}" == "11" ]]; then
+          micromamba install zstd-static=1.5.6 nodejs=18.20.4 kokkos=4.4.01
+        elif [[ "${{ inputs.llvm-version }}" == "21" ]]; then
+          micromamba install zstd-static=1.5.7
+        fi
+        if [[ "${{ inputs.os }}" == *ubuntu* && "${{ inputs.llvm-version }}" != "11" ]]; then
+          micromamba install libunwind=1.7.2
+        fi
+        if [[ "${{ inputs.os }}" == *ubuntu* && "${{ inputs.llvm-version }}" == "11" ]]; then
+          micromamba install pandoc=3.1.13
+        fi
+
+    - uses: hendrikmuhs/ccache-action@main
+      with:
+        key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}
+
+    - name: Setup Platform
+      shell: bash -e -l {0}
+      run: |
+        echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> "$GITHUB_ENV"
+        echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> "$GITHUB_ENV"
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> "$GITHUB_ENV"
+        echo "ENABLE_RUNTIME_STACKTRACE=yes" >> "$GITHUB_ENV"
+
+    - name: Build (Linux / macOS)
+      shell: bash -e -l {0}
+      if: contains(inputs.os, 'ubuntu') || contains(inputs.os, 'macos')
+      run: |
+        export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+        export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+        export WIN=0
+        shell ci/build.sh
+
+    - name: Build (Windows)
+      if: contains(inputs.os, 'windows')
+      shell: cmd
+      run: |
+        set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+        call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+        call micromamba activate lf
+        set LFORTRAN_CMAKE_GENERATOR=Ninja
+        set WIN=1
+        set MACOS=0
+        set ENABLE_RUNTIME_STACKTRACE=no
+        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
+            call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+        )
+        set CC=cl.exe
+        set CXX=cl.exe
+        set "PATH=%PATH:C:\mingw64\bin;=%"
+        shell ci\build.sh
