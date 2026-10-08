@@ -258,9 +258,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         expression = re.search(r"^\s*LFORTRAN_TEST_SUITE: (.+)$", quick, re.MULTILINE).group(1)
         self.assertEqual(expression, "smoke")
         event_conditions = re.findall(r"^\s*if: (.*github\.event_name.*)$", quick, re.MULTILINE)
-        self.assertEqual(event_conditions, ["github.event_name == 'push'"])
-        upload = quick.split("      - name: Upload to wasm_builds\n", 1)[1]
-        self.assertIn("if: github.event_name == 'push'", upload)
+        self.assertEqual(event_conditions, [])
+        self.assertNotIn("upload_lfortran_wasm.sh", quick)
         compatibility = quick.split("\n  compatibility:\n", 1)[1].split("\n  test_llvm_wasm:\n", 1)[0]
         self.assertNotIn("if:", compatibility)
         self.assertIn("scope: quick", compatibility)
@@ -275,6 +274,10 @@ class WorkflowPolicyTests(unittest.TestCase):
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         triggers = quick.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
         self.assertIn("\n  merge_group:\n", triggers)
+        # The merge queue already tested the exact commit that lands on main.
+        push = triggers.split("\n  push:\n", 1)[1].split("\n  pull_request:\n", 1)[0]
+        self.assertNotIn("branches:", push)
+        self.assertIn("tags:", push)
         # Exhaustive is optional and runs on the resulting main push.
         extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
         self.assertNotIn("merge_group:", extra)
@@ -282,11 +285,28 @@ class WorkflowPolicyTests(unittest.TestCase):
         save = "save: ${{ github.event_name != 'merge_group' }}"
         for path in (workflows / "Quick-Checks-CI.yml",
                      workflows / "Compiler-Compatibility-CI.yml",
-                     ROOT / ".github/actions/build-platform/action.yml"):
+                     ROOT / ".github/actions/build-platform/action.yml",
+                     ROOT / ".github/actions/build-lfortran-wasm/action.yml"):
             steps = path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]
             self.assertTrue(steps, path)
             for step in steps:
                 self.assertIn(save, step.split("\n\n", 1)[0], path)
+
+    def test_wasm_upload_runs_only_on_main_and_release_tags(self):
+        workflows = ROOT / ".github/workflows"
+        quick = (workflows / "Quick-Checks-CI.yml").read_text()
+        upload = (workflows / "Upload-WASM-CI.yml").read_text()
+        action = "uses: ./.github/actions/build-lfortran-wasm\n"
+        wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1].split("\n  quick_status:", 1)[0]
+        self.assertIn(action, wasm)
+        self.assertIn(action, upload)
+        triggers = upload.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+        self.assertEqual(triggers,
+            "  push:\n    branches:\n      - main\n    tags:\n      - 'v*'\n")
+        self.assertIn("run: |\n            ci/upload_lfortran_wasm.sh\n", upload)
+        callers = [path.name for path in workflows.glob("*.yml")
+                   if "upload_lfortran_wasm.sh" in path.read_text()]
+        self.assertEqual(callers, ["Upload-WASM-CI.yml"])
 
     def test_coverage_matrix_has_quick_and_exhaustive_roles(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()

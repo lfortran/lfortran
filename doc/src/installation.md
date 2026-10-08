@@ -420,17 +420,20 @@ policy."
 #### CI coverage
 
 Pull requests normally run only **Quick checks**. Quick uses the same
-builds, test suites and selection rules on PRs, merge queue groups, main pushes,
-release tags and manual runs. Publishing steps remain push-only. Main runs
-Quick plus Exhaustive. Exhaustive adds configurations and broader suites, never
-another invocation of Quick, and runs identically on main, on labeled PRs and
-on manual dispatch.
+builds, test suites and selection rules on PRs, merge queue groups, release
+tags and manual runs. Main runs Quick plus Exhaustive. Exhaustive adds
+configurations and broader suites, never another invocation of Quick, and runs
+identically on main, on labeled PRs and on manual dispatch.
 
-Quick is triggered by the `merge_group` event so that its required checks
-report when a merge queue is enabled for `main`. Exhaustive is optional and is
-not run on merge groups; it runs on the resulting main push. Merge queue runs
-restore compiler caches but do not save them, because caches on the temporary
-`gh-readonly-queue/main/*` branches cannot be reused.
+Changes reach `main` through the merge queue. Quick runs on the `merge_group`
+event, so its required checks are reported on the exact commit that `main` is
+then fast-forwarded to. The resulting main push therefore does not rerun
+Quick; it runs Exhaustive and `Upload-WASM-CI.yml`, which rebuilds the WASM
+compiler with the same `.github/actions/build-lfortran-wasm` action as Quick
+and publishes it to `wasm_builds` (also for `v*` tags). Exhaustive is optional
+and is not run on merge groups. Merge queue runs restore compiler caches but do
+not save them, because caches on the temporary `gh-readonly-queue/main/*`
+branches cannot be reused.
 
 The shared native compiler workflow has two explicit coverage roles:
 

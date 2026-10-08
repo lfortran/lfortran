@@ -1,0 +1,30 @@
+name: Upload WASM build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  upload_wasm:
+    name: Upload LFortran WASM build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Build and test LFortran WASM
+        uses: ./.github/actions/build-lfortran-wasm
+
+      - name: Upload to wasm_builds
+        shell: bash -l {0}
+        run: |
+            ci/upload_lfortran_wasm.sh
+        env:
+          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}

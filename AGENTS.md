@@ -132,7 +132,7 @@ only once, redirect to a log file and then examine the log file.
 ### CI policy
 
 - `Quick checks` is the normal PR gate and runs the same builds, tests and
-  selections on PRs, main, release tags and manual runs. It runs full Linux
+  selections on PRs, merge queue groups, release tags and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
@@ -151,16 +151,17 @@ only once, redirect to a log file and then examine the log file.
   flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
   Exhaustive checks add missing configurations without replaying Quick.
-  LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
+  LLVM-WASM, no-LLVM and MLIR belong only to Quick, including for main.
   Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
-- Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
+- Every main commit passes Quick in the merge queue (`merge_group`) on the
+  exact commit that lands on main, so main pushes do not rerun Quick; they run
+  Exhaustive and the WASM upload (`Upload-WASM-CI.yml`). Keep `merge_group` on
+  every workflow that produces a required check; merge queue runs must not
+  save caches. Exhaustive is identical on main, on a PR
   labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
   third-party application catalog; only publishing and deployment are push-only.
-- Quick also runs on `merge_group` so required checks report in the merge
-  queue. Keep `merge_group` on every workflow that produces a required check;
-  merge queue runs must not save caches.
 - Third-party applications are **bug generators for integration tests**, not
   part of ordinary PR checks. They run on every push to `main` and in every
   requested Exhaustive run, including applications such as FIATS.
