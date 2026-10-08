@@ -3685,3 +3685,49 @@ contains
         p => null(view)
     end subroutine
 end module
+
+! R3G-06: a narrowed ordinary selector obeys concrete ancestry, not conformance.
+module traits_inspection_nested_unrelated
+    implicit none
+    abstract interface :: I
+    end interface
+    type :: Parent
+        integer :: n
+    end type
+    type, extends(Parent) :: Child
+    end type
+    type :: Other
+        integer :: n
+    end type
+contains
+    subroutine bad_type(view)
+        class(I), intent(in) :: view
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            type is (Other)
+                print *, inner%n
+            end select
+        end select
+    end subroutine
+    subroutine bad_class(view)
+        class(I), intent(in) :: view
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            class is (Other)
+                print *, inner%n
+            end select
+        end select
+    end subroutine
+    subroutine readonly_alias(view)
+        class(I), intent(in) :: view
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            class is (Child)
+                inner%n = 1
+            end select
+        end select
+    end subroutine
+end module

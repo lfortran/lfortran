@@ -849,6 +849,10 @@ Same-spelled derived types in different modules remain distinct. `CLASS IS`
 uses only the concrete derived type's real extension chain. A concrete parent
 need not implement the declared trait. Exact guards take precedence; otherwise
 the most-specific matching class guard wins, independently of source order.
+Once a guard has narrowed the view to an ordinary concrete `CLASS(Parent)`,
+nested `TYPE IS` and `CLASS IS` guards must name that type or a real extension
+of it. An unrelated nested guard is diagnosed at its source keyword, before
+any narrowing association is constructed.
 `CLASS DEFAULT` retains the selector's declared contract and selected method
 slots. With no matching guard and no default, no block executes.
 

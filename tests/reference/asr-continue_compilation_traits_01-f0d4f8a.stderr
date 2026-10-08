@@ -2004,6 +2004,24 @@ semantic error: null() mold requires a pointer or allocatable variable
 3685 |         p => null(view)
      |                   ^^^^ 
 
+semantic error: type guard 'other' must be the declared type 'parent' or an extension of it
+    --> tests/errors/continue_compilation_traits_01.f90:3708:13
+     |
+3708 |             type is (Other)
+     |             ^^^^ 
+
+semantic error: type guard 'other' must be the declared type 'parent' or an extension of it
+    --> tests/errors/continue_compilation_traits_01.f90:3718:13
+     |
+3718 |             class is (Other)
+     |             ^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3729:17
+     |
+3729 |                 inner%n = 1
+     |                 ^^^^^^^ 
+
 semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3618:28
      |

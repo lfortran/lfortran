@@ -5084,6 +5084,136 @@ TEST_CASE("Runtime trait association queries preserve unresolved imports") {
     CHECK_FALSE(ASRUtils::association_has_target(variable));
 }
 
+TEST_CASE("Runtime trait nested guards diagnose ancestry before ASR construction") {
+    using namespace LCompilers;
+    const std::string source = R"(
+module nested_guard_proofs_m
+    abstract interface :: I
+    end interface
+    type :: Parent
+        integer :: n
+    end type
+    type, extends(Parent) :: Child
+    end type
+    type :: Other
+        integer :: n
+    end type
+contains
+    subroutine bad_type(view)
+        class(I), intent(in) :: view
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            type is (Other)
+                print *, inner%n
+            end select
+        end select
+    end subroutine
+    subroutine bad_class(view)
+        class(I), intent(in) :: view
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            class is (Other)
+                print *, inner%n
+            end select
+        end select
+    end subroutine
+    integer function good(view)
+        class(I), intent(in) :: view
+        good = 0
+        select type (outer => view)
+        class is (Parent)
+            select type (inner => outer)
+            type is (Child)
+                good = inner%n
+            end select
+        end select
+    end function
+end module
+)";
+    Allocator al(1024 * 1024);
+    CompilerOptions options;
+    options.continue_compilation = true;
+    diag::Diagnostics errors;
+    auto parsed = LFortran::parse(al, source, errors, options);
+    REQUIRE(parsed.ok);
+    LocationManager lm;
+    auto result = LFortran::ast_to_asr(al, *parsed.result, errors, nullptr, false, options, lm);
+    INFO(errors.render2());
+    REQUIRE(result.ok);
+    std::set<uint32_t> locations;
+    for (auto &error : errors.diagnostics) {
+        if (error.level != diag::Level::Error) continue;
+        CHECK(error.stage == diag::Stage::Semantic);
+        CHECK(error.message == "type guard 'other' must be the declared type 'parent' or an extension of it");
+        REQUIRE(error.labels.size() == 1);
+        REQUIRE(error.labels[0].spans.size() == 1);
+        auto loc = error.labels[0].spans[0].loc;
+        locations.insert(loc.first);
+        auto keyword = source.substr(loc.first, loc.last - loc.first + 1);
+        CHECK((keyword == "type" || keyword == "class"));
+    }
+    CHECK((locations == std::set<uint32_t>{
+        static_cast<uint32_t>(source.find("type is (Other)")),
+        static_cast<uint32_t>(source.find("class is (Other)"))}));
+    diag::Diagnostics valid;
+    REQUIRE(asr_verify(*result.result, true, valid));
+    SymbolTable imports(nullptr);
+    auto binary = serialize(*result.result);
+    auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+        deserialize_asr(al, binary, true, imports, 0));
+    fix_external_symbols(*loaded, imports);
+    CHECK(asr_verify(*loaded, true, valid));
+
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("nested_guard_proofs_m"));
+    class FindNested : public ASR::BaseWalkVisitor<FindNested> {
+    public:
+        ASR::symbol_t *parent;
+        ASR::SelectType_t *selection = nullptr;
+        void visit_SelectType(const ASR::SelectType_t &x) {
+            auto *declared = ASRUtils::get_struct_sym_from_struct_expr(x.m_selector);
+            if (ASRUtils::symbol_get_past_external(declared) == parent) {
+                selection = const_cast<ASR::SelectType_t*>(&x);
+            }
+            ASR::BaseWalkVisitor<FindNested>::visit_SelectType(x);
+        }
+    } find;
+    find.parent = module->m_symtab->get_symbol("parent");
+    find.visit_symbol(*module->m_symtab->get_symbol("good"));
+    REQUIRE(find.selection);
+    auto *guard = ASR::down_cast<ASR::TypeStmtName_t>(find.selection->m_body[0]);
+    auto *block = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(guard->m_body[0])->m_m);
+    block->m_symtab->parent->erase_symbol(block->m_name);
+    auto *other = module->m_symtab->get_symbol("other");
+    SUBCASE("malformed TYPE IS still fails verification") {
+        find.selection->m_body[0] = ASR::down_cast<ASR::type_stmt_t>(
+            ASR::make_TypeStmtName_t(al, guard->base.base.loc, other, nullptr, 0));
+    }
+    SUBCASE("malformed CLASS IS still fails verification") {
+        find.selection->m_body[0] = ASR::down_cast<ASR::type_stmt_t>(
+            ASR::make_ClassStmt_t(al, guard->base.base.loc, other, nullptr, 0));
+    }
+    diag::Diagnostics invalid;
+    CHECK_FALSE(asr_verify(*result.result, true, invalid));
+    REQUIRE(!invalid.diagnostics.empty());
+    CHECK(invalid.diagnostics.back().code == "asr.verify.select_type.guard_extends_selector");
+    for (auto form : {ASRTextForm::Named, ASRTextForm::Positional}) {
+        ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = asr_to_text(*result.result, text_options);
+        diag::Diagnostics text_errors;
+        LocationManager text_lm;
+        auto reloaded = asr_from_text(al, text, "nested_guard.asr", text_lm, text_errors);
+        REQUIRE(reloaded.ok);
+        CHECK_FALSE(asr_verify(*reloaded.result, true, text_errors));
+        REQUIRE(!text_errors.diagnostics.empty());
+        CHECK(text_errors.diagnostics.back().code == "asr.verify.select_type.guard_extends_selector");
+    }
+}
+
 TEST_CASE("Runtime trait inspection preserves guarded data associations") {
     using namespace LCompilers;
     const std::string source = R"(

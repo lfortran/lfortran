@@ -4998,6 +4998,17 @@ public:
                 if (!is_default) {
                     type_symbol = concrete_type_guard(type_symbol, loc);
                     auto *nominal = ASRUtils::symbol_get_past_external(type_symbol);
+                    if (view_declaration) {
+                        auto *declared = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(view_declaration));
+                        if (!ASRUtils::can_pass_derviedtype_arg_to_parameter(
+                                ASR::down_cast<ASR::Struct_t>(nominal), declared)) {
+                            Location guard_loc{loc.first, loc.first + (is_class ? 4u : 3u)};
+                            trait_call_error("type guard '" + std::string(ASRUtils::symbol_name(nominal)) +
+                                "' must be the declared type '" + std::string(declared->m_name) +
+                                "' or an extension of it", guard_loc);
+                        }
+                    }
                     if (!seen_guards.insert({nominal, is_class}).second) {
                         trait_call_error("duplicate nominal select type guard", loc);
                     }
