@@ -2997,39 +2997,66 @@ int main_app(int argc, char *argv[]) {
         }
     }
     if (opts.arg_c) {
-        int result;
-        if (backend == Backend::llvm) {
-#ifdef HAVE_LFORTRAN_LLVM
-            result = compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
-                compiler_options, lfortran_pass_manager, opts.arg_c, nullptr,
-                opts.from_asr);
-#else
-            std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
-            return 1;
-#endif
-        } else if (backend == Backend::c) {
-            result = compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
-                    rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c, nullptr);
-        } else if (backend == Backend::cpp) {
-            result = compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
-                    true, rtlib_c_header_dir, compiler_options, opts.arg_c, nullptr);
-        } else if (backend == Backend::x86) {
-            result = compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
-        } else if (backend == Backend::wasm) {
-            result = compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
-        } else if (backend == Backend::fortran) {
-            result = compile_to_binary_fortran(opts.arg_file, outfile, compiler_options, lfortran_pass_manager);
-        } else if (backend == Backend::mlir) {
-#ifdef HAVE_LFORTRAN_MLIR
-            result = handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
-#else
-            std::cerr << "The -c option with `--backend=mlir` requires the "
-                "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
+        // Like gfortran, compile every Fortran source to its own object file
+        std::vector<std::string> sources;
+        if (!opts.from_asr) {
+            for (const auto &arg_file : opts.arg_files) {
+                if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
+                    endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+                    sources.push_back(arg_file);
+                }
+            }
+        }
+        if (sources.size() <= 1) {
+            sources = {opts.arg_file};
+        } else if (compiler_options.arg_o.size() > 0) {
+            std::cerr << "error: cannot specify -o with -c and multiple files"
                 << std::endl;
             return 1;
+        }
+        int result = 0;
+        for (const auto &source : sources) {
+            if (source != opts.arg_file) {
+                lcli::infer_source_form(opts, source, compiler_options);
+                outfile = std::filesystem::path(source).filename()
+                    .replace_extension(".o").string();
+            }
+            int err;
+            if (backend == Backend::llvm) {
+#ifdef HAVE_LFORTRAN_LLVM
+                err = compile_src_to_object_file(source, outfile, compiler_options.time_report, false,
+                    compiler_options, lfortran_pass_manager, opts.arg_c, nullptr,
+                    opts.from_asr);
+#else
+                std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+                return 1;
 #endif
-        } else {
-            throw LCompilers::LCompilersException("Unsupported backend.");
+            } else if (backend == Backend::c) {
+                err = compile_to_object_file_c(source, outfile, opts.arg_v, false,
+                        rtlib_c_header_dir, lfortran_pass_manager, compiler_options, opts.arg_c, nullptr);
+            } else if (backend == Backend::cpp) {
+                err = compile_to_object_file_cpp(source, outfile, opts.arg_v, false,
+                        true, rtlib_c_header_dir, compiler_options, opts.arg_c, nullptr);
+            } else if (backend == Backend::x86) {
+                err = compile_to_binary_x86(source, outfile, compiler_options.time_report, compiler_options);
+            } else if (backend == Backend::wasm) {
+                err = compile_to_binary_wasm(source, outfile, compiler_options.time_report, compiler_options);
+            } else if (backend == Backend::fortran) {
+                err = compile_to_binary_fortran(source, outfile, compiler_options, lfortran_pass_manager);
+            } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+                err = handle_mlir(source, outfile, compiler_options, false, false);
+#else
+                std::cerr << "The -c option with `--backend=mlir` requires the "
+                    "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
+                    << std::endl;
+                return 1;
+#endif
+            } else {
+                throw LCompilers::LCompilersException("Unsupported backend.");
+            }
+            // Keep going after an error, like gfortran, but report it
+            if (err) result = err;
         }
         if (compiler_options.time_report) {
             auto end_time = std::chrono::high_resolution_clock::now();

@@ -32,6 +32,22 @@ namespace LCompilers::CommandLineInterface {
         // empty
     }
 
+    void infer_source_form(const LFortranCommandLineOpts &opts,
+            const std::string &file, CompilerOptions &compiler_options) {
+        // Decide if a file is fixed format and if it gets preprocessing
+        // based on the extension. Gfortran does the same thing
+        compiler_options.fixed_form = opts.fixed_form ||
+            (opts.fixed_form_infer && (endswith(file, ".f") || endswith(file, ".F")));
+        if (opts.cpp) {
+            compiler_options.c_preprocessor = true;
+        } else if (opts.no_cpp) {
+            compiler_options.c_preprocessor = false;
+        } else {
+            compiler_options.c_preprocessor = opts.cpp_infer &&
+                (endswith(file, ".F90") || endswith(file, ".F"));
+        }
+    }
+
     static std::string to_lower(const std::string &s) {
         std::string result = s;
         std::transform(result.begin(), result.end(), result.begin(),
@@ -631,12 +647,6 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
         }
 
-        // Decide if a file is fixed format based on the extension
-        // Gfortran does the same thing
-        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
-            compiler_options.fixed_form = true;
-        }
-
         if (opts.disable_implicit_typing) {
             compiler_options.implicit_typing = false;
         }
@@ -647,17 +657,9 @@ namespace LCompilers::CommandLineInterface {
 
         if (opts.cpp && opts.no_cpp) {
             throw LCompilers::LCompilersException("Cannot use --cpp and --no-cpp at the same time");
-        } else if(opts.cpp) {
-            compiler_options.c_preprocessor = true;
-        } else if(opts.no_cpp) {
-            compiler_options.c_preprocessor = false;
-        // Decide if a file gets preprocessing based on the extension
-        // Gfortran does the same thing
-        } else if (opts.cpp_infer && (endswith(opts.arg_file, ".F90") || endswith(opts.arg_file, ".F"))) {
-            compiler_options.c_preprocessor = true;
-        } else {
-            compiler_options.c_preprocessor = false;
         }
+        opts.fixed_form = compiler_options.fixed_form;
+        infer_source_form(opts, opts.arg_file, compiler_options);
 
         // Propagate descriptor_index_64 to PassOptions
         if (compiler_options.descriptor_index_64) {

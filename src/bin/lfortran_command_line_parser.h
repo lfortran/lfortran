@@ -63,6 +63,8 @@ namespace LCompilers::CommandLineInterface {
         std::string linker_path{""};
         bool print_targets = false;
         bool print_c_include_dir = false;
+        // fixed form requested by an option, before inferring it per file
+        bool fixed_form = false;
         bool fixed_form_infer = false;
         bool cpp = false;
         bool cpp_infer = false;
@@ -96,6 +98,9 @@ namespace LCompilers::CommandLineInterface {
 
         CompilerOptions compiler_options;
     }; // struct LFortranCommandLineOpts
+
+    void infer_source_form(const LFortranCommandLineOpts &opts,
+        const std::string &file, CompilerOptions &compiler_options);
 
     class LFortranCommandLineParser {
     public:

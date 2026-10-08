@@ -5115,6 +5115,7 @@ RUN(NAME separate_compilation_52 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_53 LABELS gfortran llvm EXTRAFILES separate_compilation_53a.f90 separate_compilation_53b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_54 LABELS gfortran llvm EXTRAFILES separate_compilation_54a.f90 separate_compilation_54b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME separate_compilation_55 LABELS gfortran llvm EXTRAFILES separate_compilation_55a.f90 EXTRA_ARGS --separate-compilation) # dot_product on a derived-type component section (#14036)
+RUN(NAME separate_compilation_56 LABELS gfortran llvm EXTRAFILES separate_compilation_56a.f90 separate_compilation_56b.f90 separate_compilation_56c.f EXTRA_ARGS --fixed-form-infer)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

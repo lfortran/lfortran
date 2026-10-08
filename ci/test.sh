@@ -27,6 +27,11 @@ fi
 src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
+# Compile several files with one -c, inferring the form of each file
+src/bin/lfortran --fixed-form-infer -c integration_tests/separate_compilation_56c.f integration_tests/separate_compilation_56a.f90 integration_tests/separate_compilation_56b.f90 integration_tests/separate_compilation_56.f90
+src/bin/lfortran separate_compilation_56c.o separate_compilation_56a.o separate_compilation_56b.o separate_compilation_56.o -o separate_compilation_56
+./separate_compilation_56
+
 
 # Compile and link in one step
 src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
