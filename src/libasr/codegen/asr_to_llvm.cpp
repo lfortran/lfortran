@@ -9360,13 +9360,22 @@ public:
                             llvm_sym = llvm_utils->CreateLoad2(internal_type, cast_ptr);
                         }
                     }
-                    // For non-BindC functions with value attribute,
+                    // A VALUE dummy passed by value is stored in a local
+                    // variable, so that it can be used (and modified)
+                    // like any other variable.
+                    // For other non-BindC functions with value attribute,
                     // create a local copy so modifications to the
                     // parameter don't affect the caller's variable.
                     // Skip CPtr: it is already passed by value at
                     // the call site and handled by the existing
                     // is_cptr_dummy_passed_by_value path.
-                    if (arg->m_value_attr &&
+                    if (LLVM::is_value_dummy_passed_by_value(*arg)) {
+                        llvm::Value* local_copy = builder->CreateAlloca(
+                            llvm_arg.getType(), nullptr,
+                            std::string(arg->m_name) + "_value");
+                        builder->CreateStore(&llvm_arg, local_copy);
+                        llvm_sym = local_copy;
+                    } else if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
                         !ASRUtils::is_array(arg->m_type) &&
@@ -26051,6 +26060,15 @@ public:
                         }
                     }
                 }
+            }
+
+            // A VALUE dummy passed by value receives the value that the
+            // argument computed above points to.
+            if (orig_arg && LLVM::is_value_dummy_passed_by_value(*orig_arg) &&
+                    tmp->getType()->isPointerTy()) {
+                tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc,
+                        &orig_arg->base)), orig_arg->m_type, module.get()), tmp);
             }
 
             args.push_back(tmp);
