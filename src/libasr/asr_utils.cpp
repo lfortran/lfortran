@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <climits>
 #include <set>
 #include <unordered_set>
 #include <map>
