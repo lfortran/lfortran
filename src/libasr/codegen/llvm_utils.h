@@ -227,6 +227,22 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // A non-optional scalar integer, real or logical VALUE dummy
+        // argument is passed by value (the same convention as GFortran).
+        // VALUE dummies with the bind(c) ABI follow the C ABI and are
+        // lowered by the bind(c) specific code paths instead.
+        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || v.m_abi == ASR::abiType::BindC ||
+                    v.m_presence == ASR::presenceType::Optional ||
+                    !ASRUtils::is_arg_dummy(v.m_intent)) {
+                return false;
+            }
+            return ASR::is_a<ASR::Integer_t>(*v.m_type) ||
+                   ASR::is_a<ASR::UnsignedInteger_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Real_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Logical_t>(*v.m_type);
+        }
+
         // Returns the terminator of `bb`, or nullptr when `bb` is not
         // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
         // block without a terminator from LLVM 23 on, so inspect the last
