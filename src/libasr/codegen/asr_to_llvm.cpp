@@ -10446,7 +10446,10 @@ public:
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
-        } else if(ASRUtils::is_character(*expr_type(x.m_arg))){ // Targetted physicalType is `char*`
+        } else if(ASRUtils::is_character(*expr_type(x.m_arg))
+                // An inline bind(C)/SEQUENCE member already points to its bytes
+                && !ASRUtils::is_inline_character_struct_member(
+                    ASR::down_cast<ASR::GetPointer_t>(x.m_arg)->m_arg)){ // Targetted physicalType is `char*`
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
         }
         tmp = builder->CreateBitCast(tmp,
