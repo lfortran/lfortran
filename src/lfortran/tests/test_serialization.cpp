@@ -1741,6 +1741,7 @@ implements IValue :: Cell
     procedure, pass :: value => read_cell
 end implements
 class(IValue), pointer :: shared => null()
+class(IOther), pointer :: other_shared => null()
 contains
 integer function read_cell(self)
     class(Cell), intent(in) :: self
@@ -1827,6 +1828,38 @@ end module
             CHECK_FALSE(LCompilers::asr_verify(*loaded.result, true, invalid));
             REQUIRE(!invalid.diagnostics.empty());
             CHECK(invalid.diagnostics.back().code == "asr.verify.trait_view.borrowed_storage");
+        }
+    }
+    SUBCASE("typed null values retain nominal mold and initialization contracts") {
+        auto *shared = ASR::down_cast<ASR::Variable_t>(module->m_symtab->get_symbol("shared"));
+        auto *other = ASR::down_cast<ASR::Variable_t>(module->m_symtab->get_symbol("other_shared"));
+        auto *value = ASR::down_cast<ASR::PointerNullConstant_t>(shared->m_symbolic_value);
+        std::string code;
+        SUBCASE("initializer cannot substitute an unrelated null contract") {
+            value->m_type = other->m_type;
+            code = "asr.verify.trait_pointer.null_contract";
+        }
+        SUBCASE("mold cannot substitute an unrelated declared contract") {
+            value->m_var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                al, value->base.base.loc, &other->base));
+            code = "asr.verify.trait_pointer.null_mold";
+        }
+        SUBCASE("null has pointer type rather than borrowed view type") {
+            value->m_type = ASRUtils::extract_type(value->m_type);
+            code = "asr.verify.trait_pointer.null_type";
+        }
+        rejects(code);
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics invalid;
+            LCompilers::LocationManager text_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_typed_null.asr", text_lm, invalid);
+            REQUIRE(loaded.ok);
+            CHECK_FALSE(LCompilers::asr_verify(*loaded.result, true, invalid));
+            REQUIRE(!invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code == code);
         }
     }
     SUBCASE("coarray rejection preserves a valid importable pointer module") {

@@ -18832,6 +18832,15 @@ public:
         ASR::ttype_t* null_ptr_type_ = nullptr;
         if( mold_ ) {
             null_ptr_type_ = ASRUtils::expr_type(mold_);
+            if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(null_ptr_type_))) {
+                if (!ASRUtils::is_trait_pointer(null_ptr_type_) &&
+                        !ASRUtils::is_trait_owner(null_ptr_type_)) {
+                    trait_call_error("null() mold requires a pointer or allocatable variable",
+                        mold_->base.loc);
+                }
+                null_ptr_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, x.base.base.loc, ASRUtils::extract_type(null_ptr_type_)));
+            }
         } else {
             if (current_variable_type_ == nullptr) {
                 diag.add(Diagnostic(
@@ -18842,6 +18851,10 @@ public:
                 throw SemanticAbort();
             }
             null_ptr_type_ = current_variable_type_;
+        }
+        if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(null_ptr_type_))) {
+            null_ptr_type_ = ASRUtils::import_trait_type(al, null_ptr_type_, current_scope);
+            return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, mold_);
         }
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_,
             mold_ ? mold_ : current_struct_type_var_expr);
@@ -23599,19 +23612,36 @@ public:
             al, actual->base.loc, actual, reference, view_type));
     }
 
-    void project_runtime_trait_view(ASR::expr_t *&value, ASR::ttype_t *target) {
-        auto *source_contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(value));
-        auto *target_contract = ASRUtils::trait_runtime_contract(target);
-        if (ASRUtils::trait_contracts_equal(&source_contract->base, &target_contract->base)) return;
+    std::vector<int64_t> checked_runtime_trait_projection(
+            ASR::TraitRuntimeContract_t *source_contract,
+            ASR::TraitRuntimeContract_t *target_contract, const Location &loc) {
         auto *source_trait = ASR::down_cast<ASR::Trait_t>(
             ASRUtils::symbol_get_past_external(source_contract->m_trait));
-        checked_trait_hierarchy(*source_trait, value->base.loc);
+        checked_trait_hierarchy(*source_trait, loc);
         std::vector<int64_t> mapping;
         if (!ASRUtils::trait_projection_slots(*source_contract, *target_contract, mapping)) {
             trait_call_error("the declared runtime trait does not provide the required "
                 "parent contract '" + ASRUtils::trait_contract_name(*target_contract) + "'",
-                value->base.loc);
+                loc);
         }
+        return mapping;
+    }
+
+    void check_runtime_trait_null_type(ASR::expr_t *value, ASR::ttype_t *target) {
+        auto *source = ASRUtils::expr_type(value);
+        if (!ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(source))) {
+            trait_call_error("a typed null runtime trait pointer target requires a "
+                "compatible declared runtime trait contract", value->base.loc);
+        }
+        checked_runtime_trait_projection(ASRUtils::trait_runtime_contract(source),
+            ASRUtils::trait_runtime_contract(target), value->base.loc);
+    }
+
+    void project_runtime_trait_view(ASR::expr_t *&value, ASR::ttype_t *target) {
+        auto *source_contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(value));
+        auto *target_contract = ASRUtils::trait_runtime_contract(target);
+        if (ASRUtils::trait_contracts_equal(&source_contract->base, &target_contract->base)) return;
+        auto mapping = checked_runtime_trait_projection(source_contract, target_contract, value->base.loc);
         bool pointer = ASRUtils::is_trait_pointer(ASRUtils::expr_type(value));
         auto *reference = ASRUtils::import_type_declaration(al, &target_contract->base, current_scope);
         ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
@@ -23640,7 +23670,10 @@ public:
             trait_call_error("cannot change association of an intent(in) runtime trait pointer", loc);
         }
         check_runtime_trait_pointer_context(target, true);
-        if (value && ASR::is_a<ASR::PointerNullConstant_t>(*value)) value = nullptr;
+        if (value && ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            check_runtime_trait_null_type(value, target_type);
+            value = nullptr;
+        }
         if (value) {
             check_runtime_trait_pointer_context(value);
             if (!ASRUtils::is_valid_pointer_assignment_target(value)) {

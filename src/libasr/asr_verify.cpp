@@ -3339,6 +3339,20 @@ public:
             bool null_initialized = pointer && !dummy &&
                 (!x.m_symbolic_value || ASR::is_a<PointerNullConstant_t>(*x.m_symbolic_value)) &&
                 (!x.m_value || ASR::is_a<PointerNullConstant_t>(*x.m_value));
+            if (null_initialized && check_external) {
+                for (auto *value : {x.m_symbolic_value, x.m_value}) {
+                    if (!value) continue;
+                    auto *source = typed_expr_type(value);
+                    require_id(source && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(source)),
+                        "asr.verify.trait_pointer.null_contract",
+                        "A null initializer must use the pointer's declared runtime trait contract");
+                    visit_ttype(*source);
+                    visit_ttype(*x.m_type);
+                    require_id(ASRUtils::trait_contracts_equal(source, x.m_type),
+                        "asr.verify.trait_pointer.null_contract",
+                        "A null initializer must use the pointer's declared runtime trait contract");
+                }
+            }
             bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
                 x.m_intent == intentType::Local && x.m_parent_symtab &&
                 x.m_parent_symtab->asr_owner &&
@@ -5153,6 +5167,23 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        if (check_external && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
+            visit_ttype(*x.m_type);
+            require_id(ASRUtils::is_trait_pointer(x.m_type),
+                "asr.verify.trait_pointer.null_type",
+                "A runtime trait null value must have pointer type");
+            if (x.m_var_expr) {
+                auto *mold_type = typed_expr_type(x.m_var_expr);
+                require_id(mold_type &&
+                        (ASRUtils::is_trait_pointer(mold_type) || ASRUtils::is_trait_owner(mold_type)),
+                    "asr.verify.trait_pointer.null_mold",
+                    "A runtime trait null mold must be a pointer or allocatable variable");
+                visit_ttype(*mold_type);
+                require_id(ASRUtils::trait_contracts_equal(x.m_type, mold_type),
+                    "asr.verify.trait_pointer.null_mold",
+                    "A runtime trait null value must retain its mold's declared contract");
+            }
+        }
         if ( x.m_var_expr != nullptr ) {
             visit_expr(*x.m_var_expr);
         }

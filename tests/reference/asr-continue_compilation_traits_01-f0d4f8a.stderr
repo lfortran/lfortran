@@ -1956,6 +1956,54 @@ semantic error: a select type association with a nondefinable selector cannot ap
 3595 |                 write(20, *) (item, index=1,2)
      |                              ^^^^^^^^^^^^^^^^^ 
 
+semantic error: the declared runtime trait does not provide the required parent contract 'a'
+    --> tests/errors/continue_compilation_traits_01.f90:3668:19
+     |
+3668 |         parent => null(other)
+     |                   ^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3669:23
+     |
+3669 |         child_view => null(parent)
+     |                       ^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3670:23
+     |
+3670 |         child_view => null(combination)
+     |                       ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'combined'
+    --> tests/errors/continue_compilation_traits_01.f90:3671:30
+     |
+3671 |         named_combination => null(combination)
+     |                              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: a typed null runtime trait pointer target requires a compatible declared runtime trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:3672:19
+     |
+3672 |         parent => null(integer_view)
+     |                   ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a'
+    --> tests/errors/continue_compilation_traits_01.f90:3673:26
+     |
+3673 |         call take_parent(null(other))
+     |                          ^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3674:25
+     |
+3674 |         call take_child(null(parent))
+     |                         ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3685:19
+     |
+3685 |         p => null(view)
+     |                   ^^^^ 
+
 semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3618:28
      |

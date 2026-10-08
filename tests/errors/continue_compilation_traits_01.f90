@@ -3645,3 +3645,43 @@ subroutine traits_pointer_coarray_local()
     implicit none
     class(I), pointer :: p[*]
 end subroutine
+
+! R3G-05: NULL(MOLD=...) retains its declared nominal contract.
+module traits_pointer_null_contracts
+    implicit none
+    abstract interface :: A
+    end interface
+    abstract interface :: B
+    end interface
+    abstract interface, extends(A) :: Child
+    end interface
+    abstract interface, extends(A + B) :: Combined
+    end interface
+contains
+    subroutine bad()
+        class(A), pointer, save :: parent => null()
+        class(B), pointer, save :: other => null()
+        class(Child), pointer, save :: child_view => null()
+        class(A + B), pointer, save :: combination => null()
+        class(Combined), pointer, save :: named_combination => null()
+        integer, pointer, save :: integer_view => null()
+        parent => null(other)
+        child_view => null(parent)
+        child_view => null(combination)
+        named_combination => null(combination)
+        parent => null(integer_view)
+        call take_parent(null(other))
+        call take_child(null(parent))
+    end subroutine
+    subroutine take_parent(p)
+        class(A), pointer, intent(in) :: p
+    end subroutine
+    subroutine take_child(p)
+        class(Child), pointer, intent(in) :: p
+    end subroutine
+    subroutine bad_mold(view)
+        class(A), intent(in) :: view
+        class(A), pointer :: p
+        p => null(view)
+    end subroutine
+end module

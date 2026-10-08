@@ -652,6 +652,12 @@ their complete source-archive fixture closure are registered.
 Rank and corank eligibility is checked before pointer/owner initialization.
 Unsupported trait coarrays are diagnosed at the declaration and removed during
 error recovery, so a subsequent `USE` cannot import invalid pointer storage.
+`NULL(MOLD=...)` retains the mold's declared contract, including for an
+allocatable mold. Pointer assignment permits the same nominal
+child-to-parent and equivalent-anonymous-contract projections as non-null
+pointer values, but not unrelated contracts or strengthening. Mold-less
+`NULL()` takes its type from the pointer context. Pointer `INTENT(IN)` actuals
+obey the same projection checks; `MOLD` does not bypass them.
 
 Scalar `class(I), pointer` variables support association to concrete TARGET or
 POINTER storage, allocatable TARGET owners, and pointers with the same contract
