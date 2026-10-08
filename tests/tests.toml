@@ -871,6 +871,11 @@ pass = "flip_sign"
 cumulative = true
 
 [[test]]
+filename = "../integration_tests/func_call_in_decl_02.f90"
+asr = true
+pass = "function_call_in_declaration"
+
+[[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
 pass = "array_struct_temporary,array_op"

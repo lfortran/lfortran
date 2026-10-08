@@ -25855,55 +25855,18 @@ public:
             // For bind(C) calls with DescriptorArray/AssumedRankArray args,
             // convert the descriptor from LFortran's internal format (element
             // strides) to CFI format (byte strides) and set elem_len.
-            // Only apply for explicit bind(C) functions (with bindc_name),
-            // not implicit interface functions which use BindC ABI internally
-            // but expect LFortran's descriptor format.
             ASR::FunctionType_t* callee_fn_type = nullptr;
             if (func_subrout->type == ASR::symbolType::Function) {
                 callee_fn_type = ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(func_subrout));
             }
-            // Check if callee is an implicit interface function.
-            // Implicit interfaces use BindC ABI internally but the
-            // actual Fortran implementation uses LFortran's internal
-            // descriptor format.  Detect by looking for a Source/
-            // Implementation function with the same name in the
-            // global scope.
             // A call through a procedure variable has no LLVM function of
             // its own: the variable's interface gives the parameter types,
             // and the procedure named in the call is its original name.
             bool call_through_variable = ASR::is_a<ASR::Variable_t>(
                 *ASRUtils::symbol_get_past_external(x.m_name));
-            bool is_implicit_interface = false;
-            if (callee_fn_type &&
-                callee_fn_type->m_abi == ASR::abiType::BindC &&
-                callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                !callee_fn_type->m_bindc_name) {
-                ASR::Function_t* called_fn =
-                    ASR::down_cast<ASR::Function_t>(func_subrout);
-                std::string called_name = called_fn->m_name;
-                if (call_through_variable && x.m_original_name) {
-                    called_name = ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(x.m_original_name));
-                }
-                SymbolTable* scope = called_fn->m_symtab->parent;
-                while (scope && scope->parent) scope = scope->parent;
-                if (scope) {
-                    ASR::symbol_t* impl = scope->get_symbol(called_name);
-                    if (impl && impl != (ASR::symbol_t*)called_fn &&
-                        ASR::is_a<ASR::Function_t>(*impl)) {
-                        ASR::FunctionType_t* impl_ft =
-                            ASRUtils::get_FunctionType(
-                                ASR::down_cast<ASR::Function_t>(impl));
-                        if (impl_ft->m_abi != ASR::abiType::BindC) {
-                            is_implicit_interface = true;
-                        }
-                    }
-                }
-            }
             if (orig_arg && x_abi == ASR::abiType::BindC &&
                 callee_fn_type &&
-                !is_implicit_interface &&
                 ASRUtils::is_array(orig_arg->m_type)) {
                 ASR::array_physical_typeType phys_type =
                     ASRUtils::extract_physical_type(orig_arg->m_type);
@@ -26101,7 +26064,7 @@ public:
             // wrap in a rank-0 CFI descriptor so the C callee receives
             // a valid CFI_cdesc_t*.
             if (orig_arg && x_abi == ASR::abiType::BindC &&
-                callee_fn_type && !is_implicit_interface &&
+                callee_fn_type &&
                 !ASRUtils::is_array(orig_arg->m_type) &&
                 !ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(orig_arg->m_type))) &&
