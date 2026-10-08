@@ -114,6 +114,11 @@ choices and checks integer `3` and real `3.0` in normal and fast modes.
 Each fixture has private module output, preserving the authors' shared module
 name without parallel-build collisions. These extension fixtures are not
 claimed to compile with GFortran.
+`traits_paper_manual_values.f90` also includes the paper's summation definition
+and manual-procedure example byte for byte. Its separately recorded context
+declares `INumeric` as `integer | real(real32) | real(real64)`, so the original
+real32 `ASSOCIATE` alias and real64 pointer both remain intact. This context is
+independent of either functional program's private constraint.
 
 ## Generic messages
 

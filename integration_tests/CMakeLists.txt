@@ -3923,6 +3923,8 @@ RUN(NAME traits_paper_functional1 FILE traits_paper_functional/functional1
 RUN(NAME traits_paper_functional2 FILE traits_paper_functional/functional2
     LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_02 LABELS llvm llvm2 NO_STD_F23

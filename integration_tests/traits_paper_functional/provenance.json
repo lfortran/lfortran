@@ -19,6 +19,40 @@
       "sha256": "05d98eb6f43b20cd9f53f610301c6fecd96677babe6662f504c7093dd5c5a7e6"
     }
   ],
+  "included_corpus_inventory": {
+    "files": 10,
+    "executable_programs": 8,
+    "module_only_interop_examples": 2
+  },
+  "inline_fixtures": [
+    {
+      "corpus_id": "inline-25",
+      "source": "root traits.tex",
+      "tex_listing_range": [2105, 2114],
+      "file": "inline_25.f90",
+      "sha256": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8"
+    },
+    {
+      "corpus_id": "inline-28",
+      "source": "root traits.tex",
+      "tex_listing_range": [2158, 2178],
+      "file": "inline_28.f90",
+      "sha256": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee"
+    }
+  ],
+  "manual_procedure_context": {
+    "wrapper": "../traits_paper_manual_values.f90",
+    "declarations": [
+      "use iso_fortran_env, only: real32, real64",
+      "abstract interface :: INumeric; integer | real(real32) | real(real64); end interface"
+    ],
+    "sum_definition": "unchanged inline-25",
+    "procedure_example": "unchanged inline-28, including ASSOCIATE ssum => sum{real(real32)}",
+    "expected_real64_totals": [15, 20],
+    "expected_real32_totals": [15, 20],
+    "constraint_context": "Parent-approved standalone context, independent of functional1's private integer|real(real64) constraint.",
+    "scope": "No initializer, typedef, or mutating-Vector corpus changes."
+  },
   "preservation": "Byte-for-byte copies, including original module names and whitespace.",
   "acceptance": {
     "stdin_choices": [1, 2],
@@ -30,6 +64,6 @@
   "qualifications": [
     "These proposed-language programs are not standard Fortran or GFortran oracles.",
     "functional2 omits IMPORT real64 in average_real64. Existing LFortran host-name visibility accepts it; the milestone does not change interface-body host-association rules.",
-    "The separate procedure-value regression admits real32 explicitly to test the paper's real32 callable alias; the functional fixtures retain their original integer|real(real64) contract."
+    "The standalone manual-procedure context admits real32 and real64 explicitly, as approved by the parent; the functional fixtures retain their original private integer|real(real64) contract."
   ]
 }
