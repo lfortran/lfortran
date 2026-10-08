@@ -541,11 +541,20 @@ public:
         s.append(")");
     }
     void visit_DoLoop(const DoLoop_t &x) {
+        visit_do_loop(x, " = ");
+    }
+
+    void visit_InferDoLoop(const InferDoLoop_t &x) {
+        visit_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_do_loop(const Loop &x, const char* assignment) {
         std::string r = "do";
         if (x.m_var) {
             r.append(" ");
             r.append(x.m_var);
-            r.append(" = ");
+            r.append(assignment);
         }
         if (x.m_start) {
             this->visit_expr(*x.m_start);
@@ -572,6 +581,33 @@ public:
         indent_level -= 4;
         r.append("end do");
         s = r;
+    }
+    void visit_ImpliedDoLoop(const ImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " = ");
+    }
+
+    void visit_InferImpliedDoLoop(const InferImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_implied_do_loop(const Loop &x, const char* assignment) {
+        std::string r = "(";
+        for (size_t i = 0; i < x.n_values; i++) {
+            this->visit_expr(*x.m_values[i]);
+            r += s + ", ";
+        }
+        r += x.m_var;
+        r += assignment;
+        this->visit_expr(*x.m_start);
+        r += s + ", ";
+        this->visit_expr(*x.m_end);
+        r += s;
+        if (x.m_increment) {
+            this->visit_expr(*x.m_increment);
+            r += ", " + s;
+        }
+        s = r + ")";
     }
     //Converts do concurrent to a regular do loop. Adds OpenMP pragmas.
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {

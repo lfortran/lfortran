@@ -72,6 +72,7 @@ static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
     switch (stmt.type) {
         case decl_stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::InferDoLoop:       ((InferDoLoop_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
@@ -1304,7 +1305,11 @@ ast_t* implied_do_loop(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
+    if (infer) {
+        return make_InferImpliedDoLoop_t(al, loc, EXPRS(ex_list),
+            ex_list.size(), name2char(i), EXPR(low), EXPR(high), EXPR_OPT(incr));
+    }
     return make_ImpliedDoLoop_t(al, loc,
             EXPRS(ex_list), ex_list.size(),
             name2char(i),
@@ -1318,11 +1323,11 @@ ast_t* implied_do1(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 1);
     v.push_back(al, ex);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 ast_t* implied_do2(Allocator &al, Location &loc,
@@ -1331,12 +1336,12 @@ ast_t* implied_do2(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 2);
     v.push_back(al, ex1);
     v.push_back(al, ex2);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 ast_t* implied_do3(Allocator &al, Location &loc,
@@ -1346,7 +1351,7 @@ ast_t* implied_do3(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 2+ex_list.size());
     v.push_back(al, ex1);
@@ -1354,7 +1359,7 @@ ast_t* implied_do3(Allocator &al, Location &loc,
     for (size_t i=0; i<ex_list.size(); i++) {
         v.push_back(al, ex_list[i]);
     }
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 #define IMPLIED_DO_LOOP1(ex, i, low, high, l) \
@@ -2376,6 +2381,15 @@ static inline void drop_trailing_matching_continue(
     }
 }
 
+static inline ast_t* inferred_do_loop(Allocator &al, Location &loc,
+        ast_t* var, ast_t* start, ast_t* end, ast_t* increment,
+        ast_t* trivia, Vec<ast_t*> body, int64_t end_label) {
+    drop_trailing_matching_continue(body, end_label);
+    return make_InferDoLoop_t(al, loc, 0, nullptr, end_label,
+        name2char(var), EXPR(start), EXPR(end), EXPR_OPT(increment),
+        STMTS(body), body.size(), trivia_cast(trivia), nullptr, &var->loc);
+}
+
 #define DO1(trivia, body, end_label, l) ( \
         drop_trailing_matching_continue(body, end_label), \
         make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
@@ -3224,6 +3238,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Allocate)
         TRIVIA_SET(Assign)
         TRIVIA_SET(Assignment)
+        TRIVIA_SET(InferAssignment)
         TRIVIA_SET(Associate)
         TRIVIA_SET(Backspace)
         TRIVIA_SET(Close)
@@ -3265,6 +3280,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Critical)
         TRIVIA_SET(DoConcurrentLoop)
         TRIVIA_SET(DoLoop)
+        TRIVIA_SET(InferDoLoop)
         TRIVIA_SET(ForAll)
         TRIVIA_SET(If)
         TRIVIA_SET(IfArithmetic)

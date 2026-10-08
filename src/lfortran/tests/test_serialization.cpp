@@ -154,6 +154,34 @@ void asr_mod(const std::string &src, const std::string &module_name = "") {
     CHECK(original == LCompilers::pickle(*asr2));
 }
 
+TEST_CASE("Inferred loop controls preserve syntax and serialize typed ASR") {
+    const std::string source = R"(
+program inferred_loops
+implicit none
+real :: a(10)
+do i := 1, 10
+    tmp := real(i)
+    a(i) = tmp
+end do
+b := [(real(j), j := 1, 10)]
+end program
+)";
+    ast_ser(source);
+    asr_ser(source);
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("do i := 1, 10") != std::string::npos);
+    CHECK(printed.find("j := 1, 10") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    CHECK(LCompilers::LFortran::pickle(*parsed.result) ==
+        LCompilers::LFortran::pickle(*reparsed.result));
+}
+
 static const std::string numeric_trait_source = R"(
 module numeric_contracts
 implicit none

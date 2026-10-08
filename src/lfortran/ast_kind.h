@@ -87,6 +87,7 @@ static inline DeclStmtKind decl_stmt_kind(const decl_stmt_t &x) {
         case decl_stmtType::Critical:
         case decl_stmtType::DoConcurrentLoop:
         case decl_stmtType::DoLoop:
+        case decl_stmtType::InferDoLoop:
         case decl_stmtType::ForAll:
         case decl_stmtType::If:
         case decl_stmtType::IfArithmetic:

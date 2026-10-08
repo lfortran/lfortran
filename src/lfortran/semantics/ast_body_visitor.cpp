@@ -1626,6 +1626,14 @@ public:
                     }
                     break;
                 }
+                case AST::decl_stmtType::InferDoLoop: {
+                    auto* s = AST::down_cast<AST::InferDoLoop_t>(stmt);
+                    collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
+                    if (s->m_do_label != 0) {
+                        labels.insert(std::to_string(s->m_do_label));
+                    }
+                    break;
+                }
                 case AST::decl_stmtType::Where: {
                     AST::Where_t* s = AST::down_cast<AST::Where_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
@@ -6991,86 +6999,6 @@ public:
         tmp = (ASR::asr_t*)ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target_var, tmp_expr, nullptr, compiler_options.po.realloc_lhs_arrays, false));
     }
 
-    // Declares a variable with type inferred from the RHS value expression.
-    // Used by both --infer mode (visit_Assignment) and := syntax (visit_InferAssignment).
-    ASR::ttype_t* infer_scalar_type(const Location& loc, ASR::ttype_t* inferred_type,
-            AST::expr_t* value) {
-        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
-            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
-        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
-            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
-        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
-            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
-        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
-            return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, kind));
-        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
-            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
-            return ASRUtils::TYPE(
-                ASR::make_String_t(al, loc,
-                    str_type->m_kind, str_type->m_len,
-                    str_type->m_len_kind, str_type->m_physical_type));
-        } else if (ASR::is_a<ASR::StructType_t>(*inferred_type)) {
-            return inferred_type;
-        }
-        diag.add(Diagnostic(
-            "Type inference does not support this type",
-            Level::Error, Stage::Semantic, {
-                Label("unsupported type", {value->base.loc})
-            }
-        ));
-        throw SemanticAbort();
-    }
-
-    void infer_type_and_declare(AST::Name_t* target_name, AST::expr_t* value) {
-        this->visit_expr(*value);
-        ASR::expr_t* inferred_value = ASRUtils::EXPR(tmp);
-        ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
-            ASRUtils::expr_type(inferred_value));
-
-        Location loc = target_name->base.base.loc;
-        ASR::ttype_t* declared_type = nullptr;
-        bool is_struct = false;
-        if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inferred_type);
-            ASR::ttype_t* scalar_type = infer_scalar_type(loc, arr->m_type,
-                value);
-            declared_type = ASRUtils::make_Array_t_util(
-                al, loc, scalar_type, arr->m_dims, arr->n_dims);
-        } else {
-            declared_type = infer_scalar_type(loc, inferred_type,
-                value);
-            is_struct = ASR::is_a<ASR::StructType_t>(*inferred_type);
-        }
-
-        ASR::symbol_t* type_decl = nullptr;
-        if (is_struct) {
-            if (ASR::is_a<ASR::StructConstructor_t>(*inferred_value)) {
-                type_decl = ASR::down_cast<ASR::StructConstructor_t>(
-                    inferred_value)->m_dt_sym;
-            } else {
-                type_decl = ASRUtils::get_struct_sym_from_struct_expr(
-                    inferred_value);
-            }
-        }
-        SetChar variable_dependencies_vec;
-        variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
-            declared_type);
-        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, current_scope,
-                s2c(al, to_lower(target_name->m_id)),
-                variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                ASRUtils::intent_local, nullptr, nullptr,
-                ASR::storage_typeType::Default, declared_type, type_decl,
-                current_procedure_abi_type, ASR::Public,
-                ASR::presenceType::Required, false));
-        current_scope->add_symbol(to_lower(target_name->m_id), v);
-    }
-
     /* Returns true if `x` is a statement function, false otherwise.
     Example of statement functions:
     integer :: A
@@ -7466,7 +7394,8 @@ public:
             tmp = nullptr;
             return;
         }
-        if (AST::is_a<AST::ImpliedDoLoop_t>(*x.m_value)) {
+        if (AST::is_a<AST::ImpliedDoLoop_t>(*x.m_value) ||
+                AST::is_a<AST::InferImpliedDoLoop_t>(*x.m_value)) {
             diag.add(Diagnostic(
                 "Implied DO loop must be enclosed within array constructor "
                 "brackets [...]; expected '[( ... )]' in assignment",
@@ -8733,12 +8662,7 @@ public:
     }
 
     void visit_InferAssignment(const AST::InferAssignment_t &x) {
-        if (!compiler_options.infer_mode) {
-            diag.semantic_warning_label(
-                "`:=` is an experimental LFortran extension (subject to change); "
-                "use `--infer` to suppress this warning",
-                { x.base.base.loc }, "LFortran extension");
-        }
+        warn_inferred_declaration(x.base.base.loc);
         if (!AST::is_a<AST::Name_t>(*x.m_target)) {
             diag.add(Diagnostic(
                 "`:=` can only be used with a simple variable name",
@@ -8749,18 +8673,7 @@ public:
             throw SemanticAbort();
         }
         AST::Name_t* target_name = AST::down_cast<AST::Name_t>(x.m_target);
-        std::string var_name = to_lower(target_name->m_id);
-        ASR::symbol_t* existing = current_scope->get_symbol(var_name);
-        if (existing != nullptr) {
-            diag.add(Diagnostic(
-                "Variable '" + var_name + "' is already declared; "
-                "use `=` for assignment to existing variables",
-                Level::Error, Stage::Semantic, {
-                    Label("already declared", {target_name->base.base.loc})
-                }
-            ));
-            throw SemanticAbort();
-        }
+        check_inferred_variable_name(target_name->m_id, target_name->base.base.loc);
         infer_type_and_declare(target_name, x.m_value);
         // Delegate to visit_Assignment for the actual assignment lowering
         AST::Assignment_t assignment;
@@ -10085,6 +9998,15 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type, diag);
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
+        visit_do_loop(x, false);
+    }
+
+    void visit_InferDoLoop(const AST::InferDoLoop_t &x) {
+        visit_do_loop(x, true);
+    }
+
+    template <typename Loop>
+    void visit_do_loop(const Loop &x, bool infer) {
         char* loop_name = x.m_stmt_name;
         if (loop_name) {
             std::string loop_name_str = to_lower(loop_name);
@@ -10097,12 +10019,23 @@ public:
                 throw SemanticAbort();
             }
         }
-        LoopScope loop_scope(in_loop, in_do_concurrent, false);
-        all_loops_blocks_nesting += 1;
-        all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
         ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
+        if (infer) {
+            warn_inferred_declaration(x.base.base.loc);
+            const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
+            check_inferred_variable_name(x.m_var, var_loc);
+            visit_expr(*x.m_start);
+            start = ASRUtils::EXPR(tmp);
+            check_inferred_loop_start(start);
+            auto* name = AST::down_cast2<AST::Name_t>(AST::make_Name_t(
+                al, var_loc, x.m_var, nullptr, 0));
+            infer_type_and_declare(name, x.m_start, start);
+        }
+        LoopScope loop_scope(in_loop, in_do_concurrent, false);
+        all_loops_blocks_nesting += 1;
+        all_blocks_nesting++;
         if (x.m_var) {
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
             var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
@@ -10126,8 +10059,10 @@ public:
             check_loop_control_type(var, "DO variable");
         }
         if (x.m_start) {
-            visit_expr(*x.m_start);
-            start = ASRUtils::EXPR(tmp);
+            if (!start) {
+                visit_expr(*x.m_start);
+                start = ASRUtils::EXPR(tmp);
+            }
             check_loop_control_type(start, "start expression in DO loop");
             type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(start));

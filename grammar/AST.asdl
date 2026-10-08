@@ -195,6 +195,9 @@ decl_stmt
     | Trait(identifier name, identifier* parents, interface_item* items)
     | Implements(identifier* traits, decl_attribute implementing_type,
         procedure_decl* procedures)
+    | InferDoLoop(int label, identifier? stmt_name, int do_label, identifier var,
+            expr start, expr end, expr? increment, decl_stmt* body,
+            trivia? t_inside, trivia? trivia, location var_loc)
 
 expr
     = BoolOp(expr left, boolop op, expr right)
@@ -224,6 +227,8 @@ expr
     | Parenthesis(expr operand)
     | ConditionalExpr(expr test, expr body, expr orelse)
     | Nil()
+    | InferImpliedDoLoop(expr* values, identifier var, expr start, expr end,
+        expr? increment)
 
 
 -- All statement nodes have an optional trivia?, here is the meaning:

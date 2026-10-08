@@ -2311,6 +2311,12 @@ do_statement
             $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, $10, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, $12, @$); }
+    | KW_DO comma_opt id ":=" expr "," expr sep statements enddo {
+            $$ = inferred_do_loop(p.m_a, @$, $3, $5, $7, nullptr,
+                TRIVIA_AFTER($8, @$), $9, $10); }
+    | KW_DO comma_opt id ":=" expr "," expr "," expr sep statements enddo {
+            $$ = inferred_do_loop(p.m_a, @$, $3, $5, $7, $9,
+                TRIVIA_AFTER($10, @$), $11, $12); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
             $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, $11, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
@@ -2674,6 +2680,18 @@ expr
             $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$); }
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
+    | "(" expr "," id ":=" expr "," expr ")" {
+            $$ = implied_do1(p.m_a, @$, $2, $4, $6, $8, nullptr, true); }
+    | "(" expr "," expr "," id ":=" expr "," expr ")" {
+            $$ = implied_do2(p.m_a, @$, $2, $4, $6, $8, $10, nullptr, true); }
+    | "(" expr "," expr "," expr_list "," id ":=" expr "," expr ")" {
+            $$ = implied_do3(p.m_a, @$, $2, $4, $6, $8, $10, $12, nullptr, true); }
+    | "(" expr "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do1(p.m_a, @$, $2, $4, $6, $8, $10, true); }
+    | "(" expr "," expr "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do2(p.m_a, @$, $2, $4, $6, $8, $10, $12, true); }
+    | "(" expr "," expr "," expr_list "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do3(p.m_a, @$, $2, $4, $6, $8, $10, $12, $14, true); }
 
 // ### level-1
     | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }

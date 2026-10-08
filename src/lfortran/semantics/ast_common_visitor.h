@@ -148,6 +148,7 @@ static inline int64_t stmt_label(AST::decl_stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(Critical)
         LFORTRAN_STMT_LABEL_TYPE(DoConcurrentLoop)
         LFORTRAN_STMT_LABEL_TYPE(DoLoop)
+        LFORTRAN_STMT_LABEL_TYPE(InferDoLoop)
         LFORTRAN_STMT_LABEL_TYPE(ForAll)
         LFORTRAN_STMT_LABEL_TYPE(If)
         LFORTRAN_STMT_LABEL_TYPE(IfArithmetic)
@@ -20573,6 +20574,138 @@ public:
     }
 
 
+    void warn_inferred_declaration(const Location& loc) {
+        if (!compiler_options.infer_mode) {
+            diag.semantic_warning_label(
+                "`:=` is an experimental LFortran extension (subject to change); "
+                "use `--infer` to suppress this warning",
+                {loc}, "LFortran extension");
+        }
+    }
+
+    void check_inferred_variable_name(const std::string& name, const Location& loc) {
+        std::string var_name = to_lower(name);
+        if (current_scope->get_symbol(var_name)) {
+            diag.add(Diagnostic(
+                "Variable '" + var_name + "' is already declared; "
+                "use `=` for assignment to existing variables",
+                Level::Error, Stage::Semantic, {
+                    Label("already declared", {loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
+    ASR::ttype_t* infer_scalar_type(const Location& loc, ASR::ttype_t* inferred_type,
+            AST::expr_t* value) {
+        if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
+            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+            return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, kind));
+        } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
+            return ASRUtils::TYPE(
+                ASR::make_String_t(al, loc,
+                    str_type->m_kind, str_type->m_len,
+                    str_type->m_len_kind, str_type->m_physical_type));
+        } else if (ASR::is_a<ASR::StructType_t>(*inferred_type)) {
+            return inferred_type;
+        }
+        diag.add(Diagnostic(
+            "Type inference does not support this type",
+            Level::Error, Stage::Semantic, {
+                Label("unsupported type", {value->base.loc})
+            }));
+        throw SemanticAbort();
+    }
+
+    // Share := declaration typing with --infer and both loop-control forms.
+    // A previsited value lets loop lowering evaluate the initial bound once.
+    void infer_type_and_declare(AST::Name_t* target_name, AST::expr_t* value,
+            ASR::expr_t* inferred_value = nullptr) {
+        if (!inferred_value) {
+            this->visit_expr(*value);
+            inferred_value = ASRUtils::EXPR(tmp);
+        }
+        ASR::ttype_t* inferred_type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(inferred_value));
+        Location loc = target_name->base.base.loc;
+        ASR::ttype_t* declared_type = nullptr;
+        bool is_struct = false;
+        if (ASR::is_a<ASR::Array_t>(*inferred_type)) {
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(inferred_type);
+            ASR::ttype_t* scalar_type = infer_scalar_type(loc, arr->m_type, value);
+            ASR::dimension_t* dims = arr->m_dims;
+            if (arr->n_dims == 1 && !dims[0].m_length &&
+                    ASR::is_a<ASR::ArrayConstructor_t>(*inferred_value)) {
+                int64_t count = compute_array_constructor_element_count(
+                    ASR::down_cast<ASR::ArrayConstructor_t>(inferred_value));
+                if (count >= 0) {
+                    dims = al.allocate<ASR::dimension_t>(1);
+                    dims[0] = arr->m_dims[0];
+                    dims[0].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, count, ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, loc, compiler_options.po.default_integer_kind))));
+                }
+            }
+            for (size_t i = 0; i < arr->n_dims; i++) {
+                if (!dims[i].m_length) {
+                    diag.semantic_error_label(
+                        "type inference requires a known array shape; use an explicit declaration",
+                        {value->base.loc}, "");
+                    throw SemanticAbort();
+                }
+            }
+            declared_type = ASRUtils::make_Array_t_util(
+                al, loc, scalar_type, dims, arr->n_dims);
+        } else {
+            declared_type = infer_scalar_type(loc, inferred_type, value);
+            is_struct = ASR::is_a<ASR::StructType_t>(*inferred_type);
+        }
+        ASR::symbol_t* type_decl = nullptr;
+        if (is_struct) {
+            if (ASR::is_a<ASR::StructConstructor_t>(*inferred_value)) {
+                type_decl = ASR::down_cast<ASR::StructConstructor_t>(
+                    inferred_value)->m_dt_sym;
+            } else {
+                type_decl = ASRUtils::get_struct_sym_from_struct_expr(inferred_value);
+            }
+        }
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec,
+            declared_type);
+        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, to_lower(target_name->m_id)),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                ASRUtils::intent_local, nullptr, nullptr,
+                ASR::storage_typeType::Default, declared_type, type_decl,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(to_lower(target_name->m_id), v);
+    }
+
+    void check_inferred_loop_start(ASR::expr_t* start) {
+        ASR::ttype_t* type = ASRUtils::expr_type(start);
+        if (!ASR::is_a<ASR::Integer_t>(
+                *ASRUtils::type_get_past_allocatable_pointer(type))) {
+            diag.semantic_error_label(
+                "inferred loop control must start with a scalar integer, not " +
+                    ASRUtils::type_to_str_with_kind(type, start),
+                {start->base.loc}, "");
+            throw SemanticAbort();
+        }
+    }
+
     // The loop variable of an implied-do has to be a scalar integer. Left to
     // reach the pass that expands the loop, anything else fails there with an
     // internal error, having passed semantic analysis.
@@ -20843,7 +20976,54 @@ public:
         curr_nesting_level--;
     }
 
+    std::set<std::string> inferred_implied_do_indices;
+
+    void visit_InferImpliedDoLoop(const AST::InferImpliedDoLoop_t& x) {
+        warn_inferred_declaration(x.base.base.loc);
+        std::string name = to_lower(x.m_var);
+        if (inferred_implied_do_indices.count(name)) {
+            diag.semantic_error_label(
+                "nested implied do loops cannot use the same index '" + name + "'",
+                {x.base.base.loc}, "");
+            throw SemanticAbort();
+        }
+        this->visit_expr(*x.m_start);
+        ASR::expr_t* start = ASRUtils::EXPR(tmp);
+        check_inferred_loop_start(start);
+        std::string unique_name = current_scope->get_unique_name(
+            "lfortran_inferred_idl_" + name);
+        auto* ast_name = AST::down_cast2<AST::Name_t>(AST::make_Name_t(
+            al, x.base.base.loc, s2c(al, unique_name), nullptr, 0));
+        infer_type_and_declare(ast_name, x.m_start, start);
+        ASR::symbol_t* index = current_scope->get_symbol(unique_name);
+        ASR::symbol_t* previous = current_scope->get_symbol(name);
+        struct IndexScope {
+            SymbolTable* scope;
+            std::string name;
+            ASR::symbol_t* previous;
+            std::set<std::string>& active;
+            int& nesting;
+            int previous_nesting;
+            ~IndexScope() {
+                scope->erase_symbol(name);
+                if (previous) scope->add_symbol(name, previous);
+                active.erase(name);
+                nesting = previous_nesting;
+            }
+        } index_scope{current_scope, name, previous, inferred_implied_do_indices,
+            idl_nesting_level, idl_nesting_level};
+        if (previous) current_scope->erase_symbol(name);
+        current_scope->add_symbol(name, index);
+        inferred_implied_do_indices.insert(name);
+        visit_implied_do_loop(x, start);
+    }
+
     void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
+        visit_implied_do_loop(x);
+    }
+
+    template <typename Loop>
+    void visit_implied_do_loop(const Loop& x, ASR::expr_t* inferred_start = nullptr) {
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0) {
@@ -20884,8 +21064,12 @@ public:
 
             a_values_vec.push_back(al, expr);
         }
-        this->visit_expr(*(x.m_start));
-        a_start = ASRUtils::EXPR(tmp);
+        if (inferred_start) {
+            a_start = inferred_start;
+        } else {
+            this->visit_expr(*(x.m_start));
+            a_start = ASRUtils::EXPR(tmp);
+        }
         this->visit_expr(*(x.m_end));
         a_end = ASRUtils::EXPR(tmp);
         if( x.m_increment != nullptr ) {

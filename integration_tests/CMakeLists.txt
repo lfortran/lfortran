@@ -5422,6 +5422,8 @@ RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 RUN(NAME ilp64_kind_arg_01 LABELS llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
 # Type inference with := syntax
+RUN(NAME infer_walrus_loop_01 LABELS llvm llvm_infer NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME infer_walrus_loop_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME infer_walrus_01 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_02 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_03 LABELS llvm_infer NO_STD_F23)

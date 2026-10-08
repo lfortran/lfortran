@@ -2741,6 +2741,15 @@ public:
     }
 
     void visit_DoLoop(const DoLoop_t &x) {
+        visit_do_loop(x, " = ");
+    }
+
+    void visit_InferDoLoop(const InferDoLoop_t &x) {
+        visit_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_do_loop(const Loop &x, const char* assignment) {
         std::string r = indent;
         r += print_label(x);
         r += print_stmt_name(x);
@@ -2750,7 +2759,7 @@ public:
         if (x.m_var) {
             r.append(" ");
             r.append(x.m_var);
-            r.append(" = ");
+            r.append(assignment);
         }
         if (x.m_start) {
             this->visit_expr(*x.m_start);
@@ -2795,6 +2804,15 @@ public:
     }
 
     void visit_ImpliedDoLoop(const ImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " = ");
+    }
+
+    void visit_InferImpliedDoLoop(const InferImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_implied_do_loop(const Loop &x, const char* assignment) {
         std::string r = "";
         r += "(";
         for (size_t i=0; i<x.n_values; i++) {
@@ -2803,7 +2821,7 @@ public:
             r.append(", ");
         }
         r.append(x.m_var);
-        r.append(" = ");
+        r.append(assignment);
         this->visit_expr(*x.m_start);
         r.append(s);
         r.append(", ");
