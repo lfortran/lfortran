@@ -440,6 +440,10 @@ class QuickScriptTests(unittest.TestCase):
                 "from pathlib import Path\n"
                 "with open(os.environ['CI_CALLS'], 'a') as log:\n"
                 "    log.write(json.dumps([str(Path(sys.argv[0]).resolve()), sys.argv[1:]]) + '\\n')\n"
+                "if Path(sys.argv[0]).name == 'cmake' and 'CI_BUILD_ENV_LOG' in os.environ:\n"
+                "    with open(os.environ['CI_BUILD_ENV_LOG'], 'a') as log:\n"
+                "        log.write(json.dumps({key: os.environ.get(key, '') "
+                "for key in ('CFLAGS', 'CXXFLAGS')}) + '\\n')\n"
                 "if Path(sys.argv[0]).name == 'nproc': print(3)\n"
             )
             target.chmod(0o755)
@@ -617,6 +621,8 @@ class QuickScriptTests(unittest.TestCase):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         build = source.split("      - name: Build\n", 1)[1].split("\n      - ", 1)[0]
         script = build.split("        run: |\n", 1)[1]
+        environment_log = self.directory / "build-environment.jsonl"
+        self.env.update(CI_BUILD_ENV_LOG=str(environment_log), CFLAGS="", CXXFLAGS="")
         cases = (
             ("quick", "ubuntu-latest", "7", True),
             ("quick", "ubuntu-latest", "11", True),
@@ -632,6 +638,7 @@ class QuickScriptTests(unittest.TestCase):
         for scope, platform, llvm, enabled in cases:
             with self.subTest(scope=scope, platform=platform, llvm=llvm):
                 self.calls.write_text("")
+                environment_log.write_text("")
                 rendered = script.replace("${{ matrix.os }}", platform)
                 rendered = rendered.replace("${{ matrix.llvm-version }}", llvm)
                 env = dict(self.env, LFORTRAN_CI_SCOPE=scope, CONDA_PREFIX=str(self.directory))
@@ -646,6 +653,35 @@ class QuickScriptTests(unittest.TestCase):
                 self.assertEqual("-DWITH_RUNTIME_STACKTRACE=yes" in cmake[0], enabled)
                 debug = scope == "quick" and llvm == "11"
                 self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
+                self.assertEqual("-DWITH_INTERNAL_ALLOC_CHECK=yes" in cmake[0], debug)
+                flags = json.loads(environment_log.read_text().splitlines()[0])
+                expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
+                            "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
+                self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected if debug else ""))
+
+    def test_full_descriptor_owner_keeps_platform_checks(self):
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("    - name: Build (Linux / macOS)\n", 1)[1].split("\n    - name:", 1)[0]
+        script = step.split("      run: |\n", 1)[1].split("        shell ci/build.sh", 1)[0]
+        build = (ROOT / "ci/build.sh").read_text()
+        block = build.split('if [[ $WIN == "1" ]]; then # Windows', 1)[1]
+        block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\ncmake --build", 1)[0]
+        environment_log = self.directory / "build-environment.jsonl"
+        env = dict(self.env, CI_BUILD_ENV_LOG=str(environment_log),
+                   LFORTRAN_CMAKE_GENERATOR="Ninja", ENABLE_RUNTIME_STACKTRACE="yes")
+        result = subprocess.run(
+            ["bash", "-e"], input=script + "\n" + block,
+            cwd=self.directory, env=env, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
+        self.assertEqual(len(calls), 1)
+        self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", calls[0])
+        self.assertIn("-DCMAKE_BUILD_TYPE=Debug", calls[0])
+        expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
+                    "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
+        flags = json.loads(environment_log.read_text())
+        self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected))
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

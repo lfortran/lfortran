@@ -215,12 +215,15 @@ jobs:
                [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
                 STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
             fi
-            # Quick's LLVM 11 compiler runs the full normal/fast suites, so
-            # build it in Debug to enable assertions and per-pass ASR checks.
+            # Quick's full normal/fast compiler needs the same diagnostic,
+            # allocation and assertion checks as the platform Debug builds.
             BUILD_TYPE=Release
+            CHECK_FLAGS=()
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 BUILD_TYPE=Debug
-                export CXXFLAGS="-D_GLIBCXX_ASSERTIONS"
+                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes)
+                export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+                export CXXFLAGS="$CFLAGS"
             fi
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -230,6 +233,7 @@ jobs:
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               ${STACKTRACE_FLAG} \
+              "${CHECK_FLAGS[@]}" \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \

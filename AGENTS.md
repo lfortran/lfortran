@@ -140,6 +140,8 @@ only once, redirect to a log file and then examine the log file.
 - Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
   Every full Quick suite runs with assertions and per-pass ASR verification.
+  Both full-suite compilers also use the platform C/C++ diagnostic/hardening
+  flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.

@@ -446,7 +446,9 @@ serializing them in one long job:
 
 Every registered LLVM test runs in each of these modes on its designated
 compiler. Both are Debug builds, so every full Quick suite runs with
-assertions and per-pass ASR verification. Splitting the modes across two
+assertions and per-pass ASR verification. Both also use the platform C/C++
+diagnostic and standard-library hardening flags, including `-Werror`, and
+`WITH_INTERNAL_ALLOC_CHECK=yes`. Splitting the modes across two
 jobs reduces the critical path without sampling those suites or adding
 another dependent job/queue.
 
