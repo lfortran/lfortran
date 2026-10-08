@@ -11,5 +11,6 @@ program srand_01
     call srand(s)
     y = rand()
     if (abs(x - y) > 1e-6) error stop "srand via pointer is not repeatable"
+    deallocate(s)
     print *, "ok"
 end program srand_01

@@ -35,5 +35,6 @@ program random_seed_02
     do i = 1, n
         if (g(i) /= 90 + i) error stop "put with contiguous array section"
     end do
+    deallocate(n, p)
     print *, "ok"
 end program random_seed_02

@@ -20,5 +20,6 @@ program random_init_03
     call random_seed(get=s2)
     if (x /= y) error stop "repeatable random_init via pointers"
     if (any(s1 /= s2)) error stop "repeatable random_init seeds via pointers"
+    deallocate(rep, img)
     print *, "ok"
 end program random_init_03
