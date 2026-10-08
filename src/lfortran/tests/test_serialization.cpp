@@ -1740,6 +1740,7 @@ end type
 implements IValue :: Cell
     procedure, pass :: value => read_cell
 end implements
+class(IValue), pointer :: shared => null()
 contains
 integer function read_cell(self)
     class(Cell), intent(in) :: self
@@ -1807,6 +1808,66 @@ end module
         association->m_target = ASRUtils::EXPR(
             ASR::make_Var_t(al, association->base.base.loc, &function->base));
         rejects("asr.verify.trait_pointer.storage");
+    }
+    SUBCASE("a module pointer cannot acquire coarray storage") {
+        auto *shared = ASR::down_cast<ASR::Variable_t>(module->m_symtab->get_symbol("shared"));
+        shared->m_codims = al.allocate<ASR::codimension_t>(1);
+        shared->n_codims = 1;
+        shared->m_codims[0] = ASR::codimension_t{shared->base.base.loc,
+            nullptr, nullptr, ASR::codimension_typeType::CodimensionStar};
+        rejects("asr.verify.trait_view.borrowed_storage");
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics invalid;
+            LCompilers::LocationManager text_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "trait_pointer_coarray.asr", text_lm, invalid);
+            REQUIRE(loaded.ok);
+            CHECK_FALSE(LCompilers::asr_verify(*loaded.result, true, invalid));
+            REQUIRE(!invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code == "asr.verify.trait_view.borrowed_storage");
+        }
+    }
+    SUBCASE("coarray rejection preserves a valid importable pointer module") {
+        const std::string recovering_source = R"(
+module coarray_recovery_m
+    implicit none
+    abstract interface :: I
+    end interface
+    class(I), pointer :: bad[*]
+    class(I), pointer :: good => null()
+end module
+program coarray_recovery
+    use coarray_recovery_m
+    implicit none
+    nullify(good)
+end program
+)";
+        LCompilers::diag::Diagnostics errors;
+        options.continue_compilation = true;
+        auto ast = LCompilers::LFortran::parse(al, recovering_source, errors, options);
+        REQUIRE(ast.ok);
+        auto recovered = LCompilers::LFortran::ast_to_asr(
+            al, *ast.result, errors, nullptr, false, options, lm);
+        INFO(errors.render2());
+        REQUIRE(recovered.ok);
+        CHECK(errors.has_error());
+        CHECK(errors.render2().find("ASR verify") == std::string::npos);
+        auto *m = ASR::down_cast<ASR::Module_t>(recovered.result->m_symtab->get_symbol("coarray_recovery_m"));
+        auto *p = ASR::down_cast<ASR::Program_t>(recovered.result->m_symtab->get_symbol("coarray_recovery"));
+        CHECK(m->m_symtab->get_symbol("bad") == nullptr);
+        CHECK(p->m_symtab->get_symbol("bad") == nullptr);
+        CHECK(ASRUtils::symbol_get_past_external(p->m_symtab->get_symbol("good")) ==
+            m->m_symtab->get_symbol("good"));
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*recovered.result, true, valid));
+        LCompilers::SymbolTable imports(nullptr);
+        auto binary = LCompilers::serialize(*recovered.result);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(al, binary, true, imports, 0));
+        fix_external_symbols(*loaded, imports);
+        CHECK(LCompilers::asr_verify(*loaded, true, valid));
     }
 }
 

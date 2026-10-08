@@ -696,6 +696,18 @@ semantic error: runtime generic trait implementations outside module scope are n
 3516 |         procedure, nopass :: apply
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: runtime trait arrays and coarrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3630:26
+     |
+3630 |     class(I), pointer :: p[*]
+     |                          ^^^^ 
+
+semantic error: runtime trait arrays and coarrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3646:26
+     |
+3646 |     class(I), pointer :: p[*]
+     |                          ^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

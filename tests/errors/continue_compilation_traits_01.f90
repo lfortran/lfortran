@@ -3621,3 +3621,27 @@ contains
         end block
     end function
 end module
+
+! R3G-04: rejected coarrays must not remain in an imported module.
+module traits_pointer_coarray_module
+    implicit none
+    abstract interface :: I
+    end interface
+    class(I), pointer :: p[*]
+    class(I), pointer :: good => null()
+end module
+
+module traits_pointer_coarray_import
+    use traits_pointer_coarray_module, only: good
+    implicit none
+contains
+    subroutine use_good()
+        nullify(good)
+    end subroutine
+end module
+
+subroutine traits_pointer_coarray_local()
+    use traits_pointer_coarray_module, only: I
+    implicit none
+    class(I), pointer :: p[*]
+end subroutine

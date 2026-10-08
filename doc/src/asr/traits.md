@@ -649,6 +649,10 @@ their complete source-archive fixture closure are registered.
 
 ## Persistent scalar pointer views (R3)
 
+Rank and corank eligibility is checked before pointer/owner initialization.
+Unsupported trait coarrays are diagnosed at the declaration and removed during
+error recovery, so a subsequent `USE` cannot import invalid pointer storage.
+
 Scalar `class(I), pointer` variables support association to concrete TARGET or
 POINTER storage, allocatable TARGET owners, and pointers with the same contract
 or a known nominal child contract:

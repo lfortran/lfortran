@@ -23809,15 +23809,15 @@ public:
                     !ASR::is_a<ASR::TraitObjectType_t>(
                         *ASRUtils::extract_type(variable->m_type))) continue;
             std::string message;
-            if (ASRUtils::is_trait_pointer(variable->m_type)) {
+            if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
+                message = "runtime trait arrays and coarrays are not implemented yet";
+            } else if (ASRUtils::is_trait_pointer(variable->m_type)) {
                 if ((variable->m_symbolic_value &&
                         !ASR::is_a<ASR::PointerNullConstant_t>(*variable->m_symbolic_value)) ||
                         (variable->m_value &&
                         !ASR::is_a<ASR::PointerNullConstant_t>(*variable->m_value))) {
                     message = "runtime trait pointer initialization requires null()";
                 }
-            } else if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
-                message = "runtime trait arrays and coarrays are not implemented yet";
             } else if (!ASRUtils::is_trait_owner(variable->m_type)) {
                 message = "runtime trait objects currently require a scalar dummy";
             } else if (variable->m_symbolic_value || variable->m_value ||
