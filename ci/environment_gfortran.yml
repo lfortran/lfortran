@@ -4,5 +4,5 @@ channels:
 dependencies:
   - python=3.12
   - cmake=3.29.1
-  # Keep SELECT TYPE finalization without the 13.4 submodule regression.
-  - gfortran=16.1.0
+  # Pin a release with SELECT TYPE function-result finalization.
+  - gfortran=15.2.0
