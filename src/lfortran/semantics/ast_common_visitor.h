@@ -9421,6 +9421,11 @@ public:
                         } else {
                             symbol_variable->m_type = type;
                         }
+                        if (is_argument && s_intent != ASRUtils::intent_unspecified) {
+                            // The dummy was referenced (e.g. in an array bound)
+                            // before this declaration gave it an explicit intent
+                            symbol_variable->m_intent = s_intent;
+                        }
                         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))
                             || ASR::is_a<ASR::UnionType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
                             symbol_variable->m_type_declaration = type_declaration;

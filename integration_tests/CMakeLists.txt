@@ -3533,6 +3533,7 @@ RUN(NAME class_153 LABELS gfortran llvm)
 RUN(NAME class_154 LABELS gfortran llvm)
 RUN(NAME class_158 LABELS gfortran llvm)
 RUN(NAME class_159 LABELS gfortran llvm)
+RUN(NAME class_157 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)

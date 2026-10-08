@@ -2141,3 +2141,10 @@ subroutine intent_list_non_dummy_error(x)
     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
 end subroutine intent_list_non_dummy_error
 
+subroutine intent_in_bound_before_decl_error(a, nz)
+    implicit none
+    real, dimension(nz) :: a
+    integer, intent(in) :: nz
+    nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
+    a = 1
+end subroutine intent_in_bound_before_decl_error
