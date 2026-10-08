@@ -249,7 +249,7 @@ jobs:
                 command -v gfortran
                 gfortran --version
                 test "$(command -v gfortran)" = "$CONDA_PREFIX/bin/gfortran"
-                test "$(gfortran -dumpfullversion)" = "13.4.0"
+                test "$(gfortran -dumpfullversion)" = "16.1.0"
                 cd integration_tests
                 ./run_tests.py -b gfortran
             '
