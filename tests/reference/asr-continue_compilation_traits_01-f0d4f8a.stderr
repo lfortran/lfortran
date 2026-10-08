@@ -832,12 +832,6 @@ semantic error: runtime trait packing currently requires an exact nonpolymorphic
 1955 |         call consume(object)
      |                      ^^^^^^ 
 
-semantic error: concrete select type inspection of runtime trait views is not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:1959:21
-     |
-1959 |         select type(object)
-     |                     ^^^^^^ 
-
 semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
     --> tests/errors/continue_compilation_traits_01.f90:1981:22
      |
@@ -927,12 +921,6 @@ semantic error: move_alloc for runtime trait owners is not implemented yet
      |
 2225 |         call move_alloc(owner, copy)
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: concrete select type inspection of runtime trait views is not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2229:21
-     |
-2229 |         select type(owner)
-     |                     ^^^^^ 
 
 semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:2286:33
@@ -1515,3 +1503,195 @@ semantic error: conflicting implementations of combined trait method 'value': pr
      |
 2942 |         view => object
      |                 ^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3011:21
+     |
+3011 |             nullify(concrete)
+     |                     ^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3019:13
+     |
+3019 |             concrete => target
+     |             ^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3026:31
+     |
+3026 |             call pointer_slot(concrete)
+     |                               ^^^^^^^^ 
+
+semantic error: associated requires a pointer argument; a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3033:28
+     |
+3033 |             if (associated(concrete)) error stop
+     |                            ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3040:22
+     |
+3040 |             allocate(concrete)
+     |                      ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3047:24
+     |
+3047 |             deallocate(concrete)
+     |                        ^^^^^^^^ 
+
+semantic error: a select type associate name is not allocatable
+    --> tests/errors/continue_compilation_traits_01.f90:3054:34
+     |
+3054 |             call allocation_slot(concrete)
+     |                                  ^^^^^^^^ 
+
+semantic error: allocated requires an allocatable variable, not a construct association
+    --> tests/errors/continue_compilation_traits_01.f90:3061:27
+     |
+3061 |             if (allocated(concrete)) error stop
+     |                           ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3068:13
+     |
+3068 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3076:13
+     |
+3076 |             concrete = value
+     |             ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3083:25
+     |
+3083 |             call output(concrete%n)
+     |                         ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3091:24
+     |
+3091 |             n = define(concrete%n)
+     |                        ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3098:22
+     |
+3098 |             allocate(concrete%data(2))
+     |                      ^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3105:24
+     |
+3105 |             deallocate(concrete%data)
+     |                        ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3112:21
+     |
+3112 |             nullify(concrete%link)
+     |                     ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3119:21
+     |
+3119 |             read *, concrete%n
+     |                     ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3128:17
+     |
+3128 |                 nested%n = 1
+     |                 ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3137:17
+     |
+3137 |                 nested%n = 1
+     |                 ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3147:13
+     |
+3147 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3154:13
+     |
+3154 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3160:13
+     |
+3160 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3167:13
+     |
+3167 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+    --> tests/errors/continue_compilation_traits_01.f90:3174:9
+     |
+3174 |         type is (IChild)
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+    --> tests/errors/continue_compilation_traits_01.f90:3180:9
+     |
+3180 |         class is (IChild)
+     |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: select type requires a declared concrete derived type guard
+    --> tests/errors/continue_compilation_traits_01.f90:3186:9
+     |
+3186 |         type is (integer)
+     |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate nominal select type guard
+    --> tests/errors/continue_compilation_traits_01.f90:3193:9
+     |
+3193 |         type is (Cell)
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3200:21
+     |
+3200 |             nullify(concrete)
+     |                     ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3207:22
+     |
+3207 |             allocate(concrete)
+     |                      ^^^^^^^^ 
+
+semantic error: this select type association does not have the target attribute
+    --> tests/errors/continue_compilation_traits_01.f90:3215:24
+     |
+3215 |             pointer => concrete
+     |                        ^^^^^^^^ 
+
+semantic error: this select type association does not have the target attribute
+    --> tests/errors/continue_compilation_traits_01.f90:3222:24
+     |
+3222 |             pointer => concrete
+     |                        ^^^^^^^^ 
+
+semantic error: Argument `n` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:3230:29
+     |
+3230 |                 call output(n)
+     |                             ^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3239:34
+     |
+3239 |             allocate(local, stat=concrete%n)
+     |                                  ^^^^^^^^^^ 

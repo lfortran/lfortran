@@ -18852,6 +18852,10 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        if (ASR::is_a<ASR::Var_t>(*ptr_) && ASRUtils::association_variable(ptr_)) {
+            trait_call_error("associated requires a pointer argument; a select type "
+                "associate name is not a pointer", ptr_->base.loc);
+        }
         if (tgt_) {
             auto *value = ASRUtils::expr_value(tgt_);
             if (value && ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
@@ -23296,6 +23300,30 @@ public:
     }
 
     void adapt_runtime_trait_argument(ASR::expr_t *&actual, ASR::expr_t *dummy) {
+        if (ASR::is_a<ASR::Var_t>(*dummy)) {
+            auto *variable = ASRUtils::get_variable_from_symbol(
+                ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+            if (variable && (variable->m_intent == ASR::intentType::Out ||
+                    variable->m_intent == ASR::intentType::InOut)) {
+                check_association_definable(actual);
+            }
+            if (ASR::is_a<ASR::Var_t>(*actual) && ASRUtils::association_variable(actual)) {
+                if (ASRUtils::is_allocatable(ASRUtils::expr_type(dummy))) {
+                    trait_call_error("a select type associate name is not allocatable",
+                        actual->base.loc);
+                }
+                if (ASRUtils::is_pointer(ASRUtils::expr_type(dummy)) && variable &&
+                        variable->m_intent != ASR::intentType::In) {
+                    trait_call_error("a select type associate name is not a pointer",
+                        actual->base.loc);
+                }
+                if (ASRUtils::is_pointer(ASRUtils::expr_type(dummy)) &&
+                        !ASRUtils::is_valid_pointer_assignment_target(actual)) {
+                    trait_call_error("this select type association does not have the target attribute",
+                        actual->base.loc);
+                }
+            }
+        }
         auto *target = ASRUtils::expr_type(dummy);
         auto *source = ASRUtils::expr_type(actual);
         if (!ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(target))) {
@@ -23357,6 +23385,14 @@ public:
             return;
         }
         make_runtime_trait_view(actual, target);
+    }
+
+    void check_association_definable(ASR::expr_t *expression) {
+        auto *variable = ASRUtils::association_variable(expression);
+        if (variable && variable->m_intent == ASR::intentType::In) {
+            trait_call_error("a select type association with a nondefinable selector "
+                "cannot appear in a variable definition context", expression->base.loc);
+        }
     }
 
     void make_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target) {

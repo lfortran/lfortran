@@ -2516,6 +2516,7 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            if (v->m_storage == ASR::storage_typeType::Association) return true;
             if (ASRUtils::is_trait_owner(v->m_type) &&
                     (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(
                         v->m_parent_symtab->asr_owner)) ||

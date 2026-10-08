@@ -822,9 +822,7 @@ public:
     bool is_selector_statement(ASR::stmt_t* x,
             std::unordered_set<ASR::symbol_t*> &associated) {
         if (current_scope->asr_owner == nullptr ||
-                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
-                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
-                    current_scope->asr_owner))) {
+                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
             return false;
         }
         ASR::expr_t* target = nullptr;
@@ -837,6 +835,9 @@ public:
             return false;
         }
         ASR::symbol_t* name = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                    current_scope->asr_owner)) &&
+                !ASRUtils::association_variable(target)) return false;
         return current_scope->get_symbol(ASRUtils::symbol_name(name)) == name &&
             associated.insert(name).second;
     }

@@ -238,6 +238,22 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                         --work-dir ${CMAKE_BINARY_DIR}/tests/output
                         --combinations ${runtime_trait_flags}
                 )
+                add_test(
+                    NAME test_runtime_trait_inspection_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --inspection ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_inspection_states_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_result_02.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --inspection ${runtime_trait_flags}
+                )
             endforeach()
         endif()
         add_test(

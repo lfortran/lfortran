@@ -3767,7 +3767,7 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
         elif name in ("TraitPack", "TraitReceiver", "TraitFunctionCall", "TraitBorrow",
-                      "TraitProject"):
+                      "TraitProject", "TraitInspect"):
             self.emit("case ASR::exprType::%s: { return nullptr; }"
                     % name, 2, new_line=False)
         else:

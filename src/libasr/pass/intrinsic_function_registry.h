@@ -1108,6 +1108,11 @@ namespace Allocated {
             return nullptr;
         }
         if( !ASRUtils::is_allocatable(args.p[0]) ) {
+            if (ASRUtils::association_variable(args.p[0])) {
+                append_error(diag, "allocated requires an allocatable variable, "
+                    "not a construct association", args.p[0]->base.loc);
+                return nullptr;
+            }
             append_error(diag, "Intrinsic `allocated` can be called only on" \
                 " allocatable argument", loc);
             return nullptr;

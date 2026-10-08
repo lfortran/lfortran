@@ -4664,6 +4664,187 @@ TEST_CASE("Topological sorting mod_int") {
     CHECK(LCompilers::ASRUtils::order_deps(deps) == std::vector<std::string>({ "mod_2", "mod_1", "mod_4", "mod_3" }));
 }
 
+TEST_CASE("Runtime trait inspection preserves guarded data associations") {
+    using namespace LCompilers;
+    const std::string source = R"(
+module inspection_serialization_types
+    type :: Root
+        integer :: n
+    end type
+    type, extends(Root) :: Mid
+        integer :: extra
+    end type
+    type, extends(Mid) :: Cell
+        integer :: last
+    end type
+    type :: Other
+        integer :: n, extra, last
+    end type
+end module
+module inspection_serialization_m
+    use inspection_serialization_types
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+contains
+    subroutine inspect(view)
+        class(IValue), pointer, intent(in) :: view
+        select type (concrete => view)
+        class is (Root)
+            concrete%n = 1
+        type is (Cell)
+            concrete%n = 2
+            associate (component => concrete%n)
+                component = 4
+            end associate
+        class is (Mid)
+            concrete%n = 3
+        class default
+            if (concrete%value() /= view%value()) error stop
+        end select
+    end subroutine
+    integer function readonly(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            readonly = concrete%n
+        class default
+            readonly = 0
+        end select
+    end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "inspection_serialization_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("inspection_serialization_m"));
+    auto *function = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("inspect"));
+    auto *scope = ASR::down_cast<ASR::AssociateBlock_t>(
+        ASR::down_cast<ASR::AssociateBlockCall_t>(function->m_body[0])->m_m);
+    REQUIRE(scope->n_body == 3);
+    auto *snapshot = ASR::down_cast<ASR::Associate_t>(scope->m_body[0]);
+    auto *conversion = ASR::down_cast<ASR::Associate_t>(scope->m_body[1]);
+    auto *inspection = ASR::down_cast<ASR::TraitInspect_t>(conversion->m_value);
+    auto *selection = ASR::down_cast<ASR::SelectType_t>(scope->m_body[2]);
+    REQUIRE(selection->n_body == 3);
+    auto *exact = ASR::down_cast<ASR::TypeStmtName_t>(selection->m_body[0]);
+    auto *guard = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(exact->m_body[0])->m_m);
+    auto *binding = ASR::down_cast<ASR::Associate_t>(guard->m_body[0]);
+    auto *alias = ASRUtils::EXPR2VAR(binding->m_target);
+    auto *readonly = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("readonly"));
+    auto *readonly_scope = ASR::down_cast<ASR::AssociateBlock_t>(
+        ASR::down_cast<ASR::AssociateBlockCall_t>(readonly->m_body[0])->m_m);
+    auto *readonly_select = ASR::down_cast<ASR::SelectType_t>(readonly_scope->m_body[2]);
+    auto *readonly_exact = ASR::down_cast<ASR::TypeStmtName_t>(readonly_select->m_body[0]);
+    auto *readonly_guard = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(readonly_exact->m_body[0])->m_m);
+    auto *readonly_binding = ASR::down_cast<ASR::Associate_t>(readonly_guard->m_body[0]);
+    auto *readonly_alias = ASRUtils::EXPR2VAR(readonly_binding->m_target);
+    CHECK(alias->m_storage == ASR::storage_typeType::Association);
+    CHECK(alias->m_intent == ASR::intentType::Local);
+    CHECK(alias->m_target_attr);
+    CHECK_FALSE(ASRUtils::is_pointer(alias->m_type));
+    CHECK_FALSE(ASRUtils::is_allocatable(alias->m_type));
+    CHECK(readonly_alias->m_intent == ASR::intentType::In);
+    CHECK_FALSE(readonly_alias->m_target_attr);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("binary and both text forms retain the checked view") {
+        LCompilers::SymbolTable imports(nullptr);
+        auto binary = LCompilers::serialize(*result.result);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(al, binary, true, imports, 0));
+        fix_external_symbols(*loaded, imports);
+        CHECK(LCompilers::asr_verify(*loaded, true, diagnostics));
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            CHECK(text.find("TraitInspect") != std::string::npos);
+            CHECK(text.find("Association") != std::string::npos);
+            LCompilers::diag::Diagnostics text_diagnostics;
+            LCompilers::LocationManager text_lm;
+            auto reloaded = LCompilers::asr_from_text(
+                al, text, "inspection.asr", text_lm, text_diagnostics);
+            INFO(text_diagnostics.render2());
+            REQUIRE(reloaded.ok);
+            CHECK(LCompilers::asr_verify(*reloaded.result, true, text_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*reloaded.result, text_options));
+        }
+        LCompilers::diag::Diagnostics unsupported;
+        CHECK(ASRUtils::reject_runtime_traits(*result.result, unsupported, "C"));
+        CHECK(unsupported.has_error());
+    }
+    SUBCASE("inspection cannot accept an unchecked pointer slot") {
+        inspection->m_view = function->m_args[0];
+        rejects("asr.verify.trait_inspect.view");
+    }
+    SUBCASE("inspection cannot claim a concrete identity") {
+        inspection->m_type_declaration = module->m_symtab->get_symbol("cell");
+        rejects("asr.verify.trait_inspect.declaration");
+    }
+    SUBCASE("inspection cannot produce an owning view") {
+        inspection->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+            al, inspection->base.base.loc, inspection->m_type));
+        rejects("asr.verify.trait_inspect.view");
+    }
+    SUBCASE("associate name cannot inherit POINTER") {
+        alias->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, alias->base.base.loc, alias->m_type));
+        rejects("asr.verify.association.storage");
+    }
+    SUBCASE("associate name cannot inherit ALLOCATABLE") {
+        alias->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, alias->base.base.loc, alias->m_type));
+        rejects("asr.verify.association.storage");
+    }
+    SUBCASE("readonly borrow cannot yield a mutable data alias") {
+        readonly_alias->m_intent = ASR::intentType::Local;
+        rejects("asr.verify.association.definable");
+    }
+    SUBCASE("readonly borrow without TARGET cannot invent it") {
+        readonly_alias->m_target_attr = true;
+        rejects("asr.verify.association.target");
+    }
+    SUBCASE("same layout does not authorize another nominal narrowing") {
+        exact->m_sym = module->m_symtab->get_symbol("other");
+        rejects("asr.verify.association.guarded_type");
+    }
+    SUBCASE("an alias must retain its original binding") {
+        binding->m_target = snapshot->m_target;
+        rejects("asr.verify.association.storage");
+    }
+    SUBCASE("source-order ancestry does not override specificity") {
+        std::swap(selection->m_body[1], selection->m_body[2]);
+        rejects("asr.verify.select_type.specificity");
+    }
+    SUBCASE("readonly subobjects cannot be assigned by malformed ASR") {
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(readonly_guard->m_body[1]);
+        assignment->m_target = assignment->m_value;
+        assignment->m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, assignment->base.base.loc, 1,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, assignment->base.base.loc, 4))));
+        rejects("asr.verify.association.definable");
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

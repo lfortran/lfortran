@@ -9233,6 +9233,8 @@ public:
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
+                if (ASR::down_cast<ASR::Variable_t>(var_sym)->m_storage ==
+                        ASR::storage_typeType::Association) continue;
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
@@ -11646,6 +11648,14 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::EXPR2VAR(x.m_target)->m_storage ==
+                    ASR::storage_typeType::Association) {
+            visit_expr_load_wrapper(x.m_value, 0);
+            uint32_t hash = get_hash((ASR::asr_t*)ASRUtils::EXPR2VAR(x.m_target));
+            llvm_symtab[hash] = tmp;
+            return;
+        }
         bool is_target_pointer_section = false;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
             ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
@@ -27819,6 +27829,19 @@ public:
         tmp = llvm_utils->CreateLoad2(llvm_utils->getTraitType(x.m_type)->getPointerTo(), slot);
         llvm_utils->trait_error_if(builder->CreateIsNull(tmp),
             "cannot borrow an unallocated runtime trait object");
+    }
+
+    void visit_TraitInspect(const ASR::TraitInspect_t &x) {
+        auto *view = trait_owner_slot(x.m_view);
+        auto *type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_type, x.m_type_declaration, module.get());
+        auto *result = llvm_utils->CreateAlloca(type, nullptr, "trait_inspection");
+        auto *vptr = builder->CreateBitCast(
+            llvm_utils->trait_field(view, 0), llvm_utils->vptr_type);
+        builder->CreateStore(vptr, llvm_utils->create_gep2(type, result, 0));
+        builder->CreateStore(llvm_utils->trait_field(view, 1),
+            llvm_utils->create_gep2(type, result, 1));
+        tmp = result;
     }
 
     void visit_TraitAssociate(const ASR::TraitAssociate_t &x) {

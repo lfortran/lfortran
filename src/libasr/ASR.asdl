@@ -269,6 +269,9 @@ expr
     | TraitBorrow(expr owner, ttype type)
     -- Copy selected slots into a view of guaranteed nominal requirements.
     | TraitProject(expr view, trait_projection_slot* slots, ttype type)
+    -- Expose only concrete identity and payload through an ordinary class(*)
+    -- view. The selected trait slots and the payload's ownership are unchanged.
+    | TraitInspect(expr view, symbol type_declaration, ttype type)
 
 ttype
     = Integer(int kind)
@@ -303,7 +306,9 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter | Threadprivate
+-- Association is a construct-local data alias bound once by Associate.
+-- It owns no storage and confers neither POINTER nor ALLOCATABLE.
+storage_type = Default | Save | Parameter | Threadprivate | Association
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface | ImplicitInterface

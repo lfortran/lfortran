@@ -2478,6 +2478,14 @@ public:
                 a_values_vec.push_back(al, expr);
             }
         }
+        for (auto *output : {a_iostat, a_iomsg, a_size, a_id}) {
+            check_association_definable(output);
+        }
+        if (_type == AST::decl_stmtType::Read) {
+            for (auto *value : a_values_vec) check_association_definable(value);
+        } else if (a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))) {
+            check_association_definable(a_unit);
+        }
 
         // A editing of integer items is a legacy Fortran 66 feature (deleted
         // in Fortran 77); supported, but warn when a constant format edits
@@ -3174,6 +3182,10 @@ public:
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
+        check_association_definable(target);
+        if (ASR::is_a<ASR::Var_t>(*target) && ASRUtils::association_variable(target)) {
+            trait_call_error("a select type associate name is not a pointer", target->base.loc);
+        }
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
         current_struct_type_var_expr = target;
@@ -3211,6 +3223,11 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        if (ASRUtils::association_variable(value) &&
+                !ASRUtils::is_valid_pointer_assignment_target(value)) {
+            trait_call_error("this select type association does not have the target attribute",
+                value->base.loc);
+        }
         if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(target_type)) ||
                 ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(value_type))) {
             tmp = make_runtime_trait_association(target, value, x.base.base.loc);
@@ -3507,7 +3524,16 @@ public:
                 tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
-            if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
+            bool data_alias = create_associate_stmt && ASRUtils::association_variable(tmp_expr);
+            if (data_alias) {
+                if (ASRUtils::is_array(tmp_type) || ASRUtils::is_pointer(tmp_type) ||
+                        ASRUtils::is_allocatable(tmp_type)) {
+                    trait_call_error("associate views of indirect or array components "
+                        "of an inspected value are not implemented yet", tmp_expr->base.loc);
+                }
+                tmp_storage = ASR::storage_typeType::Association;
+            }
+            if ( create_associate_stmt && !data_alias && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
                     ASRUtils::type_get_past_allocatable(tmp_type)));
@@ -3536,6 +3562,12 @@ public:
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::symbol_t* associate_sym = ASR::down_cast<ASR::symbol_t>(v);
+            if (data_alias) {
+                auto *variable = ASR::down_cast<ASR::Variable_t>(associate_sym);
+                variable->m_intent = ASRUtils::association_is_definable(tmp_expr)
+                    ? ASR::intentType::Local : ASR::intentType::In;
+                variable->m_target_attr = ASRUtils::association_has_target(tmp_expr);
+            }
             if (selector_is_constant) {
                 non_definable_associate_variables.insert(associate_sym);
             }
@@ -3848,6 +3880,12 @@ public:
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
             }
+            check_association_definable(new_arg.m_a);
+            if (ASR::is_a<ASR::Var_t>(*new_arg.m_a) &&
+                    ASRUtils::association_variable(new_arg.m_a)) {
+                trait_call_error("a select type associate name is neither allocatable nor a pointer",
+                    new_arg.m_a->base.loc);
+            }
             alloc_args_vec.push_back(al, new_arg);
         }
 
@@ -3889,6 +3927,8 @@ public:
             }
         }
 
+        check_association_definable(stat);
+        check_association_definable(errmsg);
         bool trait_allocation = false;
         for (auto &arg : alloc_args_vec) {
             trait_allocation |= ASR::is_a<ASR::TraitObjectType_t>(
@@ -4435,6 +4475,11 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            check_association_definable(tmp_expr);
+            if (ASR::is_a<ASR::Var_t>(*tmp_expr) && ASRUtils::association_variable(tmp_expr)) {
+                trait_call_error("a select type associate name is neither allocatable nor a pointer",
+                    tmp_expr->base.loc);
+            }
             if (x.n_keywords && ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                 trait_call_error("runtime trait deallocation with stat, errmsg or other "
@@ -4748,10 +4793,229 @@ public:
                     select_rank_body.size(), select_rank_default.p, select_rank_default.size());
     }
 
+    ASR::symbol_t *concrete_type_guard(ASR::symbol_t *symbol, const Location &loc) {
+        auto *resolved = ASRUtils::symbol_get_past_external(symbol);
+        if (resolved && ASR::is_a<ASR::Trait_t>(*resolved)) {
+            trait_call_error("a trait name in select type is not a concrete type guard; "
+                "inspection does not query conformance", loc);
+        }
+        if (!resolved || !ASR::is_a<ASR::Struct_t>(*resolved)) {
+            trait_call_error("select type requires a declared concrete derived type guard", loc);
+        }
+        return symbol;
+    }
+
+    void visit_data_select_type(const AST::SelectType_t &x, ASR::expr_t *selector) {
+        if (!ASR::is_a<ASR::Var_t>(*selector) &&
+                !(ASR::is_a<ASR::FunctionCall_t>(*selector) &&
+                  ASRUtils::is_trait_owner(ASRUtils::expr_type(selector)))) {
+            trait_call_error("runtime trait inspection requires a scalar variable "
+                "or an owning function result", selector->base.loc);
+        }
+        if (!x.m_assoc_name && !AST::is_a<AST::Name_t>(*x.m_selector)) {
+            trait_call_error("an associate name is required for this select type selector",
+                selector->base.loc);
+        }
+        bool definable = ASRUtils::association_is_definable(selector);
+        bool target_attr = ASRUtils::association_has_target(selector);
+        auto *base = extract_assignment_base_symbol(selector);
+        auto *source_var = base ? ASRUtils::get_variable_from_symbol(base) : nullptr;
+        for (auto *scope = current_scope; scope; scope = scope->parent) {
+            if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ||
+                    !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                        scope->asr_owner))) continue;
+            auto *function = ASR::down_cast2<ASR::Function_t>(scope->asr_owner);
+            if (ASRUtils::get_FunctionType(function)->m_pure && source_var) {
+                bool local = false;
+                for (auto *s = source_var->m_parent_symtab; s; s = s->parent) {
+                    if (s == scope) { local = true; break; }
+                }
+                if (!local || source_var->m_intent == ASR::intentType::In ||
+                        (function->m_return_var &&
+                         ASRUtils::is_arg_dummy(source_var->m_intent))) definable = false;
+            }
+            break;
+        }
+        std::string associate_name = x.m_assoc_name ? to_lower(x.m_assoc_name)
+            : ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(selector)->m_v);
+        auto *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        std::string scope_name = x.m_stmt_name ? to_lower(x.m_stmt_name)
+            : parent_scope->get_unique_name("~trait_inspection");
+        auto *scope_symbol = ASR::down_cast<ASR::symbol_t>(x.m_stmt_name
+            ? ASR::make_Block_t(al, x.base.base.loc, current_scope,
+                s2c(al, scope_name), nullptr, 0)
+            : ASR::make_AssociateBlock_t(al, x.base.base.loc, current_scope,
+                s2c(al, scope_name), nullptr, 0));
+        parent_scope->add_symbol(scope_name, scope_symbol);
+        auto *inspection_scope = current_scope;
+        Vec<ASR::stmt_t*> body; body.reserve(al, 3);
+        auto bind_alias = [&](const std::string &name, ASR::ttype_t *type,
+                ASR::symbol_t *declaration, ASR::expr_t *value, const Location &loc,
+                Vec<ASR::stmt_t*> &statements) {
+            auto *symbol = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, name), nullptr, 0,
+                definable ? ASR::intentType::Local : ASR::intentType::In,
+                nullptr, nullptr, ASR::storage_typeType::Association, type,
+                ASRUtils::import_type_declaration(al, declaration, current_scope),
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+            ASR::down_cast<ASR::Variable_t>(symbol)->m_target_attr = target_attr;
+            current_scope->add_symbol(name, symbol);
+            auto *variable = ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol));
+            if (value) statements.push_back(al,
+                ASRUtils::STMT(ASR::make_Associate_t(al, loc, variable, value)));
+            return variable;
+        };
+        try {
+            auto *view_type = ASRUtils::extract_type(ASRUtils::expr_type(selector));
+            ASR::symbol_t *view_declaration = nullptr;
+            ASR::expr_t *view = selector, *ordinary = selector;
+            if (ASR::is_a<ASR::TraitObjectType_t>(*view_type)) {
+                make_runtime_trait_view(selector, view_type);
+                auto *contract = ASRUtils::trait_runtime_contract(view_type);
+                view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, x.base.base.loc,
+                    ASRUtils::import_type_declaration(al, &contract->base, current_scope)));
+                Vec<ASR::trait_projection_slot_t> slots; slots.reserve(al, contract->n_slots);
+                for (size_t i = 0; i < contract->n_slots; i++) {
+                    ASR::trait_projection_slot_t slot;
+                    slot.loc = x.base.base.loc; slot.m_source = i;
+                    slots.push_back(al, slot);
+                }
+                // An identity projection snapshots the entire selected descriptor,
+                // not its payload. Reassociation of the original cannot retarget us.
+                auto *snapshot = ASRUtils::EXPR(ASR::make_TraitProject_t(al, x.base.base.loc,
+                    selector, slots.p, slots.size(), view_type));
+                view = bind_alias(current_scope->get_unique_name("~selected_view"),
+                    view_type, nullptr, snapshot, x.base.base.loc, body);
+                auto *poly_type = ASRUtils::TYPE(ASR::make_StructType_t(al,
+                    x.base.base.loc, nullptr, 0, nullptr, 0, false, true));
+                auto *poly_symbol = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al,
+                    x.base.base.loc, al.make_new<SymbolTable>(current_scope),
+                    s2c(al, current_scope->get_unique_name("~inspection_type")), poly_type,
+                    nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source,
+                    ASR::accessType::Private, false, true, false, nullptr, 0,
+                    nullptr, nullptr, nullptr, 0));
+                current_scope->add_symbol(ASRUtils::symbol_name(poly_symbol), poly_symbol);
+                auto *inspection = ASRUtils::EXPR(ASR::make_TraitInspect_t(al,
+                    x.base.base.loc, view, poly_symbol, poly_type));
+                ordinary = bind_alias(current_scope->get_unique_name("~concrete_view"),
+                    poly_type, poly_symbol, inspection, x.base.base.loc, body);
+            } else {
+                view_declaration = ASRUtils::get_struct_sym_from_struct_expr(selector);
+            }
+            Vec<ASR::type_stmt_t*> guards; guards.reserve(al, x.n_body);
+            Vec<ASR::stmt_t*> default_body; default_body.reserve(al, 1);
+            bool has_default = false;
+            std::set<std::pair<ASR::symbol_t*, bool>> seen_guards;
+            for (size_t i = 0; i < x.n_body; i++) {
+                auto *guard = x.m_body[i];
+                const Location &loc = guard->base.loc;
+                current_scope = al.make_new<SymbolTable>(inspection_scope);
+                std::string block_name = inspection_scope->get_unique_name("~type_guard");
+                auto *block_symbol = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                    al, loc, current_scope, s2c(al, block_name), nullptr, 0));
+                inspection_scope->add_symbol(block_name, block_symbol);
+                ASR::symbol_t *type_symbol = nullptr;
+                AST::decl_stmt_t **statements = nullptr;
+                size_t n_statements = 0;
+                bool is_class = false;
+                bool is_default = false;
+                switch (guard->type) {
+                    case AST::type_stmtType::TypeStmtName: {
+                        auto *g = AST::down_cast<AST::TypeStmtName_t>(guard);
+                        type_symbol = current_scope->resolve_symbol(to_lower(g->m_name));
+                        statements = g->m_body; n_statements = g->n_body;
+                        break;
+                    }
+                    case AST::type_stmtType::ClassStmt: {
+                        auto *g = AST::down_cast<AST::ClassStmt_t>(guard);
+                        type_symbol = current_scope->resolve_symbol(to_lower(g->m_id));
+                        statements = g->m_body; n_statements = g->n_body; is_class = true;
+                        break;
+                    }
+                    case AST::type_stmtType::TypeStmtType: {
+                        auto *g = AST::down_cast<AST::TypeStmtType_t>(guard);
+                        Vec<ASR::dimension_t> dims; dims.reserve(al, 0);
+                        determine_type(loc, associate_name, g->m_vartype, false, false,
+                            dims, nullptr, type_symbol, ASR::abiType::Source);
+                        statements = g->m_body; n_statements = g->n_body;
+                        break;
+                    }
+                    case AST::type_stmtType::ClassDefault: {
+                        auto *g = AST::down_cast<AST::ClassDefault_t>(guard);
+                        if (has_default) trait_call_error(
+                            "select type has more than one class default", loc);
+                        has_default = true; is_default = true;
+                        statements = g->m_body; n_statements = g->n_body;
+                        break;
+                    }
+                    default:
+                        trait_call_error("unsupported runtime trait type guard", loc);
+                }
+                ASR::ttype_t *type = view_type;
+                if (!is_default) {
+                    type_symbol = concrete_type_guard(type_symbol, loc);
+                    auto *nominal = ASRUtils::symbol_get_past_external(type_symbol);
+                    if (!seen_guards.insert({nominal, is_class}).second) {
+                        trait_call_error("duplicate nominal select type guard", loc);
+                    }
+                    type = ASRUtils::make_StructType_t_util(al, loc, type_symbol, !is_class);
+                } else {
+                    type_symbol = view_declaration;
+                }
+                Vec<ASR::stmt_t*> block_body; block_body.reserve(al, n_statements + 1);
+                auto *alias = bind_alias(associate_name, type, type_symbol, nullptr,
+                    loc, block_body);
+                auto *value = is_default ? view : ASRUtils::EXPR(ASR::make_Cast_t(al,
+                    loc, ordinary, is_class ? ASR::cast_kindType::ClassToClass
+                        : ASR::cast_kindType::ClassToStruct, type, nullptr, alias));
+                block_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Associate_t(al, loc, alias, value)));
+                transform_stmts(block_body, n_statements, statements);
+                auto *block = ASR::down_cast<ASR::Block_t>(block_symbol);
+                block->m_body = block_body.p; block->n_body = block_body.size();
+                Vec<ASR::stmt_t*> call; call.reserve(al, 1);
+                call.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                    loc, -1, block_symbol)));
+                if (is_default) {
+                    default_body.push_back(al, call[0]);
+                } else {
+                    type_symbol = ASRUtils::import_type_declaration(
+                        al, type_symbol, inspection_scope);
+                    guards.push_back(al, ASR::down_cast<ASR::type_stmt_t>(is_class
+                        ? ASR::make_ClassStmt_t(al, loc, type_symbol, call.p, call.size())
+                        : ASR::make_TypeStmtName_t(al, loc, type_symbol, call.p, call.size())));
+                }
+            }
+            ASRUtils::order_select_type_guards(guards.p, guards.size());
+            body.push_back(al, ASRUtils::STMT(ASR::make_SelectType_t(al,
+                x.base.base.loc, ordinary, s2c(al, associate_name), guards.p,
+                guards.size(), default_body.p, default_body.size())));
+            if (x.m_stmt_name) {
+                auto *block = ASR::down_cast<ASR::Block_t>(scope_symbol);
+                block->m_body = body.p; block->n_body = body.size();
+            } else {
+                auto *block = ASR::down_cast<ASR::AssociateBlock_t>(scope_symbol);
+                block->m_body = body.p; block->n_body = body.size();
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = parent_scope;
+            parent_scope->erase_symbol(scope_name);
+            throw;
+        }
+        current_scope = parent_scope;
+        tmp = x.m_stmt_name
+            ? ASR::make_BlockCall_t(al, x.base.base.loc, -1, scope_symbol)
+            : ASR::make_AssociateBlockCall_t(al, x.base.base.loc, scope_symbol);
+    }
+
     void visit_SelectType(const AST::SelectType_t& x) {
         all_loops_blocks_nesting++;
-        // TODO: We might need to re-order all ASR::TypeStmtName
-        // before ASR::ClassStmt as per GFortran's semantics
+        struct SelectDepth {
+            int &depth;
+            ~SelectDepth() { depth--; }
+        } nesting{all_loops_blocks_nesting};
         if( !x.m_selector ) {
             diag.add(Diagnostic(
                 "Selector expression is missing in select type statement.",
@@ -4771,8 +5035,8 @@ public:
             ASR::ttype_t* selector_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(m_selector));
             if (ASR::is_a<ASR::TraitObjectType_t>(*selector_type)) {
-                trait_call_error("concrete select type inspection of runtime trait views "
-                    "is not implemented yet", x.m_selector->base.loc);
+                visit_data_select_type(x, m_selector);
+                return;
             }
             if (!ASRUtils::is_class_type(selector_type)
                     && !ASRUtils::is_unlimited_polymorphic_type(selector_type)) {
@@ -4782,6 +5046,10 @@ public:
                         Label("",{x.m_selector->base.loc})
                     }));
                 throw SemanticAbort();
+            }
+            if (ASRUtils::association_variable(m_selector)) {
+                visit_data_select_type(x, m_selector);
+                return;
             }
         }
         // When the selector is a function call, create a temporary variable
@@ -4954,7 +5222,8 @@ public:
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
                     AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(class_stmt->m_id)));
+                    ASR::symbol_t* sym = concrete_type_guard(current_scope->resolve_symbol(
+                        to_lower(std::string(class_stmt->m_id))), class_stmt->base.base.loc);
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -5037,7 +5306,8 @@ public:
                 }
                 case AST::type_stmtType::TypeStmtName: {
                     AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(to_lower(std::string(type_stmt_name->m_name)));
+                    ASR::symbol_t* sym = concrete_type_guard(current_scope->resolve_symbol(
+                        to_lower(std::string(type_stmt_name->m_name))), type_stmt_name->base.base.loc);
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -5439,7 +5709,7 @@ public:
             selector_variable->n_dependencies = selector_variable_n_dependencies;
         }
 
-        all_loops_blocks_nesting--;
+        ASRUtils::order_select_type_guards(select_type_body.p, select_type_body.size());
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
@@ -7298,6 +7568,7 @@ public:
             }
         }
         ASR::stmt_t *overloaded_stmt = nullptr;
+        check_association_definable(target);
         check_assignment_to_constant_variable(extract_assignment_base_symbol(target),
             x.base.base.loc);
         if (ASR::is_a<ASR::Var_t>(*target)) {
@@ -10741,6 +11012,11 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            check_association_definable(tmp_expr);
+            if (ASR::is_a<ASR::Var_t>(*tmp_expr) && ASRUtils::association_variable(tmp_expr)) {
+                trait_call_error("a select type associate name is not a pointer",
+                    tmp_expr->base.loc);
+            }
             if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(tmp_expr))) {
                 check_runtime_trait_pointer_context(tmp_expr, true);
             }

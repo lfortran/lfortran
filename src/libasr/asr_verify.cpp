@@ -572,9 +572,78 @@ public:
         return visitor.found;
     }
 
+    bool guarded_data_association(const Variable_t &variable, const Cast_t &cast) {
+        auto *scope = variable.m_parent_symtab;
+        auto *parent = scope ? scope->parent : nullptr;
+        auto *owner = parent ? parent->asr_owner : nullptr;
+        if (!owner || !ASR::is_a<symbol_t>(*owner)) return false;
+        stmt_t **body = nullptr;
+        size_t n = 0;
+        auto *symbol = ASR::down_cast<symbol_t>(owner);
+        if (ASR::is_a<Block_t>(*symbol)) {
+            auto *block = ASR::down_cast<Block_t>(symbol);
+            body = block->m_body; n = block->n_body;
+        } else if (ASR::is_a<AssociateBlock_t>(*symbol)) {
+            auto *block = ASR::down_cast<AssociateBlock_t>(symbol);
+            body = block->m_body; n = block->n_body;
+        }
+        if (!cast.m_dest || !ASR::is_a<Var_t>(*cast.m_dest) ||
+                ASR::down_cast<Var_t>(cast.m_dest)->m_v != &variable.base) return false;
+        for (size_t i = 0; i < n; i++) {
+            if (!ASR::is_a<SelectType_t>(*body[i])) continue;
+            auto *selection = ASR::down_cast<SelectType_t>(body[i]);
+            if (!same_variable(selection->m_selector, cast.m_arg)) continue;
+            for (size_t j = 0; j < selection->n_body; j++) {
+                auto *guard = selection->m_body[j];
+                symbol_t *declaration = nullptr;
+                stmt_t **statements = nullptr;
+                size_t count = 0;
+                if (ASR::is_a<TypeStmtName_t>(*guard) &&
+                        cast.m_kind == cast_kindType::ClassToStruct) {
+                    auto *g = ASR::down_cast<TypeStmtName_t>(guard);
+                    declaration = g->m_sym; statements = g->m_body; count = g->n_body;
+                } else if (ASR::is_a<ClassStmt_t>(*guard) &&
+                        cast.m_kind == cast_kindType::ClassToClass) {
+                    auto *g = ASR::down_cast<ClassStmt_t>(guard);
+                    declaration = g->m_sym; statements = g->m_body; count = g->n_body;
+                }
+                if (count == 1 && statements && ASR::is_a<BlockCall_t>(*statements[0]) &&
+                        (asr_t*)ASR::down_cast<BlockCall_t>(statements[0])->m_m == scope->asr_owner &&
+                        ASRUtils::symbol_get_past_external(declaration) ==
+                            ASRUtils::symbol_get_past_external(variable.m_type_declaration)) return true;
+            }
+        }
+        return false;
+    }
+
     void visit_Associate(const Associate_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_Associate(x);
         if (!check_external || x.m_target == nullptr || x.m_value == nullptr) {
+            return;
+        }
+        if (ASR::is_a<Var_t>(*x.m_target) &&
+                ASRUtils::EXPR2VAR(x.m_target)->m_storage == storage_typeType::Association) {
+            auto *variable = ASRUtils::EXPR2VAR(x.m_target);
+            require_id(variable->m_parent_symtab == current_symtab &&
+                    ASRUtils::association_value(*variable) == x.m_value,
+                "asr.verify.association.binding",
+                "A data association must be bound exactly once in its own construct");
+            require_id(ASRUtils::types_equal(variable->m_type,
+                    typed_expr_type(x.m_value), x.m_target, x.m_value),
+                "asr.verify.association.type",
+                "A data association must have the explicit type of its view");
+            if (ASR::is_a<Cast_t>(*x.m_value)) {
+                require_id(guarded_data_association(*variable,
+                        *ASR::down_cast<Cast_t>(x.m_value)),
+                    "asr.verify.association.guarded_type",
+                    "A narrowed data association requires its matching nominal SELECT TYPE guard");
+            } else {
+                require_id(ASR::is_a<TraitProject_t>(*x.m_value) ||
+                        ASR::is_a<TraitInspect_t>(*x.m_value) ||
+                        ASRUtils::association_variable(x.m_value),
+                    "asr.verify.association.source",
+                    "A data association must preserve a captured or explicitly inspected view");
+            }
             return;
         }
         ASR::ttype_t *target = typed_expr_type(x.m_target);
@@ -598,6 +667,10 @@ public:
     void visit_SelectType(const SelectType_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_SelectType(x);
         if (!check_external || x.m_selector == nullptr) return;
+        auto *selector_type = typed_expr_type(x.m_selector);
+        require_id(selector_type && ASRUtils::is_class_type(ASRUtils::extract_type(selector_type)),
+            "asr.verify.select_type.polymorphic",
+            "SELECT TYPE requires an ordinary polymorphic selector; trait inspection must be explicit");
         for (size_t i = 0; i < x.n_body; i++) {
             ASR::symbol_t *guard = nullptr;
             if (ASR::is_a<ASR::TypeStmtName_t>(*x.m_body[i])) {
@@ -606,17 +679,37 @@ public:
                 guard = ASR::down_cast<ASR::ClassStmt_t>(x.m_body[i])->m_sym;
             }
             if (guard == nullptr) continue;
+            auto *concrete = ASRUtils::symbol_get_past_external(guard);
+            require_id(concrete && ASR::is_a<Struct_t>(*concrete),
+                "asr.verify.select_type.concrete_guard",
+                "A type guard names a concrete derived type, not a trait contract");
             require_id(
                 dynamic_type_is_compatible(guard, x.m_selector),
                 "asr.verify.select_type.guard_extends_selector",
                 "The type guard '" +
                 std::string(ASRUtils::symbol_name(guard)) +
                 "' does not extend the declared type of the selector");
+            if (ASR::is_a<ClassStmt_t>(*x.m_body[i])) {
+                for (size_t j = i + 1; j < x.n_body; j++) {
+                    if (!ASR::is_a<ClassStmt_t>(*x.m_body[j])) continue;
+                    auto *later = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ClassStmt_t>(x.m_body[j])->m_sym);
+                    require_id(!later || !ASR::is_a<Struct_t>(*later) ||
+                            !struct_is_or_extends(ASR::down_cast<Struct_t>(later),
+                                ASR::down_cast<Struct_t>(concrete)),
+                        "asr.verify.select_type.specificity",
+                        "More-specific CLASS IS guards must precede matching ancestors");
+                }
+            }
         }
     }
 
     void visit_Assignment(const Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
+        auto *association = ASRUtils::association_variable(target);
+        require_id(!association || association->m_intent != intentType::In,
+            "asr.verify.association.definable",
+            "A read-only construct association cannot appear in a variable definition context");
         if( ASR::is_a<ASR::Var_t>(*target) ) {
             ASR::Var_t* target_Var = ASR::down_cast<ASR::Var_t>(target);
             bool is_target_const = false;
@@ -2137,6 +2230,27 @@ public:
             "Borrowing an owner must preserve its declared contract");
     }
 
+    void visit_TraitInspect(const TraitInspect_t &x) {
+        auto *view_type = typed_expr_type(x.m_view);
+        require_id(view_type && ASR::is_a<TraitObjectType_t>(*view_type) &&
+                x.m_type && ASR::is_a<StructType_t>(*x.m_type) &&
+                ASRUtils::is_unlimited_polymorphic_type(x.m_type) &&
+                !ASR::down_cast<StructType_t>(x.m_type)->m_is_cstruct,
+            "asr.verify.trait_inspect.view",
+            "Concrete inspection requires a borrowed scalar trait and an ordinary class(*) view");
+        visit_expr(*x.m_view);
+        visit_ttype(*x.m_type);
+        require_id(x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration),
+            "asr.verify.trait_inspect.declaration",
+            "The ordinary inspection view must carry an in-scope type declaration");
+        if (!check_external) return;
+        auto *declaration = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+        require_id(declaration && ASR::is_a<Struct_t>(*declaration) &&
+                ASRUtils::is_unlimited_polymorphic_type(declaration),
+            "asr.verify.trait_inspect.declaration",
+            "Concrete inspection cannot claim an unchecked concrete type");
+    }
+
     void visit_TraitProject(const TraitProject_t &x) {
         auto *source = typed_expr_type(x.m_view);
         require_id(source && x.m_type &&
@@ -2226,6 +2340,14 @@ public:
     }
 
     void visit_PointerAssociated(const PointerAssociated_t &x) {
+        require_id(!x.m_ptr || !ASR::is_a<Var_t>(*x.m_ptr) ||
+                !ASRUtils::association_variable(x.m_ptr),
+            "asr.verify.association.pointer_attribute",
+            "A construct association is not a pointer inquiry's POINTER argument");
+        require_id(!check_external || !ASRUtils::association_variable(x.m_tgt) ||
+                ASRUtils::is_valid_pointer_assignment_target(x.m_tgt),
+            "asr.verify.association.target",
+            "An association used as a pointer target must retain TARGET");
         if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_ptr)) &&
                 !ASR::is_a<PointerNullConstant_t>(*x.m_ptr)) {
             auto *type = verify_trait_pointer(x.m_ptr, x.base.base.loc, false);
@@ -2286,6 +2408,11 @@ public:
 
     void visit_Nullify(const Nullify_t &x) {
         for (size_t i = 0; i < x.n_vars; i++) {
+            auto *association = ASRUtils::association_variable(x.m_vars[i]);
+            require_id(!association || (!ASR::is_a<Var_t>(*x.m_vars[i]) &&
+                    association->m_intent != intentType::In),
+                "asr.verify.association.pointer_attribute",
+                "A construct association is not a pointer and cannot nullify a read-only subobject");
             if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_vars[i]))) {
                 verify_trait_pointer(x.m_vars[i], x.base.base.loc, true);
             } else {
@@ -2930,6 +3057,27 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        if (x.m_storage == storage_typeType::Association) {
+            auto *value = ASRUtils::association_value(x);
+            require_id(x.m_type && !ASRUtils::is_array(x.m_type) &&
+                    !ASRUtils::is_pointer(x.m_type) && !ASRUtils::is_allocatable(x.m_type) &&
+                    (ASR::is_a<StructType_t>(*x.m_type) ||
+                     ASR::is_a<TraitObjectType_t>(*x.m_type) ||
+                     ASR::is_a<Integer_t>(*x.m_type) || ASR::is_a<Real_t>(*x.m_type) ||
+                     ASR::is_a<Complex_t>(*x.m_type) || ASR::is_a<Logical_t>(*x.m_type) ||
+                     ASR::is_a<String_t>(*x.m_type) || ASR::is_a<CPtr_t>(*x.m_type)) &&
+                    (x.m_intent == intentType::Local || x.m_intent == intentType::In) &&
+                    x.m_presence == presenceType::Required && !x.m_symbolic_value &&
+                    !x.m_value && !x.m_value_attr && !x.n_codims && value,
+                "asr.verify.association.storage",
+                "A data association is a once-bound scalar construct local, not an owner or pointer");
+            require_id(ASRUtils::association_is_definable(value) || x.m_intent == intentType::In,
+                "asr.verify.association.definable",
+                "A data association must preserve its selector's nondefinability");
+            require_id(!check_external || !x.m_target_attr || ASRUtils::association_has_target(value),
+                "asr.verify.association.target",
+                "A data association cannot acquire TARGET from a selector without TARGET or POINTER");
+        }
         if (contains_retained_result_storage(x.m_type)) {
             auto *scope_owner = x.m_parent_symtab ? x.m_parent_symtab->asr_owner : nullptr;
             require_id(ASR::is_a<TraitOwnerList_t>(*x.m_type) &&
@@ -2991,7 +3139,9 @@ public:
                 (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
                 !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
                     x.m_parent_symtab->asr_owner));
-            require_id((borrowed || owner || slot || result || pointer) &&
+            bool association = x.m_storage == storage_typeType::Association &&
+                ASR::is_a<TraitObjectType_t>(*x.m_type);
+            require_id((borrowed || owner || slot || result || pointer || association) &&
                     x.m_presence == presenceType::Required &&
                     !x.m_value_attr &&
                     ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
@@ -3505,6 +3655,11 @@ public:
     void verify_trait_deallocation(const T &x, bool implicit = false) {
         std::set<symbol_t*> owners;
         for (size_t i = 0; i < x.n_vars; i++) {
+            auto *association = ASRUtils::association_variable(x.m_vars[i]);
+            require_id(!association || (association->m_intent != intentType::In &&
+                    !ASR::is_a<Var_t>(*x.m_vars[i])),
+                "asr.verify.association.deallocate",
+                "A data association owns no storage and cannot deallocate a read-only subobject");
             auto *type = typed_expr_type(x.m_vars[i]);
             if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
             verify_trait_owner(x.m_vars[i], x.base.base.loc);
@@ -4052,6 +4207,19 @@ public:
                     continue;
                 }
                 ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                auto *actual = x.m_args[i].m_value;
+                auto *association = ASRUtils::association_variable(actual);
+                require_id(!association || association->m_intent != intentType::In ||
+                        (callee_param->m_intent != intentType::Out &&
+                         callee_param->m_intent != intentType::InOut),
+                    "asr.verify.association.definable",
+                    "A read-only data association cannot be a defining actual argument");
+                require_id(!association || !ASR::is_a<Var_t>(*actual) ||
+                        (!ASRUtils::is_allocatable(callee_param->m_type) &&
+                         (!ASRUtils::is_pointer(callee_param->m_type) ||
+                          callee_param->m_intent == intentType::In)),
+                    "asr.verify.association.actual_attributes",
+                    "A data association is neither an allocation slot nor a defining pointer slot");
 
                 // Skip detailed checks for self argument (args[0] in method calls)
                 if (i == 0 && is_method && !nopass) {
@@ -5785,6 +5953,10 @@ public:
                 reject_implicit_trait_storage(x.m_source, x.m_source->base.loc);
             }
             for( size_t i = 0; i < x.n_args; i++ ) {
+                auto *association = ASRUtils::association_variable(x.m_args[i].m_a);
+                require_id(!association || association->m_intent != intentType::In,
+                    "asr.verify.association.definable",
+                    "A read-only data association cannot allocate a subobject");
                 reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
                 require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
@@ -5830,6 +6002,16 @@ public:
         }
 
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
+    }
+
+    void visit_FileRead(const FileRead_t &x) {
+        for (size_t i = 0; i < x.n_values; i++) {
+            auto *association = ASRUtils::association_variable(x.m_values[i]);
+            require_id(!association || association->m_intent != intentType::In,
+                "asr.verify.association.definable",
+                "A read-only data association cannot be an input item");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
     }
 
     void verify_sync_stat_list(const std::string &stmt_name, const Location &loc, ASR::expr_t *stat, ASR::expr_t *errmsg,

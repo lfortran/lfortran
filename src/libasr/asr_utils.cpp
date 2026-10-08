@@ -629,6 +629,9 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::TraitReceiver: {
             return ASR::down_cast<ASR::TraitReceiver_t>(expression)->m_type_declaration;
         }
+        case ASR::exprType::TraitInspect: {
+            return ASR::down_cast<ASR::TraitInspect_t>(expression)->m_type_declaration;
+        }
         case ASR::exprType::UnionInstanceMember: {
             ASR::UnionInstanceMember_t* union_instance_member = ASR::down_cast<ASR::UnionInstanceMember_t>(expression);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(union_instance_member->m_m)));
@@ -5957,6 +5960,109 @@ std::string nominal_symbol_name(const ASR::symbol_t *symbol)
         result += std::to_string(i->size()) + "_" + *i;
     }
     return result;
+}
+
+ASR::Variable_t *association_variable(ASR::expr_t *expr) {
+    if (!expr) return nullptr;
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return variable && variable->m_storage == ASR::storage_typeType::Association
+                ? variable : nullptr;
+        }
+        case ASR::exprType::StructInstanceMember:
+            return association_variable(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        case ASR::exprType::ArrayItem:
+            return association_variable(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        case ASR::exprType::ArraySection:
+            return association_variable(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        case ASR::exprType::ArrayPhysicalCast:
+            return association_variable(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+        case ASR::exprType::Cast:
+            return association_variable(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        case ASR::exprType::ComplexRe:
+            return association_variable(ASR::down_cast<ASR::ComplexRe_t>(expr)->m_arg);
+        case ASR::exprType::ComplexIm:
+            return association_variable(ASR::down_cast<ASR::ComplexIm_t>(expr)->m_arg);
+        default: return nullptr;
+    }
+}
+
+ASR::expr_t *association_value(const ASR::Variable_t &variable) {
+    auto *owner = variable.m_parent_symtab ? variable.m_parent_symtab->asr_owner : nullptr;
+    if (!owner || !ASR::is_a<ASR::symbol_t>(*owner)) return nullptr;
+    ASR::stmt_t **body = nullptr;
+    size_t n = 0;
+    auto *symbol = ASR::down_cast<ASR::symbol_t>(owner);
+    if (ASR::is_a<ASR::Block_t>(*symbol)) {
+        auto *block = ASR::down_cast<ASR::Block_t>(symbol);
+        body = block->m_body; n = block->n_body;
+    } else if (ASR::is_a<ASR::AssociateBlock_t>(*symbol)) {
+        auto *block = ASR::down_cast<ASR::AssociateBlock_t>(symbol);
+        body = block->m_body; n = block->n_body;
+    }
+    ASR::expr_t *value = nullptr;
+    for (size_t i = 0; i < n; i++) {
+        if (!ASR::is_a<ASR::Associate_t>(*body[i])) continue;
+        auto *binding = ASR::down_cast<ASR::Associate_t>(body[i]);
+        if (!binding->m_target || !ASR::is_a<ASR::Var_t>(*binding->m_target) ||
+                ASR::down_cast<ASR::Var_t>(binding->m_target)->m_v != &variable.base) continue;
+        if (value) return nullptr;
+        value = binding->m_value;
+    }
+    return value;
+}
+
+static ASR::expr_t *association_source(ASR::expr_t *value) {
+    switch (value->type) {
+        case ASR::exprType::TraitBorrow:
+            return ASR::down_cast<ASR::TraitBorrow_t>(value)->m_owner;
+        case ASR::exprType::TraitProject:
+            return ASR::down_cast<ASR::TraitProject_t>(value)->m_view;
+        case ASR::exprType::TraitInspect:
+            return ASR::down_cast<ASR::TraitInspect_t>(value)->m_view;
+        case ASR::exprType::Cast:
+            return ASR::down_cast<ASR::Cast_t>(value)->m_arg;
+        default: return nullptr;
+    }
+}
+
+bool association_is_definable(ASR::expr_t *value) {
+    if (!value) return false;
+    if (auto *source = association_source(value)) return association_is_definable(source);
+    if (auto *variable = association_variable(value)) {
+        return variable->m_intent != ASR::intentType::In;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*value)) return false;
+    auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(value)->m_v);
+    return variable && variable->m_storage != ASR::storage_typeType::Parameter &&
+        (variable->m_intent != ASR::intentType::In || is_pointer(variable->m_type));
+}
+
+bool association_has_target(ASR::expr_t *value) {
+    if (!value) return false;
+    if (auto *source = association_source(value)) return association_has_target(source);
+    if (association_variable(value)) return is_valid_pointer_assignment_target(value);
+    if (!ASR::is_a<ASR::Var_t>(*value)) return false;
+    auto *variable = get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(value)->m_v);
+    return variable && (variable->m_target_attr || is_pointer(variable->m_type));
+}
+
+void order_select_type_guards(ASR::type_stmt_t **guards, size_t n) {
+    auto specificity = [](ASR::type_stmt_t *guard) {
+        if (!ASR::is_a<ASR::ClassStmt_t>(*guard)) return INT_MAX;
+        auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::ClassStmt_t>(guard)->m_sym);
+        int depth = 0;
+        std::set<ASR::symbol_t*> seen;
+        while (symbol && ASR::is_a<ASR::Struct_t>(*symbol) && seen.insert(symbol).second) {
+            depth++;
+            symbol = symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(symbol)->m_parent);
+        }
+        return depth;
+    };
+    std::stable_sort(guards, guards + n, [&](ASR::type_stmt_t *a, ASR::type_stmt_t *b) {
+        return specificity(a) > specificity(b);
+    });
 }
 
 bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,

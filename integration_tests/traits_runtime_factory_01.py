@@ -20,11 +20,13 @@ def main():
     mode.add_argument("--slots", action="store_true")
     mode.add_argument("--projections", action="store_true")
     mode.add_argument("--combinations", action="store_true")
+    mode.add_argument("--inspection", action="store_true")
     parser.add_argument("--detect-leaks", action="store_true")
     args = parser.parse_args()
     compiler = Path(args.lfortran).resolve()
     sources = Path(__file__).resolve().parent
-    prefix = ("traits_runtime_combination_01" if args.combinations else
+    prefix = ("traits_runtime_inspection_separate_01" if args.inspection else
+              "traits_runtime_combination_01" if args.combinations else
               "traits_runtime_05" if args.projections else
               "traits_runtime_07" if args.slots else "traits_runtime_factory_01")
     work = Path(args.work_dir).resolve() / f"trait-factory-{os.getpid()}-{time.time_ns()}"
@@ -82,7 +84,7 @@ def main():
     frozen = digest(archive)
     archive_checks = {"before_clients": frozen}
     frozen_files = {str(obj): digest(obj) for obj in objects}
-    if args.combinations:
+    if args.combinations or args.inspection:
         for path in [contracts, *(work / "contracts").rglob("*.mod")]:
             frozen_files[str(path)] = digest(path)
     if not args.slots:
@@ -93,7 +95,7 @@ def main():
             frozen_files[str(module)] = digest(module)
         assert hidden, "the private provider must have compiled its module"
         (work / "hidden-provider-modules.json").write_text(json.dumps(hidden, indent=2) + "\n")
-        if args.combinations:
+        if args.combinations or args.inspection:
             hidden_sources = {}
             for source in (work / "provider").glob("*.f90"):
                 hidden_sources[str(source.relative_to(work))] = digest(source)
@@ -126,7 +128,7 @@ def main():
     assert "TraitWitness" not in semantic and "TraitImplementation" not in semantic
     assert "TraitPack" not in semantic
     assert re.search(r"call i32 %", llvm), "dispatch must use the carried witness"
-    if args.projections or args.combinations:
+    if args.projections or args.combinations or args.inspection:
         assert "TraitProject" in semantic and "TraitAssociate" in semantic
         assert "TraitBorrow" in semantic
         if args.combinations:
@@ -134,12 +136,16 @@ def main():
             assert "TraitAssignment" in semantic and "TraitAllocate" in semantic
             assert re.search(r"call (?:i8\*|ptr) %", llvm), "copy must use the retained concrete lifecycle"
             assert "hiddenbox" not in semantic.lower()
+        if args.inspection:
+            assert "TraitInspect" in semantic and "SelectType" in semantic
+            assert "Association" in semantic and "ClassToStruct" in semantic
+            assert "ClassToClass" in semantic and "hiddenleaf" not in semantic.lower()
     elif not args.slots:
         assert "TraitBorrow" in semantic and "TraitAssignment" in semantic
         assert "ReturnVar" in semantic and "make_value" in semantic
         assert re.search(r"call (?:i8\*|ptr) %", llvm), "copy must use the private lifecycle"
         assert "hiddena" not in semantic.lower() and "hiddenb" not in semantic.lower()
-    if args.projections or args.combinations:
+    if args.projections or args.combinations or args.inspection:
         extra_objects.append(compile_part("alternative_impl", ["contracts"])[0])
         extra_objects.append(compile_part("alternative", ["contracts", "alternative_impl"])[0])
         check_archive("after_alternative")
@@ -158,12 +164,16 @@ def main():
         assert "hiddena" not in semantic.lower() and "hiddenb" not in semantic.lower()
         if args.combinations:
             assert "hiddenbox" not in semantic.lower()
+        if args.inspection:
+            assert "hiddenleaf" not in semantic.lower()
     executable = work / "program"
     run("link", [compiler, *flags, driver, consumer, *extra_objects, archive, contracts, "-o", executable])
     check_archive("after_link")
     for name, arguments in [("first-a", []), ("first-b", ["select-second-first"])]:
         output = run(name, [executable, *arguments])
-        if args.combinations:
+        if args.inspection:
+            assert "concrete inspection: frozen providers, selected methods, identity and finalization" in output
+        elif args.combinations:
             assert "late combinations: selected procedures, addresses, slots and finalization" in output
         elif not args.slots and not args.projections:
             assert re.search(r"factory results:\s+16\s+16\s+272\s+464\s+10", output), output

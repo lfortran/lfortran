@@ -10693,6 +10693,11 @@ bool runtime_trait_method_supported(const ASR::Function_t &method);
 std::string nominal_symbol_name(const ASR::symbol_t *symbol);
 bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
     diag::Diagnostics &diagnostics, const std::string &backend);
+ASR::Variable_t *association_variable(ASR::expr_t *expr);
+ASR::expr_t *association_value(const ASR::Variable_t &variable);
+bool association_is_definable(ASR::expr_t *value);
+bool association_has_target(ASR::expr_t *value);
+void order_select_type_guards(ASR::type_stmt_t **guards, size_t n);
 
 // Walk parents in declaration order and retain each original member once.
 // Unresolved external parents are left for the full verifier when requested.

@@ -2975,3 +2975,268 @@ contains
         class(A + B), pointer :: view
     end function
 end module
+
+module traits_runtime_inspection_negative_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface, extends(IValue) :: IChild
+    end interface
+    type :: Cell
+        integer :: n
+        integer, pointer :: link
+        integer, allocatable :: data(:)
+    end type
+    class(IValue), pointer :: shared
+contains
+    subroutine output(value)
+        integer, intent(out) :: value
+    end subroutine
+    integer function define(value)
+        integer, intent(out) :: value
+        define = 0
+    end function
+    subroutine pointer_slot(value)
+        type(Cell), pointer, intent(inout) :: value
+    end subroutine
+    subroutine allocation_slot(value)
+        type(Cell), allocatable, intent(in) :: value
+    end subroutine
+    subroutine no_pointer_nullify(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (Cell)
+            nullify(concrete)
+        end select
+    end subroutine
+    subroutine no_pointer_assignment(view, target)
+        class(IValue), pointer :: view
+        type(Cell), target :: target
+        select type (concrete => view)
+        type is (Cell)
+            concrete => target
+        end select
+    end subroutine
+    subroutine no_pointer_slot(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (Cell)
+            call pointer_slot(concrete)
+        end select
+    end subroutine
+    subroutine no_pointer_inquiry(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (Cell)
+            if (associated(concrete)) error stop
+        end select
+    end subroutine
+    subroutine no_allocate(view)
+        class(IValue), allocatable :: view
+        select type (concrete => view)
+        type is (Cell)
+            allocate(concrete)
+        end select
+    end subroutine
+    subroutine no_deallocate(view)
+        class(IValue), allocatable :: view
+        select type (concrete => view)
+        type is (Cell)
+            deallocate(concrete)
+        end select
+    end subroutine
+    subroutine no_allocation_slot(view)
+        class(IValue), allocatable :: view
+        select type (concrete => view)
+        type is (Cell)
+            call allocation_slot(concrete)
+        end select
+    end subroutine
+    subroutine no_allocated_inquiry(view)
+        class(IValue), allocatable :: view
+        select type (concrete => view)
+        type is (Cell)
+            if (allocated(concrete)) error stop
+        end select
+    end subroutine
+    subroutine readonly_component(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            concrete%n = 1
+        end select
+    end subroutine
+    subroutine readonly_whole(view, value)
+        class(IValue), intent(in) :: view
+        type(Cell), intent(in) :: value
+        select type (concrete => view)
+        type is (Cell)
+            concrete = value
+        end select
+    end subroutine
+    subroutine readonly_output(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            call output(concrete%n)
+        end select
+    end subroutine
+    subroutine readonly_function_output(view)
+        class(IValue), intent(in) :: view
+        integer :: n
+        select type (concrete => view)
+        type is (Cell)
+            n = define(concrete%n)
+        end select
+    end subroutine
+    subroutine readonly_allocate(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            allocate(concrete%data(2))
+        end select
+    end subroutine
+    subroutine readonly_deallocate(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            deallocate(concrete%data)
+        end select
+    end subroutine
+    subroutine readonly_nullify(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            nullify(concrete%link)
+        end select
+    end subroutine
+    subroutine readonly_read(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            read *, concrete%n
+        end select
+    end subroutine
+    subroutine readonly_nested_select(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        class is (Cell)
+            select type (nested => concrete)
+            type is (Cell)
+                nested%n = 1
+            end select
+        end select
+    end subroutine
+    subroutine readonly_nested_associate(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            associate (nested => concrete)
+                nested%n = 1
+            end associate
+        end select
+    end subroutine
+    function make() result(owner)
+        class(IValue), allocatable :: owner
+    end function
+    subroutine readonly_result()
+        select type (concrete => make())
+        type is (Cell)
+            concrete%n = 1
+        end select
+    end subroutine
+    pure subroutine readonly_pure_pointer(view)
+        class(IValue), pointer, intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            concrete%n = 1
+        end select
+    end subroutine
+    pure subroutine readonly_pure_host()
+        select type (concrete => shared)
+        type is (Cell)
+            concrete%n = 1
+        end select
+    end subroutine
+    pure integer function readonly_pure_function(view)
+        class(IValue), pointer, intent(inout) :: view
+        select type (concrete => view)
+        type is (Cell)
+            concrete%n = 1
+        end select
+        readonly_pure_function = 0
+    end function
+    subroutine not_type_conformance(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (IChild)
+        end select
+    end subroutine
+    subroutine not_class_conformance(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        class is (IChild)
+        end select
+    end subroutine
+    subroutine no_intrinsic_guard(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (integer)
+        end select
+    end subroutine
+    subroutine duplicate_guard(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        type is (Cell)
+        type is (Cell)
+        end select
+    end subroutine
+    subroutine default_not_pointer(view)
+        class(IValue), pointer :: view
+        select type (concrete => view)
+        class default
+            nullify(concrete)
+        end select
+    end subroutine
+    subroutine default_not_allocatable(view)
+        class(IValue), allocatable :: view
+        select type (concrete => view)
+        class default
+            allocate(concrete)
+        end select
+    end subroutine
+    subroutine not_target(view)
+        class(IValue), allocatable :: view
+        type(Cell), pointer :: pointer
+        select type (concrete => view)
+        type is (Cell)
+            pointer => concrete
+        end select
+    end subroutine
+    subroutine result_not_target()
+        type(Cell), pointer :: pointer
+        select type (concrete => make())
+        type is (Cell)
+            pointer => concrete
+        end select
+    end subroutine
+    subroutine readonly_nested_component(view)
+        class(IValue), intent(in) :: view
+        select type (concrete => view)
+        type is (Cell)
+            associate (n => concrete%n)
+                call output(n)
+            end associate
+        end select
+    end subroutine
+    subroutine readonly_allocation_status(view)
+        class(IValue), intent(in) :: view
+        integer, allocatable :: local
+        select type (concrete => view)
+        type is (Cell)
+            allocate(local, stat=concrete%n)
+        end select
+    end subroutine
+end module
