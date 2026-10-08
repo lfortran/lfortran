@@ -1936,10 +1936,11 @@ public:
                 "asr.verify.trait_erasure.generic",
                 "An erased entry must originate in a checked template");
             auto *generic = ASR::down_cast<Template_t>(definition);
-            auto *original = ASRUtils::trait_method_function(definition);
+            auto *original = verify_runtime_trait_procedure(definition, x.base.base.loc,
+                "asr.verify.trait_erasure.original");
             auto *entry = verify_runtime_trait_procedure(x.m_procedure, x.base.base.loc,
                 "asr.verify.trait_erasure.entry");
-            require_id(original && ASRUtils::symbol_parent_symtab(&entry->base) == current_symtab &&
+            require_id(ASRUtils::symbol_parent_symtab(&entry->base) == current_symtab &&
                     ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
                     ASRUtils::trait_erased_signature_matches(*original, *entry),
                 "asr.verify.trait_erasure.signature",

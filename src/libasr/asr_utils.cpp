@@ -5697,7 +5697,8 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
         const ASR::Function_t &erased, size_t offset)
 {
     if (!trait_method_template(generic) || erased.n_args != generic.n_args + offset ||
-            !erased.m_args || !generic.m_return_var || !erased.m_return_var) return false;
+            (generic.n_args && !generic.m_args) || !erased.m_args ||
+            !generic.m_return_var || !erased.m_return_var) return false;
     auto *result = typed_expr_type(generic.m_return_var);
     if (!result || !ASR::is_a<ASR::Integer_t>(*result)) return false;
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
@@ -5705,8 +5706,12 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
         if (!generic.m_args[i] || !erased.m_args[i + offset] ||
                 !ASR::is_a<ASR::Var_t>(*generic.m_args[i]) ||
                 !ASR::is_a<ASR::Var_t>(*erased.m_args[i + offset])) return false;
-        arguments.emplace(&EXPR2VAR(generic.m_args[i])->base,
-            &EXPR2VAR(erased.m_args[i + offset])->base);
+        auto *a = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(generic.m_args[i])->m_v));
+        auto *b = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(erased.m_args[i + offset])->m_v));
+        if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) return false;
+        arguments.emplace(&a->base, &b->base);
     }
     for (size_t i = 0; i < generic.n_args; i++) {
         auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(erased.m_args[i + offset]);

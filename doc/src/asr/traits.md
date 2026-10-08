@@ -142,6 +142,9 @@ scoped nominal proof while a forwarding consumer is still generic. Instantiation
 turns it into a checked concrete `TraitPack`, another scoped deferred pack, or a
 verified projection of an already-erased argument. LLVM only lowers the
 resulting explicit descriptors and calls.
+Erasure verification validates both procedure declarations before comparing
+their signatures, including argument-symbol kinds, independently of symbol
+visitation order and compiler assertions.
 
 This compiler-private ABI is for the same supported build/toolchain/target; it
 is not a cross-compiler, cross-version, or independently loaded plugin ABI.

@@ -1400,6 +1400,63 @@ end module
             CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
         }
     }
+    SUBCASE("erasure validates argument symbols before visiting the original template") {
+        auto text = LCompilers::asr_to_text(*result.result);
+        const std::string old_name = "\"__trait_erasure_apply\"";
+        const std::string new_name = "\"__a_erasure_apply\"";
+        for (size_t pos = text.find(old_name); pos != std::string::npos;
+                pos = text.find(old_name, pos + new_name.size())) {
+            text.replace(pos, old_name.size(), new_name);
+        }
+        LCompilers::diag::Diagnostics ordered_diagnostics;
+        LCompilers::LocationManager ordered_lm;
+        auto ordered = LCompilers::asr_from_text(
+            al, text, "ordered_erasure.asr", ordered_lm, ordered_diagnostics);
+        REQUIRE(ordered.ok);
+        CHECK(LCompilers::asr_verify(*ordered.result, true, ordered_diagnostics));
+        bool mutate_original = true;
+        SUBCASE("original argument refers to a function") {
+            mutate_original = true;
+        }
+        SUBCASE("erased argument refers to a function") {
+            mutate_original = false;
+        }
+        LCompilers::SymbolTable imports(nullptr);
+        auto binary = LCompilers::serialize(*ordered.result);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(al, binary, true, imports, 0));
+        fix_external_symbols(*loaded, imports);
+        auto reject_argument = [&](ASR::TranslationUnit_t &unit) {
+            LCompilers::diag::Diagnostics invalid;
+            CHECK_FALSE(LCompilers::asr_verify(unit, true, invalid));
+            INFO(invalid.render2());
+            REQUIRE(!invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code == "asr.verify.trait_procedure.argument");
+        };
+        for (auto *unit : {ordered.result, loaded}) {
+            auto *m = ASR::down_cast<ASR::Module_t>(
+                unit->m_symtab->get_symbol("runtime_generic_evidence_m"));
+            auto *definition = ASR::down_cast<ASR::Template_t>(m->m_symtab->get_symbol("apply"));
+            auto *original = ASRUtils::trait_method_function(&definition->base);
+            auto *erased = ASRUtils::trait_method_function(
+                ASRUtils::trait_erasure(*definition, m->m_symtab)->m_procedure);
+            auto *mutated = mutate_original ? original : erased;
+            ASR::down_cast<ASR::Var_t>(mutated->m_args[0])->m_v = &mutated->base;
+            CHECK_FALSE(ASRUtils::trait_erased_signature_matches(*original, *erased));
+            reject_argument(*unit);
+        }
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*ordered.result, text_options);
+            LCompilers::diag::Diagnostics text_diagnostics;
+            LCompilers::LocationManager text_lm;
+            auto reloaded = LCompilers::asr_from_text(
+                al, text, "nonvariable_generic_argument.asr", text_lm, text_diagnostics);
+            REQUIRE(reloaded.ok);
+            reject_argument(*reloaded.result);
+        }
+    }
     SUBCASE("the entry cannot drop a binder substitution") {
         erasure->n_parameters = 0;
         rejects("asr.verify.trait_erasure.parameters");
