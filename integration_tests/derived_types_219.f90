@@ -1,63 +1,64 @@
-module m_base_219
-    implicit none
-    type :: base_m
-        integer :: m_val = 10
-    end type
-end module
-
-module m_proc_219
-    use m_base_219
-    implicit none
-    type :: base_in_m
-        integer :: b_val = 20
-    end type
-contains
-    subroutine sub_m()
-        type, extends(base_in_m) :: ext_in_m
-            integer :: ext_b = 21
-        end type
-        type, extends(base_m) :: ext_from_used
-            integer :: ext_u = 11
-        end type
-        type(ext_in_m) :: x1
-        type(ext_from_used) :: x2
-        if (x1%b_val /= 20 .or. x1%ext_b /= 21) error stop 1
-        if (x2%m_val /= 10 .or. x2%ext_u /= 11) error stop 2
-        x1%b_val = 120
-        x1%ext_b = 121
-        if (x1%b_val /= 120 .or. x1%ext_b /= 121) error stop 3
-    end subroutine
-end module
-
+! Rank 2 and rank 3 array components with a scalar default initializer,
+! declared in a program (#14211).
 program derived_types_219
-    use m_proc_219
-    use m_base_219, only: base_m
     implicit none
+    type :: sometype
+        integer :: i
+        integer, dimension(2,2) :: x = 1
+    end type sometype
 
-    type :: base_prog
-        integer :: p_val = 30
-    end type
+    type :: t3
+        integer :: i = 0
+        integer :: a(2,3) = 7
+        real :: r(2,2,2) = 1.5
+        character(len=3) :: c(2,2) = "ab"
+        logical :: l(3,2) = .true.
+        integer :: p(2,3) = reshape([1, 2, 3, 4, 5, 6], [2, 3])
+        real(8) :: d(2,2,3) = reshape([1d0, 2d0, 3d0, 4d0, 5d0, 6d0, &
+            7d0, 8d0, 9d0, 10d0, 11d0, 12d0], [2, 2, 3])
+    end type t3
 
-    call sub_m()
-    call sub_internal()
+    integer :: i_
+    type(sometype) :: y
+    type(t3) :: u, v, w
 
-contains
+    ! The reproducer from the issue
+    y = sometype(i=1)
+    print *, sum(y%x)
+    if (sum(y%x) /= 4) error stop
+    if (any(shape(y%x) /= [2, 2])) error stop
 
-    subroutine sub_internal()
-        type, extends(base_prog) :: ext_prog
-            integer :: ext_p = 31
-        end type
-        type, extends(base_m) :: ext_used_in_prog
-            integer :: ext_up = 12
-        end type
-        type(ext_prog) :: y1
-        type(ext_used_in_prog) :: y2
+    ! A plain declaration, no constructor
+    if (u%i /= 0) error stop
+    if (any(u%a /= 7) .or. size(u%a) /= 6) error stop
+    if (any(u%r /= 1.5) .or. size(u%r) /= 8) error stop
+    if (any(u%c /= "ab ") .or. len(u%c) /= 3) error stop
+    if (.not. all(u%l)) error stop
+    if (u%p(2, 3) /= 6 .or. u%p(1, 2) /= 3) error stop
+    if (u%d(2, 1, 3) /= 10.0d0 .or. sum(u%d) /= 78.0d0) error stop
 
-        if (y1%p_val /= 30 .or. y1%ext_p /= 31) error stop 4
-        if (y2%m_val /= 10 .or. y2%ext_up /= 12) error stop 5
-        y1%p_val = 130
-        y1%ext_p = 131
-        if (y1%p_val /= 130 .or. y1%ext_p /= 131) error stop 6
-    end subroutine
+    ! Constructor with the defaults filled in
+    v = t3(i=5)
+    if (v%i /= 5) error stop
+    if (any(v%a /= 7)) error stop
+    if (any(v%r /= 1.5)) error stop
+    if (any(v%c /= "ab")) error stop
+    if (.not. all(v%l)) error stop
+    if (v%p(2, 3) /= 6 .or. v%p(1, 2) /= 3) error stop
+    if (v%d(2, 1, 3) /= 10.0d0) error stop
 
+    ! Constructor with the array components given
+    w = t3(1, reshape([(i_, i_ = 1, 6)], [2, 3]), 2.0, "xyz", .false., 3, 4.0d0)
+    if (w%a(2, 3) /= 6 .or. w%a(1, 2) /= 3) error stop
+    if (any(w%r /= 2.0)) error stop
+    if (any(w%c /= "xyz")) error stop
+    if (any(w%l)) error stop
+    if (any(w%p /= 3)) error stop
+    if (any(w%d /= 4.0d0)) error stop
+
+    w = t3(a=9, l=.false.)
+    if (any(w%a /= 9)) error stop
+    if (any(w%l)) error stop
+    if (any(w%r /= 1.5)) error stop
+    if (w%p(2, 3) /= 6) error stop
 end program derived_types_219
