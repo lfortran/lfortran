@@ -12972,7 +12972,10 @@ public:
 
             // 1. Evaluate RHS
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 2;  // load to value
+            bool is_scalar_string_store = ASRUtils::is_string_only(target_type);
+            // Scalar strings are copied from their descriptor pointer, as in
+            // the regular string assignment below.
+            ptr_loads = is_scalar_string_store ? 0 : 2;
             this->visit_expr_wrapper(x.m_value, true);
             llvm::Value* rhs_value = tmp;
 
@@ -12997,7 +13000,14 @@ public:
             data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data_ptr);
             data_ptr = builder->CreateBitCast(data_ptr, target_llvm_type->getPointerTo());
 
-            if (ASRUtils::is_character(*target_type)) {
+            if (is_scalar_string_store) {
+                // The selector's storage has a fixed length, so pad or
+                // truncate into it instead of reallocating (deepcopy would).
+                llvm_utils->lfortran_str_copy(data_ptr, rhs_value,
+                    ASRUtils::get_string_type(target_type),
+                    ASRUtils::get_string_type(ASRUtils::expr_type(x.m_value)),
+                    /*is_dest_allocatable=*/false);
+            } else if (ASRUtils::is_character(*target_type)) {
                 // String assignment needs lfortran_str_copy
                 llvm_utils->deepcopy(x.m_value, rhs_value, data_ptr,
                     target_type, target_type, module.get());
