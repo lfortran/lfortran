@@ -470,6 +470,18 @@ Quick and Exhaustive share `.github/actions/build-platform` so these compiler
 configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
 alternate-backend or descriptor-mode suites; Linux references stay in Quick.
 
+The LLVM 11/19 and macOS application-only compatibility profiles retain their
+historical runtime-stacktrace setting. **A current need for that exception has
+not been established.** Caffeine 0.8.2 removes LFortran `-g` from its defaults
+and GASNet linker flags, and does not itself require disabling runtime
+stacktraces. When runtime-stacktrace support is enabled, actual LFortran `-g`
+links invoke `llvm-dwarfdump` and `dwarf_convert.py` (also `dsymutil` on macOS);
+ordinary non-`-g` links do not. Before removing the legacy profile exception,
+validate those tools and runtime-enabled application checks in the affected
+toolchains, and review the Linux/LLVM 11 `libunwind` installation condition
+alongside the runtime flag. Do not infer that a Caffeine `--enable-debug` build
+requests LFortran `-g`.
+
 The distinct Kokkos/out-of-source and custom-install configurations run
 full suites. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.

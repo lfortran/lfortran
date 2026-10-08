@@ -206,10 +206,12 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Integration regressions include -g tests, which need runtime
-            # stacktraces. Exhaustive application builds (LLVM 11/19, macOS)
-            # must not enable it: Caffeine passes -g at link time and
-            # dwarf_convert.py then fails without llvm-dwarfdump.
+            # Integration -g tests exercise runtime stacktraces. Preserve the
+            # historical LLVM 11/19/macOS application profiles pending validation
+            # of their runtime-debug dependencies (see the CI coverage docs).
+            # Caffeine 0.8.2 strips LFortran -g; it does not justify this exception.
+            # Actual -g conversion needs llvm-dwarfdump (also dsymutil on macOS);
+            # Linux LLVM 11 application setup still does not install libunwind.
             STACKTRACE_FLAG=""
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" ]] || \
                [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
