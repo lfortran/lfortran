@@ -1789,7 +1789,7 @@ public:
         if (!contains_dt) return false;
 
         struct Item {
-            enum Kind { DT, FMT, LITERAL, SLASH } kind;
+            enum Kind { DT, FMT, LITERAL, SLASH, COLON } kind;
             std::string str;
             bool consumes_val = false;
         };
@@ -1806,12 +1806,20 @@ public:
 
                 if (content[i] == '\'' || content[i] == '"') {
                     char quote = content[i++];
-                    size_t start = i;
-                    while (i < content.size() && content[i] != quote) {
-                        i++;
+                    std::string lit = "";
+                    while (i < content.size()) {
+                        if (content[i] == quote) {
+                            if (i + 1 < content.size() && content[i + 1] == quote) {
+                                lit += quote;
+                                i += 2;
+                            } else {
+                                i++;
+                                break;
+                            }
+                        } else {
+                            lit += content[i++];
+                        }
                     }
-                    std::string lit = content.substr(start, i - start);
-                    if (i < content.size()) i++;
                     out.push_back({Item::LITERAL, lit, false});
                     continue;
                 }
@@ -1824,6 +1832,7 @@ public:
 
                 if (content[i] == ':') {
                     i++;
+                    out.push_back({Item::COLON, ":", false});
                     continue;
                 }
 
@@ -1850,12 +1859,19 @@ public:
                     std::string suffix = "";
                     if (i < content.size() && (content[i] == '\'' || content[i] == '"')) {
                         char quote = content[i++];
-                        size_t start = i;
-                        while (i < content.size() && content[i] != quote) {
-                            i++;
+                        while (i < content.size()) {
+                            if (content[i] == quote) {
+                                if (i + 1 < content.size() && content[i + 1] == quote) {
+                                    suffix += quote;
+                                    i += 2;
+                                } else {
+                                    i++;
+                                    break;
+                                }
+                            } else {
+                                suffix += content[i++];
+                            }
                         }
-                        suffix = content.substr(start, i - start);
-                        if (i < content.size()) i++;
                     }
                     if (i < content.size() && content[i] == '(') {
                         int depth = 1;
@@ -1875,7 +1891,13 @@ public:
                     while (i < content.size() && std::isdigit(static_cast<unsigned char>(content[i]))) {
                         i++;
                     }
-                    int count = std::stoi(content.substr(num_start, i - num_start));
+                    int count = 0;
+                    try {
+                        count = std::stoi(content.substr(num_start, i - num_start));
+                    } catch (...) {
+                        return false;
+                    }
+                    if (count <= 0 || count > 10000) return false;
                     while (i < content.size() && std::isspace(static_cast<unsigned char>(content[i]))) {
                         i++;
                     }
@@ -1910,12 +1932,19 @@ public:
                         std::string suffix = "";
                         if (i < content.size() && (content[i] == '\'' || content[i] == '"')) {
                             char quote = content[i++];
-                            size_t start = i;
-                            while (i < content.size() && content[i] != quote) {
-                                i++;
+                            while (i < content.size()) {
+                                if (content[i] == quote) {
+                                    if (i + 1 < content.size() && content[i + 1] == quote) {
+                                        suffix += quote;
+                                        i += 2;
+                                    } else {
+                                        i++;
+                                        break;
+                                    }
+                                } else {
+                                    suffix += content[i++];
+                                }
                             }
-                            suffix = content.substr(start, i - start);
-                            if (i < content.size()) i++;
                         }
                         if (i < content.size() && content[i] == '(') {
                             int depth = 1;
@@ -1998,6 +2027,19 @@ public:
 
         for (size_t it_idx = 0; it_idx < items.size(); it_idx++) {
             const auto &item = items[it_idx];
+            if (item.kind == Item::COLON) {
+                if (val_idx >= values.size()) {
+                    if (is_advancing && it_idx > 0) {
+                        ASR::asr_t *newline_stmt = ASR::make_FileWrite_t(al, loc, -1, unit,
+                            a_iomsg, a_iostat, nullptr, nullptr, 0,
+                            nullptr, nullptr, nullptr, true,
+                            nullptr, nullptr, nullptr, nullptr, nullptr);
+                        out_stmts.push_back(newline_stmt);
+                    }
+                    break;
+                }
+                continue;
+            }
             bool is_last = (it_idx == items.size() - 1);
             ASR::expr_t *end_expr = (is_last && is_advancing) ? nullptr : empty_string;
             int64_t cur_label = (it_idx == 0) ? m_label : -1;
@@ -2097,12 +2139,17 @@ public:
                 sf_vec.reserve(al, 1);
                 sf_vec.push_back(al, sf);
                 ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
-                    nullptr, nullptr, nullptr, sf_vec.p, 1,
+                    a_iomsg, a_iostat, nullptr, sf_vec.p, 1,
                     nullptr, end_expr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
                 out_stmts.push_back(stmt);
             } else if (item.kind == Item::LITERAL) {
-                std::string lit_fmt = "(\"" + item.str + "\")";
+                std::string escaped_lit = "";
+                for (char c : item.str) {
+                    if (c == '\'') escaped_lit += "''";
+                    else escaped_lit += c;
+                }
+                std::string lit_fmt = "('" + escaped_lit + "')";
                 ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
@@ -2124,13 +2171,13 @@ public:
                 sf_vec.reserve(al, 1);
                 sf_vec.push_back(al, sf);
                 ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
-                    nullptr, nullptr, nullptr, sf_vec.p, 1,
+                    a_iomsg, a_iostat, nullptr, sf_vec.p, 1,
                     nullptr, end_expr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
                 out_stmts.push_back(stmt);
             } else if (item.kind == Item::SLASH) {
                 ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
-                    nullptr, nullptr, nullptr, nullptr, 0,
+                    a_iomsg, a_iostat, nullptr, nullptr, 0,
                     nullptr, nullptr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
                 out_stmts.push_back(stmt);

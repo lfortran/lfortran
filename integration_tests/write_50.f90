@@ -38,6 +38,8 @@ write(*, '(i0,1x,dt)') 5, z
 print '(dt,1x,i0)', y, 5
 print '(2dt)', y, z
 print '(2(1x, dt))', y, z
+print '(dt, :, ", suffix")', y
+print '(dt, '' it''''s '')', y
 
 ! Check file I/O formatting and verify exact values
 open(newunit=u, file='write_50_tmp.txt', status='replace')
@@ -59,6 +61,12 @@ write(u, '(2dt)') y, z
 
 ! Case 6: repeated group with DT
 write(u, '(2(1x, dt))') y, z
+
+! Case 7: colon termination when items exhausted
+write(u, '(dt, :, ", suffix")') y
+
+! Case 8: escaped single quotes in format literal
+write(u, '(dt, '' it''''s '')') y
 
 close(u)
 
@@ -82,8 +90,14 @@ if (trim(line) /= '12') error stop 5
 read(u, '(a)') line
 if (trim(line) /= ' 1 2') error stop 6
 
+read(u, '(a)') line
+if (trim(line) /= '1') error stop 7
+
+read(u, '(a)') line
+if (trim(line) /= "1 it's") error stop 8
+
 close(u, status='delete')
 
-if (nout /= 18) error stop 7
+if (nout /= 22) error stop 9
 
 end program
