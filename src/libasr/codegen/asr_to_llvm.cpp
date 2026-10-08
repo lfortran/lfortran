@@ -18217,9 +18217,13 @@ public:
         ASR::ttype_t* source_arr_type = ASRUtils::type_get_past_allocatable_pointer(
             ASRUtils::expr_type(x.m_source));
         if (ASRUtils::is_character(*expr_type(x.m_source))) {
-            tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
-                        llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
-                        llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+            if (ASRUtils::is_inline_character_struct_member(x.m_source)) { //bindc or sequence type
+                tmp = source_ptr = builder->CreateBitCast(tmp, character_type);
+            } else {
+                tmp = source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ?
+                            llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
+                            llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+            }
         } else if(source->getType()->isPointerTy()){//Case: [n x i8]* type Arrays and ptr %
             if (is_array && ASR::is_a<ASR::Array_t>(*source_arr_type) &&
                 ASR::down_cast<ASR::Array_t>(source_arr_type)->m_physical_type ==
