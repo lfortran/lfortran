@@ -2980,6 +2980,20 @@ public:
                     ptr_loads = saved_ptr_loads;
                     llvm_symtab_finalizer.finalize_before_deallocate(
                         desc_ptr, realloc_arg_type, realloc_struct_sym, false);
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                        realloc_storage_type);
+                    if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
+                        // As in visit_Deallocate: finalize_before_deallocate
+                        // has freed the class wrapper and its data, so null
+                        // the descriptor's data pointer and let the
+                        // reallocation below allocate fresh storage.
+                        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_args[0].m_a, realloc_storage_type, module.get());
+                        llvm::Type* llvm_data_type = llvm_utils->get_el_type(
+                            x.m_args[0].m_a, element_type, module.get());
+                        arr_descr->reset_is_allocated_flag(desc_type, desc_ptr,
+                            llvm_data_type);
+                    }
                 }, [](){});
             }
             visit_AllocateUtil(x, nullptr, true);

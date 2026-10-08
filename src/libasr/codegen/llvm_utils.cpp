@@ -9683,13 +9683,46 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
         llvm::Type* const llvm_underlying_struct_type = llvm_utils->getStructType(data_type_struct, llvm_utils->module);
         
-        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr
+        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr.
+        // An array that is reallocated keeps its wrapper, and its data is
+        // resized below, so that neither of them leaks.
         const int64_t class_wrapper_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_class_type);
-        llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder,
-            llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
-        builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-            class_wrapper_size, llvm::MaybeAlign());
-        llvm::Value* class_wrapper = builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
+        llvm::Type* const class_wrapper_ptr_type = llvm_class_type->getPointerTo();
+        auto allocate_class_wrapper = [&]() -> llvm::Value* {
+            llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder,
+                llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
+            builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                class_wrapper_size, llvm::MaybeAlign());
+            return builder->CreateBitCast(wrapper_mem, class_wrapper_ptr_type);
+        };
+        llvm::Value* class_wrapper = nullptr;
+        llvm::Value* existing_data = nullptr;
+        if (realloc) {
+            llvm::Value* wrapper_var = llvm_utils->CreateAlloca(class_wrapper_ptr_type,
+                nullptr, "realloc_class_wrapper");
+            llvm::Value* data_var = llvm_utils->CreateAlloca(llvm_utils->i8_ptr,
+                nullptr, "realloc_class_data");
+            llvm::Value* old_wrapper = builder->CreateLoad(class_wrapper_ptr_type, array_data_ptr);
+            llvm::Value* has_wrapper = builder->CreateICmpNE(old_wrapper,
+                llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(class_wrapper_ptr_type)));
+            llvm_utils->create_if_else(has_wrapper, [&]() {
+                llvm::Type* existing_load_type = ASRUtils::is_unlimited_polymorphic_type(class_symbol)
+                    ? llvm_utils->i8_ptr
+                    : llvm_utils->getStructType(class_symbol, llvm_utils->module)->getPointerTo();
+                llvm::Value* old_data = builder->CreateLoad(existing_load_type,
+                    llvm_utils->CreateGEP2(llvm_class_type, old_wrapper, 1));
+                builder->CreateStore(old_wrapper, wrapper_var);
+                builder->CreateStore(builder->CreateBitCast(old_data, llvm_utils->i8_ptr), data_var);
+            }, [&]() {
+                builder->CreateStore(allocate_class_wrapper(), wrapper_var);
+                builder->CreateStore(llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)), data_var);
+            });
+            class_wrapper = builder->CreateLoad(class_wrapper_ptr_type, wrapper_var);
+            existing_data = builder->CreateLoad(llvm_utils->i8_ptr, data_var);
+        } else {
+            class_wrapper = allocate_class_wrapper();
+        }
         builder->CreateStore(class_wrapper, array_data_ptr);
         
         // Step 2: Allocate the underlying data array using proper subclass size
@@ -9699,11 +9732,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                                 llvm::ConstantInt::get(context, llvm::APInt(64, underlying_struct_alloc_size)));
         llvm::Value* data_mem = nullptr;
         if (realloc) {
-            llvm::Value* existing_data_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
-            llvm::Type* existing_load_type = ASRUtils::is_unlimited_polymorphic_type(class_symbol)
-                ? llvm_utils->i8_ptr
-                : llvm_utils->getStructType(class_symbol, llvm_utils->module)->getPointerTo();
-            llvm::Value* existing_data = builder->CreateLoad(existing_load_type, existing_data_ptr);
             data_mem = LLVM::lfortran_realloc(context, *llvm_utils->module, *builder, existing_data, total_bytes_to_alloc);
         } else {
             data_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
