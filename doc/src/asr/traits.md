@@ -8,7 +8,8 @@ type-bound procedures keep their existing meanings.
 
 The LLVM backend also supports borrowed scalar runtime views and bounded scalar
 allocatable ownership, invariant allocatable dummy slots, and scalar allocatable
-function results, and persistent nonowning scalar pointer views.
+function results, persistent nonowning scalar pointer views, and concrete
+`SELECT TYPE` inspection of those views.
 
 ## Declaring a contract
 
@@ -311,10 +312,10 @@ is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
 supported. Trait arrays, aggregate method results, generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
-invalid, not an implicitly owning box. Concrete SELECT TYPE inspection is a
-later stage: eventual TYPE IS tests nominal concrete identity, and CLASS IS
-tests real implementation inheritance, not unrelated-trait discovery.
-Universal traits with generic methods remain eligible in that future model;
+invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
+below, tests concrete identity and real implementation inheritance, not
+unrelated-trait discovery.
+Universal traits with generic methods remain eligible in the future model;
 type-set traits remain constraint-only.
 
 The private same-build/target LLVM borrowed representation is a stack descriptor
@@ -435,8 +436,8 @@ diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
-Trait arrays, pointer results, components, ASSOCIATE
-views, `move_alloc`, inspection, and mutable receivers remain
+Trait arrays, pointer results, components, general ASSOCIATE
+views, `move_alloc`, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
 options are rejected rather than ignored. Allocation failure terminates, including
@@ -557,7 +558,7 @@ LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
 contract-only consumer before its providers, then checks forwarding against a
 frozen provider archive in normal and fast modes.
 Pointer results, allocation/deallocation through
-trait pointers, arrays/components and concrete inspection remain
+trait pointers and arrays/components remain
 subsequent work.
 
 ## Named parent projections (R3)
@@ -610,7 +611,8 @@ copies. `traits_runtime_06` checks diamond/coalesced origins and exact receiver
 addresses. `traits_runtime_projection_01` checks nullable and readonly pointer
 arguments, returned aliases, deep copies and exact finalization through parent
 views; `_02` checks eligible subsets of runtime-ineligible children.
-Concrete SELECT TYPE and generic runtime methods remain separate subsequent stages.
+Concrete SELECT TYPE is described below; generic runtime methods remain a
+separate subsequent stage.
 
 ## General anonymous runtime combinations (R3)
 
@@ -675,6 +677,88 @@ repeated/conditional retention, saved owners and BLOCK cleanup. `_03` checks
 opposite import orders, same-spelled distinct original traits, agreed coalesced
 bindings and zero-method conjunctions. Standard Fortran controls remain separate
 because `class(A+B)` is an extension, not GFortran syntax.
+
+## Concrete SELECT TYPE inspection (R3)
+
+Scalar pointer views, allocated owners, read-only borrowed views, and genuine
+owning function selectors support concrete derived-type guards:
+
+```fortran
+type(Cell), target :: first, second
+type(Cell), pointer :: expected
+class(IValue), pointer :: view
+expected => first
+view => first
+select type (concrete => view)
+type is (Cell)
+    if (.not. associated(expected, concrete)) error stop
+    view => second
+    concrete%n = 23 ! Still defines first, not second.
+class default
+    print *, concrete%get_value()
+end select
+```
+
+`TYPE IS` uses exact concrete nominal identity, including kind specialization,
+not layout, unqualified spelling, or the selected trait implementation.
+Same-spelled derived types in different modules remain distinct. `CLASS IS`
+uses only the concrete derived type's real extension chain. A concrete parent
+need not implement the declared trait. Exact guards take precedence; otherwise
+the most-specific matching class guard wins, independently of source order.
+`CLASS DEFAULT` retains the selector's declared contract and selected method
+slots. With no matching guard and no default, no block executes.
+
+The selector is evaluated once. Its full selected descriptor is captured without
+copying or finalizing the payload. Reassociating the original pointer does not
+retarget the associate name. Inspection never reconstructs conformance or
+changes dispatch through the original view, including named-parent projections
+and anonymous combinations. A separately compiled inspector needs the contract
+and the concrete guard declarations, not the implementation modules.
+
+An associate name has **neither POINTER nor ALLOCATABLE**, even when its selector
+does. It has TARGET only when its selector is a variable with TARGET or POINTER.
+`associated(expected, concrete)` above is valid; reversing those arguments is
+not. Allocation-slot actuals, pointer reassociation, and `nullify(concrete)` are
+invalid. The name preserves source definability: a nonpointer INTENT(IN) borrowed
+selector and an expression selector cannot be modified, including through
+components, defining actual arguments, nested inspection, or input statements.
+POINTER, INTENT(IN) protects the original pointer association, not its target;
+target mutation through inspection is permitted subject to ordinary PURE
+restrictions. Pointer association to an eligible concrete target retains that
+target, never an escaping temporary inspection wrapper.
+
+An owning function selector is retained until its innermost using construct
+completes, including RETURN, EXIT, CYCLE, and GO TO. Inspection neither adds an
+extra FINAL nor finalizes the result before the selected block. An unallocated
+owner or disassociated pointer terminates with an explicit state diagnostic
+before any matching/default decision, even when the construct has no default.
+
+A trait name in TYPE IS or CLASS IS is diagnosed: inspection is not an
+unrelated-interface conformance query. Intrinsic guards, runtime trait arrays,
+components, pointer results, generic methods, and mutation-message syntax are
+not added by this scalar slice. Parameterized implementation declarations remain
+part of the separate generic-derived-type work; inspection reuses the existing
+concrete kind-specialized metadata rather than introducing another type system.
+
+`traits_runtime_inspection_01` checks nominal identity, concrete ancestry and
+specificity. `_02` checks exact target identity, descriptor reassociation,
+attributes, nested aliases, PURE contexts and owning cleanup. `_03` checks
+11 evaluations and exactly 11 FINAL calls with payload sum 382, including early
+exits. `_04` checks construction of distinct kind-parameter guards against a
+trait selector; its GFortran oracle checks actual equal-layout kind
+specializations. The corresponding ordinary LFortran CLASS(*)-pointer/PDT
+execution is not covered by this trait slice.
+The inspection modes of `traits_runtime_factory_01.py` and
+`traits_runtime_result_02.py` check frozen providers/contract-only consumers and
+five invalid-state paths in normal and fast CTest configurations.
+
+The registered standard controls are GFortran-only, independently checking
+association and result lifetime. Primary Fortran 2023 11.1.3.3, 11.1.11.2 and
+19.5.1.6 specify these association rules. GFortran currently accepts a
+NULLIFY-associate-name negative contrary to those rules and rejects the
+same-spelled/different-module twin guards as overlapping. The portable nominal
+control therefore uses distinct names; neither limitation weakens the trait
+tests or their required diagnostics.
 
 ## Compiler representation
 
@@ -751,6 +835,19 @@ not header assignment. Verification rejects
 incompatible/missing evidence, ownership duplication via ordinary assignment or
 association, borrowed cleanup, forged null initializers and escaping storage.
 AST, binary, module and named/positional ASR text round trips retain these proofs.
+
+`TraitInspect` explicitly converts a borrowed trait snapshot to an ordinary
+`class(*)` inspection view. LLVM copies just the concrete vptr and payload
+address into that view; it never bitcasts the expanded trait descriptor into an
+ordinary CLASS object. An identity `TraitProject` captures all originally
+selected slots before inspection. Existing `SelectType` and explicit
+`ClassToStruct`/`ClassToClass` casts then use ordinary nominal type metadata.
+The `Association` storage category marks once-bound, nonowning data aliases with
+their source TARGET/definability facts, independently of POINTER or ALLOCATABLE.
+The verifier checks local binding, guarded nominal narrowing, readonly contexts,
+and class-guard specificity. Result-scope lowering retains owning selectors
+through the whole construct. Backends neither select conformance nor finalize
+association storage.
 
 The private owner descriptor has a common three-word prefix (concrete vptr, raw
 payload, lifecycle) followed by one method address per declared slot; it is not

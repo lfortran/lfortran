@@ -26,6 +26,7 @@ ArraySize
 ArrayTranspose
 BitCast
 Cast
+TraitInspect
 CLoc
 CoarrayRef
 CompilerOptions
