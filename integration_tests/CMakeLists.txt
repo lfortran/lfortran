@@ -5866,3 +5866,13 @@ RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
 
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
+# -s settings must reach the emcc link (see #12603); the -s=KEY=VALUE
+# spelling also covers the driver's normalization (raw emcc rejects it).
+# Nested TARGET guard: suffixed configs rename the target, and CMake errors
+# on link options for a nonexistent one.
+RUN(NAME emscripten_s_forward_01 LABELS gfortran llvm llvm_wasm_emcc)
+if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+    if (TARGET emscripten_s_forward_01)
+        target_link_options(emscripten_s_forward_01 PUBLIC -s=STACK_SIZE=64mb)
+    endif()
+endif()
