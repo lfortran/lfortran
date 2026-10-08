@@ -876,6 +876,13 @@ asr = true
 pass = "function_call_in_declaration"
 
 [[test]]
+filename = "../integration_tests/external_string_arg_02.f90"
+asr = true
+llvm = true
+pass = "string_length_arguments"
+options = "--implicit-interface"
+
+[[test]]
 filename = "array_op_simplifier_test.f90"
 asr = true
 pass = "array_struct_temporary,array_op"
