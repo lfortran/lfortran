@@ -96,7 +96,7 @@ def main():
         for name in ["offset_apply", "scaled_apply"]:
             entry = rf"__trait_erasure_{name}.*_entry"
             assert len(re.findall(rf"(?m)^.*\b[Tt] .*{entry}$", symbols)) == 1, symbols
-            assert re.search(rf"define i32 @.*{entry}\(", llvm), llvm
+            assert re.search(rf"(?m)^define [^@\n]*i32 @.*{entry}\(", llvm), llvm
             assert "__instantiated_" + name not in semantic
         assert re.search(r"call i32 %", llvm), "provider operations must use supplied evidence"
         for late_type in ["latevalue", "paddedvalue", "alternatevalue"]:
