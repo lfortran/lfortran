@@ -15438,12 +15438,17 @@ public:
         // A fixed size array member is stored inline in the struct, so what
         // the member selects is the block of storage itself. Loading it
         // would hand back the aggregate by value, which has no address to
-        // copy from or index through.
+        // copy from or index through. A character array member is a
+        // PointerArray whose storage (its string descriptor) is likewise
+        // held inline in the struct.
         bool inline_array_member =
             ASR::is_a<ASR::StructInstanceMember_t>(*x) &&
             ASRUtils::is_array(ASRUtils::expr_type(x)) &&
-            ASRUtils::extract_physical_type(ASRUtils::expr_type(x)) ==
-                ASR::array_physical_typeType::FixedSizeArray;
+            (ASRUtils::extract_physical_type(ASRUtils::expr_type(x)) ==
+                ASR::array_physical_typeType::FixedSizeArray ||
+             (ASRUtils::is_character(*ASRUtils::expr_type(x)) &&
+              ASRUtils::extract_physical_type(ASRUtils::expr_type(x)) ==
+                ASR::array_physical_typeType::PointerArray));
 
         if (load_ref && !inline_array_member &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
@@ -18193,14 +18198,18 @@ public:
         }
         llvm::Value* source{};
         int64_t p_load = 0 ;
+        bool load_ref = true;
         if(ASRUtils::is_character(*expr_type(x.m_source))){
             const bool source_is_descriptor_array_= ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(expr_type(x.m_source)))
                                                     && ASRUtils::extract_physical_type(expr_type(x.m_source)) == ASR::DescriptorArray;
             p_load = source_is_descriptor_array_? 1 : 0;
+            // Other character sources are read through their address
+            // (string descriptor pointer), so they must not be loaded.
+            load_ref = source_is_descriptor_array_;
         } else {
             p_load = ptr_loads;
         }
-        this->visit_expr_load_wrapper(x.m_source, p_load, true);
+        this->visit_expr_load_wrapper(x.m_source, p_load, load_ref);
         source = tmp;
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(x.m_source, ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
