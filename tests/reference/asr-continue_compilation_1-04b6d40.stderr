@@ -935,9 +935,9 @@ semantic error: 'y' has an intent attribute but is not a dummy argument of 'inte
      |                      ^ 'y' is not a dummy argument
 
 semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-    --> tests/errors/continue_compilation_1.f90:2147:19
+    --> tests/errors/continue_compilation_1.f90:2155:19
      |
-2147 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+2155 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
      |                   ^ 'y' is not a dummy argument
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3112,3 +3112,9 @@ semantic error: Cannot assign to an intent(in) variable `y`
      |
 2135 |     y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
      |     ^ 
+
+semantic error: Cannot assign to an intent(in) variable `nz`
+    --> tests/errors/continue_compilation_1.f90:2148:5
+     |
+2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
+     |     ^^ 

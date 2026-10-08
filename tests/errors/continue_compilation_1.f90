@@ -2141,9 +2141,16 @@ subroutine intent_list_non_dummy_error(x)
     intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
 end subroutine intent_list_non_dummy_error
 
+subroutine intent_in_bound_before_decl_error(a, nz)
+    implicit none
+    real, dimension(nz) :: a
+    integer, intent(in) :: nz
+    nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
+    a = 1
+end subroutine intent_in_bound_before_decl_error
+
 subroutine non_dummy_intent_statement(x)
     implicit none
     integer :: x, y
     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
 end subroutine non_dummy_intent_statement
-

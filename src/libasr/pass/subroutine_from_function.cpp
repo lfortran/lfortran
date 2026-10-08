@@ -1419,7 +1419,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
      * TO :
      *     DO while (.true.)
      *      temp1 = ff(flag)
-     *      if ((temp1 == "Hello") == .false.) exit
+     *      if (.not. (temp1 == "Hello")) exit
      *      ...
      *     END DO
      */
@@ -1433,7 +1433,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         visit_expr(*x.m_test);
         if (!pass_result.empty()){ // Temps Created!
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
-            pass_result.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            pass_result.push_back(al, builder.If(builder.Not(x.m_test), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 pass_result.push_back(al, x.m_body[i]);
             }
