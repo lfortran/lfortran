@@ -19016,7 +19016,8 @@ public:
                     poly_ptr = builder->CreateBitCast(poly_ptr, target_llvm_type->getPointerTo());
                     // Load the value if ptr_loads > 0 (caller wants value, not pointer)
                     // For ptr_loads == 0 (e.g., character passed to function), return pointer
-                    if (ptr_loads > 0) {
+                    // Strings are always handled through a pointer to their descriptor
+                    if (ptr_loads > 0 && !ASRUtils::is_character(*target_type)) {
                         tmp = llvm_utils->CreateLoad2(target_llvm_type, poly_ptr);
                     } else {
                         tmp = poly_ptr;
