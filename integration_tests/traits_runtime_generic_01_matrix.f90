@@ -1,7 +1,7 @@
 program traits_runtime_generic_matrix
     use traits_runtime_generic_01_contracts_m, only: IAlgorithm, make_algorithm
-    use traits_runtime_generic_01_late_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
-    use traits_runtime_generic_01_consumer_m, only: invoke, invoke_padded, invoke_alternate
+    use traits_runtime_generic_01_matrix_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
+    use traits_runtime_generic_01_matrix_consumer_m, only: invoke, invoke_padded, invoke_alternate
     implicit none
     type(LateValue) :: value
     type(PaddedValue) :: padded

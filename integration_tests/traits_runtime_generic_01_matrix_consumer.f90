@@ -1,6 +1,6 @@
-module traits_runtime_generic_01_consumer_m
+module traits_runtime_generic_01_matrix_consumer_m
     use traits_runtime_generic_01_contracts_m, only: IAlgorithm
-    use traits_runtime_generic_01_late_client_m, only: LateValue, PaddedValue, AlternateValue
+    use traits_runtime_generic_01_matrix_client_m, only: LateValue, PaddedValue, AlternateValue
     implicit none
 contains
     integer function invoke(implementation, object) result(r)

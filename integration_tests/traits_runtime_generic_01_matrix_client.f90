@@ -1,4 +1,4 @@
-module traits_runtime_generic_01_late_client_m
+module traits_runtime_generic_01_matrix_client_m
     use traits_runtime_generic_01_contracts_m, only: IValue
     implicit none
     integer :: argument_finals = 0

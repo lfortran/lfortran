@@ -26,7 +26,7 @@ end module
 
 program traits_runtime_generic_04
     use traits_runtime_generic_04_m
-    use traits_runtime_generic_01_late_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
+    use traits_runtime_generic_01_matrix_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
     implicit none
     type(LateValue) :: left
     type(PaddedValue) :: padded

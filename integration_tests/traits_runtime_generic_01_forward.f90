@@ -1,7 +1,7 @@
 ! Uses the existing frozen provider and unchanged late layout/identity matrix.
 program traits_runtime_generic_forwarding
     use traits_runtime_generic_01_contracts_m, only: IAlgorithm, make_algorithm
-    use traits_runtime_generic_01_late_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
+    use traits_runtime_generic_01_matrix_client_m, only: LateValue, PaddedValue, AlternateValue, argument_finals
     use traits_runtime_generic_forwarding_m, only: forward, forward_twice
     implicit none
     type(LateValue) :: value
