@@ -1793,6 +1793,7 @@ public:
             std::string str;
             bool consumes_val = false;
         };
+        constexpr size_t MAX_EXPANDED_ITEMS = 10000;
         std::vector<Item> items;
         std::function<bool(size_t&, std::vector<Item>&)> parse_items =
             [&](size_t &i, std::vector<Item> &out) -> bool {
@@ -1820,18 +1821,21 @@ public:
                             lit += content[i++];
                         }
                     }
+                    if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                     out.push_back({Item::LITERAL, lit, false});
                     continue;
                 }
 
                 if (content[i] == '/') {
                     i++;
+                    if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                     out.push_back({Item::SLASH, "/", false});
                     continue;
                 }
 
                 if (content[i] == ':') {
                     i++;
+                    if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                     out.push_back({Item::COLON, ":", false});
                     continue;
                 }
@@ -1841,6 +1845,7 @@ public:
                     std::vector<Item> sub;
                     if (!parse_items(i, sub)) return false;
                     if (i < content.size() && content[i] == ')') i++;
+                    if (out.size() + sub.size() > MAX_EXPANDED_ITEMS) return false;
                     out.insert(out.end(), sub.begin(), sub.end());
                     continue;
                 }
@@ -1848,6 +1853,7 @@ public:
                 if ((content[i] == 'x' || content[i] == 'X') &&
                     (i + 1 >= content.size() || !std::isalpha(static_cast<unsigned char>(content[i+1])))) {
                     i++;
+                    if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                     out.push_back({Item::LITERAL, " ", false});
                     continue;
                 }
@@ -1882,6 +1888,7 @@ public:
                             i++;
                         }
                     }
+                    if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                     out.push_back({Item::DT, "DT" + suffix, true});
                     continue;
                 }
@@ -1897,7 +1904,7 @@ public:
                     } catch (...) {
                         return false;
                     }
-                    if (count <= 0 || count > 10000) return false;
+                    if (count <= 0 || static_cast<size_t>(count) > MAX_EXPANDED_ITEMS) return false;
                     while (i < content.size() && std::isspace(static_cast<unsigned char>(content[i]))) {
                         i++;
                     }
@@ -1908,6 +1915,10 @@ public:
                         std::vector<Item> group;
                         if (!parse_items(i, group)) return false;
                         if (i < content.size() && content[i] == ')') i++;
+                        if (group.empty()) continue;
+                        if (out.size() + group.size() * static_cast<size_t>(count) > MAX_EXPANDED_ITEMS) {
+                            return false;
+                        }
                         for (int r = 0; r < count; r++) {
                             out.insert(out.end(), group.begin(), group.end());
                         }
@@ -1916,6 +1927,7 @@ public:
 
                     if (content[i] == 'x' || content[i] == 'X') {
                         i++;
+                        if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                         out.push_back({Item::LITERAL, std::string(count, ' '), false});
                         continue;
                     }
@@ -1955,6 +1967,7 @@ public:
                                 i++;
                             }
                         }
+                        if (out.size() + static_cast<size_t>(count) > MAX_EXPANDED_ITEMS) return false;
                         for (int r = 0; r < count; r++) {
                             out.push_back({Item::DT, "DT" + suffix, true});
                         }
@@ -1968,6 +1981,7 @@ public:
                         i++;
                     }
                     std::string desc = content.substr(desc_start, i - desc_start);
+                    if (out.size() + static_cast<size_t>(count) > MAX_EXPANDED_ITEMS) return false;
                     for (int r = 0; r < count; r++) {
                         out.push_back({Item::FMT, "(" + desc + ")", true});
                     }
@@ -1990,6 +2004,7 @@ public:
                     udesc == "RN" || udesc == "RC" || udesc == "RP") {
                     continue;
                 }
+                if (out.size() >= MAX_EXPANDED_ITEMS) return false;
                 out.push_back({Item::FMT, "(" + desc + ")", true});
             }
             return true;
@@ -2001,11 +2016,27 @@ public:
         }
 
         size_t vals_consumed = 0;
+        size_t vals_before_first_colon = 0;
+        bool seen_colon = false;
         for (const auto &it : items) {
-            if (it.consumes_val) vals_consumed++;
+            if (it.kind == Item::COLON) {
+                seen_colon = true;
+            }
+            if (it.consumes_val) {
+                vals_consumed++;
+                if (!seen_colon) {
+                    vals_before_first_colon++;
+                }
+            }
         }
-        if (vals_consumed != values.size()) {
-            return false;
+        if (seen_colon) {
+            if (values.size() < vals_before_first_colon || values.size() > vals_consumed) {
+                return false;
+            }
+        } else {
+            if (vals_consumed != values.size()) {
+                return false;
+            }
         }
 
         if (!unit) {
@@ -2024,6 +2055,28 @@ public:
 
         bool is_advancing = (a_end == nullptr);
         size_t val_idx = 0;
+        bool label_attached = false;
+
+        auto emit_stmt = [&](ASR::asr_t *stmt) {
+            if (a_iostat != nullptr && !out_stmts.empty()) {
+                ASR::ttype_t *iostat_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::expr_type(a_iostat));
+                ASR::expr_t *zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 0, iostat_type));
+                ASR::ttype_t *cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
+                    al, loc, compiler_options.po.default_integer_kind));
+                ASR::expr_t *cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                    al, loc, a_iostat, ASR::cmpopType::Eq, zero, cmp_type, nullptr));
+                Vec<ASR::stmt_t*> if_body;
+                if_body.reserve(al, 1);
+                if_body.push_back(al, ASRUtils::STMT(stmt));
+                ASR::asr_t *guarded = ASR::make_If_t(
+                    al, loc, nullptr, cond, if_body.p, if_body.size(), nullptr, 0);
+                out_stmts.push_back(guarded);
+            } else {
+                out_stmts.push_back(stmt);
+            }
+        };
 
         for (size_t it_idx = 0; it_idx < items.size(); it_idx++) {
             const auto &item = items[it_idx];
@@ -2034,7 +2087,7 @@ public:
                             a_iomsg, a_iostat, nullptr, nullptr, 0,
                             nullptr, nullptr, nullptr, true,
                             nullptr, nullptr, nullptr, nullptr, nullptr);
-                        out_stmts.push_back(newline_stmt);
+                        emit_stmt(newline_stmt);
                     }
                     break;
                 }
@@ -2042,7 +2095,8 @@ public:
             }
             bool is_last = (it_idx == items.size() - 1);
             ASR::expr_t *end_expr = (is_last && is_advancing) ? nullptr : empty_string;
-            int64_t cur_label = (it_idx == 0) ? m_label : -1;
+            int64_t cur_label = (!label_attached) ? m_label : -1;
+            if (cur_label != -1) label_attached = true;
 
             if (item.kind == Item::DT) {
                 ASR::expr_t *val = values[val_idx++];
@@ -2112,7 +2166,7 @@ public:
                     cur_iomsg, cur_iostat, nullptr, nullptr, 0,
                     nullptr, end_expr, ASRUtils::STMT(overloaded_asr), true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
-                out_stmts.push_back(stmt);
+                emit_stmt(stmt);
             } else if (item.kind == Item::FMT) {
                 ASR::expr_t *val = values[val_idx++];
                 ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
@@ -2142,7 +2196,7 @@ public:
                     a_iomsg, a_iostat, nullptr, sf_vec.p, 1,
                     nullptr, end_expr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
-                out_stmts.push_back(stmt);
+                emit_stmt(stmt);
             } else if (item.kind == Item::LITERAL) {
                 std::string escaped_lit = "";
                 for (char c : item.str) {
@@ -2174,13 +2228,13 @@ public:
                     a_iomsg, a_iostat, nullptr, sf_vec.p, 1,
                     nullptr, end_expr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
-                out_stmts.push_back(stmt);
+                emit_stmt(stmt);
             } else if (item.kind == Item::SLASH) {
                 ASR::asr_t *stmt = ASR::make_FileWrite_t(al, loc, cur_label, unit,
                     a_iomsg, a_iostat, nullptr, nullptr, 0,
                     nullptr, nullptr, nullptr, true,
                     nullptr, nullptr, nullptr, nullptr, nullptr);
-                out_stmts.push_back(stmt);
+                emit_stmt(stmt);
             }
         }
         return true;

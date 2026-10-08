@@ -8,6 +8,12 @@ contains
     procedure :: wf
     generic :: write(formatted) => wf
 end type
+type :: err_t
+    integer :: code = 0
+contains
+    procedure :: wf_err
+    generic :: write(formatted) => wf_err
+end type
 contains
 subroutine wf(dtv, unit, iotype, v_list, iostat, iomsg)
     class(t), intent(in) :: dtv
@@ -19,14 +25,26 @@ subroutine wf(dtv, unit, iotype, v_list, iostat, iomsg)
     nout = nout + 1
     write(unit, '(i0)', iostat=iostat) dtv%v
 end subroutine
+subroutine wf_err(dtv, unit, iotype, v_list, iostat, iomsg)
+    class(err_t), intent(in) :: dtv
+    integer, intent(in) :: unit
+    character(*), intent(in) :: iotype
+    integer, intent(in) :: v_list(:)
+    integer, intent(out) :: iostat
+    character(*), intent(inout) :: iomsg
+    iostat = dtv%code
+    iomsg = 'expected dt error'
+end subroutine
 end module
 
 program write_50
 use write_50_mod
 implicit none
 type(t) :: y, z
-integer :: u
+type(err_t) :: ey
+integer :: u, stat
 character(len=100) :: line
+character(len=80) :: msg
 
 y%v = 1
 z%v = 2
@@ -98,6 +116,22 @@ if (trim(line) /= "1 it's") error stop 8
 
 close(u, status='delete')
 
-if (nout /= 22) error stop 9
+! Case 9: DT error status preservation across fragments
+ey%code = 42
+msg = 'initial'
+open(newunit=u, file='write_50_tmp.txt', status='replace')
+write(u, '(dt,1x,i0)', iostat=stat, iomsg=msg) ey, 5
+close(u, status='delete')
+if (stat /= 42) error stop 10
+if (trim(msg) /= 'expected dt error') error stop 11
+
+! Case 10: labeled colon write
+open(newunit=u, status='scratch')
+goto 100
+error stop 12
+100 write(u, '(:,dt)') y
+close(u)
+
+if (nout /= 23) error stop 13
 
 end program
