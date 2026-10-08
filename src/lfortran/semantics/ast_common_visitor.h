@@ -24971,6 +24971,14 @@ public:
                 packs.push_back(&x);
                 this->visit_expr(*x.m_payload);
             }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+            void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
         } collect;
         for (size_t i = 0; i < source.n_body; i++) collect.visit_stmt(*source.m_body[i]);
         auto *saved_scope = current_scope;

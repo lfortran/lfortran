@@ -145,6 +145,8 @@ resulting explicit descriptors and calls.
 Ordinary `BLOCK` scopes use that same instantiator for static and erased
 entries, retaining scoped locals, host references, dependencies and cleanup on
 normal completion, `EXIT` and `RETURN`.
+Deferred conformance evidence is collected through nested `BLOCK` and
+`ASSOCIATE` bodies before specializing generic runtime calls.
 Erasure verification validates both procedure declarations before comparing
 their signatures, including argument-symbol kinds, independently of symbol
 visitation order and compiler assertions.

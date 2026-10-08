@@ -84,6 +84,19 @@ contains
         end block outer
         r = r + bias
     end function
+    function forward_in_block{IValue :: T}(view, arg, mode) result(r)
+        class(IAlgorithm), intent(in) :: view
+        type(T), intent(in) :: arg
+        integer, intent(in) :: mode
+        integer :: r
+        block
+            integer :: local
+            associate (alias => local)
+                alias = view%apply{T}(arg, mode)
+            end associate
+            r = local
+        end block
+    end function
 end module
 
 program traits_runtime_generic_block_01
@@ -104,6 +117,10 @@ program traits_runtime_generic_block_01
     bias = 7
     r = apply{Cell}(object, 0)
     if (r /= 116 .or. finals /= 8 .or. total /= 126) error stop 4
+    r = forward_in_block(view, object, 0)
+    if (r /= 116 .or. finals /= 10 .or. total /= 156) error stop 6
+    r = forward_in_block{Cell}(view, object, 1)
+    if (r /= 46 .or. finals /= 12 .or. total /= 188) error stop 7
     if (argument_finals /= 0 .or. object%n /= 31) error stop 5
     nullify(view)
 end program

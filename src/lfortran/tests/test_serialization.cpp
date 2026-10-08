@@ -1335,7 +1335,9 @@ contains
         type(T), intent(in) :: object
         type(U), intent(in) :: other
         integer :: r
-        r = view%apply{T}(object)
+        block
+            r = view%apply{T}(object)
+        end block
     end function
     integer function concrete(view, object) result(r)
         class(IAlgorithm), intent(in) :: view
@@ -1372,8 +1374,10 @@ end module
         ASR::down_cast<ASR::Assignment_t>(wrapper->m_body[0])->m_value);
     auto *forward = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("forward"));
     auto *forward_function = ASRUtils::trait_method_function(&forward->base);
+    auto *forward_block = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(forward_function->m_body[0])->m_m);
     auto *call = ASR::down_cast<ASR::TraitFunctionCall_t>(
-        ASR::down_cast<ASR::Assignment_t>(forward_function->m_body[0])->m_value);
+        ASR::down_cast<ASR::Assignment_t>(forward_block->m_body[0])->m_value);
     auto *pack = ASR::down_cast<ASR::TraitDeferredPack_t>(call->m_args[1].m_value);
     auto *other_contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("iother"));
     REQUIRE(other_contract);

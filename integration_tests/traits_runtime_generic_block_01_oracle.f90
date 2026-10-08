@@ -65,6 +65,18 @@ contains
         end block outer
         r = r + bias
     end function
+    function forward_in_block(arg, mode) result(r)
+        type(Cell), intent(in) :: arg
+        integer, intent(in) :: mode
+        integer :: r
+        block
+            integer :: local
+            associate (alias => local)
+                alias = apply(arg, mode)
+            end associate
+            r = local
+        end block
+    end function
 end module
 
 program traits_runtime_generic_block_01_oracle
@@ -82,5 +94,9 @@ program traits_runtime_generic_block_01_oracle
     bias = 7
     r = apply(object, 0)
     if (r /= 116 .or. finals /= 8 .or. total /= 126) error stop 4
+    r = forward_in_block(object, 0)
+    if (r /= 116 .or. finals /= 10 .or. total /= 156) error stop 6
+    r = forward_in_block(object, 1)
+    if (r /= 46 .or. finals /= 12 .or. total /= 188) error stop 7
     if (argument_finals /= 0 .or. object%n /= 31) error stop 5
 end program
