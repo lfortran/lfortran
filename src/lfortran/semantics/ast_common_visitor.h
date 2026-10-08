@@ -25388,6 +25388,17 @@ public:
                     }
                 }
 
+                if (!ASRUtils::is_fixed_size_array(dims.p, dims.size())) {
+                    // The extent of the section depends on runtime values
+                    // (e.g. `x(lo:hi)%c`), so like a plain section
+                    // `a(lo:hi)` its dimensions are deferred and taken from
+                    // the section at runtime. The expression `hi - lo + 1`
+                    // would be negative for an empty section such as `x(5:1)`.
+                    for (size_t idx = 0; idx < dims.size(); idx++) {
+                        dims.p[idx].m_start = nullptr;
+                        dims.p[idx].m_length = nullptr;
+                    }
+                }
                 array_found = true;
                 // The extent of the section can depend on runtime values
                 // (e.g. `x(lo:hi)%c`), in which case the result is not a
