@@ -17337,6 +17337,16 @@ public:
                 dims.push_back(al, dim);
                 new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
             }
+            if (order_for_eval && ASR::is_a<ASR::ArrayConstant_t>(*order_for_eval) &&
+                    !ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                // Fold a constant `source` (array constructor or named
+                // constant) to its value, so that `pad` and `order` are
+                // applied to it at compile time below
+                ASR::expr_t* array_value = ASRUtils::expr_value(array);
+                if (array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+                    array = array_value;
+                }
+            }
             int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
             if (array_size != -1 &&  new_shape_size > array_size) {
                 if (!pad){
@@ -17394,12 +17404,6 @@ public:
                         diag.add(Diagnostic("reshape accepts `order` array as a permutation of elements from 1 to " + std::to_string(n),
                                             Level::Error, Stage::Semantic, {Label("", {order->base.loc})}));
                         throw SemanticAbort();
-                    }
-                }
-                if (!ASR::is_a<ASR::ArrayConstant_t>(*array)) {
-                    if (ASR::is_a<ASR::ArrayConstructor_t>(*array) &&
-                        ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value != nullptr) {
-                        array = ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value;
                     }
                 }
                 if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
