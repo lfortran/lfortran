@@ -1,7 +1,9 @@
 module traits_runtime_inspection_kind_oracle_m
     implicit none
-    type :: KindBox(k)
+    type :: KindBox(k, length)
         integer, kind :: k = 4
+        ! Work around GFortran 13 rejecting kind-only PDT TYPE IS guards.
+        integer, len :: length = 0
         integer :: n
     end type
 end module
@@ -23,9 +25,9 @@ program traits_runtime_inspection_04_oracle
             view => second
         end if
         select type (concrete => view)
-        type is (KindBox(4))
+        type is (KindBox(4, *))
             if (i /= 1 .or. concrete%n /= 23) error stop 2
-        type is (KindBox(8))
+        type is (KindBox(8, *))
             if (i /= 2 .or. concrete%n /= 29) error stop 3
         class default
             error stop 4
