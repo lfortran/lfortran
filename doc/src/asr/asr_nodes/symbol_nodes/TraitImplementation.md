@@ -34,6 +34,9 @@ Conformance belongs to its defining scope and does not mutate an imported
 derived type. Structural layout equality is insufficient for selecting it:
 `type_declaration` preserves nominal type identity.
 Bindings preserve canonical member identities and receiver adaptation.
+A generic member and its implementation reference `Template` symbols.
+Their scoped binders correspond positionally and must have equivalent nominal
+constraints; an implementation cannot narrow the universally promised domain.
 An implementation also satisfies the trait's ancestors. When several visible
 paths satisfy the same constraint, their procedure and receiver bindings must
 agree; distinct nominal conformance paths are not resolved by import order.

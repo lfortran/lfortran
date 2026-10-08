@@ -100,6 +100,18 @@ public:
         ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitWitness(x);
     }
 
+    void visit_TraitErasure(const ASR::TraitErasure_t &x) {
+        retain_trait_procedure(x.m_procedure);
+        retain_trait_procedure(&ASRUtils::trait_method_function(x.m_generic)->base);
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            for (size_t j = 0; j < x.m_parameters[i].n_operations; j++) {
+                retain_trait_procedure(x.m_parameters[i].m_operations[j].m_requirement);
+                retain_trait_procedure(x.m_parameters[i].m_operations[j].m_procedure);
+            }
+        }
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitErasure(x);
+    }
+
     void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
         retain_trait_procedure(x.m_name);
         ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitFunctionCall(x);

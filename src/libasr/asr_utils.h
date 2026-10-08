@@ -851,6 +851,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::TraitImplementation: return "TraitImplementation";
         case ASR::symbolType::TraitRuntimeContract: return "TraitRuntimeContract";
         case ASR::symbolType::TraitWitness: return "TraitWitness";
+        case ASR::symbolType::TraitErasure: return "TraitErasure";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -1104,6 +1105,7 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
         }
         case ASR::symbolType::TraitRuntimeContract:
         case ASR::symbolType::TraitWitness:
+        case ASR::symbolType::TraitErasure:
             return "! runtime trait evidence " + std::string(symbol_name(&s));
         case ASR::symbolType::AssociateBlock: {
             const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
@@ -1264,6 +1266,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitWitness: {
             return ASR::down_cast<ASR::TraitWitness_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitErasure: {
+            return ASR::down_cast<ASR::TraitErasure_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -1732,6 +1737,7 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         case ASR::symbolType::TraitConstraint:
         case ASR::symbolType::TraitImplementation:
         case ASR::symbolType::TraitRuntimeContract:
+        case ASR::symbolType::TraitErasure:
             // Runtime dependencies belong to the specialized procedures.
             return std::make_pair(nullptr, size_t(0));
         case ASR::symbolType::TraitWitness: {
@@ -1800,6 +1806,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitWitness: {
             return ASR::down_cast<ASR::TraitWitness_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::TraitErasure: {
+            return ASR::down_cast<ASR::TraitErasure_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
@@ -1876,6 +1885,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitWitness: {
             return ASR::down_cast<ASR::TraitWitness_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::TraitErasure: {
+            return ASR::down_cast<ASR::TraitErasure_t>(f)->m_symtab;
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
@@ -10652,6 +10664,12 @@ struct TraitHierarchy {
 ASR::Function_t *trait_method_function(ASR::symbol_t *method);
 ASR::Template_t *trait_method_template(const ASR::Function_t &method);
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
+std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
+ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
+ASR::TraitErasure_t *trait_erasure(ASR::Template_t &generic, SymbolTable *scope);
+bool trait_erased_signature_matches(const ASR::Function_t &generic,
+    const ASR::Function_t &erased, size_t offset = 0);
+std::string trait_deferred_pack_key(const ASR::TraitDeferredPack_t &pack);
 std::string trait_generic_correspondence(const ASR::Function_t &left,
     const ASR::Function_t &right,
     std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters);

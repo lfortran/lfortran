@@ -465,6 +465,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        queue_trait_erasures(*unit);
         instantiate_pending_bodies();
     }
 
@@ -6666,6 +6667,10 @@ public:
 
     void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
         visit_program_unit(*lower_trait_procedure(al, x));
+    }
+
+    void visit_Implements(const AST::Implements_t &) {
+        // Conformance declarations are completely checked by the symbol-table visitor.
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {

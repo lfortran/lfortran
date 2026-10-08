@@ -29,6 +29,10 @@ None.
 The receiver can occupy a non-first argument position. Static specialization
 uses this metadata to construct an ordinary typed procedure adapter instead
 of making the backend infer receiver positions.
+A universally generic message binds the trait's `Template` to the
+implementation's checked `Template`, retaining their quantified contracts.
+Runtime adapters call its reusable `TraitErasure` entry; static calls use the
+same checked definition with concrete substitutions.
 
 ## Examples
 

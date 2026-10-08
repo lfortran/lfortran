@@ -10292,12 +10292,34 @@ public:
                 emit_trait_witness(*witness,
                     !prototype_only && witness->m_abi == ASR::abiType::Source);
             }
+            if (ASR::is_a<ASR::TraitErasure_t>(*item.second)) {
+                auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(item.second);
+                auto *saved_scope = current_scope;
+                current_scope = erasure->m_symtab;
+                for (const auto &entry : erasure->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                        instantiate_function(*ASR::down_cast<ASR::Function_t>(entry.second));
+                    }
+                }
+                current_scope = saved_scope;
+            }
         }
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
             }
+        }
+        for (const auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitErasure_t>(*item.second)) continue;
+            auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(item.second);
+            if (!prototype_only && ASRUtils::get_FunctionType(
+                    ASRUtils::trait_method_function(erasure->m_procedure))->m_abi ==
+                    ASR::abiType::ExternalUndefined) continue;
+            auto *saved_scope = current_scope;
+            current_scope = erasure->m_symtab;
+            visit_procedures(*erasure);
+            current_scope = saved_scope;
         }
         if (!prototype_only) {
             for (const auto &item : x.m_symtab->get_scope()) {
@@ -27775,6 +27797,11 @@ public:
         bool indirect_payload = LLVM::is_llvm_pointer(*expr_type(x.m_payload));
         visit_expr_load_wrapper(x.m_payload, indirect_payload, indirect_payload);
         tmp = trait_witness_view(*witness, builder->CreateBitCast(tmp, llvm_utils->i8_ptr));
+    }
+
+    void visit_TraitDeferredPack(const ASR::TraitDeferredPack_t &x) {
+        throw CodeGenError("a deferred generic argument must be instantiated before "
+            "runtime trait lowering", x.base.base.loc);
     }
 
     llvm::Value *trait_owner_slot(ASR::expr_t *owner) {

@@ -23,6 +23,8 @@ reduction_expr
 require_instantiation
 tbind
 trait_binding
+trait_erased_operation
+trait_erased_parameter
 trait_lifecycle
 trait_projection_slot
 trait_requirement

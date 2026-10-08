@@ -4515,13 +4515,15 @@ public:
             auto *binding = ASRUtils::find_trait_binding(
                 *implementation, contract->m_slots[i].m_origins[0]);
             LCOMPILERS_ASSERT(binding);
-            auto *procedure = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(binding->m_procedure));
+            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
             auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
             if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return nullptr;
-            auto *member = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(contract->m_slots[i].m_origins[0]));
+            auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
             if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
+            if (auto *generic = ASRUtils::trait_method_template(*procedure)) {
+                create_trait_erasure(*generic, implementation->m_parent_symtab,
+                    binding->loc);
+            }
         }
         const Location &loc = implementation->base.base.loc;
         std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==

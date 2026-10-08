@@ -622,6 +622,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::TraitBorrow:
         case ASR::exprType::TraitProject:
         case ASR::exprType::TraitFunctionCall:
+        case ASR::exprType::TraitDeferredPack:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
             return nullptr;
@@ -5658,6 +5659,81 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
     return nullptr;
 }
 
+std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter)
+{
+    std::vector<ASR::symbol_t*> traits;
+    parameter = symbol_get_past_external(parameter);
+    if (!parameter) return traits;
+    auto *scope = symbol_parent_symtab(parameter);
+    if (!scope) return traits;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        if (symbol_get_past_external(constraint->m_parameter) == parameter) {
+            traits.push_back(constraint->m_trait);
+        }
+    }
+    return normalized_trait_requirements(traits);
+}
+
+ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter)
+{
+    auto traits = trait_parameter_traits(parameter);
+    return traits.size() == 1 ? trait_runtime_contract(traits[0]) : nullptr;
+}
+
+ASR::TraitErasure_t *trait_erasure(ASR::Template_t &generic, SymbolTable *scope)
+{
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitErasure_t>(*entry.second)) continue;
+        auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(entry.second);
+        if (symbol_get_past_external(erasure->m_generic) == &generic.base) return erasure;
+    }
+    return nullptr;
+}
+
+bool trait_erased_signature_matches(const ASR::Function_t &generic,
+        const ASR::Function_t &erased, size_t offset)
+{
+    if (!trait_method_template(generic) || erased.n_args != generic.n_args + offset ||
+            !erased.m_args || !generic.m_return_var || !erased.m_return_var) return false;
+    auto *result = typed_expr_type(generic.m_return_var);
+    if (!result || !ASR::is_a<ASR::Integer_t>(*result)) return false;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
+    for (size_t i = 0; i < generic.n_args; i++) {
+        if (!generic.m_args[i] || !erased.m_args[i + offset] ||
+                !ASR::is_a<ASR::Var_t>(*generic.m_args[i]) ||
+                !ASR::is_a<ASR::Var_t>(*erased.m_args[i + offset])) return false;
+        arguments.emplace(&EXPR2VAR(generic.m_args[i])->base,
+            &EXPR2VAR(erased.m_args[i + offset])->base);
+    }
+    for (size_t i = 0; i < generic.n_args; i++) {
+        auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(erased.m_args[i + offset]);
+        if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
+                a->m_value_attr != b->m_value_attr ||
+                std::string(a->m_name) != b->m_name) return false;
+        auto *binder = trait_type_parameter(generic.m_args[i]);
+        if (binder) {
+            auto *contract = trait_parameter_contract(binder);
+            if (!contract || !ASR::is_a<ASR::TraitObjectType_t>(*b->m_type) ||
+                    !ASR::is_a<ASR::TypeParameter_t>(*a->m_type) ||
+                    a->m_intent != ASR::intentType::In ||
+                    !trait_contracts_equal(
+                        ASR::down_cast<ASR::TraitObjectType_t>(b->m_type)->m_contract,
+                        &contract->base)) return false;
+        } else if (!trait_types_equal(generic.m_args[i], erased.m_args[i + offset], arguments)) {
+            return false;
+        }
+    }
+    return trait_types_equal(generic.m_return_var, erased.m_return_var, arguments);
+}
+
+std::string trait_deferred_pack_key(const ASR::TraitDeferredPack_t &pack)
+{
+    return nominal_symbol_name(pack.m_constraint) + ":" +
+        nominal_symbol_name(&trait_runtime_contract(pack.m_type)->base);
+}
+
 std::string trait_generic_correspondence(const ASR::Function_t &left,
     const ASR::Function_t &right,
     std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
@@ -5667,17 +5743,9 @@ std::string trait_generic_correspondence(const ASR::Function_t &left,
     if (!a || !b || a->n_args != b->n_args) {
         return "generic type parameter counts differ";
     }
-    auto constraints = [](ASR::Template_t *generic, ASR::symbol_t *parameter) {
-        std::vector<ASR::symbol_t*> traits;
-        for (const auto &entry : generic->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
-            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
-            if (symbol_get_past_external(constraint->m_parameter) == parameter) {
-                traits.push_back(constraint->m_trait);
-            }
-        }
-        return normalized_trait_requirements(traits);
-    };
+    if ((a->n_args && !a->m_args) || (b->n_args && !b->m_args)) {
+        return "generic type parameter declarations are missing";
+    }
     for (size_t i = 0; i < a->n_args; i++) {
         auto *ap = a->m_symtab->get_symbol(a->m_args[i]);
         auto *bp = b->m_symtab->get_symbol(b->m_args[i]);
@@ -5687,7 +5755,7 @@ std::string trait_generic_correspondence(const ASR::Function_t &left,
                 !ASR::is_a<ASR::TypeParameter_t>(*symbol_type(bp))) {
             return "generic type parameter declarations are missing";
         }
-        auto ac = constraints(a, ap), bc = constraints(b, bp);
+        auto ac = trait_parameter_traits(ap), bc = trait_parameter_traits(bp);
         if (ac.empty() || ac != bc) {
             return "generic type parameter constraints must be nominally equivalent";
         }
@@ -6016,7 +6084,15 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
 
 bool runtime_trait_method_supported(const ASR::Function_t &method)
 {
-    if (trait_method_template(method)) return false;
+    auto *generic = trait_method_template(method);
+    if (generic) {
+        if (!method.m_return_var || (generic->n_args && !generic->m_args)) return false;
+        for (size_t i = 0; i < generic->n_args; i++) {
+            if (!trait_parameter_contract(generic->m_symtab->get_symbol(generic->m_args[i]))) {
+                return false;
+            }
+        }
+    }
     auto abi = get_FunctionType(method)->m_abi;
     if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return false;
     if (method.m_return_var &&
@@ -6027,6 +6103,15 @@ bool runtime_trait_method_supported(const ASR::Function_t &method)
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
         auto *arg = ASR::down_cast<ASR::Variable_t>(symbol);
         auto *type = arg->m_type;
+        if (generic && ASR::is_a<ASR::TypeParameter_t>(*type)) {
+            if (arg->m_intent != ASR::intentType::In ||
+                    arg->m_presence != ASR::presenceType::Required ||
+                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->n_codims || ASR::down_cast<ASR::TypeParameter_t>(type)->m_is_class) {
+                return false;
+            }
+            continue;
+        }
         if (!(ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
                 || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)
                 || ASR::is_a<ASR::String_t>(*type)
@@ -6168,6 +6253,7 @@ bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
         Location loc;
         void visit_TraitRuntimeContract(const ASR::TraitRuntimeContract_t &) {}
         void visit_TraitWitness(const ASR::TraitWitness_t &) {}
+        void visit_TraitErasure(const ASR::TraitErasure_t &) {}
         void visit_TraitObjectType(const ASR::TraitObjectType_t &x) {
             if (!found) loc = x.base.base.loc;
             found = true;

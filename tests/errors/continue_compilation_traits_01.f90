@@ -3352,3 +3352,200 @@ contains
         r = object%undeclared()
     end function
 end module
+
+! Erased generic storage/result/mutation semantics are not inferred from a view.
+module traits_generic_runtime_boundaries
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IArray
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object(:)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: IMutable
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(inout) :: object
+            integer :: r
+        end function
+    end interface
+    abstract interface :: IOwning
+        function apply{IValue :: T}(object) result(r)
+            type(T), allocatable, intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    abstract interface :: IResult
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            type(T) :: r
+        end function
+    end interface
+    class(IArray), allocatable :: array_method
+    class(IMutable), allocatable :: mutable_method
+    class(IOwning), allocatable :: owning_method
+    class(IResult), allocatable :: generic_result
+end module
+
+! Runtime generic calls still require nominal and type-argument agreement.
+module traits_generic_runtime_bad_actual
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Good
+        integer :: n
+    end type
+    type :: Bad
+        integer :: n
+    end type
+    implements IValue :: Good
+        procedure, nopass :: value
+    end implements
+contains
+    integer function value()
+        value = 7
+    end function
+    subroutine bad_calls(algorithm, object)
+        class(IAlgorithm), intent(in) :: algorithm
+        type(Bad), intent(in) :: object
+        integer :: r
+        r = algorithm%apply(object)
+        r = algorithm%apply{Good}(object)
+        r = algorithm%apply(1)
+    end subroutine
+end module
+
+! A checked generic local cannot silently become a borrowed descriptor.
+module traits_generic_runtime_local_storage
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        type(T) :: scratch
+        integer :: r
+        r = object%value()
+    end function
+end module
+
+module traits_generic_nominal_left
+    implicit none
+    abstract interface :: IValue
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+end module
+
+module traits_generic_nominal_right
+    implicit none
+    abstract interface :: IValue
+    end interface
+end module
+
+! Same spelling and an equal empty method set do not identify nominal domains.
+module traits_generic_runtime_nominal_mismatch
+    use traits_generic_nominal_left, only: IAlgorithm
+    use traits_generic_nominal_right, only: IValue
+    implicit none
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: Renamed}(object) result(r)
+        type(Renamed), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module
+
+! A finite intrinsic type set cannot implement a universal nominal method.
+module traits_generic_runtime_finite_narrowing
+    use traits_generic_nominal_left, only: IAlgorithm
+    implicit none
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{integer | real(8) :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module
+
+! The first erased provider ABI is module-owned, not a local closure ABI.
+program traits_generic_runtime_local_provider
+    use traits_generic_nominal_left, only: IValue, IAlgorithm
+    implicit none
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end program
+
+! A helper's generic result cannot acquire borrowed-view result semantics.
+module traits_generic_runtime_helper_result
+    use traits_generic_nominal_left, only: IValue, IAlgorithm
+    implicit none
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = consume(identity(object))
+    end function
+    function identity{IValue :: U}(object) result(copy)
+        type(U), intent(in) :: object
+        type(U) :: copy
+        copy = object
+    end function
+    function consume{IValue :: V}(object) result(r)
+        type(V), intent(in) :: object
+        integer :: r
+        r = 0
+    end function
+end module

@@ -84,6 +84,10 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 witness->m_symtab->mark_all_variables_external(al);
                 break;
             }
+            case ASR::symbolType::TraitErasure: {
+                ASR::down_cast<ASR::TraitErasure_t>(a.second)->m_symtab->mark_all_variables_external(al);
+                break;
+            }
             default : {};
         }
     }

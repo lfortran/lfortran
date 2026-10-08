@@ -559,7 +559,8 @@ public:
                     is_a<ASR::TraitConstraint_t>(*item.second) ||
                     is_a<ASR::TraitImplementation_t>(*item.second) ||
                     is_a<ASR::TraitRuntimeContract_t>(*item.second) ||
-                    is_a<ASR::TraitWitness_t>(*item.second)) {
+                    is_a<ASR::TraitWitness_t>(*item.second) ||
+                    is_a<ASR::TraitErasure_t>(*item.second)) {
                 visit_symbol(*item.second);
                 r += src;
                 r += "\n";
@@ -949,6 +950,22 @@ public:
             is_interface = true;
             inc_indent();
             for (const auto &entry : x.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Template_t>(*entry.second)) {
+                    auto *generic = ASR::down_cast<ASR::Template_t>(entry.second);
+                    r += indent + "! generic message " + generic->m_name + "{";
+                    for (size_t i = 0; i < generic->n_args; i++) {
+                        if (i) r += ", ";
+                        auto traits = ASRUtils::trait_parameter_traits(
+                            generic->m_symtab->get_symbol(generic->m_args[i]));
+                        for (size_t j = 0; j < traits.size(); j++) {
+                            if (j) r += " + ";
+                            r += ASRUtils::symbol_name(traits[j]);
+                        }
+                        r += " :: " + std::string(generic->m_args[i]);
+                    }
+                    r += "}\n";
+                    continue;
+                }
                 visit_symbol(*entry.second);
                 r += src;
             }
@@ -1098,6 +1115,18 @@ public:
                 : "composed nominal evidence") + "\n";
     }
 
+    void visit_TraitErasure(const ASR::TraitErasure_t &x) {
+        src = indent + "! erased generic entry " +
+            ASRUtils::symbol_name(x.m_procedure) + " from checked template " +
+            ASRUtils::symbol_name(x.m_generic) + "\n";
+    }
+
+    void visit_TraitDeferredPack(const ASR::TraitDeferredPack_t &x) {
+        visit_expr(*x.m_payload);
+        src = "trait_deferred_pack(" + src + ", " +
+            ASRUtils::trait_contract_name(*ASRUtils::trait_runtime_contract(x.m_type)) + ")";
+    }
+
     void visit_TraitPack(const ASR::TraitPack_t &x) {
         visit_expr(*x.m_payload);
     }
@@ -1191,10 +1220,16 @@ public:
         src.clear();
         auto *symbol = ASRUtils::symbol_get_past_external(x.m_external);
         auto *owner = ASRUtils::get_asr_owner(symbol);
+        if (for_compilation && (ASR::is_a<ASR::Trait_t>(*symbol) ||
+                ASR::is_a<ASR::TraitConstraint_t>(*symbol) ||
+                ASR::is_a<ASR::TraitImplementation_t>(*symbol) ||
+                ASR::is_a<ASR::Template_t>(*symbol))) return;
         if (ASR::is_a<ASR::TraitRuntimeContract_t>(*symbol) ||
                 ASR::is_a<ASR::TraitWitness_t>(*symbol) ||
+                ASR::is_a<ASR::TraitErasure_t>(*symbol) ||
                 (owner && (ASR::is_a<ASR::TraitRuntimeContract_t>(*owner) ||
-                           ASR::is_a<ASR::Trait_t>(*owner)))) return;
+                           ASR::is_a<ASR::Trait_t>(*owner) ||
+                           ASR::is_a<ASR::TraitErasure_t>(*owner)))) return;
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if (std::string(x.m_name).find('@') != std::string::npos ||
             std::string(x.m_original_name).find('@') != std::string::npos) {

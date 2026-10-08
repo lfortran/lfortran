@@ -30,6 +30,10 @@ None.
 
 A trait describes a contract, not an executable body or a derived-type layout.
 Its procedures have no passed-object dummy, but can have ordinary arguments.
+An ordinary message is a `Function`; a generic message is the existing
+`Template` with its principal interface function and scoped `TraitConstraint`
+binders. Equivalence compares binder positions and canonical nominal constraints,
+not type-parameter spelling or currently visible concrete implementations.
 The symbol identity distinguishes traits even when their signatures are equal.
 The parent graph is acyclic. Inherited requirements retain the identity of
 their original declaring trait rather than being copied into each child.

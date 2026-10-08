@@ -1672,6 +1672,17 @@ public:
                 procedure->n_body == 0,
             "asr.verify.trait_contract.receiver",
             "A callable interface must take its read-only view as its first argument", loc);
+        for (size_t i = 0; i < slot.n_origins; i++) {
+            auto *method = ASRUtils::trait_method_function(slot.m_origins[i]);
+            if (method && ASRUtils::trait_method_template(*method)) {
+                verify_runtime_trait_procedure(slot.m_origins[i], loc,
+                    "asr.verify.trait_contract.origin");
+                require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
+                        ASRUtils::trait_erased_signature_matches(*method, *procedure, 1),
+                    "asr.verify.trait_contract.erased_signature",
+                    "A generic slot must preserve its quantified nominal argument domains", loc);
+            }
+        }
         return procedure;
     }
 
@@ -1891,15 +1902,147 @@ public:
                             symtab_in_scope(current_symtab, slot.m_origins[j]),
                         "asr.verify.trait_contract.origin_order",
                         "Runtime slot origins must follow the canonical trait hierarchy");
-                    auto mismatch = ASRUtils::trait_method_mismatch(
-                        *ASR::down_cast<Function_t>(origin), *procedure, 0, 1);
-                    require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
-                        "asr.verify.trait_contract.signature",
-                        "A runtime slot must preserve its message signature: " + mismatch.message);
+                    auto *method = ASRUtils::trait_method_function(origin);
+                    if (!ASRUtils::trait_method_template(*method)) {
+                        auto mismatch = ASRUtils::trait_method_mismatch(*method, *procedure, 0, 1);
+                        require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                            "asr.verify.trait_contract.signature",
+                            "A runtime slot must preserve its message signature: " + mismatch.message);
+                    }
                 }
             }
         }
         for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitErasure(const TraitErasure_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_erasure.scope",
+            "A generic erasure must own a unique provider scope");
+        require_id(x.m_generic && symtab_in_scope(current_symtab, x.m_generic) &&
+                x.m_procedure && x.m_parameters,
+            "asr.verify.trait_erasure.fields",
+            "An erasure must retain its checked template, entry and binder substitutions");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *definition = ASRUtils::symbol_get_past_external(x.m_generic);
+            require_id(definition && ASR::is_a<Template_t>(*definition),
+                "asr.verify.trait_erasure.generic",
+                "An erased entry must originate in a checked template");
+            auto *generic = ASR::down_cast<Template_t>(definition);
+            auto *original = ASRUtils::trait_method_function(definition);
+            auto *entry = verify_runtime_trait_procedure(x.m_procedure, x.base.base.loc,
+                "asr.verify.trait_erasure.entry");
+            require_id(original && ASRUtils::symbol_parent_symtab(&entry->base) == current_symtab &&
+                    ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
+                    ASRUtils::trait_erased_signature_matches(*original, *entry),
+                "asr.verify.trait_erasure.signature",
+                "The reusable entry must preserve its template's arguments and erase only checked scalar binders");
+            require_id(x.n_parameters == generic->n_args,
+                "asr.verify.trait_erasure.parameters",
+                "Erasure must retain exactly one substitution per scoped binder");
+            for (size_t i = 0; i < x.n_parameters; i++) {
+                auto &parameter = x.m_parameters[i];
+                require_id(parameter.m_parameter && parameter.m_contract &&
+                        symtab_in_scope(current_symtab, parameter.m_parameter) &&
+                        symtab_in_scope(current_symtab, parameter.m_contract) &&
+                        (!parameter.n_operations || parameter.m_operations),
+                    "asr.verify.trait_erasure.parameter_fields",
+                    "Erased binders require visible nominal type and operation evidence");
+                auto *binder = generic->m_symtab->get_symbol(generic->m_args[i]);
+                auto *contract = ASRUtils::trait_parameter_contract(binder);
+                require_id(binder && contract &&
+                        ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder &&
+                        ASRUtils::symbol_get_past_external(parameter.m_contract) == &contract->base,
+                    "asr.verify.trait_erasure.parameter_identity",
+                    "An erased binder must preserve its original scope and exact nominal domain");
+                std::map<symbol_t*, symbol_t*> required;
+                for (const auto &item : generic->m_symtab->get_scope()) {
+                    if (!ASR::is_a<TraitConstraint_t>(*item.second)) continue;
+                    auto *constraint = ASR::down_cast<TraitConstraint_t>(item.second);
+                    if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) continue;
+                    for (size_t j = 0; j < constraint->n_requirements; j++) {
+                        auto &operation = constraint->m_requirements[j];
+                        required.emplace(ASRUtils::symbol_get_past_external(operation.m_procedure),
+                            ASRUtils::symbol_get_past_external(operation.m_member));
+                    }
+                }
+                require_id(parameter.n_operations == required.size(),
+                    "asr.verify.trait_erasure.operations",
+                    "Erasure must supply every checked operation exactly once");
+                std::set<symbol_t*> seen;
+                for (size_t j = 0; j < parameter.n_operations; j++) {
+                    auto &operation = parameter.m_operations[j];
+                    auto *requirement = ASRUtils::symbol_get_past_external(operation.m_requirement);
+                    require_id(requirement && required.count(requirement) &&
+                            seen.insert(requirement).second &&
+                            symtab_in_scope(current_symtab, operation.m_requirement),
+                        "asr.verify.trait_erasure.operation_identity",
+                        "Erased operations must refer to the binder's checked requirements");
+                    auto *wrapper = verify_runtime_trait_procedure(operation.m_procedure,
+                        operation.loc, "asr.verify.trait_erasure.operation");
+                    size_t slot = contract->n_slots;
+                    for (size_t k = 0; k < contract->n_slots; k++) {
+                        for (size_t m = 0; m < contract->m_slots[k].n_origins; m++) {
+                            if (ASRUtils::symbol_get_past_external(contract->m_slots[k].m_origins[m]) ==
+                                    required.at(requirement)) slot = k;
+                        }
+                    }
+                    require_id(slot < contract->n_slots &&
+                            ASRUtils::symbol_parent_symtab(&wrapper->base) == current_symtab,
+                        "asr.verify.trait_erasure.operation_slot",
+                        "An erased operation wrapper must select its proved nominal slot");
+                    auto comparable = *wrapper;
+                    auto signature = *ASRUtils::get_FunctionType(wrapper);
+                    if (signature.m_abi == abiType::ExternalUndefined) signature.m_abi = abiType::Source;
+                    comparable.m_function_signature = &signature.base;
+                    auto mismatch = ASRUtils::trait_method_mismatch(
+                        *verify_runtime_trait_slot(*contract, slot, operation.loc), comparable);
+                    require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                        "asr.verify.trait_erasure.operation_signature",
+                        "An erased operation must preserve its runtime slot signature");
+                    if (ASRUtils::get_FunctionType(wrapper)->m_abi == abiType::ExternalUndefined &&
+                            wrapper->n_body == 0) continue;
+                    require_id(wrapper->n_body == 1 && wrapper->m_body,
+                        "asr.verify.trait_erasure.operation_body",
+                        "An erased operation wrapper must contain one checked indirect call");
+                    TraitFunctionCall_t *function_call = nullptr;
+                    TraitSubroutineCall_t *subroutine_call = nullptr;
+                    if (wrapper->m_return_var && ASR::is_a<Assignment_t>(*wrapper->m_body[0])) {
+                        auto *assignment = ASR::down_cast<Assignment_t>(wrapper->m_body[0]);
+                        require_id(same_variable(assignment->m_target, wrapper->m_return_var) &&
+                                assignment->m_value && ASR::is_a<TraitFunctionCall_t>(*assignment->m_value),
+                            "asr.verify.trait_erasure.operation_body",
+                            "An erased operation must return its selected indirect call");
+                        function_call = ASR::down_cast<TraitFunctionCall_t>(assignment->m_value);
+                    } else if (!wrapper->m_return_var &&
+                            ASR::is_a<TraitSubroutineCall_t>(*wrapper->m_body[0])) {
+                        subroutine_call = ASR::down_cast<TraitSubroutineCall_t>(wrapper->m_body[0]);
+                    }
+                    require_id(function_call || subroutine_call,
+                        "asr.verify.trait_erasure.operation_body",
+                        "Erased operation wrappers must use explicit dynamic dispatch");
+                    auto *args = function_call ? function_call->m_args : subroutine_call->m_args;
+                    size_t nargs = function_call ? function_call->n_args : subroutine_call->n_args;
+                    int64_t index = function_call ? function_call->m_slot : subroutine_call->m_slot;
+                    require_id(index == (int64_t)slot && nargs == wrapper->n_args && args,
+                        "asr.verify.trait_erasure.operation_body",
+                        "An erased operation must forward all of its own arguments in order");
+                    for (size_t k = 0; k < nargs; k++) {
+                        require_id(same_variable(args[k].m_value, wrapper->m_args[k]),
+                            "asr.verify.trait_erasure.operation_body",
+                            "An erased operation must borrow the supplied actual view, not provider storage");
+                    }
+                }
+            }
+        }
+        for (const auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
         current_symtab = parent;
     }
 
@@ -2167,6 +2310,49 @@ public:
                 ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
             "asr.verify.trait_pack.nominal_type",
             "A borrowed payload's nominal type must match its selected witness");
+    }
+
+    void visit_TraitDeferredPack(const TraitDeferredPack_t &x) {
+        require_id(x.m_payload && x.m_constraint && x.m_type &&
+                typed_expr_type(x.m_payload) &&
+                ASR::is_a<TypeParameter_t>(*typed_expr_type(x.m_payload)) &&
+                ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                symtab_in_scope(current_symtab, x.m_constraint),
+            "asr.verify.trait_deferred_pack.fields",
+            "A deferred pack requires a scalar type parameter, visible constraint and borrowed contract");
+        visit_expr(*x.m_payload);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *symbol = ASRUtils::symbol_get_past_external(x.m_constraint);
+        require_id(symbol && ASR::is_a<TraitConstraint_t>(*symbol),
+            "asr.verify.trait_deferred_pack.constraint",
+            "Deferred packing must retain a checked nominal constraint");
+        auto *constraint = ASR::down_cast<TraitConstraint_t>(symbol);
+        auto *parameter = ASRUtils::trait_type_parameter(x.m_payload);
+        require_id(parameter &&
+                parameter == ASRUtils::symbol_get_past_external(constraint->m_parameter),
+            "asr.verify.trait_deferred_pack.parameter",
+            "Deferred evidence must belong to the payload's scoped generic binder");
+        bool in_generic = false;
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (scope == constraint->m_parent_symtab) in_generic = true;
+        }
+        require_id(in_generic,
+            "asr.verify.trait_deferred_pack.scope",
+            "A deferred pack may exist only within its checked generic definition");
+        auto *trait = ASRUtils::symbol_get_past_external(constraint->m_trait);
+        require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait,
+            "asr.verify.trait_deferred_pack.nominal",
+            "A deferred runtime argument requires an open nominal domain, not a finite type set");
+        auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(trait), x.base.base.loc);
+        auto *target = ASRUtils::symbol_get_past_external(
+            ASRUtils::trait_runtime_contract(x.m_type)->m_trait);
+        bool provided = false;
+        for (auto *origin : hierarchy.traits) provided |= &origin->base == target;
+        require_id(provided,
+            "asr.verify.trait_deferred_pack.implication",
+            "The binder's declared constraints must guarantee the requested runtime operations");
     }
 
     ttype_t *verify_trait_owner(expr_t *owner, const Location &loc,
@@ -2483,6 +2669,11 @@ public:
                 ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)),
             "asr.verify.trait_call.receiver",
             "A runtime trait call requires a borrowed view as its first argument");
+        for (size_t i = 1; i < x.n_args; i++) {
+            if (x.m_args[i].m_value && ASR::is_a<TraitDeferredPack_t>(*x.m_args[i].m_value)) {
+                visit_TraitDeferredPack(*ASR::down_cast<TraitDeferredPack_t>(x.m_args[i].m_value));
+            }
+        }
         if (!check_external) return;
         visit_ttype(*typed_expr_type(x.m_args[0].m_value));
         auto *contract = ASRUtils::trait_runtime_contract(
@@ -3520,6 +3711,10 @@ public:
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Trait_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::TraitRuntimeContract_t>(*asr_owner_sym) ||
+                                  ((ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym)) &&
+                                    m && x.n_scope_names > 0) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
@@ -3539,6 +3734,10 @@ public:
                 } else if (ASR::is_a<ASR::TraitRuntimeContract_t>(*asr_owner_sym)) {
                     runtime_contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(asr_owner_sym);
                     asr_owner_name = runtime_contract->m_name;
+                } else if (ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym)) {
+                    asr_owner_name = ASRUtils::symbol_name(asr_owner_sym);
                 }
             } else {
                 asr_owner_name = m->m_name;

@@ -640,17 +640,67 @@ semantic error: argument 'left' does not match trait method 'apply': expected t,
 3320 |        end implements
      | ...^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3387:5
+     |
+3387 |     class(IArray), allocatable :: array_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3388:5
+     |
+3388 |     class(IMutable), allocatable :: mutable_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3389:5
+     |
+3389 |     class(IOwning), allocatable :: owning_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3390:5
+     |
+3390 |     class(IResult), allocatable :: generic_result
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3450:20
+     |
+3450 |         type(T) :: scratch
+     |                    ^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3481:5 - 3483:19
+     |
+3481 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3483 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3498:5 - 3500:19
+     |
+3498 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3500 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime generic trait implementations outside module scope are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3516:9
+     |
+3516 |         procedure, nopass :: apply
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |
 63 |         value = read_value(object)
    |                 ^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_traits_01.f90:63:9
-   |
-63 |         value = read_value(object)
-   |         ^^^^^              ^^^^^^ type mismatch (integer and box)
 
 semantic error: method 'missing_value' is not provided by the declared trait constraints
    --> tests/errors/continue_compilation_traits_01.f90:205:15
@@ -1731,3 +1781,27 @@ semantic error: method 'undeclared' is not provided by the declared trait constr
      |
 3352 |         r = object%undeclared()
      |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+    --> tests/errors/continue_compilation_traits_01.f90:3423:13
+     |
+3423 |         r = algorithm%apply(object)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+    --> tests/errors/continue_compilation_traits_01.f90:3424:13
+     |
+3424 |         r = algorithm%apply{Good}(object)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+    --> tests/errors/continue_compilation_traits_01.f90:3425:13
+     |
+3425 |         r = algorithm%apply(1)
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3543:20
+     |
+3543 |         type(U) :: copy
+     |                    ^^^^ 

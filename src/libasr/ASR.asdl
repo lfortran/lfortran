@@ -20,6 +20,12 @@ trait_slot
 trait_projection_slot
     = (int source)
 
+trait_erased_operation
+    = (symbol requirement, symbol procedure)
+
+trait_erased_parameter
+    = (symbol parameter, symbol contract, trait_erased_operation* operations)
+
 -- Concrete, not conformance, identity of the scalar owned-value protocol.
 -- Its callbacks default-initialize raw storage, initialize-copy without
 -- finalizing the destination, assign to prepared/live storage, destroy a live
@@ -60,6 +66,9 @@ symbol
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
     | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots, bool anonymous)
     | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol? implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle, symbol* projections, symbol* components)
+    -- One checked template body, instantiated with explicit borrowed-view
+    -- types and operation substitutions rather than concrete types.
+    | TraitErasure(symbol_table symtab, identifier name, symbol generic, symbol procedure, trait_erased_parameter* parameters)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -272,6 +281,10 @@ expr
     -- Expose only concrete identity and payload through an ordinary class(*)
     -- view. The selected trait slots and the payload's ownership are unchanged.
     | TraitInspect(expr view, symbol type_declaration, ttype type)
+    -- Definition-time proof of a deferred readonly argument's nominal domain.
+    -- Template instantiation must replace this with selected concrete evidence
+    -- or a proved projection of an already-erased argument.
+    | TraitDeferredPack(expr payload, symbol constraint, ttype type)
 
 ttype
     = Integer(int kind)

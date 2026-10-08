@@ -3747,6 +3747,27 @@ RUN(NAME template_instantiate_rename_02 LABELS llvm)
 RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
 RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_method_02 LABELS llvm c fortran wasm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_late_client.f90 traits_runtime_generic_01_consumer.f90)
+RUN(NAME traits_runtime_generic_01_matrix LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_matrix_client.f90 traits_runtime_generic_01_matrix_consumer.f90)
+RUN(NAME traits_runtime_generic_01_forward LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_forwarding.f90 traits_runtime_generic_01_matrix_client.f90)
+RUN(NAME traits_runtime_generic_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_03_ops.f90
+        traits_runtime_generic_01_late_client.f90)
+RUN(NAME traits_runtime_generic_04 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_matrix_client.f90)
 RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_static_bindc_01_m.f90)
 RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)

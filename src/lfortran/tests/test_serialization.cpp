@@ -1280,6 +1280,180 @@ end module
     }
 }
 
+TEST_CASE("Runtime generic erasure preserves checked bodies and explicit evidence") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module runtime_generic_evidence_m
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IOther
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Cell
+        integer :: n
+    end type
+    type :: Algorithm
+    end type
+    implements IValue :: Cell
+        procedure, pass :: value => cell_value
+    end implements
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    integer function cell_value(self) result(r)
+        class(Cell), intent(in) :: self
+        r = self%n
+    end function
+    function apply{IValue :: Q}(object) result(r)
+        type(Q), intent(in) :: object
+        integer :: r
+        r = object%value() + 13
+    end function
+    function forward{IValue :: T, IValue :: U}(view, object, other) result(r)
+        class(IAlgorithm), intent(in) :: view
+        type(T), intent(in) :: object
+        type(U), intent(in) :: other
+        integer :: r
+        r = view%apply{T}(object)
+    end function
+    integer function concrete(view, object) result(r)
+        class(IAlgorithm), intent(in) :: view
+        type(Cell), intent(in) :: object
+        r = forward(view, object, object)
+    end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "runtime_generic_evidence_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("runtime_generic_evidence_m"));
+    auto *generic = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("apply"));
+    auto *erasure = ASRUtils::trait_erasure(*generic, module->m_symtab);
+    REQUIRE(erasure);
+    REQUIRE(erasure->n_parameters == 1);
+    auto &parameter = erasure->m_parameters[0];
+    REQUIRE(parameter.n_operations == 1);
+    auto &operation = parameter.m_operations[0];
+    auto *entry = ASRUtils::trait_method_function(erasure->m_procedure);
+    auto *wrapper = ASRUtils::trait_method_function(operation.m_procedure);
+    auto *operation_call = ASR::down_cast<ASR::TraitFunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(wrapper->m_body[0])->m_value);
+    auto *forward = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("forward"));
+    auto *forward_function = ASRUtils::trait_method_function(&forward->base);
+    auto *call = ASR::down_cast<ASR::TraitFunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(forward_function->m_body[0])->m_value);
+    auto *pack = ASR::down_cast<ASR::TraitDeferredPack_t>(call->m_args[1].m_value);
+    auto *other_contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("iother"));
+    REQUIRE(other_contract);
+    CHECK(ASRUtils::expr_value(&pack->base) == nullptr);
+    CHECK(ASRUtils::expr_type(&pack->base) == pack->m_type);
+    CHECK(ASRUtils::trait_type_parameter(pack->m_payload) == forward->m_symtab->get_symbol("t"));
+    CHECK(ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::expr_type(entry->m_args[0])));
+    CHECK(ASR::is_a<ASR::TypeParameter_t>(
+        *ASRUtils::expr_type(ASRUtils::trait_method_function(&generic->base)->m_args[0])));
+    CHECK(ASRUtils::symbol_get_past_external(parameter.m_parameter) ==
+        generic->m_symtab->get_symbol("q"));
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text preserve erasure and deferred evidence") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            std::string text = LCompilers::asr_to_text(*result.result, text_options);
+            CHECK(text.find("TraitErasure") != std::string::npos);
+            CHECK(text.find("TraitDeferredPack") != std::string::npos);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "runtime_generic.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("the entry cannot drop a binder substitution") {
+        erasure->n_parameters = 0;
+        rejects("asr.verify.trait_erasure.parameters");
+    }
+    SUBCASE("the source must remain a checked template") {
+        erasure->m_generic = module->m_symtab->get_symbol("cell_value");
+        rejects("asr.verify.trait_erasure.generic");
+    }
+    SUBCASE("binder identity is not a same-typed operation identity") {
+        parameter.m_parameter = operation.m_requirement;
+        rejects("asr.verify.trait_erasure.parameter_identity");
+    }
+    SUBCASE("equal structural layout cannot change the nominal domain") {
+        parameter.m_contract = &other_contract->base;
+        rejects("asr.verify.trait_erasure.parameter_identity");
+    }
+    SUBCASE("every promised operation is supplied") {
+        parameter.n_operations = 0;
+        rejects("asr.verify.trait_erasure.operations");
+    }
+    SUBCASE("an operation cannot forge its checked requirement") {
+        operation.m_requirement = erasure->m_procedure;
+        rejects("asr.verify.trait_erasure.operation_identity");
+    }
+    SUBCASE("operation argument names and signature remain canonical") {
+        operation.m_procedure = erasure->m_procedure;
+        rejects("asr.verify.trait_erasure.operation_signature");
+    }
+    SUBCASE("a wrapper cannot substitute the provider entry argument") {
+        operation_call->m_args[0].m_value = entry->m_args[0];
+        rejects("asr.verify.trait_erasure.operation_body");
+    }
+    SUBCASE("a wrapper must call its selected canonical slot") {
+        operation_call->m_name = other_contract->m_slots[0].m_procedure;
+        rejects("asr.verify.trait_call.slot");
+    }
+    SUBCASE("generic slot erasure must preserve its declared domain") {
+        auto *contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("ialgorithm"));
+        auto *slot = ASRUtils::trait_method_function(contract->m_slots[0].m_procedure);
+        ASRUtils::EXPR2VAR(slot->m_args[1])->m_type =
+            ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, slot->base.base.loc, &other_contract->base));
+        rejects("asr.verify.trait_contract.erased_signature");
+    }
+    SUBCASE("deferred evidence cannot switch equal-domain binder positions") {
+        pack->m_constraint = forward->m_symtab->get_symbol("__constraint_u");
+        rejects("asr.verify.trait_deferred_pack.parameter");
+    }
+    SUBCASE("deferred evidence cannot request an unrelated nominal trait") {
+        pack->m_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+            al, pack->base.base.loc, &other_contract->base));
+        rejects("asr.verify.trait_deferred_pack.implication");
+    }
+}
+
 TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

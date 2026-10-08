@@ -14,6 +14,7 @@
 "symbol.TraitImplementation" = "metadata"
 "symbol.TraitRuntimeContract" = "metadata"
 "symbol.TraitWitness" = "helper:module witness emission"
+"symbol.TraitErasure" = "helper:erased provider procedure emission"
 "symbol.Namelist" = "helper:formatted I/O"
 
 "type_set_operation.TypeSetBinary" = "metadata"

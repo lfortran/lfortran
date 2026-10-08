@@ -21,11 +21,13 @@ def main():
     mode.add_argument("--projections", action="store_true")
     mode.add_argument("--combinations", action="store_true")
     mode.add_argument("--inspection", action="store_true")
+    mode.add_argument("--generic", action="store_true")
     parser.add_argument("--detect-leaks", action="store_true")
     args = parser.parse_args()
     compiler = Path(args.lfortran).resolve()
     sources = Path(__file__).resolve().parent
-    prefix = ("traits_runtime_inspection_separate_01" if args.inspection else
+    prefix = ("traits_runtime_generic_01" if args.generic else
+              "traits_runtime_inspection_separate_01" if args.inspection else
               "traits_runtime_combination_01" if args.combinations else
               "traits_runtime_05" if args.projections else
               "traits_runtime_07" if args.slots else "traits_runtime_factory_01")
@@ -57,13 +59,13 @@ def main():
         assert process.returncode == 0, (command, process.returncode, text)
         return text
 
-    def compile_part(part, imports):
+    def compile_part(part, imports, source_name=None):
         directory = work / part
         directory.mkdir()
         modules = directory / "modules"
         modules.mkdir()
         suffix = "" if part == "driver" else "_" + part
-        original = sources / (prefix + suffix + ".f90")
+        original = sources / (source_name or prefix + suffix + ".f90")
         source = directory / original.name
         shutil.copyfile(original, source)
         assert digest(source) == digest(original)
@@ -79,13 +81,36 @@ def main():
     contracts, _, _ = compile_part("contracts", [])
     providers = ["impl_a", "impl_b"] if args.slots else ["provider"]
     objects = [compile_part(part, ["contracts"])[0] for part in providers]
+    if args.generic:
+        inspection = work / "provider" / "inspection"
+        inspection.mkdir()
+        provider_source = work / "provider" / (prefix + "_provider.f90")
+        inspect_flags = [*flags, "-I", work / "contracts" / "modules", "-J", inspection]
+        semantic = run("provider-asr", [compiler, *inspect_flags, "--show-asr", provider_source],
+                       work / "provider")
+        llvm = run("provider-llvm", [compiler, *inspect_flags, "--show-llvm", provider_source],
+                   work / "provider")
+        symbols = run("provider-symbols", ["nm", objects[0]])
+        assert "traits are an experimental LFortran extension" in semantic
+        assert semantic.count("(TraitErasure") == 2
+        for name in ["offset_apply", "scaled_apply"]:
+            entry = rf"__trait_erasure_{name}.*_entry"
+            assert len(re.findall(rf"(?m)^.*\b[Tt] .*{entry}$", symbols)) == 1, symbols
+            assert re.search(rf"define i32 @.*{entry}\(", llvm), llvm
+            assert "__instantiated_" + name not in semantic
+        assert re.search(r"call i32 %", llvm), "provider operations must use supplied evidence"
+        for late_type in ["latevalue", "paddedvalue", "alternatevalue"]:
+            assert late_type not in semantic.lower() and late_type not in llvm.lower()
     archive = work / "providers.a"
     run("archive", ["ar", "rcs", archive, *objects])
     frozen = digest(archive)
     archive_checks = {"before_clients": frozen}
     frozen_files = {str(obj): digest(obj) for obj in objects}
-    if args.combinations or args.inspection:
+    if args.combinations or args.inspection or args.generic:
         for path in [contracts, *(work / "contracts").rglob("*.mod")]:
+            frozen_files[str(path)] = digest(path)
+    if args.generic:
+        for path in (work / "contracts").glob("*.f90"):
             frozen_files[str(path)] = digest(path)
     if not args.slots:
         hidden = {}
@@ -95,7 +120,7 @@ def main():
             frozen_files[str(module)] = digest(module)
         assert hidden, "the private provider must have compiled its module"
         (work / "hidden-provider-modules.json").write_text(json.dumps(hidden, indent=2) + "\n")
-        if args.combinations or args.inspection:
+        if args.combinations or args.inspection or args.generic:
             hidden_sources = {}
             for source in (work / "provider").glob("*.f90"):
                 hidden_sources[str(source.relative_to(work))] = digest(source)
@@ -108,10 +133,75 @@ def main():
         archive_checks[stage] = digest(archive)
         assert archive_checks[stage] == frozen
         assert all(digest(Path(path)) == value for path, value in frozen_files.items())
+        if args.generic:
+            assert not list((work / "provider").rglob("*.mod"))
+            assert not list((work / "provider").glob("*.f90"))
         (work / "archive.json").write_text(json.dumps(archive_checks, indent=2) + "\n")
         (work / "provider-files.json").write_text(json.dumps(frozen_files, indent=2) + "\n")
 
     check_archive("before_clients")
+    if args.generic:
+        def inspect_client(part, source, includes, deferred=False):
+            directory = work / part
+            inspection = directory / "inspection"
+            inspection.mkdir()
+            semantic = run(part + "-asr", [compiler, *flags, *includes, "-J", inspection,
+                                           "--show-asr", source], directory)
+            check_archive("after_" + part + "_asr")
+            llvm = run(part + "-llvm", [compiler, *flags, *includes, "-J", inspection,
+                                       "--show-llvm", source], directory)
+            check_archive("after_" + part + "_llvm")
+            for forbidden in ["offset_apply", "scaled_apply", "offsetalgorithm",
+                              "scaledalgorithm", "traits_runtime_generic_01_provider_m"]:
+                assert forbidden not in semantic.lower()
+                assert forbidden not in llvm.lower()
+            assert "TraitErasure" not in semantic
+            assert "TraitFunctionCall" in semantic
+            if deferred:
+                assert "TraitDeferredPack" in semantic and "TraitPack" not in semantic
+            else:
+                assert "TraitPack" in semantic
+                assert re.search(r"call i32 %", llvm), "the client must dynamically select the provider"
+
+        def late_part(part, imports, source_name=None):
+            result = compile_part(part, imports, source_name)
+            check_archive("after_" + part)
+            return result
+
+        def execute(name, objects):
+            executable = work / ("program-" + name)
+            run("link-" + name, [compiler, *flags, *objects, archive, contracts, "-o", executable])
+            check_archive("after_link_" + name)
+            for order, arguments in [("first-a", []), ("first-b", ["select-second-first"])]:
+                output = run(name + "-" + order, [executable, *arguments])
+                if args.detect_leaks:
+                    assert "NO LEAKS FOUND" in output, output
+                check_archive("after_" + name + "_" + order)
+
+        # The checked forwarding template, too, must predate all client types.
+        assert not (work / "late_client").exists() and not (work / "matrix_client").exists()
+        forwarding, source, includes = late_part("forwarding", ["contracts"])
+        inspect_client("forwarding", source, includes, deferred=True)
+        for path in [forwarding, *(work / "forwarding" / "modules").glob("*.mod")]:
+            frozen_files[str(path)] = digest(path)
+        check_archive("before_late_types")
+        late, _, _ = late_part("late_client", ["contracts"])
+        consumer, source, includes = late_part("consumer", ["contracts", "late_client"])
+        inspect_client("consumer", source, includes)
+        explicit, _, _ = late_part("explicit_syntax", ["contracts", "late_client"])
+        driver, _, _ = late_part("driver", ["contracts", "late_client", "consumer"])
+        execute("original", [driver, consumer, late, explicit])
+        matrix, _, _ = late_part("matrix_client", ["contracts"])
+        consumer, source, includes = late_part("matrix_consumer", ["contracts", "matrix_client"])
+        inspect_client("matrix_consumer", source, includes)
+        driver, _, _ = late_part("matrix", ["contracts", "matrix_client", "matrix_consumer"])
+        execute("matrix", [driver, consumer, matrix])
+        driver, source, includes = late_part("forward", ["contracts", "matrix_client", "forwarding"])
+        inspect_client("forward", source, includes)
+        execute("forward", [driver, forwarding, matrix])
+        print(f"{prefix}: frozen open-world 47/174, layout/nominal 84/248, "
+              f"generic forwarding, both selection orders, unchanged archive {frozen}")
+        return
     extra_objects = []
     consumer_imports = ["contracts"]
     if args.combinations:
