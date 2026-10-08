@@ -86,17 +86,26 @@ def check_source_dependencies(head, test):
     if len(tree) != len(sources) or any(not line.startswith(("100644 ", "100755 ")) for line in tree):
         raise ValueError("missing or non-regular coarray source")
     code = "\n".join(git("show", f"{head}:{path}") for path in sources)
-    code = re.sub(r"![^\n]*", "", code)
-    if re.search(r"(?im)^\s*#|\b(?:include|open|read|get_command_argument|"
+    # This is a conservative guard, not a Fortran lexer. Only whole comment
+    # lines are safe to discard: a quoted '!' can precede executable statements.
+    # Keep strings and trailing comments, accepting false positives.
+    code = re.sub(r"(?m)^[ \t]*![^\n]*", "", code)
+    # Do not try to reconstruct split tokens or continued character literals.
+    # Ordinary continuation between tokens (e.g. after a comma) remains safe.
+    if re.search(r"(?m)\w&|^[ \t]*&", code):
+        raise ValueError("continued coarray tokens may hide dependencies")
+    if re.search(r"(?im)^\s*#|\b(?:include|open|read|submodule|get_command_argument|"
                  r"get_environment_variable|execute_command_line)\b", code):
         raise ValueError("coarray file dependencies need conservative reference validation")
-    modules = set(re.findall(r"(?im)(?:^|;)\s*module\s+(\w+)", code.lower()))
-    uses = set(re.findall(r"(?im)(?:^|;)\s*use\s*(?:,\s*(?:non_)?intrinsic\s*::|::)?\s*(\w+)",
+    # Only trust a literal module declaration at the start of a line, not text
+    # after a semicolon inside a string or trailing comment.
+    modules = set(re.findall(r"(?im)^[ \t]*module[ \t]+(\w+)", code.lower()))
+    uses = set(re.findall(r"(?i)\buse\s*(?:,\s*(?:non_)?intrinsic\s*::|::)?\s*(\w+)",
                           code.lower()))
     intrinsic = {"iso_fortran_env", "iso_c_binding", "ieee_arithmetic",
                  "ieee_exceptions", "ieee_features"}
     if (uses - modules - intrinsic or
-            re.search(r"(?im)(?:^|;)\s*use\b[^\n]*(?:&|non_intrinsic)", code)):
+            re.search(r"(?im)\buse\b[^\n]*(?:&|non_intrinsic)", code)):
         raise ValueError("unresolved coarray module dependencies need reference validation")
 
 

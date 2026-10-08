@@ -590,7 +590,11 @@ the Caffeine script installs OpenMPI/OpenCoarrays for Quick, and no `caf`/`cafru
 checks run. Caffeine uses GASNet's SMP conduit, not MPI. Missing or inconsistent
 history (including manual runs, new refs or unavailable push bases), dirty
 checkouts and unresolved source dependencies log **conservative reference
-validation**, never an unexplained skip. Invalid test registrations fail explicitly.
+validation**, never an unexplained skip. The source dependency guard keeps quoted
+text and trailing comments rather than guessing where a Fortran comment starts.
+Split tokens and continued character literals request full reference validation;
+it does not attempt to parse arbitrary Fortran to prove dependencies unchanged.
+Invalid test registrations fail explicitly.
 Standalone/default and Exhaustive invocations always request full Linux reference
 validation. macOS retains its existing no-OpenCoarrays behavior; Caffeine unit,
 smoke and all LFortran integration tests still run.

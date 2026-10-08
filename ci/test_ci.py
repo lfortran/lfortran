@@ -779,6 +779,7 @@ class CaffeineTests(unittest.TestCase):
             "        'env': {k: os.environ.get(k) for k in ('FC', 'CC', 'CXX', 'CAF_IMAGES')}}) + '\\n')\n"
             "if os.environ.get('CI_FAIL') == key: sys.exit(42)\n"
             "if name == 'git':\n"
+            "    if os.environ.get('CI_GIT_FAIL') == args[0]: sys.exit(42)\n"
             "    if args[0] == 'clone':\n"
             "        dest = Path('caffeine' if 'caffeine' in args[-1] else 'OpenCoarrays')\n"
             "        dest.mkdir()\n"
@@ -1042,6 +1043,119 @@ class CaffeineTests(unittest.TestCase):
                 result = self.select_reference()
                 self.assertEqual(result.stdout, "true\n", result.stderr)
                 self.assertIn("dependencies", result.stderr)
+
+    def test_changed_data_with_quoted_comments_or_continued_keywords_runs_reference(self):
+        source = self.directory / "integration_tests/coarrays_03.f90"
+        data = self.directory / "input.dat"
+        cases = (
+            ("ordinary", "open(unit=10, file='input.dat')\nread(10, *) value"),
+            ("quoted-exclamation",
+             "print *, '!'; open(unit=10, file='input.dat')\n"
+             "print *, '!'; read(10, *) value"),
+            ("continued-keywords", "op&\n&en(unit=10, file='input.dat')\nre&\n&ad(10, *) value"),
+            ("continued-with-comments",
+             "op& ! continued token\n! comment between lines\n"
+             "&en(unit=10, file='input.dat')\nre&\n&ad(10, *) value"),
+        )
+        for name, statements in cases:
+            with self.subTest(case=name):
+                source.write_text(
+                    "program coarrays_03\ninteger :: value[*]\n" + statements +
+                    "\nclose(10)\nsync all\nif (value /= 42) error stop\nend program\n"
+                )
+                data.write_text("41\n")
+                head = self.commit("integration_tests/coarrays_03.f90", "input.dat")
+                result = self.select_reference()
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("changed coarray sources", result.stderr)
+                self.base = head
+                data.write_text("42\n")
+                self.commit("input.dat")
+                self.assertEqual(self.git_run("diff", "--name-only", self.base, "HEAD"), "input.dat")
+                result = self.select_reference()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+                result, calls = self.run_caffeine()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assert_capability_coverage(calls)
+                self.assertIn("Run GFortran/OpenCoarrays reference validation: true", result.stdout)
+                for command in ("mpifort", "caf", "cafrun"):
+                    self.assertTrue(any(call["command"] == command for call in calls))
+                self.base = self.git_run("rev-parse", "HEAD")
+
+    def test_ambiguous_module_dependencies_are_conservative(self):
+        source = self.directory / "integration_tests/coarrays_03.f90"
+        cases = (
+            "print *, '!'; use other_module",
+            "us&\n&e other_module",
+            "use &\nother_module",
+            "use other_module ! ; module other_module",
+            "use other_module\nprint *, '; module other_module'",
+            "100 use other_module",
+            "submodule(other_module) child",
+        )
+        for statements in cases:
+            with self.subTest(statements=statements):
+                source.write_text(statements + "\n")
+                self.base = self.commit("integration_tests/coarrays_03.f90")
+                (self.directory / "other_module.f90").write_text(statements + "\n")
+                self.commit("other_module.f90")
+                result = self.select_reference()
+                self.assertEqual(result.stdout, "true\n", result.stderr)
+                self.assertIn("conservative", result.stderr)
+
+    def test_actual_coarray_sources_keep_the_compiler_only_fast_path(self):
+        spec = importlib.util.spec_from_file_location("coarray_tests", ROOT / "ci/coarray_tests.py")
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        manifest = (INTEGRATION / "CMakeLists.txt").read_text()
+        self.manifest.write_text(manifest)
+        for test in helper.parse_tests(manifest):
+            for source in (test[0], *test[3].split()):
+                shutil.copyfile(ROOT / source, self.directory / source)
+        self.base = self.commit("integration_tests")
+        (self.directory / "compiler.cpp").write_text("// compiler-only change\n")
+        self.commit("compiler.cpp")
+        result = self.select_reference()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "false\n", result.stderr)
+        self.assertIn("unchanged", result.stderr)
+
+    def test_diff_and_source_read_errors_never_report_unchanged(self):
+        for command in ("diff", "show", "ls-tree"):
+            with self.subTest(command=command):
+                result = self.select_reference(CI_GIT_FAIL=command)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n")
+                self.assertIn("conservative", result.stderr)
+                self.assertIn("42", result.stderr)
+        result, calls = self.run_caffeine(CI_GIT_FAIL="diff")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("conservative", result.stderr)
+        self.assertTrue(any(call["command"] == "cafrun" for call in calls))
+        self.assert_capability_coverage(calls)
+        source = self.directory / "integration_tests/coarrays_03.f90"
+        source.write_bytes(b"\xff\n")
+        self.base = self.commit("integration_tests/coarrays_03.f90")
+        result = self.select_reference()
+        self.assertEqual(result.stdout, "true\n", result.stderr)
+        self.assertIn("decode", result.stderr)
+
+    def test_invalid_registrations_surface_errors_before_setup(self):
+        for manifest in ("RUN(NAME ${test} EXTRA_ARGS --coarray=true)\n",
+                         'RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true ")\n'):
+            with self.subTest(manifest=manifest):
+                self.manifest.write_text(manifest)
+                self.base = self.commit("integration_tests/CMakeLists.txt")
+                result = self.select_reference()
+                self.assertEqual(result.stdout, "true\n")
+                self.assertIn("conservative", result.stderr)
+                result, calls = self.run_caffeine()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ValueError", result.stderr)
+                self.assertFalse({call["key"] for call in calls} &
+                                 {"micromamba", "install.sh", "unit", "lfortran"})
 
     def test_unknown_cmake_includes_remain_conservative_when_the_manifest_is_unchanged(self):
         self.manifest.write_text(self.manifest.read_text() + "include(test_inputs.cmake)\n")
