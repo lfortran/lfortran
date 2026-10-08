@@ -1183,19 +1183,6 @@ bool set_allocation_size(
             }
             break;
         }
-        case ASR::exprType::ComplexConstructor: {
-            // `z(2:3)%re = x` is `z(2:3) = cmplx(x, z(2:3)%im)`: one part may
-            // be a scalar, the array part gives the shape.
-            ASR::ComplexConstructor_t* complex_constructor =
-                ASR::down_cast<ASR::ComplexConstructor_t>(value);
-            ASR::expr_t* array_part = complex_constructor->m_re;
-            if (!ASRUtils::is_array(ASRUtils::expr_type(array_part))) {
-                array_part = complex_constructor->m_im;
-            }
-            return set_allocation_size(al, array_part, temporary_var,
-                allocate_dims, target_n_dims, add_allocated_check,
-                len_allocte_expr);
-        }
         case ASR::exprType::ImpliedDoLoop: {
             ASR::ImpliedDoLoop_t* implied_do_loop =
                 ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
@@ -2625,6 +2612,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         replace_expr_with_temporary_variable(xx.m_re, x.m_re, "_complex_constructor_re");
 
         replace_expr_with_temporary_variable(xx.m_im, xx.m_im, "_complex_constructor_im");
+
+        // Also simplify the arguments in a scalar part, such as the section
+        // in `maxval(z(3:4)%re)`
+        CallReplacerOnExpressionsVisitor::visit_ComplexConstructor(x);
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
@@ -2838,6 +2829,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        // A scalar part, such as `maxval(z%re)` in `z(1:2)%re = maxval(z%re)`,
+        // is evaluated once into a temporary, not once per element
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ComplexConstructor(x);
         replace_current_expr(x, "_complex_constructor_");
     }
 
