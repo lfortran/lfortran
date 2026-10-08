@@ -268,8 +268,8 @@ struct Stacktrace {
     char *binary_filename[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     uint64_t local_pc_size;
 
-    uint64_t addresses[LCOMPILERS_MAX_STACKTRACE_LENGTH];
-    uint64_t line_numbers[LCOMPILERS_MAX_STACKTRACE_LENGTH];
+    uint64_t *addresses;
+    uint64_t *line_numbers;
     uint64_t stack_size;
 };
 
@@ -14493,8 +14493,9 @@ static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context *context,
             d->pc[d->pc_size] = pc;
             d->pc_size++;
         } else {
-            printf("The stacktrace length is out of range.\nAborting...");
-            abort();
+            fprintf(stderr, "note: stacktrace truncated at %d frames\n",
+                LCOMPILERS_MAX_STACKTRACE_LENGTH);
+            return _URC_END_OF_STACK;
         }
     }
     return _URC_NO_REASON;
@@ -14518,7 +14519,7 @@ char *get_base_name(char *filename) {
     char *slash_idx_ptr = strrchr(filename, '/');
     const char *base_start = slash_idx_ptr ? (slash_idx_ptr + 1) : filename;
     const char *dot_idx_ptr = strrchr(base_start, '.');
-    size_t base_len = dot_idx_ptr == NULL ? strlen(base_start)
+    size_t base_len = dot_idx_ptr == NULL || dot_idx_ptr == base_start ? strlen(base_start)
                                           : (size_t)(dot_idx_ptr - base_start);
     if (base_len == 0) {
         return NULL;
@@ -14654,15 +14655,14 @@ uint32_t get_file_size(int64_t fp) {
 }
 
 /*
- * `lines_dat.txt` file must be created before calling this function,
- * The file can be created using the command:
- *     ./src/bin/dat_convert.py lines.dat
- * This function fills in the `addresses` and `line_numbers`
- * from the `lines_dat.txt` file.
+ * Fills in the `addresses` and `line_numbers` from the packed binary
+ * debug-map file (`*_lines.dat`), where each entry is:
+ *     (address:uint64, line:uint64, reserved:uint64)
  */
-void get_local_info_dwarfdump(struct Stacktrace *d) {
-    // TODO: Read the contents of lines.dat from here itself.
+void get_local_info_debug_map(struct Stacktrace *d) {
     d->stack_size = 0;
+    d->addresses = NULL;
+    d->line_numbers = NULL;
     // Use the binary executable path instead of source_filename to avoid
     // Ninja preprocessed filename mismatches (e.g. *.f90-pp.f90).
     const char *exe_path = binary_executable_path;
@@ -14681,71 +14681,56 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     const char *base = strrchr(exe_path, '/');
     base = base ? (base + 1) : exe_path;
     const char *dot = strrchr(base, '.');
-    size_t stem_len = dot ? (size_t)(dot - exe_path) : strlen(exe_path);
+    size_t stem_len = dot && dot != base ? (size_t)(dot - exe_path) : strlen(exe_path);
     char filename[4096];
-    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat.txt",
+    if (snprintf(filename, sizeof(filename), "%.*s_lines.dat",
                  (int)stem_len, exe_path) >= (int)sizeof(filename)) {
         return;
     }
-    int64_t fd = _lpython_open(filename, "r");
-    if (fd < 0) {
+    FILE *fp = fopen(filename, "rb");
+    if (fp == NULL) {
         return;
     }
-    uint32_t size = get_file_size(fd);
-    if (size == 0) {
-        _lpython_close(fd);
-        return;
-    }
-    // +1 so we can always NUL-terminate after fread without writing past
-    // the allocated buffer when the read fills the whole file.
-    char *file_contents = (char *) internal_calloc((size_t)size + 1, sizeof(char));
-    if (file_contents == NULL) {
-        _lpython_close(fd);
-        return;
-    }
-    size_t nread = fread(file_contents, 1, size, (FILE*)fd);
-    file_contents[nread] = '\0';
-    _lpython_close(fd);
 
-    // Token scratch for decimal uint64 fields (max 20 digits + NUL).
-    // Sized independently of LCOMPILERS_MAX_STACKTRACE_LENGTH; always
-    // bounds-checked so a corrupt/malformed lines file cannot overflow.
-    char s[32];
-    // Field within the current line: 0 = address, 1 = line number, >=2 ignored
-    // (dat_convert.py writes three uint64s per line: addr, line, unused).
-    int field = 0;
-    uint32_t j = 0;
-    for (size_t i = 0; i < nread; i++) {
-        if (d->stack_size >= LCOMPILERS_MAX_STACKTRACE_LENGTH) {
-            // Prevent writing past the fixed-size addresses/line_numbers
-            // arrays when the debug line table has more entries than
-            // LCOMPILERS_MAX_STACKTRACE_LENGTH (e.g. when linking against
-            // large external libraries built with a different compiler).
+    // Debug-map rows and stack frames have independent sizes.
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return;
+    }
+    long file_size = ftell(fp);
+    if (file_size < (long)(3 * sizeof(uint64_t)) || fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        return;
+    }
+    size_t entries = (size_t)file_size / (3 * sizeof(uint64_t));
+    d->addresses = internal_malloc(entries * sizeof(uint64_t));
+    d->line_numbers = internal_malloc(entries * sizeof(uint64_t));
+    if (d->addresses == NULL || d->line_numbers == NULL) {
+        internal_free(d->addresses);
+        internal_free(d->line_numbers);
+        d->addresses = NULL;
+        d->line_numbers = NULL;
+        fclose(fp);
+        return;
+    }
+
+    uint64_t entry[3];
+    while (d->stack_size < entries &&
+            fread(entry, sizeof(uint64_t), 3, fp) == 3) {
+        if (entry[1] == 0) {
+            continue;
+        }
+        if (entry[1] > UINT32_MAX || (d->stack_size > 0 &&
+                entry[0] < d->addresses[d->stack_size - 1])) {
+            d->stack_size = 0;
             break;
         }
-        char c = file_contents[i];
-        if (c == '\n') {
-            j = 0;
-            field = 0;
-            d->stack_size++;
-            continue;
-        } else if (c == ' ') {
-            s[j] = '\0';
-            j = 0;
-            if (field == 0) {
-                d->addresses[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
-            } else if (field == 1) {
-                d->line_numbers[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
-            }
-            field++;
-            continue;
-        }
-        // Bound s[]: drop excess characters rather than overflowing.
-        if (j + 1 < sizeof(s)) {
-            s[j++] = c;
-        }
+        d->addresses[d->stack_size] = entry[0];
+        d->line_numbers[d->stack_size] = entry[1];
+        d->stack_size++;
     }
-    internal_free(file_contents);
+    if (ferror(fp)) d->stack_size = 0;
+    fclose(fp);
 }
 
 char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len) {
@@ -14823,9 +14808,11 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     source_filename = filename;
     struct Stacktrace d = get_stacktrace_addresses();
     get_local_address(&d);
-    get_local_info_dwarfdump(&d);
+    get_local_info_debug_map(&d);
     if (d.stack_size == 0) {
         print_stacktrace_raw_addresses(&d, use_colors);
+        internal_free(d.addresses);
+        internal_free(d.line_numbers);
         return;
     }
 
@@ -14867,6 +14854,8 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #else
     }
 #endif
+    internal_free(d.addresses);
+    internal_free(d.line_numbers);
 #endif // HAVE_RUNTIME_STACKTRACE
 }
 

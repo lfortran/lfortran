@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -18,6 +19,8 @@
 #include <libasr/pickle.h>
 #include <libasr/modfile.h>
 #include <libasr/utils.h>
+#include <libasr/config.h>
+#include <libasr/stacktrace.h>
 #include <lfortran/utils.h>
 
 #include <llvm/Config/llvm-config.h>
@@ -577,6 +580,79 @@ end function)";
     e.add_module(std::move(m));
     CHECK(e.execfn<int32_t>("f") == 4);
 }
+
+#ifdef HAVE_RUNTIME_STACKTRACE
+TEST_CASE("runtime debug map of a binary without line info") {
+    std::string obj = "test_llvm_debug_map_nodebug.o";
+    std::string map = "test_llvm_debug_map_nodebug_lines.dat";
+    LCompilers::LLVMEvaluator e;
+    e.create_empty_object_file(obj);
+    {
+        std::ofstream stale(map, std::ios::binary);
+        stale << "stale contents";
+    }
+
+    std::string error_message;
+    CHECK(LCompilers::write_runtime_debug_map(obj, map, error_message));
+    CHECK(std::filesystem::file_size(map) == 0);
+
+    CHECK(!LCompilers::write_runtime_debug_map(obj + ".missing", map,
+        error_message));
+    CHECK(!error_message.empty());
+
+    error_message.clear();
+    CHECK(!LCompilers::write_runtime_debug_map(obj, ".", error_message));
+    CHECK(!error_message.empty());
+    for (const char *contents : {"invalid object", "!<arch>\n"}) {
+        std::string invalid = obj + ".invalid";
+        {
+            std::ofstream file(invalid, std::ios::binary);
+            file << contents;
+        }
+        error_message.clear();
+        CHECK(!LCompilers::write_runtime_debug_map(invalid, map, error_message));
+        CHECK(!error_message.empty());
+        std::filesystem::remove(invalid);
+    }
+
+    std::filesystem::remove(obj);
+    std::filesystem::remove(map);
+}
+
+#ifdef __linux__
+TEST_CASE("runtime debug map reports buffered write failures") {
+    CompilerOptions co;
+    co.emit_debug_info = true;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(co);
+    std::string filename = std::string(LFORTRAN_PROJECT_SOURCE_DIR)
+        + "/tests/errors/runtime_stacktrace_01.f90";
+    std::string source;
+    REQUIRE(LCompilers::read_file(filename, source));
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations fl;
+    fl.in_filename = filename;
+    lm.files.push_back(fl);
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics diagnostics;
+    auto module = e.get_llvm2(source, lm, lpm, diagnostics);
+    REQUIRE(module.ok);
+    std::string obj = "test_llvm_debug_map_write.o";
+    std::string map = "test_llvm_debug_map_write_lines.dat";
+    e.get_llvm_evaluator().save_object_file(*module.result->m_m, obj);
+
+    std::string error_message;
+    REQUIRE(LCompilers::write_runtime_debug_map(obj, map, error_message));
+    REQUIRE(std::filesystem::file_size(map) > 0);
+    CHECK(!LCompilers::write_runtime_debug_map(obj, "/dev/full", error_message));
+    CHECK(!error_message.empty());
+
+    std::filesystem::remove(obj);
+    std::filesystem::remove(map);
+}
+#endif
+#endif
 
 #endif // __EMSCRIPTEN__
 

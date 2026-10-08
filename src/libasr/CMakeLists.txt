@@ -199,13 +199,6 @@ if (WITH_LLVM)
     endif()
 endif()
 
-# Install the dwarf_convert.py and dat_convert.py
-install(
-    FILES dwarf_convert.py dat_convert.py
-    PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/lfortran
-)
-
 set(LFORTRAN_GPU_RUNTIME_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu

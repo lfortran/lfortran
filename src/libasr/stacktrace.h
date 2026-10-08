@@ -64,6 +64,14 @@ void address_to_line_number(const std::vector<std::string> &filenames,
           std::string &filename,
           int &line_number);
 
+// Build a runtime debug line map from DWARF info in `binary_path` and write it
+// as packed uint64 triples (address, line, 0) into `map_path`. The third
+// field is reserved for a file index; the runtime does not read it yet. A
+// binary without line information produces an empty map.
+bool write_runtime_debug_map(const std::string &binary_path,
+          const std::string &map_path,
+          std::string &error_message);
+
 std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace);
 
 } // namespace LCompilers

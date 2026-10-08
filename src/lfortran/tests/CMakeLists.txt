@@ -150,6 +150,17 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (WITH_RUNTIME_STACKTRACE AND NOT WIN32 AND NOT EMSCRIPTEN)
+            foreach(debug_map_case paths large_map failures deep_stack nodebug external_denial)
+                add_test(
+                    NAME test_runtime_debug_map_${debug_map_case}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/tests/runtime_stacktrace/check_debug_map.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --case ${debug_map_case}
+                )
+            endforeach()
+        endif()
         add_test(
             NAME test_asr_text_edn_conformance
             COMMAND ${LFORTRAN_TEST_PYTHON}

@@ -2019,8 +2019,7 @@ int link_executable(const std::vector<std::string> &infiles,
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
 
-    size_t dot_index = outfile.find_last_of(".");
-    std::string file_name = outfile.substr(0, dot_index);
+    std::string file_name = std::filesystem::path(outfile).replace_extension().string();
     std::string extra_linker_flags;
     if (!linker_flags.empty()) {
         for (auto &s: linker_flags) {
@@ -2295,31 +2294,35 @@ int link_executable(const std::vector<std::string> &infiles,
 
 #ifdef HAVE_RUNTIME_STACKTRACE
         if (compiler_options.emit_debug_info) {
-            // TODO: Replace the following hardcoded part
-            std::string cmd = "";
+            // The executable is already linked. Without a debug map the
+            // runtime prints raw addresses, so a failure here is a warning.
+            std::string lines_dat = file_name + "_lines.dat";
+            std::string debug_map_source = outfile;
+            std::string error_message;
+            bool map_written = true;
+
 #ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
-                + outfile + ".dSYM > ";
-#else
-            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
+            std::string cmd = "dsymutil " + outfile;
+            if (system(cmd.c_str()) != 0) {
+                error_message = "command failed: " + cmd;
+                map_written = false;
+            }
+            std::filesystem::path outfile_path(outfile);
+            debug_map_source = outfile + ".dSYM/Contents/Resources/DWARF/"
+                + outfile_path.filename().string();
 #endif
-            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                + file_name + "_lines.dat)";
-            int status = system(cmd.c_str());
-            if ( status != 0 ) {
-                std::cerr << "Error in creating the files used to generate "
-                    "the debug information. This might be caused because either"
-                    " `llvm-dwarfdump` or `Python` are not available. "
-                    "Please activate the CONDA environment and compile again.\n";
-                // `system()` reports a wait status, not an exit code. Returning
-                // it unchanged would truncate it to its low 8 bits in `main()`,
-                // so a missing `llvm-dwarfdump` (127 << 8 == 32512) would be
-                // silently reported as a successful exit code of 0.
-                int exit_status = LCompilers::LFortran::get_exit_status(status);
-                return exit_status != 0 ? exit_status : 1;
+
+            if (map_written) {
+                map_written = LCompilers::write_runtime_debug_map(
+                    debug_map_source, lines_dat, error_message);
+            }
+            if (!map_written) {
+                // Do not let a map from a previous build describe this one.
+                std::error_code ec;
+                std::filesystem::remove(lines_dat, ec);
+                std::cerr << "warning: could not generate the runtime debug "
+                    "map for '" << outfile << "' (" << error_message
+                    << "); runtime stacktraces will show raw addresses\n";
             }
         }
 #endif
