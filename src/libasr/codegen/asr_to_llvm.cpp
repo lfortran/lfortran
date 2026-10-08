@@ -4653,6 +4653,10 @@ public:
             }
         }
 
+        // Lowering the indices and the bounds may visit struct members
+        // (e.g. `a(b%i)`), which would overwrite the derived type of the
+        // array element, so it is saved here and restored afterwards.
+        std::string array_der_type_name = current_der_type_name;
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         {
@@ -4819,6 +4823,7 @@ public:
                                                     check_for_bounds, array_name, infile);
             }
         }
+        current_der_type_name = array_der_type_name;
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
             current_der_type_name = get_type_key(
                 ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)));
@@ -9366,9 +9371,8 @@ public:
                     // For other non-BindC functions with value attribute,
                     // create a local copy so modifications to the
                     // parameter don't affect the caller's variable.
-                    // Skip CPtr: it is already passed by value at
-                    // the call site and handled by the existing
-                    // is_cptr_dummy_passed_by_value path.
+                    // CPtr is handled below: it is passed as the
+                    // void* itself, not as a pointer to it.
                     if (LLVM::is_value_dummy_passed_by_value(*arg)) {
                         llvm::Value* local_copy = builder->CreateAlloca(
                             llvm_arg.getType(), nullptr,
@@ -9386,6 +9390,12 @@ public:
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
                         builder->CreateStore(loaded, local_copy);
+                        llvm_sym = local_copy;
+                    }
+                    if (LLVM::is_cptr_dummy_in_local_storage(*arg)) {
+                        llvm::Value* local_copy = builder->CreateAlloca(
+                            llvm_arg.getType(), nullptr, std::string(arg->m_name) + "_value");
+                        builder->CreateStore(llvm_sym, local_copy);
                         llvm_sym = local_copy;
                     }
                     uint32_t h = get_hash((ASR::asr_t*)arg);
@@ -10471,7 +10481,7 @@ public:
         int reduce_loads = 0;
         if( ASR::is_a<ASR::Var_t>(*cptr) ) {
             ASR::Variable_t* cptr_var = ASRUtils::EXPR2VAR(cptr);
-            reduce_loads = cptr_var->m_intent == ASRUtils::intent_in;
+            reduce_loads = LLVM::is_cptr_dummy_held_by_value(*cptr_var);
         }
         if( ASRUtils::is_array(ASRUtils::expr_type(fptr)) ) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -10712,7 +10722,7 @@ public:
             bool load_cptr = true;
             if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
                 ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
-                load_cptr = !is_cptr_dummy_passed_by_value(p_var)
+                load_cptr = !LLVM::is_cptr_dummy_held_by_value(*p_var)
                     && !(p_var->m_storage == ASR::storage_typeType::Parameter
                         && p_var->m_value != nullptr);
             } else if (ASR::is_a<ASR::CPtr_t>(*p_type)
@@ -10759,7 +10769,7 @@ public:
             bool load_tgt = false;
             if (ASR::is_a<ASR::Var_t>(*x.m_tgt)) {
                 ASR::Variable_t* t_var = ASRUtils::EXPR2VAR(x.m_tgt);
-                load_tgt = !is_cptr_dummy_passed_by_value(t_var);
+                load_tgt = !LLVM::is_cptr_dummy_held_by_value(*t_var);
             }
             if (load_tgt) {
                 llvm::Type* t_llvm_type = llvm_utils->get_type_from_ttype_t_util(
@@ -14245,6 +14255,16 @@ public:
                             !ASRUtils::is_character(*value_type)) {
                         value = wrap_array_data_for_polymorphic_move(x.m_value,
                             source_array_type, value, target_array_type, target_el_type);
+                        source_array_type = target_array_type;
+                    } else if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                            source_array_type != target_array_type) {
+                        // Both are polymorphic: the descriptors differ only in
+                        // the declared type of the class wrapper {vptr, data*},
+                        // whose vptr keeps the dynamic type. Move the wrapper
+                        // through the source descriptor viewed with the
+                        // destination's descriptor type.
+                        value = builder->CreateBitCast(value,
+                            target_array_type->getPointerTo());
                         source_array_type = target_array_type;
                     }
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
@@ -17844,14 +17864,6 @@ public:
         }
     }
 
-    inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t* x) const {
-        return ASR::is_a<ASR::CPtr_t>(*x->m_type) &&
-            ASRUtils::is_arg_dummy(x->m_intent) &&
-            !(x->m_intent == ASR::intentType::Out ||
-              x->m_intent == ASR::intentType::InOut ||
-              (x->m_intent == ASR::intentType::Unspecified && !x->m_value_attr));
-    }
-
     inline void fetch_val(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         llvm::Value* x_v;
@@ -17862,7 +17874,7 @@ public:
             tmp = x_v;
             return;
         }
-        if (is_cptr_dummy_passed_by_value(x)) {
+        if (LLVM::is_cptr_dummy_held_by_value(*x)) {
             // type(c_ptr) dummy arguments that are passed by value
             // are already the pointer value and must not be loaded.
             tmp = x_v;
@@ -24612,6 +24624,24 @@ public:
         }        
     }
 
+    // Converts a type(c_ptr) actual argument, held as a void** if
+    // `actual_is_reference` and as a void* otherwise, to how the `formal`
+    // dummy is passed (see LLVM::is_cptr_dummy_passed_by_reference).
+    llvm::Value* convert_cptr_call_arg(llvm::Value* actual,
+            bool actual_is_reference, const ASR::Variable_t& formal) {
+        llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+        bool formal_is_reference = LLVM::is_cptr_dummy_passed_by_reference(formal);
+        if (actual_is_reference && !formal_is_reference) {
+            return llvm_utils->CreateLoad2(cptr_type, actual);
+        }
+        if (!actual_is_reference && formal_is_reference) {
+            llvm::AllocaInst *target = get_call_arg_alloca(cptr_type);
+            builder->CreateStore(actual, target);
+            return target;
+        }
+        return actual;
+    }
+
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false, size_t skip_self_idx = 0) {
         std::vector<llvm::Value *> args;
@@ -24727,8 +24757,16 @@ public:
 
                             if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
                                      && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
-                                if ( orig_arg_intent != ASRUtils::intent_out &&
-                                        arg->m_intent == intent_local ) {
+                                if (ASR::is_a<ASR::CPtr_t>(*orig_arg->m_type)) {
+                                    // Every CPtr variable is held as a
+                                    // void** except a dummy that is held
+                                    // as the void* itself.
+                                    tmp = convert_cptr_call_arg(tmp,
+                                        !LLVM::is_cptr_dummy_held_by_value(*arg),
+                                        *orig_arg);
+                                } else if ( orig_arg_intent != ASRUtils::intent_out &&
+                                        (arg->m_intent == intent_local ||
+                                         LLVM::is_cptr_dummy_in_local_storage(*arg)) ) {
                                     // Local variable of type
                                     // CPtr is a void**, so we
                                     // have to load it
@@ -24736,6 +24774,16 @@ public:
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
                             } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
+                                if (ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
+                                        LLVM::is_cptr_dummy_in_local_storage(*arg) &&
+                                        LLVM::is_cptr_dummy_passed_by_value(*orig_arg) &&
+                                        !orig_arg->m_value_attr) {
+                                    // A VALUE dummy is held in local
+                                    // storage (a void**). A VALUE CPtr dummy
+                                    // is handled below.
+                                    llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
+                                    tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                }
                                 // A procedure variable stored in memory (a
                                 // local or a pointer) passes the procedure it
                                 // holds to a dummy that is not a pointer.
@@ -24808,11 +24856,11 @@ public:
                                             }
                                         }
                                     } else if (is_a<ASR::CPtr_t>(*arg_type)) {
-                                        if ( arg->m_intent == intent_local ||
-                                                arg->m_intent == ASRUtils::intent_out) {
-                                            // Local variable or Dummy out argument
-                                            // of type CPtr is a void**, so we
-                                            // have to load it
+                                        if (!LLVM::is_cptr_dummy_held_by_value(*arg)) {
+                                            // A CPtr variable other than a
+                                            // dummy held as the void* itself
+                                            // is a void**, so we have to
+                                            // load it
                                             llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                                             tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
@@ -24881,6 +24929,15 @@ public:
 
                                     llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[i].m_value, arg->m_type, module.get());
                                     tmp = llvm_utils->CreateLoad2(load_type, tmp);
+                                    if ((x_abi == ASR::abiType::Source ||
+                                            x_abi == ASR::abiType::ExternalUndefined) &&
+                                            ASR::is_a<ASR::CPtr_t>(*orig_arg->m_type) &&
+                                            ASR::is_a<ASR::CPtr_t>(*ASRUtils::
+                                                type_get_past_allocatable_pointer(arg->m_type))) {
+                                        // The target of a pointer to a CPtr
+                                        // (e.g. an ASSOCIATE name) is a void**.
+                                        tmp = convert_cptr_call_arg(tmp, true, *orig_arg);
+                                    }
                                 }
                                 if (orig_arg && ASRUtils::is_class_type(
                                         ASRUtils::extract_type(arg->m_type))
@@ -25041,6 +25098,19 @@ public:
                         tmp = ptr_to_tmp;
                     }
                 }
+            } else if (orig_arg &&
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
+                // A polymorphic scalar component passed to a nonpolymorphic
+                // dummy: the dummy receives the declared-type part of the
+                // component's dynamic value, reached through its class wrapper.
+                this->visit_expr_wrapper(x.m_args[i].m_value);
+                tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                    al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
                 ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                     x.m_args[i].m_value);
@@ -25107,6 +25177,18 @@ public:
                         tmp = target;
                     }
                 }
+            } else if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
+                    && orig_arg && ASR::is_a<ASR::CPtr_t>(*orig_arg->m_type)
+                    && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(x.m_args[i].m_value))) {
+                // An array element or a component is held as a void**; any
+                // other expression (c_null_ptr, c_loc(x), a function result)
+                // or a compile-time value is a void*.
+                ASR::expr_t* actual = x.m_args[i].m_value;
+                bool actual_is_reference = (ASR::is_a<ASR::ArrayItem_t>(*actual) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*actual)) &&
+                    ASRUtils::expr_value(actual) == nullptr;
+                this->visit_expr_wrapper(actual);
+                tmp = convert_cptr_call_arg(tmp, actual_is_reference, *orig_arg);
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
                 this->visit_expr_wrapper(x.m_args[i].m_value);
@@ -25378,7 +25460,7 @@ public:
                                     && (ASRUtils::is_array(arg_type)
                                         || (ASR::is_a<ASR::CPtr_t>(
                                                 *ASRUtils::expr_type(x.m_args[i].m_value))
-                                            && is_cptr_dummy_passed_by_value(orig_arg))))
+                                            && LLVM::is_cptr_dummy_passed_by_value(*orig_arg))))
                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
                                     && ASRUtils::is_allocatable(arg_type)
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
@@ -25773,55 +25855,18 @@ public:
             // For bind(C) calls with DescriptorArray/AssumedRankArray args,
             // convert the descriptor from LFortran's internal format (element
             // strides) to CFI format (byte strides) and set elem_len.
-            // Only apply for explicit bind(C) functions (with bindc_name),
-            // not implicit interface functions which use BindC ABI internally
-            // but expect LFortran's descriptor format.
             ASR::FunctionType_t* callee_fn_type = nullptr;
             if (func_subrout->type == ASR::symbolType::Function) {
                 callee_fn_type = ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(func_subrout));
             }
-            // Check if callee is an implicit interface function.
-            // Implicit interfaces use BindC ABI internally but the
-            // actual Fortran implementation uses LFortran's internal
-            // descriptor format.  Detect by looking for a Source/
-            // Implementation function with the same name in the
-            // global scope.
             // A call through a procedure variable has no LLVM function of
             // its own: the variable's interface gives the parameter types,
             // and the procedure named in the call is its original name.
             bool call_through_variable = ASR::is_a<ASR::Variable_t>(
                 *ASRUtils::symbol_get_past_external(x.m_name));
-            bool is_implicit_interface = false;
-            if (callee_fn_type &&
-                callee_fn_type->m_abi == ASR::abiType::BindC &&
-                callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                !callee_fn_type->m_bindc_name) {
-                ASR::Function_t* called_fn =
-                    ASR::down_cast<ASR::Function_t>(func_subrout);
-                std::string called_name = called_fn->m_name;
-                if (call_through_variable && x.m_original_name) {
-                    called_name = ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(x.m_original_name));
-                }
-                SymbolTable* scope = called_fn->m_symtab->parent;
-                while (scope && scope->parent) scope = scope->parent;
-                if (scope) {
-                    ASR::symbol_t* impl = scope->get_symbol(called_name);
-                    if (impl && impl != (ASR::symbol_t*)called_fn &&
-                        ASR::is_a<ASR::Function_t>(*impl)) {
-                        ASR::FunctionType_t* impl_ft =
-                            ASRUtils::get_FunctionType(
-                                ASR::down_cast<ASR::Function_t>(impl));
-                        if (impl_ft->m_abi != ASR::abiType::BindC) {
-                            is_implicit_interface = true;
-                        }
-                    }
-                }
-            }
             if (orig_arg && x_abi == ASR::abiType::BindC &&
                 callee_fn_type &&
-                !is_implicit_interface &&
                 ASRUtils::is_array(orig_arg->m_type)) {
                 ASR::array_physical_typeType phys_type =
                     ASRUtils::extract_physical_type(orig_arg->m_type);
@@ -26019,7 +26064,7 @@ public:
             // wrap in a rank-0 CFI descriptor so the C callee receives
             // a valid CFI_cdesc_t*.
             if (orig_arg && x_abi == ASR::abiType::BindC &&
-                callee_fn_type && !is_implicit_interface &&
+                callee_fn_type &&
                 !ASRUtils::is_array(orig_arg->m_type) &&
                 !ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(orig_arg->m_type))) &&
@@ -26554,7 +26599,14 @@ public:
                                                     ASRUtils::extract_kind_from_ttype_t(arg_type),
                                                     unlimited_polymorphic_struct, module.get());
                     }
-                                               
+
+                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr))) {
+                        // Allocatable or pointer actual: wrap its target, not the
+                        // address of the allocatable/pointer slot.
+                        llvm::Type* arg_el_type = llvm_utils->get_el_type(
+                            arg_expr, ASRUtils::extract_type(arg_type), module.get());
+                        dt = llvm_utils->CreateLoad2(arg_el_type->getPointerTo(), dt);
+                    }
                     builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr), data_ptr);
                     return unlimited_polymorphic_struct;
                 }
