@@ -18833,10 +18833,16 @@ public:
         if( mold_ ) {
             null_ptr_type_ = ASRUtils::expr_type(mold_);
             if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(null_ptr_type_))) {
-                if (!ASRUtils::is_trait_pointer(null_ptr_type_) &&
-                        !ASRUtils::is_trait_owner(null_ptr_type_)) {
+                LCOMPILERS_ASSERT(x.n_args + x.n_keywords == 1);
+                auto *mold_ast = x.n_args ? x.m_args[0].m_end : x.m_keywords[0].m_value;
+                bool owner_variable = ASRUtils::is_trait_owner(null_ptr_type_) &&
+                    ASR::is_a<ASR::Var_t>(*mold_) &&
+                    ASRUtils::get_variable_from_symbol(
+                        ASR::down_cast<ASR::Var_t>(mold_)->m_v);
+                if (AST::is_a<AST::Parenthesis_t>(*mold_ast) ||
+                        (!ASRUtils::is_trait_pointer(null_ptr_type_) && !owner_variable)) {
                     trait_call_error("null() mold requires a pointer or allocatable variable",
-                        mold_->base.loc);
+                        mold_ast->base.loc);
                 }
                 null_ptr_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
                     al, x.base.base.loc, ASRUtils::extract_type(null_ptr_type_)));

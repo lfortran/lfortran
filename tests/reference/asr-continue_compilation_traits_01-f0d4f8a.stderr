@@ -2022,6 +2022,48 @@ semantic error: a select type association with a nondefinable selector cannot ap
 3729 |                 inner%n = 1
      |                 ^^^^^^^ 
 
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3756:19
+     |
+3756 |         p => null(make_owner())
+     |                   ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3759:32
+     |
+3759 |         call take_pointer(null(make_owner()))
+     |                                ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3765:19
+     |
+3765 |         p => null(factory())
+     |                   ^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3770:19
+     |
+3770 |         p => null((owner))
+     |                   ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3771:25
+     |
+3771 |         p => null(mold=((owner)))
+     |                         ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3772:32
+     |
+3772 |         call take_pointer(null((owner)))
+     |                                ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3777:19
+     |
+3777 |         p => null((q))
+     |                   ^^^ 
+
 semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3618:28
      |

@@ -9,6 +9,13 @@ contains
         class(A), pointer, intent(in) :: p
         if (associated(p)) error stop 1
     end subroutine
+    subroutine readonly_mold(owner)
+        class(Child), allocatable, intent(in) :: owner
+        class(A), pointer :: p
+        p => null(mold=owner)
+        call take_parent(null(owner))
+        if (associated(p)) error stop 7
+    end subroutine
 end module
 
 module traits_runtime_pointer_null_01_oracle_aliases
@@ -36,4 +43,10 @@ program traits_runtime_pointer_null_01_oracle
     call take_parent(null())
     if (associated(p) .or. associated(renamed) .or. associated(alias)) error stop 3
     if (allocated(owner)) error stop 6
+    call readonly_mold(owner)
+    if (allocated(owner)) error stop 8
+    allocate(Child :: owner)
+    call readonly_mold(owner)
+    if (.not. allocated(owner)) error stop 9
+    deallocate(owner)
 end program

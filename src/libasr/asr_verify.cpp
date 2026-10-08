@@ -5174,8 +5174,12 @@ public:
                 "A runtime trait null value must have pointer type");
             if (x.m_var_expr) {
                 auto *mold_type = typed_expr_type(x.m_var_expr);
+                bool owner_variable = ASRUtils::is_trait_owner(mold_type) &&
+                    ASR::is_a<Var_t>(*x.m_var_expr) &&
+                    ASRUtils::get_variable_from_symbol(
+                        ASR::down_cast<Var_t>(x.m_var_expr)->m_v);
                 require_id(mold_type &&
-                        (ASRUtils::is_trait_pointer(mold_type) || ASRUtils::is_trait_owner(mold_type)),
+                        (ASRUtils::is_trait_pointer(mold_type) || owner_variable),
                     "asr.verify.trait_pointer.null_mold",
                     "A runtime trait null mold must be a pointer or allocatable variable");
                 visit_ttype(*mold_type);

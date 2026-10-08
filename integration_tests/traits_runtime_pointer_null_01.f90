@@ -8,6 +8,11 @@ module traits_runtime_pointer_null_01_contracts
     end interface
     abstract interface, extends(A + B) :: Combined
     end interface
+    type :: Box
+        integer :: n = 7
+    end type
+    implements Child :: Box
+    end implements
 contains
     subroutine take_parent(p)
         class(A), pointer, intent(in) :: p
@@ -16,6 +21,13 @@ contains
     subroutine take_combination(p)
         class(A + B), pointer, intent(in) :: p
         if (associated(p)) error stop 2
+    end subroutine
+    subroutine readonly_mold(owner)
+        class(Child), allocatable, intent(in) :: owner
+        class(A), pointer :: p
+        p => null(mold=owner)
+        call take_parent(null(owner))
+        if (associated(p)) error stop 7
     end subroutine
 end module
 
@@ -54,4 +66,10 @@ program traits_runtime_pointer_null_01
     if (associated(p) .or. associated(renamed) .or. associated(alias)) error stop 3
     if (associated(ab) .or. associated(ba) .or. associated(combined_view)) error stop 4
     if (allocated(owner)) error stop 6
+    call readonly_mold(owner)
+    if (allocated(owner)) error stop 8
+    allocate(Box :: owner)
+    call readonly_mold(owner)
+    if (.not. allocated(owner)) error stop 9
+    deallocate(owner)
 end program
