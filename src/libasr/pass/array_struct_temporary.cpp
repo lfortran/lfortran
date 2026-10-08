@@ -1183,6 +1183,19 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::ComplexConstructor: {
+            // `z(2:3)%re = x` is `z(2:3) = cmplx(x, z(2:3)%im)`: one part may
+            // be a scalar, the array part gives the shape.
+            ASR::ComplexConstructor_t* complex_constructor =
+                ASR::down_cast<ASR::ComplexConstructor_t>(value);
+            ASR::expr_t* array_part = complex_constructor->m_re;
+            if (!ASRUtils::is_array(ASRUtils::expr_type(array_part))) {
+                array_part = complex_constructor->m_im;
+            }
+            return set_allocation_size(al, array_part, temporary_var,
+                allocate_dims, target_n_dims, add_allocated_check,
+                len_allocte_expr);
+        }
         case ASR::exprType::ImpliedDoLoop: {
             ASR::ImpliedDoLoop_t* implied_do_loop =
                 ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
