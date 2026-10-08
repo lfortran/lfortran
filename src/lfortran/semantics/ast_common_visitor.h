@@ -16456,6 +16456,13 @@ public:
                 }
             }
             if( member != nullptr ) {
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *ASRUtils::symbol_get_past_external(member))) {
+                    diag.add(Diagnostic("Type-bound procedure '" + var_name
+                        + "' requires an argument list",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
