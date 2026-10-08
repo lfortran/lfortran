@@ -961,16 +961,16 @@ public:
             ? ASRUtils::symbol_get_past_external(x.m_member) : x.m_member;
         ASR::symbol_t *procedure = check_external
             ? ASRUtils::symbol_get_past_external(x.m_procedure) : x.m_procedure;
-        check(member != nullptr && ASR::is_a<ASR::Function_t>(*member),
+        check(ASRUtils::trait_method_function(member) != nullptr,
             "asr.verify.trait_binding.member_is_function",
-            "A trait binding member must be a Function, not " +
+            "A trait binding member must be an ordinary or generic procedure, not " +
                 std::string(x.m_member ? ASRUtils::symbol_type_name(*x.m_member) : "<null>"));
-        check(procedure != nullptr && ASR::is_a<ASR::Function_t>(*procedure),
+        check(ASRUtils::trait_method_function(procedure) != nullptr,
             "asr.verify.trait_binding.procedure_is_function",
-            "A trait binding procedure must be a Function, not " +
+            "A trait binding procedure must be an ordinary or generic procedure, not " +
                 std::string(x.m_procedure ? ASRUtils::symbol_type_name(*x.m_procedure) : "<null>"));
         if (procedure) {
-            ASR::Function_t *proc = ASR::down_cast<ASR::Function_t>(procedure);
+            ASR::Function_t *proc = ASRUtils::trait_method_function(procedure);
             check(proc->m_function_signature != nullptr &&
                     ASR::is_a<ASR::FunctionType_t>(*proc->m_function_signature),
                 "asr.verify.trait_binding.procedure_signature_required",
@@ -979,8 +979,14 @@ public:
                 "asr.verify.trait_binding.procedure_is_implementation",
                 "A trait binding procedure must be a concrete implementation");
         }
+        std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+        auto mismatch = ASRUtils::trait_generic_correspondence(
+            *ASRUtils::trait_method_function(member),
+            *ASRUtils::trait_method_function(procedure), parameters);
+        check(mismatch.empty(), "asr.verify.trait_binding.generic_contract",
+            "A generic binding must preserve its universally quantified contract: " + mismatch);
         if (x.m_self_argument) {
-            ASR::Function_t *proc = ASR::down_cast<ASR::Function_t>(procedure);
+            ASR::Function_t *proc = ASRUtils::trait_method_function(procedure);
             bool found = false;
             for (size_t i = 0; i < proc->n_args; i++) {
                 if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i])) continue;
@@ -1100,10 +1106,10 @@ public:
             }
         }
         for (auto &a : x.m_symtab->get_scope()) {
-            require_id(ASR::is_a<ASR::Function_t>(*a.second),
+            require_id(ASRUtils::trait_method_function(a.second) != nullptr,
                 "asr.verify.trait.member_is_function",
-                "Trait '" + std::string(x.m_name) + "' members must be abstract Functions");
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(a.second);
+                "Trait '" + std::string(x.m_name) + "' members must be abstract procedures");
+            ASR::Function_t *fn = ASRUtils::trait_method_function(a.second);
             require_id(fn->m_function_signature != nullptr,
                 "asr.verify.trait.member_signature_required",
                 "Trait '" + std::string(x.m_name) +
@@ -1138,7 +1144,7 @@ public:
             }
             std::map<std::string, ASR::Function_t*> methods;
             for (ASR::symbol_t *member : hierarchy.members) {
-                auto *method = ASR::down_cast<ASR::Function_t>(member);
+                auto *method = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(method->m_name, method);
                 if (!previous.second) {
                     auto mismatch = ASRUtils::trait_method_mismatch(
@@ -1585,13 +1591,17 @@ public:
         std::map<std::string, const ASR::trait_binding_t*> methods;
         for (size_t i = 0; i < x.n_bindings; i++) {
             visit_trait_binding(x.m_bindings[i]);
+            if (check_external && ASRUtils::trait_method_template(
+                    *ASRUtils::trait_method_function(x.m_bindings[i].m_member))) {
+                verify_runtime_binding(x, x.m_bindings[i]);
+            }
             ASR::symbol_t *member = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_bindings[i].m_member)
                 : x.m_bindings[i].m_member;
             require_id(member != nullptr &&
-                    ASR::is_a<ASR::Function_t>(*member),
+                    ASRUtils::trait_method_function(member) != nullptr,
                 "asr.verify.trait_implementation.member_is_function",
-                "TraitImplementation binding member must be a Function");
+                "TraitImplementation binding member must be an ordinary or generic procedure");
             std::string member_name = ASRUtils::symbol_name(member);
             require(bound_members.insert(member).second,
                 "TraitImplementation member '" + member_name +
@@ -1612,10 +1622,9 @@ public:
 
     Function_t *verify_runtime_trait_procedure(symbol_t *reference,
             const Location &loc, const std::string &code) {
-        auto *symbol = ASRUtils::symbol_get_past_external(reference);
-        require_with_loc_id(symbol && ASR::is_a<Function_t>(*symbol),
+        auto *procedure = ASRUtils::trait_method_function(reference);
+        require_with_loc_id(procedure != nullptr,
             code, "A runtime trait procedure reference must name a function", loc);
-        auto *procedure = ASR::down_cast<Function_t>(symbol);
         require_with_loc_id(procedure->m_name && procedure->m_symtab &&
                 procedure->m_symtab->parent && procedure->m_function_signature &&
                 ASR::is_a<FunctionType_t>(*procedure->m_function_signature) &&
@@ -2088,6 +2097,11 @@ public:
             "asr.verify.trait_witness.binding_signature",
             "A witness binding must have the message's ordinary arguments", loc);
         std::map<symbol_t*, symbol_t*> parameters;
+        auto generic_mismatch = ASRUtils::trait_generic_correspondence(
+            *required, *procedure, parameters);
+        require_with_loc_id(generic_mismatch.empty(),
+            "asr.verify.trait_binding.generic_contract",
+            "A generic binding must preserve its universal contract: " + generic_mismatch, loc);
         for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
             if (i == receiver) continue;
             parameters.emplace(

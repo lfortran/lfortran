@@ -3746,6 +3746,7 @@ RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_02 LABELS llvm)
 RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
+RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_static_bindc_01_m.f90)
 RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)

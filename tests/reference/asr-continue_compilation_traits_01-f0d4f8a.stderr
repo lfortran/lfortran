@@ -610,6 +610,36 @@ semantic error: runtime trait function results require uninitialized scalar allo
 2975 |         class(A + B), pointer :: view
      |                                  ^^^^ 
 
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3263:5 - 3265:19
+     |
+3263 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3265 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter counts differ
+    --> tests/errors/continue_compilation_traits_01.f90:3292:5 - 3294:19
+     |
+3292 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3294 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'left' does not match trait method 'apply': expected t, got y
+    --> tests/errors/continue_compilation_traits_01.f90:3318:5 - 3320:19
+     |
+3318 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3320 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |
@@ -1695,3 +1725,9 @@ semantic error: a select type association with a nondefinable selector cannot ap
      |
 3239 |             allocate(local, stat=concrete%n)
      |                                  ^^^^^^^^^^ 
+
+semantic error: method 'undeclared' is not provided by the declared trait constraints
+    --> tests/errors/continue_compilation_traits_01.f90:3352:13
+     |
+3352 |         r = object%undeclared()
+     |             ^^^^^^^^^^^^^^^^^^^ 

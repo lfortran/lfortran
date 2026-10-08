@@ -2032,6 +2032,8 @@ subroutine_call
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
     | KW_CALL id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
             $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
+    | KW_CALL struct_member_star id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = SUBROUTINE_CALL0(p.m_a, $2.p, $2.n, $3, $8, $5, @$); }
     ;
 
 pragma_statement
@@ -2615,6 +2617,8 @@ designator
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
+    | struct_member_star id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = FUNCCALLORARRAY0(p.m_a, $2, $1, $7, empty1(), $4, @$); }
     | id "(" fnarray_arg_list_opt ")" "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY3($1, $3, $6, @$); }
     | struct_member_star id "(" fnarray_arg_list_opt ")" "(" fnarray_arg_list_opt ")" {

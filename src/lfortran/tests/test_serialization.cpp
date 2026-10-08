@@ -1209,6 +1209,77 @@ end function
 end module
 )";
 
+TEST_CASE("Generic trait methods retain scoped nominal binder correspondence") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module generic_trait_methods_m
+    implicit none
+    abstract interface :: IValue
+    end interface
+    abstract interface, extends(IValue) :: IMore
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: Renamed}(object) result(r)
+        type(Renamed), intent(in) :: object
+        integer :: r
+        r = 41
+    end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "generic_trait_methods_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("generic_trait_methods_m"));
+    auto *generic = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("apply"));
+    auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(
+        generic->m_symtab->get_symbol("__constraint_renamed"));
+    SUBCASE("named and positional text round trips preserve binder scopes") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            std::string text = LCompilers::asr_to_text(*result.result, text_options);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "generic_traits.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("a nominal child is not an equivalent universal domain") {
+        constraint->m_trait = module->m_symtab->get_symbol("imore");
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == "asr.verify.trait_binding.generic_contract");
+    }
+}
+
 TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

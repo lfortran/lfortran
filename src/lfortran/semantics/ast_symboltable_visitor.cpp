@@ -4378,7 +4378,7 @@ public:
     void check_trait_methods(ASR::Trait_t &trait, const Location &loc) {
         std::map<std::string, ASR::Function_t*> methods;
         for (ASR::symbol_t *member : checked_trait_hierarchy(trait, loc).members) {
-            auto *method = ASR::down_cast<ASR::Function_t>(member);
+            auto *method = ASRUtils::trait_method_function(member);
             for (size_t i = 0; i < method->n_args; i++) {
                 if (!ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
                         !ASR::is_a<ASR::Variable_t>(
@@ -4459,8 +4459,7 @@ public:
                 AST::program_unit_t *procedure =
                     AST::down_cast<AST::InterfaceProc_t>(x.m_items[i])->m_proc;
                 if (AST::is_a<AST::TraitProcedure_t>(*procedure)) {
-                    trait_error("generic trait methods are not implemented yet",
-                        procedure->base.loc);
+                    procedure = AST::down_cast<AST::TraitProcedure_t>(procedure)->m_procedure;
                 }
                 AST::decl_stmt_t **items;
                 size_t n_items;
@@ -4652,7 +4651,11 @@ public:
                 Vec<ASR::trait_requirement_t> requirements;
                 requirements.reserve(al, hierarchy.members.size());
                 for (ASR::symbol_t *member : hierarchy.members) {
-                    auto *method = ASR::down_cast<ASR::Function_t>(member);
+                    auto *method = ASRUtils::trait_method_function(member);
+                    if (ASRUtils::trait_method_template(*method)) {
+                        trait_error("generic methods in generic type parameter constraints "
+                            "are not implemented yet", parameter.loc);
+                    }
                     auto found = methods.find(method->m_name);
                     ASR::symbol_t *procedure;
                     if (found == methods.end()) {
@@ -4735,6 +4738,12 @@ public:
                 std::string(requirement->m_name) + "'", loc);
         }
         std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+        auto generic_mismatch = ASRUtils::trait_generic_correspondence(
+            *requirement, *procedure, parameters);
+        if (!generic_mismatch.empty()) {
+            trait_error("generic contract does not match trait method '" +
+                std::string(requirement->m_name) + "': " + generic_mismatch, loc);
+        }
         for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
             if (i == receiver) continue;
             parameters.emplace(&ASRUtils::EXPR2VAR(requirement->m_args[j++])->base,
@@ -4881,8 +4890,7 @@ public:
                     ? symbol->m_local_rename : symbol->m_remote_sym);
                 ASR::symbol_t *procedure = current_scope->resolve_symbol(
                     to_lower(symbol->m_remote_sym));
-                if (!procedure || !ASR::is_a<ASR::Function_t>(
-                        *ASRUtils::symbol_get_past_external(procedure))) {
+                if (!ASRUtils::trait_method_function(procedure)) {
                     trait_error("trait implementation procedure '"
                         + std::string(symbol->m_remote_sym) + "' is not defined", binding.loc);
                 }
@@ -4902,7 +4910,7 @@ public:
             }
             hierarchies.push_back(checked_trait_hierarchy(*trait, x.base.base.loc));
             for (ASR::symbol_t *member : hierarchies.back().members) {
-                auto *method = ASR::down_cast<ASR::Function_t>(member);
+                auto *method = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(method->m_name, method);
                 if (!previous.second) {
                     check_trait_method_compatibility(*previous.first->second,
@@ -4947,8 +4955,8 @@ public:
                     binding.m_is_nopass = declaration->m_is_nopass;
                 }
                 binding.m_member = member;
-                check_trait_binding(ASR::down_cast<ASR::Function_t>(member),
-                    ASR::down_cast<ASR::Function_t>(binding.m_procedure), type_symbol,
+                check_trait_binding(ASRUtils::trait_method_function(member),
+                    ASRUtils::trait_method_function(binding.m_procedure), type_symbol,
                     binding, x.base.base.loc);
                 binding.m_member = reference_trait_member(
                     member, current_scope, x.base.base.loc);

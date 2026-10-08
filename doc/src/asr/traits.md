@@ -72,6 +72,31 @@ cannot determine a type parameter, provide it explicitly.
 See `integration_tests/traits_static_01.f90` for a complete example with two
 unrelated implementing types and checked runtime results.
 
+## Generic messages
+
+A trait message may use the same constrained generic-procedure syntax:
+
+```fortran
+abstract interface :: IAlgorithm
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+    end function
+end interface
+```
+
+Its implementation must also be universally generic. Corresponding binders may
+have different names, but must have nominally equivalent constraints; accepting
+only a concrete type or a stricter child trait does not implement this promise.
+Binder positions remain distinct even when their constraints are identical.
+The implementation body is checked at definition time, including when unused.
+
+Direct concrete `object%apply(value)` and `object%apply{ValueType}(value)` calls
+reuse ordinary static generic specialization. Both `nopass` and a named
+passed-object argument are supported; the latter need not be the first dummy.
+See `integration_tests/traits_generic_method_01.f90` for alpha-renamed,
+inherited/coalesced generic messages and static calls to the same implementation.
+
 ## Inheritance and composed constraints
 
 A trait can inherit the requirements of other traits and add its own:

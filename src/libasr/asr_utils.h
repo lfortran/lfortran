@@ -10649,6 +10649,13 @@ struct TraitHierarchy {
     std::vector<ASR::symbol_t*> members;
 };
 
+ASR::Function_t *trait_method_function(ASR::symbol_t *method);
+ASR::Template_t *trait_method_template(const ASR::Function_t &method);
+ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
+std::string trait_generic_correspondence(const ASR::Function_t &left,
+    const ASR::Function_t &right,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters);
+
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,

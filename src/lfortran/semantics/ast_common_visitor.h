@@ -22397,23 +22397,7 @@ public:
     }
 
     ASR::symbol_t *actual_trait_parameter(ASR::expr_t *actual) {
-        if (ASR::is_a<ASR::ArrayItem_t>(*actual)) {
-            return actual_trait_parameter(ASR::down_cast<ASR::ArrayItem_t>(actual)->m_v);
-        }
-        if (ASR::is_a<ASR::ArraySection_t>(*actual)) {
-            return actual_trait_parameter(ASR::down_cast<ASR::ArraySection_t>(actual)->m_v);
-        }
-        SymbolTable *scope = nullptr;
-        if (ASR::is_a<ASR::Var_t>(*actual)) {
-            scope = ASRUtils::symbol_parent_symtab(ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(actual)->m_v));
-        } else if (ASR::is_a<ASR::FunctionCall_t>(*actual)) {
-            scope = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::FunctionCall_t>(actual)->m_name));
-        }
-        auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(
-            ASRUtils::extract_type(ASRUtils::expr_type(actual)));
-        return declared_trait_parameter(parameter->m_param, scope);
+        return ASRUtils::trait_type_parameter(actual);
     }
 
     ASR::TraitConstraint_t *type_set_constraint(ASR::symbol_t *parameter) {
@@ -22800,6 +22784,10 @@ public:
             }
             return true;
         }
+        // Ordinary passed-object adaptation is checked by call construction,
+        // after the independent generic type parameters have been inferred.
+        if (ASRUtils::is_class_type(formal_type) &&
+                ASR::is_a<ASR::StructType_t>(*actual_type)) return true;
         return ASRUtils::check_equal_type(formal_type, actual_type, nullptr,
             actual_expr);
     }
@@ -22976,7 +22964,7 @@ public:
         auto hierarchy = checked_trait_hierarchy(*trait, loc);
         std::map<std::string, ASR::Function_t*> methods;
         for (auto *member : hierarchy.members) {
-            auto *method = ASR::down_cast<ASR::Function_t>(member);
+            auto *method = ASRUtils::trait_method_function(member);
             if (!ASRUtils::runtime_trait_method_supported(*method)) return nullptr;
             auto previous = methods.emplace(method->m_name, method);
             if (!previous.second) {
@@ -22998,7 +22986,7 @@ public:
         Vec<ASR::trait_slot_t> slots;
         slots.reserve(al, hierarchy.members.size());
         for (auto *member : hierarchy.members) {
-            auto *method = ASR::down_cast<ASR::Function_t>(member);
+            auto *method = ASRUtils::trait_method_function(member);
             auto inserted = indices.emplace(method->m_name, slots.size());
             if (inserted.second) {
                 ASR::trait_slot_t slot;
@@ -24131,8 +24119,7 @@ public:
                 for (auto *implementation : trait_implementations_for_type(declaration, loc)) {
                     for (size_t i = 0; i < implementation->n_bindings; i++) {
                         auto &binding = implementation->m_bindings[i];
-                        auto *member = ASR::down_cast<ASR::Function_t>(
-                            ASRUtils::symbol_get_past_external(binding.m_member));
+                        auto *member = ASRUtils::trait_method_function(binding.m_member);
                         if (name != member->m_name) continue;
                         if (concrete_binding) {
                             check_trait_method_compatibility(*signature, *member, loc);
@@ -24151,7 +24138,8 @@ public:
             } else {
                 return false;
             }
-            if (members[0].n_args != 0 || n_explicit_args != 0) {
+            if (members[0].n_args != 0 ||
+                    (n_explicit_args != 0 && !ASRUtils::trait_method_template(*signature))) {
                 trait_call_error("this trait method reference is not implemented yet", loc);
             }
             tmp = resolve_variable(loc, to_lower(members[0].m_name));
@@ -24216,8 +24204,7 @@ public:
         } else if (abstract_method) {
             args = prepend_call_arg(receiver, args);
         } else if (!concrete_binding->m_is_nopass) {
-            auto *implementation = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(callee));
+            auto *implementation = ASRUtils::trait_method_function(callee);
             Vec<ASR::call_arg_t> adapted;
             adapted.reserve(al, args.size() + 1);
             for (size_t i = 0, j = 0; i < implementation->n_args; i++) {
@@ -24232,6 +24219,13 @@ public:
                 adapted.push_back(al, arg);
             }
             args = adapted;
+        }
+        if (concrete_binding) {
+            auto *implementation = ASRUtils::trait_method_function(callee);
+            if (auto *method = ASRUtils::trait_method_template(*implementation)) {
+                callee = specialize_trait_procedure(method, implementation, args,
+                    explicit_args, n_explicit_args, loc);
+            }
         }
         callee = make_operator_proc_visible(callee, "trait", current_scope);
         ASRUtils::insert_module_dependency(callee, al, current_module_dependencies);

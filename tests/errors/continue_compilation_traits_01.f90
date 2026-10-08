@@ -3240,3 +3240,115 @@ contains
         end select
     end subroutine
 end module
+
+! A generic implementation cannot narrow a universally promised nominal domain.
+module traits_generic_method_narrowed
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface, extends(IValue) :: IMore
+        integer function extra()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IMore :: Element}(object) result(r)
+        type(Element), intent(in) :: object
+        integer :: r
+        r = object%extra()
+    end function
+end module
+
+! One concrete argument type is not an implementation of a universal method.
+module traits_generic_method_missing_binder
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    type :: Value
+        integer :: n
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    integer function apply(object)
+        type(Value), intent(in) :: object
+        apply = object%n
+    end function
+end module
+
+! Equal constraints do not identify distinct positional binders.
+module traits_generic_method_swapped_binders
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T, IValue :: U}(left, right) result(r)
+            type(T), intent(in) :: left
+            type(U), intent(in) :: right
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: X, IValue :: Y}(left, right) result(r)
+        type(Y), intent(in) :: left
+        type(X), intent(in) :: right
+        integer :: r
+        r = left%value() + right%value()
+    end function
+end module
+
+! Check generic implementation bodies even without any calls or runtime view.
+module traits_generic_method_unused_body
+    implicit none
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IAlgorithm
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+    type :: Algorithm
+    end type
+    implements IAlgorithm :: Algorithm
+        procedure, nopass :: apply
+    end implements
+contains
+    function apply{IValue :: Element}(object) result(r)
+        type(Element), intent(in) :: object
+        integer :: r
+        r = object%undeclared()
+    end function
+end module

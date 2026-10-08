@@ -5606,6 +5606,96 @@ bool is_struct_like_type(ASR::ttype_t *t)
     return ASR::is_a<ASR::StructType_t>(*t2) || ASRUtils::is_class_type(t2);
 }
 
+ASR::Function_t *trait_method_function(ASR::symbol_t *method)
+{
+    method = symbol_get_past_external(method);
+    if (method && ASR::is_a<ASR::Template_t>(*method)) {
+        auto *generic = ASR::down_cast<ASR::Template_t>(method);
+        method = generic->m_symtab && generic->m_name
+            ? generic->m_symtab->get_symbol(generic->m_name) : nullptr;
+    }
+    return method && ASR::is_a<ASR::Function_t>(*method)
+        ? ASR::down_cast<ASR::Function_t>(method) : nullptr;
+}
+
+ASR::Template_t *trait_method_template(const ASR::Function_t &method)
+{
+    auto *owner = get_asr_owner(const_cast<ASR::symbol_t*>(&method.base));
+    if (!owner || !ASR::is_a<ASR::Template_t>(*owner)) return nullptr;
+    auto *generic = ASR::down_cast<ASR::Template_t>(owner);
+    return trait_method_function(owner) == &method ? generic : nullptr;
+}
+
+ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
+{
+    if (!value) return nullptr;
+    if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+        return trait_type_parameter(ASR::down_cast<ASR::ArrayItem_t>(value)->m_v);
+    }
+    if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+        return trait_type_parameter(ASR::down_cast<ASR::ArraySection_t>(value)->m_v);
+    }
+    auto *type = typed_expr_type(value);
+    if (!type || !ASR::is_a<ASR::TypeParameter_t>(*extract_type(type))) return nullptr;
+    auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(extract_type(type));
+    SymbolTable *scope = nullptr;
+    if (ASR::is_a<ASR::Var_t>(*value)) {
+        scope = symbol_parent_symtab(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(value)->m_v));
+    } else if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+        scope = symbol_symtab(symbol_get_past_external(
+            ASR::down_cast<ASR::FunctionCall_t>(value)->m_name));
+    }
+    for (; scope; scope = scope->parent) {
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            auto *binder = symbol_get_past_external(constraint->m_parameter);
+            if (binder && parameter->m_param &&
+                    std::string(symbol_name(binder)) == parameter->m_param) return binder;
+        }
+    }
+    return nullptr;
+}
+
+std::string trait_generic_correspondence(const ASR::Function_t &left,
+    const ASR::Function_t &right,
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    auto *a = trait_method_template(left), *b = trait_method_template(right);
+    if (!a && !b) return "";
+    if (!a || !b || a->n_args != b->n_args) {
+        return "generic type parameter counts differ";
+    }
+    auto constraints = [](ASR::Template_t *generic, ASR::symbol_t *parameter) {
+        std::vector<ASR::symbol_t*> traits;
+        for (const auto &entry : generic->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            if (symbol_get_past_external(constraint->m_parameter) == parameter) {
+                traits.push_back(constraint->m_trait);
+            }
+        }
+        return normalized_trait_requirements(traits);
+    };
+    for (size_t i = 0; i < a->n_args; i++) {
+        auto *ap = a->m_symtab->get_symbol(a->m_args[i]);
+        auto *bp = b->m_symtab->get_symbol(b->m_args[i]);
+        if (!ap || !bp || !ASR::is_a<ASR::Variable_t>(*ap) ||
+                !ASR::is_a<ASR::Variable_t>(*bp) ||
+                !ASR::is_a<ASR::TypeParameter_t>(*symbol_type(ap)) ||
+                !ASR::is_a<ASR::TypeParameter_t>(*symbol_type(bp))) {
+            return "generic type parameter declarations are missing";
+        }
+        auto ac = constraints(a, ap), bc = constraints(b, bp);
+        if (ac.empty() || ac != bc) {
+            return "generic type parameter constraints must be nominally equivalent";
+        }
+        parameters.emplace(ap, bp);
+    }
+    return "";
+}
+
 TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
 {
     TraitHierarchy result;
@@ -5643,7 +5733,7 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
             }
             for (const auto &entry : current.m_symtab->get_scope()) {
                 ASR::symbol_t *member = entry.second;
-                if (!member || !ASR::is_a<ASR::Function_t>(*member) ||
+                if (!member || !trait_method_function(member) ||
                         symbol_parent_symtab(member) != current.m_symtab) {
                     result.error = TraitHierarchyError::Member;
                     return false;
@@ -5926,6 +6016,7 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
 
 bool runtime_trait_method_supported(const ASR::Function_t &method)
 {
+    if (trait_method_template(method)) return false;
     auto abi = get_FunctionType(method)->m_abi;
     if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return false;
     if (method.m_return_var &&
@@ -6254,6 +6345,16 @@ bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
     a = extract_type(a);
     b = extract_type(b);
     if (a->type != b->type) return false;
+    if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
+        auto *ap = trait_type_parameter(left), *bp = trait_type_parameter(right);
+        if (!ap || !bp) return false;
+        auto bound = parameters.find(ap);
+        auto *at = ASR::down_cast<ASR::TypeParameter_t>(a);
+        auto *bt = ASR::down_cast<ASR::TypeParameter_t>(b);
+        return (ap == bp || (bound != parameters.end() && bound->second == bp)) &&
+            at->m_is_class == bt->m_is_class &&
+            at->m_deferred_attr == bt->m_deferred_attr;
+    }
     if (ASR::is_a<ASR::StructType_t>(*a)) {
         const auto *a_type = ASR::down_cast<ASR::StructType_t>(a);
         const auto *b_type = ASR::down_cast<ASR::StructType_t>(b);
@@ -6293,6 +6394,10 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
         return {TraitMethodDifference::Contract, "argument declarations are missing"};
     }
     std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+    auto generic_mismatch = trait_generic_correspondence(left, right, parameters);
+    if (!generic_mismatch.empty()) {
+        return {TraitMethodDifference::Contract, generic_mismatch};
+    }
     for (size_t i = 0; i < left.n_args - left_offset; i++) {
         ASR::expr_t *a_expr = left.m_args[i + left_offset];
         ASR::expr_t *b_expr = right.m_args[i + right_offset];
