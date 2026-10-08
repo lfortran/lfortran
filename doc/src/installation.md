@@ -470,17 +470,24 @@ Quick and Exhaustive share `.github/actions/build-platform` so these compiler
 configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
 alternate-backend or descriptor-mode suites; Linux references stay in Quick.
 
-The LLVM 11/19 and macOS application-only compatibility profiles retain their
-historical runtime-stacktrace setting. **A current need for that exception has
-not been established.** Caffeine 0.8.2 removes LFortran `-g` from its defaults
-and GASNet linker flags, and does not itself require disabling runtime
-stacktraces. When runtime-stacktrace support is enabled, actual LFortran `-g`
-links invoke `llvm-dwarfdump` and `dwarf_convert.py` (also `dsymutil` on macOS);
-ordinary non-`-g` links do not. Before removing the legacy profile exception,
-validate those tools and runtime-enabled application checks in the affected
-toolchains, and review the Linux/LLVM 11 `libunwind` installation condition
-alongside the runtime flag. Do not infer that a Caffeine `--enable-debug` build
-requests LFortran `-g`.
+All native compatibility profiles enable runtime-stacktrace support, including
+the LLVM 11/19 and macOS application compilers. Caffeine 0.8.2 removes LFortran
+`-g` from its defaults and GASNet linker flags; its `--enable-debug` build does
+not require disabling runtime stacktraces. Actual LFortran `-g` links invoke
+`llvm-dwarfdump` and `dwarf_convert.py` (also `dsymutil` on macOS); ordinary
+non-`-g` links do not. The LLVM packages supply these debug tools. A separate
+application-compiler probe verifies the generated runtime-support define,
+executes the tools and checks both ordinary and `-g` links before the catalog.
+Missing/broken tools or failed links must fail the job, not disable support.
+
+On Linux, runtime-stacktrace support uses the compiler's `<unwind.h>` interface.
+It does not itself enable CMake's separate `WITH_LIBUNWIND` option. LLVM >=12
+requires that library independently, and the workflow retains its explicit
+`libunwind` installation (also kept in the existing Quick LLVM 11 environment).
+The LLVM 11 application compiler does not need an additional `libunwind`
+installation merely to enable runtime stacktraces. Application validation must
+exercise the runtime-enabled Release LLVM 11/19 and macOS LLVM 22 profiles;
+success with the former disabled-runtime flags is not evidence for this change.
 
 The distinct Kokkos/out-of-source and custom-install configurations run
 full suites. Standalone C++ builds, documentation/kernel tests, the

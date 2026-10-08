@@ -206,17 +206,6 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Integration -g tests exercise runtime stacktraces. Preserve the
-            # historical LLVM 11/19/macOS application profiles pending validation
-            # of their runtime-debug dependencies (see the CI coverage docs).
-            # Caffeine 0.8.2 strips LFortran -g; it does not justify this exception.
-            # Actual -g conversion needs llvm-dwarfdump (also dsymutil on macOS);
-            # Linux LLVM 11 application setup still does not install libunwind.
-            STACKTRACE_FLAG=""
-            if [[ "$LFORTRAN_CI_SCOPE" == "quick" ]] || \
-               [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
-                STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
-            fi
             # Quick's full normal/fast compiler needs the same diagnostic,
             # allocation and assertion checks as the platform Debug builds.
             BUILD_TYPE=Release
@@ -234,7 +223,7 @@ jobs:
               -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-              ${STACKTRACE_FLAG} \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               "${CHECK_FLAGS[@]}" \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
@@ -242,6 +231,27 @@ jobs:
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test application runtime stacktraces
+        shell: bash -e -l {0}
+        if: ${{ inputs.scope == 'exhaustive' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            # Caffeine strips LFortran -g. Exercise debug conversion explicitly
+            # on application compilers instead of disabling runtime support.
+            grep -q '^#define HAVE_RUNTIME_STACKTRACE$' src/libasr/config.h
+            llvm-dwarfdump --version
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                dsymutil --version
+            fi
+            lfortran -v examples/expr2.f90 -o expr2
+            actual=$(./expr2)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
+            lfortran -v -g examples/expr2.f90 -o expr2-debug
+            actual=$(./expr2-debug)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
 
       - name: Test third party codes
         shell: bash -e -l {0}

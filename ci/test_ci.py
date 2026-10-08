@@ -458,9 +458,9 @@ class QuickScriptTests(unittest.TestCase):
                         CI_CALLS=str(self.calls))
         for name in (
             "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
-            "expr2", "modules_15", "intrinsics_04", "intrinsics_04s",
+            "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
-            "bin/make", "bin/ctest", "bin/pip",
+            "bin/make", "bin/ctest", "bin/pip", "bin/llvm-dwarfdump", "bin/dsymutil",
         ):
             target = self.directory / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -470,6 +470,11 @@ class QuickScriptTests(unittest.TestCase):
                 "from pathlib import Path\n"
                 "with open(os.environ['CI_CALLS'], 'a') as log:\n"
                 "    log.write(json.dumps([str(Path(sys.argv[0]).resolve()), sys.argv[1:]]) + '\\n')\n"
+                "if (os.environ.get('CI_FAIL_TOOL') == Path(sys.argv[0]).name or\n"
+                "    (os.environ.get('CI_FAIL_TOOL') == 'debug-link' and '-g' in sys.argv)):\n"
+                "    sys.exit(int(os.environ.get('CI_FAIL_STATUS', '42')))\n"
+                "if Path(sys.argv[0]).name in ('expr2', 'expr2-debug'):\n"
+                "    print(os.environ.get('CI_EXPR_RESULT', '25'))\n"
                 "if Path(sys.argv[0]).name == 'cmake' and 'CI_BUILD_ENV_LOG' in os.environ:\n"
                 "    with open(os.environ['CI_BUILD_ENV_LOG'], 'a') as log:\n"
                 "        log.write(json.dumps({key: os.environ.get(key, '') "
@@ -658,12 +663,12 @@ class QuickScriptTests(unittest.TestCase):
             ("quick", "ubuntu-latest", "11", True),
             ("quick", "ubuntu-latest", "23", True),
             ("exhaustive", "ubuntu-latest", "7", True),
-            ("exhaustive", "ubuntu-latest", "11", False),
-            ("exhaustive", "ubuntu-latest", "19", False),
+            ("exhaustive", "ubuntu-latest", "11", True),
+            ("exhaustive", "ubuntu-latest", "19", True),
             ("exhaustive", "ubuntu-latest", "21", True),
             ("exhaustive", "ubuntu-latest", "22", True),
             ("exhaustive", "ubuntu-latest", "23", True),
-            ("exhaustive", "macos-latest", "22", False),
+            ("exhaustive", "macos-latest", "22", True),
         )
         for scope, platform, llvm, enabled in cases:
             with self.subTest(scope=scope, platform=platform, llvm=llvm):
@@ -681,6 +686,8 @@ class QuickScriptTests(unittest.TestCase):
                 cmake = [args for path, args in calls if path == str(self.bin / "cmake")]
                 self.assertEqual(len(cmake), 2)
                 self.assertEqual("-DWITH_RUNTIME_STACKTRACE=yes" in cmake[0], enabled)
+                self.assertEqual([arg for arg in cmake[0] if arg.startswith("-DWITH_RUNTIME_STACKTRACE=")],
+                                 ["-DWITH_RUNTIME_STACKTRACE=yes"])
                 debug = scope == "quick" and llvm == "11"
                 self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
                 self.assertEqual("-DWITH_INTERNAL_ALLOC_CHECK=yes" in cmake[0], debug)
@@ -688,6 +695,65 @@ class QuickScriptTests(unittest.TestCase):
                 expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                             "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
                 self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected if debug else ""))
+
+    def test_application_runtime_stacktrace_probes_and_failures(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        step = source.split("      - name: Test application runtime stacktraces\n", 1)[1]
+        step = step.split("\n      - ", 1)[0]
+        self.assertIn("inputs.scope == 'exhaustive'", step)
+        self.assertIn("matrix.llvm-version == '11'", step)
+        self.assertIn("matrix.llvm-version == '19'", step)
+        self.assertIn("contains(matrix.os, 'macos')", step)
+        self.assertNotIn("github.event_name", step)
+        config = self.directory / "src/libasr/config.h"
+        config.parent.mkdir()
+        config.write_text("#define HAVE_RUNTIME_STACKTRACE\n")
+        script = step.split("        run: |\n", 1)[1]
+        for platform in ("ubuntu-latest", "macos-latest"):
+            with self.subTest(platform=platform):
+                self.calls.write_text("")
+                rendered = script.replace("${{ matrix.os }}", platform)
+                result = subprocess.run(["bash", "-e", "-o", "pipefail"], input=rendered,
+                                        cwd=self.directory, env=self.env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [(Path(path).name, args)
+                         for path, args in map(json.loads, self.calls.read_text().splitlines())]
+                expected = [("llvm-dwarfdump", ["--version"])]
+                if platform == "macos-latest":
+                    expected.append(("dsymutil", ["--version"]))
+                expected += [
+                    ("lfortran", ["-v", "examples/expr2.f90", "-o", "expr2"]),
+                    ("expr2", []),
+                    ("lfortran", ["-v", "-g", "examples/expr2.f90", "-o", "expr2-debug"]),
+                    ("expr2-debug", []),
+                ]
+                self.assertEqual(calls, expected)
+        for failure in ("llvm-dwarfdump", "dsymutil", "lfortran", "debug-link", "expr2", "expr2-debug"):
+            with self.subTest(failure=failure):
+                result = subprocess.run(
+                    ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
+                    env=dict(self.env, CI_FAIL_TOOL=failure), capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
+        for tool in ("llvm-dwarfdump", "dsymutil"):
+            with self.subTest(missing=tool):
+                result = subprocess.run(
+                    ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
+                    env=dict(self.env, CI_FAIL_TOOL=tool, CI_FAIL_STATUS="127"),
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 127, result.stdout + result.stderr)
+        result = subprocess.run(
+            ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
+            env=dict(self.env, CI_EXPR_RESULT="24"), capture_output=True, text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        config.write_text("/* runtime support is disabled */\n")
+        self.calls.write_text("")
+        result = subprocess.run(["bash", "-e", "-o", "pipefail"], input=rendered,
+                                cwd=self.directory, env=self.env, capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.calls.read_text(), "")
 
     def test_full_descriptor_owner_keeps_platform_checks(self):
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
