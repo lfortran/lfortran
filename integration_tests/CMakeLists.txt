@@ -2370,6 +2370,7 @@ RUN(NAME implicit_interface_105 LABELS gfortran llvm EXTRA_ARGS --implicit-inter
 RUN(NAME implicit_interface_106 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME implicit_interface_107 LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME implicit_interface_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_109 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -3907,6 +3908,20 @@ RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f90)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
+RUN(NAME external_string_arg_02 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_02_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME external_string_arg_03 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_03_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_01 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_02 LABELS gfortran llvm
+    EXTRAFILES string_arg_hidden_length_02b.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_03 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_04 LABELS gfortran llvm
+    EXTRA_ARGS --skip-pass=string_length_arguments)
+RUN(NAME string_arg_hidden_length_05 LABELS gfortran llvm)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5045,6 +5060,7 @@ RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
+RUN(NAME func_call_in_decl_02 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)

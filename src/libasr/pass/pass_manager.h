@@ -60,6 +60,7 @@
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
+#include <libasr/pass/string_length_arguments.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
@@ -127,6 +128,7 @@ namespace LCompilers {
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
+            {"string_length_arguments", &pass_string_length_arguments},
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
@@ -149,6 +151,11 @@ namespace LCompilers {
 
         bool apply_default_passes;
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
+        // The translation unit the string_length_arguments pass has run on,
+        // so that the verifier checks what it did to it. The pass adds the
+        // hidden arguments again each time it runs, so it does not run on it
+        // again (`--cumulative` lists the passes twice).
+        ASR::TranslationUnit_t* string_length_arguments_applied = nullptr;
 
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
@@ -157,9 +164,10 @@ namespace LCompilers {
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
                            diag::Diagnostics &diagnostics,
-                           double &cummulative_time_taken_by_passes_in_microseconds) {
+                           double &cummulative_time_taken_by_passes_in_microseconds,
+                           bool required = false) {
             pass_options.diagnostics = &diagnostics;
-            if (pass_options.pass_cumulative) {
+            if (pass_options.pass_cumulative && !required) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
                     _with_optimization_passes.end(),
@@ -202,12 +210,18 @@ namespace LCompilers {
                 // Note: this is not enough for rtlib, we also need to include
                 // it
 
-                if (rtlib && passes[i] == "unused_functions") continue;
-                if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end())
+                if (!required) {
+                    if (rtlib && passes[i] == "unused_functions") continue;
+                    if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end())
+                        continue;
+                    if (c_skip_pass && std::find(_c_skip_passes.begin(),
+                            _c_skip_passes.end(), passes[i]) != _c_skip_passes.end())
+                        continue;
+                }
+                if (passes[i] == "string_length_arguments" &&
+                        string_length_arguments_applied == asr) {
                     continue;
-                if (c_skip_pass && std::find(_c_skip_passes.begin(),
-                        _c_skip_passes.end(), passes[i]) != _c_skip_passes.end())
-                    continue;
+                }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
@@ -215,12 +229,18 @@ namespace LCompilers {
                 bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (!had_error && diagnostics.has_error()) return;
+                if (passes[i] == "string_length_arguments") {
+                    string_length_arguments_applied = asr;
+                }
                 bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
+                ASRVerifyOptions verify_options;
+                verify_options.string_length_arguments =
+                    string_length_arguments_applied == asr;
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],
@@ -348,6 +368,10 @@ namespace LCompilers {
                 "device_launch_expand",
                 "do_loops",
                 "while_else",
+                // Every call the passes above can create is in place, so each
+                // character dummy gets its hidden length argument here, and
+                // each call the length of its actual.
+                "string_length_arguments",
                 "unused_functions",
                 "unique_symbols",
                 "intent_out_deallocate",
@@ -395,6 +419,7 @@ namespace LCompilers {
                           diag::Diagnostics &diagnostics) {
             double cummulative_time_taken_by_passes_in_microseconds = 0.0;
             auto t1 = std::chrono::high_resolution_clock::now();
+            string_length_arguments_applied = nullptr;
             if( !_user_defined_passes.empty() ) {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics, cummulative_time_taken_by_passes_in_microseconds);
@@ -417,6 +442,19 @@ namespace LCompilers {
                 }
                 pass_options.vector_of_time_report.push_back(message);
             }
+        }
+
+        // The LLVM and C code generators pass character dummies the way the
+        // string_length_arguments pass lays them out, so they run it with
+        // this after apply_passes(), whatever passes were selected (--pass,
+        // --skip-pass). It does nothing if the pass has run already.
+        void apply_string_length_arguments(Allocator& al,
+                ASR::TranslationUnit_t* asr, PassOptions& pass_options,
+                diag::Diagnostics &diagnostics) {
+            std::vector<std::string> passes = {"string_length_arguments"};
+            double time_taken_in_microseconds = 0.0;
+            apply_passes(al, asr, passes, pass_options, diagnostics,
+                time_taken_in_microseconds, true);
         }
 
         void dump_all_passes(Allocator& al, ASR::TranslationUnit_t* asr,

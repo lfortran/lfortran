@@ -1,0 +1,13 @@
+{
+    "basename": "pass_string_length_arguments-string_arg_hidden_length_04-ef17042",
+    "cmd": "lfortran --cumulative --pass=string_length_arguments --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/string_arg_hidden_length_04.f90",
+    "infile_hash": "40af0c2604e3b45ce021a0505ad7bab26da79a2b281e50604902ed71",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_string_length_arguments-string_arg_hidden_length_04-ef17042.stdout",
+    "stdout_hash": "60facbbc3bb96b3a4cb3813705b64133b53912216484a29086003ad4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1232,7 +1232,7 @@ namespace LCompilers {
                     n_dims, a_kind, is_array_type, arg->m_intent,
                     module, false);
                 if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC && is_array_type) {
-                    // For bind(c) array dummies (including implicit interfaces), handle
+                    // For bind(c) array dummies, handle
                     // based on the physical type specified in the ASR.
                     ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(arg->m_type);
                     if (phys_type == ASR::array_physical_typeType::DescriptorArray ||
@@ -1251,6 +1251,10 @@ namespace LCompilers {
                     type = type_original->getPointerTo();
                 } else if (LLVM::is_value_dummy_passed_by_value(*arg)) {
                     type = get_type_from_ttype_t_util(x.m_args[i], arg->m_type, module);
+                } else if (ASRUtils::is_string_dummy_with_hidden_length(
+                        *ASRUtils::get_FunctionType(x), *arg)) {
+                    // The data pointer; the length is a hidden argument.
+                    type = character_type;
                 } else {
                     type = type_original;
                 }
