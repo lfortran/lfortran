@@ -132,7 +132,7 @@ only once, redirect to a log file and then examine the log file.
 ### CI policy
 
 - `Quick checks` is the normal PR gate and runs the same builds, tests and
-  selections on PRs, merge queue groups, release tags and manual runs. It runs full Linux
+  selections on PRs, merge queue groups and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
@@ -156,8 +156,8 @@ only once, redirect to a log file and then examine the log file.
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
 - Every main commit passes Quick in the merge queue (`merge_group`) on the
-  exact commit that lands on main, so main pushes do not rerun Quick; they run
-  Exhaustive and the WASM upload (`Upload-WASM-CI.yml`). Keep `merge_group` on
+  exact commit that lands on main, so main and release-tag pushes do not rerun
+  Quick; they run Exhaustive and the WASM upload (`Upload-WASM-CI.yml`). Keep `merge_group` on
   every workflow that produces a required check; merge queue runs must not
   save caches. Exhaustive is identical on main, on a PR
   labeled `Tests::Run-Exhaustive` and on manual dispatch, including the

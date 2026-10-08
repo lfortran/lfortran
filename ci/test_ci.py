@@ -146,7 +146,7 @@ class RunnerTests(unittest.TestCase):
             (name, result) for name in names
             for result in ("failure", "skipped", "cancelled", "")
         ]
-        for event in ("pull_request", "merge_group", "push", "workflow_dispatch"):
+        for event in ("pull_request", "merge_group", "workflow_dispatch"):
             for failed_job, conclusion in cases:
                 with self.subTest(event=event, job=failed_job, conclusion=conclusion):
                     results = dict.fromkeys(names, "success")
@@ -275,9 +275,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         triggers = quick.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
         self.assertIn("\n  merge_group:\n", triggers)
         # The merge queue already tested the exact commit that lands on main.
-        push = triggers.split("\n  push:\n", 1)[1].split("\n  pull_request:\n", 1)[0]
-        self.assertNotIn("branches:", push)
-        self.assertIn("tags:", push)
+        self.assertNotIn("push:", triggers)
         # Exhaustive is optional and runs on the resulting main push.
         extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
         self.assertNotIn("merge_group:", extra)

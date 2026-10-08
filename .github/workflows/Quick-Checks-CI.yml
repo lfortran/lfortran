@@ -2,18 +2,16 @@ name: Quick checks
 
 on:
   # Main commits are tested by the merge queue before main is updated, so
-  # main pushes do not rerun Quick. Upload-WASM-CI.yml publishes from main.
-  push:
-    tags:
-      - 'v*'
+  # pushes (main and release tags) do not rerun Quick. Upload-WASM-CI.yml
+  # publishes WASM builds from main and release tags.
   pull_request:
     branches:
       - main
   merge_group:
   workflow_dispatch:
 
-# Only superseded PR runs are cancelled. Merge queue, tag and manual runs use
-# a commit SHA, distinct from PR concurrency groups.
+# Only superseded PR runs are cancelled. Merge queue and manual runs use a
+# commit SHA, distinct from PR concurrency groups.
 concurrency:
   group: quick-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
