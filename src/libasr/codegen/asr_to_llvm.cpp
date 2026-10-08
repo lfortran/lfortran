@@ -26431,6 +26431,30 @@ public:
         return type2vtabid[class_sym];
     }
 
+    // A polymorphic dummy without POINTER or ALLOCATABLE is associated with
+    // the target of a scalar class pointer actual, not with the pointer, so
+    // it gets a stack copy of the pointer's class wrapper `wrapper`.
+    // Re-associating, reallocating or nullifying the pointer during the call
+    // then neither changes the dummy nor frees the wrapper it uses. A
+    // disassociated pointer still passes a null wrapper.
+    llvm::Value* copy_class_wrapper_for_dummy(ASR::expr_t* actual, ASR::expr_t* dummy,
+            llvm::Value* wrapper) {
+        ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
+        if (!ASRUtils::is_pointer(actual_type) || ASRUtils::is_array(actual_type) ||
+                LLVM::is_llvm_pointer(*ASRUtils::expr_type(dummy))) {
+            return wrapper;
+        }
+        llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(actual,
+            ASRUtils::type_get_past_pointer(actual_type), module.get());
+        llvm::Value* copy = llvm_utils->CreateAlloca(wrapper_type);
+        llvm::Value* is_associated = builder->CreateIsNotNull(wrapper);
+        llvm_utils->create_if_else(is_associated, [&]() {
+            builder->CreateStore(llvm_utils->CreateLoad2(wrapper_type, wrapper), copy);
+        }, []() {});
+        return builder->CreateSelect(is_associated, copy,
+            llvm::ConstantPointerNull::get(wrapper_type->getPointerTo()));
+    }
+
     llvm::Value* convert_to_polymorphic_arg(ASR::expr_t* arg_expr, llvm::Value* dt, ASR::expr_t* s_m_args0,
         ASR::ttype_t* s_m_args0_type, ASR::ttype_t* arg_type) {
         if ( compiler_options.new_classes ) {
@@ -26445,6 +26469,7 @@ public:
                         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, ASRUtils::expr_type(arg_expr), module.get());
                         dt = llvm_utils->CreateLoad2(_type, dt);
+                        dt = copy_class_wrapper_for_dummy(arg_expr, s_m_args0, dt);
                     }
                     return dt;
                 }
@@ -26691,6 +26716,7 @@ public:
                     if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
                             !LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0))) {
                         dt = llvm_utils->CreateLoad2(call_arg_struct_type->getPointerTo(), dt);
+                        dt = copy_class_wrapper_for_dummy(arg_expr, s_m_args0, dt);
                     }
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                         s_m_args0, ASRUtils::expr_type(s_m_args0), module.get());
@@ -27879,6 +27905,7 @@ public:
         if (!class_proc->m_is_nopass) {
             llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0], 
                 ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
+            llvm_dt = copy_class_wrapper_for_dummy(x.m_dt, func->m_args[0], llvm_dt);
             llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
             args.push_back(llvm_dt);
         }
@@ -27949,6 +27976,7 @@ public:
         if (!class_proc->m_is_nopass) {
             llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0],
                 ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
+            llvm_dt = copy_class_wrapper_for_dummy(x.m_dt, func->m_args[0], llvm_dt);
             llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
 
             // If the parameter is a POINTER, we need an extra level of indirection
