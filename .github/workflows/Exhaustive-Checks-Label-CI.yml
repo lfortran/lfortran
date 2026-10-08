@@ -1,22 +1,8 @@
 name: Exhaustive checks label
 
-# Starts or stops Exhaustive checks (Exhaustive-Checks-CI.yml) when the
-# Tests::Run-Exhaustive label is added to or removed from a PR. That workflow
-# does not run on label events itself (see the comment on its triggers).
-#
-# This reruns the Exhaustive checks run of the PR head commit, after
-# cancelling it if it is still running. The run's `gate` job reads the
-# current labels, so the rerun runs every job if the label is present and
-# skips them all otherwise. A rerun stays the newest run of that workflow, so
-# the PR page keeps showing it. Removing the label after the run finished
-# keeps its results.
-#
-# GitHub reruns a run only up to 30 days after it started. For an older head
-# commit, push a new commit or close and reopen the PR.
-#
-# pull_request_target gives a token that can rerun workflows, also on PRs
-# from forks. It is safe here: this workflow does not check out or run any
-# code from the PR.
+# Explicit, rare requests for extended compiler checks, not application suites.
+# Rerun the PR's existing workflow so its gate reads the current labels.
+# Unrelated label events must not replace the visible Exhaustive result.
 on:
   pull_request_target:
     types: [labeled, unlabeled]
@@ -27,8 +13,6 @@ permissions:
   actions: write
   pull-requests: read
 
-# Every label change starts a run of this workflow. Keying the group by label
-# keeps unrelated labels from cancelling a rerun in progress.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.label.name }}
   cancel-in-progress: true
@@ -39,6 +23,7 @@ jobs:
     if: github.event.label.name == 'Tests::Run-Exhaustive'
     runs-on: ubuntu-latest
     steps:
+      # This privileged workflow never checks out or executes PR code.
       - name: Rerun Exhaustive checks of the PR head commit
         shell: bash
         env:
@@ -63,13 +48,21 @@ jobs:
             exit 0
           fi
 
-          # `gh run rerun` needs a completed run.
           if [ "$(run_field status)" != completed ]; then
-            gh run cancel "$run_id" || true
+            if ! gh run cancel "$run_id"; then
+              if [ "$(run_field status)" != completed ]; then
+                echo "::error::Could not cancel run $run_id"
+                exit 1
+              fi
+            fi
             for _ in $(seq 60); do
               [ "$(run_field status)" = completed ] && break
               sleep 5
             done
+            if [ "$(run_field status)" != completed ]; then
+              echo "::error::Timed out waiting for run $run_id to stop"
+              exit 1
+            fi
           fi
 
           if [ "$ACTION" = unlabeled ] && [ "$(run_field conclusion)" != cancelled ]; then
@@ -77,8 +70,7 @@ jobs:
             exit 0
           fi
 
-          # Rerunning an older commit's run would cancel the run of the new
-          # head (same concurrency group), which reads the labels itself.
+          # Do not let an old head's rerun cancel a new revision's checks.
           if [ "$(head_sha)" != "$sha" ]; then
             echo "The PR head moved on from $sha; nothing to rerun."
             exit 0

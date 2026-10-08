@@ -10,6 +10,10 @@ endif ()
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
+option(LFORTRAN_SMOKE "Build and run the representative CI smoke suite" OFF)
+if (LFORTRAN_SMOKE)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/smoke_tests.cmake)
+endif()
 
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
@@ -86,6 +90,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         else()
             set(ADD_TEST OFF)
         endif()
+    endif()
+
+    if (LFORTRAN_SMOKE AND NOT RUN_SMOKE_NAME IN_LIST LFORTRAN_SMOKE_TESTS)
+        set(ADD_TEST OFF)
     endif()
 
     if (ADD_TEST)
@@ -272,6 +280,7 @@ macro(RUN)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
+    set(RUN_SMOKE_NAME "${RUN_NAME}")
 
     foreach(b ${RUN_LABELS})
         if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
@@ -338,19 +347,21 @@ macro(COMPILE)
         message(FATAL_ERROR "Must specify the COMPILER argument")
     endif()
 
-    foreach(compiler ${compilers})
-        if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
-            add_custom_command(
-                OUTPUT ${name}_lfortran.mod
-                COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_custom_target(${name}_lfortran ALL DEPENDS ${name}_lfortran.mod)
-        elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
-            add_custom_command(
-                OUTPUT ${name}_gfortran.mod
-                COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_custom_target(${name}_gfortran ALL DEPENDS ${name}_gfortran.mod)
-        endif()
-    endforeach()
+    if (NOT LFORTRAN_SMOKE OR name IN_LIST LFORTRAN_SMOKE_TESTS)
+        foreach(compiler ${compilers})
+            if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
+                add_custom_command(
+                    OUTPUT ${name}_lfortran.mod
+                    COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+                add_custom_target(${name}_lfortran ALL DEPENDS ${name}_lfortran.mod)
+            elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
+                add_custom_command(
+                    OUTPUT ${name}_gfortran.mod
+                    COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
+                add_custom_target(${name}_gfortran ALL DEPENDS ${name}_gfortran.mod)
+            endif()
+        endforeach()
+    endif()
 endmacro(COMPILE)
 
 # The supported test labels are:
@@ -5866,3 +5877,12 @@ RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
 
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
+
+if (LFORTRAN_SMOKE)
+    get_property(smoke_tests DIRECTORY PROPERTY TESTS)
+    list(LENGTH smoke_tests smoke_count)
+    if (smoke_count EQUAL 0)
+        message(FATAL_ERROR "No smoke tests selected for backend: ${LFORTRAN_BACKEND}")
+    endif()
+    message(STATUS "Selected ${smoke_count} smoke tests for ${LFORTRAN_BACKEND}")
+endif()
