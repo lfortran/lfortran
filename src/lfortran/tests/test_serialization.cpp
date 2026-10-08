@@ -1751,6 +1751,12 @@ integer function read_cell(self)
     class(Cell), intent(in) :: self
     read_cell = self%n
 end function
+function make_owner() result(owner)
+    class(IValue), allocatable :: owner
+    type(Cell) :: source
+    source%n = 7
+    allocate(owner, source=source)
+end function
 subroutine bind(view, object, other)
     class(IValue), pointer, intent(out) :: view
     type(Cell), target, intent(inout) :: object
@@ -1846,6 +1852,16 @@ end module
         SUBCASE("mold cannot substitute an unrelated declared contract") {
             value->m_var_expr = ASRUtils::EXPR(ASR::make_Var_t(
                 al, value->base.base.loc, &other->base));
+            code = "asr.verify.trait_pointer.null_mold";
+        }
+        SUBCASE("an allocatable function value is not a mold variable") {
+            auto *factory = ASR::down_cast<ASR::Function_t>(
+                module->m_symtab->get_symbol("make_owner"));
+            value->m_var_expr = ASRUtils::EXPR(ASR::make_FunctionCall_t(
+                al, value->base.base.loc, &factory->base, nullptr, nullptr, 0,
+                ASRUtils::expr_type(factory->m_return_var), nullptr, nullptr));
+            LCompilers::PassUtils::UpdateDependenciesVisitor dependencies(al);
+            dependencies.visit_TranslationUnit(*result.result);
             code = "asr.verify.trait_pointer.null_mold";
         }
         SUBCASE("null has pointer type rather than borrowed view type") {

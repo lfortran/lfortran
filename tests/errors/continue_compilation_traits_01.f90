@@ -3731,3 +3731,49 @@ contains
         end select
     end subroutine
 end module
+
+module traits_null_function_mold
+    implicit none
+    abstract interface :: I
+    end interface
+    type :: Box
+        integer :: n
+    end type
+    implements I :: Box
+    end implements
+contains
+    function make_owner() result(owner)
+        class(I), allocatable :: owner
+        type(Box) :: source
+        source%n = 7
+        allocate(owner, source=source)
+    end function
+    subroutine take_pointer(p)
+        class(I), pointer, intent(in) :: p
+    end subroutine
+    subroutine bad_assignment()
+        class(I), pointer :: p
+        p => null(make_owner())
+    end subroutine
+    subroutine bad_actual()
+        call take_pointer(null(make_owner()))
+    end subroutine
+    subroutine bad_indirect()
+        class(I), pointer :: p
+        procedure(make_owner), pointer :: factory
+        factory => make_owner
+        p => null(factory())
+    end subroutine
+    subroutine bad_parenthesized(owner)
+        class(I), allocatable, intent(in) :: owner
+        class(I), pointer :: p
+        p => null((owner))
+        p => null(mold=((owner)))
+        call take_pointer(null((owner)))
+    end subroutine
+    subroutine bad_parenthesized_pointer(q)
+        class(I), pointer, intent(in) :: q
+        class(I), pointer :: p
+        p => null((q))
+    end subroutine
+end module

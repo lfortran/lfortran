@@ -660,6 +660,9 @@ child-to-parent and equivalent-anonymous-contract projections as non-null
 pointer values, but not unrelated contracts or strengthening. Mold-less
 `NULL()` takes its type from the pointer context. Pointer `INTENT(IN)` actuals
 obey the same projection checks; `MOLD` does not bypass them.
+An allocatable MOLD must be a variable, not an allocatable-result function
+value or a parenthesized expression. The variable may be unallocated or readonly:
+MOLD does not define it or change its allocation state.
 
 Scalar `class(I), pointer` variables support association to concrete TARGET or
 POINTER storage, allocatable TARGET owners, and pointers with the same contract
