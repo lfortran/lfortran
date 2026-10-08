@@ -26626,7 +26626,14 @@ public:
                                                     ASRUtils::extract_kind_from_ttype_t(arg_type),
                                                     unlimited_polymorphic_struct, module.get());
                     }
-                                               
+
+                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr))) {
+                        // Allocatable or pointer actual: wrap its target, not the
+                        // address of the allocatable/pointer slot.
+                        llvm::Type* arg_el_type = llvm_utils->get_el_type(
+                            arg_expr, ASRUtils::extract_type(arg_type), module.get());
+                        dt = llvm_utils->CreateLoad2(arg_el_type->getPointerTo(), dt);
+                    }
                     builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr), data_ptr);
                     return unlimited_polymorphic_struct;
                 }
