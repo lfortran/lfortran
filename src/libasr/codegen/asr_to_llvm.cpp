@@ -25046,6 +25046,19 @@ public:
                         tmp = ptr_to_tmp;
                     }
                 }
+            } else if (orig_arg &&
+                    ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) &&
+                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                    !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
+                // A polymorphic scalar component passed to a nonpolymorphic
+                // dummy: the dummy receives the declared-type part of the
+                // component's dynamic value, reached through its class wrapper.
+                this->visit_expr_wrapper(x.m_args[i].m_value);
+                tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                    al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
                 ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                     x.m_args[i].m_value);
