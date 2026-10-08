@@ -16,9 +16,12 @@ integer, parameter :: p2(2,2,2) = reshape(s3, [2, 2, 2], order=[3, 1, 2])
 integer, parameter :: p3(3,3) = reshape(s1, [3, 3], pad=[0, -1], order=[2, 1])
 integer, parameter :: p4(3,2) = reshape(msrc, [3, 2], order=[2, 1])
 real, parameter :: p5(2,2) = reshape(rs, [2, 2], order=[2, 1])
+integer, parameter :: z(2) = [0, -1]
+integer, parameter :: p7(3,3) = reshape(s1, [3, 3], pad=z, order=[2, 1])
 integer :: b(2,2), r1(2,3), r2(2,2,2), r3(3,3), r4(3,2)
 real :: r5(2,2)
 real(8) :: r6(2,3)
+integer :: r7(3,3), r8(3,3)
 
 b = reshape(src, [2, 2], order=[2, 1])
 r1 = reshape(s1, [2, 3], order=[2, 1])
@@ -28,6 +31,8 @@ r4 = reshape(msrc, [3, 2], order=[2, 1])
 r5 = reshape(rs, [2, 2], order=[2, 1])
 r6 = reshape([1d0+0d0, 2d0+0d0, 3d0+0d0, 4d0+0d0], [2, 3], order=[2, 1], &
     pad=[0d0])
+r7 = reshape(s1, [3, 3], pad=z, order=[2, 1])
+r8 = reshape([1, 2, 3, 4, 5, 6], [3, 3], pad=z, order=[2, 1])
 
 print *, a
 print *, b
@@ -45,4 +50,7 @@ if (any(abs(p5 - reshape([1.0, 3.0, 2.0, 4.0], [2, 2])) > 1e-6)) error stop 11
 if (any(abs(r5 - reshape([1.0, 3.0, 2.0, 4.0], [2, 2])) > 1e-6)) error stop 12
 if (any(abs(r6 - reshape([1d0, 4d0, 2d0, 0d0, 3d0, 0d0], [2, 3])) > 1d-12)) &
     error stop 13
+if (any(p7 /= reshape([1, 4, 0, 2, 5, -1, 3, 6, 0], [3, 3]))) error stop 14
+if (any(r7 /= reshape([1, 4, 0, 2, 5, -1, 3, 6, 0], [3, 3]))) error stop 15
+if (any(r8 /= reshape([1, 4, 0, 2, 5, -1, 3, 6, 0], [3, 3]))) error stop 16
 end program
