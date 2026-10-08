@@ -1,0 +1,13 @@
+{
+    "basename": "asr-parameter_22-729fd52",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/parameter_22.f90",
+    "infile_hash": "c5a5db64e490dc1f3abfbe864fd14e5a04db7d654879ab4c9fbe7be7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-parameter_22-729fd52.stderr",
+    "stderr_hash": "4541931f787982a01316bd40d224ffa61b087f389ad2bb3e1fb5cce0",
+    "returncode": 0
+}

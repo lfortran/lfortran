@@ -10175,26 +10175,55 @@ public:
                             int src_kind = ASRUtils::extract_kind_from_ttype_t(init_type);
                             int dst_kind = ASRUtils::extract_kind_from_ttype_t(type);
                             bool do_warn = false;
+                            // Whether any of the `n` double precision values at
+                            // `v` changes when narrowed to single precision.
+                            auto changes_on_narrowing = [](const double *v, size_t n) {
+                                for (size_t k = 0; k < n; k++) {
+                                    if ((double)(float)v[k] != v[k]) {
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            };
+                            // Constant array of double precision elements, or
+                            // nullptr if `cval` is not one.
+                            auto real8_array_constant = [](ASR::expr_t *cval) -> ASR::ArrayConstant_t* {
+                                if (cval && ASR::is_a<ASR::ArrayConstant_t>(*cval)) {
+                                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(cval);
+                                    if (ASRUtils::extract_kind_from_ttype_t(ac->m_type) == 8) {
+                                        return ac;
+                                    }
+                                }
+                                return nullptr;
+                            };
                             if (src_kind > dst_kind) {
                                 if (ASRUtils::is_real(*init_type) && ASRUtils::is_real(*type)) {
                                     // Only warn when the constant value changes after narrowing.
                                     ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
+                                    ASR::ArrayConstant_t *ac = real8_array_constant(cval);
                                     if (cval && ASR::is_a<ASR::RealConstant_t>(*cval)) {
                                         double v = ASR::down_cast<ASR::RealConstant_t>(cval)->m_r;
                                         if ((double)(float)v != v) {
                                             do_warn = true;
                                         }
+                                    } else if (ac) {
+                                        do_warn = changes_on_narrowing((const double*)ac->m_data,
+                                            ASRUtils::get_constant_ArrayConstant_size(ac));
                                     } else {
                                         do_warn = true;
                                     }
                                 } else if (ASRUtils::is_complex(*init_type) && ASRUtils::is_complex(*type)) {
                                     ASR::expr_t *cval = ASRUtils::expr_value(init_expr);
+                                    ASR::ArrayConstant_t *ac = real8_array_constant(cval);
                                     if (cval && ASR::is_a<ASR::ComplexConstant_t>(*cval)) {
                                         auto *cc = ASR::down_cast<ASR::ComplexConstant_t>(cval);
                                         if ((double)(float)cc->m_re != cc->m_re ||
                                                 (double)(float)cc->m_im != cc->m_im) {
                                             do_warn = true;
                                         }
+                                    } else if (ac) {
+                                        do_warn = changes_on_narrowing((const double*)ac->m_data,
+                                            2 * ASRUtils::get_constant_ArrayConstant_size(ac));
                                     } else {
                                         do_warn = true;
                                     }
@@ -10213,10 +10242,10 @@ public:
                                 }
                             }
                             if (do_warn) {
-                                std::string src_str = ASRUtils::type_to_str_fortran_symbol(init_type, nullptr) +
-                                    "(" + std::to_string(src_kind) + ")";
-                                std::string dst_str = ASRUtils::type_to_str_fortran_symbol(type, nullptr) +
-                                    "(" + std::to_string(dst_kind) + ")";
+                                std::string src_str = ASRUtils::type_to_str_fortran_symbol(
+                                    ASRUtils::extract_type(init_type), nullptr, true);
+                                std::string dst_str = ASRUtils::type_to_str_fortran_symbol(
+                                    ASRUtils::extract_type(type), nullptr, true);
                                 diag.add(Diagnostic(
                                     "Change of value in conversion from '" + src_str +
                                     "' to '" + dst_str + "'",
