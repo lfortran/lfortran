@@ -267,7 +267,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
+    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC ISOLATE_MODULES)
     set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
@@ -318,6 +318,17 @@ macro(RUN)
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     else ()
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+    endif()
+
+    if (RUN_ISOLATE_MODULES AND TARGET ${RUN_NAME})
+        # The forced-compiler runner can leave compiler identification unset.
+        if (NOT CMAKE_Fortran_MODDIR_FLAG)
+            set(CMAKE_Fortran_MODDIR_FLAG "-J")
+        endif()
+        set(module_dir "${CMAKE_CURRENT_BINARY_DIR}/modules/${RUN_NAME}")
+        file(MAKE_DIRECTORY "${module_dir}")
+        set_target_properties(${RUN_NAME} PROPERTIES Fortran_MODULE_DIRECTORY "${module_dir}")
+        target_include_directories(${RUN_NAME} PRIVATE "${module_dir}")
     endif()
 
 endmacro(RUN)
@@ -3748,24 +3759,24 @@ RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
 RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_method_02 LABELS llvm c fortran wasm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
-RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23
+RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
         traits_runtime_generic_01_late_client.f90 traits_runtime_generic_01_consumer.f90)
-RUN(NAME traits_runtime_generic_01_matrix LABELS llvm llvm2 NO_STD_F23
+RUN(NAME traits_runtime_generic_01_matrix LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
         traits_runtime_generic_01_matrix_client.f90 traits_runtime_generic_01_matrix_consumer.f90)
-RUN(NAME traits_runtime_generic_01_forward LABELS llvm llvm2 NO_STD_F23
+RUN(NAME traits_runtime_generic_01_forward LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
         traits_runtime_generic_01_forwarding.f90 traits_runtime_generic_01_matrix_client.f90)
 RUN(NAME traits_runtime_generic_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
-RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23
+RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_03_ops.f90
         traits_runtime_generic_01_late_client.f90)
-RUN(NAME traits_runtime_generic_04 LABELS llvm llvm2 NO_STD_F23
+RUN(NAME traits_runtime_generic_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_matrix_client.f90)
 RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
