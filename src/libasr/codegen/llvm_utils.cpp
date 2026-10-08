@@ -1212,8 +1212,10 @@ namespace LCompilers {
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
-                // We pass all arguments as pointers for now,
-                // except bind(C) value arguments that are passed by value
+                // We pass all arguments as pointers for now, except
+                // bind(C) value arguments and the VALUE dummies selected
+                // by LLVM::is_value_dummy_passed_by_value(), which are
+                // passed by value
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
@@ -1247,6 +1249,8 @@ namespace LCompilers {
                     is_array_type = false;
                 } else if (is_array_type) {
                     type = type_original->getPointerTo();
+                } else if (LLVM::is_value_dummy_passed_by_value(*arg)) {
+                    type = get_type_from_ttype_t_util(x.m_args[i], arg->m_type, module);
                 } else {
                     type = type_original;
                 }
@@ -1255,10 +1259,7 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
-                if( (arg->m_intent == ASRUtils::intent_out ||
-                     arg->m_intent == ASRUtils::intent_inout ||
-                     (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
-                    ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
+                if( LLVM::is_cptr_dummy_passed_by_reference(*arg) ) {
                     type = type->getPointerTo();
                 }
                 std::uint32_t m_h;
