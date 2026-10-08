@@ -119,8 +119,9 @@ inventing a new one.
 Review build, generation and validation coverage against `AGENTS.md`'s CI
 policy. Internal regression modes and capability checks belong in Quick;
 Exhaustive adds configurations rather than replaying already-covered work.
-Third-party application validation intentionally runs on main as a source
-of integration regressions and release evidence. Do not mistake that
+Third-party application validation intentionally runs only in Exhaustive
+(every main push or an explicit request) as a source of integration
+regressions and release evidence. Do not mistake that
 explicit trade-off, or credential-restricted publishing, for an accidental
 coverage omission.
 

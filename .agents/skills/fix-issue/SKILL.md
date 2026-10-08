@@ -9,8 +9,8 @@ description: >
   original issue is fully fixed, open a draft PR from the user's fork with
   `gh`, review it with pr-review, and keep fixing CI failures and review
   blockers until Quick checks is green and the PR is clean, then mark it
-  ready for review. Third-party applications run on main to generate
-  integration-test regressions, not as a PR gate. Extended PR compiler checks
+  ready for review. Third-party applications run in Exhaustive (main or an
+  explicit request) to generate integration-test regressions, not as a PR gate. Extended PR compiler checks
   are opt-in only when the user requests them. Unrelated pre-existing bugs
   are filed as separate issues and linked from the PR.
   Triggers: fix issue, fix github issue, issue to PR, resolve issue, send PR
@@ -397,11 +397,11 @@ require both on the same current revision.
 Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
 Do not treat missing or all-skipped Quick checks as success.
-Expected skips of unrequested Exhaustive jobs and main-only application
-validation do not block a PR.
+Expected skips of unrequested Exhaustive jobs, including application
+validation, do not block a PR.
 
 Third-party applications are bug generators for the integration suite and
-release compatibility checks on every main push, not a PR test suite.
+release compatibility checks on every main push, not an ordinary PR test suite.
 When the reported bug comes from an application, reduce it, add the registered
 integration regression, fix the compiler and verify the original application
 failure locally. Do not add that application to Quick. Caffeine-backed
@@ -410,7 +410,7 @@ coarray and GPU integration checks remain required capability tests.
 Do not add CI labels or dispatch extended CI automatically, including for
 serialization, finalization, I/O or GPU changes. Do not cancel older main runs.
 The rare `Tests::Run-Exhaustive` label is for an explicit request for extended
-compiler coverage; it does not run the application catalog on a PR.
+coverage; it runs the same Exhaustive checks as main, including applications.
 
 Only when the user requests extended checks, add the label with
 `gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.

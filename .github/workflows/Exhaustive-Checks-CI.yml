@@ -66,7 +66,7 @@ jobs:
     if: needs.gate.outputs.run == 'true'
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
-      scope: ${{ github.event_name == 'push' && 'main' || 'extra' }}
+      scope: exhaustive
 
   platform:
     name: Full platform coverage (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
@@ -163,14 +163,10 @@ jobs:
         run: |
             export PATH="$(pwd)/inst/bin:$PATH"
             NPROC=$(nproc)
-            selection=()
-            if [[ "$GITHUB_EVENT_NAME" != "push" ]]; then
-                selection=(--smoke)
-            fi
             cd src/integration_tests
-            ./run_tests.py -b llvm -sc -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm_submodule -sc -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm --detect-leaks -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm -sc -j${NPROC}
+            ./run_tests.py -b llvm_submodule -sc -j${NPROC}
+            ./run_tests.py -b llvm --detect-leaks -j${NPROC}
 
       - name: Test C++ compiler build
         shell: bash -e -l {0}
@@ -244,21 +240,16 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ctest
-            selection=()
-            if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-                ./run_tests.py
-                ./run_tests.py -vh
-            else
-                selection=(--smoke)
-            fi
+            ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             NPROC=$(nproc)
-            ./run_tests.py -b llvm -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm -f -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm_single_invocation -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm --std=f23 -j${NPROC} "${selection[@]}"
-            ./run_tests.py -b llvm -f --std=f23 -j${NPROC} "${selection[@]}"
+            ./run_tests.py -b llvm -j${NPROC}
+            ./run_tests.py -b llvm -f -j${NPROC}
+            ./run_tests.py -b llvm_single_invocation -j${NPROC}
+            ./run_tests.py -b llvm --std=f23 -j${NPROC}
+            ./run_tests.py -b llvm -f --std=f23 -j${NPROC}
 
       - name: Test Installation
         shell: bash -e -l {0}

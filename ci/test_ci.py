@@ -189,7 +189,7 @@ class RunnerTests(unittest.TestCase):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-    def test_application_catalog_runs_only_on_main_pushes(self):
+    def test_application_catalog_runs_in_every_exhaustive_run_except_tags(self):
         workflows = ROOT / ".github/workflows"
         callers = [path.name for path in workflows.glob("*.yml")
                    if "ci/test_third_party_codes.sh" in path.read_text()]
@@ -198,8 +198,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         step = source.split("      - name: Test third party codes\n", 1)[1].split("\n      - ", 1)[0]
         condition = re.search(r"^\s*if: (.+)$", step, re.MULTILINE).group(1)
         self.assertEqual(condition,
-            "${{ github.event_name == 'push' && github.ref == 'refs/heads/main' "
-            "&& inputs.scope == 'main' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' "
+            "${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') "
+            "&& (matrix.llvm-version == '11' || matrix.llvm-version == '19' "
             "|| contains(matrix.os, 'macos')) }}")
         self.assertNotIn("--quick", step)
         self.assertIn('LAPACK_MODE="full"', step)
@@ -240,15 +240,14 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("name: Extended compiler checks", extra)
         self.assertNotIn("name: Compiler compatibility\n", extra)
 
-    def test_coverage_matrix_preserves_main_and_bounds_extra(self):
+    def test_coverage_matrix_has_quick_and_exhaustive_roles(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         matrix = re.search(r"llvm-version: \$\{\{ fromJSON\('([^']+)'\)\[inputs.scope\]", source)
         self.assertIsNotNone(matrix)
         roles = json.loads(matrix.group(1))
         self.assertEqual(roles, {
             "quick": ["7", "11", "23"],
-            "extra": ["7", "23"],
-            "main": ["7", "8", "10", "11", "15", "17", "18", "19", "21", "22", "23"],
+            "exhaustive": ["7", "8", "10", "11", "15", "17", "18", "19", "21", "22", "23"],
         })
         self.assertIn('"os":"macos-latest","llvm-version":"22"', source)
         self.assertIn("inputs.scope == 'quick' && fromJSON('[]')", source)
@@ -302,7 +301,7 @@ class WorkflowPolicyTests(unittest.TestCase):
 
     def test_quick_owns_full_cpu_regressions(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-        reference = source.split("      - name: Test Release reference coverage\n", 1)[1]
+        reference = source.split("      - name: Test Debug reference coverage\n", 1)[1]
         reference = reference.split("      - name: Test LLVM integration tests\n", 1)[0]
         self.assertIn("inputs.scope == 'quick' && matrix.llvm-version == '11'", reference)
         self.assertIn("./run_tests.py\n", reference)
@@ -310,7 +309,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         integration = integration.split("      - name: Test coarray", 1)[0]
         self.assertIn('[[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]', integration)
         self.assertIn("bash ci/test_llvm_integration.sh --core", integration)
-        self.assertIn("export WIN=0 MACOS=1 LFORTRAN_TEST_SUITE=full", integration)
+        self.assertNotIn("shell ci/test.sh", integration)
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         options = quick.split("      - name: Test full descriptor modes\n", 1)[1]
         options = options.split("\n      - ", 1)[0]
@@ -382,7 +381,21 @@ class WorkflowPolicyTests(unittest.TestCase):
                 continue
             self.assertIn("needs: gate", body, name)
             self.assertIn("needs.gate.outputs.run == 'true'", body, name)
-        self.assertIn("scope: ${{ github.event_name == 'push' && 'main' || 'extra' }}", source)
+        self.assertIn("scope: exhaustive", source)
+
+    def test_exhaustive_coverage_is_event_independent(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
+        jobs = source.split("\njobs:\n", 1)[1].split("\n  compatibility:\n", 1)[1]
+        self.assertNotIn("--smoke", jobs)
+        self.assertNotIn("GITHUB_EVENT_NAME", jobs)
+        publishing = {
+            "if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}",
+            "if: github.event_name == 'push'",
+            "if: ${{ github.event_name == 'push' }}",
+            "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
+        }
+        conditions = re.findall(r"^\s*(if: .*github\.event_name.*)$", jobs, re.MULTILINE)
+        self.assertEqual(set(conditions), publishing)
 
     def test_label_controller_never_executes_pr_code(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-Label-CI.yml").read_text()
@@ -559,7 +572,7 @@ class QuickScriptTests(unittest.TestCase):
                                      [normal, submodule] if macos else
                                      [normal, fast_variants, fast, submodule])
 
-    def test_installation_variants_keep_main_full_and_prs_supplementary(self):
+    def test_installation_variants_run_full_suites_on_every_event(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         blocks = re.split(r"(?m)^  ([\w-]+):\n", source.split("\njobs:\n", 1)[1])
         jobs = dict(zip(blocks[1::2], blocks[2::2]))
@@ -587,12 +600,11 @@ class QuickScriptTests(unittest.TestCase):
                     reference = [args for path, args in calls
                                  if path == str(self.directory / "run_tests.py")]
                     self.assertEqual(len(integration), count)
-                    self.assertEqual(len(reference), 2 if job == "release" and event == "push" else 0)
+                    self.assertEqual(len(reference), 2 if job == "release" else 0)
                     for args in integration:
-                        if args != ["-m"]:
-                            self.assertEqual("--smoke" in args, event != "push")
+                        self.assertNotIn("--smoke", args)
 
-    def test_full_integration_builds_enable_runtime_stacktraces(self):
+    def test_compatibility_build_configuration(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         build = source.split("      - name: Build\n", 1)[1].split("\n      - ", 1)[0]
         script = build.split("        run: |\n", 1)[1]
@@ -600,16 +612,13 @@ class QuickScriptTests(unittest.TestCase):
             ("quick", "ubuntu-latest", "7", True),
             ("quick", "ubuntu-latest", "11", True),
             ("quick", "ubuntu-latest", "23", True),
-            ("extra", "ubuntu-latest", "7", True),
-            ("extra", "ubuntu-latest", "23", True),
-            ("extra", "macos-latest", "22", True),
-            ("main", "ubuntu-latest", "7", True),
-            ("main", "ubuntu-latest", "11", False),
-            ("main", "ubuntu-latest", "19", False),
-            ("main", "ubuntu-latest", "21", True),
-            ("main", "ubuntu-latest", "22", True),
-            ("main", "ubuntu-latest", "23", True),
-            ("main", "macos-latest", "22", False),
+            ("exhaustive", "ubuntu-latest", "7", True),
+            ("exhaustive", "ubuntu-latest", "11", False),
+            ("exhaustive", "ubuntu-latest", "19", False),
+            ("exhaustive", "ubuntu-latest", "21", True),
+            ("exhaustive", "ubuntu-latest", "22", True),
+            ("exhaustive", "ubuntu-latest", "23", True),
+            ("exhaustive", "macos-latest", "22", False),
         )
         for scope, platform, llvm, enabled in cases:
             with self.subTest(scope=scope, platform=platform, llvm=llvm):
@@ -626,6 +635,8 @@ class QuickScriptTests(unittest.TestCase):
                 cmake = [args for path, args in calls if path == str(self.bin / "cmake")]
                 self.assertEqual(len(cmake), 2)
                 self.assertEqual("-DWITH_RUNTIME_STACKTRACE=yes" in cmake[0], enabled)
+                debug = scope == "quick" and llvm == "11"
+                self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

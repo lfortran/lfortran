@@ -421,16 +421,16 @@ policy."
 
 Pull requests normally run only **Quick checks**. Quick runs exactly the same
 builds, test suites and selections on PRs, main pushes, release tags and manual
-runs. Publishing steps remain push-only. Exhaustive adds configurations and
-broader suites, never another invocation of Quick.
+runs. Publishing steps remain push-only. Main runs Quick plus Exhaustive.
+Exhaustive adds configurations and broader suites, never another invocation
+of Quick, and runs identically on main, on labeled PRs and on manual dispatch.
 
-The shared native compiler workflow has three explicit coverage roles:
+The shared native compiler workflow has two explicit coverage roles:
 
 | Role | Caller | Native LLVM matrix |
 | --- | --- | --- |
 | `quick` | Quick on every event | Linux 7/11/23 |
-| `extra` | Exhaustive on PRs and manual runs | Linux 7/23 and macOS 22 |
-| `main` | Exhaustive on main and release-tag pushes | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 |
+| `exhaustive` | Exhaustive on every event | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 |
 
 Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
@@ -441,39 +441,36 @@ serializing them in one long job:
 
 | Compiler | Complete regression modes |
 | --- | --- |
-| Linux/LLVM 11 Release | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
+| Linux/LLVM 11 Debug | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
 | Linux/LLVM 21 Debug | Separate compilation, submodules with separate compilation, and leak detection |
 
 Every registered LLVM test runs in each of these modes on its designated
-compiler. Moving the largest batch to an optimized compiler and balancing
-the remaining modes reduces the critical path without sampling those suites
-or adding another dependent job/queue.
+compiler. Both are Debug builds, so every full Quick suite runs with
+assertions and per-pass ASR verification. Splitting the modes across two
+jobs reduces the critical path without sampling those suites or adding
+another dependent job/queue.
 
-Linux/LLVM 11 Debug retains full reference coverage, platform smoke tests,
+The Linux/LLVM 11 platform build retains full reference coverage, platform smoke tests,
 and the full GFortran, C/C++, Fortran, direct-WASM, OpenMP and CUDA-on-CPU
 backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
 Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
 the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
-Release LLVM 11 anchor. The standalone compiler-to-WASM build is also retained.
+LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained.
 
-Exhaustive PR checks run full compatibility suites on Linux LLVM 7/23 and
-full normal platform coverage on macOS LLVM 22, including Caffeine/coarrays.
-These compilers enable runtime stacktraces for the `-g` integration regressions.
-Three supplemental platform builds also run full normal/fast suites on Linux
+Exhaustive runs the full compatibility suites on every LLVM version except
+11 and 19, which run the application catalog instead, as does macOS LLVM 22;
+every compatibility job runs Caffeine/coarrays. Three supplemental platform builds also run full normal/fast suites on Linux
 LLVM 11/21 Debug and full normal/reference suites on macOS LLVM 11 Debug.
 These retain the full platform coverage that used to run only in main's Quick.
 Quick and Exhaustive share `.github/actions/build-platform` so these compiler
 configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
 alternate-backend or descriptor-mode suites; Linux references stay in Quick.
 
-The distinct Kokkos/out-of-source and custom-install configurations use
-smoke tests to check those build/install paths; Quick already owns the full
-CPU mode suites. Standalone C++ builds, documentation/kernel tests, the
+The distinct Kokkos/out-of-source and custom-install configurations run
+full suites. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
-Main retains its original full suites in these configurations, not smoke
-substitutes.
 
 Ordinary PRs run only the small gate of the standalone Exhaustive workflow;
 its compiler jobs require an explicit request.
@@ -525,12 +522,11 @@ Without this explicit migration, the workflow retains its safe aggregate
 default; code alone cannot remove its queue while preserving the old settings.
 
 **Third-party applications generate bugs for the integration suite; they are
-not a PR regression suite.** The application catalog runs on every push to
-`main`, where it both finds coverage gaps and demonstrates compatibility with
-real applications. It does not run on PRs, including explicitly requested
-Exhaustive checks or manual checks on a PR branch. There is no automatic
-exception for changes to serialization, finalization, I/O or GPU lowering.
-FIATS and other applications remain main-only even when built with GPU flags.
+not part of ordinary PR checks.** The application catalog runs on every push
+to `main`, where it both finds coverage gaps and demonstrates compatibility
+with real applications, and in every explicitly requested Exhaustive run.
+There is no automatic exception for changes to serialization, finalization,
+I/O or GPU lowering.
 
 Caffeine is different: it supplies the coarray runtime backend. Building it
 and running the coarray capability checks remains part of Quick, just as
@@ -583,7 +579,7 @@ gh run watch <run-id> --repo <fork-owner>/lfortran
 Check both workflows' results and head SHAs. Labeled and manually dispatched
 Exhaustive runs are purely supplemental: neither invokes Quick. A green
 Exhaustive result alone does not imply a green Quick result. Manual runs do
-not run the application catalog, publish or deploy. Manual fork runs need not
+not publish or deploy. Manual fork runs need not
 appear among the upstream PR's checks.
 
 To run the representative integration subset locally:

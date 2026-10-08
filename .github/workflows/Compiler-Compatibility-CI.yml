@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       scope:
-        description: "Coverage role: quick, extra, or main"
+        description: "Coverage role: quick or exhaustive"
         type: string
-        default: main
+        default: exhaustive
 
 permissions:
   contents: read
@@ -24,10 +24,10 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        # Quick owns the full regression modes on LLVM 11/21. Extra coverage
-        # broadens the endpoint LLVM versions and macOS, without repeating it.
-        # An unknown scope has no matrix, rather than silently selecting main.
-        llvm-version: ${{ fromJSON('{"quick":["7","11","23"],"extra":["7","23"],"main":["7","8","10","11","15","17","18","19","21","22","23"]}')[inputs.scope] }}
+        # Quick owns the full regression modes on LLVM 11/21. Exhaustive is
+        # identical on main, labeled PRs and manual runs.
+        # An unknown scope has no matrix, rather than silently selecting one.
+        llvm-version: ${{ fromJSON('{"quick":["7","11","23"],"exhaustive":["7","8","10","11","15","17","18","19","21","22","23"]}')[inputs.scope] }}
         python-version: ["3.10"]
         include: ${{ inputs.scope == 'quick' && fromJSON('[]') || fromJSON('[{"os":"macos-latest","llvm-version":"22","python-version":"3.10"}]') }}
     steps:
@@ -206,17 +206,24 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Quick and extra matrices include -g integration regressions,
-            # which need runtime stacktraces. Keep main's application-only build
-            # settings unchanged. Linking with -g also needs llvm-dwarfdump
-            # and the Python debug-map conversion scripts.
+            # Integration regressions include -g tests, which need runtime
+            # stacktraces. Exhaustive application builds (LLVM 11/19, macOS)
+            # must not enable it: Caffeine passes -g at link time and
+            # dwarf_convert.py then fails without llvm-dwarfdump.
             STACKTRACE_FLAG=""
-            if [[ "$LFORTRAN_CI_SCOPE" == "quick" || "$LFORTRAN_CI_SCOPE" == "extra" ]] || \
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" ]] || \
                [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
                 STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
             fi
+            # Quick's LLVM 11 compiler runs the full normal/fast suites, so
+            # build it in Debug to enable assertions and per-pass ASR checks.
+            BUILD_TYPE=Release
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
+                BUILD_TYPE=Debug
+                export CXXFLAGS="-D_GLIBCXX_ASSERTIONS"
+            fi
             cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
               -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
@@ -232,7 +239,7 @@ jobs:
 
       - name: Test third party codes
         shell: bash -e -l {0}
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.scope == 'main' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        if: ${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             LAPACK_MODE="smoke"
@@ -251,7 +258,7 @@ jobs:
         shell: bash -e -l {0}
         run: ctest --output-on-failure
 
-      - name: Test Release reference coverage
+      - name: Test Debug reference coverage
         if: inputs.scope == 'quick' && matrix.llvm-version == '11'
         shell: bash -e -l {0}
         run: |
@@ -263,14 +270,11 @@ jobs:
 
       - name: Test LLVM integration tests
         shell: bash -e -l {0}
-        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (inputs.scope == 'extra' && contains(matrix.os, 'macos')) || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
+        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
-            if [[ "${{ matrix.os }}" == *macos* ]]; then
-                export WIN=0 MACOS=1 LFORTRAN_TEST_SUITE=full
-                shell ci/test.sh
-            elif [[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]; then
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]; then
                 bash ci/test_llvm_integration.sh --core
             else
                 bash ci/test_llvm_integration.sh

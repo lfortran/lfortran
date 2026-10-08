@@ -137,27 +137,30 @@ only once, redirect to a log file and then examine the log file.
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
   or merge.
-- Quick's optimized LLVM 11 compiler owns the full normal/fast and Fortran 2023
+- Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
+  Every full Quick suite runs with assertions and per-pass ASR verification.
   These modes are not just smoke selections.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
-- Third-party applications are **bug generators for integration tests**, not a
-  PR regression suite. Run the application catalog on every push to `main`,
-  never on ordinary, labeled or manually dispatched PR checks. This includes
-  applications such as FIATS even when built with GPU flags.
+- Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
+  labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
+  third-party application catalog; only publishing and deployment are push-only.
+- Third-party applications are **bug generators for integration tests**, not
+  part of ordinary PR checks. They run on every push to `main` and in every
+  requested Exhaustive run, including applications such as FIATS.
 - A compiler failure found by an application must become a reduced, registered
   integration regression. Fix it promptly or revert the offending change,
   and verify the original application failure as well as the regression.
   Do not add whole applications to Quick or waive their failures.
 - Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
   checks. Do not apply it automatically based on files or compiler subsystems
-  touched. It does not enable the application catalog on a PR. Manual dispatch
-  in a fork is an alternative; dispatch Quick separately if it has not run on
-  that revision, and verify both tested SHAs and results.
+  touched. Manual dispatch in a fork is an alternative; dispatch Quick
+  separately if it has not run on that revision, and verify both tested SHAs
+  and results.
 - Every main push keeps the full compiler matrix and application validation.
   Main runs are not automatically cancelled or coalesced; maintainers may
   manually cancel older runs while keeping the latest. Release-tag workflows

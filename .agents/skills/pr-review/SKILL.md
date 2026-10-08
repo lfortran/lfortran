@@ -184,7 +184,8 @@ Require a test that fails without the fix and passes with it.
 - Apply `AGENTS.md`'s CI policy when reviewing coverage. Quick must retain the
   internal regression modes and capability checks; Exhaustive should add
   missing configurations without duplicating Quick. Application validation
-  intentionally runs only on main, and publishing requires main-only credentials.
+  runs only in Exhaustive (main or an explicit request), and publishing
+  requires main-only credentials.
 
 ## Account for pragmatic follow-ups
 
