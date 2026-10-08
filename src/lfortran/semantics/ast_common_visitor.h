@@ -10055,6 +10055,13 @@ public:
                                 );
                             }
                             LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
+                            // The folded constant has a rank 1 type; give it
+                            // the rank and bounds of the declared array, as
+                            // `integer :: x(2,2) = 1` is a 2x2 array. A
+                            // component default is filled into a structure
+                            // constructor, which checks its rank.
+                            ASR::down_cast<ASR::ArrayConstant_t>(init_expr)->m_type =
+                                ASRUtils::duplicate_type(al, type);
                             value = init_expr;
                         }
                     }
