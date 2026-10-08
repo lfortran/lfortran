@@ -4057,6 +4057,30 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         context, llvm::APInt(64, descr_size));
                     builder->CreateMemCpy(dest_descr, llvm::MaybeAlign(),
                                           src_descr, llvm::MaybeAlign(), size_val);
+                } else if (ASRUtils::is_class_type(pointer_type->m_type) &&
+                           !ASRUtils::is_array(pointer_type->m_type)) {
+                    // A scalar class pointer is a heap-allocated class wrapper
+                    // {vptr, data*} owned by the pointer (freed by nullify and
+                    // finalization). Copy the wrapper contents into dest's own
+                    // wrapper, as pointer assignment does, so that dest has
+                    // the same target and dynamic type without sharing src's
+                    // wrapper.
+                    llvm::Type* wrapper_type = get_type_from_ttype_t_util(
+                        src_expr, pointer_type->m_type, module);
+                    llvm::Value* src_wrapper = CreateLoad2(
+                        wrapper_type->getPointerTo(), src);
+                    create_if_else(builder->CreateIsNull(src_wrapper), [&]() {
+                        lfortran_free(CreateLoad2(wrapper_type->getPointerTo(), dest));
+                        builder->CreateStore(llvm::ConstantPointerNull::get(
+                            wrapper_type->getPointerTo()), dest);
+                    }, [&]() {
+                        create_if_else(builder->CreateIsNull(
+                                CreateLoad2(wrapper_type->getPointerTo(), dest)), [&]() {
+                            builder->CreateStore(alloc_zeroed_type(wrapper_type), dest);
+                        }, []() {});
+                        builder->CreateStore(CreateLoad2(wrapper_type, src_wrapper),
+                            CreateLoad2(wrapper_type->getPointerTo(), dest));
+                    });
                 } else {
                     src = CreateLoad2(get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module)->getPointerTo(), src);
                     LLVM::CreateStore(*builder, src, dest);

@@ -178,7 +178,7 @@ deallocate(mc%st)
 y%x = 7
 z%x = 8
 do k = 1, 3
-    do mode = 1, 5
+    do mode = 1, 6
         b%p => y
         call work(b, b%p, mode)
     end do
