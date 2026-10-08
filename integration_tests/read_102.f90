@@ -1,4 +1,4 @@
-program read_101
+program read_102
     use iso_c_binding, only: c_char, c_int64_t, c_null_char
     implicit none
 
@@ -11,7 +11,7 @@ program read_101
     end interface
 
     integer :: x
-    character(len=*), parameter :: input_file = "read_101_input.txt"
+    character(len=*), parameter :: input_file = "read_102_input.txt"
 
     open(10, file=input_file, status="replace", action="write")
     write(10, '(a)') "4 2 "
@@ -21,4 +21,4 @@ program read_101
     read(*, '(I4)') x
 
     if (x /= 42) error stop
-end program read_101
+end program read_102
