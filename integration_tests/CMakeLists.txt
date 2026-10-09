@@ -3590,6 +3590,7 @@ RUN(NAME class_optional_02 LABELS gfortran llvm)
 # passed to an optional class array dummy, so this test is llvm only
 RUN(NAME class_optional_03 LABELS llvm)
 RUN(NAME class_optional_04 LABELS gfortran llvm)
+RUN(NAME class_pointer_assoc_leak_01 LABELS gfortran llvm)
 RUN(NAME class_array_deepcopy_01 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_01 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_02 LABELS gfortran llvm)
