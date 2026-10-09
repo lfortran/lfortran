@@ -10860,7 +10860,7 @@ public:
         ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
         llvm::Value *ptr, *nptr;
         llvm::Type* ptr_array_inner_type = nullptr;
-        bool ptr_is_unlimited_polymorphic_array = false;
+        bool ptr_is_class_array = false;
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, false);
@@ -10947,8 +10947,9 @@ public:
             ptr_array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(ptr_array_inner_type->getPointerTo(), ptr);
-            ptr_is_unlimited_polymorphic_array =
-                x.m_tgt && ASRUtils::is_unlimited_polymorphic_type(x.m_ptr);
+            // The data of a polymorphic pointer array is its class wrapper.
+            ptr_is_class_array = x.m_tgt
+                && ASRUtils::is_class_type(ASRUtils::extract_type(p_type));
         }
         ptr_loads = ptr_loads_copy;
         auto to_int64 = [&](llvm::Value* v) {
@@ -11050,10 +11051,15 @@ public:
                             nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(x.m_tgt,
                                     ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
+                            if (ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) {
+                                // {VTable*, data*} -- Check equality on data field
+                                nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                                    llvm_utils->create_gep2(array_inner_type, nptr, 1));
+                            }
                         }
                     }
                 }
-                if (ptr_is_unlimited_polymorphic_array) { // {VTable*, i8*} -- Check equality on data field
+                if (ptr_is_class_array) { // {VTable*, i8*} -- Check equality on data field
                     ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                         llvm_utils->create_gep2(ptr_array_inner_type, ptr, 1));
                 }
