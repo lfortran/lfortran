@@ -5526,6 +5526,20 @@ public:
 	    ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
 	    size_t const num_cb_var = blk.second.size();
 
+	    if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()
+		    && struct_type->n_members > 0) {
+		// The block was read from a modfile, together with a module that
+		// uses it: it has been declared in a different program unit.
+		size_t byte_size = 0;
+		for (size_t i = 0; i < struct_type->n_members; i++) {
+		    ASR::symbol_t* member = struct_type->m_symtab->get_symbol(
+			struct_type->m_members[i]);
+		    byte_size += get_type_byte_size(ASRUtils::symbol_type(member));
+		}
+		common_block_byte_sizes[common_block_name] = byte_size;
+		common_block_dictionary[common_block_name].first = false;
+	    }
+
 	    auto cbd_it = common_block_dictionary.find(common_block_name);
 
 	    if (cbd_it == common_block_dictionary.end()) {
