@@ -3112,3 +3112,9 @@ semantic error: Cannot assign to an intent(in) variable `nz`
      |
 2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
      |     ^^ 
+
+semantic error: reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+    --> tests/errors/continue_compilation_1.f90:2154:42
+     |
+2154 |     print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+     |                                          ^^^^^^^^^^^ `pad` has size zero, but `shape` specifies size of 4 which exceeds the `source` array size of 2
