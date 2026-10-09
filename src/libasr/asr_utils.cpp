@@ -2027,6 +2027,9 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(member_type))) {
+            member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
+        }
 
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
             ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));

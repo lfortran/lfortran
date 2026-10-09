@@ -6651,6 +6651,87 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
     return init_expr;
 }
 
+// The bounds of a procedure type's dummy arguments can reference module
+// symbols that are only visible from the module that declared the interface
+// (for example the getter of a use-associated explicit-shape bound). Replaces
+// every such reference with an ExternalSymbol imported into `scope`. With
+// `only_check` set, it only records in `found` whether there is any.
+class ProcedureTypeSymbolImporter:
+    public ASR::BaseExprReplacer<ProcedureTypeSymbolImporter> {
+    Allocator &al;
+    SymbolTable *scope;
+    bool only_check;
+
+    public:
+
+    bool found = false;
+
+    ProcedureTypeSymbolImporter(Allocator &al_, SymbolTable *scope_,
+        bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
+
+    ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
+        SymbolTable *sym_scope = ASRUtils::symbol_parent_symtab(sym);
+        for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+            if (s->counter == sym_scope->counter) {
+                return sym;
+            }
+        }
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(target);
+        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+            return sym;
+        }
+        found = true;
+        if (only_check) {
+            return sym;
+        }
+        std::string name = ASRUtils::symbol_name(target);
+        ASR::symbol_t *existing = scope->resolve_symbol(name);
+        if (existing && ASRUtils::symbol_get_past_external(existing) == target) {
+            return existing;
+        }
+        std::string unique_name = scope->get_unique_name(name, false);
+        ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_ExternalSymbol_t(al, target->base.loc, scope,
+                s2c(al, unique_name), target, ASRUtils::symbol_name(owner),
+                nullptr, 0, s2c(al, name), ASR::accessType::Private));
+        scope->add_symbol(unique_name, ext_sym);
+        return ext_sym;
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        ASR::BaseExprReplacer<ProcedureTypeSymbolImporter>::replace_FunctionCall(x);
+        x->m_name = import_symbol(x->m_name);
+        if (x->m_original_name) {
+            x->m_original_name = import_symbol(x->m_original_name);
+        }
+    }
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = import_symbol(x->m_v);
+    }
+};
+
+// Returns the procedure type `type` as it can be referenced from `scope`:
+// `type` itself, or a copy whose module symbols are imported into `scope`.
+static inline ASR::ttype_t* import_procedure_type(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    ProcedureTypeSymbolImporter checker(al, scope, true);
+    checker.replace_ttype(type);
+    if (!checker.found) {
+        return type;
+    }
+    ASR::ttype_t *new_type = ASRUtils::duplicate_type(al, type);
+    ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
+        ASRUtils::type_get_past_pointer(new_type));
+    if (ft->m_return_var_type) {
+        ft->m_return_var_type = ASRUtils::duplicate_type(al, ft->m_return_var_type);
+    }
+    ProcedureTypeSymbolImporter importer(al, scope, false);
+    importer.replace_ttype(new_type);
+    return new_type;
+}
+
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     private:
@@ -9921,8 +10002,12 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
+        ASR::ttype_t* member_type = ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name));
+        if (current_scope) {
+            member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
+        }
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
-            a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
+            a_dt, a_name, member_type, nullptr));
     }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
