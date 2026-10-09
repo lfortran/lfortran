@@ -12,8 +12,8 @@ import time
 
 
 SOURCE_HASHES = {
-    "functional1": "1d2edfe92ea41958e0671fefccad774b1c9ae519078825071156c349199b609f",
-    "functional2": "05d98eb6f43b20cd9f53f610301c6fecd96677babe6662f504c7093dd5c5a7e6",
+    "functional1": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25",
+    "functional2": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1",
 }
 INLINE_HASHES = {
     "inline_25.f90": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",

@@ -5,7 +5,7 @@ module averager_library
    implicit none
    private
    
-   public :: simple_average, pairwise_average
+   public :: simple_sum_average, pairwise_sum_average
    
    abstract interface :: INumeric
       integer | real(real64)
@@ -33,17 +33,17 @@ contains
       end if
    end function pairwise_sum
 
-   function simple_average{INumeric :: T}(x) result(a)
+   function simple_sum_average{INumeric :: T}(x) result(a)
       type(T), intent(in) :: x(:)
       type(T)             :: a
       a = simple_sum(x) / T(size(x))
-   end function simple_average
+   end function simple_sum_average
 
-   function pairwise_average{INumeric :: T}(x) result(a)
+   function pairwise_sum_average{INumeric :: T}(x) result(a)
       type(T), intent(in) :: x(:)
       type(T)             :: a
       a = pairwise_sum(x) / T(size(x))
-   end function pairwise_average
+   end function pairwise_sum_average
 
 end module averager_library
 
@@ -53,7 +53,7 @@ program main
    use, intrinsic :: iso_fortran_env, only: real64
 
    ! dependencies on implementations
-   use averager_library, only: simple_average, pairwise_average
+   use averager_library, only: simple_sum_average, pairwise_sum_average
 
    implicit none
    
@@ -70,11 +70,11 @@ program main
    
    select case (key)
    case (1)
-      print '(i1)',   simple_average(xi)
-      print '(f3.1)', simple_average(xf)
+      print '(i1)',   simple_sum_average(xi)
+      print '(f3.1)', simple_sum_average(xf)
    case (2)
-      print '(i1)',   pairwise_average(xi)
-      print '(f3.1)', pairwise_average(xf)
+      print '(i1)',   pairwise_sum_average(xi)
+      print '(f3.1)', pairwise_sum_average(xf)
    case default
       stop 'Case not implemented!'
    end select

@@ -1,6 +1,8 @@
 {
   "source_repository": "Traits-for-Fortran",
-  "source_revision": "fb6ee9bb104dadf9aee3b01e4e71fada9245e08c",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "previous_source_revision": "fb6ee9bb104dadf9aee3b01e4e71fada9245e08c",
+  "revision_change": "Only average procedure names changed to simple_sum_average and pairwise_sum_average; original algorithms, input choices and expected results are unchanged.",
   "normative_paper": {
     "file": "traits.tex",
     "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21"
@@ -10,13 +12,13 @@
       "corpus_id": "functional1",
       "source_path": "Code/Fortran/functional1.f90",
       "file": "functional1.f90",
-      "sha256": "1d2edfe92ea41958e0671fefccad774b1c9ae519078825071156c349199b609f"
+      "sha256": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25"
     },
     {
       "corpus_id": "functional2",
       "source_path": "Code/Fortran/functional2.f90",
       "file": "functional2.f90",
-      "sha256": "05d98eb6f43b20cd9f53f610301c6fecd96677babe6662f504c7093dd5c5a7e6"
+      "sha256": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1"
     }
   ],
   "included_corpus_inventory": {
