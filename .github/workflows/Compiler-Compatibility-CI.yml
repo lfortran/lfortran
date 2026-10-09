@@ -50,7 +50,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6=hb85ec53_102
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
@@ -147,7 +147,7 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.10
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.10' || '' }}
             binutils=2.45.1
             zstd-static=1.5.7
 
@@ -191,12 +191,13 @@ jobs:
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6=hb85ec53_102
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
@@ -206,21 +207,15 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ./build0.sh
-            # Integration regressions include -g tests, which need runtime
-            # stacktraces. Exhaustive application builds (LLVM 11/19, macOS)
-            # must not enable it: Caffeine passes -g at link time and
-            # dwarf_convert.py then fails without llvm-dwarfdump.
-            STACKTRACE_FLAG=""
-            if [[ "$LFORTRAN_CI_SCOPE" == "quick" ]] || \
-               [[ "${{ matrix.llvm-version }}" != "11" && "${{ matrix.llvm-version }}" != "19" && "${{ matrix.os }}" != *macos* ]]; then
-                STACKTRACE_FLAG="-DWITH_RUNTIME_STACKTRACE=yes"
-            fi
-            # Quick's LLVM 11 compiler runs the full normal/fast suites, so
-            # build it in Debug to enable assertions and per-pass ASR checks.
+            # Quick's full normal/fast compiler needs the same diagnostic,
+            # allocation and assertion checks as the platform Debug builds.
             BUILD_TYPE=Release
+            CHECK_FLAGS=()
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 BUILD_TYPE=Debug
-                export CXXFLAGS="-D_GLIBCXX_ASSERTIONS"
+                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes)
+                export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+                export CXXFLAGS="$CFLAGS"
             fi
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -229,13 +224,35 @@ jobs:
               -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
-              ${STACKTRACE_FLAG} \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              "${CHECK_FLAGS[@]}" \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+      - name: Test application runtime stacktraces
+        shell: bash -e -l {0}
+        if: ${{ inputs.scope == 'exhaustive' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            # Caffeine strips LFortran -g. Exercise debug conversion explicitly
+            # on application compilers instead of disabling runtime support.
+            grep -q '^#define HAVE_RUNTIME_STACKTRACE$' src/libasr/config.h
+            llvm-dwarfdump --version
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                dsymutil --version
+            fi
+            lfortran -v examples/expr2.f90 -o expr2
+            actual=$(./expr2)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
+            lfortran -v -g examples/expr2.f90 -o expr2-debug
+            actual=$(./expr2-debug)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
 
       - name: Test third party codes
         shell: bash -e -l {0}
@@ -283,4 +300,9 @@ jobs:
       - name: Test coarray runtime with Caffeine
         if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
         shell: bash -e -l {0}
+        env:
+          # Compare actual checkout inputs on PRs and pushes alike. Missing
+          # history (including manual/tag runs) requests conservative validation.
+          LFORTRAN_COARRAY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          LFORTRAN_COARRAY_HEAD: ${{ github.sha }}
         run: ci/test_caffeine.sh --verify-all-passes

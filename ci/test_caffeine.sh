@@ -1,11 +1,31 @@
 #!/usr/bin/env bash
 echo "##[group] Setup"
-set -ex
+set -ex -o pipefail
 
 echo "CONDA_PREFIX=$CONDA_PREFIX"
+reference=false
 if [[ $(uname -s) == Linux ]] ; then
-  LINUX=1
+  case "${LFORTRAN_CI_SCOPE:-exhaustive}" in
+    quick)
+      reference=$(python3 ci/coarray_tests.py reference \
+        --base "${LFORTRAN_COARRAY_BASE:-}" --head "${LFORTRAN_COARRAY_HEAD:-}")
+      ;;
+    exhaustive)
+      reference=true
+      ;;
+    *)
+      echo "ERROR: unknown LFORTRAN_CI_SCOPE: $LFORTRAN_CI_SCOPE" >&2
+      exit 2
+      ;;
+  esac
 fi
+case "$reference" in
+  true|false) echo "Run GFortran/OpenCoarrays reference validation: $reference" ;;
+  *) echo "ERROR: invalid coarray reference selection: $reference" >&2; exit 2 ;;
+esac
+
+# Fail before dependency setup if registrations cannot be understood.
+tests=$(python3 ci/coarray_tests.py list)
 
 # Use freshly built LFortran
 
@@ -14,19 +34,34 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-# FPM disabled to speed up the build
-#micromamba install -c conda-forge fpm=0.12.0
-#which fpm
-#fpm --version
+ensure_tool() {
+  local package="$1" status
+  shift
+  if "$@"; then
+    return 0
+  else
+    status=$?
+  fi
+  # Only a missing command warrants installation; do not mask broken tools.
+  if [[ "$status" != 127 ]]; then
+    return "$status"
+  fi
+  micromamba install -y -c conda-forge "$package"
+  "$@"
+}
 
-if [ $LINUX ] ; then
+ensure_tool fpm=0.12.0 fpm --version
+
+if [[ "$reference" == true ]] ; then
 
 (set +x
  echo "##[endgroup]"
  echo "##[group] Install OpenMPI"
 )
 
-micromamba install -y -c conda-forge openmpi
+# Probe the MPI wrapper itself, not its configured build-time compiler.
+# OpenCoarrays' CMake build selects the available GFortran separately.
+ensure_tool openmpi=5.0.6=hb85ec53_102 mpifort --showme:version
 export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
 export OMPI_MCA_rmaps_base_oversubscribe=1
 
@@ -39,12 +74,12 @@ git clone https://github.com/sourceryinstitute/OpenCoarrays.git
 cd OpenCoarrays
 
 cmake -B build \
-  -DCMAKE_INSTALL_PREFIX="$HOME/opencoarrays"
+  -DCMAKE_INSTALL_PREFIX="$PWD/inst"
 
 cmake --build build -j2
 cmake --install build
 
-export PATH="$HOME/opencoarrays/bin:$PATH"
+export PATH="$PWD/inst/bin:$PATH"
 
 cd ..
 
@@ -54,7 +89,7 @@ caf --version
 which cafrun
 cafrun --version
 
-fi # LINUX
+fi # reference
 
 (set +x 
  echo "##[endgroup]"
@@ -83,11 +118,22 @@ clang --version
 
 # Build caffeine
 
-./install.sh --yes --prefix=$PWD/inst --verbose --enable-rpath --enable-debug --disable-fpm
+./install.sh --yes --prefix=$PWD/inst --verbose --enable-rpath --enable-debug
 
 # Output Caffeine configuration information
 
 ./run-fpm.sh info
+
+(set +x
+ echo "##[endgroup]"
+ echo "##[group] Caffeine unit tests"
+)
+
+# Failures here can indicate regressions compiling Caffeine's ordinary Fortran,
+# independently of LFortran's coarray lowering.
+# The generated wrapper selects LFortran and GASNet; keep its four-image
+# unit-test setting local so integration tests retain their own image counts.
+CAF_IMAGES=4 ./run-fpm.sh test --verbose
 
 cd ..
 
@@ -117,37 +163,6 @@ make -C caffeine/app prif
 CAF_IMAGES=${CAF_IMAGES:-2}
 
 echo "Using CAF_IMAGES=$CAF_IMAGES"
-
-# Find all coarray-enabled tests
-
-tests=$(python3 -c '
-import re
-filenames = []
-
-with open("integration_tests/CMakeLists.txt") as f:
-    for line in f:
-        line = line.strip()
-        if line.startswith("RUN(") and "coarray=true" in line:
-            fields = ["NAME", "NUM_IMAGES", "LABELS", "EXTRAFILES", "EXTRA_ARGS"]
-            # Regex pattern matching key, separator (space or =), and value up to the next key or closing bracket
-            fields_pattern = "|".join(fields)
-            pattern = rf"({fields_pattern})[ =]\s*(.*?)(?=\s+(?:{fields_pattern})[ =]|\))"
-            parsed_data = dict(re.findall(pattern, line))
-            name       = parsed_data.get("NAME")
-            num_images = parsed_data.get("NUM_IMAGES") or ""
-            extra_args = parsed_data.get("EXTRA_ARGS") or ""
-            extrafiles = parsed_data.get("EXTRAFILES") or ""
-            extrafiles = " ".join(f"integration_tests/{item}" for item in extrafiles.split())
-            if name:
-                filenames.append(f"integration_tests/{name}.f90;{num_images};{extra_args};{extrafiles}")
-
-print("\n".join(filenames))
-')
-
-if [ -z "$tests" ]; then
-echo "No coarray tests found"
-exit 1
-fi
 
 # OpenCoarrays (caf/cafrun) does not support character arguments to co_max/co_min,
 # so the gfortran cross-check is skipped for those tests. LFortran + Caffeine still
@@ -200,13 +215,13 @@ gasnetrun_smp -n "$num_images" ./"${base}_lf.out"
 # Cross-check with gfortran/OpenCoarrays, unless OpenCoarrays lacks support
 # ----------------------------------------
 
-if [ $LINUX ] ; then
+if [[ "$reference" == true ]] ; then
   if [[ " $opencoarrays_unsupported " =~ " $base " ]] ; then
     skip_opencoarrays=true
   else
     skip_opencoarrays=false
   fi
-else # macOS
+else
   skip_opencoarrays=true
 fi
 
@@ -234,4 +249,6 @@ echo
 echo "All coarray runtime tests passed"
 
 rm -rf caffeine
-rm -rf OpenCoarrays
+if [[ "$reference" == true ]]; then
+    rm -rf OpenCoarrays
+fi
