@@ -2825,7 +2825,11 @@ RUN(NAME derived_types_218 LABELS gfortran llvm)
 RUN(NAME derived_types_219 LABELS gfortran llvm)
 RUN(NAME derived_types_220 LABELS gfortran llvm)
 RUN(NAME derived_types_221 LABELS gfortran llvm)
+RUN(NAME derived_types_222 LABELS gfortran llvm)
 RUN(NAME derived_types_223 LABELS gfortran llvm)
+RUN(NAME derived_types_224 LABELS gfortran llvm)
+RUN(NAME derived_types_225 LABELS gfortran llvm)
+RUN(NAME derived_types_226 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
@@ -3559,6 +3563,8 @@ RUN(NAME class_160 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME class_161 LABELS gfortran llvm)
 RUN(NAME class_162 LABELS gfortran llvm)
 RUN(NAME class_165 LABELS gfortran llvm)
+RUN(NAME class_166 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_167 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -3925,6 +3931,18 @@ RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f90)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
+RUN(NAME external_string_arg_02 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_02_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME external_string_arg_03 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_03_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_01 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_02 LABELS gfortran llvm
+    EXTRAFILES string_arg_hidden_length_02b.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_03 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_05 LABELS gfortran llvm)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5070,6 +5088,9 @@ RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_
 RUN(NAME allocatable_component_struct_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)
 RUN(NAME allocatable_component_scalar_use_01 LABELS gfortran llvm)
+RUN(NAME allocatable_component_arg_01 LABELS gfortran llvm)
+RUN(NAME allocatable_component_arg_02 LABELS gfortran llvm)
+RUN(NAME allocatable_component_arg_03 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm

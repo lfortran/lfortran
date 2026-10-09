@@ -419,11 +419,18 @@ policy."
 
 #### CI coverage
 
-Pull requests normally run only **Quick checks**. Quick runs exactly the same
-builds, test suites and selections on PRs, main pushes, release tags and manual
-runs. Publishing steps remain push-only. Main runs Quick plus Exhaustive.
-Exhaustive adds configurations and broader suites, never another invocation
-of Quick, and runs identically on main, on labeled PRs and on manual dispatch.
+Pull requests normally run only **Quick checks**. Quick uses the same
+builds, test suites and selection rules on PRs, merge queue groups, main pushes,
+release tags and manual runs. Publishing steps remain push-only. Main runs
+Quick plus Exhaustive. Exhaustive adds configurations and broader suites, never
+another invocation of Quick, and runs identically on main, on labeled PRs and
+on manual dispatch.
+
+Quick is triggered by the `merge_group` event so that its required checks
+report when a merge queue is enabled for `main`. Exhaustive is optional and is
+not run on merge groups; it runs on the resulting main push. Merge queue runs
+restore compiler caches but do not save them, because caches on the temporary
+`gh-readonly-queue/main/*` branches cannot be reused.
 
 The shared native compiler workflow has two explicit coverage roles:
 
@@ -446,7 +453,9 @@ serializing them in one long job:
 
 Every registered LLVM test runs in each of these modes on its designated
 compiler. Both are Debug builds, so every full Quick suite runs with
-assertions and per-pass ASR verification. Splitting the modes across two
+assertions and per-pass ASR verification. Both also use the platform C/C++
+diagnostic and standard-library hardening flags, including `-Werror`, and
+`WITH_INTERNAL_ALLOC_CHECK=yes`. Splitting the modes across two
 jobs reduces the critical path without sampling those suites or adding
 another dependent job/queue.
 
@@ -468,6 +477,25 @@ Quick and Exhaustive share `.github/actions/build-platform` so these compiler
 configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
 alternate-backend or descriptor-mode suites; Linux references stay in Quick.
 
+All native compatibility profiles enable runtime-stacktrace support, including
+the LLVM 11/19 and macOS application compilers. Caffeine removes LFortran
+`-g` from its defaults and GASNet linker flags; its `--enable-debug` build does
+not require disabling runtime stacktraces. Actual LFortran `-g` links invoke
+`llvm-dwarfdump` and `dwarf_convert.py` (also `dsymutil` on macOS); ordinary
+non-`-g` links do not. The LLVM packages supply these debug tools. A separate
+application-compiler probe verifies the generated runtime-support define,
+executes the tools and checks both ordinary and `-g` links before the catalog.
+Missing/broken tools or failed links must fail the job, not disable support.
+
+On Linux, runtime-stacktrace support uses the compiler's `<unwind.h>` interface.
+It does not itself enable CMake's separate `WITH_LIBUNWIND` option. LLVM >=12
+requires that library independently, and the workflow retains its explicit
+`libunwind` installation (also kept in the existing Quick LLVM 11 environment).
+The LLVM 11 application compiler does not need an additional `libunwind`
+installation merely to enable runtime stacktraces. Application validation must
+exercise the runtime-enabled Release LLVM 11/19 and macOS LLVM 22 profiles;
+success with the former disabled-runtime flags is not evidence for this change.
+
 The distinct Kokkos/out-of-source and custom-install configurations run
 full suites. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
@@ -486,10 +514,16 @@ limits.
 To eliminate that final runner job, first deploy this workflow version with
 the legacy gate still enabled. A repository administrator can then migrate
 to direct required checks. **Do not enable the variable before updating
-protection.** Keep all existing required checks, keep their expected GitHub
-Actions app binding, and add these seven Quick check contexts:
+protection.** Keep the four existing platform requirements and add the seven
+compatibility/backend requirements below, retaining the expected GitHub Actions
+app binding (currently app ID `15368`). All eleven real-work contexts must
+remain required, in addition to the legacy aggregate during the transition:
 
 ```text
+LFortran CI (OS=macos-latest, LLVM=11)
+LFortran CI (OS=ubuntu-latest, LLVM=11)
+LFortran CI (OS=ubuntu-latest, LLVM=21)
+LFortran CI (OS=windows-2025, LLVM=11)
 Build LFortran to WASM
 Compiler compatibility / Test LLVM 7 (ubuntu-latest)
 Compiler compatibility / Test LLVM 11 (ubuntu-latest)
@@ -499,24 +533,38 @@ Compiler compatibility / Test without LLVM Backend
 Compiler compatibility / Test MLIR backend
 ```
 
-Then set the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
-to `true`. Job names stay stable: the real WASM build and every compatibility
-job are required directly, and the legacy summary is skipped without a runner.
-The old summary requirement may remain, but it is no longer what enforces
-the underlying results. Exhaustive uses the
+Verify those requirements and their app binding on a fresh PR run **before**
+setting the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
+to `true`. Then verify another fresh PR run with all eleven contexts still
+required. Job names stay stable; the legacy summary is skipped without a runner.
+Only after verifying direct protection may an administrator remove the old
+`Build LFortran to WASM and Upload` requirement. Do not remove any of the four
+platform requirements: they own backend, GPU, reference and full descriptor-mode
+coverage that the compatibility jobs do not replace. Exhaustive uses the
 distinct `Extended compiler checks` prefix, so an optional Exhaustive result
-cannot substitute for a required Quick result. Verify all required contexts
-on a fresh PR run before considering migration complete. Existing PRs may
-need their checks refreshed after a protection change.
+cannot substitute for a required Quick result. Existing PRs may need their
+checks refreshed after a protection change; a manual-dispatch run alone is
+not evidence that a PR's required checks are satisfied.
+
+A [conditionally skipped job reports success and does not block merging even
+when required](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
+Thus the old aggregate requirement may remain while its job is skipped, but
+then it provides **no protection** for failed dependencies. This differs from a
+missing check or a [whole workflow skipped by branch/path/commit filtering,
+whose required checks remain pending](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+Do not rely on a skipped summary to validate the migration.
 
 For rollback, clear the variable **but keep all direct requirements in place**.
+Restore the legacy aggregate requirement, with its GitHub Actions app binding,
+if it was removed.
 Changing a variable does not replace completed checks: an old direct-mode
 summary is still skipped, even if a compatibility job failed.
 Drain outstanding direct-mode runs, then rerun Quick for every active PR's
 current revision. Verify that the protected status comes from an executed,
 successful `quick_status` aggregate, not an old skipped result, before
-optionally removing any direct requirements. Leaving the direct requirements
-in place is safe and adds no runner work.
+optionally removing the seven newly added direct requirements. Keep the four
+platform requirements throughout rollback as well. Leaving all eleven direct
+requirements in place is safe and adds no runner work.
 
 Without this explicit migration, the workflow retains its safe aggregate
 default; code alone cannot remove its queue while preserving the old settings.
@@ -528,10 +576,61 @@ with real applications, and in every explicitly requested Exhaustive run.
 There is no automatic exception for changes to serialization, finalization,
 I/O or GPU lowering.
 
-Caffeine is different: it supplies the coarray runtime backend. Building it
-and running the coarray capability checks remains part of Quick, just as
+Caffeine is different: it supplies the coarray runtime backend. Building it,
+running its own LFortran-compiled unit tests and running every registered coarray
+capability test remain part of Quick, just as
 Metal and CUDA-on-CPU integration tests validate particular backends and
 platforms. Toolchain/runtime dependencies are not the application catalog.
+
+`ci/test_caffeine.sh` uses Caffeine and its generated `run-fpm.sh` wrapper,
+which selects LFortran and the GASNet runner. Unit tests use four images;
+the PRIF smoke test and integration tests keep their existing image settings.
+The missing-tool installer uses the same `fpm=0.12.0` pin as the application
+harness. A failed installed tool or unit test is an error, not a reason to
+skip coverage or reinstall speculatively.
+
+Only the Linux **GFortran/OpenCoarrays reference validation** is source-dependent
+in Quick. The shared workflow supplies `LFORTRAN_COARRAY_BASE` (the PR base SHA
+or push's previous SHA) and `LFORTRAN_COARRAY_HEAD` (the actual checkout SHA).
+`ci/coarray_tests.py` shares the harness's manifest parser and compares registered
+primary and `EXTRAFILES` sources, including edits, additions, renames and deletions.
+Changed coarray registrations, harness/environment inputs or relevant CMake
+dependencies also request reference validation. Other changed paths default to
+reference validation, including data files anywhere in the repository, unregistered
+sources, support files and unknown configuration. This does not depend on finding
+literal file names or particular I/O statements in the Fortran sources.
+Only regular compiler implementation files under `src/` with the explicit suffixes
+in `COMPILER_SUFFIXES`, and simple standalone non-coarray `.f90` programs with
+literal `RUN(NAME ... LABELS ...)` registrations, can skip this fallback. Both
+versions of a changed file must qualify; additions/deletions check the existing
+version. Module/procedure sources, preprocessing, continuations and more complex
+registrations are intentionally conservative, even when unrelated.
+Unrelated simple registrations in the manifest retain their fast path.
+The same comparison rule applies on every event; there is no reduced PR-only
+LFortran selection.
+
+When those inputs are demonstrably unchanged, neither shared-workflow setup nor
+the Caffeine script installs OpenMPI/OpenCoarrays for Quick, and no `caf`/`cafrun`
+checks run. Caffeine uses GASNet's SMP conduit, not MPI. Missing or inconsistent
+history (including manual runs, new refs or unavailable push bases), dirty
+checkouts and unresolved source dependencies log **conservative reference
+validation**, never an unexplained skip. Even the narrow source-change fast path
+requires ordinary free-form `.f90` coarray sources and known source options;
+fixed-form/preprocessed/other-language support and unknown options always request
+reference validation. The additional source guard keeps quoted text and trailing
+comments rather than guessing where a Fortran comment starts. File I/O (including
+`INQUIRE`), foreign bindings, split tokens and continued character literals request
+reference validation; only explicit standard-output `write(*, ...)` is exempt.
+These guards can request extra work, but are not a general Fortran dependency
+parser and never exempt data or unknown changed paths.
+Invalid test registrations fail explicitly.
+Standalone/default and Exhaustive invocations always request full Linux reference
+validation. macOS retains its existing no-OpenCoarrays behavior; Caffeine unit,
+smoke and all LFortran integration tests still run.
+The OpenMPI availability probe uses `mpifort --showme:version`, which checks the
+wrapper without invoking its configured build-time compiler. OpenCoarrays'
+CMake build still selects GFortran and checks that it can compile and link MPI;
+a missing or broken reference compiler remains an error.
 
 When an application finds a compiler bug, reduce the failure to a registered
 integration regression in the relevant modes, fix the compiler, and verify

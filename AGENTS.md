@@ -137,9 +137,18 @@ only once, redirect to a log file and then examine the log file.
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
   capability checks in Quick. No exhaustive label is required before review
   or merge.
+  Caffeine's own LFortran unit tests and all coarray capability tests always run.
+  Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
+  use the same input comparison on every event, validate conservatively when
+  inputs cannot be determined, and retain full reference validation in Exhaustive.
+  Data, support and unknown-path changes request reference validation by default;
+  only explicit compiler-source and simple standalone-test cases may skip it.
+  Do not infer arbitrary runtime file dependencies from a Fortran keyword list.
 - Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
   suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
   Every full Quick suite runs with assertions and per-pass ASR verification.
+  Both full-suite compilers also use the platform C/C++ diagnostic/hardening
+  flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
@@ -149,6 +158,9 @@ only once, redirect to a log file and then examine the log file.
 - Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
   labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
   third-party application catalog; only publishing and deployment are push-only.
+- Quick also runs on `merge_group` so required checks report in the merge
+  queue. Keep `merge_group` on every workflow that produces a required check;
+  merge queue runs must not save caches.
 - Third-party applications are **bug generators for integration tests**, not
   part of ordinary PR checks. They run on every push to `main` and in every
   requested Exhaustive run, including applications such as FIATS.
@@ -171,9 +183,11 @@ only once, redirect to a log file and then examine the log file.
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
 - The status-only aggregate may be disabled only after all Quick jobs are
-  required directly in branch protection. Follow the documented
-  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout; do not weaken protection to
-  remove a queue.
+  required directly in branch protection: retain all four platform contexts
+  and add the seven compatibility/backend contexts. Follow the documented
+  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout and rollback; a conditionally
+  skipped aggregate does not block merging and no longer protects its
+  dependencies. Do not weaken protection to remove a queue.
 
 See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
 and the distinction between capability tests and application validation.

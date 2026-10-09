@@ -1,63 +1,170 @@
-module m_base_221
-    implicit none
-    type :: base_m
-        integer :: m_val = 10
-    end type
-end module
-
-module m_proc_221
-    use m_base_221
-    implicit none
-    type :: base_in_m
-        integer :: b_val = 20
-    end type
+module derived_types_221_mod
+implicit none
+type :: s
+    integer :: i
+end type
+type, extends(s) :: s2
+    integer :: j
+end type
+type :: t
+    class(s), pointer :: p => null()
+end type
+type :: u
+    class(*), pointer :: q => null()
+end type
 contains
-    subroutine sub_m()
-        type, extends(base_in_m) :: ext_in_m
-            integer :: ext_b = 21
-        end type
-        type, extends(base_m) :: ext_from_used
-            integer :: ext_u = 11
-        end type
-        type(ext_in_m) :: x1
-        type(ext_from_used) :: x2
-        if (x1%b_val /= 20 .or. x1%ext_b /= 21) error stop 1
-        if (x2%m_val /= 10 .or. x2%ext_u /= 11) error stop 2
-        x1%b_val = 120
-        x1%ext_b = 121
-        if (x1%b_val /= 120 .or. x1%ext_b /= 121) error stop 3
-    end subroutine
+
+subroutine check_scalar_copy(x, y)
+    type(s), target, intent(in) :: x, y
+    type(t) :: a, b
+    a%p => x
+    b = a
+    if (.not. associated(b%p, x)) error stop
+    b%p => y
+    if (.not. associated(a%p, x)) error stop
+    if (a%p%i /= 1) error stop
+    if (b%p%i /= 2) error stop
+end subroutine
+
+subroutine check_dynamic_type(z)
+    type(s2), target, intent(in) :: z
+    type(t) :: a, b
+    a%p => z
+    b = a
+    select type (q => b%p)
+    type is (s2)
+        if (q%j /= 30) error stop
+    class default
+        error stop
+    end select
+    nullify(a%p)
+    if (.not. associated(b%p, z)) error stop
+    b = a
+    if (associated(b%p)) error stop
+end subroutine
+
+subroutine check_array_constructor(x)
+    type(s), target, intent(in) :: x
+    class(s), pointer :: w
+    type(t) :: a(2)
+    type(t), allocatable :: c(:)
+    w => x
+    a = [t(w), t(w)]
+    if (.not. associated(a(1)%p, x)) error stop
+    if (.not. associated(a(2)%p, x)) error stop
+    allocate(c(2))
+    c = [t(w), t(w)]
+    if (c(2)%p%i /= 1) error stop
+end subroutine
+
+subroutine check_array_assignment(x, y)
+    type(s), target, intent(in) :: x, y
+    type(t) :: a(2), b(2)
+    type(t), allocatable :: c(:), d(:)
+    a(1)%p => x
+    a(2)%p => y
+    b = a
+    b(1)%p => y
+    if (.not. associated(a(1)%p, x)) error stop
+    if (b(2)%p%i /= 2) error stop
+    allocate(c(2), d(2))
+    c = a
+    d = c
+    d(2)%p => x
+    if (.not. associated(c(2)%p, y)) error stop
+    if (d(1)%p%i /= 1) error stop
+end subroutine
+
+subroutine check_allocate_source(x, y)
+    type(s), target, intent(in) :: x, y
+    type(t) :: a
+    type(t), allocatable :: b, c(:)
+    class(t), allocatable :: d
+    a%p => x
+    allocate(b, source=a)
+    allocate(c(2), source=a)
+    allocate(d, source=a)
+    b%p => y
+    c(1)%p => y
+    d%p => y
+    if (.not. associated(a%p, x)) error stop
+    if (c(2)%p%i /= 1) error stop
+    b = a
+    if (b%p%i /= 1) error stop
+    deallocate(b)
+end subroutine
+
+subroutine check_unlimited()
+    integer, target :: k, m
+    type(u) :: a, b
+    k = 1
+    m = 2
+    a%q => k
+    b = a
+    if (.not. associated(b%q, k)) error stop
+    b%q => m
+    if (.not. associated(a%q, k)) error stop
+    select type (q => a%q)
+    type is (integer)
+        if (q /= 1) error stop
+    class default
+        error stop
+    end select
+end subroutine
+
+subroutine assign_by_value(v, w)
+    type(t), value :: v
+    type(t), intent(in) :: w
+    v = w
+    if (associated(w%p)) then
+        if (v%p%i /= w%p%i) error stop
+    else
+        if (associated(v%p)) error stop
+    end if
+end subroutine
+
+subroutine repoint_by_value(v, y)
+    type(t), value :: v
+    type(s), target, intent(in) :: y
+    v%p => y
+    if (v%p%i /= 2) error stop
+end subroutine
+
+subroutine check_value_dummy(x, y)
+    type(s), target, intent(in) :: x, y
+    type(t) :: a, b, e
+    integer :: k
+    a%p => x
+    b%p => y
+    call assign_by_value(a, b)
+    if (.not. associated(a%p, x)) error stop
+    do k = 1, 10
+        call assign_by_value(a, e)
+    end do
+    if (.not. associated(a%p, x)) error stop
+    call repoint_by_value(a, y)
+    if (.not. associated(a%p, x)) error stop
+    if (a%p%i /= 1) error stop
+end subroutine
+
 end module
 
 program derived_types_221
-    use m_proc_221
-    use m_base_221, only: base_m
-    implicit none
-
-    type :: base_prog
-        integer :: p_val = 30
-    end type
-
-    call sub_m()
-    call sub_internal()
-
-contains
-
-    subroutine sub_internal()
-        type, extends(base_prog) :: ext_prog
-            integer :: ext_p = 31
-        end type
-        type, extends(base_m) :: ext_used_in_prog
-            integer :: ext_up = 12
-        end type
-        type(ext_prog) :: y1
-        type(ext_used_in_prog) :: y2
-
-        if (y1%p_val /= 30 .or. y1%ext_p /= 31) error stop 4
-        if (y2%m_val /= 10 .or. y2%ext_up /= 12) error stop 5
-        y1%p_val = 130
-        y1%ext_p = 131
-        if (y1%p_val /= 130 .or. y1%ext_p /= 131) error stop 6
-    end subroutine
-
-end program derived_types_221
+use derived_types_221_mod
+implicit none
+type(s), target :: x, y
+type(s2), target :: z
+x%i = 1
+y%i = 2
+z%i = 3
+z%j = 30
+call check_scalar_copy(x, y)
+call check_dynamic_type(z)
+call check_array_constructor(x)
+call check_array_assignment(x, y)
+call check_allocate_source(x, y)
+call check_unlimited()
+call check_value_dummy(x, y)
+if (x%i /= 1 .or. y%i /= 2) error stop
+print *, "ok"
+end program
