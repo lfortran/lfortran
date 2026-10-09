@@ -6405,7 +6405,7 @@ public:
         ASR::symbol_t *owner = ASRUtils::get_asr_owner(
             const_cast<ASR::symbol_t*>(&x.base));
         if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-            return startswith(ASRUtils::symbol_name(owner), "file_common_block_");
+            return ASRUtils::is_common_block_module_name(ASRUtils::symbol_name(owner));
         }
         return false;
     }

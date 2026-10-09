@@ -1130,7 +1130,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             // of this translation unit that depends on it. Other translation
             // units may declare the block with other member names, and must
             // not replace the layout such a module was compiled against.
-            if (LCompilers::startswith(m->m_name, "file_common_block_")
+            if (LCompilers::ASRUtils::is_common_block_module_name(m->m_name)
                     && dependencies.find(m->m_name) == dependencies.end()) {
                 continue;
             }

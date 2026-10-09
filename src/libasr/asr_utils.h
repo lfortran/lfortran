@@ -1826,6 +1826,16 @@ static inline bool is_tu_scope(const SymbolTable *s) {
     return s->asr_owner != nullptr && ASR::is_a<ASR::unit_t>(*s->asr_owner);
 }
 
+// The storage of a named COMMON block is a module of its own, synthesized by
+// the frontend. Its name is the only mark ASR has of that so far.
+static inline std::string common_block_module_name(const std::string &block_name) {
+    return "file_common_block_" + block_name;
+}
+
+static inline bool is_common_block_module_name(const std::string &module_name) {
+    return startswith(module_name, common_block_module_name(""));
+}
+
 // Interactive evaluation compiles one TranslationUnit per cell, chained by
 // scope, and a cell may redeclare a name an earlier cell already used. Both
 // declarations stay live -- code compiled earlier keeps using the old one -- so

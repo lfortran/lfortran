@@ -4269,7 +4269,6 @@ public:
     }
 
     void visit_BlockData(const AST::BlockData_t& x) {
-        std::string base_module_name = "file_common_block_";
         std::string base_struct_instance_name = "struct_instance_";
 
         SymbolTable* global_scope = current_scope->get_tu_scope();
@@ -4418,7 +4417,7 @@ public:
                             }
                             // Convert to lowercase to match how symbols are stored
                             std::string common_block_name_lower = to_lower(common_block_name);
-                            std::string module_name = base_module_name + common_block_name_lower;
+                            std::string module_name = ASRUtils::common_block_module_name(common_block_name_lower);
 
                             ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
 

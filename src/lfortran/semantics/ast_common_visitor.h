@@ -3804,7 +3804,7 @@ public:
             ASR::symbol_t* curr_struct = common_variables_hash[hash];
             ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(curr_struct);
             std::string ext_sym_name = std::string(struct_type->m_name);
-            std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
+            std::string module_name = ASRUtils::common_block_module_name(struct_type->m_name);
             add_common_block_module_dependency(module_name);
             // Import the COMMON struct type into the using scope, like `use`.
             import_common_external_symbol(
@@ -5366,9 +5366,8 @@ public:
     }
 
     ASR::symbol_t* create_common_module(Location loc, std::string common_block_name) {
-        std::string base_module_name = "file_common_block_";
         std::string base_struct_instance_name = "struct_instance_";
-        std::string module_name = base_module_name + common_block_name;
+        std::string module_name = ASRUtils::common_block_module_name(common_block_name);
         SymbolTable *parent_scope = current_scope;
         SymbolTable *global_scope = current_scope;
         // get global scope
@@ -8600,7 +8599,7 @@ public:
                                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
                                 struct_->m_abi = abi_type;
                             }
-                            std::string module_name = "file_common_block_" + common_block_name;
+                            std::string module_name = ASRUtils::common_block_module_name(common_block_name);
                             SymbolTable *global_scope = current_scope;
                             while (global_scope->parent) {
                                 global_scope = global_scope->parent;
