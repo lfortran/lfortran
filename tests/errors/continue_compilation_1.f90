@@ -2148,3 +2148,66 @@ subroutine intent_in_bound_before_decl_error(a, nz)
     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
     a = 1
 end subroutine intent_in_bound_before_decl_error
+
+module pointer_allocatable_polymorphism_m
+    implicit none
+    type :: papm_s
+        integer :: i = 0
+    contains
+        procedure :: papm_bound
+    end type
+    type, extends(papm_s) :: papm_t
+    end type
+contains
+    subroutine papm_class_ptr(w)
+        class(papm_s), pointer, intent(in) :: w
+    end subroutine
+    subroutine papm_type_ptr(w)
+        type(papm_s), pointer, intent(in) :: w
+    end subroutine
+    subroutine papm_class_alloc(w)
+        class(papm_s), allocatable :: w
+    end subroutine
+    subroutine papm_type_alloc(w)
+        type(papm_s), allocatable :: w
+    end subroutine
+    subroutine papm_star_ptr(w)
+        class(*), pointer :: w
+    end subroutine
+    integer function papm_class_alloc_f(w)
+        class(papm_s), allocatable :: w
+        papm_class_alloc_f = 1
+    end function
+    integer function papm_bound(self, w)
+        class(papm_s), intent(in) :: self
+        class(papm_s), pointer, intent(in) :: w
+        papm_bound = 1
+    end function
+end module
+
+! F2018 15.5.2.5: when the actual and the dummy are both pointers or both
+! allocatable, the actual is polymorphic if and only if the dummy is, and
+! both have the same declared type.
+subroutine pointer_allocatable_polymorphism()
+    use pointer_allocatable_polymorphism_m
+    implicit none
+    type(papm_s), pointer :: tp
+    class(papm_s), pointer :: cp
+    type(papm_s), allocatable :: ta
+    class(papm_s), allocatable :: ca
+    class(papm_t), pointer :: ctp
+    type(papm_s), target :: tt
+    type(papm_s) :: y
+    integer :: k
+    call papm_class_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    call papm_type_ptr(cp)  ! {Error} the actual argument for pointer dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    call papm_class_alloc(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    call papm_type_alloc(ca)  ! {Error} the actual argument for allocatable dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    call papm_class_ptr(ctp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must have the same declared type, but it is `class(papm_t)`
+    call papm_star_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(*)` must be polymorphic, but it is `type(papm_s)`
+    k = papm_class_alloc_f(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    k = y%papm_bound(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    call papm_class_ptr(tt)
+    call papm_class_ptr(cp)
+    call papm_type_ptr(tp)
+end subroutine

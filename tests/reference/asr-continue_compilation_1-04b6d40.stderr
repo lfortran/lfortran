@@ -3112,3 +3112,51 @@ semantic error: Cannot assign to an intent(in) variable `nz`
      |
 2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
      |     ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2202:25
+     |
+2202 |     call papm_class_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                         ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2203:24
+     |
+2203 |     call papm_type_ptr(cp)  ! {Error} the actual argument for pointer dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+     |                        ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2204:27
+     |
+2204 |     call papm_class_alloc(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                           ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2205:26
+     |
+2205 |     call papm_type_alloc(ca)  ! {Error} the actual argument for allocatable dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+     |                          ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must have the same declared type, but it is `class(papm_t)`
+    --> tests/errors/continue_compilation_1.f90:2206:25
+     |
+2206 |     call papm_class_ptr(ctp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must have the same declared type, but it is `class(papm_t)`
+     |                         ^^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(*)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2207:24
+     |
+2207 |     call papm_star_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(*)` must be polymorphic, but it is `type(papm_s)`
+     |                        ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2208:28
+     |
+2208 |     k = papm_class_alloc_f(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                            ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2209:22
+     |
+2209 |     k = y%papm_bound(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                      ^^ 

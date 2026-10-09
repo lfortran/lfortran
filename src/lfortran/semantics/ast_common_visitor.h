@@ -1797,6 +1797,9 @@ public:
     // Procedures with a dummy argument found to be a procedure while their
     // body is visited, after calls to them may have been built.
     std::set<ASR::symbol_t*> procedures_with_late_procedure_dummies;
+    // Associate names of ASSOCIATE, SELECT TYPE and SELECT RANK constructs.
+    // They are pointers in ASR but never have the POINTER attribute.
+    std::set<ASR::symbol_t*> construct_associate_names;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -15476,6 +15479,107 @@ public:
         }
     }
 
+    // F2018 15.5.2.5: when the actual and the dummy are both allocatable or
+    // both pointers, the actual is polymorphic if and only if the dummy is,
+    // and both have the same declared type. Any other actual for a pointer
+    // dummy (a target, null(), a function result) is not covered by this rule.
+    void check_allocatable_pointer_polymorphism(ASR::expr_t* actual, ASR::expr_t* dummy) {
+        if (ASR::is_a<ASR::Var_t>(*actual)) {
+            if (construct_associate_names.count(
+                    ASR::down_cast<ASR::Var_t>(actual)->m_v)) {
+                return;
+            }
+        } else if (!ASR::is_a<ASR::StructInstanceMember_t>(*actual)) {
+            return;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*dummy)
+                || !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(dummy)->m_v)) {
+            return;
+        }
+        ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
+        ASR::ttype_t* dummy_type = ASRUtils::expr_type(dummy);
+        std::string attribute;
+        if (ASRUtils::is_allocatable(actual_type) && ASRUtils::is_allocatable(dummy_type)) {
+            attribute = "allocatable";
+        } else if (ASRUtils::is_pointer(actual_type) && ASRUtils::is_pointer(dummy_type)) {
+            attribute = "pointer";
+        } else {
+            return;
+        }
+        ASR::ttype_t* actual_elem = ASRUtils::extract_type(actual_type);
+        ASR::ttype_t* dummy_elem = ASRUtils::extract_type(dummy_type);
+        if (ASR::is_a<ASR::FunctionType_t>(*actual_elem)
+                || ASR::is_a<ASR::FunctionType_t>(*dummy_elem)) {
+            return;
+        }
+        bool actual_poly = ASRUtils::is_class_type(actual_elem);
+        bool dummy_poly = ASRUtils::is_class_type(dummy_elem);
+        if (!actual_poly && !dummy_poly) {
+            // Mismatched nonpolymorphic types are reported as a type mismatch.
+            return;
+        }
+        std::string dummy_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+        auto declared_type_str = [](ASR::ttype_t* elem, ASR::expr_t* expr) {
+            if (!ASR::is_a<ASR::StructType_t>(*elem)) {
+                return ASRUtils::type_to_str_with_kind(elem, expr);
+            }
+            if (ASRUtils::is_unlimited_polymorphic_type(elem)) {
+                return std::string("class(*)");
+            }
+            return std::string(ASRUtils::is_class_type(elem) ? "class(" : "type(")
+                + ASRUtils::type_to_str_with_kind(elem, expr) + ")";
+        };
+        std::string actual_str = declared_type_str(actual_elem, actual);
+        std::string dummy_str = declared_type_str(dummy_elem, dummy);
+        std::string msg;
+        if (actual_poly != dummy_poly) {
+            msg = "the actual argument for " + attribute + " dummy argument `"
+                + dummy_name + "` of type `" + dummy_str + "` must "
+                + (dummy_poly ? "" : "not ") + "be polymorphic, but it is `"
+                + actual_str + "`";
+        } else {
+            bool actual_upoly = ASRUtils::is_unlimited_polymorphic_type(actual_elem);
+            bool dummy_upoly = ASRUtils::is_unlimited_polymorphic_type(dummy_elem);
+            bool same_declared_type = actual_upoly == dummy_upoly;
+            if (same_declared_type && !dummy_upoly) {
+                ASR::symbol_t* actual_struct = ASRUtils::get_struct_sym_from_struct_expr(actual);
+                ASR::symbol_t* dummy_struct = ASRUtils::get_struct_sym_from_struct_expr(dummy);
+                same_declared_type = actual_struct == nullptr || dummy_struct == nullptr
+                    || ASRUtils::symbol_get_past_external(actual_struct)
+                        == ASRUtils::symbol_get_past_external(dummy_struct);
+            }
+            if (same_declared_type) {
+                return;
+            }
+            msg = "the actual argument for " + attribute + " dummy argument `"
+                + dummy_name + "` of type `" + dummy_str
+                + "` must have the same declared type, but it is `" + actual_str + "`";
+        }
+        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {
+            Label("", {actual->base.loc})}));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
+
+    // `args` are the actual arguments of a call to `proc`, including the
+    // passed object, in the order of the procedure's dummy arguments.
+    void check_call_allocatable_pointer_polymorphism(ASR::symbol_t* proc,
+            ASR::call_arg_t* args, size_t n_args) {
+        ASR::symbol_t* proc_past_ext = ASRUtils::symbol_get_past_external(proc);
+        if (!ASR::is_a<ASR::Function_t>(*proc_past_ext)
+                && !ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_past_ext)) {
+            return;
+        }
+        ASR::Function_t* func = ASRUtils::get_function(proc_past_ext);
+        for (size_t i = 0; i < n_args && i < func->n_args; i++) {
+            if (args[i].m_value != nullptr) {
+                check_allocatable_pointer_polymorphism(args[i].m_value, func->m_args[i]);
+            }
+        }
+    }
+
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
@@ -20979,6 +21083,17 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        resolve_FuncCallOrArray(x);
+        if (tmp != nullptr && ASR::is_a<ASR::expr_t>(*tmp)
+                && ASR::is_a<ASR::FunctionCall_t>(*ASRUtils::EXPR(tmp))) {
+            ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(
+                ASRUtils::EXPR(tmp));
+            check_call_allocatable_pointer_polymorphism(call->m_name,
+                call->m_args, call->n_args);
+        }
+    }
+
+    void resolve_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         // An actual argument of the form `( cond ? a : b )` is a conditional
         // argument (R1526). It is expanded before the reference is resolved,
         // so that every copy of it is an ordinary procedure reference.
