@@ -8547,6 +8547,19 @@ public:
                 break;
             }
             case ASR::exprType::ArrayConstant: {
+                if (ASRUtils::is_character(*ASRUtils::expr_type(expr))) {
+                    // A CHARACTER array is one string descriptor over its
+                    // consecutive element bytes, not an array of descriptors.
+                    // Build the backing data buffer as writable, since this
+                    // constant initializes a writable struct global.
+                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+                        llvm_utils->declare_constant_stringArray(al,
+                            ASR::down_cast<ASR::ArrayConstant_t>(expr), false));
+                    if (gv && gv->hasInitializer()) {
+                        return gv->getInitializer();
+                    }
+                    break;
+                }
                 // Infer LLVM element/array type from the ASR expression
                 llvm::Type* elem_type = nullptr;
                 elem_type = llvm_utils->get_el_type(expr, ASRUtils::extract_type(ASRUtils::expr_type(expr)), module.get());
