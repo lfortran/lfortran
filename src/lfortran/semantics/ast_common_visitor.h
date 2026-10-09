@@ -13516,6 +13516,14 @@ public:
                         al, v_expr->base.loc, v_expr, v_ext, struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+            // A COMMON object is accessed through its block's struct member.
+            // Refer to that member up front, so that the implied bounds and
+            // lengths computed from `v_Var` below (e.g. for `a(:)`) do not
+            // reference the local declaration, which is removed later.
+            ASR::expr_t* common_member = replace_with_common_block_variables(v_Var);
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*common_member)) {
+                v_Var = common_member;
+            }
             if (is_assumed_rank) {
                 ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, 
                     v_Var, ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, 
