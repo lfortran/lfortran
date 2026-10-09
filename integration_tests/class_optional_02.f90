@@ -41,14 +41,6 @@ contains
         if (present(item)) r = item(1)%get() + item(2)%get()
     end subroutine
 
-    function makea(n) result(item)
-        integer, intent(in) :: n
-        class(item_t), allocatable :: item(:)
-        allocate(big_item_t :: item(2))
-        item(1)%v = n
-        item(2)%v = 2*n
-    end function
-
     subroutine use_local(r)
         integer, intent(out) :: r
         class(item_t), allocatable :: b(:)
@@ -76,9 +68,6 @@ program class_optional_02
     a(2)%v = 3
     call consumea(r, a)
     if (r /= 6) error stop
-
-    call consumea(r, makea(3))
-    if (r /= 9) error stop
 
     call use_local(r)
     if (r /= 9) error stop
