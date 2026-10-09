@@ -93,6 +93,69 @@ subroutine check_seq_bindc()
     if (size(pba) /= 2) error stop 115
     if (any(pba%j /= [11, 12])) error stop 116
 end subroutine
+subroutine check_remap()
+    type(s), target :: xs(4)
+    type(s), allocatable, target :: xa(:)
+    class(s), allocatable, target :: ca(:)
+    class(*), pointer :: u(:), uc(:), u2(:,:), u2a(:,:), u2c(:,:)
+    integer :: i
+    xs%i = [1, 2, 3, 4]
+    allocate(xa(6))
+    xa%i = [10, 20, 30, 40, 50, 60]
+
+    u(0:) => xs
+    if (lbound(u, 1) /= 0 .or. ubound(u, 1) /= 3 .or. size(u) /= 4) error stop 60
+    select type (u)
+    type is (s)
+        if (u(0)%i /= 1 .or. u(3)%i /= 4) error stop 61
+    class default
+        error stop 62
+    end select
+
+    u2(1:2, 1:2) => xs
+    if (any(shape(u2) /= [2, 2])) error stop 63
+    if (any(lbound(u2) /= [1, 1]) .or. any(ubound(u2) /= [2, 2])) error stop 64
+    select type (u2)
+    type is (s)
+        if (u2(2, 1)%i /= 2 .or. u2(1, 2)%i /= 3 .or. u2(2, 2)%i /= 4) error stop 65
+    class default
+        error stop 66
+    end select
+
+    u2a(0:1, -1:1) => xa
+    if (any(shape(u2a) /= [2, 3])) error stop 67
+    if (any(lbound(u2a) /= [0, -1]) .or. any(ubound(u2a) /= [1, 1])) error stop 68
+    select type (u2a)
+    type is (s)
+        if (u2a(0, -1)%i /= 10 .or. u2a(0, 0)%i /= 30 .or. u2a(1, 1)%i /= 60) error stop 69
+    class default
+        error stop 70
+    end select
+
+    allocate(s2 :: ca(4))
+    select type (ca)
+    type is (s2)
+        do i = 1, 4
+            ca(i)%i = i
+            ca(i)%j = 100 + i
+        end do
+    end select
+    uc(5:) => ca
+    if (lbound(uc, 1) /= 5 .or. ubound(uc, 1) /= 8) error stop 71
+    select type (uc)
+    type is (s2)
+        if (uc(5)%j /= 101 .or. uc(8)%j /= 104 .or. uc(7)%i /= 3) error stop 72
+    class default
+        error stop 73
+    end select
+    u2c(1:2, 1:2) => ca
+    select type (u2c)
+    type is (s2)
+        if (u2c(2, 2)%j /= 104 .or. u2c(1, 2)%i /= 3) error stop 74
+    class default
+        error stop 75
+    end select
+end subroutine
 end module
 
 program class_168
@@ -179,6 +242,7 @@ class default
 end select
 
 call check_seq_bindc()
+call check_remap()
 
 print *, "ok"
 end program
