@@ -3515,14 +3515,14 @@ public:
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+            if( current_scope->resolve_symbol(parent_sym_name) == nullptr ) {
                 diag.add(diag::Diagnostic(
                     parent_sym_name + " is not defined.",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            parent_sym = current_scope->get_symbol(parent_sym_name);
+            parent_sym = current_scope->resolve_symbol(parent_sym_name);
             // C1616: "The name of a deferred type shall not appear as a
             // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
             // NOTE 1 there: "A deferred type cannot be extended, even if it has
