@@ -3828,6 +3828,21 @@ public:
             std::string actual_member_name = target_var_name;
             ASR::symbol_t* struct_member_sym = struct_type->m_symtab->get_symbol(target_var_name);
             size_t offset_within_member = 0;
+            auto var_offset_it = common_variables_byte_offset.find(hash);
+            if (struct_member_sym && var_offset_it != common_variables_byte_offset.end()) {
+                // COMMON objects are associated by storage position. A
+                // member of the same name, declared by another program unit
+                // at another position, is not this variable's storage.
+                size_t member_offset = 0;
+                for (size_t i = 0; i < struct_type->n_members; i++) {
+                    if (std::string(struct_type->m_members[i]) == target_var_name) break;
+                    member_offset += get_type_byte_size(ASRUtils::symbol_type(
+                        struct_type->m_symtab->get_symbol(struct_type->m_members[i])));
+                }
+                if (member_offset != var_offset_it->second) {
+                    struct_member_sym = nullptr;
+                }
+            }
             if (!struct_member_sym) {
                 // Name lookup failed - match by byte offset instead. Find the
                 // struct member whose storage range [offset, offset+size) contains
