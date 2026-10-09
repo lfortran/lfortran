@@ -2053,6 +2053,15 @@ struct FixedFormRecursiveDescent {
 			    error(cpy, "Syntax error: expecting length "
 				  "specification after " + decls[i]);
 			}
+                    } else if (*cpy == '(') {
+                        // kind or length selector, such as `real(8)`,
+                        // `real(kind=8)` or `character(len=32)`
+                        unsigned char *end = cpy + 1;
+                        if (try_expr(end, true) && *end == ')') {
+                            end++;
+                            kw_found.back() += tostr(cpy, end);
+                            cpy = end;
+                        }
                     }
                     decls.erase(decls.begin() + i);
                     break;
@@ -2078,8 +2087,9 @@ struct FixedFormRecursiveDescent {
 
         // tokenize all keywords
         for(auto const &kw : kw_found) {
-            if (kw.find('*') != std::string::npos) {
+            if (kw.find_first_of("*(") != std::string::npos) {
                 tokenize_until(cur + kw.size());
+                cur += kw.size();
             } else {
                 push_token_advance(cur, kw);
             }
