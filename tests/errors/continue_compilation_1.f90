@@ -2153,3 +2153,22 @@ subroutine reshape_zero_size_pad_error()
     implicit none
     print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
 end subroutine reshape_zero_size_pad_error
+
+subroutine pointer_assign_type_mismatch_error()
+    implicit none
+    type :: patm_s
+        integer :: i
+    end type
+    type :: patm_o
+        real :: r
+    end type
+    type(patm_s), pointer :: p
+    type(patm_o), target :: y
+    integer, pointer :: ip
+    real, target :: r
+    class(*), pointer :: q
+    p => y  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
+end subroutine pointer_assign_type_mismatch_error

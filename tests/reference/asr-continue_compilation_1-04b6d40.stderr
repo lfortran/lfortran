@@ -3118,3 +3118,27 @@ semantic error: reshape accepts `pad` array of size zero only if `source` array 
      |
 2154 |     print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
      |                                          ^^^^^^^^^^^ `pad` has size zero, but `shape` specifies size of 4 which exceeds the `source` array size of 2
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2170:5
+     |
+2170 |     p => y  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and type(patm_o))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2171:5
+     |
+2171 |     ip => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (integer(4) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2172:5
+     |
+2172 |     p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and class(*))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2173:5
+     |
+2173 |     ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^^^^^^ type mismatch (integer(4) and derived type)

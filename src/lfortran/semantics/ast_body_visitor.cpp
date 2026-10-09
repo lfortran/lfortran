@@ -3264,7 +3264,9 @@ public:
                 value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
             }
 
-            if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
+            // A `class(*)` pointer can be associated with a target of any type.
+            if (ASRUtils::is_derived_type_similar(target_struct, value_struct) ||
+                    ASRUtils::is_unlimited_polymorphic_type(target_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) && ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
@@ -3414,6 +3416,48 @@ public:
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+        }
+        // Procedure characteristics only have to agree when the pointer has
+        // an explicit interface (F2018 10.2.2.4), so a procedure pointer
+        // assignment involving an implicit interface is not a mismatch.
+        bool implicit_procedure_assignment =
+            ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) &&
+            ASR::is_a<ASR::FunctionType_t>(*value_type_underlying) &&
+            (ASRUtils::is_opaque_procedure_type(target_type) ||
+                ASRUtils::is_opaque_procedure_type(value_type));
+        if (tmp == nullptr && !implicit_procedure_assignment) {
+            auto pointer_type_to_str = [](ASR::ttype_t* t, ASR::expr_t* e) {
+                t = ASRUtils::type_get_past_allocatable_pointer(t);
+                ASR::ttype_t* elem = ASRUtils::type_get_past_array(t);
+                if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                    if (ASRUtils::is_unlimited_polymorphic_type(elem)) {
+                        return std::string("class(*)");
+                    }
+                    // `null(mold)` does not record the derived type of its mold.
+                    ASR::symbol_t* struct_sym =
+                        ASR::is_a<ASR::PointerNullConstant_t>(*e) ? nullptr
+                            : ASRUtils::get_struct_sym_from_struct_expr(e);
+                    if (struct_sym == nullptr) {
+                        return std::string("derived type");
+                    }
+                    std::string name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(struct_sym));
+                    return (ASRUtils::is_class_type(elem) ? "class(" : "type(")
+                        + name + ")";
+                }
+                if (ASR::is_a<ASR::FunctionType_t>(*elem)) {
+                    return std::string("procedure");
+                }
+                return ASRUtils::type_to_str_with_kind(t, e);
+            };
+            std::string ltype = pointer_type_to_str(target_type, target);
+            std::string rtype = pointer_type_to_str(value_type, value);
+            diag.semantic_error_label(
+                "type mismatch in pointer assignment, the types must be compatible",
+                {target->base.loc, value->base.loc},
+                "type mismatch (" + ltype + " and " + rtype + ")"
+            );
+            throw SemanticAbort();
         }
     }
 

@@ -12472,13 +12472,18 @@ public:
                                 }
 
                                 // Store vptr + data pointer into the wrapper
-                                if (ASR::is_a<ASR::StructType_t>(*value_elem_asr_type)) {
+                                if (ASRUtils::is_class_type(value_elem_asr_type)) {
                                     llvm::Value* src_vptr = llvm_utils->CreateLoad2(
                                         llvm_utils->vptr_type, llvm_utils->create_gep2(value_el_type, value_data_ptr, 0));
                                     builder->CreateStore(src_vptr, llvm_utils->create_gep2(wrapper_llvm_type, wrapper_ptr, 0));
                                     llvm::Value* src_data_ptr = llvm_utils->CreateLoad2(
                                         llvm_utils->i8_ptr, llvm_utils->create_gep2(value_el_type, value_data_ptr, 1));
                                     builder->CreateStore(src_data_ptr, llvm_utils->create_gep2(wrapper_llvm_type, wrapper_ptr, 1));
+                                } else if (ASR::is_a<ASR::StructType_t>(*value_elem_asr_type)) {
+                                    struct_api->store_class_vptr(
+                                        ASRUtils::get_struct_sym_from_struct_expr(x.m_value), wrapper_ptr, module.get());
+                                    llvm::Value* void_data_ptr = builder->CreateBitCast(value_data_ptr, llvm_utils->i8_ptr);
+                                    builder->CreateStore(void_data_ptr, llvm_utils->create_gep2(wrapper_llvm_type, wrapper_ptr, 1));
                                 } else {
                                     struct_api->store_intrinsic_type_vptr(value_elem_asr_type,
                                         ASRUtils::extract_kind_from_ttype_t(value_elem_asr_type), wrapper_ptr, module.get());
