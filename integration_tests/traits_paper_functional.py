@@ -81,7 +81,9 @@ def main():
         for key in (1, 2):
             output = run(f"{name}-key{key}", [executable], private, f"{key}\n")
             match = re.search(
-                r"Choose an averaging method:\s*([+-]?\d+)\s+([+-]?\d+\.\d+)\s*\Z",
+                r"Choose an averaging method:\s*([+-]?\d+)\s+([+-]?\d+\.\d+)\s*"
+                r"(?:-+ Memory Leak Report -+\s+"
+                r"-+\s+NO LEAKS FOUND\s*)?\Z",
                 output)
             if not match or int(match[1]) != 3 or Decimal(match[2]) != Decimal("3.0"):
                 raise RuntimeError(f"{name}, choice {key}: expected 3 and 3.0:\n{output}")

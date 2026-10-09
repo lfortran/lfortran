@@ -21003,8 +21003,10 @@ public:
         this->visit_expr(*x.m_start);
         ASR::expr_t* start = ASRUtils::EXPR(tmp);
         check_inferred_loop_start(start);
+        // Declaration handling lowercases names, unlike the mixed-case
+        // separate-compilation ID. This index only needs local uniqueness.
         std::string unique_name = current_scope->get_unique_name(
-            "lfortran_inferred_idl_" + name);
+            "lfortran_inferred_idl_" + name, false);
         auto* ast_name = AST::down_cast2<AST::Name_t>(AST::make_Name_t(
             al, x.base.base.loc, s2c(al, unique_name), nullptr, 0));
         infer_type_and_declare(ast_name, x.m_start, start);
