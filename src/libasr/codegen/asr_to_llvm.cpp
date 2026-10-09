@@ -10983,6 +10983,24 @@ public:
             tmp = builder->CreateICmpEQ(to_int64(ptr), to_int64(tgt));
             return ;
         }
+        // The data field of the class wrapper {VTable*, data*} of a
+        // polymorphic array, or null if the array is a disassociated
+        // pointer, whose wrapper is null.
+        auto load_class_wrapper_data = [&](llvm::Type* wrapper_type,
+                llvm::Value* wrapper) -> llvm::Value* {
+            llvm::Value* data = llvm_utils->CreateAlloca(llvm_utils->i8_ptr,
+                nullptr, "class_wrapper_data");
+            builder->CreateStore(llvm::ConstantPointerNull::get(
+                llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)), data);
+            llvm_utils->create_if_else(builder->CreateIsNotNull(wrapper), [&]() {
+                llvm::Type* data_type = llvm::cast<llvm::StructType>(
+                    wrapper_type)->getElementType(1);
+                builder->CreateStore(builder->CreateBitCast(llvm_utils->CreateLoad2(
+                    data_type, llvm_utils->create_gep2(wrapper_type, wrapper, 1)),
+                    llvm_utils->i8_ptr), data);
+            }, []() {});
+            return llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data);
+        };
         llvm_utils->create_if_else(builder->CreateICmpEQ(
             to_int64(ptr),
             llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0))),
@@ -11042,8 +11060,7 @@ public:
                             nptr = arr_descr->get_pointer_to_data(x.m_tgt,
                                 ASRUtils::type_get_past_allocatable_pointer(tgt_type), nptr, module.get());
                             nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), nptr);
-                            nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                                llvm_utils->create_gep2(array_inner_type, nptr, 1)); // {VTable*, i8*} -- Check equality on data field
+                            nptr = load_class_wrapper_data(array_inner_type, nptr);
                         } else {
                             llvm::Type* array_type_desc = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
                                 ASRUtils::expr_type(x.m_tgt), module.get());
@@ -11052,9 +11069,7 @@ public:
                                 arr_descr->get_pointer_to_data(x.m_tgt,
                                     ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
                             if (ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) {
-                                // {VTable*, data*} -- Check equality on data field
-                                nptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                                    llvm_utils->create_gep2(array_inner_type, nptr, 1));
+                                nptr = load_class_wrapper_data(array_inner_type, nptr);
                             }
                         }
                     }
