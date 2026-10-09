@@ -3265,8 +3265,16 @@ public:
             }
 
             // A `class(*)` pointer can be associated with a target of any type.
+            // A non-polymorphic pointer of a SEQUENCE or BIND(C) type can be
+            // associated with a `class(*)` target.
+            bool seq_or_bindc_from_upoly =
+                ASRUtils::is_unlimited_polymorphic_type(value_struct) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                (target_struct->m_is_sequence ||
+                    target_struct->m_abi == ASR::abiType::BindC);
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct) ||
-                    ASRUtils::is_unlimited_polymorphic_type(target_struct)) {
+                    ASRUtils::is_unlimited_polymorphic_type(target_struct) ||
+                    seq_or_bindc_from_upoly) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) && ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
@@ -3426,37 +3434,82 @@ public:
             (ASRUtils::is_opaque_procedure_type(target_type) ||
                 ASRUtils::is_opaque_procedure_type(value_type));
         if (tmp == nullptr && !implicit_procedure_assignment) {
-            auto pointer_type_to_str = [](ASR::ttype_t* t, ASR::expr_t* e) {
+            auto procedure_to_str = [](ASR::expr_t* e) {
+                ASR::symbol_t* sym = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*e)) {
+                    sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                    sym = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
+                }
+                if (sym) {
+                    sym = ASRUtils::symbol_get_past_external(sym);
+                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                        sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+                    }
+                }
+                if (sym) {
+                    sym = ASRUtils::symbol_get_past_external(sym);
+                }
+                if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
+                    std::string name = ASRUtils::symbol_name(sym);
+                    // Skip compiler-generated interface names.
+                    if (name.rfind("__", 0) != 0) {
+                        return "procedure(" + name + ")";
+                    }
+                }
+                return std::string("procedure");
+            };
+            auto pointer_type_to_str = [&](ASR::ttype_t* t, ASR::expr_t* e) {
                 t = ASRUtils::type_get_past_allocatable_pointer(t);
                 ASR::ttype_t* elem = ASRUtils::type_get_past_array(t);
+                std::string res;
                 if (ASR::is_a<ASR::StructType_t>(*elem)) {
                     if (ASRUtils::is_unlimited_polymorphic_type(elem)) {
-                        return std::string("class(*)");
+                        res = "class(*)";
+                    } else {
+                        // `null(mold)` does not record the derived type of its mold.
+                        ASR::symbol_t* struct_sym =
+                            ASR::is_a<ASR::PointerNullConstant_t>(*e) ? nullptr
+                                : ASRUtils::get_struct_sym_from_struct_expr(e);
+                        if (struct_sym) {
+                            res = (ASRUtils::is_class_type(elem) ? "class(" : "type(")
+                                + std::string(ASRUtils::symbol_name(
+                                    ASRUtils::symbol_get_past_external(struct_sym)))
+                                + ")";
+                        } else {
+                            res = "derived type";
+                        }
                     }
-                    // `null(mold)` does not record the derived type of its mold.
-                    ASR::symbol_t* struct_sym =
-                        ASR::is_a<ASR::PointerNullConstant_t>(*e) ? nullptr
-                            : ASRUtils::get_struct_sym_from_struct_expr(e);
-                    if (struct_sym == nullptr) {
-                        return std::string("derived type");
+                    if (ASRUtils::is_array(t)) {
+                        ASRUtils::encode_dimensions(ASRUtils::extract_n_dims_from_ttype(t),
+                            res, false);
                     }
-                    std::string name = ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(struct_sym));
-                    return (ASRUtils::is_class_type(elem) ? "class(" : "type(")
-                        + name + ")";
+                    return res;
                 }
                 if (ASR::is_a<ASR::FunctionType_t>(*elem)) {
-                    return std::string("procedure");
+                    return procedure_to_str(e);
+                }
+                if (ASR::is_a<ASR::String_t>(*elem)) {
+                    return ASRUtils::type_to_str_fortran_symbol(t, nullptr, true);
                 }
                 return ASRUtils::type_to_str_with_kind(t, e);
             };
             std::string ltype = pointer_type_to_str(target_type, target);
             std::string rtype = pointer_type_to_str(value_type, value);
-            diag.semantic_error_label(
-                "type mismatch in pointer assignment, the types must be compatible",
-                {target->base.loc, value->base.loc},
-                "type mismatch (" + ltype + " and " + rtype + ")"
-            );
+            if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) &&
+                    ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
+                diag.semantic_error_label(
+                    "interface mismatch in procedure pointer assignment",
+                    {target->base.loc, value->base.loc},
+                    "incompatible interfaces (" + ltype + " and " + rtype + ")"
+                );
+            } else {
+                diag.semantic_error_label(
+                    "type mismatch in pointer assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ltype + " and " + rtype + ")"
+                );
+            }
             throw SemanticAbort();
         }
     }

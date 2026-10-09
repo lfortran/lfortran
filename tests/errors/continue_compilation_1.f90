@@ -2172,3 +2172,24 @@ subroutine pointer_assign_type_mismatch_error()
     p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
     ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
 end subroutine pointer_assign_type_mismatch_error
+
+subroutine pointer_assign_interface_mismatch_error()
+    implicit none
+    abstract interface
+        real function paim_iface(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    procedure(paim_iface), pointer :: fp
+    real, target :: r
+    integer, pointer :: ip
+    character(len=5), target :: cs
+    fp => paim_g  ! {Error} interface mismatch in procedure pointer assignment
+    fp => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
+contains
+    real function paim_g(n)
+        integer, intent(in) :: n
+        paim_g = n
+    end function
+end subroutine pointer_assign_interface_mismatch_error

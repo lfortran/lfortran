@@ -1,4 +1,5 @@
 module class_168_mod
+use iso_c_binding, only: c_int, c_double
 implicit none
 type :: s
     integer :: i
@@ -8,6 +9,20 @@ type, extends(s) :: s2
 end type
 type :: holder
     class(*), pointer :: q => null()
+end type
+! A pointer of a SEQUENCE or BIND(C) type can be associated with an
+! unlimited polymorphic target.
+type :: sq
+    sequence
+    integer :: i
+    real :: r
+end type
+type, bind(c) :: bc
+    integer(c_int) :: j
+    real(c_double) :: d
+end type
+type :: sq_holder
+    type(sq), pointer :: ps => null()
 end type
 contains
 integer function get(q) result(r)
@@ -30,6 +45,54 @@ integer function get_class(q) result(r)
         r = -1
     end select
 end function
+subroutine check_seq_bindc()
+    type(sq), target :: x, xa(3)
+    type(bc), target :: y, ya(2)
+    class(*), pointer :: q, qa(:)
+    type(sq), pointer :: ps, psa(:)
+    type(bc), pointer :: pb, pba(:)
+    type(sq_holder) :: h
+
+    x = sq(5, 1.5)
+    q => x
+    ps => q
+    if (.not. associated(ps)) error stop 101
+    if (.not. associated(ps, x)) error stop 102
+    if (ps%i /= 5) error stop 103
+    if (abs(ps%r - 1.5) > 1e-6) error stop 104
+    ps%i = 6
+    if (x%i /= 6) error stop 105
+
+    y = bc(7, 2.5d0)
+    q => y
+    pb => q
+    if (.not. associated(pb, y)) error stop 106
+    if (pb%j /= 7) error stop 107
+    if (abs(pb%d - 2.5d0) > 1d-12) error stop 108
+    pb%j = 8
+    if (y%j /= 8) error stop 109
+
+    q => x
+    h%ps => q
+    if (.not. associated(h%ps, x)) error stop 110
+    if (h%ps%i /= 6) error stop 111
+
+    xa%i = [1, 2, 3]
+    xa%r = 0.0
+    qa => xa
+    psa => qa
+    if (size(psa) /= 3) error stop 112
+    if (any(psa%i /= [1, 2, 3])) error stop 113
+    psa(2)%i = 20
+    if (xa(2)%i /= 20) error stop 114
+
+    ya%j = [11, 12]
+    ya%d = 0.0d0
+    qa => ya
+    pba => qa
+    if (size(pba) /= 2) error stop 115
+    if (any(pba%j /= [11, 12])) error stop 116
+end subroutine
 end module
 
 program class_168
@@ -114,6 +177,8 @@ type is (s)
 class default
     error stop 25
 end select
+
+call check_seq_bindc()
 
 print *, "ok"
 end program

@@ -3142,3 +3142,21 @@ semantic error: type mismatch in pointer assignment, the types must be compatibl
      |
 2173 |     ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
      |     ^^    ^^^^^^^ type mismatch (integer(4) and derived type)
+
+semantic error: interface mismatch in procedure pointer assignment
+    --> tests/errors/continue_compilation_1.f90:2187:5
+     |
+2187 |     fp => paim_g  ! {Error} interface mismatch in procedure pointer assignment
+     |     ^^    ^^^^^^ incompatible interfaces (procedure(paim_iface) and procedure(paim_g))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2188:5
+     |
+2188 |     fp => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (procedure(paim_iface) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2189:5
+     |
+2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^ type mismatch (integer(4) and character(len=5))
