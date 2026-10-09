@@ -2001,7 +2001,9 @@ struct FixedFormRecursiveDescent {
                 // Handle procedure declaration within the interface
                 lex_procedure(cur);
             } else if (next_is(cur, "moduleprocedure")) {
-                // TODO: handle module procedure
+                push_token_advance(cur, "module");
+                push_token_advance(cur, "procedure");
+                tokenize_line(cur);
             } else {
                 error(cur, "Unexpected token in interface block");
             }
