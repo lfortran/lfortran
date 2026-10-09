@@ -172,6 +172,16 @@ static std::string compute_llvm_function_name(
     return fn_name;
 }
 
+// The variables an expression references, in the order it references them.
+class ReferencedVariables : public ASR::BaseWalkVisitor<ReferencedVariables> {
+public:
+    std::vector<ASR::symbol_t*> variables;
+
+    void visit_Var(const ASR::Var_t &x) {
+        variables.push_back(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+};
+
 // For each statement label of a procedure body, the BLOCK and ASSOCIATE
 // constructs that contain the labeled statement, outermost first.
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
@@ -2980,6 +2990,20 @@ public:
                     ptr_loads = saved_ptr_loads;
                     llvm_symtab_finalizer.finalize_before_deallocate(
                         desc_ptr, realloc_arg_type, realloc_struct_sym, false);
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                        realloc_storage_type);
+                    if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
+                        // As in visit_Deallocate: finalize_before_deallocate
+                        // has freed the class wrapper and its data, so null
+                        // the descriptor's data pointer and let the
+                        // reallocation below allocate fresh storage.
+                        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_args[0].m_a, realloc_storage_type, module.get());
+                        llvm::Type* llvm_data_type = llvm_utils->get_el_type(
+                            x.m_args[0].m_a, element_type, module.get());
+                        arr_descr->reset_is_allocated_flag(desc_type, desc_ptr,
+                            llvm_data_type);
+                    }
                 }, [](){});
             }
             visit_AllocateUtil(x, nullptr, true);
@@ -9774,6 +9798,63 @@ public:
         }
     }
 
+    // A character dummy passed as its data pointer, with its length in a
+    // hidden argument (ASRUtils::is_string_dummy_with_hidden_length), gets a
+    // local descriptor made of the two, so that the body uses it like any
+    // other string. Its length is the declared one, which for an
+    // assumed-length dummy is the hidden argument.
+    void setup_string_dummies_with_hidden_length(const ASR::Function_t& x) {
+        struct Dummy {
+            llvm::Value* desc;
+            ASR::String_t* str;
+            // 0: length not set, 1: being set, 2: set.
+            int state;
+        };
+        std::map<ASR::symbol_t*, Dummy> dummies;
+        std::vector<ASR::symbol_t*> order;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASRUtils::is_string_dummy_with_hidden_length(x, x.m_args[i])) {
+                continue;
+            }
+            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            uint32_t h = get_hash((ASR::asr_t*)arg);
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            ASR::String_t* str = ASRUtils::get_string_type(arg->m_type);
+            if (str->m_len_kind != ASR::ExpressionLength || str->m_len == nullptr) {
+                // The string_length_arguments pass gives every such dummy a
+                // length expression, if only its hidden argument.
+                throw CodeGenError("the character dummy `" + std::string(arg->m_name) +
+                    "` has no hidden length argument; the string_length_arguments "
+                    "pass must run before code generation", arg->base.base.loc);
+            }
+            llvm::Value* desc = llvm_utils->create_string_descriptor(
+                std::string(arg->m_name) + "_desc");
+            builder->CreateStore(llvm_symtab[h],
+                llvm_utils->create_gep2(string_descriptor, desc, 0));
+            llvm_symtab[h] = desc;
+            dummies[&arg->base] = {desc, str, 0};
+            order.push_back(&arg->base);
+        }
+        // A declared length can depend on the length of another such dummy
+        // (`character(len=len(a)*2) :: b`), which can come later in the
+        // argument list, so the lengths it depends on are set first.
+        std::function<void(ASR::symbol_t*)> set_length = [&](ASR::symbol_t* s) {
+            Dummy &dummy = dummies.at(s);
+            if (dummy.state != 0) return;
+            dummy.state = 1;
+            ReferencedVariables referenced;
+            referenced.visit_expr(*dummy.str->m_len);
+            for (ASR::symbol_t* r: referenced.variables) {
+                if (dummies.find(r) != dummies.end()) set_length(r);
+            }
+            setup_string_length(dummy.desc, dummy.str, dummy.str->m_len);
+            dummy.state = 2;
+        };
+        for (ASR::symbol_t* s: order) {
+            set_length(s);
+        }
+    }
+
     inline void define_function_entry(const ASR::Function_t& x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
         parent_function = &x;
@@ -9897,6 +9978,8 @@ public:
             }
         }
 
+        setup_string_dummies_with_hidden_length(x);
+
         for( auto& sym: x.m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ) {
                 continue ;
@@ -9946,7 +10029,10 @@ public:
             if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                 ASRUtils::is_string_only(symbol_type) &&
                 !ASRUtils::is_allocatable(symbol_type) &&
-                !ASRUtils::is_pointer(symbol_type)) {
+                !ASRUtils::is_pointer(symbol_type) &&
+                !ASRUtils::is_string_dummy_with_hidden_length(
+                    *ASRUtils::get_FunctionType(x),
+                    *ASR::down_cast<ASR::Variable_t>(sym.second))) {
                 ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym.second);
                 if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len &&
@@ -24694,6 +24780,15 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false)
             }
+            // A character dummy passed with a hidden length receives the
+            // data pointer of its actual; the length is a separate argument
+            // of the call (see ASRUtils::is_string_dummy_with_hidden_length).
+            bool pass_string_data = orig_arg != nullptr &&
+                ASR::is_a<ASR::Function_t>(*func_subrout) &&
+                ASRUtils::is_string_dummy_with_hidden_length(
+                    *ASRUtils::get_FunctionType(
+                        ASR::down_cast<ASR::Function_t>(func_subrout)),
+                    *orig_arg);
 
             if(orig_arg && x.m_args[i].m_value){
                 check_strings_phsyicalType_match(orig_arg->m_type, expr_type(x.m_args[i].m_value));
@@ -24716,6 +24811,11 @@ public:
 
             if( x.m_args[i].m_value == nullptr ) {
                 LCOMPILERS_ASSERT(orig_arg != nullptr);
+                if (pass_string_data) {
+                    args.push_back(llvm::ConstantPointerNull::get(
+                        llvm_utils->character_type));
+                    continue;
+                }
                 llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, orig_arg->base.base.loc, &orig_arg->base)),
                     orig_arg->m_type, module.get());
@@ -26176,6 +26276,13 @@ public:
                 tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc,
                         &orig_arg->base)), orig_arg->m_type, module.get()), tmp);
+            }
+
+            if (pass_string_data) {
+                // The actual is lowered to its string descriptor (a
+                // character dummy and its actual are both DescriptorString).
+                tmp = llvm_utils->CreateLoad2(llvm_utils->character_type,
+                    llvm_utils->create_gep2(string_descriptor, tmp, 0));
             }
 
             args.push_back(tmp);
