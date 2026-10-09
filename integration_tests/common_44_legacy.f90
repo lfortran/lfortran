@@ -1,6 +1,7 @@
-! Declares the COMMON block of common_44_mod with another member name after
-! common_44_mod was compiled. That must not change what the modfiles of
-! common_44_mod refer to.
+! Declares the COMMON block of common_44_mod with another member name. The use
+! of common_44_order_mod makes this file compile after common_44_module.f90,
+! so this declaration comes after common_44_mod was compiled; it must not
+! change the layout the modfiles of common_44_mod refer to.
 module common_44_legacy_mod
     use common_44_order_mod, only: expected
     implicit none

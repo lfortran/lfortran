@@ -1,4 +1,6 @@
-! common_44_legacy.f90 uses common_44_order_mod, so this file is compiled first.
+! The bug needs common_44_legacy.f90 compiled after this file: its COMMON
+! declaration then replaced the layout common_44_mod was compiled against.
+! common_44_legacy.f90 uses common_44_order_mod only to force that order.
 module common_44_order_mod
     implicit none
     integer, parameter :: expected = 17
