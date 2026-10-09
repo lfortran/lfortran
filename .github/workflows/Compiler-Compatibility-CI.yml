@@ -197,6 +197,7 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
