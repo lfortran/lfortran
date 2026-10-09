@@ -129,6 +129,69 @@ only once, redirect to a log file and then examine the log file.
   before your change and pass after. Do not merge without a full local pass of
   unit and integration suites.
 
+### CI policy
+
+- `Quick checks` is the normal PR gate and runs the same builds, tests and
+  selections on PRs, main, release tags and manual runs. It runs full Linux
+  LLVM/reference coverage and representative checks on every platform, plus
+  shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
+  capability checks in Quick. No exhaustive label is required before review
+  or merge.
+  Caffeine's own LFortran unit tests and all coarray capability tests always run.
+  Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
+  use the same input comparison on every event, validate conservatively when
+  inputs cannot be determined, and retain full reference validation in Exhaustive.
+  Data, support and unknown-path changes request reference validation by default;
+  only explicit compiler-source and simple standalone-test cases may skip it.
+  Do not infer arbitrary runtime file dependencies from a Fortran keyword list.
+- Quick's LLVM 11 Debug compiler owns the full normal/fast and Fortran 2023
+  suites; LLVM 21 Debug owns full separate-compilation and leak-detection suites.
+  Every full Quick suite runs with assertions and per-pass ASR verification.
+  Both full-suite compilers also use the platform C/C++ diagnostic/hardening
+  flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
+  These modes are not just smoke selections.
+  Exhaustive checks add missing configurations without replaying Quick.
+  LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
+  Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
+  coverage belong to supplemental Exhaustive jobs, preserving the original
+  main coverage without making Quick slower on main.
+- Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
+  labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
+  third-party application catalog; only publishing and deployment are push-only.
+- Quick also runs on `merge_group` so required checks report in the merge
+  queue. Keep `merge_group` on every workflow that produces a required check;
+  merge queue runs must not save caches.
+- Third-party applications are **bug generators for integration tests**, not
+  part of ordinary PR checks. They run on every push to `main` and in every
+  requested Exhaustive run, including applications such as FIATS.
+- A compiler failure found by an application must become a reduced, registered
+  integration regression. Fix it promptly or revert the offending change,
+  and verify the original application failure as well as the regression.
+  Do not add whole applications to Quick or waive their failures.
+- Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
+  checks. Do not apply it automatically based on files or compiler subsystems
+  touched. Manual dispatch in a fork is an alternative; dispatch Quick
+  separately if it has not run on that revision, and verify both tested SHAs
+  and results.
+- Every main push keeps the full compiler matrix and application validation.
+  Main runs are not automatically cancelled or coalesced; maintainers may
+  manually cancel older runs while keeping the latest. Release-tag workflows
+  keep compiler and packaging checks without repeating the application catalog.
+- Release only a tested main commit whose full CI, including applications,
+  is green. Quick or extended PR checks alone do not qualify a release.
+- `integration_tests/run_tests.py --smoke` selects the maintained feature set in
+  `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
+  CI configurations, not a replacement for full local regression testing.
+- The status-only aggregate may be disabled only after all Quick jobs are
+  required directly in branch protection: retain all four platform contexts
+  and add the seven compatibility/backend contexts. Follow the documented
+  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout and rollback; a conditionally
+  skipped aggregate does not block merging and no longer protects its
+  dependencies. Do not weaken protection to remove a queue.
+
+See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
+and the distinction between capability tests and application validation.
+
 ### Test Placement Decision Tree
 - If the test compiles and runs end-to-end → integration test (preferred).
 - If the test checks a compile-time error → `tests/errors/continue_compilation_1.f90`

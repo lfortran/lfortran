@@ -2097,3 +2097,54 @@ end subroutine allocate_func_target_01
 function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
 end function func_alloc_target_01
+
+module component_init_host_scope_in_continue_compilation_1_m
+    implicit none
+    integer :: cihs_h = 3
+    type :: cihs_t
+        ! a component initializer is evaluated in the host scope: `cihs_h`
+        ! is the module variable, which is not a named constant
+        integer :: cihs_h = cihs_h  ! {Error} Initialization of `cihs_h` must reduce to a compile time constant.
+    end type
+    type :: cihs_u
+        integer :: cihs_a = 1
+        integer :: cihs_b = cihs_a  ! {Error} component `cihs_a` cannot be referenced in a component declaration
+    end type
+    type :: cihs_v
+        integer :: cihs_c(2) = 1
+        integer :: cihs_d = cihs_c(1)  ! {Error} component `cihs_c` cannot be referenced in a component declaration
+    end type
+    type :: cihs_w
+        integer :: cihs_n = 2
+        integer :: cihs_e(cihs_n)  ! {Error} component `cihs_n` cannot be referenced in a component declaration
+    end type
+    type :: cihs_x
+        integer :: cihs_k = 4
+        real(cihs_k) :: cihs_f  ! {Error} component `cihs_k` cannot be referenced in a component declaration
+    end type
+    type :: cihs_y
+        integer :: cihs_l = 3
+        character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
+    end type
+end module
+
+subroutine intent_list_assignment_error(x, y)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y
+    y = 5  ! {Error} Cannot assign to an intent(in) variable `y`
+end subroutine intent_list_assignment_error
+
+subroutine intent_list_non_dummy_error(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+end subroutine intent_list_non_dummy_error
+
+subroutine intent_in_bound_before_decl_error(a, nz)
+    implicit none
+    real, dimension(nz) :: a
+    integer, intent(in) :: nz
+    nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
+    a = 1
+end subroutine intent_in_bound_before_decl_error

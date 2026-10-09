@@ -8,10 +8,11 @@ description: >
   create-mre and fix-mre repeatedly (one MRE per underlying bug) until the
   original issue is fully fixed, open a draft PR from the user's fork with
   `gh`, review it with pr-review, and keep fixing CI failures and review
-  blockers until the PR is green and clean, then add the
-  Tests::Run-Exhaustive label, fix any exhaustive CI failures, and mark it
-  ready for review. Unrelated pre-existing bugs found along the way are filed
-  as separate issues and linked from the PR.
+  blockers until Quick checks is green and the PR is clean, then mark it
+  ready for review. Third-party applications run in Exhaustive (main or an
+  explicit request) to generate integration-test regressions, not as a PR gate. Extended PR compiler checks
+  are opt-in only when the user requests them. Unrelated pre-existing bugs
+  are filed as separate issues and linked from the PR.
   Triggers: fix issue, fix github issue, issue to PR, resolve issue, send PR
   for issue, end-to-end fix.
 compatibility: >
@@ -33,8 +34,7 @@ setup ─► repro-issue ─► ┌─► create-mre ─► fix-mre ─► issue
             ▼
    ┌─► CI watch  +  fresh pr-review  +  human comments
    │        │
-   │        ├─ clean, no label yet ─► add Tests::Run-Exhaustive ─► CI watch
-   │        ├─ clean + exhaustive green ─► mark PR ready ─► final report
+   │        ├─ Quick green + clean ─► mark PR ready ─► final report
    │        ▼
    └── fix subagent (commit, push)
 
@@ -95,8 +95,7 @@ MRE files are archived to `.fix-issue/<id>/mre_<j>/`.
 
 Invoking this skill counts as the user's consent to create a branch, commit,
 push to **the user's fork**, open a draft PR against `lfortran/lfortran`, push
-follow-up commits to that PR, add the `Tests::Run-Exhaustive` label to that
-PR, open new issues at `lfortran/lfortran` for unrelated pre-existing bugs
+follow-up commits to that PR, open new issues at `lfortran/lfortran` for unrelated pre-existing bugs
 found along the way, and mark the PR ready for review. This overrides the
 "do not commit" default in `fix-mre`. Pass this authorization explicitly to
 the subagents that need it.
@@ -106,8 +105,9 @@ Never, under any circumstances:
 - push to the upstream `lfortran/lfortran` repository;
 - use an unconditional force-push; when the policy below calls for rebasing,
   update the fork branch only with `git push --force-with-lease`;
-- comment on, close, or relabel the original issue, add any other label to
-  the PR, comment on other issues or PRs (including existing issues found in
+- comment on, close, or relabel the original issue, add a label to
+  the PR except an explicitly requested `Tests::Run-Exhaustive`, comment on
+  other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
 
@@ -349,7 +349,7 @@ current head SHA.
   gh pr checks <PR> --repo lfortran/lfortran --watch --interval 120 \
       > .fix-issue/<id>/ci_<k>.log 2>&1; echo "exit=$?"
   ```
-  Checks can take a minute to appear after a push or labeling. If `gh`
+  Checks can take a minute to appear after a push. If `gh`
   reports no checks yet, wait and retry. CI can take over an hour. Do not
   poll in short loops; wait for the background command to finish. Afterwards,
   get only a summary:
@@ -382,29 +382,57 @@ The fix subagent reads the actual comment text.
 **6c. Decide.** The PR is **clean** when all of these hold for the current
 head SHA:
 
-- every CI check passed, or each failing check was shown by a subagent to
+- every applicable CI check passed, or each failing check was shown by a subagent to
   also fail on `main` (it is pre-existing, so report it but do not fix it
   here);
 - the latest fresh review has **no blocker and no rework** findings;
 - no human review comment or requested change is unaddressed;
 - `mergeable` is not `CONFLICTING`.
 
-If clean and the PR does not have the label yet, add it:
-`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
-Wait until now because the exhaustive suite is expensive, and while the label
-is present it reruns on every push (`.github/workflows/Exhaustive-Checks-CI.yml`
-triggers on `synchronize`, and `Exhaustive-Checks-Label-CI.yml` reruns it when
-the label is added). If `gh` lacks permission to add
-labels, tell the user and ask them to add it. Record the label in `state.md`,
-then start the next round with only the CI watch; the head SHA is unchanged,
-so the review stands, and this round does not count toward the cap.
-
-The PR is **done** when it is clean, the label is present, and the
-`Exhaustive checks` workflow ran on the current head SHA (not `skipped`) with
-every job passed or shown to also fail on `main`. Check with
+The PR is **done** when it is clean and `Quick checks` ran for the current
+PR revision, with every applicable job passed or shown to also fail on `main`.
+Quick includes the shared compiler compatibility jobs; those are not optional.
+Requested Exhaustive checks supplement Quick rather than replacing it;
+require both on the same current revision.
+Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
-If done, go to Phase 6. Exhaustive failures go to the fix subagent like any
-other CI failure.
+Do not treat missing or all-skipped Quick checks as success.
+Expected skips of unrequested Exhaustive jobs, including application
+validation, do not block a PR.
+
+Third-party applications are bug generators for the integration suite and
+release compatibility checks on every main push, not an ordinary PR test suite.
+When the reported bug comes from an application, reduce it, add the registered
+integration regression, fix the compiler and verify the original application
+failure locally. Do not add that application to Quick. Caffeine-backed
+coarray and GPU integration checks remain required capability tests.
+
+Do not add CI labels or dispatch extended CI automatically, including for
+serialization, finalization, I/O or GPU changes. Do not cancel older main runs.
+The rare `Tests::Run-Exhaustive` label is for an explicit request for extended
+coverage; it runs the same Exhaustive checks as main, including applications.
+
+Only when the user requests extended checks, add the label with
+`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
+If it is already present, wait for the applicable checks rather than removing
+it. They must pass for the current revision before finishing, subject to the
+pre-existing-failure rule above. Label addition reruns the current PR's
+Exhaustive workflow; subsequent pushes rerun it while the label remains.
+If labeling is unavailable, an explicitly requested manual run in the fork
+is an alternative:
+`gh workflow run Exhaustive-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
+Exhaustive never invokes Quick. If there is no successful Quick run for the
+same revision, also dispatch
+`gh workflow run Quick-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
+Record each run ID, URL and head SHA in `state.md` and wait with
+`gh run watch <run-id> --repo <login>/lfortran`; it may not appear in upstream
+`gh pr checks`. A push invalidates the old result. Extended-check failures
+go to the fix subagent like any other CI failure.
+
+Release qualification is separate: the release commit must have green full
+main CI, including applications. Quick or extended PR success is not enough.
+
+If done, go to Phase 6.
 
 **6d. Otherwise spawn a fresh fix subagent** with the list of what is
 outstanding: failing check names, the path `review_<k>.md`, and which human
@@ -459,7 +487,7 @@ Bugs fixed (<count> MRE iterations, one commit each):
   2. ...
 
 CI:      green  (pre-existing failures on main: <none | names>)
-Exhaustive CI: green  (pre-existing failures on main: <none | names>)
+Extended compiler CI: <not requested | green, run URL and tested SHA>
 Review:  <rounds> round(s); blockers/rework fixed: <n>; rejected with reason: <n>
 Follow-up issues filed: <#M, #M (duplicate of existing), ... or none>
 Other follow-ups (not bugs, not filed): <list or none>

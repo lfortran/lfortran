@@ -1,0 +1,308 @@
+name: Compiler compatibility
+
+on:
+  workflow_call:
+    inputs:
+      scope:
+        description: "Coverage role: quick or exhaustive"
+        type: string
+        default: exhaustive
+
+permissions:
+  contents: read
+
+env:
+  MACOSX_DEPLOYMENT_TARGET: 15.0
+  LFORTRAN_CI_SCOPE: ${{ inputs.scope }}
+  LFORTRAN_TEST_SUITE: ${{ inputs.scope == 'quick' && 'smoke' || 'full' }}
+
+jobs:
+  test_llvm:
+    name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        # Quick owns the full regression modes on LLVM 11/21. Exhaustive is
+        # identical on main, labeled PRs and manual runs.
+        # An unknown scope has no matrix, rather than silently selecting one.
+        llvm-version: ${{ fromJSON('{"quick":["7","11","23"],"exhaustive":["7","8","10","11","15","17","18","19","21","22","23"]}')[inputs.scope] }}
+        python-version: ["3.10"]
+        include: ${{ inputs.scope == 'quick' && fromJSON('[]') || fromJSON('[{"os":"macos-latest","llvm-version":"22","python-version":"3.10"}]') }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Pin 7.0.1: the conda-forge llvmdev 7.1.0 build is compiled with a
+      # newer toolchain, and its static libraries crash at run time (in
+      # createX86MCSubtargetInfo) when linked with the runner's binutils 2.42.
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: matrix.llvm-version == '7'
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=7.0.1
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '10')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.2
+            openmpi=5.0.6=hb85ec53_102
+            zlib=1.3.1
+            zstd-static=1.5.6
+            xonsh=0.16.0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '18')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            xonsh=0.16.0
+            zlib=1.3.1
+            zstd-static=1.5.6
+            openmpi=5.0.6=hb85ec53_102
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '20')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6=hb85ec53_102
+            xonsh=0.16.0
+            zlib=1.3.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '21')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            llvmdev=21.1.0
+            python=${{ matrix.python-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6=hb85ec53_102
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '22') && contains(matrix.os, 'ubuntu')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
+            binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '23') && contains(matrix.os, 'ubuntu')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.10' || '' }}
+            binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.os, 'macos')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment.yml
+          create-args: >-
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '12')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.3
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: ${{! ( matrix.llvm-version == '7' || contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          save: ${{ github.event_name != 'merge_group' }}
+
+      - name: Install libunwind
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
+        run: micromamba install -y -n lf libunwind=1.7.2
+
+      - name: Build
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            # Quick's full normal/fast compiler needs the same diagnostic,
+            # allocation and assertion checks as the platform Debug builds.
+            BUILD_TYPE=Release
+            CHECK_FLAGS=()
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
+                BUILD_TYPE=Debug
+                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes)
+                export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+                export CXXFLAGS="$CFLAGS"
+            fi
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+              -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              "${CHECK_FLAGS[@]}" \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test application runtime stacktraces
+        shell: bash -e -l {0}
+        if: ${{ inputs.scope == 'exhaustive' && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            # Caffeine strips LFortran -g. Exercise debug conversion explicitly
+            # on application compilers instead of disabling runtime support.
+            grep -q '^#define HAVE_RUNTIME_STACKTRACE$' src/libasr/config.h
+            llvm-dwarfdump --version
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                dsymutil --version
+            fi
+            lfortran -v examples/expr2.f90 -o expr2
+            actual=$(./expr2)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
+            lfortran -v -g examples/expr2.f90 -o expr2-debug
+            actual=$(./expr2-debug)
+            echo "$actual"
+            test "${actual//[[:space:]]/}" = 25
+
+      - name: Test third party codes
+        shell: bash -e -l {0}
+        if: ${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            LAPACK_MODE="smoke"
+            # The full Reference-LAPACK suite costs ~10 min more than smoke.
+            # It exercises LFortran, not LLVM, so run it on the default
+            # version only. LLVM 19 and macOS stay on smoke.
+            if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
+                LAPACK_MODE="full"
+            fi
+            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      # The unit tests exercise the JIT, whose code path differs between
+      # LLVM versions, so run them for every version.
+      - name: Test unit tests
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+
+      - name: Test Debug reference coverage
+        if: inputs.scope == 'quick' && matrix.llvm-version == '11'
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+
+      - name: Test LLVM integration tests
+        shell: bash -e -l {0}
+        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]; then
+                bash ci/test_llvm_integration.sh --core
+            else
+                bash ci/test_llvm_integration.sh
+            fi
+
+      - name: Test coarray runtime with Caffeine
+        if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
+        shell: bash -e -l {0}
+        env:
+          # Compare actual checkout inputs on PRs and pushes alike. Missing
+          # history (including manual/tag runs) requests conservative validation.
+          LFORTRAN_COARRAY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          LFORTRAN_COARRAY_HEAD: ${{ github.sha }}
+        run: ci/test_caffeine.sh --verify-all-passes
