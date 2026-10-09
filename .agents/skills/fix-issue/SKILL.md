@@ -114,9 +114,9 @@ Never, under any circumstances:
 
 ### Keeping the PR branch current
 
-Keep PR history linear: the branch must never contain a merge of `main`. The
-merge queue tests every PR against the latest `main`, so do not update the
-branch only because `main` moved; every push reruns CI. Update it only when
+Keep PR history linear: the branch must never contain a merge of `main`. Do
+not update the branch only because `main` moved; every push reruns CI, and
+Quick on `main` catches integration breakage after merging. Update it only when
 the PR has base conflicts, needs a change that landed on `main`, or CI
 failures look caused by a stale base.
 
