@@ -3561,6 +3561,8 @@ RUN(NAME class_161 LABELS gfortran llvm)
 RUN(NAME class_162 LABELS gfortran llvm)
 RUN(NAME class_163 LABELS gfortran llvm)
 RUN(NAME class_165 LABELS gfortran llvm)
+RUN(NAME class_166 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_167 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -3927,6 +3929,18 @@ RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f90)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
+RUN(NAME external_string_arg_02 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_02_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME external_string_arg_03 LABELS gfortran llvm
+    EXTRAFILES external_string_arg_03_c.c
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_01 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_02 LABELS gfortran llvm
+    EXTRAFILES string_arg_hidden_length_02b.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME string_arg_hidden_length_03 LABELS gfortran llvm)
+RUN(NAME string_arg_hidden_length_05 LABELS gfortran llvm)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
