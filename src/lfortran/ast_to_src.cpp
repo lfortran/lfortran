@@ -1816,6 +1816,7 @@ public:
             ATTRTYPE(Pure)
             ATTRTYPE(Recursive)
             ATTRTYPE(Save)
+            ATTRTYPE(Sealed)
             ATTRTYPE(Sequence)
             ATTRTYPE(Target)
             ATTRTYPE(Value)
@@ -1834,6 +1835,15 @@ public:
 
     void visit_AttrTraitClass(const AttrTraitClass_t &x) {
         std::string r = "class(";
+        for (size_t i = 0; i < x.n_traits; i++) {
+            if (i) r += " + ";
+            r += x.m_traits[i];
+        }
+        s = r + ")";
+    }
+
+    void visit_AttrImplements(const AttrImplements_t &x) {
+        std::string r = "implements(";
         for (size_t i = 0; i < x.n_traits; i++) {
             if (i) r += " + ";
             r += x.m_traits[i];

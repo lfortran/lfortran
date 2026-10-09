@@ -1449,6 +1449,11 @@ bool is_directly_addressable_expr(ASR::expr_t* value) {
         case ASR::exprType::TraitReceiver: {
             return true;
         }
+        case ASR::exprType::Cast: {
+            auto *cast = ASR::down_cast<ASR::Cast_t>(value);
+            return cast->m_kind == ASR::cast_kindType::ClassToStruct &&
+                is_directly_addressable_expr(cast->m_arg);
+        }
         case ASR::exprType::ArrayItem: {
             return !ASRUtils::is_array(ASRUtils::expr_type(value)) &&
                    !ASRUtils::is_allocatable(ASRUtils::expr_type(value)) &&
@@ -1977,6 +1982,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::TraitReceiver_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       !(is_call && ASR::is_a<ASR::Cast_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                         is_directly_addressable_expr(x_m_args[i].m_value)) &&
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                          !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&

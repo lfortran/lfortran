@@ -874,6 +874,26 @@ public:
                     std::string(x.m_name) + " procedures.");
         }
         verify_binding_override(x, x_m_proc);
+        if (!check_external) return;
+        require_id(x.m_dispatch_proc ||
+                !ASRUtils::sealed_override_needs_adapter(x, x_m_proc),
+            "asr.verify.struct_method.dispatch_required",
+            "A sealed nonpolymorphic override requires an inherited-slot dispatch adapter");
+        if (x.m_dispatch_proc) {
+            auto *dispatch = ASRUtils::symbol_get_past_external(x.m_dispatch_proc);
+            require_id(dispatch && ASR::is_a<ASR::Function_t>(*dispatch) &&
+                    symtab_in_scope(symtab, x.m_dispatch_proc),
+                "asr.verify.struct_method.dispatch_procedure",
+                "A dispatch adapter must be an in-scope function");
+            auto *adapter = ASR::down_cast<ASR::Function_t>(dispatch);
+            require_id(adapter->m_symtab && adapter->m_symtab->parent == symtab->parent &&
+                    adapter->m_access == ASR::accessType::Private,
+                "asr.verify.struct_method.dispatch_owner",
+                "A dispatch adapter must be private to its type's defining scope");
+            require_conforming(ASRUtils::sealed_dispatch_adapter_mismatch(
+                    x, *x_m_proc, *adapter),
+                "asr.verify.struct_method.dispatch", x.base.base.loc);
+        }
     }
 
     void visit_trait_requirement(const trait_requirement_t &x) {
@@ -1591,10 +1611,6 @@ public:
         std::map<std::string, const ASR::trait_binding_t*> methods;
         for (size_t i = 0; i < x.n_bindings; i++) {
             visit_trait_binding(x.m_bindings[i]);
-            if (check_external && ASRUtils::trait_method_template(
-                    *ASRUtils::trait_method_function(x.m_bindings[i].m_member))) {
-                verify_runtime_binding(x, x.m_bindings[i]);
-            }
             ASR::symbol_t *member = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_bindings[i].m_member)
                 : x.m_bindings[i].m_member;
@@ -1618,6 +1634,9 @@ public:
         }
         require(bound_members.size() == trait_members.size(),
             "TraitImplementation bindings must cover each trait member exactly once");
+        for (size_t i = 0; i < x.n_bindings; i++) {
+            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false);
+        }
     }
 
     Function_t *verify_runtime_trait_procedure(symbol_t *reference,
@@ -2199,6 +2218,11 @@ public:
 
     void verify_runtime_binding(const TraitImplementation_t &implementation,
             const trait_binding_t &binding) {
+        verify_trait_binding(implementation.m_type_declaration, binding, true);
+    }
+
+    void verify_trait_binding(symbol_t *type_declaration,
+            const trait_binding_t &binding, bool runtime) {
         const Location &loc = binding.loc;
         auto *required = verify_runtime_trait_procedure(binding.m_member, loc,
             "asr.verify.trait_binding.member_is_function");
@@ -2206,11 +2230,11 @@ public:
             "asr.verify.trait_binding.procedure_is_function");
         auto *required_signature = ASRUtils::get_FunctionType(required);
         auto *actual_signature = ASRUtils::get_FunctionType(procedure);
-        require_with_loc_id(
+        require_with_loc_id(!runtime || (
                 (required_signature->m_abi == abiType::Source ||
                     required_signature->m_abi == abiType::ExternalUndefined) &&
                 (actual_signature->m_abi == abiType::Source ||
-                    actual_signature->m_abi == abiType::ExternalUndefined),
+                    actual_signature->m_abi == abiType::ExternalUndefined)),
             "asr.verify.trait_witness.binding_abi",
             "A runtime witness binding requires the ordinary source calling convention", loc);
         require_with_loc_id(
@@ -2229,12 +2253,11 @@ public:
                 "asr.verify.trait_witness.receiver",
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
-            require_with_loc_id(ASR::is_a<StructType_t>(*self->m_type) &&
-                    self->m_intent == intentType::In &&
-                    ASRUtils::symbol_get_past_external(self->m_type_declaration) ==
-                        ASRUtils::symbol_get_past_external(implementation.m_type_declaration),
+            require_with_loc_id(self->m_intent == intentType::In &&
+                    ASRUtils::trait_receiver_type_matches(*self, type_declaration),
                 "asr.verify.trait_witness.receiver_type",
-                "A runtime witness receiver must borrow its exact nominal implementing type read-only", loc);
+                "A witness receiver must borrow its nominal implementing type "
+                "or a polymorphic ancestor read-only", loc);
         }
         require_with_loc_id(procedure->n_args ==
                 required->n_args + (binding.m_is_nopass ? 0 : 1),
@@ -3153,11 +3176,109 @@ public:
         }
     }
 
+    void verify_type_trait_obligations(const Struct_t &x) {
+        require_id(!x.n_trait_obligations || x.m_trait_obligations,
+            "asr.verify.struct.trait_obligations",
+            "Type adoption must retain its nominal trait obligations");
+        for (size_t i = 0; i < x.n_trait_obligations; i++) {
+            require_id(x.m_trait_obligations[i] &&
+                    symtab_in_scope(current_symtab, x.m_trait_obligations[i]),
+                "asr.verify.struct.trait_obligation_in_scope",
+                "An adopted trait must be visible in the type's declaring scope");
+        }
+        if (!check_external) return;
+        std::set<symbol_t*> traits;
+        for (size_t i = 0; i < x.n_trait_obligations; i++) {
+            auto *trait = ASRUtils::symbol_get_past_external(x.m_trait_obligations[i]);
+            require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait &&
+                    traits.insert(trait).second,
+                "asr.verify.struct.trait_obligations",
+                "Type obligations must identify distinct universal traits");
+        }
+        auto *parent = ASRUtils::symbol_get_past_external(x.m_parent);
+        if (parent && ASR::is_a<Struct_t>(*parent)) {
+            auto *structure = ASR::down_cast<Struct_t>(parent);
+            for (size_t i = 0; i < structure->n_trait_obligations; i++) {
+                require_id(traits.count(ASRUtils::symbol_get_past_external(
+                        structure->m_trait_obligations[i])),
+                    "asr.verify.struct.inherited_trait_obligations",
+                    "A type must retain every nominal obligation of its parent");
+            }
+        }
+        std::map<symbol_t*, TraitImplementation_t*> implementations;
+        if (!traits.empty()) {
+            for (const auto &entry : x.m_symtab->parent->get_scope()) {
+                if (!ASR::is_a<TraitImplementation_t>(*entry.second)) continue;
+                auto *implementation = ASR::down_cast<TraitImplementation_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+                        &x.base) {
+                    implementations.emplace(ASRUtils::symbol_get_past_external(
+                        implementation->m_trait), implementation);
+                }
+            }
+        }
+        std::map<std::string, Function_t*> methods;
+        for (auto *trait : traits) {
+            auto hierarchy = verify_trait_hierarchy(
+                *ASR::down_cast<Trait_t>(trait), x.base.base.loc);
+            auto proof = implementations.find(trait);
+            require_id(x.m_is_abstract || proof != implementations.end(),
+                "asr.verify.struct.concrete_trait_obligations",
+                "A concrete type must provide complete evidence for every adopted trait");
+            for (auto *member : hierarchy.members) {
+                auto *required = ASRUtils::trait_method_function(member);
+                auto previous = methods.emplace(required->m_name, required);
+                require_id(previous.second || ASRUtils::trait_method_mismatch(
+                        *previous.first->second, *required).difference ==
+                            ASRUtils::TraitMethodDifference::None,
+                    "asr.verify.struct.compatible_trait_obligations",
+                    "Adopted traits must agree on shared method signatures");
+                symbol_t *method = nullptr;
+                std::set<const Struct_t*> seen;
+                for (const Struct_t *s = &x; s && !method && seen.insert(s).second;) {
+                    method = s->m_symtab->get_symbol(required->m_name);
+                    auto *base = ASRUtils::symbol_get_past_external(s->m_parent);
+                    s = base && ASR::is_a<Struct_t>(*base)
+                        ? ASR::down_cast<Struct_t>(base) : nullptr;
+                }
+                auto *declaration = method && ASR::is_a<StructMethodDeclaration_t>(*method)
+                    ? ASR::down_cast<StructMethodDeclaration_t>(method) : nullptr;
+                if (!declaration || declaration->m_is_deferred) {
+                    require_id(x.m_is_abstract && proof == implementations.end(),
+                        "asr.verify.struct.trait_method_implemented",
+                        "A type adoption must use a concrete ordinary binding for each method");
+                    continue;
+                }
+                auto *procedure = verify_runtime_trait_procedure(declaration->m_proc,
+                    declaration->base.base.loc, "asr.verify.struct.trait_method_procedure");
+                trait_binding_t binding;
+                binding.loc = declaration->base.base.loc;
+                binding.m_member = member;
+                binding.m_procedure = declaration->m_proc;
+                binding.m_is_nopass = declaration->m_is_nopass;
+                size_t self = ASRUtils::passed_object_index(*declaration, procedure);
+                binding.m_self_argument = self < procedure->n_args
+                    ? ASRUtils::EXPR2VAR(procedure->m_args[self])->m_name : nullptr;
+                verify_trait_binding(const_cast<symbol_t*>(&x.base), binding, false);
+                if (proof != implementations.end()) {
+                    auto *bound = ASRUtils::find_trait_binding(*proof->second, member);
+                    require_id(bound && ASRUtils::trait_bindings_equal(*bound, binding),
+                        "asr.verify.struct.trait_method_binding",
+                        "Nominal conformance must use the effective ordinary type-bound procedure");
+                }
+            }
+        }
+    }
+
     // A derived type extends another derived type and nothing else. Every
     // member lookup, every dispatch and every layout decision walks this
     // chain, so a parent that is not a type is followed straight into the
     // wrong node.
     void visit_Struct(const Struct_t& x) {
+        require_id(!x.m_is_sealed || !x.m_is_abstract,
+            "asr.verify.struct.sealed_not_abstract",
+            "A sealed type cannot be abstract");
         if (x.m_parent != nullptr) {
             ASR::symbol_t *parent = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_parent) : x.m_parent;
@@ -3170,6 +3291,9 @@ public:
                 "'" + std::string(x.m_name) +
                 "' is a sequence type, so it cannot extend another type");
             if (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_is_sealed,
+                    "asr.verify.struct.parent_not_sealed",
+                    "A sealed type cannot be extended");
                 require_id(
                     !ASR::down_cast<ASR::Struct_t>(parent)->m_is_sequence,
                     "asr.verify.struct.sequence_type_not_extended",
@@ -3189,6 +3313,7 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
         }
+        verify_type_trait_obligations(x);
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);
@@ -4378,6 +4503,23 @@ public:
             if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
                 func = ASR::down_cast<ASR::Function_t>(method->m_proc);
                 nopass = method->m_is_nopass;
+                size_t self = ASRUtils::passed_object_index(*method, func);
+                if (!nopass && self < func->n_args && self < x.n_args &&
+                        x.m_args[self].m_value) {
+                    auto *formal = ASRUtils::expr_to_variable_or_null(func->m_args[self]);
+                    auto *type_symbol = formal ? ASRUtils::symbol_get_past_external(
+                        formal->m_type_declaration) : nullptr;
+                    if (formal && type_symbol && ASR::is_a<Struct_t>(*type_symbol) &&
+                            ASR::down_cast<Struct_t>(type_symbol)->m_is_sealed &&
+                            ASR::is_a<StructType_t>(*formal->m_type) &&
+                            !ASRUtils::is_class_type(formal->m_type)) {
+                        auto *actual_type = typed_expr_type(x.m_args[self].m_value);
+                        require_id(actual_type &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(actual_type)),
+                            "asr.verify.call.sealed_receiver",
+                            "A sealed nonpolymorphic passed object requires an explicit concrete view");
+                    }
+                }
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
             func = ASR::down_cast<ASR::Function_t>(func_sym);

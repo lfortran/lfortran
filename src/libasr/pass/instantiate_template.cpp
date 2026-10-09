@@ -342,7 +342,8 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             x->m_is_sequence,
-            nullptr, 0, m_alignment, nullptr, nullptr, 0);
+            nullptr, 0, m_alignment, nullptr, nullptr, 0, x->m_is_sealed,
+            x->m_trait_obligations, x->n_trait_obligations);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -456,10 +457,19 @@ public:
         SymbolInstantiator cp_t(al, context_map, type_subs, symbol_subs,
             func_scope, template_scope, new_cp_name);
         ASR::symbol_t *new_cp_proc = cp_t.instantiate_symbol(cp_proc);
+        ASR::symbol_t *dispatch = nullptr;
+        if (x->m_dispatch_proc) {
+            std::string dispatch_name = func_scope->get_unique_name(
+                new_cp_name + "_dispatch", false);
+            SymbolInstantiator dispatch_t(al, context_map, type_subs, symbol_subs,
+                func_scope, template_scope, dispatch_name);
+            dispatch = dispatch_t.instantiate_symbol(x->m_dispatch_proc);
+        }
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            dispatch));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -1868,7 +1878,8 @@ public:
         ASR::asr_t* result = ASR::make_Struct_t(al, x->base.base.loc,
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
-            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0);
+            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0,
+            x->m_is_sealed, x->m_trait_obligations, x->n_trait_obligations);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -1941,10 +1952,20 @@ public:
             diagnostics);
         ASR::symbol_t* new_cp_proc = t.instantiate();
         symbol_subs[ASRUtils::symbol_name(cp_proc)] = new_cp_proc;
+        ASR::symbol_t* dispatch = nullptr;
+        if (x->m_dispatch_proc) {
+            std::string dispatch_name = target_scope->parent->get_unique_name(
+                new_cp_name + "_dispatch", false);
+            SymbolInstantiator dispatch_t(al, target_scope->parent, type_subs,
+                symbol_subs, dispatch_name, x->m_dispatch_proc, diagnostics);
+            dispatch = dispatch_t.instantiate();
+            symbol_subs[ASRUtils::symbol_name(x->m_dispatch_proc)] = dispatch;
+        }
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            dispatch));
         target_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -2419,6 +2440,11 @@ public:
         BodyInstantiator t(al, type_subs, symbol_subs, new_proc, proc,
             instantiated_bodies);
         t.instantiate();
+        if (x->m_dispatch_proc) {
+            BodyInstantiator dispatch_t(al, type_subs, symbol_subs,
+                new_c->m_dispatch_proc, x->m_dispatch_proc, instantiated_bodies);
+            dispatch_t.instantiate();
+        }
     }
 
     /* expr */

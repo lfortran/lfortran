@@ -2,7 +2,7 @@
     "basename": "asr-method_call_actual_kind_mismatch-e7835e6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/method_call_actual_kind_mismatch.asr",
-    "infile_hash": "7c9d998312371bde15d135d185efd6a18e7f78eb7d46add738f84294",
+    "infile_hash": "2809fef1f2bbbc07b0421f8f3788b35917196b553e7b3859c2d06e26",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

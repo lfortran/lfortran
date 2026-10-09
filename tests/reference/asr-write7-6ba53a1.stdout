@@ -22,6 +22,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             pwunf:
                                                 (StructMethodDeclaration
@@ -33,6 +34,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ~write_formatted:
                                                 (GenericProcedure
@@ -67,6 +69,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             pwf:

@@ -80,6 +80,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             struct_instance_ls0001:
                                 (Variable

@@ -3768,6 +3768,25 @@ RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_02 LABELS llvm)
 RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
 RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
+RUN(NAME traits_type_adoption_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_type_adoption_02_contracts.f90 traits_type_adoption_02_parent.f90
+        traits_type_adoption_02_child.f90 traits_type_adoption_02_facade.f90
+        traits_type_adoption_02_consumer.f90)
+RUN(NAME traits_type_adoption_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_03_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_04 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_type_adoption_04_provider.f90 traits_type_adoption_04_consumer.f90)
+RUN(NAME traits_type_adoption_04_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_05 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_05_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_method_02 LABELS llvm c fortran wasm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES

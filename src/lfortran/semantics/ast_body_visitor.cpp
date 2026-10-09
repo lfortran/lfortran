@@ -4975,7 +4975,7 @@ public:
                     s2c(al, current_scope->get_unique_name("~inspection_type")), poly_type,
                     nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source,
                     ASR::accessType::Private, false, true, false, nullptr, 0,
-                    nullptr, nullptr, nullptr, 0));
+                    nullptr, nullptr, nullptr, 0, false, nullptr, 0));
                 current_scope->add_symbol(ASRUtils::symbol_name(poly_symbol), poly_symbol);
                 auto *inspection = ASRUtils::EXPR(ASR::make_TraitInspect_t(al,
                     x.base.base.loc, view, poly_symbol, poly_type));
@@ -8582,7 +8582,8 @@ public:
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                              f->m_args, f->n_args, x.base.base.loc, f,
-                             diags, x.n_member, is_nopass);
+                             diags, x.n_member, is_nopass,
+                             ASRUtils::get_pass_arg_index(original_sym));
                 if (diags.has_error()) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                                             diags.diagnostics.begin(), diags.diagnostics.end());
@@ -8604,7 +8605,8 @@ public:
                 diag::Diagnostics diags;
                 visit_kwargs(args, x.m_keywords, x.n_keywords,
                              f->m_args, f->n_args, x.base.base.loc, f,
-                             diags, x.n_member, is_nopass);
+                             diags, x.n_member, is_nopass,
+                             ASRUtils::get_pass_arg_index(original_sym));
                 if (diags.has_error()) {
                     diag.diagnostics.insert(diag.diagnostics.end(),
                                             diags.diagnostics.begin(), diags.diagnostics.end());
@@ -9396,6 +9398,8 @@ public:
         }
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
+            const size_t pass_index = offset ? ASRUtils::get_pass_arg_index(final_sym)
+                : f->n_args;
             if (args.size() + offset > f->n_args) {
                 const Location args_loc { ASRUtils::get_vec_loc(args) };
                 diag.add(diag::Diagnostic(
@@ -9407,10 +9411,11 @@ public:
 
             // Validate required arguments are provided
             for (size_t i = 0; i + offset < f->n_args; i++) {
-                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
+                const size_t formal_index = i + (offset && i >= pass_index ? 1 : 0);
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(f->m_args[formal_index]);
 
                 if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
-                    ASR::Variable_t* v = ASRUtils::EXPR2VAR(f->m_args[i + offset]);
+                    ASR::Variable_t* v = ASRUtils::EXPR2VAR(f->m_args[formal_index]);
 
                     if (v->m_presence != ASR::presenceType::Optional) {
                         if (i >= args.size()) {
@@ -9436,7 +9441,7 @@ public:
                         }
                     }
                     if (i < args.size() && args[i].m_value != nullptr) {
-                        adapt_runtime_trait_argument(args.p[i].m_value, f->m_args[i + offset]);
+                        adapt_runtime_trait_argument(args.p[i].m_value, f->m_args[formal_index]);
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
                         ASR::ttype_t* param_type = v->m_type;
@@ -9455,7 +9460,7 @@ public:
                             }
                             // A procedure actual of another type than the dummy
                             // is cast to the dummy's type.
-                            passed_arg = cast_procedure_actual(passed_arg, f->m_args[i + offset]);
+                            passed_arg = cast_procedure_actual(passed_arg, f->m_args[formal_index]);
                             args.p[i].m_value = passed_arg;
                             passed_type = ASRUtils::expr_type(passed_arg);
                         }
@@ -9470,10 +9475,9 @@ public:
                         // and crashes there.
                         bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
                                             ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
-                        bool self_passing_call = v_expr != nullptr && !nopass; // `pass` attributed method, has offset that's not properly handled for now.
-                        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
-                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
-                                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg) : false);
+                        bool skip_check = is_function_type_arg ||
+                            (has_class_type_side && ASRUtils::can_pass_class_argument(
+                                f->m_args[formal_index], passed_arg));
                         // For implicit_argument_casting, skip type checking for
                         // compatible type families (e.g., numeric↔numeric, string↔string)
                         // but reject fundamentally incompatible types (e.g., string→integer)
@@ -9512,9 +9516,9 @@ public:
                             }
                         }
                         // Check if types are equal
-                        if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
+                        if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[formal_index])) {
                             std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[formal_index]);
                             diag.add(diag::Diagnostic(
                                 "Type mismatch in argument `" + std::string(v->m_name) +
                                 "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
@@ -9529,12 +9533,13 @@ public:
                     // procedure is cast to the dummy's type.
                     if (i < args.size() && args[i].m_value != nullptr) {
                         args.p[i].m_value = cast_procedure_actual(args.p[i].m_value,
-                            f->m_args[i + offset]);
+                            f->m_args[formal_index]);
                     }
                 }
             }
 
-            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass,
+                offset ? ASRUtils::get_pass_arg_index(final_sym) : 0);
         }
         ASR::stmt_t* cast_stmt = nullptr;
         if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()

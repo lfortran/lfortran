@@ -1,0 +1,42 @@
+{
+  "authority": "Root traits.tex, Implements derived type attribute section",
+  "companion_revision": "fb6ee9bb104dadf9aee3b01e4e71fada9245e08c",
+  "fixtures": {
+    "extends_parent.f90": {
+      "corpus_id": "extends_parent",
+      "sha256": "9141332b540c768055e84b80a6170bb692b0366be0c8c410dcf6b15bf5b8cba3",
+      "source": "Code/Fortran/Interop/extends_parent.f90",
+      "checks": [
+        "verified ASR",
+        "object compilation"
+      ],
+      "executable": false
+    },
+    "abstract_new.f90": {
+      "corpus_id": "abstract_new",
+      "sha256": "1c9b1882ac60448fad1060b265f22b15c5a0c8316bc7142f8f980a1a091991b0",
+      "source": "Code/Fortran/Interop/abstract_new.f90",
+      "checks": [
+        "verified ASR",
+        "object compilation"
+      ],
+      "executable": false
+    },
+    "simple_sum.f90": {
+      "corpus_id": null,
+      "scope": "sealed/type-implements prerequisite only; not acceptance of mixed or static",
+      "source": "Code/Fortran/mixed.f90",
+      "line_range": [
+        1,
+        55
+      ],
+      "sha256": "6c4842ae7b415ce84b958ab0e9029dc9fa4b7c922d6143d15010dcd50dac5bba",
+      "checks": [
+        "verified ASR",
+        "object compilation"
+      ],
+      "executable": false
+    }
+  },
+  "note": "The two Interop files are immutable, byte-exact module-only examples. Their empty output methods are never executed. simple_sum is a byte-exact prefix, not a rewritten full OO example."
+}

@@ -6602,6 +6602,21 @@ bool trait_bindings_equal(const ASR::trait_binding_t &left,
         std::string(left.m_self_argument) == right.m_self_argument;
 }
 
+bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
+    ASR::symbol_t *implementing_type)
+{
+    if (!receiver.m_type || !ASR::is_a<ASR::StructType_t>(*receiver.m_type)) {
+        return false;
+    }
+    auto *self = symbol_get_past_external(receiver.m_type_declaration);
+    auto *concrete = symbol_get_past_external(implementing_type);
+    if (!self || !concrete || !ASR::is_a<ASR::Struct_t>(*self) ||
+            !ASR::is_a<ASR::Struct_t>(*concrete)) return false;
+    return self == concrete || (is_class_type(receiver.m_type) &&
+        is_parent(ASR::down_cast<ASR::Struct_t>(self),
+            ASR::down_cast<ASR::Struct_t>(concrete)));
+}
+
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member)
 {
@@ -6840,6 +6855,128 @@ InterfaceMismatch binding_override_mismatch(
     // The passed-object dummy argument is declared with the type it is bound
     // to, so the two deliberately differ there.
     return interface_mismatch(what, proc, base, self_index, use_expr_context);
+}
+
+bool sealed_override_needs_adapter(
+    const ASR::StructMethodDeclaration_t &binding, ASR::Function_t *procedure)
+{
+    if (binding.m_is_nopass || binding.m_is_deferred || !procedure ||
+            !binding.m_parent_symtab || !binding.m_parent_symtab->asr_owner ||
+            !ASR::is_a<ASR::symbol_t>(*binding.m_parent_symtab->asr_owner)) {
+        return false;
+    }
+    auto *owner = ASR::down_cast<ASR::symbol_t>(binding.m_parent_symtab->asr_owner);
+    if (!ASR::is_a<ASR::Struct_t>(*owner) ||
+            !ASR::down_cast<ASR::Struct_t>(owner)->m_is_sealed) return false;
+    auto *base = overridden_binding(binding);
+    auto *parent = base ? trait_method_function(base->m_proc) : nullptr;
+    if (!parent || parent == procedure) return false;
+    size_t self = passed_object_index(binding, procedure);
+    size_t parent_self = passed_object_index(*base, parent);
+    if (self >= procedure->n_args || parent_self >= parent->n_args) return false;
+    auto *type = typed_expr_type(procedure->m_args[self]);
+    auto *parent_type = typed_expr_type(parent->m_args[parent_self]);
+    return type && parent_type &&
+        ASR::is_a<ASR::StructType_t>(*extract_type(type)) &&
+        !is_class_type(extract_type(type)) && is_class_type(extract_type(parent_type));
+}
+
+InterfaceMismatch sealed_dispatch_adapter_mismatch(
+    const ASR::StructMethodDeclaration_t &binding, ASR::Function_t &procedure,
+    ASR::Function_t &adapter)
+{
+    if (!sealed_override_needs_adapter(binding, &procedure) || &adapter == &procedure) {
+        return {true, "binding", "a dispatch adapter requires a sealed nonpolymorphic override"};
+    }
+    if (!sealed_dispatch_result_supported(procedure)) {
+        return {true, "result", "sealed dispatch currently requires a scalar numeric or logical result"};
+    }
+    if (adapter.n_args != procedure.n_args ||
+            bool(adapter.m_return_var) != bool(procedure.m_return_var)) {
+        return {true, "signature", "a dispatch adapter must preserve the procedure's arguments and result"};
+    }
+    if (!adapter.m_function_signature || !procedure.m_function_signature ||
+            !ASR::is_a<ASR::FunctionType_t>(*adapter.m_function_signature) ||
+            !ASR::is_a<ASR::FunctionType_t>(*procedure.m_function_signature)) {
+        return {true, "signature", "a dispatch adapter requires explicit procedure signatures"};
+    }
+    auto *from = get_FunctionType(procedure);
+    auto *to = get_FunctionType(adapter);
+    if (from->m_abi != to->m_abi || from->m_pure != to->m_pure ||
+            from->m_elemental != to->m_elemental) {
+        return {true, "attributes", "a dispatch adapter must preserve abi, pure and elemental attributes"};
+    }
+    std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+    for (size_t i = 0; i < procedure.n_args; i++) {
+        auto *a = procedure.m_args[i];
+        auto *b = adapter.m_args[i];
+        if (!a || !b || !ASR::is_a<ASR::Var_t>(*a) || !ASR::is_a<ASR::Var_t>(*b) ||
+                !ASRUtils::get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(a)->m_v) ||
+                !ASRUtils::get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(b)->m_v)) {
+            return {true, "arguments", "dispatch adapter arguments must be typed variables"};
+        }
+        parameters.emplace(ASR::down_cast<ASR::Var_t>(a)->m_v,
+            ASR::down_cast<ASR::Var_t>(b)->m_v);
+    }
+    size_t self = passed_object_index(binding, &procedure);
+    auto *parent_binding = overridden_binding(binding);
+    auto *parent = trait_method_function(parent_binding->m_proc);
+    auto *parent_receiver = ASRUtils::expr_to_variable_or_null(
+        parent->m_args[passed_object_index(*parent_binding, parent)]);
+    auto *receiver = EXPR2VAR(procedure.m_args[self]);
+    if (!parent_receiver || receiver->m_intent != parent_receiver->m_intent ||
+            receiver->m_presence != parent_receiver->m_presence ||
+            receiver->m_value_attr != parent_receiver->m_value_attr ||
+            receiver->m_target_attr != parent_receiver->m_target_attr ||
+            receiver->m_contiguous_attr != parent_receiver->m_contiguous_attr ||
+            receiver->m_is_volatile != parent_receiver->m_is_volatile ||
+            receiver->n_codims != parent_receiver->n_codims) {
+        return {true, "receiver_attributes",
+            "a sealed override passed-object dummy must preserve the inherited dummy attributes"};
+    }
+    for (size_t i = 0; i < procedure.n_args; i++) {
+        auto *a = EXPR2VAR(procedure.m_args[i]);
+        auto *b = EXPR2VAR(adapter.m_args[i]);
+        auto intent = a->m_intent == ASR::intentType::Out
+            ? ASR::intentType::InOut : a->m_intent;
+        if (!a->m_type || !b->m_type || !a->m_name || !b->m_name ||
+                std::string(a->m_name) != b->m_name || intent != b->m_intent ||
+                a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr ||
+                a->m_target_attr != b->m_target_attr ||
+                a->m_contiguous_attr != b->m_contiguous_attr ||
+                a->m_is_volatile != b->m_is_volatile || a->n_codims != b->n_codims ||
+                is_pointer(a->m_type) != is_pointer(b->m_type) ||
+                is_allocatable(a->m_type) != is_allocatable(b->m_type)) {
+            return {true, "arguments", "a dispatch adapter must preserve dummy attributes, except out becomes inout"};
+        }
+        if (i == self) {
+            if (!ASR::is_a<ASR::StructType_t>(*a->m_type) ||
+                    !is_class_type(b->m_type) ||
+                    symbol_get_past_external(a->m_type_declaration) !=
+                        symbol_get_past_external(b->m_type_declaration) ||
+                    symbol_get_past_external(b->m_type_declaration) !=
+                        ASR::down_cast<ASR::symbol_t>(binding.m_parent_symtab->asr_owner)) {
+                return {true, "receiver", "a dispatch adapter must accept the exact sealed class receiver"};
+            }
+        } else if (!trait_shapes_equal(a->m_type, b->m_type, parameters) ||
+                !trait_types_equal(procedure.m_args[i], adapter.m_args[i], parameters)) {
+            return {true, "arguments", "a dispatch adapter must preserve nonreceiver argument types and shapes"};
+        }
+    }
+    if (procedure.m_return_var &&
+            !trait_types_equal(procedure.m_return_var, adapter.m_return_var, parameters)) {
+        return {true, "result", "a dispatch adapter must preserve its result type"};
+    }
+    return {};
+}
+
+bool sealed_dispatch_result_supported(const ASR::Function_t &procedure)
+{
+    if (!procedure.m_return_var) return true;
+    auto *type = typed_expr_type(procedure.m_return_var);
+    return type && (ASR::is_a<ASR::Integer_t>(*type) ||
+        ASR::is_a<ASR::UnsignedInteger_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+        ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type));
 }
 
 std::string get_format_type_code(ASR::ttype_t* type) {

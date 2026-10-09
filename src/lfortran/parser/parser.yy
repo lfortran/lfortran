@@ -346,6 +346,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_RETURN
 %token <string> KW_REWIND
 %token <string> KW_SAVE
+%token <string> KW_SEALED
 %token <string> KW_SELECT
 %token <string> KW_SELECT_CASE
 %token <string> KW_SELECT_RANK
@@ -417,6 +418,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> implements_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <ast> derived_type_modifier
+%type <vec_ast> derived_type_modifiers derived_type_modifier_list
 %type <vec_ast> deferred_type_decl
 %type <ast> deferred_proc_decl
 %type <vec_ast> deferred_type_attr_list
@@ -845,12 +848,32 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE derived_type_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
-    | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
+    | KW_TYPE derived_type_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+derived_type_modifiers
+    : %empty { LIST_NEW($$); }
+    | "::" { LIST_NEW($$); }
+    | derived_type_modifier_list "::" { $$ = $1; }
+    ;
+
+derived_type_modifier_list
+    : derived_type_modifier_list "," derived_type_modifier {
+        $$ = $1; LIST_ADD($$, $3); }
+    | "," derived_type_modifier { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+derived_type_modifier
+    : var_modifier { $$ = $1; }
+    | KW_SEALED { $$ = SIMPLE_ATTR(Sealed, @$); }
+    | KW_IMPLEMENTS "(" trait_name_list ")" {
+        $$ = make_AttrImplements_t(p.m_a, @$,
+            REDUCE_ARGS(p.m_a, $3), $3.size()); }
     ;
 
 deferred_type_decl
@@ -2953,6 +2976,7 @@ id
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
     | KW_SAVE { $$ = SYMBOL($1, @$); }
+    | KW_SEALED { $$ = SYMBOL($1, @$); }
     | KW_SELECT { $$ = SYMBOL($1, @$); }
     | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
     | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

@@ -311,6 +311,7 @@ decl_attribute
     | AttrExpr(expr value)
     | AttrRank(expr* rank)
     | AttrTraitClass(identifier* traits)
+    | AttrImplements(identifier* traits)
 
 simple_attribute
     = AttrAbstract
@@ -344,6 +345,7 @@ simple_attribute
     | AttrTarget
     | AttrValue
     | AttrVolatile
+    | AttrSealed
 
 attr_intent = In | Out | InOut
 

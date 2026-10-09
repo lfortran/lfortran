@@ -842,6 +842,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -971,6 +973,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })
@@ -1146,6 +1150,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             raw:
                                                 (Variable
@@ -1194,6 +1199,8 @@
                                     []
                                     ()
                                     6 toml_value
+                                    []
+                                    .false.
                                     []
                                 ),
                             toml_value:
@@ -1479,6 +1486,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             key:
                                                 (Variable
@@ -1516,6 +1524,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_value
@@ -1538,6 +1547,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

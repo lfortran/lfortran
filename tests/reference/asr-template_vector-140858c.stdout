@@ -682,6 +682,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -693,6 +694,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -738,6 +740,8 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
+                                                    .false.
                                                     []
                                                 ),
                                             v:
@@ -1601,6 +1605,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -1612,6 +1617,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -1670,6 +1676,8 @@
                                                     []
                                                     ()
                                                     ()
+                                                    []
+                                                    .false.
                                                     []
                                                 )
                                         })

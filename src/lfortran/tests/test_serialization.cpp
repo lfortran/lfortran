@@ -5594,6 +5594,391 @@ end module
     }
 }
 
+static const std::string type_adoption_source = R"(
+module type_adoption
+implicit none
+abstract interface :: IValue
+integer function value()
+end function
+end interface
+abstract interface :: IExtra
+real function extra()
+end function
+end interface
+type, implements(IValue) :: Root
+real(8) :: padding(2)
+integer :: seed
+contains
+procedure :: value => root_value
+end type
+type, abstract, extends(Root), implements(IExtra) :: Base
+end type
+type, extends(Base), sealed :: Child
+integer :: bonus
+contains
+procedure :: extra => child_extra
+end type
+type, sealed :: Other
+real(8) :: padding(2)
+integer :: seed
+end type
+contains
+integer function root_value(self) result(n)
+class(Root), intent(in) :: self
+n = self%seed
+end function
+real function child_extra(self) result(n)
+type(Child), intent(in) :: self
+n = real(self%bonus)
+end function
+integer function alternate(self) result(n)
+class(Child), intent(in) :: self
+n = self%bonus
+end function
+end module
+)";
+
+TEST_CASE("Type adoption preserves AST, binary, module and text metadata") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    ast_ser(type_adoption_source);
+    asr_ser(type_adoption_source);
+    asr_mod(type_adoption_source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, type_adoption_source,
+        diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("implements(IValue)") != std::string::npos);
+    CHECK(printed.find("extends(Base), sealed") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(rebuilt.ok);
+    CHECK(LCompilers::asr_to_text(*result.result) ==
+        LCompilers::asr_to_text(*rebuilt.result));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("type_adoption"));
+    auto structure = [&](const char *name) {
+        return ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol(name));
+    };
+    auto *root = structure("root"), *base = structure("base"), *child = structure("child");
+    CHECK(base->m_is_abstract);
+    CHECK(child->m_is_sealed);
+    CHECK(base->n_trait_obligations == 2);
+    CHECK(child->n_trait_obligations == 2);
+    CHECK(child->m_parent == &base->base);
+    CHECK(base->m_parent == &root->base);
+    CHECK(base->m_symtab->get_symbol("extra") == nullptr);
+    auto *root_value = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("root_value"));
+    CHECK(ASRUtils::trait_receiver_type_matches(
+        *ASRUtils::EXPR2VAR(root_value->m_args[0]), &child->base));
+    CHECK_FALSE(ASRUtils::trait_receiver_type_matches(
+        *ASRUtils::EXPR2VAR(root_value->m_args[0]), &structure("other")->base));
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "type_adoption.asr", lm, diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        if (!code.empty()) CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("sealed is enforced on the actual parent") {
+        root->m_is_sealed = true;
+        rejects("asr.verify.struct.parent_not_sealed");
+    }
+    SUBCASE("sealed and abstract are inconsistent") {
+        child->m_is_abstract = true;
+        rejects("asr.verify.struct.sealed_not_abstract");
+    }
+    SUBCASE("a child cannot drop inherited nominal obligations") {
+        child->n_trait_obligations = 0;
+        rejects("asr.verify.struct.inherited_trait_obligations");
+    }
+    SUBCASE("an adoption must name a trait, not a same-layout type") {
+        child->m_trait_obligations[1] = &structure("other")->base;
+        rejects("asr.verify.struct.trait_obligations");
+    }
+    SUBCASE("concrete completion requires its own nominal evidence") {
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+            auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+                    &child->base && ASRUtils::symbol_get_past_external(
+                        implementation->m_trait) == module->m_symtab->get_symbol("iextra")) {
+                module->m_symtab->erase_symbol(entry.first);
+                break;
+            }
+        }
+        rejects("asr.verify.struct.concrete_trait_obligations");
+    }
+    SUBCASE("the conformance must retain the effective inherited binding") {
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+            auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+                    &child->base && ASRUtils::symbol_get_past_external(
+                        implementation->m_trait) == module->m_symtab->get_symbol("ivalue")) {
+                implementation->m_bindings[0].m_procedure =
+                    module->m_symtab->get_symbol("alternate");
+            }
+        }
+        rejects("");
+    }
+}
+
+TEST_CASE("Sealed is nonreserved in free and fixed source forms") {
+    for (bool fixed : {false, true}) {
+        Allocator al(64 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.fixed_form = fixed;
+        std::string input = fixed ?
+            "modulesealed\n"
+            "type,sealed,implements(i+j)::box\n"
+            "integer::sealed\n"
+            "contains\n"
+            "procedure,nopass::value\n"
+            "endtypebox\n"
+            "endmodulesealed\n" :
+            "      module sealed\n"
+            "      type, sealed, implements(I + J) :: box\n"
+            "      integer :: sealed\n"
+            "      end type box\n"
+            "      end module sealed\n";
+        auto parsed = LCompilers::LFortran::parse(al, input, diagnostics, options);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        auto source = LCompilers::LFortran::ast_to_src(*parsed.result);
+        CHECK(source.find(fixed ? "sealed, implements(i + j)" :
+            "sealed, implements(I + J)") != std::string::npos);
+        CHECK(source.find("integer :: sealed") != std::string::npos);
+    }
+}
+
+TEST_CASE("Sealed methods lower polymorphic receivers before code generation") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module sealed_receiver_m
+implicit none
+type, sealed :: Box
+    integer :: n
+contains
+    procedure, pass(self) :: value
+end type
+contains
+integer function value(delta, self)
+    integer, intent(in) :: delta
+    type(Box), intent(in) :: self
+    value = self%n + delta
+end function
+integer function inspect(object)
+    class(Box), intent(in) :: object
+    inspect = object%value(1)
+end function
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("sealed_receiver_m"));
+    auto *inspect = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("inspect"));
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(inspect->m_body[0])->m_value);
+    REQUIRE(call->n_args == 2);
+    REQUIRE(ASR::is_a<ASR::Cast_t>(*call->m_args[1].m_value));
+    auto *receiver = ASR::down_cast<ASR::Cast_t>(call->m_args[1].m_value);
+    CHECK(receiver->m_kind == ASR::cast_kindType::ClassToStruct);
+    CHECK_FALSE(ASRUtils::is_class_type(receiver->m_type));
+    CHECK(call->m_dt == &receiver->base);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "sealed_receiver.asr", loaded_lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+    }
+    call->m_args[1].m_value = receiver->m_arg;
+    LCompilers::diag::Diagnostics invalid;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    REQUIRE(!invalid.diagnostics.empty());
+    CHECK(invalid.diagnostics.back().code == "asr.verify.call.sealed_receiver");
+}
+
+TEST_CASE("Sealed overrides preserve their source binding and typed dispatch adapter") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module sealed_override_m
+implicit none
+type :: Parent
+    integer :: n
+contains
+    procedure, pass(self) :: value => parent_value
+    procedure, pass(self) :: reset => parent_reset
+end type
+type, extends(Parent), sealed :: Closed
+contains
+    procedure, pass(self) :: value => closed_value
+    procedure, pass(self) :: reset => closed_reset
+end type
+contains
+pure integer function parent_value(delta, self) result(n)
+    integer, intent(in) :: delta
+    class(Parent), intent(in) :: self
+    n = self%n + delta
+end function
+pure integer function closed_value(delta, self) result(n)
+    integer, intent(in) :: delta
+    type(Closed), intent(in) :: self
+    integer :: unrelated_local
+    unrelated_local = self%n
+    n = unrelated_local + delta + 1
+end function
+subroutine parent_reset(delta, self, output)
+    integer, intent(in) :: delta
+    class(Parent), intent(out) :: self
+    integer, intent(out) :: output
+    self%n = delta
+    output = delta
+end subroutine
+subroutine closed_reset(delta, self, output)
+    integer, intent(in) :: delta
+    type(Closed), intent(out) :: self
+    integer, intent(out) :: output
+    self%n = delta + 1
+    output = delta + 1
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("sealed_override_m"));
+    auto *closed = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("closed"));
+    auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+        closed->m_symtab->get_symbol("value"));
+    auto *original = ASR::down_cast<ASR::Function_t>(binding->m_proc);
+    REQUIRE(binding->m_dispatch_proc);
+    auto *adapter = ASR::down_cast<ASR::Function_t>(binding->m_dispatch_proc);
+    CHECK(binding->m_proc == module->m_symtab->get_symbol("closed_value"));
+    CHECK(adapter->m_symtab->parent == module->m_symtab);
+    CHECK(adapter->m_access == ASR::accessType::Private);
+    CHECK(ASRUtils::get_FunctionType(adapter)->m_pure);
+    CHECK(adapter->m_symtab->get_symbol("unrelated_local") == nullptr);
+    REQUIRE(adapter->n_args == 2);
+    CHECK_FALSE(ASRUtils::is_class_type(ASRUtils::expr_type(original->m_args[1])));
+    CHECK(ASRUtils::is_class_type(ASRUtils::expr_type(adapter->m_args[1])));
+    REQUIRE(adapter->n_body == 1);
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(adapter->m_body[0])->m_value);
+    CHECK(ASRUtils::symbol_get_past_external(call->m_name) == &original->base);
+    REQUIRE(call->n_args == 2);
+    CHECK(call->m_args[0].m_value == adapter->m_args[0]);
+    REQUIRE(ASR::is_a<ASR::Cast_t>(*call->m_args[1].m_value));
+    auto *cast = ASR::down_cast<ASR::Cast_t>(call->m_args[1].m_value);
+    CHECK(cast->m_kind == ASR::cast_kindType::ClassToStruct);
+    CHECK(cast->m_arg == adapter->m_args[1]);
+
+    auto *reset = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+        closed->m_symtab->get_symbol("reset"));
+    auto *reset_original = ASR::down_cast<ASR::Function_t>(reset->m_proc);
+    auto *reset_adapter = ASR::down_cast<ASR::Function_t>(reset->m_dispatch_proc);
+    for (size_t i : {size_t(1), size_t(2)}) {
+        CHECK(ASRUtils::EXPR2VAR(reset_original->m_args[i])->m_intent == ASR::intentType::Out);
+        CHECK(ASRUtils::EXPR2VAR(reset_adapter->m_args[i])->m_intent == ASR::intentType::InOut);
+    }
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "sealed_override.asr", lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("an inherited virtual slot cannot use the raw TYPE implementation") {
+        binding->m_dispatch_proc = nullptr;
+        rejects("asr.verify.struct_method.dispatch_required");
+    }
+    SUBCASE("a dispatch reference must be a procedure") {
+        auto *parent = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("parent"));
+        binding->m_dispatch_proc = parent->m_symtab->get_symbol("n");
+        rejects("asr.verify.struct_method.dispatch_procedure");
+    }
+    SUBCASE("the original implementation is not its own adapter") {
+        binding->m_dispatch_proc = binding->m_proc;
+        rejects("asr.verify.struct_method.dispatch_owner");
+    }
+    SUBCASE("adapter argument intent cannot alter the source contract") {
+        ASRUtils::EXPR2VAR(reset_adapter->m_args[2])->m_intent = ASR::intentType::Out;
+        rejects("asr.verify.struct_method.dispatch.arguments");
+    }
+    SUBCASE("adapter receiver cannot name the ancestor") {
+        ASRUtils::EXPR2VAR(adapter->m_args[1])->m_type_declaration =
+            module->m_symtab->get_symbol("parent");
+        rejects("asr.verify.struct_method.dispatch.receiver");
+    }
+    SUBCASE("sealed receivers must retain the inherited argument attributes") {
+        ASRUtils::EXPR2VAR(original->m_args[1])->m_intent = ASR::intentType::InOut;
+        rejects("asr.verify.struct_method.dispatch.receiver_attributes");
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

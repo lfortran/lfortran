@@ -708,6 +708,124 @@ semantic error: runtime trait arrays and coarrays are not implemented yet
 3646 |     class(I), pointer :: p[*]
      |                          ^^^^ 
 
+semantic error: missing implementation of trait method 'value'
+    --> tests/errors/continue_compilation_traits_01.f90:3902:5 - 3903:13
+     |
+3902 |        type, implements(I) :: Concrete
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3903 |        end type
+     | ...^^^^^^^^^^^^^ 
+
+semantic error: missing implementation of trait method 'value'
+    --> tests/errors/continue_compilation_traits_01.f90:3915:5 - 3916:13
+     |
+3915 |        type, extends(Middle) :: Concrete
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3916 |        end type
+     | ...^^^^^^^^^^^^^ 
+
+semantic error: sealed type 'base' cannot be extended
+    --> tests/errors/continue_compilation_traits_01.f90:3929:11
+     |
+3929 |     type, extends(Base) :: Child
+     |           ^^^^^^^^^^^^^ 
+
+semantic error: extends must precede implements in a type declaration
+    --> tests/errors/continue_compilation_traits_01.f90:3938:26
+     |
+3938 |     type, implements(I), extends(Parent) :: Child
+     |                          ^^^^^^^^^^^^^^^ 
+
+semantic error: a sealed type cannot be abstract
+    --> tests/errors/continue_compilation_traits_01.f90:3943:5 - 3944:13
+     |
+3943 |        type, abstract, sealed :: Impossible
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3944 |        end type
+     | ...^^^^^^^^^^^^^ 
+
+semantic error: the sealed attribute is repeated
+    --> tests/errors/continue_compilation_traits_01.f90:3948:19
+     |
+3948 |     type, sealed, sealed :: T
+     |                   ^^^^^^ 
+
+semantic error: the implements attribute is repeated
+    --> tests/errors/continue_compilation_traits_01.f90:3955:26
+     |
+3955 |     type, implements(I), implements(I) :: T
+     |                          ^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be manually implemented
+    --> tests/errors/continue_compilation_traits_01.f90:3963:11
+     |
+3963 |     type, implements(INumeric) :: T
+     |           ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an implements block cannot target an abstract type
+    --> tests/errors/continue_compilation_traits_01.f90:3974:5 - 3975:19
+     |
+3974 |        implements I :: Parent
+     |        ^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3975 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'n' does not match trait method 'value': expected integer(4), got real(4)
+    --> tests/errors/continue_compilation_traits_01.f90:3986:5 - 3989:13
+     |
+3986 |        type, extends(Parent) :: Child
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3989 |        end type
+     | ...^^^^^^^^^^^^^ 
+
+semantic error: trait receivers currently require intent(in) without pointer or allocatable
+    --> tests/errors/continue_compilation_traits_01.f90:4003:5 - 4007:13
+     |
+4003 |        type, sealed, implements(I) :: T
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4007 |        end type
+     | ...^^^^^^^^^^^^^ 
+
+semantic error: passed-object argument must have the implementing type
+    --> tests/errors/continue_compilation_traits_01.f90:4025:5 - 4027:19
+     |
+4025 |        implements I :: Child
+     |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4027 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: sealed override dispatch currently requires a scalar numeric or logical result; other result forms are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:4042:9
+     |
+4042 |         procedure :: values => child_values
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: sealed override dispatch currently requires a scalar numeric or logical result; other result forms are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:4064:9
+     |
+4064 |         procedure :: value => child_value
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a sealed override passed-object dummy must preserve the inherited dummy attributes
+    --> tests/errors/continue_compilation_traits_01.f90:4087:9
+     |
+4087 |         procedure :: value => child_value
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

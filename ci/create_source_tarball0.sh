@@ -41,10 +41,15 @@ cmake -E copy \
     integration_tests/traits_runtime_inspection_state_01.f90 \
     integration_tests/traits_runtime_07*.f90 \
     integration_tests/traits_paper_functional.py \
+    integration_tests/traits_type_adoption.py \
+    integration_tests/traits_type_adoption_02*.f90 \
+    integration_tests/traits_type_adoption_04*.f90 \
     integration_tests/traits_paper_manual_values.f90 \
     $dest/integration_tests
 cmake -E copy_directory integration_tests/traits_paper_functional \
     $dest/integration_tests/traits_paper_functional
+cmake -E copy_directory integration_tests/traits_paper_type_adoption \
+    $dest/integration_tests/traits_paper_type_adoption
 
 # Create the tarball
 cmake -E make_directory dist

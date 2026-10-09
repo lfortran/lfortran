@@ -169,6 +169,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_character_tokenizer
@@ -191,6 +192,8 @@
                                     []
                                     ()
                                     4 toml_tokenizer
+                                    []
+                                    .false.
                                     []
                                 ),
                             toml_tokenizer:
@@ -515,6 +518,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -582,6 +587,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_tokenizer
@@ -610,6 +616,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_tokenizer_:
                                 (Struct
@@ -636,6 +644,8 @@
                                     []
                                     ()
                                     8 toml_tokenizer
+                                    []
+                                    .false.
                                     []
                                 )
                         })

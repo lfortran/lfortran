@@ -286,6 +286,12 @@ public:
     }
 
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
+        if (x.m_dispatch_proc) {
+            auto *dispatch = ASRUtils::symbol_get_past_external(x.m_dispatch_proc);
+            fn_used[get_hash((ASR::asr_t*)dispatch)] = ASRUtils::symbol_name(dispatch);
+            fn_used[get_hash((ASR::asr_t*)x.m_dispatch_proc)] =
+                ASRUtils::symbol_name(x.m_dispatch_proc);
+        }
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_proc);
         if (ASR::is_a<ASR::Function_t>(*s)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);

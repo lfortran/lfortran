@@ -598,6 +598,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             build_target_t:
                                 (Struct
@@ -651,6 +653,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             cmd_build:
@@ -872,6 +876,8 @@
                                     ()
                                     2 fpm_cmd_settings
                                     []
+                                    .false.
+                                    []
                                 ),
                             fpm_cmd_settings:
                                 (Struct
@@ -928,6 +934,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             fpm_model_t:
                                 (Struct
@@ -954,6 +962,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             string_t:
@@ -1008,6 +1018,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

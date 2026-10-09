@@ -1047,6 +1047,17 @@ public:
     }
 
     void visit_TraitImplementation(const ASR::TraitImplementation_t &x) {
+        auto *type = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+        if (type && ASR::is_a<ASR::Struct_t>(*type)) {
+            auto *structure = ASR::down_cast<ASR::Struct_t>(type);
+            for (size_t i = 0; i < structure->n_trait_obligations; i++) {
+                if (ASRUtils::symbol_get_past_external(structure->m_trait_obligations[i]) ==
+                        ASRUtils::symbol_get_past_external(x.m_trait)) {
+                    src.clear();
+                    return;
+                }
+            }
+        }
         if (!for_compilation &&
                 ASRUtils::trait_runtime_witness(const_cast<ASR::TraitImplementation_t&>(x))) {
             std::string r = indent + "implements " + ASRUtils::symbol_name(x.m_trait) +
@@ -1301,11 +1312,20 @@ public:
         r += "type";
         if (x.m_parent) {
             r += ", extends(";
-            r += std::string(ASR::down_cast<ASR::Struct_t>(x.m_parent)->m_name);
+            r += ASRUtils::symbol_name(x.m_parent);
             r += ")";
         }
         if (x.m_is_abstract) {
             r += ", abstract";
+        }
+        if (!for_compilation && x.m_is_sealed) r += ", sealed";
+        if (!for_compilation && x.n_trait_obligations) {
+            r += ", implements(";
+            for (size_t i = 0; i < x.n_trait_obligations; i++) {
+                if (i) r += " + ";
+                r += ASRUtils::symbol_name(x.m_trait_obligations[i]);
+            }
+            r += ")";
         }
         if (x.m_abi == ASR::abiType::BindC) {
             r += ", bind(c)";

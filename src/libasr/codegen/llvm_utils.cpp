@@ -9875,7 +9875,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(item.second);
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
                 ASR::StructMethodDeclaration_t* method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-                ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(method_decl->m_proc);
+                ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(
+                    method_decl->m_dispatch_proc ? method_decl->m_dispatch_proc
+                        : method_decl->m_proc);
                 if (method_decl->m_is_deferred) {
                     llvm::FunctionType *func_type = llvm_utils->get_function_type(
                         *(ASR::down_cast<ASR::Function_t>(

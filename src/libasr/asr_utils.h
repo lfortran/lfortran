@@ -5034,12 +5034,13 @@ class FuncParamToArgReplacer : public ASR::BaseExprReplacer<FuncParamToArgReplac
 };
 static inline void set_absent_optional_arguments_to_null(
     Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
-    ASR::expr_t* dt=nullptr, bool nopass = false) {
+    ASR::expr_t* dt=nullptr, bool nopass = false, size_t pass_index=0) {
     int offset = (dt != nullptr) && (!nopass);
     for( size_t i = args.size(); i + offset < func->n_args; i++ ) {
+        const size_t formal_index = i + (offset && i >= pass_index ? 1 : 0);
         if( ASR::is_a<ASR::Variable_t>(
-                *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {
-            LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[i + offset])->m_presence ==
+                *ASR::down_cast<ASR::Var_t>(func->m_args[formal_index])->m_v) ) {
+            LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[formal_index])->m_presence ==
                                 ASR::presenceType::Optional);
             ASR::call_arg_t empty_arg;
             Location loc;
@@ -6619,7 +6620,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, false, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -7698,7 +7699,9 @@ class SymbolDuplicator {
             struct_type_t->m_is_sequence,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
-            struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+            struct_type_t->m_kind_params, struct_type_t->n_kind_params,
+            struct_type_t->m_is_sealed,
+            struct_type_t->m_trait_obligations, struct_type_t->n_trait_obligations));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
@@ -7723,7 +7726,7 @@ class SymbolDuplicator {
             structMethod->m_name, structMethod->m_self_argument,
             structMethod->m_proc_name, structMethod->m_proc,
             structMethod->m_abi, structMethod->m_is_deferred,
-            structMethod->m_is_nopass));
+            structMethod->m_is_nopass, structMethod->m_dispatch_proc));
     }
 
     ASR::symbol_t* duplicate_Namelist(ASR::Namelist_t* namelist,
@@ -9594,7 +9597,7 @@ inline bool is_stringToArray_cast_needed(ASR::ttype_t* const argument_ty, ASR::t
 ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type);
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
-    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
+    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t*& a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
@@ -9603,6 +9606,31 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         return;
     }
     ASR::Function_t* func = ASRUtils::get_function(a_name);
+
+    if (a_dt && ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_) &&
+            !ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name_)->m_is_nopass &&
+            !ASRUtils::is_array(ASRUtils::expr_type(a_dt)) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(a_dt)))) {
+        auto *declared = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(a_dt));
+        size_t self = ASRUtils::get_pass_arg_index(a_name);
+        if (declared && ASR::is_a<ASR::Struct_t>(*declared) &&
+                ASR::down_cast<ASR::Struct_t>(declared)->m_is_sealed &&
+                self < n_args && self < func->n_args) {
+            auto *formal_type = ASRUtils::expr_type(func->m_args[self]);
+            if (ASR::is_a<ASR::StructType_t>(*formal_type) &&
+                    !ASRUtils::is_class_type(formal_type) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(func->m_args[self])) == declared) {
+                // Sealing proves the dynamic type; preserve that decision as a
+                // concrete receiver before any backend chooses a calling ABI.
+                a_dt = ASRUtils::EXPR(ASR::make_Cast_t(al, a_dt->base.loc,
+                    a_dt, ASR::cast_kindType::ClassToStruct,
+                    ASRUtils::duplicate_type(al, formal_type), nullptr, nullptr));
+                a_args[self].m_value = a_dt;
+            }
+        }
+    }
 
     for( size_t i = 0; i < n_args; i++ ) {
         if( i >= func_type->n_arg_types ) {
@@ -10748,6 +10776,11 @@ bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
 bool trait_bindings_equal(const ASR::trait_binding_t &left,
     const ASR::trait_binding_t &right);
 
+// A conformance may inherit a passed-object method, but only through its
+// real EXTENDS chain and only when that ancestor receiver is polymorphic.
+bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
+    ASR::symbol_t *implementing_type);
+
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);
 
@@ -10776,6 +10809,15 @@ size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
 // chain of the derived type `x` belongs to, or nullptr.
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x);
+
+bool sealed_override_needs_adapter(
+    const ASR::StructMethodDeclaration_t &binding, ASR::Function_t *procedure);
+
+bool sealed_dispatch_result_supported(const ASR::Function_t &procedure);
+
+InterfaceMismatch sealed_dispatch_adapter_mismatch(
+    const ASR::StructMethodDeclaration_t &binding, ASR::Function_t &procedure,
+    ASR::Function_t &adapter);
 
 // Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
 // overrides must have the same interface apart from the passed-object dummy

@@ -1035,7 +1035,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, xx.m_dt,
             nullptr, false);
     }
 
@@ -1076,7 +1076,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
 
 
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, xx.m_dt,
             nullptr, false);
     }
 

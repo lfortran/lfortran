@@ -2,7 +2,7 @@
     "basename": "asr-struct_parent_is_function-f4da41c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_parent_is_function.asr",
-    "infile_hash": "4c9a6ef25c4e7807cd833f81d08d217adaa55292ce3e52433e7bdc4b",
+    "infile_hash": "2b8f5c72db22e7c2b72988cd6c96bd34e09304d999e946bcb51d02a2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

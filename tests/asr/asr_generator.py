@@ -458,7 +458,7 @@ def struct_method(table, name, proc, proc_name=None, deferred=False,
         f":name {string(name)} :self_argument nil "
         f":proc_name {string(proc_name or name)} :proc {proc} "
         f":abi :Source :is_deferred {'true' if deferred else 'false'} "
-        f":is_nopass {'true' if nopass else 'false'})"
+        f":is_nopass {'true' if nopass else 'false'} :dispatch_proc nil)"
     )
 
 
@@ -469,7 +469,8 @@ def struct(symtab_id, name, methods, parent=None, abstract=False):
         f":members [] :member_functions [] :abi :Source :access :Public "
         f":is_packed false :is_abstract {'true' if abstract else 'false'} "
         f":is_sequence false :initializers [] :alignment nil "
-        f":parent {parent or 'nil'} :kind_params [])"
+        f":parent {parent or 'nil'} :kind_params [] "
+        f":is_sealed false :trait_obligations [])"
     )
 
 

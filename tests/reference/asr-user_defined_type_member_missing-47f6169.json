@@ -2,7 +2,7 @@
     "basename": "asr-user_defined_type_member_missing-47f6169",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/user_defined_type_member_missing.asr",
-    "infile_hash": "d7e4b7b6b63958229365b305d00f9593765043a67a373cc81543a2f3",
+    "infile_hash": "c44e8447c7cccebbf069f6d784ca38c07d9b59b3bb288388a082957e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

@@ -28008,14 +28008,14 @@ public:
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
+        size_t self = ASRUtils::passed_object_index(*class_proc, func);
+        args = convert_call_args(x, !class_proc->m_is_nopass, self);
         if (!class_proc->m_is_nopass) {
-            llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0], 
-                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
+            llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[self],
+                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[self])), module.get());
             llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
-            args.push_back(llvm_dt);
+            args.insert(args.begin() + self, llvm_dt);
         }
-        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
-        args.insert(args.end(), args2.begin(), args2.end());
 
         // Get VTable pointer
         if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {
@@ -28078,25 +28078,25 @@ public:
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
+        size_t self = ASRUtils::passed_object_index(*class_proc, func);
+        args = convert_call_args(x, !class_proc->m_is_nopass, self);
         if (!class_proc->m_is_nopass) {
-            llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[0],
-                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[0])), module.get());
+            llvm::Type* target_struct_type = llvm_utils->get_type_from_ttype_t_util(func->m_args[self],
+                ASRUtils::extract_type(ASRUtils::expr_type(func->m_args[self])), module.get());
             llvm_dt = builder->CreateBitCast(llvm_dt, target_struct_type->getPointerTo());
 
             // If the parameter is a POINTER, we need an extra level of indirection
-            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(func->m_args[0]))) {
+            if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(func->m_args[self]))) {
                 // Allocate space for a pointer on the stack
                 llvm::Value* ptr_storage = llvm_utils->CreateAlloca(*builder, target_struct_type->getPointerTo());
                 // Store the loaded class descriptor pointer into it
                 builder->CreateStore(llvm_dt, ptr_storage);
                 // Pass the address of the storage (which is now a pointer-to-pointer)
-                args.push_back(ptr_storage);
+                args.insert(args.begin() + self, ptr_storage);
             } else {
-                args.push_back(llvm_dt);
+                args.insert(args.begin() + self, llvm_dt);
             }
         }
-        std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass /* skip_self */);
-        args.insert(args.end(), args2.begin(), args2.end());
 
         // Get Runtime VTable Pointer
         if (ASR::is_a<ASR::ArrayItem_t>(*x.m_dt)) {

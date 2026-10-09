@@ -40,7 +40,10 @@ symbol
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
-    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
+    -- trait_obligations are nominal adoptions, including the parent's obligations.
+    -- Concrete types require complete TraitImplementation evidence for each;
+    -- abstract types may defer missing methods without a deferred ordinary TBP.
+    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params, bool is_sealed, symbol* trait_obligations)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     -- A Local integer Variable of Default storage whose symbolic_value is not
@@ -55,7 +58,9 @@ symbol
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
                string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
                codimension* codims)
-    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
+    -- dispatch_proc adapts a sealed TYPE receiver to the inherited CLASS slot
+    -- without changing the original source binding or its nominal evidence.
+    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass, symbol? dispatch_proc)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)

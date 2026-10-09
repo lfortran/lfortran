@@ -5406,7 +5406,7 @@ public:
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, true,
-                nullptr, 0, nullptr, nullptr, nullptr, 0));
+                nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -6752,6 +6752,13 @@ public:
         }
 
         for (size_t i = 0; i < x.n_attributes; i++) {
+            if (AST::is_a<AST::AttrImplements_t>(*x.m_attributes[i]) ||
+                    (AST::is_a<AST::SimpleAttribute_t>(*x.m_attributes[i]) &&
+                     AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i])->m_attr ==
+                        AST::simple_attributeType::AttrSealed)) {
+                trait_call_error("sealed and implements are derived type attributes",
+                    x.m_attributes[i]->base.loc);
+            }
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
                 diag.add(Diagnostic(
                     "Type must be declared first",
@@ -11104,7 +11111,8 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0, pdt_struct->m_is_sealed,
+            pdt_struct->m_trait_obligations, pdt_struct->n_trait_obligations);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -11647,7 +11655,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -12033,7 +12041,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -15025,25 +15033,29 @@ public:
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
-
-        if (!v_class_proc->m_is_nopass) {
-            size_t pass_idx = ASRUtils::get_pass_arg_index(v);
-            ASR::call_arg_t self_arg;
-            self_arg.loc = v_expr->base.loc;
-            self_arg.m_value = v_expr;
-            Vec<ASR::call_arg_t> full_args;
-            full_args.reserve(al, n_args + 1);
-            size_t explicit_i = 0;
-            for (size_t i = 0; i < n_args + 1; i++) {
-                if (i == pass_idx) {
-                    full_args.push_back(al, self_arg);
-                } else {
-                    full_args.push_back(al, args[explicit_i]);
-                    explicit_i++;
-                }
+        const size_t pass_idx = ASRUtils::get_pass_arg_index(v);
+        if (n_kwargs > 0) {
+            diag::Diagnostics diags;
+            visit_kwargs(args, m_kwargs, n_kwargs,
+                func->m_args, func->n_args, loc, func,
+                diags, n_member, v_class_proc->m_is_nopass, pass_idx);
+            if (diags.has_error()) {
+                diag.diagnostics.insert(diag.diagnostics.end(),
+                    diags.diagnostics.begin(), diags.diagnostics.end());
+                throw SemanticAbort();
             }
-            args = full_args;
         }
+        if (args.size() + (v_class_proc->m_is_nopass ? 0 : 1) > func->n_args) {
+            trait_call_error("more actual than formal arguments in procedure call", loc);
+        }
+        validate_missing_required_arguments(loc, args, func, v_expr,
+            v_class_proc->m_is_nopass, pass_idx);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al,
+            v_expr, v_class_proc->m_is_nopass, pass_idx);
+        ASR::call_arg_t* call_args = args.p;
+        size_t n_call_args = args.size();
+        ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
+        args.from_pointer_n(call_args, n_call_args);
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
@@ -15057,54 +15069,13 @@ public:
                             &new_dims);
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            if (!v_class_proc->m_is_nopass) {
-                size_t pass_idx = ASRUtils::get_pass_arg_index(v);
-                ASR::call_arg_t self_arg;
-                self_arg.loc = v_expr->base.loc;
-                self_arg.m_value = v_expr;
-                Vec<ASR::call_arg_t> explicit_args;
-                explicit_args.reserve(al, n_args);
-                visit_expr_list(m_args, n_args, explicit_args);
-                args = {};
-                args.reserve(al, func->n_args);
-                size_t explicit_i = 0;
-                for (size_t i = 0; i < n_args + 1; i++) {
-                    if (i == pass_idx) {
-                        args.push_back(al, self_arg);
-                    } else {
-                        args.push_back(al, explicit_args[explicit_i]);
-                        explicit_i++;
-                    }
-                }
-            }
             // Set the correct return type.
             type = handle_return_type(type, func->m_return_var->base.loc, args, func);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
-        if (!v_class_proc->m_is_nopass) {
-            args = {};
-            visit_expr_list(m_args, n_args, args);
-        }
-        if (n_kwargs > 0) {
-            diag::Diagnostics diags;
-            visit_kwargs(args, m_kwargs, n_kwargs,
-                            func->m_args, func->n_args, loc, func,
-                            diags, n_member, v_class_proc->m_is_nopass);
-            if( diags.has_error() ) {
-                diag.diagnostics.insert(diag.diagnostics.end(),
-                    diags.diagnostics.begin(), diags.diagnostics.end());
-                throw SemanticAbort();
-            }
-        }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        validate_missing_required_arguments(loc, args, func, v_expr,
-            v_class_proc->m_is_nopass);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
-        ASR::call_arg_t* call_args = args.p;
-        size_t n_call_args = args.size();
-        ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, call_args, n_call_args, type, nullptr,
                 v_expr, current_scope, current_function_dependencies,
@@ -15914,10 +15885,11 @@ public:
 
     void validate_missing_required_arguments(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::Function_t* func,
-                ASR::expr_t* dt=nullptr, bool nopass=false) {
+                ASR::expr_t* dt=nullptr, bool nopass=false, size_t pass_index=0) {
         const int offset = (dt != nullptr && !nopass) ? 1 : 0;
         for (size_t i = 0; i + offset < func->n_args; i++) {
-            ASR::expr_t* dummy = func->m_args[i + offset];
+            const size_t formal_index = i + (offset && i >= pass_index ? 1 : 0);
+            ASR::expr_t* dummy = func->m_args[formal_index];
             ASR::symbol_t* dummy_sym = nullptr;
             if (ASR::is_a<ASR::Var_t>(*dummy)) {
                 dummy_sym = ASRUtils::symbol_get_past_external(
@@ -27427,14 +27399,15 @@ public:
     template <typename T>
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
                 ASR::expr_t **fn_args, size_t fn_n_args, const Location &loc, T* fn,
-                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false) {
+                diag::Diagnostics& diag, size_t type_bound=0, bool is_nopass = false,
+                size_t pass_index=0) {
         int n_args = args.size();
         std::string fn_name = fn->m_name;
         if (is_nopass) {
             type_bound = 0;
         }
         bool is_method = (type_bound > 0);
-        if (n_args + (int)n > (int)fn_n_args) {
+        if (n_args + (int)n + (int)is_method > (int)fn_n_args) {
             diag.semantic_error_label(
                 "Procedure '" + fn_name + "' accepts " + std::to_string(fn_n_args)
                 + " arguments, but " + std::to_string(n_args + n)
@@ -27456,7 +27429,8 @@ public:
                     optional_args.push_back(itr->first);
                     for( int i = 0; i < (int)fn_n_args; i++ ) {
                         if( ASR::down_cast<ASR::Var_t>(fn_args[i])->m_v == fn_sym ) {
-                            optional_args_idx.push_back(i - is_method);
+                            optional_args_idx.push_back(i - (is_method &&
+                                size_t(i) > pass_index ? 1 : 0));
                             break;
                         }
                     }
@@ -27465,6 +27439,10 @@ public:
         }
 
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(fn_args, fn_n_args);
+        if (is_method) {
+            LCOMPILERS_ASSERT(pass_index < fn_args2.size());
+            fn_args2.erase(fn_args2.begin() + pass_index);
+        }
 
         int offset = args.size();
         for (int i = 0; i < (int)fn_n_args - offset - is_method; i++) {
@@ -27499,7 +27477,7 @@ public:
                 return ;
             }
 
-            int idx = std::distance(fn_args2.begin(), search) - (int)is_method;
+            int idx = std::distance(fn_args2.begin(), search);
             if (idx < n_args) {
                 diag.semantic_error_label(
                     "Keyword argument '" + name + "' is already specified as a positional argument",

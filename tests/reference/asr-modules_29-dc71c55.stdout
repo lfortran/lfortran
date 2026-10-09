@@ -262,6 +262,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 )
                         })
                     fpm_git1
@@ -410,6 +412,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -463,6 +467,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             git_target_branch:
@@ -1027,6 +1033,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 )
                         })
                     fpm_manifest_dependency1
@@ -1262,6 +1270,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             new_dependencies:

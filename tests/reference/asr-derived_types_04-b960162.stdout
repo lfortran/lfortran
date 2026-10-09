@@ -123,6 +123,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             num_bits:
                                                 (Variable
@@ -167,6 +168,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

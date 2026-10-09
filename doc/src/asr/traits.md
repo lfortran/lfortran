@@ -51,6 +51,97 @@ implementation before using its conformance. An `ONLY` import of a type retains
 the public conformance records exported for that type by the explicitly used
 module. It does not make implementations in unrelated, unseen modules visible.
 
+## Adopting traits in a derived type
+
+A type can instead adopt contracts in its declaration. Its ordinary type-bound
+procedures supply the implementations; a second `implements` block is not needed:
+
+```fortran
+type, sealed, implements(IValue) :: Box
+    integer :: value
+contains
+    procedure :: get_value => box_value
+end type
+! In the module's CONTAINS section:
+function box_value(self) result(res)
+    type(Box), intent(in) :: self
+    integer :: res
+    res = self%value
+end function
+```
+
+`sealed` prohibits extension by `EXTENDS`, including through renamed imports.
+It permits an exact `TYPE(Box)` passed-object dummy instead of requiring
+`CLASS(Box)`. A sealed type may itself extend a nonsealed type, but it cannot
+also be abstract. Ordinary visibility and binding/override rules still apply.
+Trait receivers remain read-only.
+Calling a nonpolymorphic sealed receiver through scalar `CLASS(Box)` storage
+uses an explicit `ClassToStruct` receiver in ASR. The call retains the original
+payload rather than passing a polymorphic wrapper to a concrete procedure.
+An override reached through a nonsealed ancestor instead has an explicit typed
+dispatch adapter. The original procedure remains the nominal implementation;
+only its inherited virtual slot uses the adapter. The adapter borrows the
+payload, preserves named PASS positions and leaves OUT-entry cleanup to the
+original procedure. It does not clone implementation locals.
+
+This prototype supports such adapters for ordinary subroutines and scalar
+numeric/logical function results. Generic overrides, indirect receivers and
+lifetime-bearing results (including arrays, pointers, allocatables, derived
+values and character results) still receive an explicit unsupported diagnostic
+when they need this adapter. They require transparent result-slot forwarding,
+not an extra value copy. This restriction does not apply to existing ordinary
+CLASS overrides or sealed methods that do not override an ancestor slot.
+
+`implements(IParent + IChild)` adopts multiple interfaces, not multiple storage
+parents. When combined with `extends(Parent)`, `extends` must come first.
+The child retains its own nominal identity and actual parent component.
+Inherited ordinary bindings satisfy requirements, and ordinary overrides
+replace those bindings in the child's conformance. A method whose receiver is
+an ancestor must take that ancestor polymorphically. Static adapters and runtime
+witnesses use ordinary typed procedure calls; recovering a trait payload does
+not relabel it as its method's receiver type.
+
+An abstract type can adopt a trait without supplying every method. It need not
+invent ordinary `procedure(...), deferred` bindings for those missing methods.
+Every concrete descendant must complete all inherited obligations, including
+ones inherited through intermediate abstract types. Partial implementations
+are signature-checked, and missing concrete implementations receive semantic
+diagnostics. Existing ordinary `DEFERRED` bindings remain supported and must
+also be fulfilled. An explicit, retroactive `implements` **block** still cannot
+target an abstract type.
+
+The declaration's nominal obligations and each completed conformance survive
+module serialization, `ONLY`, renaming, and re-export. An unrelated type does
+not acquire a conformance merely by having matching methods or layout. A
+static-only trait can still supply its runtime-eligible ancestor interfaces;
+an unsupported extra message does not disable those subsets.
+
+This currently supports nonparameterized adopting types in modules and main
+programs, within the existing static and scalar runtime domains. It does not
+add initializers, trait-valued components, generic derived types, or numeric
+runtime array/result protocols.
+
+The byte-exact, module-only paper examples `extends_parent.f90` and
+`abstract_new.f90` are registered through `traits_type_adoption.py` in normal
+and fast native CTests. They are verified and compiled to objects, **not run**:
+their illustrative output-method bodies do not define output values.
+`traits_type_adoption_01` and `_02` supply defined-output controls for dispatch,
+layout, overrides, lifetime, ordinary deferred bindings, and separate modules.
+`_03` checks concrete sealed receivers through ordinary polymorphic dummies,
+pointers and owners, including a non-first named passed object.
+`_04` checks separate ancestor-slot dispatch, pure/optional and named-PASS
+forwarding, unchanged static/runtime conformance, and absence of extra FINAL
+calls. `_05` checks exactly-once receiver and ordinary-argument OUT cleanup,
+allocatable slots, and dummy-dependent array bounds.
+The standard-Fortran oracles test the corresponding storage and dispatch
+behavior with GFortran and LFortran. The dispatch work also repairs the ordinary
+non-first-PASS paths that previously failed in the preserved baseline, rather
+than excluding those controls from LLVM.
+`traits_paper_type_adoption/simple_sum.f90` preserves
+only the first two modules of the paper's `mixed.f90`, establishing its
+sealed/type-adoption prerequisite, not acceptance of the full OO program.
+Fixture hashes and extraction provenance are recorded beside those files.
+
 ## Constraining a generic procedure
 
 ```fortran
@@ -978,8 +1069,16 @@ Three ASR symbol kinds preserve the semantic distinction from templates:
   not a generated-name convention, distinguishes it from a named declaration.
 - `TraitConstraint` connects a generic type parameter to a trait and to the
   normalized abstract procedures used when checking its body.
-- `TraitImplementation` records a concrete type's nominal conformance and its
+- `TraitImplementation` records a resolved type's complete nominal conformance and its
   procedure witnesses, including passed-object adaptation.
+
+`Struct::trait_obligations` records declaration adoption, including inherited
+obligations. Abstract types can lack completion records; concrete types cannot.
+Verification checks the inherited obligation set, complete nominal evidence,
+signature compatibility, and agreement with the effective ordinary binding.
+`Struct::is_sealed` is checked both when declaring an extension and by ASR
+verification. Both fields are serialized, rather than inferred from names,
+layouts, or LLVM types.
 
 Constrained generic procedures use the existing `Template` carrier and shared
 type/symbol substitution and body-instantiation machinery. A normalized

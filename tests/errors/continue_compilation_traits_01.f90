@@ -3892,3 +3892,208 @@ contains
         end associate
     end subroutine
 end module
+
+! Derived-type adoption, abstract obligations and sealing.
+module traits_adoption_missing_01
+    abstract interface :: I
+        integer function value()
+        end function
+    end interface
+    type, implements(I) :: Concrete
+    end type
+end module
+
+module traits_adoption_missing_02
+    abstract interface :: I
+        integer function value()
+        end function
+    end interface
+    type, abstract, implements(I) :: Parent
+    end type
+    type, abstract, extends(Parent) :: Middle
+    end type
+    type, extends(Middle) :: Concrete
+    end type
+end module
+
+module traits_adoption_sealed_parent
+    type, sealed :: Parent
+        integer :: n
+    end type
+end module
+module traits_adoption_sealed_facade
+    use traits_adoption_sealed_parent, only: Renamed => Parent
+end module
+module traits_adoption_sealed_extension
+    use traits_adoption_sealed_facade, only: Base => Renamed
+    type, extends(Base) :: Child
+    end type
+end module
+
+module traits_adoption_attribute_order
+    abstract interface :: I
+    end interface
+    type :: Parent
+    end type
+    type, implements(I), extends(Parent) :: Child
+    end type
+end module
+
+module traits_adoption_sealed_abstract
+    type, abstract, sealed :: Impossible
+    end type
+end module
+
+module traits_adoption_duplicate_sealed
+    type, sealed, sealed :: T
+    end type
+end module
+
+module traits_adoption_duplicate_attribute
+    abstract interface :: I
+    end interface
+    type, implements(I), implements(I) :: T
+    end type
+end module
+
+module traits_adoption_type_set
+    abstract interface :: INumeric
+        integer | real
+    end interface
+    type, implements(INumeric) :: T
+    end type
+end module
+
+module traits_adoption_abstract_block
+    abstract interface :: I
+        integer function value()
+        end function
+    end interface
+    type, abstract, implements(I) :: Parent
+    end type
+    implements I :: Parent
+    end implements
+end module
+
+module traits_adoption_wrong_signature
+    abstract interface :: I
+        integer function value(n)
+            integer, intent(in) :: n
+        end function
+    end interface
+    type, abstract, implements(I) :: Parent
+    end type
+    type, extends(Parent) :: Child
+    contains
+        procedure :: value
+    end type
+contains
+    integer function value(self, n)
+        class(Child), intent(in) :: self
+        real, intent(in) :: n
+        value = int(n)
+    end function
+end module
+
+module traits_adoption_readonly
+    abstract interface :: I
+        integer function value()
+        end function
+    end interface
+    type, sealed, implements(I) :: T
+        integer :: n
+    contains
+        procedure :: value
+    end type
+contains
+    integer function value(self)
+        type(T), intent(inout) :: self
+        self%n = self%n + 1
+        value = self%n
+    end function
+end module
+
+module traits_adoption_nonpolymorphic_ancestor
+    abstract interface :: I
+        integer function value()
+        end function
+    end interface
+    type :: Parent
+    end type
+    type, extends(Parent) :: Child
+    end type
+    implements I :: Child
+        procedure :: value
+    end implements
+contains
+    integer function value(self)
+        type(Parent), intent(in) :: self
+        value = 1
+    end function
+end module
+
+module traits_adoption_sealed_array_result
+    type :: Parent
+    contains
+        procedure :: values => parent_values
+    end type
+    type, extends(Parent), sealed :: Child
+    contains
+        procedure :: values => child_values
+    end type
+contains
+    function parent_values(self) result(values)
+        class(Parent), intent(in) :: self
+        integer :: values(2)
+        values = [1, 2]
+    end function
+    function child_values(self) result(values)
+        type(Child), intent(in) :: self
+        integer :: values(2)
+        values = [3, 4]
+    end function
+end module
+
+module traits_adoption_sealed_pointer_result
+    type :: Parent
+    contains
+        procedure :: value => parent_value
+    end type
+    type, extends(Parent), sealed :: Child
+    contains
+        procedure :: value => child_value
+    end type
+contains
+    function parent_value(self) result(value)
+        class(Parent), intent(in) :: self
+        integer, pointer :: value
+        value => null()
+    end function
+    function child_value(self) result(value)
+        type(Child), intent(in) :: self
+        integer, pointer :: value
+        value => null()
+    end function
+end module
+
+module traits_adoption_sealed_receiver_intent
+    type :: Parent
+        integer :: n
+    contains
+        procedure :: value => parent_value
+    end type
+    type, extends(Parent), sealed :: Child
+    contains
+        procedure :: value => child_value
+    end type
+contains
+    integer function parent_value(self) result(n)
+        class(Parent), intent(in) :: self
+        n = self%n
+    end function
+    integer function child_value(self) result(n)
+        type(Child), intent(inout) :: self
+        self%n = self%n + 1
+        n = self%n
+    end function
+end module
