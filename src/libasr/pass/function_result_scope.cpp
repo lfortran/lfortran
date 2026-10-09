@@ -797,8 +797,7 @@ public:
         for (size_t i = 0; i < block->n_body; i++) {
             block_body.push_back(al, block->m_body[i]);
         }
-        block_body.push_back(al, b.If(b.Eq(x.m_test, b.logical_false()),
-            {b.Exit()}, {}));
+        block_body.push_back(al, b.If(b.Not(x.m_test), {b.Exit()}, {}));
         block->m_body = block_body.p;
         block->n_body = block_body.size();
         Vec<ASR::stmt_t*> body;

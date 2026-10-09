@@ -231,6 +231,74 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // A non-optional scalar integer, real or logical VALUE dummy
+        // argument is passed by value (the same convention as GFortran).
+        // VALUE dummies with the bind(c) ABI follow the C ABI and are
+        // lowered by the bind(c) specific code paths instead.
+        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || v.m_abi == ASR::abiType::BindC ||
+                    v.m_presence == ASR::presenceType::Optional ||
+                    !ASRUtils::is_arg_dummy(v.m_intent)) {
+                return false;
+            }
+            return ASR::is_a<ASR::Integer_t>(*v.m_type) ||
+                   ASR::is_a<ASR::UnsignedInteger_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Real_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Logical_t>(*v.m_type);
+        }
+
+        // A scalar VALUE dummy of derived type of a procedure without the
+        // bind(c) ABI is passed by reference, and the callee copies the
+        // actual argument into a local variable (F2018 15.5.2.4). Each
+        // scalar class pointer component of the copy gets its own class
+        // wrapper, which the callee frees when it returns. (An optional
+        // VALUE dummy is made non-optional by an ASR pass.)
+        static inline bool is_struct_value_dummy_copied(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || !ASRUtils::is_arg_dummy(v.m_intent) ||
+                    !ASR::is_a<ASR::StructType_t>(*v.m_type) ||
+                    ASRUtils::is_class_type(v.m_type)) {
+                return false;
+            }
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                v.m_parent_symtab->asr_owner);
+            return ASR::is_a<ASR::Function_t>(*owner) &&
+                ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(owner))->m_abi
+                    != ASR::abiType::BindC;
+        }
+
+        // A type(c_ptr) dummy argument that is intent(out), intent(inout),
+        // or of unspecified intent without VALUE is passed by reference
+        // (`void**`); any other type(c_ptr) dummy is passed by value
+        // (`void*`). The function signature, the callee and every call site
+        // must agree on this.
+        static inline bool is_cptr_dummy_passed_by_reference(const ASR::Variable_t& v) {
+            return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
+                (v.m_intent == ASR::intentType::Out ||
+                 v.m_intent == ASR::intentType::InOut ||
+                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr));
+        }
+
+        static inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t& v) {
+            return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
+                ASRUtils::is_arg_dummy(v.m_intent) &&
+                !is_cptr_dummy_passed_by_reference(v);
+        }
+
+        // A VALUE type(c_ptr) dummy of a non-bind(c) procedure is copied
+        // into local storage on entry, so, like a local variable, it is held
+        // as a `void**`.
+        static inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t& v) {
+            return is_cptr_dummy_passed_by_value(v) && v.m_value_attr &&
+                v.m_abi != ASR::abiType::BindC;
+        }
+
+        // Any other type(c_ptr) dummy passed by value is held as the
+        // `void*` itself.
+        static inline bool is_cptr_dummy_held_by_value(const ASR::Variable_t& v) {
+            return is_cptr_dummy_passed_by_value(v) &&
+                !is_cptr_dummy_in_local_storage(v);
+        }
+
         // Returns the terminator of `bb`, or nullptr when `bb` is not
         // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
         // block without a terminator from LLVM 23 on, so inspect the last
@@ -910,6 +978,23 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
+            // A scalar class pointer is a heap-allocated class wrapper
+            // {vptr, data*} owned by the pointer (freed by nullify and
+            // finalization). Make the class pointer stored at `dest` hold
+            // the contents of `src_wrapper` in its own wrapper, as pointer
+            // assignment does, or be null if `src_wrapper` is null.
+            void copy_class_pointer_wrapper(llvm::Value* src_wrapper, llvm::Value* dest,
+                llvm::Type* wrapper_type);
+
+            // Calls `fn` with the address of each scalar class pointer
+            // component stored in the object `ptr` of type `struct_sym`
+            // (including those of its parent and of its nested derived-type
+            // components that are neither allocatable nor pointers), and
+            // the type of its class wrapper. Returns whether there are any;
+            // with `ptr` null, only returns that.
+            bool visit_class_pointer_components(ASR::Struct_t* struct_sym, llvm::Value* ptr,
+                llvm::Module* module, const std::function<void(llvm::Value*, llvm::Type*)>& fn);
+
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
 
@@ -1124,6 +1209,16 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                // A dummy argument is not finalized (F2018 7.5.6.3): only
+                // free the class wrappers that the procedure's copy owns.
+                llvm_utils_->visit_class_pointer_components(struct_sym, llvm_var,
+                    llvm_utils_->module, [&](llvm::Value* slot, llvm::Type* wrapper_type) {
+                        llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(
+                            wrapper_type->getPointerTo(), slot));
+                    });
+                return;
+            }
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
             // elements: each of them is an entity of its own.
@@ -2522,6 +2617,9 @@ class ASRToLLVMVisitor;
                         v->m_parent_symtab->asr_owner)) ||
                      ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
                         v->m_parent_symtab->asr_owner)))) return true;
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                return false;
+            }
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
                 // Most non-local variables are not owned by this scope and must

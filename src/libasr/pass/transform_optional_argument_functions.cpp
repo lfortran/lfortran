@@ -556,9 +556,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to avoid calling the function more than once
                 if (ASR::is_a<ASR::FunctionCall_t>(*arg_expr)) {
                     std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_functioncall_");
+                    ASR::symbol_t* arg_expr_decl = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_expr_type))) {
+                        arg_expr_decl = ASRUtils::import_struct_sym_as_external(
+                            al, x.m_args[i].loc, arg_expr, scope);
+                    }
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                         x.m_args[i].loc, dummy_variable_name, al, scope,
-                        arg_expr_type, ASR::intentType::Local);
+                        arg_expr_type, ASR::intentType::Local, arg_expr_decl);
                     ASR::stmt_t* assignment = ASRUtils::STMT(
                             ASRUtils::make_Assignment_t_util(al, x.m_args[i].loc, dummy_variable,
                                 arg_expr, nullptr, false, ASRUtils::is_array(arg_expr_type)));
@@ -579,6 +584,20 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
                 ASR::ttype_t* dummy_variable_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
+                ASR::expr_t* dummy_decl_var = func->m_args[j];
+
+                // The pointer variable has the type of the actual argument, so
+                // for a derived type actual it must also take its declaration
+                // from the actual argument, not from the (possibly polymorphic
+                // or parent type) dummy argument
+                ASR::symbol_t* pointer_decl = arg_decl;
+                ASR::expr_t* pointer_decl_var = func->m_args[j];
+                bool is_struct_actual = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_expr_type));
+                if (is_struct_actual) {
+                    pointer_decl = nullptr;
+                    pointer_decl_var = arg_expr;
+                }
 
                 // We make dummy variable allocatable if class type because 
                 // local class variable should be llvm pointer
@@ -588,6 +607,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
                     dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    if (is_struct_actual) {
+                        arg_decl = nullptr;
+                        dummy_decl_var = arg_expr;
+                    }
                 }
                 {
                     ASR::ttype_t* formal_t = func_arg_j->m_type;
@@ -677,12 +700,12 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
                 std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                 ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
 
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
                 pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, pointer_decl, pointer_decl_var);
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 

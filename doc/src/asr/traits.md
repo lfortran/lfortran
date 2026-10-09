@@ -577,6 +577,14 @@ Dynamic calls obey the contract's PURE attribute: a PURE consumer cannot call
 an impure message, and each binding must preserve required PURE and ELEMENTAL
 attributes. A binding may be PURE even when its contract does not require it.
 
+Character arguments use the ordinary data-pointer and trailing hidden-length
+calling convention. The shared `string_length_arguments` pass lowers trait
+declarations, normalized slots, witness adapters, and generic entries together.
+Erased operation wrappers forward the hidden lengths as part of the selected
+calling convention; impure calls in character actuals are evaluated once.
+`traits_runtime_character_01` checks these paths across module compilation,
+including static and erased generic forwarding and side-effecting substrings.
+
 Bare borrowed view dummies require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the

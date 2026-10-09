@@ -8781,9 +8781,11 @@ public:
         }
         std::string sub_name = to_lower(x.m_name);
         // Only treat as intrinsic if no user-defined callable procedure
-        // with this name exists in scope (user procedures shadow intrinsics)
-        bool user_procedure_found = false;
-        {
+        // with this name exists in scope (user procedures shadow intrinsics).
+        // A call through a component (`call obj%name(...)`) is always a
+        // type-bound or procedure-pointer call, never an intrinsic.
+        bool user_procedure_found = x.n_member > 0;
+        if (!user_procedure_found) {
             ASR::symbol_t *sym = current_scope->resolve_symbol(sub_name);
             if (sym) {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);

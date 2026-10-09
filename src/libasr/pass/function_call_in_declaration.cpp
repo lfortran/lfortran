@@ -1350,6 +1350,11 @@ public:
                 replacer.replace_FunctionParam_with_FunctionArgs(array_t->m_dims[i].m_start, new_args);
                 replacer.replace_FunctionParam_with_FunctionArgs(array_t->m_dims[i].m_length, new_args);
             }
+            if (ASR::is_a<ASR::String_t>(*array_t->m_type) &&
+                    ASR::down_cast<ASR::String_t>(array_t->m_type)->m_len) {
+                replacer.replace_FunctionParam_with_FunctionArgs(
+                    ASR::down_cast<ASR::String_t>(array_t->m_type)->m_len, new_args);
+            }
             ASRUtils::EXPR2VAR(func->m_return_var)->m_type = return_type_copy;
         } else if (ASR::is_a<ASR::String_t>(*x.m_return_var_type)){
             ASR::ttype_t* return_type_copy = ASRUtils::duplicate_type(al, x.m_return_var_type);

@@ -1199,9 +1199,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                                             !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
                 is_pointer_return = use_temp_var_for_return;
                 {
-                    ASR::ttype_t* target_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::ttype_t* target_type_ = ASRUtils::extract_type(
                         ASRUtils::expr_type(target));
-                    ASR::ttype_t* value_type_ = ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::ttype_t* value_type_ = ASRUtils::extract_type(
                         ASRUtils::expr_type(value));
                     if (ASRUtils::is_class_type(target_type_) &&
                         !ASRUtils::is_class_type(value_type_)) {
@@ -1286,9 +1286,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 // for the temp, but get the struct symbol from the target (both share the
                 // same underlying struct, the function's m_return_var was already cleared
                 // by the CreateFunctionFromSubroutine pass).
-                ASR::ttype_t* target_unwrapped = ASRUtils::type_get_past_allocatable_pointer(
+                ASR::ttype_t* target_unwrapped = ASRUtils::extract_type(
                     ASRUtils::expr_type(target));
-                ASR::ttype_t* value_unwrapped = ASRUtils::type_get_past_allocatable_pointer(
+                ASR::ttype_t* value_unwrapped = ASRUtils::extract_type(
                     ASRUtils::expr_type(value));
                 bool class_to_type_mismatch = !ASRUtils::is_class_type(target_unwrapped) &&
                     ASRUtils::is_class_type(value_unwrapped);
@@ -1479,7 +1479,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
      * TO :
      *     DO while (.true.)
      *      temp1 = ff(flag)
-     *      if ((temp1 == "Hello") == .false.) exit
+     *      if (.not. (temp1 == "Hello")) exit
      *      ...
      *     END DO
      */
@@ -1493,7 +1493,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         visit_expr(*x.m_test);
         if (!pass_result.empty()){ // Temps Created!
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
-            pass_result.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            pass_result.push_back(al, builder.If(builder.Not(x.m_test), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 pass_result.push_back(al, x.m_body[i]);
             }

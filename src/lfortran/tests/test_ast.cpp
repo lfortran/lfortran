@@ -13,6 +13,7 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
+#include <libasr/pass/string_length_arguments.h>
 
 namespace LCompilers::LFortran {
 
@@ -369,6 +370,69 @@ end program
 
     call_stmt->m_dt = nullptr;
     CHECK(!asr_verify(*asr, true, diagnostics));
+}
+
+TEST_CASE("ASR Verify hidden string length arguments") {
+    Allocator al(64*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+character(len=5) :: x
+call s(x, 2)
+contains
+subroutine s(a, n)
+    character(len=*), intent(inout) :: a
+    integer, intent(in) :: n
+    a(n:n) = 'z'
+end subroutine
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    ASRVerifyOptions after_pass;
+    after_pass.string_length_arguments = true;
+    CHECK(asr_verify(*asr, true, diagnostics));
+    // Before the pass, `a` has no hidden length.
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.function.hidden_string_length_missing");
+    diagnostics.diagnostics.clear();
+
+    PassOptions pass_options;
+    pass_string_length_arguments(al, *asr, pass_options);
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
+        asr->m_symtab->get_symbol("p"));
+    ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
+        prog->m_symtab->get_symbol("s"));
+    CHECK(s->n_args == 3);
+    ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(
+        prog->m_body[0]);
+    REQUIRE(call_stmt->n_args == 3);
+    ASR::IntegerConstant_t *len = ASR::down_cast<ASR::IntegerConstant_t>(
+        call_stmt->m_args[2].m_value);
+    CHECK(len->m_n == 5);
+
+    // A call that does not pass the hidden length is caught.
+    call_stmt->n_args = 2;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
 }
 
 TEST_CASE("Variable Location") {

@@ -112,6 +112,9 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
+    // See ASRVerifyOptions::string_length_arguments.
+    bool check_string_length_arguments = false;
+
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
@@ -2850,6 +2853,120 @@ public:
         }
     }
 
+    // The number of character dummies of `fn` that are passed with a hidden
+    // length (ASRUtils::is_string_dummy_with_hidden_length). Their hidden
+    // lengths are its last that many dummies.
+    static size_t count_hidden_string_lengths(const Function_t &fn) {
+        size_t n = 0;
+        for (size_t i = 0; i < fn.n_args; i++) {
+            if (ASRUtils::is_string_dummy_with_hidden_length(fn, fn.m_args[i])) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    // A template is only compiled once it is instantiated, and the
+    // string_length_arguments pass leaves it alone.
+    static bool is_in_template(SymbolTable *symtab) {
+        for (; symtab != nullptr; symtab = symtab->parent) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    (ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(owner)) ||
+                     ASR::is_a<ASR::Requirement_t>(*ASR::down_cast<ASR::symbol_t>(owner)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static bool is_hidden_string_length_type(ASR::ttype_t *t) {
+        return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+            ASR::down_cast<ASR::Integer_t>(t)->m_kind == 8;
+    }
+
+    // After the string_length_arguments pass, each character dummy passed
+    // with a hidden length has it: the n-th one, in the order of the
+    // dummies, is the n-th of the `integer(8), value, intent(in)` dummies
+    // that end the argument list.
+    void verify_hidden_string_lengths(const Function_t &x) {
+        size_t n_hidden = count_hidden_string_lengths(x);
+        if (n_hidden == 0 || is_in_template(x.m_symtab)) return;
+        std::string func_name = x.m_name;
+        require_id(x.n_args >= 2 * n_hidden,
+            "asr.verify.function.hidden_string_length_missing",
+            "Function '" + func_name + "' has " + std::to_string(n_hidden) +
+            " character dummies passed with a hidden length, but not as many "
+            "hidden length dummies");
+        size_t first_hidden = x.n_args - n_hidden;
+        size_t j = first_hidden;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASRUtils::is_string_dummy_with_hidden_length(x, x.m_args[i])) {
+                continue;
+            }
+            require_id(i < first_hidden,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': the hidden length dummies "
+                "must follow all character dummies");
+            ASR::symbol_t *hidden = ASR::is_a<ASR::Var_t>(*x.m_args[j])
+                ? ASR::down_cast<ASR::Var_t>(x.m_args[j])->m_v : nullptr;
+            ASR::Variable_t *hidden_var = hidden && ASR::is_a<ASR::Variable_t>(*hidden)
+                ? ASR::down_cast<ASR::Variable_t>(hidden) : nullptr;
+            require_with_loc_id(hidden_var != nullptr &&
+                    is_hidden_string_length_type(hidden_var->m_type) &&
+                    hidden_var->m_value_attr &&
+                    hidden_var->m_intent == ASR::intentType::In &&
+                    hidden_var->m_presence == ASR::presenceType::Required,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': dummy " + std::to_string(j + 1) +
+                " must be the hidden `integer(8), value, intent(in)` length of "
+                "character dummy " + std::to_string(i + 1),
+                x.m_args[i]->base.loc);
+            ASR::String_t *str = ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_args[i]));
+            require_with_loc_id(str->m_len_kind !=
+                    ASR::string_length_kindType::AssumedLength,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': assumed-length character dummy " +
+                std::to_string(i + 1) + " must take its length from its hidden "
+                "length dummy",
+                x.m_args[i]->base.loc);
+            j++;
+        }
+    }
+
+    // After the string_length_arguments pass, a call passes the hidden length
+    // of each character argument that has one.
+    template <typename T>
+    void verify_hidden_string_length_actuals(const T &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s && ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+            s = ASR::down_cast<ASR::StructMethodDeclaration_t>(s)->m_proc;
+        } else if (s && ASR::is_a<ASR::Variable_t>(*s)) {
+            s = ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+        }
+        if (s) s = ASRUtils::symbol_get_past_external(s);
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        size_t n_hidden = count_hidden_string_lengths(*fn);
+        if (n_hidden == 0 || is_in_template(current_symtab)) return;
+        require_id(x.n_args == fn->n_args,
+            "asr.verify.call.hidden_string_length_missing",
+            "Call to '" + std::string(fn->m_name) + "' must pass the hidden "
+            "length of each of its " + std::to_string(n_hidden) +
+            " character arguments");
+        for (size_t i = fn->n_args - n_hidden; i < x.n_args; i++) {
+            require_with_loc_id(x.m_args[i].m_value != nullptr &&
+                    is_hidden_string_length_type(
+                        ASRUtils::expr_type(x.m_args[i].m_value)),
+                "asr.verify.call.hidden_string_length_missing",
+                "Call to '" + std::string(fn->m_name) + "': argument " +
+                std::to_string(i + 1) + " must be the `integer(8)` length of "
+                "a character argument",
+                x.m_args[i].loc);
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -2915,6 +3032,7 @@ public:
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
         verify_argument_memory_spaces(x);
+        if (check_string_length_arguments) verify_hidden_string_lengths(x);
         if (x.m_gpu) verify_gpu_kernel_layout(x);
 
         // Get the x parent symtab.
@@ -2961,10 +3079,11 @@ public:
                 "asr.verify.function.implicit_interface_has_no_body",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
                 "so it must have no body");
-            require_id(function_type->m_abi == ASR::abiType::BindC,
-                "asr.verify.function.implicit_interface_is_bindc",
+            require_id(function_type->m_abi == ASR::abiType::Source
+                    || function_type->m_abi == ASR::abiType::ExternalUndefined,
+                "asr.verify.function.implicit_interface_is_source",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
-                "so its abi must be BindC");
+                "so its abi must be Source or ExternalUndefined");
         }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
@@ -5278,6 +5397,7 @@ public:
         }
 
         verify_args(x);
+        if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
     }
 
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
@@ -5575,6 +5695,7 @@ public:
             }
         }
         verify_args(x);
+        if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
         visit_ttype(*x.m_type);
     }
 
@@ -6647,6 +6768,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(options.check_external, diagnostics);
+    v.check_string_length_arguments = options.string_length_arguments;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
