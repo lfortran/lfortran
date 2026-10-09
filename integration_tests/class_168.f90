@@ -1,4 +1,4 @@
-program class_155
+program class_168
 implicit none
 type :: t
     integer :: y
