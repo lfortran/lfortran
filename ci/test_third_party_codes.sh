@@ -151,9 +151,9 @@ time_section "🧪 Testing caffeine" '
     fi
   done
 
-  # Release 0.8.2
-  git checkout 0.8.2
-  assert_git_commit 6cdf2eafb139ccb40a9a0f2a1b74750b34a9a1ac
+  # Release 0.8.4
+  git checkout 0.8.4
+  assert_git_commit 0f9ca691cbe6782838266a9bb5005ae187f253a2
 
   # Now build and test caffeine with LFortran
   ./install.sh --yes --prefix=$PWD/inst --verbose --enable-rpath --enable-debug
