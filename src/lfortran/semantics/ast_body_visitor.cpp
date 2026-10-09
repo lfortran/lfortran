@@ -3603,6 +3603,13 @@ public:
         alloc_args_vec.reserve(al, x.n_args);
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int_type));
+        // The type-spec of a typed allocation, `allocate(type-spec :: a, b)`,
+        // applies to every allocation object, but the parser attaches it to
+        // the first one only.
+        AST::expr_t* alloc_type_spec = nullptr;
+        if( x.n_args > 0 && x.m_args[0].m_start && !x.m_args[0].m_end && x.m_args[0].m_step ) {
+            alloc_type_spec = x.m_args[0].m_start;
+        }
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
             new_arg.m_a = nullptr;
@@ -3691,7 +3698,13 @@ public:
                     return ASRUtils::EXPR(tmp);
                 }
             };
-            if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
+            AST::expr_t* type_spec = x.m_args[i].m_start;
+            AST::expr_t* alloc_obj = x.m_args[i].m_step;
+            if( alloc_type_spec && x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
+                type_spec = alloc_type_spec;
+                alloc_obj = x.m_args[i].m_end;
+            }
+            if( !type_spec && x.m_args[i].m_end && !x.m_args[i].m_step ) {
                 tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_end);
 
                 if (ASR::is_a<ASR::StringItem_t>(*tmp_stmt)) {
@@ -3702,11 +3715,11 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-            } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
-                tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_step);
-                if( AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i].m_start) ) {
+            } else if( type_spec && alloc_obj ) {
+                tmp_stmt = visit_ast_alloc_expr(alloc_obj);
+                if( AST::is_a<AST::FuncCallOrArray_t>(*type_spec) ) {
                     AST::FuncCallOrArray_t* func_call_t =
-                        AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
+                        AST::down_cast<AST::FuncCallOrArray_t>(type_spec);
                     std::string type_name = to_lower(std::string(func_call_t->m_func));
                     if( type_name == "character" ) {
                         if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
@@ -3765,12 +3778,12 @@ public:
                             "The type-spec: `" + std::string(func_call_t->m_func)
                             + "` is not supported yet",
                             Level::Error, Stage::Semantic, {
-                                Label("",{x.m_args[i].m_start->base.loc})
+                                Label("",{type_spec->base.loc})
                             }));
                         throw SemanticAbort();
                     }
-                } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
-                    AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
+                } else if( AST::is_a<AST::Name_t>(*type_spec) ) {
+                    AST::Name_t* name_t = AST::down_cast<AST::Name_t>(type_spec);
                     std::string name_lower = to_lower(name_t->m_id);
                     if( name_lower == "integer" ) {
                         new_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
@@ -3795,13 +3808,13 @@ public:
                                 "The type-spec: `" + std::string(name_t->m_id)
                                 + "` is not supported yet",
                                 Level::Error, Stage::Semantic, {
-                                    Label("",{x.m_args[i].m_start->base.loc})
+                                    Label("",{type_spec->base.loc})
                                 }));
                             throw SemanticAbort();
                         }
                     }
                 } else {
-                    LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
+                    LCOMPILERS_ASSERT_MSG(false, std::to_string(type_spec->type));
                 }
             }
             ASR::expr_t *array_stmt = tmp_stmt;
