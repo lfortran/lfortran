@@ -1974,10 +1974,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       // A component is passed as it is to a procedure,
+                       // which may define the dummy, e.g. `h%item` with an
+                       // allocatable `item` bound to a dummy without intent.
+                       // A VALUE dummy gets a copy of the actual, so the
+                       // copy is still made for it.
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
+                         ((is_call && !(dummy && dummy->m_value_attr)) ||
+                          (!ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                           !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))))) &&
                        !ASR::is_a<ASR::PointerNullConstant_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
@@ -2491,16 +2497,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_Call(const T& x, const std::string& name_hint) {
         // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
+        // The dummy arguments of the procedure, of the type-bound one, or of
+        // the interface of a procedure pointer or a dummy procedure.
         ASR::expr_t **orig_args = nullptr;
         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
-        if (ASR::is_a<ASR::Function_t>(*sym)) {
-            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
-        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-            // For type-bound procedures, get the actual function from m_proc
-            ASR::StructMethodDeclaration_t* smd = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(smd->m_proc);
-            if (ASR::is_a<ASR::Function_t>(*proc)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+        if (ASR::is_a<ASR::Function_t>(*sym) ||
+            ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ||
+            ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Function_t* func = ASRUtils::get_function(sym);
+            if (func) {
                 orig_args = func->m_args;
             }
         }
