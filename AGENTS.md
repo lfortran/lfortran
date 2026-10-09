@@ -275,8 +275,12 @@ and the distinction between capability tests and application validation.
 - Never mix refactoring or formatting with bug fixes. Send those separately.
 - Every fix PR must demonstrate: test fails on main, test passes on branch.
   If you cannot find such a test, the fix is not understood well enough.
-- Once a PR is in review, merge upstream into it (do not rebase) —
-  rebasing forces complete re-review.
+- Keep PR history linear: never merge `main` into a PR branch. When a PR must
+  be updated (base conflicts, or it needs a change that landed on `main`),
+  rebase it onto `upstream/main` and push with `git push --force-with-lease`.
+  The merge queue tests every PR against the latest `main`, so do not update
+  a PR only to keep it current; every push reruns CI. Address review feedback
+  with new commits rather than rewriting commits reviewers have seen.
 - PRs target `upstream/main`; reference issues (`fixes #123`), explain rationale.
 - Include test evidence (commands + summary); ensure CI passes.
 - Do not commit generated artifacts, large binaries, or local configs.
