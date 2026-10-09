@@ -235,7 +235,7 @@ FINALIZE_SYMTABLE_finalize_01:                    ; preds = %return
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_finalize_01
   %18 = load %array.1*, %array.1** %arr, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1* %18)
+  call void @release_allocatable__Array_1_i32(%array.1* %18)
   br label %Finalize_Variable_str
 
 Finalize_Variable_str:                            ; preds = %Finalize_Variable_arr
@@ -401,6 +401,43 @@ ifcont:                                           ; preds = %else, %then
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare void @_lcompilers_print_error(i8*, ...)
+
+define internal void @release_allocatable__Array_1_i32(%array.1* %0) {
+entry:
+  %1 = icmp ne %array.1* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @release_descriptorArray_Array_1_i32(%array.1* %0)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  ret void
+}
+
+define internal void @release_descriptorArray_Array_1_i32(%array.1* %0) {
+entry:
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = getelementptr %array.1, %array.1* %0, i32 0, i32 0
+  %3 = load i32*, i32** %2, align 8
+  %4 = ptrtoint i32* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %entry
+  %6 = bitcast i32* %3 to i8*
+  call void @_lfortran_free_alloc(i8* %1, i8* %6)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  ret void
+}
 
 declare void @_lfortran_internal_alloc_finalize()
 

@@ -458,6 +458,21 @@ public:
     }
 
     void visit_Subroutine(const Subroutine_t &x) {
+        print_subroutine(x, nullptr, 0);
+    }
+
+    std::string format_trait_parameters(const trait_parameter_t *parameters, size_t count) {
+        std::string result = "{";
+        for (size_t i = 0; i < count; i++) {
+            if (i) result += ", ";
+            visit_trait_parameter(parameters[i]);
+            result += s;
+        }
+        return result + "}";
+    }
+
+    void print_subroutine(const Subroutine_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         std::string r = indent;
         for (size_t i=0; i<x.n_attributes; i++) {
             visit_decl_attribute(*x.m_attributes[i]);
@@ -474,7 +489,9 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        if (x.n_temp_args > 0) {
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        } else if (x.n_temp_args > 0) {
             r.append(" ");
             r += format_generic_args(x.m_temp_args, x.n_temp_args);
         }
@@ -509,6 +526,17 @@ public:
             r.append("\n");
         }
         s = r;
+    }
+
+    void visit_TraitProcedure(const TraitProcedure_t &x) {
+        if (is_a<Function_t>(*x.m_procedure)) {
+            print_function(*down_cast<Function_t>(x.m_procedure),
+                x.m_parameters, x.n_parameters);
+        } else {
+            LCOMPILERS_ASSERT(is_a<Subroutine_t>(*x.m_procedure));
+            print_subroutine(*down_cast<Subroutine_t>(x.m_procedure),
+                x.m_parameters, x.n_parameters);
+        }
     }
 
     void visit_Procedure(const Procedure_t &x) {
@@ -1070,6 +1098,103 @@ public:
         s = r;
     }
 
+    void visit_InterfaceTypeSet(const InterfaceTypeSet_t &x) {
+        std::string r = indent;
+        for (size_t i = 0; i < x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
+        s = r + "\n";
+    }
+
+    void visit_Trait(const Trait_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("abstract interface");
+        r += syn();
+        if (x.n_parents > 0) {
+            r.append(", extends(");
+            for (size_t i=0; i<x.n_parents; i++) {
+                r.append(x.m_parents[i]);
+                if (i < x.n_parents-1) r.append(" + ");
+            }
+            r.append(")");
+        }
+        r += " :: ";
+        r.append(x.m_name);
+        r.append("\n");
+        inc_indent();
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_interface_item(*x.m_items[i]);
+            r.append(s);
+        }
+        dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end interface");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_Implements(const Implements_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("implements");
+        r += syn();
+        r += " ";
+        for (size_t i=0; i<x.n_traits; i++) {
+            r.append(x.m_traits[i]);
+            if (i < x.n_traits-1) r.append(" + ");
+        }
+        r += " :: ";
+        if (x.m_implementing_type->type == decl_attributeType::AttrType) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_implementing_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_implementing_type);
+                r.append(s);
+            }
+        } else {
+            this->visit_decl_attribute(*x.m_implementing_type);
+            r.append(s);
+        }
+        if (x.n_procedures > 0) {
+            r.append("\n");
+            inc_indent();
+            for (size_t i=0; i<x.n_procedures; i++) {
+                this->visit_procedure_decl(*x.m_procedures[i]);
+                r.append(s);
+            }
+            dec_indent();
+        } else {
+            r.append("\n");
+        }
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end implements");
+        r += syn();
+        r += " ";
+        if (x.m_implementing_type->type == decl_attributeType::AttrType) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_implementing_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_implementing_type);
+                r.append(s);
+            }
+        } else {
+            this->visit_decl_attribute(*x.m_implementing_type);
+            r.append(s);
+        }
+        r.append("\n");
+        s = r;
+    }
+
     void visit_InterfaceHeader(const InterfaceHeader_t &/* x */) {
         s = "";
     }
@@ -1185,6 +1310,11 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        print_function(x, nullptr, 0);
+    }
+
+    void print_function(const Function_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         std::string r = indent;
         for (size_t i=0; i<x.n_attributes; i++) {
             visit_decl_attribute(*x.m_attributes[i]);
@@ -1201,7 +1331,9 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        if (x.n_temp_args > 0) {
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        } else if (x.n_temp_args > 0) {
             r.append(" ");
             r += format_generic_args(x.m_temp_args, x.n_temp_args);
         }
@@ -1700,6 +1832,15 @@ public:
                 r.append(y); \
                 break;
 
+    void visit_AttrTraitClass(const AttrTraitClass_t &x) {
+        std::string r = "class(";
+        for (size_t i = 0; i < x.n_traits; i++) {
+            if (i) r += " + ";
+            r += x.m_traits[i];
+        }
+        s = r + ")";
+    }
+
     void visit_AttrType(const AttrType_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1862,6 +2003,22 @@ public:
             }
             r += ")";
         }
+        s = r;
+    }
+
+    void visit_trait_parameter(const trait_parameter_t &x) {
+        std::string r;
+        for (size_t i=0; i<x.n_traits; i++) {
+            r.append(x.m_traits[i]);
+            if (i < x.n_traits-1) r.append(" + ");
+        }
+        for (size_t i=0; i<x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
+        r += " :: ";
+        r.append(x.m_name);
         s = r;
     }
 

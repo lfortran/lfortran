@@ -55,6 +55,67 @@ void populate_span(diag::Span &s, const LocationManager &lm) {
 
 }
 
+TEST_CASE("Fortran output separates trait inspection from compilation") {
+    const std::string declarations = R"(
+module trait_fortran_output_m
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure, pass :: value => read_value
+end implements
+contains
+function read_value(self) result(r)
+    type(Payload), intent(in) :: self
+    integer :: r
+    r = self%n
+end function
+)";
+    const std::string runtime_consumer = R"(
+function observe(object) result(r)
+    class(IValue), intent(in) :: object
+    integer :: r
+    r = object%value()
+end function
+)";
+    for (bool runtime : {false, true}) {
+        for (bool for_compilation : {false, true}) {
+            std::string source = declarations +
+                (runtime ? runtime_consumer : "") + "end module\n";
+            CompilerOptions options;
+            FortranEvaluator evaluator(options);
+            LocationManager lm;
+            LocationManager::FileLocations file;
+            file.in_filename = "trait_fortran_output.f90";
+            lm.files.push_back(file);
+            lm.file_ends.push_back(source.size());
+            diag::Diagnostics diagnostics;
+            PassManager passes;
+            auto output = evaluator.get_fortran(
+                source, lm, diagnostics, passes, for_compilation);
+            INFO(diagnostics.render2());
+            if (runtime && for_compilation) {
+                CHECK_FALSE(output.ok);
+                CHECK(diagnostics.has_error());
+                REQUIRE(!diagnostics.diagnostics.empty());
+                CHECK(diagnostics.diagnostics.back().message ==
+                    "runtime trait dispatch is not implemented by the fortran backend");
+            } else {
+                REQUIRE(output.ok);
+                CHECK((output.result.find("abstract interface :: ivalue") !=
+                    std::string::npos) == !for_compilation);
+                CHECK((output.result.find("implements ivalue :: payload") !=
+                    std::string::npos) == !for_compilation);
+            }
+        }
+    }
+}
+
 TEST_CASE("ASR Verify") {
     Allocator al(4*1024);
 

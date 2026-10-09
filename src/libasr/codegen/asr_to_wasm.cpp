@@ -3603,6 +3603,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
                                               diag::Diagnostics &diagnostics,
                                               CompilerOptions &co) {
+    if (ASRUtils::reject_runtime_traits(asr, diagnostics, "wasm")) return Error();
     ASRToWASMVisitor v(al, diagnostics);
 
     co.po.always_run = true;

@@ -49,6 +49,7 @@ program_unit
     | Function(identifier name, arg* args, decl_attribute* attributes,
         expr? return_var, bind? bind, trivia? trivia, decl_stmt* items,
         program_unit* contains, identifier* temp_args, location start_name, location end_name)
+    | TraitProcedure(program_unit procedure, trait_parameter* parameters)
 
 interface_header
     = InterfaceHeader()
@@ -64,6 +65,7 @@ interface_header
 interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
+    | InterfaceTypeSet(decl_attribute* member_types)
 
 import_modifier
     = ImportDefault
@@ -190,6 +192,9 @@ decl_stmt
             decl_stmt* orelse, trivia? t_inside, trivia? trivia)
     | WhileLoop(int label, identifier? stmt_name, expr test,
             decl_stmt* body, trivia? t_inside, trivia? trivia)
+    | Trait(identifier name, identifier* parents, interface_item* items)
+    | Implements(identifier* traits, decl_attribute implementing_type,
+        procedure_decl* procedures)
 
 expr
     = BoolOp(expr left, boolop op, expr right)
@@ -299,6 +304,7 @@ decl_attribute
 -- list; a lone name is still an AttrName.
     | AttrExpr(expr value)
     | AttrRank(expr* rank)
+    | AttrTraitClass(identifier* traits)
 
 simple_attribute
     = AttrAbstract
@@ -400,6 +406,8 @@ argstar = (expr? value)
 -- is included:
 -- Null for `arg` means, it's a star
 arg = (identifier? arg)
+
+trait_parameter = (identifier name, identifier* traits, decl_attribute* member_types)
 
 
 -- Encoding of array elements and sections in fnarg:

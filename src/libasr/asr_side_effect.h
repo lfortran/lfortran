@@ -27,6 +27,25 @@ public:
         description = desc;
     }
 
+    template <typename Scope>
+    void visit_executable_body(const Scope &scope) {
+        for (size_t i = 0; i < scope.n_body && !found; i++) {
+            visit_stmt(*scope.m_body[i]);
+        }
+    }
+
+    void visit_BlockCall(const BlockCall_t &x) {
+        if (found) return;
+        visit_executable_body(*down_cast<Block_t>(
+            ASRUtils::symbol_get_past_external(x.m_m)));
+    }
+
+    void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
+        if (found) return;
+        visit_executable_body(*down_cast<AssociateBlock_t>(
+            ASRUtils::symbol_get_past_external(x.m_m)));
+    }
+
     void visit_Print(const Print_t &x) {
         if (found) return;
         mark_found(x.base.base.loc, "PRINT statement");
@@ -78,6 +97,12 @@ public:
     // be free of side effects.
     bool check_call(const Location &l, symbol_t* name) {
         symbol_t* sym = ASRUtils::symbol_get_past_external(name);
+        auto *declared = ASRUtils::get_function(sym);
+        if (declared && ASRUtils::has_trait_out_cleanup(*declared)) {
+            mark_found(l,
+                "runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects");
+            return true;
+        }
         std::string proc_name;
         if (is_a<Function_t>(*sym)) {
             if (down_cast<Function_t>(sym)->m_side_effect_free) {
@@ -116,10 +141,72 @@ public:
 
     void visit_FunctionCall(const FunctionCall_t &x) {
         if (found) return;
+        if (ASRUtils::is_trait_owner(x.m_type)) {
+            mark_found(x.base.base.loc,
+                "runtime trait result cleanup with unchecked dynamic lifecycle effects");
+            return;
+        }
         if (x.m_name && check_call(x.base.base.loc, x.m_name)) {
             return;
         }
         BaseWalkVisitor::visit_FunctionCall(x);
+    }
+
+    bool check_trait_call(const Location &l, symbol_t *name, int64_t slot) {
+        if (!check_call(l, name)) return false;
+        auto *contract = down_cast<TraitRuntimeContract_t>(ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(name)));
+        auto *origin = ASRUtils::symbol_get_past_external(
+            contract->m_slots[slot].m_origins[0]);
+        description = "call to impure trait procedure '" +
+            std::string(ASRUtils::symbol_name(origin)) + "'";
+        return true;
+    }
+
+    void visit_TraitFunctionCall(const TraitFunctionCall_t &x) {
+        if (found) return;
+        if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
+        BaseWalkVisitor::visit_TraitFunctionCall(x);
+    }
+
+    void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {
+        if (found) return;
+        if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
+        BaseWalkVisitor::visit_TraitSubroutineCall(x);
+    }
+
+    void visit_TraitAllocate(const TraitAllocate_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "runtime trait allocation with unchecked dynamic lifecycle effects");
+    }
+
+    void visit_TraitAssignment(const TraitAssignment_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "runtime trait assignment with unchecked dynamic lifecycle effects");
+    }
+    void visit_TraitRetain(const TraitRetain_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "retained runtime trait results with unchecked dynamic lifecycle effects");
+    }
+
+    void check_trait_deallocation(const Location &location,
+            expr_t **vars, size_t n_vars) {
+        for (size_t i = 0; i < n_vars && !found; i++) {
+            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(vars[i]))) {
+                mark_found(location,
+                    "runtime trait deallocation with unchecked dynamic lifecycle effects");
+            }
+        }
+    }
+
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        check_trait_deallocation(x.base.base.loc, x.m_vars, x.n_vars);
+        if (!found) BaseWalkVisitor::visit_ExplicitDeallocate(x);
+    }
+
+    void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
+        check_trait_deallocation(x.base.base.loc, x.m_vars, x.n_vars);
+        if (!found) BaseWalkVisitor::visit_ImplicitDeallocate(x);
     }
 };
 

@@ -8,6 +8,31 @@ module ASR {
 unit
     = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
+trait_requirement
+    = (symbol member, symbol procedure)
+
+trait_binding
+    = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)
+
+trait_slot
+    = (symbol* origins, symbol procedure)
+
+trait_projection_slot
+    = (int source)
+
+trait_erased_operation
+    = (symbol requirement, symbol procedure)
+
+trait_erased_parameter
+    = (symbol parameter, symbol contract, trait_erased_operation* operations)
+
+-- Concrete, not conformance, identity of the scalar owned-value protocol.
+-- Its callbacks default-initialize raw storage, initialize-copy without
+-- finalizing the destination, assign to prepared/live storage, destroy a live
+-- value, and release a compiler snapshot without user finalization.
+trait_lifecycle
+    = (symbol type_declaration)
+
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
@@ -36,6 +61,14 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
+    | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types)
+    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
+    | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
+    | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots, bool anonymous)
+    | TraitWitness(symbol_table symtab, identifier name, symbol contract, symbol? implementation, symbol* procedures, identifier* dependencies, abi abi, trait_lifecycle lifecycle, symbol* projections, symbol* components)
+    -- One checked template body, instantiated with explicit borrowed-view
+    -- types and operation substitutions rather than concrete types.
+    | TraitErasure(symbol_table symtab, identifier name, symbol generic, symbol procedure, trait_erased_parameter* parameters)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -100,6 +133,19 @@ stmt
     | Expr(expr expression)
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
+    | TraitSubroutineCall(symbol name, int slot, call_arg* args)
+    -- SOURCE initialize-copies; MOLD and typed allocation default-initialize.
+    -- Concrete sources and typed allocation carry selected witness evidence;
+    -- an already formed view carries its own witness.
+    | TraitAllocate(expr target, expr? source, symbol? witness, bool copy_value, symbol? type_declaration)
+    -- Capture an intrinsic fresh RHS snapshot before destroying the old value.
+    -- Assign to the actual destination, release the snapshot without FINAL,
+    -- retain same-type outer storage and replace the selected witness.
+    | TraitAssignment(expr target, expr value, symbol? witness)
+    -- Transfer a consumed temporary into its using scope without finalizing it.
+    | TraitRetain(expr storage, expr owner)
+    -- Copy a nonowning view into a pointer descriptor, or disassociate it.
+    | TraitAssociate(expr target, expr? value)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -222,6 +268,23 @@ expr
     | GpuThreadIndex(int dim, ttype type, expr? value)
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
+    -- Packs borrow an exact concrete scalar; forwarding a view uses Var.
+    | TraitPack(expr payload, symbol witness, ttype type)
+    -- Only the witness's own typed adapters may recover its concrete payload.
+    | TraitReceiver(expr view, symbol witness, symbol type_declaration, ttype type)
+    -- args[0] is the borrowed view, including for a nopass implementation.
+    | TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
+    -- Borrow an allocated scalar owner without transferring ownership.
+    | TraitBorrow(expr owner, ttype type)
+    -- Copy selected slots into a view of guaranteed nominal requirements.
+    | TraitProject(expr view, trait_projection_slot* slots, ttype type)
+    -- Expose only concrete identity and payload through an ordinary class(*)
+    -- view. The selected trait slots and the payload's ownership are unchanged.
+    | TraitInspect(expr view, symbol type_declaration, ttype type)
+    -- Definition-time proof of a deferred readonly argument's nominal domain.
+    -- Template instantiation must replace this with selected concrete evidence
+    -- or a proved projection of an already-erased argument.
+    | TraitDeferredPack(expr payload, symbol constraint, ttype type)
 
 ttype
     = Integer(int kind)
@@ -244,6 +307,9 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    | TraitObjectType(symbol contract)
+    -- Compiler-owned retained results; each element owns a separate header.
+    | TraitOwnerList(symbol contract)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
@@ -253,7 +319,9 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter | Threadprivate
+-- Association is a construct-local data alias bound once by Associate.
+-- It owns no storage and confers neither POINTER nor ALLOCATABLE.
+storage_type = Default | Save | Parameter | Threadprivate | Association
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface | ImplicitInterface
@@ -321,5 +389,18 @@ map_type
     
 schedule_type
     = Static | Dynamic | Guided | Auto | Runtime
+
+trait_kind = UniversalTrait | IntrinsicTypeSet
+
+type_set_operation
+    = TypeSetBinary(binop op)
+    | TypeSetComparison(cmpop op)
+    | TypeSetConversion()
+
+type_set_witness
+    = (ttype member_type, symbol procedure)
+
+type_set_requirement
+    = (symbol procedure, type_set_operation operation, type_set_witness* witnesses)
 
 }

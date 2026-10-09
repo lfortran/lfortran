@@ -41,6 +41,11 @@ if (WITH_LLVM)
     set(SRC ${SRC}
         test_llvm.cpp
     )
+    # Match the LLVM sources: LLVMUtils exposes legacy compatibility APIs.
+    if (NOT MSVC)
+        set_source_files_properties(test_llvm.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
+    endif()
 endif()
 
 if (WITH_LSP)
@@ -150,6 +155,136 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (NOT WIN32 AND NOT EMSCRIPTEN)
+            foreach(mode normal fast)
+                set(runtime_trait_flags)
+                if (mode STREQUAL "fast")
+                    list(APPEND runtime_trait_flags --fast)
+                endif()
+                add_test(
+                    NAME test_runtime_trait_separate_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_separate_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_owning_separate_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_separate_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --owning ${runtime_trait_flags}
+                )
+                set(owning_cc_flags)
+                if(APPLE AND CMAKE_OSX_SYSROOT)
+                    list(APPEND owning_cc_flags --sysroot "${CMAKE_OSX_SYSROOT}")
+                endif()
+                add_test(
+                    NAME test_runtime_trait_owning_allocation_failure_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_owning_failure_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --cc ${CMAKE_C_COMPILER}
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags} ${owning_cc_flags}
+                )
+                if (mode STREQUAL "normal")
+                    add_test(
+                        NAME test_runtime_trait_owning_allocation_failure_leaks
+                        COMMAND ${LFORTRAN_TEST_PYTHON}
+                            ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_owning_failure_01.py
+                            --lfortran $<TARGET_FILE:lfortran>
+                            --cc ${CMAKE_C_COMPILER}
+                            --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                            --detect-leaks ${owning_cc_flags}
+                    )
+                endif()
+                add_test(
+                    NAME test_runtime_trait_pointer_separate_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_separate_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --pointers ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_result_states_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_result_02.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_slot_factory_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --slots ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_result_factory_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_projection_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --projections ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_combination_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --combinations ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_inspection_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --inspection ${runtime_trait_flags}
+                )
+                add_test(
+                    NAME test_runtime_trait_generic_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --generic ${runtime_trait_flags}
+                )
+                if (mode STREQUAL "normal")
+                    add_test(
+                        NAME test_runtime_trait_generic_leaks
+                        COMMAND ${LFORTRAN_TEST_PYTHON}
+                            ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_factory_01.py
+                            --lfortran $<TARGET_FILE:lfortran>
+                            --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                            --generic --detect-leaks
+                    )
+                endif()
+                add_test(
+                    NAME test_runtime_trait_inspection_states_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_result_02.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --inspection ${runtime_trait_flags}
+                )
+            endforeach()
+        endif()
         add_test(
             NAME test_asr_text_edn_conformance
             COMMAND ${LFORTRAN_TEST_PYTHON}

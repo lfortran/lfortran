@@ -22,5 +22,15 @@ rank_stmt
 reduction_expr
 require_instantiation
 tbind
+trait_binding
+trait_erased_operation
+trait_erased_parameter
+trait_lifecycle
+trait_projection_slot
+trait_requirement
+trait_slot
+type_set_operation
+type_set_requirement
+type_set_witness
 type_stmt
 ```

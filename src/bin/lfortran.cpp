@@ -1921,7 +1921,7 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager, true);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())

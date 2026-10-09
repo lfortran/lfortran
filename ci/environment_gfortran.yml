@@ -1,0 +1,8 @@
+name: lf-gfortran
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - cmake=3.29.1
+  # Pin a release with SELECT TYPE function-result finalization.
+  - gfortran=15.2.0

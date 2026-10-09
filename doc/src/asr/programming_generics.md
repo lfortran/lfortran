@@ -2,6 +2,10 @@
 
 In this page we will explore how to write generics in LFortran.
 
+The experimental [static traits extension](traits.md) adds nominal constraints
+and inferred type arguments while reusing the generic specialization machinery.
+It does not replace the requirement/template syntax described below.
+
 ## Prerequisite
 
 Variables inside of a generic function are typed with a *deferred types*. For example, we may want to define a function that calculate the sum of a generic array which can take any number type. Using a deferred type `T`, we may want to declare the following generic function:

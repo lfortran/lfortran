@@ -32,7 +32,9 @@ static inline DeclStmtKind decl_stmt_kind(const decl_stmt_t &x) {
         case decl_stmtType::Declaration:
         case decl_stmtType::DeclarationPragma:
         case decl_stmtType::Interface:
+        case decl_stmtType::Trait:
         case decl_stmtType::DerivedType:
+        case decl_stmtType::Implements:
         case decl_stmtType::Template:
         case decl_stmtType::Enum:
         case decl_stmtType::Instantiate:

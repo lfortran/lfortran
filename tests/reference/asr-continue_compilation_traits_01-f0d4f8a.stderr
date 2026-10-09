@@ -1,0 +1,2077 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_01.f90:8:5 - 13:1
+   |
+ 8 |        abstract interface :: IValue
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |    
+   | ...^ LFortran extension
+
+semantic error: missing implementation of trait method 'get_value'
+  --> tests/errors/continue_compilation_traits_01.f90:18:5 - 19:23
+   |
+18 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+19 |        end implements Box
+   | ...^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got real(4)
+  --> tests/errors/continue_compilation_traits_01.f90:81:5 - 84:1
+   |
+81 |        implements IValue :: Box
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+84 |    
+   | ...^ 
+
+semantic error: argument 'value' does not match trait method 'consume': expected integer(4), got real(4)
+   --> tests/errors/continue_compilation_traits_01.f90:104:5 - 106:19
+    |
+104 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+106 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: rank of argument 'value' does not match trait method 'consume': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:124:5 - 126:19
+    |
+124 |        implements IConsume :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+126 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'get_value': expected integer(4), got integer(8)
+   --> tests/errors/continue_compilation_traits_01.f90:144:5 - 146:19
+    |
+144 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+146 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result rank does not match trait method 'get_value': expected rank 0, got rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:165:5 - 167:19
+    |
+165 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+167 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: function or subroutine category does not match trait method 'get_value'
+   --> tests/errors/continue_compilation_traits_01.f90:356:5 - 359:1
+    |
+356 |        implements IValue :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+359 |    
+    | ...^ 
+
+semantic error: a trait witness must be a public, nondeferred binding
+   --> tests/errors/continue_compilation_traits_01.f90:425:20
+    |
+425 |         procedure, private :: get_value => box_get_value
+    |                    ^^^^^^^ 
+
+semantic error: intent, optionality or value attribute of argument 'value' does not match trait method 'set_value'
+   --> tests/errors/continue_compilation_traits_01.f90:451:5 - 454:1
+    |
+451 |        implements ISetter :: Box
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+454 |    
+    | ...^ 
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+   --> tests/errors/continue_compilation_traits_01.f90:550:5
+    |
+550 |     type(IValue) :: object
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: missing implementation of trait method 'value'
+   --> tests/errors/continue_compilation_traits_01.f90:638:5 - 641:1
+    |
+638 |        implements IChild :: Payload
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+641 |    
+    | ...^ 
+
+semantic error: incompatible declarations of trait method 'value': results have type integer(4) and integer(8)
+   --> tests/errors/continue_compilation_traits_01.f90:744:5 - 745:28
+    |
+744 |        abstract interface, extends(INarrow + IWide) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+745 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': results have rank 0 and rank 1
+   --> tests/errors/continue_compilation_traits_01.f90:765:5 - 766:28
+    |
+765 |        abstract interface, extends(IScalar + IArray) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+766 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'values': result array shapes differ
+   --> tests/errors/continue_compilation_traits_01.f90:782:5 - 783:18
+    |
+782 |        abstract interface, extends(ITwo + IThree) :: IConflict
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+783 |        end interface
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:803:5 - 804:28
+    |
+803 |        abstract interface, extends(IRequired + IOptional) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+804 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:823:5 - 824:28
+    |
+823 |        abstract interface, extends(IInput + IOutput) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+824 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'consume': argument 'value' has different intent, optional or value attributes
+   --> tests/errors/continue_compilation_traits_01.f90:843:5 - 844:28
+    |
+843 |        abstract interface, extends(IReference + IByValue) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+844 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': pure, elemental or abi attributes differ
+   --> tests/errors/continue_compilation_traits_01.f90:863:5 - 864:28
+    |
+863 |        abstract interface, extends(IOrdinary + IPure) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+864 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'shifted': pure, elemental or abi attributes differ
+   --> tests/errors/continue_compilation_traits_01.f90:885:5 - 886:28
+    |
+885 |        abstract interface, extends(IPure + IElemental) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+886 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'shifted': dummy argument names differ ('delta' and 'amount')
+   --> tests/errors/continue_compilation_traits_01.f90:907:5 - 908:28
+    |
+907 |        abstract interface, extends(IDelta + IAmount) :: ICombined
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+908 |        end interface ICombined
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'IMissing' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:1164:5 - 1165:25
+     |
+1164 |        abstract interface, extends(IMissing) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1165 |        end interface IChild
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'Payload' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:1176:5 - 1177:25
+     |
+1176 |        abstract interface, extends(Payload) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1177 |        end interface IChild
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cyclic inheritance of trait 'iself'
+    --> tests/errors/continue_compilation_traits_01.f90:1184:5 - 1185:24
+     |
+1184 |        abstract interface, extends(ISelf) :: ISelf
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1185 |        end interface ISelf
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and real(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1208:5 - 1209:28
+     |
+1208 |        abstract interface, extends(IInteger + IReal) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1209 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument counts differ
+    --> tests/errors/continue_compilation_traits_01.f90:1229:5 - 1230:28
+     |
+1229 |        abstract interface, extends(INoArgument + IArgument) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1230 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and integer(8)
+    --> tests/errors/continue_compilation_traits_01.f90:1251:5 - 1252:28
+     |
+1251 |        abstract interface, extends(INarrow + IWide) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1252 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has rank 0 and rank 1
+    --> tests/errors/continue_compilation_traits_01.f90:1273:5 - 1274:28
+     |
+1273 |        abstract interface, extends(IScalar + IArray) :: ICombined
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1274 |        end interface ICombined
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: overloading trait method 'measure' with different argument signatures is not implemented yet: argument 'value' has type integer(4) and real(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1297:20
+     |
+1297 |     function query{IInteger + IReal :: T}(object) result(res)
+     |                    ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1319:5 - 1320:18
+     |
+1319 |        abstract interface, extends(IShape + ISize) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1320 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1338:5 - 1339:18
+     |
+1338 |        abstract interface, extends(ISize + IShape) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1339 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1358:20
+     |
+1358 |     function query{IShape + ISize :: T}(object) result(r)
+     |                    ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1381:20
+     |
+1381 |     function query{ISize + IShape :: T}(object) result(r)
+     |                    ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1403:5 - 1404:18
+     |
+1403 |        abstract interface, extends(IFirst + ISecond) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1404 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'zinput' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:1423:21
+     |
+1423 |     function unused{IFirst + ISecond :: T}(x) result(r)
+     |                     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'a' does not match trait method 'count': expected integer(4)[:], got integer(4)[:]
+    --> tests/errors/continue_compilation_traits_01.f90:1442:5 - 1444:19
+     |
+1442 |        implements IFirst :: Box
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1444 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be used as a runtime class
+    --> tests/errors/continue_compilation_traits_01.f90:1587:9
+     |
+1587 |         class(INumeric), pointer :: value
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a trait cannot be used as a concrete type; use a trait-constrained type parameter
+    --> tests/errors/continue_compilation_traits_01.f90:1598:5
+     |
+1598 |     type(INumeric) :: value
+     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be manually implemented
+    --> tests/errors/continue_compilation_traits_01.f90:1611:5 - 1612:23
+     |
+1611 |        implements INumeric :: Box
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1612 |        end implements Box
+     | ...^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type-set trait composition is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1706:21
+     |
+1706 |     function unused{IValue + integer :: T}(x) result(r)
+     |                     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:1755:26
+     |
+1755 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait arrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1914:9
+     |
+1914 |         class(IValue), intent(in) :: object(:)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:1913:5 - 1915:18
+     |
+1913 |        subroutine array_view(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1915 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:1927:41
+     |
+1927 |         class(IValue), intent(inout) :: object
+     |                                         ^^^^^^ 
+
+semantic error: 'imissing' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:1999:9
+     |
+1999 |         class(IValue + IMissing), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:1998:5 - 2000:18
+     |
+1998 |        subroutine combined_view(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2000 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'imissing' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:2002:9
+     |
+2002 |         class(IMissing + ITag), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2046:9
+     |
+2046 |         class(IValue), intent(in) :: object
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'object' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:2045:5 - 2047:18
+     |
+2045 |        subroutine consume(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2047 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2091:38
+     |
+2091 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2095:38
+     |
+2095 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2101:26
+     |
+2101 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2105:26
+     |
+2105 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait dummies cannot have saved or initialized storage
+    --> tests/errors/continue_compilation_traits_01.f90:2109:38
+     |
+2109 |         class(IValue), intent(in) :: object
+     |                                      ^^^^^^ 
+
+semantic error: Cannot set dimension for variable of non-numerical type
+    --> tests/errors/continue_compilation_traits_01.f90:2118:9
+     |
+2118 |         dimension :: object(2)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait dummies currently require intent(in) without optional or value
+    --> tests/errors/continue_compilation_traits_01.f90:2121:26
+     |
+2121 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: Attribute declaration not supported
+    --> tests/errors/continue_compilation_traits_01.f90:2125:9
+     |
+2125 |         value :: object
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: standalone pointer attribute declaration requires `--implicit-interface`
+    --> tests/errors/continue_compilation_traits_01.f90:2129:9
+     |
+2129 |         pointer :: object
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:2239:26
+     |
+2239 |         class(IValue) :: owner
+     |                          ^^^^^ 
+
+semantic error: runtime trait components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2246:9
+     |
+2246 |         class(IValue), allocatable :: owner
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
+    --> tests/errors/continue_compilation_traits_01.f90:2271:5 - 2272:18
+     |
+2271 |        abstract interface, extends(ILeft + IRight) :: IChild
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2272 |        end interface
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: optional or value allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2449:51
+     |
+2449 |         class(IValue), allocatable, intent(in) :: slot
+     |                                                   ^^^^ 
+
+semantic error: optional or value allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2453:58
+     |
+2453 |         class(IValue), allocatable, intent(in), value :: slot
+     |                                                          ^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2456:52
+     |
+2456 |         class(IValue), allocatable, intent(out) :: slot
+     |                                                    ^^^^ 
+
+semantic error: bind(c) allocatable runtime trait dummies are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2459:54
+     |
+2459 |         class(IValue), allocatable, intent(inout) :: slot
+     |                                                      ^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2482:26
+     |
+2482 |         class(IValue) :: object
+     |                          ^^^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2485:39
+     |
+2485 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
+
+semantic error: runtime trait function results with unchecked dynamic lifecycle effects are not allowed in pure procedures
+    --> tests/errors/continue_compilation_traits_01.f90:2489:39
+     |
+2489 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
+
+semantic error: runtime trait function results require the Fortran source ABI
+    --> tests/errors/continue_compilation_traits_01.f90:2492:39
+     |
+2492 |         class(IValue), allocatable :: object
+     |                                       ^^^^^^ 
+
+semantic error: an intent(out) dummy of a pure procedure cannot be polymorphic
+    --> tests/errors/continue_compilation_traits_01.f90:2681:48
+     |
+2681 |         class(IValue), pointer, intent(out) :: view
+     |                                                ^^^^ 
+
+semantic error: incompatible declarations of trait method 'value': pure, elemental or abi attributes differ
+    --> tests/errors/continue_compilation_traits_01.f90:2953:5
+     |
+2953 |     class(A + IPure), pointer :: conflict
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'box' is not a visible trait
+    --> tests/errors/continue_compilation_traits_01.f90:2962:5
+     |
+2962 |     class(A + Box), pointer :: not_a_trait
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be used as a runtime class
+    --> tests/errors/continue_compilation_traits_01.f90:2963:5
+     |
+2963 |     class(A + INumeric), pointer :: not_universal
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2965:9
+     |
+2965 |         class(A + B), pointer :: component
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait arrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2969:9
+     |
+2969 |         class(A + B), intent(in) :: view(:)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'view' not defined
+    --> tests/errors/continue_compilation_traits_01.f90:2968:5 - 2970:18
+     |
+2968 |        subroutine arrays(view)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2970 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait objects currently require a scalar dummy
+    --> tests/errors/continue_compilation_traits_01.f90:2972:25
+     |
+2972 |         class(A + B) :: view
+     |                         ^^^^ 
+
+semantic error: runtime trait function results require uninitialized scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:2975:34
+     |
+2975 |         class(A + B), pointer :: view
+     |                                  ^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3263:5 - 3265:19
+     |
+3263 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3265 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter counts differ
+    --> tests/errors/continue_compilation_traits_01.f90:3292:5 - 3294:19
+     |
+3292 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3294 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'left' does not match trait method 'apply': expected t, got y
+    --> tests/errors/continue_compilation_traits_01.f90:3318:5 - 3320:19
+     |
+3318 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3320 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3387:5
+     |
+3387 |     class(IArray), allocatable :: array_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3388:5
+     |
+3388 |     class(IMutable), allocatable :: mutable_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3389:5
+     |
+3389 |     class(IOwning), allocatable :: owning_method
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3390:5
+     |
+3390 |     class(IResult), allocatable :: generic_result
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3450:20
+     |
+3450 |         type(T) :: scratch
+     |                    ^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3481:5 - 3483:19
+     |
+3481 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3483 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic contract does not match trait method 'apply': generic type parameter constraints must be nominally equivalent
+    --> tests/errors/continue_compilation_traits_01.f90:3498:5 - 3500:19
+     |
+3498 |        implements IAlgorithm :: Algorithm
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3500 |        end implements
+     | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime generic trait implementations outside module scope are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3516:9
+     |
+3516 |         procedure, nopass :: apply
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait arrays and coarrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3630:26
+     |
+3630 |     class(I), pointer :: p[*]
+     |                          ^^^^ 
+
+semantic error: runtime trait arrays and coarrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3646:26
+     |
+3646 |     class(I), pointer :: p[*]
+     |                          ^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_01.f90:63:17
+   |
+63 |         value = read_value(object)
+   |                 ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: method 'missing_value' is not provided by the declared trait constraints
+   --> tests/errors/continue_compilation_traits_01.f90:205:15
+    |
+205 |         res = x%missing_value()
+    |               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:260:13
+    |
+260 |         if (read_value{SmallBox}(right) /= 22) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+   --> tests/errors/continue_compilation_traits_01.f90:261:13
+    |
+261 |         if (read_value{LargeBox}(left) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'get_value': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_01.f90:338:13
+    |
+338 |         if (read_value(object) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+   --> tests/errors/continue_compilation_traits_01.f90:406:17
+    |
+406 |         value = make_value()
+    |                 ^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'isecond' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:511:9
+    |
+511 |         call use_second(value, result)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `value`: expected `integer(4)` but got `real(4)`.
+   --> tests/errors/continue_compilation_traits_01.f90:538:31
+    |
+538 |         call object%get_value(value)
+    |                               ^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ichild' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:613:13
+    |
+613 |         if (child_value(object) /= 7) error stop
+    |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'righttrait' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:716:13
+    |
+716 |         if (combined_value(object) /= 7) error stop 1
+    |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'righttrait' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_01.f90:723:13
+    |
+723 |         if (reversed_value(object) /= 7) error stop 2
+    |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1019:13
+     |
+1019 |         if (read_value(object) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1032:13
+     |
+1032 |         if (read_value(object) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ibase' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1122:13
+     |
+1122 |         if (read_value(object, other) /= 7) error stop
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: method 'child_value' is not provided by the declared trait constraints
+    --> tests/errors/continue_compilation_traits_01.f90:1155:15
+     |
+1155 |         res = object%child_value()
+     |               ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: integer(8) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1469:17
+     |
+1469 |         value = identity(7_int64)
+     |                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: real(4) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1488:17
+     |
+1488 |         value = identity(7.0_real32)
+     |                 ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: complex(8) is not a member of type-set trait 'inumeric'
+    --> tests/errors/continue_compilation_traits_01.f90:1507:17
+     |
+1507 |         value = identity((2.0_real64, 1.0_real64))
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator '<' is not available for type-set member complex(8)
+    --> tests/errors/continue_compilation_traits_01.f90:1522:18
+     |
+1522 |         answer = x < y
+     |                  ^^^^^ 
+
+semantic error: conversion is not available for type-set member integer(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1536:17
+     |
+1536 |         value = T(.true.)
+     |                 ^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+    --> tests/errors/continue_compilation_traits_01.f90:1555:17
+     |
+1555 |         value = identity{integer}(2.0_real64)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+    --> tests/errors/continue_compilation_traits_01.f90:1574:17
+     |
+1574 |         value = from_integer(2)
+     |                 ^^^^^^^^^^^^^^^ 
+
+semantic error: integer(8) is not a member of inline type set {integer(4) | real(8) :: t} of generic 'identity'
+    --> tests/errors/continue_compilation_traits_01.f90:1626:13
+     |
+1626 |         r = identity(1_8)
+     |             ^^^^^^^^^^^^^ 
+
+semantic error: real(4) is not a member of inline type set {integer(4) | real(8) :: t} of generic 'identity'
+    --> tests/errors/continue_compilation_traits_01.f90:1641:13
+     |
+1641 |         r = identity(1.0)
+     |             ^^^^^^^^^^^^^ 
+
+semantic error: complex(8) is not a member of inline type set {integer(4) | real(8) :: t} of generic 'identity'
+    --> tests/errors/continue_compilation_traits_01.f90:1656:13
+     |
+1656 |         r = identity((1.d0, 2.d0))
+     |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator '<' is not available for type-set member complex(8)
+    --> tests/errors/continue_compilation_traits_01.f90:1667:13
+     |
+1667 |         r = x < y
+     |             ^^^^^ 
+
+semantic error: conversion is not available for type-set member integer(4)
+    --> tests/errors/continue_compilation_traits_01.f90:1678:13
+     |
+1678 |         r = T(.true.)
+     |             ^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+    --> tests/errors/continue_compilation_traits_01.f90:1693:13
+     |
+1693 |         r = identity{integer}(1.d0)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: forwarding between distinct type-set traits is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:1720:13
+     |
+1720 |         r = second{T}(x)
+     |             ^^^^^^^^^^^^ 
+
+semantic error: integer(4) is not a member of inline type set {integer(8) :: t} of generic 'identity'
+    --> tests/errors/continue_compilation_traits_01.f90:1740:13
+     |
+1740 |         r = identity(1)
+     |             ^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:1783:22
+     |
+1783 |         call consume(object)
+     |                      ^^^^^^ 
+
+semantic error: method 'secret' is not provided by the declared runtime trait
+    --> tests/errors/continue_compilation_traits_01.f90:1798:13
+     |
+1798 |         r = object%secret()
+     |             ^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `object` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:1815:34
+     |
+1815 |         call requires_definition(object)
+     |                                  ^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1873:21
+     |
+1873 |         r = observe(object)
+     |                     ^^^^^^ 
+
+semantic error: ambiguous visible implementations of trait 'ivalue' for method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:1891:21
+     |
+1891 |         r = observe(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait packing currently requires an exact nonpolymorphic scalar derived type
+    --> tests/errors/continue_compilation_traits_01.f90:1955:22
+     |
+1955 |         call consume(object)
+     |                      ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:1981:22
+     |
+1981 |         call consume(object)
+     |                      ^^^^^^ 
+
+semantic error: call to impure trait procedure 'value' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2019:13
+     |
+2019 |         r = object%value()
+     |             ^^^^^^^^^^^^^^ 
+
+semantic error: call to impure trait procedure 'act' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2032:9
+     |
+2032 |         call object%act()
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait implementation ABI is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2078:21
+     |
+2078 |         r = observe(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait allocation requires a concrete type, source or mold
+    --> tests/errors/continue_compilation_traits_01.f90:2180:9
+     |
+2180 |         allocate(owner)
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'noconformance'
+    --> tests/errors/continue_compilation_traits_01.f90:2185:32
+     |
+2185 |         allocate(owner, source=source)
+     |                                ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'noconformance'
+    --> tests/errors/continue_compilation_traits_01.f90:2190:17
+     |
+2190 |         owner = source
+     |                 ^^^^^^ 
+
+semantic error: runtime trait allocation with multiple objects, stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2195:9
+     |
+2195 |         allocate(Item :: owner, stat=status)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait deallocation with stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2200:9
+     |
+2200 |         deallocate(owner, errmsg=message)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with multiple objects, stat, errmsg or other options is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2204:9
+     |
+2204 |         allocate(Item :: owner, copy)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: allocation requires exactly one of a type specifier, source or mold
+    --> tests/errors/continue_compilation_traits_01.f90:2209:9
+     |
+2209 |         allocate(owner, source=source, mold=source)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `view`
+    --> tests/errors/continue_compilation_traits_01.f90:2213:9
+     |
+2213 |         view = Item(9)
+     |         ^^^^ 
+
+semantic error: runtime trait allocation requires a scalar allocatable owner
+    --> tests/errors/continue_compilation_traits_01.f90:2217:9
+     |
+2217 |         allocate(Item :: view)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2221:9
+     |
+2221 |         allocate(Item :: owner)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: move_alloc for runtime trait owners is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2225:9
+     |
+2225 |         call move_alloc(owner, copy)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2286:33
+     |
+2286 |         allocate(erased, source=owner)
+     |                                 ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2292:31
+     |
+2292 |         allocate(erased, mold=owner)
+     |                               ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2298:35
+     |
+2298 |         allocate(ordinary, source=owner)
+     |                                   ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2304:33
+     |
+2304 |         allocate(ordinary, mold=owner)
+     |                                 ^^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2309:33
+     |
+2309 |         allocate(erased, source=view)
+     |                                 ^^^^ 
+
+semantic error: allocating ordinary storage from a runtime trait source or mold is not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:2314:33
+     |
+2314 |         allocate(ordinary, mold=view)
+     |                                 ^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2325:17
+     |
+2325 |                 allocate(Item :: owner)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait assignment with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2333:17
+     |
+2333 |                 owner = Item(7)
+     |                 ^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait deallocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2342:21
+     |
+2342 |                     deallocate(owner)
+     |                     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait allocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2351:17
+     |
+2351 |                 allocate(Item :: owner)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: call to impure trait procedure 'value' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2360:26
+     |
+2360 |                 result = view%value()
+     |                          ^^^^^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2398:24
+     |
+2398 |         call read_slot(child)
+     |                        ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2402:25
+     |
+2402 |         call write_slot(child)
+     |                         ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2406:27
+     |
+2406 |         call replace_slot(child)
+     |                           ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2410:27
+     |
+2410 |         call unknown_slot(child)
+     |                           ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2414:24
+     |
+2414 |         call read_slot(combined)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2418:24
+     |
+2418 |         call read_slot(other)
+     |                        ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2422:24
+     |
+2422 |         call read_slot(concrete)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2426:24
+     |
+2426 |         call read_slot(view)
+     |                        ^^^^ 
+
+semantic error: cannot allocate an intent(in) runtime trait slot
+    --> tests/errors/continue_compilation_traits_01.f90:2430:9
+     |
+2430 |         allocate(Item :: slot)
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot assign to an intent(in) variable `slot`
+    --> tests/errors/continue_compilation_traits_01.f90:2434:9
+     |
+2434 |         slot = Item(7)
+     |         ^^^^ 
+
+semantic error: cannot deallocate an intent(in) runtime trait slot
+    --> tests/errors/continue_compilation_traits_01.f90:2438:20
+     |
+2438 |         deallocate(slot)
+     |                    ^^^^ 
+
+semantic error: Argument `slot` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2442:27
+     |
+2442 |         call replace_slot(slot)
+     |                           ^^^^ 
+
+semantic error: Argument `slot` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2446:25
+     |
+2446 |         call write_slot(slot)
+     |                         ^^^^ 
+
+semantic error: a function reference is not an allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:2495:24
+     |
+2495 |         call read_slot(make())
+     |                        ^^^^^^ 
+
+semantic error: a function reference is not an allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:2498:23
+     |
+2498 |         if (has_value(make())) error stop
+     |                       ^^^^^^ 
+
+semantic error: allocated requires an allocatable variable, not a runtime trait function result
+    --> tests/errors/continue_compilation_traits_01.f90:2501:23
+     |
+2501 |         if (allocated(make())) error stop
+     |                       ^^^^^^ 
+
+semantic error: runtime trait result cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2506:30
+     |
+2506 |                 call observe(make())
+     |                              ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2532:19
+     |
+2532 |         if (query(child)) error stop
+     |                   ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2538:19
+     |
+2538 |         if (query(view)) error stop
+     |                   ^^^^ 
+
+semantic error: a function reference is not an allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:2543:19
+     |
+2543 |         if (query(make())) error stop
+     |                   ^^^^^^ 
+
+semantic error: more actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_traits_01.f90:2549:13
+     |
+2549 |         if (query(owner, owner)) error stop
+     |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2577:23
+     |
+2577 |             ignored = clear(slot)
+     |                       ^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2586:23
+     |
+2586 |             ignored = callback(slot)
+     |                       ^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'wrapper' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2593:23
+     |
+2593 |             ignored = wrapper(slot)
+     |                       ^^^^^^^^^^^^^ 
+
+semantic error: runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2599:13
+     |
+2599 |             call clear_sub(slot)
+     |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a runtime trait pointer target requires the target or pointer attribute
+    --> tests/errors/continue_compilation_traits_01.f90:2634:17
+     |
+2634 |         view => object
+     |                 ^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2639:9
+     |
+2639 |         view => object
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2640:17
+     |
+2640 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: Argument `view` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2641:21
+     |
+2641 |         call change(view)
+     |                     ^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires a pointer actual
+    --> tests/errors/continue_compilation_traits_01.f90:2645:21
+     |
+2645 |         call change(object)
+     |                     ^^^^^^ 
+
+semantic error: runtime trait assignment requires an allocatable owner
+    --> tests/errors/continue_compilation_traits_01.f90:2650:9
+     |
+2650 |         view = object
+     |         ^^^^ 
+
+semantic error: associated requires a pointer argument
+    --> tests/errors/continue_compilation_traits_01.f90:2654:24
+     |
+2654 |         if (associated(view)) error stop
+     |                        ^^^^ 
+
+semantic error: a runtime trait target requires a runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2659:33
+     |
+2659 |         if (associated(pointer, view)) error stop
+     |                                 ^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2663:18
+     |
+2663 |         local => shared
+     |                  ^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2664:17
+     |
+2664 |         nullify(shared_view)
+     |                 ^^^^^^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2669:18
+     |
+2669 |         local => object
+     |                  ^^^^^^ 
+
+semantic error: this target cannot appear in a runtime trait pointer association context in a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:2673:17
+     |
+2673 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: Argument `view` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:2678:26
+     |
+2678 |         call pure_change(view)
+     |                          ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2733:24
+     |
+2733 |         call read_slot(combined)
+     |                        ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2734:25
+     |
+2734 |         call write_slot(combined)
+     |                         ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2735:27
+     |
+2735 |         call replace_slot(combined)
+     |                           ^^^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2736:27
+     |
+2736 |         call unknown_slot(combined)
+     |                           ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2741:28
+     |
+2741 |         call write_pointer(child)
+     |                            ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2742:30
+     |
+2742 |         call replace_pointer(child)
+     |                              ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2743:30
+     |
+2743 |         call unknown_pointer(child)
+     |                              ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2744:28
+     |
+2744 |         call write_pointer(combined)
+     |                            ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2745:30
+     |
+2745 |         call replace_pointer(combined)
+     |                              ^^^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2746:30
+     |
+2746 |         call unknown_pointer(combined)
+     |                              ^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2752:18
+     |
+2752 |         child => parent
+     |                  ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2753:19
+     |
+2753 |         parent => unrelated
+     |                   ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2754:25
+     |
+2754 |         call read_child(parent)
+     |                         ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2755:21
+     |
+2755 |         call borrow(unrelated)
+     |                     ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ichild'
+    --> tests/errors/continue_compilation_traits_01.f90:2756:31
+     |
+2756 |         if (associated(child, parent)) error stop
+     |                               ^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ivalue'
+    --> tests/errors/continue_compilation_traits_01.f90:2757:32
+     |
+2757 |         if (associated(parent, unrelated)) error stop
+     |                                ^^^^^^^^^ 
+
+semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
+    --> tests/errors/continue_compilation_traits_01.f90:2758:13
+     |
+2758 |         if (associated(parent, null(child))) error stop
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a runtime trait pointer target requires the target or pointer attribute
+    --> tests/errors/continue_compilation_traits_01.f90:2763:20
+     |
+2763 |         pointer => view
+     |                    ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2767:24
+     |
+2767 |         call read_slot(child)
+     |                        ^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+b'
+    --> tests/errors/continue_compilation_traits_01.f90:2826:31
+     |
+2826 |         call need_combination(view)
+     |                               ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'alias'
+    --> tests/errors/continue_compilation_traits_01.f90:2827:25
+     |
+2827 |         call need_alias(duplicate)
+     |                         ^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2835:18
+     |
+2835 |         named => view
+     |                  ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+b+d'
+    --> tests/errors/continue_compilation_traits_01.f90:2836:19
+     |
+2836 |         richer => view
+     |                   ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a+alias'
+    --> tests/errors/continue_compilation_traits_01.f90:2837:24
+     |
+2837 |         independent => view
+     |                        ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2838:25
+     |
+2838 |         call need_child(view)
+     |                         ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2839:25
+     |
+2839 |         call need_named(view)
+     |                         ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2840:17
+     |
+2840 |         owned = view
+     |                 ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:2841:32
+     |
+2841 |         allocate(owned, source=view)
+     |                                ^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2858:22
+     |
+2858 |         call slot_in(named)
+     |                      ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2859:25
+     |
+2859 |         call slot_inout(named)
+     |                         ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2860:23
+     |
+2860 |         call slot_out(named)
+     |                       ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2861:31
+     |
+2861 |         call slot_unspecified(named)
+     |                               ^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2862:22
+     |
+2862 |         call slot_in(richer)
+     |                      ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2863:25
+     |
+2863 |         call slot_inout(richer)
+     |                         ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2864:23
+     |
+2864 |         call slot_out(richer)
+     |                       ^^^^^^ 
+
+semantic error: an allocatable runtime trait dummy requires the same declared trait contract for every intent
+    --> tests/errors/continue_compilation_traits_01.f90:2865:31
+     |
+2865 |         call slot_unspecified(richer)
+     |                               ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2879:28
+     |
+2879 |         call pointer_inout(named)
+     |                            ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2880:26
+     |
+2880 |         call pointer_out(named)
+     |                          ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2881:34
+     |
+2881 |         call pointer_unspecified(named)
+     |                                  ^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2882:28
+     |
+2882 |         call pointer_inout(richer)
+     |                            ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2883:26
+     |
+2883 |         call pointer_out(richer)
+     |                          ^^^^^^ 
+
+semantic error: a defining runtime trait pointer dummy requires the same declared trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:2884:34
+     |
+2884 |         call pointer_unspecified(richer)
+     |                                  ^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2889:9
+     |
+2889 |         view => source
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: cannot change association of an intent(in) runtime trait pointer
+    --> tests/errors/continue_compilation_traits_01.f90:2890:17
+     |
+2890 |         nullify(view)
+     |                 ^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2912:17
+     |
+2912 |         view => object
+     |                 ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2913:17
+     |
+2913 |         owner = object
+     |                 ^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'b' for type 'onlya'
+    --> tests/errors/continue_compilation_traits_01.f90:2914:9
+     |
+2914 |         allocate(OnlyA :: owner)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: conflicting implementations of combined trait method 'value': procedure and receiver bindings must agree
+    --> tests/errors/continue_compilation_traits_01.f90:2942:17
+     |
+2942 |         view => object
+     |                 ^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3011:21
+     |
+3011 |             nullify(concrete)
+     |                     ^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3019:13
+     |
+3019 |             concrete => target
+     |             ^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3026:31
+     |
+3026 |             call pointer_slot(concrete)
+     |                               ^^^^^^^^ 
+
+semantic error: associated requires a pointer argument; a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3033:28
+     |
+3033 |             if (associated(concrete)) error stop
+     |                            ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3040:22
+     |
+3040 |             allocate(concrete)
+     |                      ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3047:24
+     |
+3047 |             deallocate(concrete)
+     |                        ^^^^^^^^ 
+
+semantic error: a select type associate name is not allocatable
+    --> tests/errors/continue_compilation_traits_01.f90:3054:34
+     |
+3054 |             call allocation_slot(concrete)
+     |                                  ^^^^^^^^ 
+
+semantic error: allocated requires an allocatable variable, not a construct association
+    --> tests/errors/continue_compilation_traits_01.f90:3061:27
+     |
+3061 |             if (allocated(concrete)) error stop
+     |                           ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3068:13
+     |
+3068 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3076:13
+     |
+3076 |             concrete = value
+     |             ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3083:25
+     |
+3083 |             call output(concrete%n)
+     |                         ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3091:24
+     |
+3091 |             n = define(concrete%n)
+     |                        ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3098:22
+     |
+3098 |             allocate(concrete%data(2))
+     |                      ^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3105:24
+     |
+3105 |             deallocate(concrete%data)
+     |                        ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3112:21
+     |
+3112 |             nullify(concrete%link)
+     |                     ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3119:21
+     |
+3119 |             read *, concrete%n
+     |                     ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3128:17
+     |
+3128 |                 nested%n = 1
+     |                 ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3137:17
+     |
+3137 |                 nested%n = 1
+     |                 ^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3147:13
+     |
+3147 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3154:13
+     |
+3154 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3160:13
+     |
+3160 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3167:13
+     |
+3167 |             concrete%n = 1
+     |             ^^^^^^^^^^ 
+
+semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+    --> tests/errors/continue_compilation_traits_01.f90:3174:9
+     |
+3174 |         type is (IChild)
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+    --> tests/errors/continue_compilation_traits_01.f90:3180:9
+     |
+3180 |         class is (IChild)
+     |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: select type requires a declared concrete derived type guard
+    --> tests/errors/continue_compilation_traits_01.f90:3186:9
+     |
+3186 |         type is (integer)
+     |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate nominal select type guard
+    --> tests/errors/continue_compilation_traits_01.f90:3193:9
+     |
+3193 |         type is (Cell)
+     |         ^^^^^^^^^^^^^^^ 
+
+semantic error: a select type associate name is not a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3200:21
+     |
+3200 |             nullify(concrete)
+     |                     ^^^^^^^^ 
+
+semantic error: a select type associate name is neither allocatable nor a pointer
+    --> tests/errors/continue_compilation_traits_01.f90:3207:22
+     |
+3207 |             allocate(concrete)
+     |                      ^^^^^^^^ 
+
+semantic error: this select type association does not have the target attribute
+    --> tests/errors/continue_compilation_traits_01.f90:3215:24
+     |
+3215 |             pointer => concrete
+     |                        ^^^^^^^^ 
+
+semantic error: this select type association does not have the target attribute
+    --> tests/errors/continue_compilation_traits_01.f90:3222:24
+     |
+3222 |             pointer => concrete
+     |                        ^^^^^^^^ 
+
+semantic error: Argument `n` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_traits_01.f90:3230:29
+     |
+3230 |                 call output(n)
+     |                             ^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3239:34
+     |
+3239 |             allocate(local, stat=concrete%n)
+     |                                  ^^^^^^^^^^ 
+
+semantic error: method 'undeclared' is not provided by the declared trait constraints
+    --> tests/errors/continue_compilation_traits_01.f90:3352:13
+     |
+3352 |         r = object%undeclared()
+     |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+    --> tests/errors/continue_compilation_traits_01.f90:3423:13
+     |
+3423 |         r = algorithm%apply(object)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: actual arguments conflict with the generic procedure's types
+    --> tests/errors/continue_compilation_traits_01.f90:3424:13
+     |
+3424 |         r = algorithm%apply{Good}(object)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+    --> tests/errors/continue_compilation_traits_01.f90:3425:13
+     |
+3425 |         r = algorithm%apply(1)
+     |             ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3571:30
+     |
+3571 |             inquire(iolength=concrete%n) 7
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3572:37
+     |
+3572 |             inquire(unit=20, number=concrete%n)
+     |                                     ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3573:37
+     |
+3573 |             inquire(unit=20, opened=concrete%flag)
+     |                                     ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3574:35
+     |
+3574 |             inquire(unit=20, name=concrete%text)
+     |                                   ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3575:35
+     |
+3575 |             inquire(unit=20, name=concrete%text(1:10))
+     |                                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3576:36
+     |
+3576 |             inquire(unit=20, iomsg=concrete%text)
+     |                                    ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3577:26
+     |
+3577 |             open(newunit=concrete%n, status="scratch")
+     |                          ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3578:34
+     |
+3578 |             open(unit=20, iostat=concrete%n)
+     |                                  ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3579:33
+     |
+3579 |             open(unit=20, iomsg=concrete%text)
+     |                                 ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3580:30
+     |
+3580 |             close(20, iostat=concrete%n)
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3581:29
+     |
+3581 |             close(20, iomsg=concrete%text)
+     |                             ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3582:31
+     |
+3582 |             rewind(20, iostat=concrete%n)
+     |                               ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3583:30
+     |
+3583 |             rewind(20, iomsg=concrete%text)
+     |                              ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3584:34
+     |
+3584 |             backspace(20, iostat=concrete%n)
+     |                                  ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3585:33
+     |
+3585 |             backspace(20, iomsg=concrete%text)
+     |                                 ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3586:32
+     |
+3586 |             endfile(20, iostat=concrete%n)
+     |                                ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3587:31
+     |
+3587 |             endfile(20, iomsg=concrete%text)
+     |                               ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3588:30
+     |
+3588 |             flush(20, iostat=concrete%n)
+     |                              ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3589:29
+     |
+3589 |             flush(20, iomsg=concrete%text)
+     |                             ^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3590:49
+     |
+3590 |             read(20, "(i1)", advance="no", size=concrete%n) item
+     |                                                 ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3591:32
+     |
+3591 |             read(20, *, iostat=concrete%n) item
+     |                                ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3592:33
+     |
+3592 |             write(20, *, iostat=concrete%n) item
+     |                                 ^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3593:19
+     |
+3593 |             write(concrete%text(1:10), "(i1)") item
+     |                   ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3595:30
+     |
+3595 |                 write(20, *) (item, index=1,2)
+     |                              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a'
+    --> tests/errors/continue_compilation_traits_01.f90:3668:19
+     |
+3668 |         parent => null(other)
+     |                   ^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3669:23
+     |
+3669 |         child_view => null(parent)
+     |                       ^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3670:23
+     |
+3670 |         child_view => null(combination)
+     |                       ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'combined'
+    --> tests/errors/continue_compilation_traits_01.f90:3671:30
+     |
+3671 |         named_combination => null(combination)
+     |                              ^^^^^^^^^^^^^^^^^ 
+
+semantic error: a typed null runtime trait pointer target requires a compatible declared runtime trait contract
+    --> tests/errors/continue_compilation_traits_01.f90:3672:19
+     |
+3672 |         parent => null(integer_view)
+     |                   ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'a'
+    --> tests/errors/continue_compilation_traits_01.f90:3673:26
+     |
+3673 |         call take_parent(null(other))
+     |                          ^^^^^^^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'child'
+    --> tests/errors/continue_compilation_traits_01.f90:3674:25
+     |
+3674 |         call take_child(null(parent))
+     |                         ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3685:19
+     |
+3685 |         p => null(view)
+     |                   ^^^^ 
+
+semantic error: type guard 'other' must be the declared type 'parent' or an extension of it
+    --> tests/errors/continue_compilation_traits_01.f90:3708:13
+     |
+3708 |             type is (Other)
+     |             ^^^^ 
+
+semantic error: type guard 'other' must be the declared type 'parent' or an extension of it
+    --> tests/errors/continue_compilation_traits_01.f90:3718:13
+     |
+3718 |             class is (Other)
+     |             ^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+    --> tests/errors/continue_compilation_traits_01.f90:3729:17
+     |
+3729 |                 inner%n = 1
+     |                 ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3756:19
+     |
+3756 |         p => null(make_owner())
+     |                   ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3759:32
+     |
+3759 |         call take_pointer(null(make_owner()))
+     |                                ^^^^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3765:19
+     |
+3765 |         p => null(factory())
+     |                   ^^^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3770:19
+     |
+3770 |         p => null((owner))
+     |                   ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3771:25
+     |
+3771 |         p => null(mold=((owner)))
+     |                         ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3772:32
+     |
+3772 |         call take_pointer(null((owner)))
+     |                                ^^^^^^^ 
+
+semantic error: null() mold requires a pointer or allocatable variable
+    --> tests/errors/continue_compilation_traits_01.f90:3777:19
+     |
+3777 |         p => null((q))
+     |                   ^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3618:28
+     |
+3618 |                 type(T) :: scratch
+     |                            ^^^^^^^ 
+
+semantic error: erased generic local storage, ownership, arrays and mutable arguments are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:3543:20
+     |
+3543 |         type(U) :: copy
+     |                    ^^^^ 

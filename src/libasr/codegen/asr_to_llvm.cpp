@@ -2998,6 +2998,12 @@ public:
 
     void visit_Nullify(const ASR::Nullify_t& x) {
         for( size_t i = 0; i < x.n_vars; i++ ) {
+            if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_vars[i]))) {
+                builder->CreateStore(llvm::Constant::getNullValue(
+                    llvm_utils->getTraitType(ASRUtils::expr_type(x.m_vars[i]))),
+                    trait_owner_slot(x.m_vars[i]));
+                continue;
+            }
             ASR::symbol_t* tmp_sym;
             llvm::Value *target;
             if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_vars[i])) {
@@ -3184,6 +3190,19 @@ public:
             }
             ASR::ttype_t *cur_type = ASRUtils::expr_type(tmp_expr);
             ASR::ttype_t *cur_type_past = ASRUtils::type_get_past_allocatable_pointer(cur_type);
+            if (ASRUtils::is_trait_owner(cur_type)) {
+                auto *slot = tmp;
+                auto *view = llvm_utils->CreateLoad2(
+                    llvm_utils->getTraitType(cur_type)->getPointerTo(), slot);
+                if constexpr (std::is_same_v<T, ASR::ExplicitDeallocate_t>) {
+                    llvm_utils->trait_error_if(builder->CreateIsNull(view),
+                        "cannot deallocate an unallocated runtime trait object");
+                }
+                llvm_utils->destroy_trait_value(view);
+                builder->CreateStore(llvm::Constant::getNullValue(
+                    llvm_utils->getTraitType(cur_type)->getPointerTo()), slot);
+                continue;
+            }
             bool in_struct = ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr);
             ASR::Struct_t* struct_sym = nullptr;
             if (cur_type_past->type == ASR::StructType ||
@@ -3235,15 +3254,6 @@ public:
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
                             llvm::Type::getInt64Ty(context)) );
                     llvm_utils->create_if_else(cond, [=]() {
-                        // Call user-defined FINAL procedures (Fortran 2018 §7.5.6.3).
-                        // A polymorphic entity is finalized as its dynamic type
-                        // by finalize_before_deallocate, through the finalizer in
-                        // its vtable, so the final procedures of the declared
-                        // type are not called here as well.
-                        if (struct_sym != nullptr &&
-                                !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                            llvm_symtab_finalizer.call_scalar_final_procedure(tmp, struct_sym);
-                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
                         // Deallocate data of class first
                         if( ASRUtils::is_pointer(cur_type) || 
@@ -3276,10 +3286,6 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
-                        if (struct_sym != nullptr && !ASRUtils::is_class_type(element_type)) {
-                            llvm_symtab_finalizer.call_array_final_before_deallocate(tmp,
-                                ASRUtils::type_get_past_allocatable_pointer(cur_type), struct_sym);
-                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
@@ -7121,6 +7127,10 @@ public:
     }
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
+        if (ASRUtils::is_trait_pointer(x.m_type)) {
+            tmp = llvm::Constant::getNullValue(llvm_utils->getTraitType(x.m_type));
+            return;
+        }
         llvm::Type* value_type;
 
         value_type = ASRUtils::is_array(x.m_type)?
@@ -7333,7 +7343,6 @@ public:
                 visit_Variable(*v);
             }
         }
-
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
@@ -8997,7 +9006,15 @@ public:
             // as their allocated type. For class arrays `ptr` is an array
             // descriptor, so GEP-ing field 1 out of it would be a type error;
             // their elements are initialized when the array is allocated.
-            if (!LLVM::is_llvm_pointer(*v->m_type) &&
+            if (ASR::is_a<ASR::TraitOwnerList_t>(*v->m_type)) {
+                builder->CreateStore(llvm::Constant::getNullValue(
+                    llvm_utils->getTraitOwnerListType()), ptr);
+            } else if (ASRUtils::is_trait_pointer(v->m_type)) {
+                if (v->m_storage != ASR::storage_typeType::Save) {
+                    builder->CreateStore(llvm::Constant::getNullValue(
+                        llvm_utils->getTraitType(v->m_type)), ptr);
+                }
+            } else if (!LLVM::is_llvm_pointer(*v->m_type) &&
                     !ASRUtils::is_array(v->m_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
                 struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(v->m_type_declaration),
@@ -9281,6 +9298,8 @@ public:
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
+                if (ASR::down_cast<ASR::Variable_t>(var_sym)->m_storage ==
+                        ASR::storage_typeType::Association) continue;
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
@@ -10408,10 +10427,50 @@ public:
 
     template<typename T>
     void visit_procedures(const T &x) {
+        for (const auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitWitness_t>(*item.second)) {
+                auto *witness = ASR::down_cast<ASR::TraitWitness_t>(item.second);
+                emit_trait_witness(*witness,
+                    !prototype_only && witness->m_abi == ASR::abiType::Source);
+            }
+            if (ASR::is_a<ASR::TraitErasure_t>(*item.second)) {
+                auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(item.second);
+                auto *saved_scope = current_scope;
+                current_scope = erasure->m_symtab;
+                for (const auto &entry : erasure->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                        instantiate_function(*ASR::down_cast<ASR::Function_t>(entry.second));
+                    }
+                }
+                current_scope = saved_scope;
+            }
+        }
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 visit_Function(*s);
+            }
+        }
+        for (const auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitErasure_t>(*item.second)) continue;
+            auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(item.second);
+            if (!prototype_only && ASRUtils::get_FunctionType(
+                    ASRUtils::trait_method_function(erasure->m_procedure))->m_abi ==
+                    ASR::abiType::ExternalUndefined) continue;
+            auto *saved_scope = current_scope;
+            current_scope = erasure->m_symtab;
+            visit_procedures(*erasure);
+            current_scope = saved_scope;
+        }
+        if (!prototype_only) {
+            for (const auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitWitness_t>(*item.second)) continue;
+                auto *witness = ASR::down_cast<ASR::TraitWitness_t>(item.second);
+                if (witness->m_abi != ASR::abiType::Source) continue;
+                auto *saved_scope = current_scope;
+                current_scope = witness->m_symtab;
+                visit_procedures(*witness);
+                current_scope = saved_scope;
             }
         }
     }
@@ -10722,6 +10781,18 @@ public:
     void visit_PointerAssociated(const ASR::PointerAssociated_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_ptr))) {
+            auto *view = trait_owner_slot(x.m_ptr);
+            auto *payload = llvm_utils->trait_field(view, 1);
+            auto *associated = builder->CreateIsNotNull(payload);
+            if (x.m_tgt) {
+                auto *target = trait_owner_slot(x.m_tgt);
+                associated = builder->CreateAnd(associated, builder->CreateICmpEQ(
+                    payload, llvm_utils->trait_field(target, 1)));
+            }
+            tmp = associated;
             return;
         }
         llvm::AllocaInst *res = llvm_utils->CreateAlloca(
@@ -11743,6 +11814,14 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::EXPR2VAR(x.m_target)->m_storage ==
+                    ASR::storage_typeType::Association) {
+            visit_expr_load_wrapper(x.m_value, 0);
+            uint32_t hash = get_hash((ASR::asr_t*)ASRUtils::EXPR2VAR(x.m_target));
+            llvm_symtab[hash] = tmp;
+            return;
+        }
         bool is_target_pointer_section = false;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
             ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
@@ -17966,6 +18045,11 @@ public:
     }
 
     inline void fetch_var(ASR::Variable_t* x) {
+        if (ASRUtils::is_trait_pointer(x->m_type)) {
+            uint32_t hash = get_hash((ASR::asr_t*)x);
+            tmp = llvm_symtab.at(hash);
+            return;
+        }
         // Only do for constant variables
         if (x->m_value && x->m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x->m_value, true);
@@ -17982,6 +18066,7 @@ public:
                     case ASR::ttypeType::Real:
                     case ASR::ttypeType::Complex:
                     case ASR::ttypeType::StructType:
+                    case ASR::ttypeType::TraitObjectType:
                     case ASR::ttypeType::String:
                     case ASR::ttypeType::Logical:
                     case ASR::ttypeType::CPtr:{
@@ -24785,6 +24870,31 @@ public:
                 continue;
             }
 
+            if (x.m_args[i].m_value &&
+                    (ASR::is_a<ASR::TraitObjectType_t>(*expr_type(x.m_args[i].m_value))
+                     || ASRUtils::is_trait_pointer(expr_type(x.m_args[i].m_value))
+                     || ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value))) {
+                int64_t saved_loads = ptr_loads;
+                ptr_loads = 0;
+                visit_expr_wrapper(x.m_args[i].m_value, true);
+                ptr_loads = saved_loads;
+                if (ASRUtils::is_trait_pointer(expr_type(x.m_args[i].m_value)) &&
+                        ASR::is_a<ASR::PointerNullConstant_t>(*x.m_args[i].m_value)) {
+                    auto *storage = get_call_arg_alloca(
+                        llvm_utils->getTraitType(expr_type(x.m_args[i].m_value)));
+                    builder->CreateStore(tmp, storage);
+                    tmp = storage;
+                }
+                if (ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value)) {
+                    tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc,
+                            &orig_arg->base)), orig_arg->m_type,
+                        expr_type(x.m_args[i].m_value));
+                }
+                args.push_back(tmp);
+                continue;
+            }
+
             if( x.m_args[i].m_value == nullptr ) {
                 LCOMPILERS_ASSERT(orig_arg != nullptr);
                 if (pass_string_data) {
@@ -27937,6 +28047,249 @@ public:
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
     }
 
+    llvm::GlobalVariable *emit_trait_witness(const ASR::TraitWitness_t &x, bool define) {
+        if (x.m_abi == ASR::abiType::Source) {
+            auto *saved_scope = current_scope;
+            current_scope = x.m_symtab;
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(x.m_procedures[i]));
+                instantiate_function(*procedure);
+            }
+            current_scope = saved_scope;
+        }
+        std::string name = "__trait_witness_" + ASRUtils::nominal_symbol_name(&x.base);
+        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr, x.n_procedures + 1);
+        auto *table = module->getNamedGlobal(name);
+        if (!table) {
+            table = new llvm::GlobalVariable(*module, type, true,
+                llvm::GlobalValue::ExternalLinkage, nullptr, name);
+        }
+        if (define && !table->hasInitializer()) {
+            std::vector<llvm::Constant*> entries;
+            entries.push_back(llvm::ConstantExpr::getBitCast(
+                struct_api->get_trait_lifecycle(x.m_lifecycle.m_type_declaration, module.get()),
+                llvm_utils->i8_ptr));
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
+                uint32_t hash = get_hash((ASR::asr_t*)procedure);
+                auto *function = llvm_symtab_fn.at(hash);
+                entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+            }
+            table->setInitializer(llvm::ConstantArray::get(type, entries));
+        }
+        return table;
+    }
+
+    llvm::Value *trait_witness_view(const ASR::TraitWitness_t &witness,
+            llvm::Value *payload) {
+        auto *concrete = ASRUtils::symbol_get_past_external(witness.m_lifecycle.m_type_declaration);
+        auto *type = llvm_utils->getTraitType(witness.n_procedures);
+        llvm::Value *view = llvm_utils->CreateAlloca(type, nullptr, "trait_borrow");
+        llvm::Value *vptr = struct_api->get_pointer_to_method(concrete, module.get());
+        vptr = builder->CreateBitCast(vptr, llvm_utils->i8_ptr);
+        builder->CreateStore(vptr, llvm_utils->create_gep2(type, view, 0));
+        builder->CreateStore(payload, llvm_utils->create_gep2(type, view, 1));
+        llvm::Value *table = emit_trait_witness(witness, false);
+        table = builder->CreateBitCast(table, llvm_utils->i8_ptr->getPointerTo());
+        auto *lifecycle = builder->CreateBitCast(
+            llvm_utils->CreateLoad2(llvm_utils->i8_ptr, table),
+            llvm_utils->i8_ptr->getPointerTo());
+        builder->CreateStore(lifecycle, llvm_utils->create_gep2(type, view, 2));
+        for (size_t i = 0; i < witness.n_procedures; i++) {
+            auto *method = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, table, i + 1));
+            builder->CreateStore(method, llvm_utils->trait_method_address(view, i));
+        }
+        return view;
+    }
+
+    void visit_TraitPack(const ASR::TraitPack_t &x) {
+        auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+            ASRUtils::symbol_get_past_external(x.m_witness));
+        // Inline subobjects provide storage; indirect components store its address.
+        bool indirect_payload = LLVM::is_llvm_pointer(*expr_type(x.m_payload));
+        visit_expr_load_wrapper(x.m_payload, indirect_payload, indirect_payload);
+        tmp = trait_witness_view(*witness, builder->CreateBitCast(tmp, llvm_utils->i8_ptr));
+    }
+
+    void visit_TraitDeferredPack(const ASR::TraitDeferredPack_t &x) {
+        throw CodeGenError("a deferred generic argument must be instantiated before "
+            "runtime trait lowering", x.base.base.loc);
+    }
+
+    llvm::Value *trait_owner_slot(ASR::expr_t *owner) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr_wrapper(owner, true);
+        ptr_loads = saved_loads;
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(owner)) &&
+                ASR::is_a<ASR::PointerNullConstant_t>(*owner)) {
+            auto *storage = get_call_arg_alloca(llvm_utils->getTraitType(ASRUtils::expr_type(owner)));
+            builder->CreateStore(tmp, storage);
+            tmp = storage;
+        }
+        return tmp;
+    }
+
+    void visit_TraitProject(const ASR::TraitProject_t &x) {
+        auto *source = trait_owner_slot(x.m_view);
+        auto *type = llvm_utils->getTraitType(x.m_type);
+        auto *result = llvm_utils->CreateAlloca(type, nullptr, "trait_projection");
+        builder->CreateStore(llvm::Constant::getNullValue(type), result);
+        auto project = [&]() {
+            for (unsigned i = 0; i < 3; i++) {
+                builder->CreateStore(llvm_utils->trait_field(source, i),
+                    llvm_utils->create_gep2(type, result, i));
+            }
+            for (size_t i = 0; i < x.n_slots; i++) {
+                auto *method = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->trait_method_address(source, x.m_slots[i].m_source));
+                builder->CreateStore(method, llvm_utils->trait_method_address(result, i));
+            }
+        };
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_view))) {
+            llvm_utils->create_if_else(
+                builder->CreateIsNotNull(llvm_utils->trait_field(source, 1)),
+                project, [](){});
+        } else {
+            project();
+        }
+        tmp = result;
+    }
+
+    void visit_TraitBorrow(const ASR::TraitBorrow_t &x) {
+        auto *slot = trait_owner_slot(x.m_owner);
+        if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(x.m_owner))) {
+            llvm_utils->trait_error_if(
+                builder->CreateIsNull(llvm_utils->trait_field(slot, 1)),
+                "cannot borrow a disassociated runtime trait pointer");
+            tmp = slot;
+            return;
+        }
+        tmp = llvm_utils->CreateLoad2(llvm_utils->getTraitType(x.m_type)->getPointerTo(), slot);
+        llvm_utils->trait_error_if(builder->CreateIsNull(tmp),
+            "cannot borrow an unallocated runtime trait object");
+    }
+
+    void visit_TraitInspect(const ASR::TraitInspect_t &x) {
+        auto *view = trait_owner_slot(x.m_view);
+        auto *type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_type, x.m_type_declaration, module.get());
+        auto *result = llvm_utils->CreateAlloca(type, nullptr, "trait_inspection");
+        auto *vptr = builder->CreateBitCast(
+            llvm_utils->trait_field(view, 0), llvm_utils->vptr_type);
+        builder->CreateStore(vptr, llvm_utils->create_gep2(type, result, 0));
+        builder->CreateStore(llvm_utils->trait_field(view, 1),
+            llvm_utils->create_gep2(type, result, 1));
+        tmp = result;
+    }
+
+    void visit_TraitAssociate(const ASR::TraitAssociate_t &x) {
+        auto *type = llvm_utils->getTraitType(ASRUtils::expr_type(x.m_target));
+        llvm::Value *value = x.m_value
+            ? llvm_utils->CreateLoad2(type, trait_owner_slot(x.m_value))
+            : llvm::Constant::getNullValue(type);
+        builder->CreateStore(value, trait_owner_slot(x.m_target));
+    }
+
+    llvm::Value *trait_snapshot(ASR::expr_t *source, bool copy_value,
+            ASR::symbol_t *selected_witness = nullptr) {
+        if (selected_witness) {
+            auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+                ASRUtils::symbol_get_past_external(selected_witness));
+            auto *concrete = ASRUtils::symbol_get_past_external(
+                witness->m_lifecycle.m_type_declaration);
+            llvm::Value *payload = llvm::Constant::getNullValue(llvm_utils->i8_ptr);
+            if (copy_value) {
+                bool indirect = LLVM::is_llvm_pointer(*ASRUtils::expr_type(source));
+                visit_expr_load_wrapper(source, indirect, indirect);
+                payload = tmp;
+                if (ASR::is_a<ASR::StructConstant_t>(*source) ||
+                        ASR::is_a<ASR::StructConstructor_t>(*source)) {
+                    auto *storage = llvm_utils->CreateAlloca(llvm_utils->getStructType(
+                        ASR::down_cast<ASR::Struct_t>(concrete), module.get()));
+                    builder->CreateStore(payload, storage);
+                    payload = storage;
+                }
+                payload = builder->CreateBitCast(payload, llvm_utils->i8_ptr);
+                llvm_utils->trait_error_if(builder->CreateIsNull(payload),
+                    "cannot copy an unallocated concrete runtime trait source");
+            }
+            auto *view = trait_witness_view(*witness, payload);
+            return llvm_utils->create_trait_value(
+                llvm_utils->getTraitType(witness->n_procedures), view, payload);
+        }
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr_wrapper(source, true);
+        ptr_loads = saved_loads;
+        auto *view = tmp;
+        auto *payload = copy_value ? llvm_utils->trait_field(view, 1)
+            : llvm::Constant::getNullValue(llvm_utils->i8_ptr);
+        return llvm_utils->create_trait_value(
+            llvm_utils->getTraitType(ASRUtils::expr_type(source)), view, payload);
+    }
+
+    void visit_TraitAllocate(const ASR::TraitAllocate_t &x) {
+        auto *slot = trait_owner_slot(x.m_target);
+        auto *old = llvm_utils->CreateLoad2(
+            llvm_utils->getTraitType(ASRUtils::expr_type(x.m_target))->getPointerTo(), slot);
+        llvm_utils->trait_error_if(builder->CreateIsNotNull(old),
+            "cannot allocate an already allocated runtime trait object");
+        auto *value = trait_snapshot(x.m_source, x.m_copy_value, x.m_witness);
+        builder->CreateStore(value, slot);
+    }
+
+    void visit_TraitAssignment(const ASR::TraitAssignment_t &x) {
+        auto *snapshot = trait_snapshot(x.m_value, true, x.m_witness);
+        auto *slot = trait_owner_slot(x.m_target);
+        llvm_utils->assign_trait_value(slot, snapshot,
+            llvm_utils->getTraitType(ASRUtils::expr_type(x.m_target)));
+    }
+
+    void visit_TraitRetain(const ASR::TraitRetain_t &x) {
+        auto *storage = trait_owner_slot(x.m_storage);
+        auto *owner = trait_owner_slot(x.m_owner);
+        llvm_utils->retain_trait_owner(storage, owner);
+    }
+
+    void visit_TraitReceiver(const ASR::TraitReceiver_t &x) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr_wrapper(x.m_view, true);
+        ptr_loads = saved_loads;
+        llvm::Value *payload = llvm_utils->trait_field(tmp, 1);
+        auto *concrete_type = llvm_utils->get_type_from_ttype_t_util(
+            x.m_type, x.m_type_declaration, module.get());
+        tmp = builder->CreateBitCast(payload, concrete_type->getPointerTo());
+    }
+
+    template <typename T>
+    void emit_trait_call(const T &x, ASR::ttype_t *result_type) {
+        ASR::FunctionCall_t call{};
+        call.m_name = x.m_name;
+        call.m_args = x.m_args;
+        call.n_args = x.n_args;
+        call.m_type = result_type;
+        std::vector<llvm::Value*> args = convert_call_args(call);
+        auto *procedure = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(x.m_name));
+        auto *function_type = llvm_utils->get_function_type(*procedure, module.get());
+        llvm::Value *entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+            llvm_utils->trait_method_address(args[0], x.m_slot));
+        entry = builder->CreateBitCast(entry, function_type->getPointerTo());
+        tmp = builder->CreateCall(function_type, entry, args);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        emit_trait_call(x, x.m_type);
+    }
+
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+        emit_trait_call(x, nullptr);
+    }
+
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
         bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
         uint64_t ptr_loads_copy = ptr_loads;
@@ -29136,8 +29489,11 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         });
     };
     if (copy) {
-        n_elements = builder_->CreateSExtOrTrunc(llvm_utils_->get_array_size(ptr,
-            arr_llvm_type, arr_type, &asr_to_llvm_visitor_), i64);
+        n_elements = is_descriptor
+            ? llvm_utils_->get_descriptor_array_size(ptr, get_llvm_type(arr_type, struct_sym))
+            : llvm_utils_->get_array_size(ptr,
+                get_llvm_type(arr_type, struct_sym), arr_type, &asr_to_llvm_visitor_);
+        n_elements = builder_->CreateSExtOrTrunc(n_elements, i64);
         final_data = builder_->CreateBitCast(LLVM::lfortran_malloc(builder_->getContext(),
                 *llvm_utils_->module, *builder_,
                 builder_->CreateMul(n_elements, llvm::ConstantInt::get(i64, final_elem_size))),

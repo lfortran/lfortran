@@ -1,0 +1,21 @@
+module traits_numeric_05_contracts_m
+use iso_fortran_env, only: real64
+implicit none
+private
+public :: INumeric
+
+abstract interface :: INumeric
+    integer | real(real64)
+end interface INumeric
+end module traits_numeric_05_contracts_m
+
+
+module traits_numeric_05_other_m
+implicit none
+private
+public :: INumeric
+
+abstract interface :: INumeric
+    integer
+end interface INumeric
+end module traits_numeric_05_other_m

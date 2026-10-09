@@ -23,7 +23,7 @@ namespace LCompilers {
                 : "_lfortran_get_default_allocator";
         }
 
-        static llvm::Value* get_allocator(llvm::LLVMContext &context,
+        llvm::Value* get_allocator(llvm::LLVMContext &context,
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
             std::string func_name = get_allocator_function_name();
@@ -32,7 +32,23 @@ namespace LCompilers {
                 llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
                 fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
             }
-            return builder.CreateCall(fn, {});
+            llvm::Value *allocator = builder.CreateCall(fn, {});
+            auto *function = builder.GetInsertBlock()->getParent();
+            if (function->hasFnAttribute(checked_allocation_attribute)) {
+                auto *proxy_type = llvm::StructType::get(context,
+                    {i8_ptr_type, i8_ptr_type, i8_ptr_type, i8_ptr_type}, false);
+                llvm::IRBuilder<> entry_builder(&function->getEntryBlock(),
+                    function->getEntryBlock().getFirstInsertionPt());
+                auto *proxy = entry_builder.CreateAlloca(proxy_type, nullptr, "checked_allocator");
+                auto *initialize_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+                    {i8_ptr_type, i8_ptr_type}, false);
+                auto initialize = module.getOrInsertFunction(
+                    "_lcompilers_init_checked_allocator", initialize_type);
+                llvm::Value *address = builder.CreateBitCast(proxy, i8_ptr_type);
+                builder.CreateCall(initialize, {address, allocator});
+                allocator = address;
+            }
+            return allocator;
         }
 
         void set_memory_debug(bool state) {
@@ -170,11 +186,10 @@ namespace LCompilers {
             });
         }
         bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
-            /*
-                True : When Pointer or Allocatable, if and only if it's not a standalond string type.
-            */
+            // Strings and trait pointers carry inline descriptors instead.
             return (ASR::is_a<ASR::Pointer_t>(asr_type) ||
                     ASR::is_a<ASR::Allocatable_t>(asr_type)) &&
+                    !ASRUtils::is_trait_pointer(&asr_type) &&
                     !ASRUtils::is_string_only(const_cast<ASR::ttype_t*>(&asr_type));
         }
 
@@ -317,20 +332,10 @@ namespace LCompilers {
             }
         }
 
-        llvm::Type* allocator_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-
-        std::string func_name = LLVM::get_allocator_function_name();
-        llvm::Function *fn = mod->getFunction(func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                allocator_ptr_type, {}, false);
-            fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, func_name, mod);
-        }
         // Insert at the entry block so the value dominates all basic blocks
         llvm::BasicBlock& entry_bb = current_fn->getEntryBlock();
         llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
-        allocator_instance = entry_builder.CreateCall(fn, {});
+        allocator_instance = LLVM::get_allocator(context, *mod, entry_builder);
         return allocator_instance;
     }
 
@@ -953,7 +958,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
-                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
+                    type = getTraitType(t2)->getPointerTo();
+                } else if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType (fntype*)
                     // The extra indirection for by-reference passing is handled in convert_args
                     type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi,
@@ -1040,6 +1047,12 @@ namespace LCompilers {
                 }
                 break;
             }
+            case (ASR::ttypeType::TraitObjectType):
+                type = getTraitType(asr_type)->getPointerTo();
+                break;
+            case (ASR::ttypeType::TraitOwnerList):
+                type = getTraitOwnerListType()->getPointerTo();
+                break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
@@ -1654,6 +1667,12 @@ namespace LCompilers {
                 llvm_type = getIntType(a_kind);
                 break;
             }
+            case (ASR::ttypeType::TraitObjectType):
+                llvm_type = getTraitType(asr_type);
+                break;
+            case (ASR::ttypeType::TraitOwnerList):
+                llvm_type = getTraitOwnerListType();
+                break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
@@ -1708,6 +1727,10 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
+                if (ASR::is_a<ASR::TraitObjectType_t>(*t2)) {
+                    llvm_type = getTraitType(t2);
+                    break;
+                }
                 bool is_pointer_;
                 if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType
@@ -1902,7 +1925,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
+        llvm::ConstantInt::get(context, llvm::APInt(32, idx, true))};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
@@ -3924,8 +3947,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     } else {
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
-                                alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
-                                module);
+                                ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
+                                module, use_defined_assignment, finalize_dest);
                     }
                 } else if(ASRUtils::is_string_only(alloc_type->m_type)){ //non-primitive type (vector)
                     lfortran_str_copy(dest, src,
@@ -3939,7 +3962,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else if (ASRUtils::is_unlimited_polymorphic_type(src_expr)) {
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_allocatable(asr_dest_type)) {
@@ -3947,7 +3970,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else {
                     LLVM::CreateStore(*builder, src, dest);
                 }
@@ -3993,7 +4016,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     src = CreateLoad2(target_llvm_type, src);
                     deepcopy(src_expr, src, dest,
                         ASRUtils::extract_type(asr_dest_type), asr_dest_type,
-                        module);
+                        module, use_defined_assignment, finalize_dest);
                 } else {
                     if (!ASRUtils::is_value_constant(src_expr) && ASRUtils::is_class_type(asr_dest_type)) {
                         if (ASRUtils::is_class_type(asr_src_type)) {
@@ -9961,9 +9984,28 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Constant*> slots;
         llvm::Function* copy_function = define_intrinsic_type_copy_function(ttype, module);
         llvm::Function* allocate_function = define_intrinsic_type_allocate_function(ttype, module);
-        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, true);
-        llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr, false);
-        slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));      // Reserved null ptr
+        llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(ttype, nullptr);
+        auto *initialize_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context),
+                llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)}, false);
+        auto *initialize_copy = llvm::Function::Create(initialize_type,
+            llvm::GlobalValue::LinkOnceODRLinkage,
+            "_value" + copy_function->getName().str(), module);
+        initialize_copy->addFnAttr(LLVM::checked_allocation_attribute);
+        auto saved_ip = builder->saveIP();
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", initialize_copy));
+        std::vector<llvm::Value*> initialize_args;
+        for (llvm::Argument &arg : initialize_copy->args()) {
+            initialize_args.push_back(&arg);
+        }
+        builder->CreateCall(copy_function, {initialize_args[0], initialize_args[1]});
+        builder->CreateRetVoid();
+        builder->restoreIP(saved_ip);
+        auto *release = finalizer_instnace.get_storage_release_fn(ttype);
+        llvm::Function* free_function = release;
+        auto *lifecycle = create_value_lifecycle(module,
+            ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind), initialize_copy, release);
+        slots.push_back(llvm::ConstantExpr::getBitCast(lifecycle, llvm_utils->i8_ptr));
         slots.push_back(llvm::ConstantExpr::getBitCast(intrinsic_type_info.at(
             ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind)), llvm_utils->i8_ptr));  // Type Info
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
@@ -10013,7 +10055,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::PointerType *i8PtrTy = llvm::PointerType::get(i8Ty, 0);
 
         std::vector<llvm::Constant*> slots;
-        slots.push_back(llvm::ConstantPointerNull::get(i8PtrTy));      // Reserved null ptr
+        auto *initialize_copy = define_struct_copy_function(struct_sym, module, true);
+        auto *release = finalizer_instnace.get_storage_release_fn(
+            struct_t->m_struct_signature, struct_t);
+        auto *lifecycle = create_value_lifecycle(module,
+            ASRUtils::nominal_symbol_name(struct_sym), initialize_copy, release);
+        slots.push_back(llvm::ConstantExpr::getBitCast(lifecycle, i8PtrTy));
         slots.push_back(llvm::ConstantExpr::getBitCast(
             newclass2typeinfo.at(struct_sym), llvm_utils->i8_ptr));             // Type Info
         
@@ -10035,7 +10082,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
-        std::string gv_name = "_VTable_" + std::string(ASRUtils::symbol_name(struct_sym));
+        std::string gv_name = "_VTable_" + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::StructType *outerStructTy = llvm::StructType::get(context, { arrTy }, false);
         llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
 
@@ -10048,6 +10095,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         newclass2vtabtype[struct_sym] = outerStructTy;
         // populate copy function body after creating vtable
         fill_struct_copy_body(struct_sym, copy_function, module);
+        fill_struct_copy_body(struct_sym, initialize_copy, module, true);
         fill_allocate_struct_body(struct_sym, allocate_array_members_function, module);
     }
 
@@ -10061,7 +10109,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
+        const std::string type_info_name = "_Type_Info_" + ASRUtils::nominal_symbol_name(struct_sym);
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
@@ -10106,11 +10154,215 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                                             llvm::GlobalValue::LinkOnceODRLinkage,
                                                             type_info_init,
                                                             type_info_name);
-        type_info_var->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        // Metadata addresses are nominal identities used by SELECT TYPE.
         type_info_var->setAlignment(llvm::MaybeAlign(8));
 
         newclass2typeinfo.insert(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
+    }
+
+    llvm::Value* LLVMUtils::trait_field(llvm::Value* view, unsigned field) {
+        auto *type = getTraitType();
+        view = builder->CreateBitCast(view, type->getPointerTo());
+        return CreateLoad2(type->getElementType(field), create_gep2(type, view, field));
+    }
+
+    llvm::Value* LLVMUtils::trait_method_address(llvm::Value* view, size_t slot) {
+        return create_ptr_gep2(i8_ptr,
+            builder->CreateBitCast(view, i8_ptr->getPointerTo()), slot + 3);
+    }
+
+    llvm::Value* LLVMUtils::value_lifecycle_function(llvm::Value* vptr,
+            unsigned entry, llvm::FunctionType* type) {
+        auto *table = builder->CreateBitCast(vptr, i8_ptr->getPointerTo());
+        auto *family = CreateLoad2(i8_ptr, create_ptr_gep2(i8_ptr, table, -2));
+        family = builder->CreateBitCast(family, i8_ptr->getPointerTo());
+        auto *function = CreateLoad2(i8_ptr, create_ptr_gep2(i8_ptr, family, entry));
+        return builder->CreateBitCast(function, type->getPointerTo());
+    }
+
+    llvm::Value* LLVMUtils::trait_lifecycle_call(llvm::Value* lifecycle,
+            TraitLifecycleEntry entry, llvm::FunctionType* type,
+            const std::vector<llvm::Value*>& args) {
+        auto *callback = CreateLoad2(i8_ptr,
+            create_ptr_gep2(i8_ptr, lifecycle, static_cast<int>(entry)));
+        callback = builder->CreateBitCast(callback, type->getPointerTo());
+        return builder->CreateCall(type, callback, args);
+    }
+
+    void LLVMUtils::trait_error_if(llvm::Value* condition, const std::string& message) {
+        create_if_else(condition, [&]() {
+            auto *text = create_global_string_ptr(
+                context, *module, *builder, message + "\n");
+            print_error(context, *module, *builder, {text});
+            exit(context, *module, *builder, llvm::ConstantInt::get(getIntType(4), 1));
+        }, [](){});
+    }
+
+    llvm::Value* LLVMUtils::trait_malloc(llvm::Type* type) {
+        auto size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(type);
+        auto *data = LLVM::lfortran_malloc(context, *module, *builder,
+            llvm::ConstantInt::get(getIntType(8), size ? size : 1));
+        trait_error_if(builder->CreateIsNull(data), "runtime trait allocation failed");
+        return builder->CreateBitCast(data, type->getPointerTo());
+    }
+
+    llvm::Value* LLVMUtils::create_trait_value(llvm::StructType* type,
+            llvm::Value* view, llvm::Value* source) {
+        auto *initialize = llvm::FunctionType::get(i8_ptr, {i8_ptr}, false);
+        auto *payload = trait_lifecycle_call(trait_field(view, 2), TraitLifecycleEntry::Initialize,
+            initialize, {source});
+        auto *copy = trait_malloc(type);
+        builder->CreateStore(CreateLoad2(type, view), copy);
+        builder->CreateStore(payload, create_gep2(type, copy, 1));
+        return copy;
+    }
+
+    void LLVMUtils::destroy_trait_value(llvm::Value* view) {
+        create_if_else(builder->CreateIsNotNull(view), [&]() {
+            auto *payload = trait_field(view, 1);
+            auto *destroy = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {i8_ptr}, false);
+            trait_lifecycle_call(trait_field(view, 2), TraitLifecycleEntry::Destroy,
+                destroy, {payload});
+            lfortran_free(payload);
+            lfortran_free(view);
+        }, [](){});
+    }
+
+    void LLVMUtils::retain_trait_owner(llvm::Value* storage, llvm::Value* owner) {
+        owner = builder->CreateBitCast(owner, getTraitType()->getPointerTo()->getPointerTo());
+        auto *value = CreateLoad2(getTraitType()->getPointerTo(), owner);
+        create_if_else(builder->CreateIsNotNull(value), [&]() {
+            auto *head = create_gep2(getTraitOwnerListType(), storage, 0);
+            auto *link_type = getTraitOwnerLinkType();
+            auto *link = trait_malloc(link_type);
+            builder->CreateStore(CreateLoad2(i8_ptr, head),
+                create_gep2(link_type, link, 0));
+            builder->CreateStore(value, create_gep2(link_type, link, 1));
+            builder->CreateStore(builder->CreateBitCast(link, i8_ptr), head);
+            builder->CreateStore(llvm::Constant::getNullValue(
+                getTraitType()->getPointerTo()), owner);
+        }, [](){});
+    }
+
+    void LLVMUtils::release_trait_owners(llvm::Value* storage) {
+        auto *head = create_gep2(getTraitOwnerListType(), storage, 0);
+        auto *link_type = getTraitOwnerLinkType();
+        create_loop("Release_trait_results", [&]() {
+            return builder->CreateIsNotNull(CreateLoad2(i8_ptr, head));
+        }, [&]() {
+            auto *link = builder->CreateBitCast(
+                CreateLoad2(i8_ptr, head), link_type->getPointerTo());
+            builder->CreateStore(CreateLoad2(i8_ptr,
+                create_gep2(link_type, link, 0)), head);
+            destroy_trait_value(CreateLoad2(getTraitType()->getPointerTo(),
+                create_gep2(link_type, link, 1)));
+            lfortran_free(link);
+        });
+    }
+
+    void LLVMUtils::assign_trait_value(llvm::Value* slot, llvm::Value* snapshot,
+            llvm::StructType* type) {
+        auto *old = CreateLoad2(type->getPointerTo(), slot);
+        auto *witness = trait_field(snapshot, 2);
+        auto *source = trait_field(snapshot, 1);
+        auto *assign = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {i8_ptr, i8_ptr, llvm::Type::getInt1Ty(context)}, false);
+        auto apply = [&](llvm::Value *destination, bool live) {
+            auto *payload = trait_field(destination, 1);
+            trait_lifecycle_call(witness, TraitLifecycleEntry::Assign, assign,
+                {payload, source,
+                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), live)});
+            builder->CreateStore(CreateLoad2(type, snapshot), destination);
+            builder->CreateStore(payload, create_gep2(type, destination, 1));
+        };
+        auto initialize = [&]() {
+            auto *value = create_trait_value(type, snapshot,
+                llvm::Constant::getNullValue(i8_ptr));
+            apply(value, false);
+            builder->CreateStore(value, slot);
+        };
+        create_if_else(builder->CreateIsNotNull(old), [&]() {
+            auto *same_type = builder->CreateICmpEQ(trait_field(old, 0),
+                trait_field(snapshot, 0));
+            create_if_else(same_type, [&]() {
+                apply(old, true);
+            }, [&]() {
+                destroy_trait_value(old);
+                initialize();
+            });
+        }, initialize);
+        auto *release = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {i8_ptr}, false);
+        trait_lifecycle_call(witness, TraitLifecycleEntry::Discard, release, {source});
+        lfortran_free(source);
+        lfortran_free(snapshot);
+    }
+
+    llvm::GlobalVariable* LLVMStruct::get_trait_lifecycle(
+            ASR::symbol_t* type_declaration, llvm::Module* module) {
+        auto *symbol = ASRUtils::symbol_get_past_external(type_declaration);
+        auto *concrete = ASR::down_cast<ASR::Struct_t>(symbol);
+        std::string name = "__trait_lifecycle_" + ASRUtils::nominal_symbol_name(symbol);
+        if (auto *existing = module->getNamedGlobal(name)) return existing;
+        auto *table_type = llvm::ArrayType::get(llvm_utils->i8_ptr, 4);
+        auto *table = new llvm::GlobalVariable(*module, table_type, true,
+            llvm::GlobalValue::LinkOnceODRLinkage, nullptr, name);
+        auto saved_ip = builder->saveIP();
+        auto *payload_type = llvm_utils->getStructType(concrete, module);
+        auto *initialize_type = llvm::FunctionType::get(
+            llvm_utils->i8_ptr, {llvm_utils->i8_ptr}, false);
+        auto *initialize = llvm::Function::Create(initialize_type,
+            llvm::GlobalValue::LinkOnceODRLinkage, name + "_initialize", module);
+        initialize->addFnAttr(LLVM::checked_allocation_attribute);
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", initialize));
+        auto *payload = llvm_utils->trait_malloc(payload_type);
+        builder->CreateStore(llvm::Constant::getNullValue(payload_type), payload);
+        allocate_struct_members(concrete, payload, concrete->m_struct_signature);
+        llvm::Value *source = &*initialize->arg_begin();
+        llvm_utils->create_if_else(builder->CreateIsNotNull(source), [&]() {
+            Allocator al(1024);
+            auto *expr = ASRUtils::EXPR(ASR::make_Var_t(al, symbol->base.loc, symbol));
+            auto *typed_source = builder->CreateBitCast(source, payload_type->getPointerTo());
+            llvm_utils->deepcopy(expr, typed_source, payload,
+                concrete->m_struct_signature, concrete->m_struct_signature, module,
+                false, false);
+        }, [](){});
+        auto *destroy = finalizer_instnace.get_UPoly_finalize_fn(concrete);
+        auto *discard = finalizer_instnace.get_storage_release_fn(
+            concrete->m_struct_signature, concrete);
+        builder->CreateRet(builder->CreateBitCast(payload, llvm_utils->i8_ptr));
+
+        auto *assign_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context)}, false);
+        auto *assign = llvm::Function::Create(assign_type,
+            llvm::GlobalValue::LinkOnceODRLinkage, name + "_assign", module);
+        assign->addFnAttr(LLVM::checked_allocation_attribute);
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", assign));
+        std::vector<llvm::Value*> assign_args;
+        for (llvm::Argument &arg : assign->args()) {
+            assign_args.push_back(&arg);
+        }
+        auto *destination = builder->CreateBitCast(assign_args[0], payload_type->getPointerTo());
+        auto *snapshot = builder->CreateBitCast(assign_args[1], payload_type->getPointerTo());
+        auto copy = [&](bool live) {
+            Allocator al(1024);
+            auto *expr = ASRUtils::EXPR(ASR::make_Var_t(al, symbol->base.loc, symbol));
+            llvm_utils->deepcopy(expr, snapshot, destination,
+                concrete->m_struct_signature, concrete->m_struct_signature, module,
+                true, live);
+        };
+        llvm_utils->create_if_else(assign_args[2], [&]() { copy(true); },
+            [&]() { copy(false); });
+        builder->CreateRetVoid();
+        std::vector<llvm::Constant*> entries;
+        for (llvm::Function *function : {initialize, destroy, assign, discard}) {
+            entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+        }
+        table->setInitializer(llvm::ConstantArray::get(table_type, entries));
+        builder->restoreIP(saved_ip);
+        return table;
     }
 
     llvm::Function* LLVMStruct::define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
@@ -10122,18 +10374,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         );
 
         // Create the function in the module
-        std::string func_name = "_allocate_struct_";
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
-        if (owner) {
-            func_name += ASRUtils::symbol_name(owner) + std::string("_");
-        }
-        func_name += ASRUtils::symbol_name(struct_sym);
+        std::string func_name = "_allocate_struct_" + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
             func_name,
             module
         );
+        func->addFnAttr(LLVM::checked_allocation_attribute);
         return func;
     }
 
@@ -10194,31 +10442,31 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
     }
 
-    llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
+    llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym,
+            llvm::Module* module, bool initialize_copy)
     {
+        std::vector<llvm::Type*> arguments = {llvm_utils->i8_ptr, llvm_utils->i8_ptr};
+        if (initialize_copy) {
+            arguments.insert(arguments.end(), 3, llvm::Type::getInt1Ty(context));
+        }
         llvm::FunctionType *funcType = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context),
-            {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
-            false
-        );
+            llvm::Type::getVoidTy(context), arguments, false);
 
         // Create the function in the module
-        std::string func_name = "_copy_";
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
-        if (owner) {
-            func_name += ASRUtils::symbol_name(owner) + std::string("_");
-        }
-        func_name += ASRUtils::symbol_name(struct_sym);
+        std::string func_name = std::string(initialize_copy ? "_value_copy_" : "_copy_")
+            + ASRUtils::nominal_symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
             func_name,
             module
         );
+        if (initialize_copy) func->addFnAttr(LLVM::checked_allocation_attribute);
         return func;
     }
 
-    void LLVMStruct::fill_struct_copy_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module) 
+    void LLVMStruct::fill_struct_copy_body(ASR::symbol_t* struct_sym,
+            llvm::Function* func, llvm::Module* module, bool initialize_copy)
     {    
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
@@ -10234,13 +10482,70 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             ASRUtils::symbol_type(struct_sym), struct_sym, module);
         llvm::Value *src = builder->CreateBitCast(argsVec[0], struct_type->getPointerTo());
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
-        llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
-            ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module);
+        if (initialize_copy) {
+            llvm_utils->create_if_else(argsVec[2], [&]() {
+                allocate_struct_members(ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym)), dst,
+                    ASRUtils::symbol_type(struct_sym));
+            }, [](){});
+        }
+        auto copy = [&](bool defined_components, bool live) {
+            llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al,
+                struct_sym->base.loc, struct_sym)), src, dst,
+                ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym),
+                module, defined_components, live);
+        };
+        if (initialize_copy) {
+            llvm_utils->create_if_else(argsVec[3], [&]() {
+                llvm_utils->create_if_else(argsVec[4], [&]() { copy(true, true); },
+                    [&]() { copy(true, false); });
+            }, [&]() {
+                llvm_utils->create_if_else(argsVec[4], [&]() { copy(false, true); },
+                    [&]() { copy(false, false); });
+            });
+        } else {
+            copy(false, true);
+        }
         builder->CreateRetVoid();
 
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+    }
+
+    void LLVMStruct::call_struct_copy(llvm::Value* vptr, llvm::Value* source,
+            llvm::Value* destination, bool initialize_copy, bool initialize_storage,
+            bool defined_components) {
+        std::vector<llvm::Type*> types = {llvm_utils->i8_ptr, llvm_utils->i8_ptr};
+        std::vector<llvm::Value*> args = {
+            builder->CreateBitCast(source, llvm_utils->i8_ptr),
+            builder->CreateBitCast(destination, llvm_utils->i8_ptr)};
+        if (initialize_copy || defined_components) {
+            types.insert(types.end(), 3, llvm::Type::getInt1Ty(context));
+            for (bool flag : {initialize_storage, defined_components, !initialize_copy}) {
+                args.push_back(llvm::ConstantInt::get(types.back(), flag));
+            }
+        }
+        auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(context), types, false);
+        if (initialize_copy || defined_components) {
+            builder->CreateCall(type, llvm_utils->value_lifecycle_function(vptr, 0, type), args);
+            return;
+        }
+        auto *table = builder->CreateBitCast(vptr, llvm_utils->i8_ptr->getPointerTo());
+        auto *entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+            llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, table, 0));
+        builder->CreateCall(type, builder->CreateBitCast(entry, type->getPointerTo()), args);
+    }
+
+    llvm::GlobalVariable* LLVMStruct::create_value_lifecycle(llvm::Module* module,
+            const std::string& name, llvm::Function* copy, llvm::Function* release) {
+        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr, 2);
+        std::vector<llvm::Constant*> functions = {
+            llvm::ConstantExpr::getBitCast(copy, llvm_utils->i8_ptr),
+            llvm::ConstantExpr::getBitCast(release, llvm_utils->i8_ptr)};
+        return new llvm::GlobalVariable(*module, type, true,
+            llvm::GlobalValue::LinkOnceODRLinkage,
+            llvm::ConstantArray::get(type, functions), "_Value_Lifecycle_" + name);
     }
 
     llvm::Function* LLVMStruct::define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module) 
@@ -10263,6 +10568,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             func_name,
             module
         );
+        func->addFnAttr(LLVM::checked_allocation_attribute);
         return func;
     }
 
@@ -10328,6 +10634,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             func_name,
             module
         );
+        func->addFnAttr(LLVM::checked_allocation_attribute);
         return func;
     }
 
@@ -10417,44 +10724,60 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
             llvm::Value* dest, llvm::Value* src, llvm::Module* module,
             bool value_is_class) {
-        ASR::symbol_t* matching_func_sym =
-            ASRUtils::resolve_struct_defined_assignment_proc(struct_t);
-        if (matching_func_sym == nullptr) {
+        auto assignment = ASRUtils::resolve_struct_defined_assignment(
+            struct_t, value_is_class);
+        if (assignment.procedure == nullptr) {
             return false;
         }
 
-        ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
-        llvm::Function* assign_fn = nullptr;
-        // Prefer the already-emitted function from the codegen symbol table.
-        uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
-        auto it = llvm_symtab_fn.find(fh);
-        if (it != llvm_symtab_fn.end()) {
-            assign_fn = it->second;
+        ASR::Function_t* func_t = assignment.procedure;
+        ASR::symbol_t* matching_func_sym = &func_t->base;
+        auto* assign_type = llvm_utils->get_function_type(*func_t, module);
+        llvm::Value* assign_fn = nullptr;
+        if (assignment.dispatch_binding) {
+            create_new_vtable_for_struct_type(&struct_t->base, module);
+            size_t pass_index = ASRUtils::get_pass_arg_index(
+                &assignment.dispatch_binding->base);
+            LCOMPILERS_ASSERT(pass_index < 2);
+            auto* receiver = pass_index == 0 ? dest : src;
+            auto* table = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+                llvm_utils->create_gep2(llvm_utils->getClassType(struct_t), receiver, 0));
+            auto offset = struct_vtab_function_offset.at(&struct_t->base)
+                .at(assignment.dispatch_binding->m_name);
+            auto* entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr,
+                    builder->CreateBitCast(table, llvm_utils->i8_ptr->getPointerTo()), offset));
+            assign_fn = builder->CreateBitCast(entry, assign_type->getPointerTo());
         } else {
-            // Fallback: declare by mangled name (e.g. assign not yet visited).
-            ASR::FunctionType_t* ftype =
-                ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
-            std::string func_name;
-            if (ftype->m_abi == ASR::abiType::BindC) {
-                func_name = ftype->m_bindc_name ? ftype->m_bindc_name
-                    : std::string(ASRUtils::symbol_name(matching_func_sym));
+            // Prefer the already-emitted function from the codegen symbol table.
+            uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);
+            auto it = llvm_symtab_fn.find(fh);
+            if (it != llvm_symtab_fn.end()) {
+                assign_fn = it->second;
             } else {
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
-                if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-                    func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
-                        + "_" + ASRUtils::symbol_name(matching_func_sym);
+                // Fallback: declare by mangled name (e.g. assign not yet visited).
+                ASR::FunctionType_t* ftype =
+                    ASR::down_cast<ASR::FunctionType_t>(func_t->m_function_signature);
+                std::string func_name;
+                if (ftype->m_abi == ASR::abiType::BindC) {
+                    func_name = ftype->m_bindc_name ? ftype->m_bindc_name
+                        : std::string(ASRUtils::symbol_name(matching_func_sym));
                 } else {
-                    func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                    ASR::symbol_t* owner = ASRUtils::get_asr_owner(matching_func_sym);
+                    if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                        func_name = "__module_" + std::string(ASRUtils::symbol_name(owner))
+                            + "_" + ASRUtils::symbol_name(matching_func_sym);
+                    } else {
+                        func_name = std::string(ASRUtils::symbol_name(matching_func_sym));
+                    }
                 }
+                assign_fn = module->getFunction(func_name);
+                if (!assign_fn) {
+                    assign_fn = llvm::Function::Create(assign_type,
+                        llvm::Function::ExternalLinkage, func_name, module);
+                }
+                llvm_symtab_fn[fh] = llvm::cast<llvm::Function>(assign_fn);
             }
-            assign_fn = module->getFunction(func_name);
-            if (!assign_fn) {
-                llvm::FunctionType* fntype =
-                    llvm_utils->get_function_type(*func_t, module);
-                assign_fn = llvm::Function::Create(fntype,
-                    llvm::Function::ExternalLinkage, func_name, module);
-            }
-            llvm_symtab_fn[fh] = assign_fn;
         }
 
         ASR::Variable_t* fn_lhs_var = ASRUtils::EXPR2VAR(func_t->m_args[0]);
@@ -10495,9 +10818,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return v;
         };
 
-        builder->CreateCall(assign_fn, {
-            adjust_arg(dest, fn_lhs_is_class),
-            adjust_arg(src, fn_rhs_is_class)
+        builder->CreateCall(assign_type, assign_fn, {
+            builder->CreateBitCast(adjust_arg(dest, fn_lhs_is_class),
+                assign_type->getParamType(0)),
+            builder->CreateBitCast(adjust_arg(src, fn_rhs_is_class),
+                assign_type->getParamType(1))
         });
         return true;
     }
@@ -10552,8 +10877,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             bool is_upoly = ASRUtils::is_unlimited_polymorphic_type(struct_sym);
 
-            if (ASRUtils::is_allocatable(src_expr) && !is_upoly
-                    && !(is_src_class || is_dest_class)) {
+            bool reallocates_elements = ASRUtils::is_allocatable(src_expr) && !is_upoly
+                && !(is_src_class || is_dest_class);
+            if (reallocates_elements) {
                 // Check if src_data is not null before realloc operations
                 // (For upoly and class arrays, reallocation is handled in
                 // their dedicated deepcopy blocks below)
@@ -10563,11 +10889,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     uint64_t data_type_size = data_layout.getTypeAllocSize(llvm_data_type);
                     llvm::Value* total_memory = builder->CreateMul(num_elements,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, data_type_size)));
-                    // Finalize nested allocatable members of old dest elements
-                    // before freeing the data buffer, to avoid leaking them.
-                    finalizer_instnace.finalize_before_deallocate(
-                        dest, src_ty, struct_sym, false);
-                    llvm_utils->lfortran_free(dest_data);
+                    auto* destroy = finalizer_instnace.get_raw_finalizer(
+                        src_ty, struct_sym, finalize_dest);
+                    llvm_utils->create_if_else(builder->CreateIsNotNull(dest_data), [&]() {
+                        builder->CreateCall(destroy,
+                            {builder->CreateBitCast(dest, llvm_utils->i8_ptr)});
+                    }, [](){});
                     llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest, llvm_data_type);
                     llvm::Value* reloaded_dest_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(),
                                             llvm_utils->arr_api->get_pointer_to_data(llvm_array_type, dest));
@@ -10628,7 +10955,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Type::getInt8Ty(context), src_w.data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
-                    builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem});
+                    if (finalize_dest && !use_defined_assignment) {
+                        builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem});
+                    } else {
+                        call_struct_copy(src_w.vptr, src_elem, dest_elem, true, true,
+                            use_defined_assignment);
+                    }
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -10699,7 +11031,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Type::getInt8Ty(context), src_raw_data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
-                    builder->CreateCall(fnTy, fn, {src_elem, dest_elem});
+                    if (finalize_dest && !use_defined_assignment) {
+                        builder->CreateCall(fnTy, fn, {src_elem, dest_elem});
+                    } else {
+                        call_struct_copy(src_vptr, src_elem, dest_elem, true, true,
+                            use_defined_assignment);
+                    }
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -10751,8 +11088,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             struct_sym, dest_elem_ptr, elem_type, false);
                     }
                     llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
-                        elem_type, ASRUtils::extract_type(dest_ty), module,
-                        false, finalize_dest);
+                        ASRUtils::extract_type(dest_ty), elem_type, module,
+                        use_defined_assignment, finalize_dest && !reallocates_elements);
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
@@ -10818,7 +11155,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     dest_ptr = builder->CreateBitCast(dest_ptr, llvm_utils->i8_ptr);
                 }
 
-                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
+                if (finalize_dest && !use_defined_assignment) {
+                    builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
+                } else {
+                    call_struct_copy(vptr, src_ptr, dest_ptr, !finalize_dest, false,
+                        use_defined_assignment);
+                }
                 return ;
             }
 
@@ -10905,6 +11247,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Value* dest_member_ptr = dest_member;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
+                            if (use_defined_assignment) {
+                                auto *member_struct = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration));
+                                llvm::Value *old = dest_member;
+                                llvm_utils->create_if_else(builder->CreateIsNotNull(old), [&]() {
+                                    finalizer_instnace.finalize_before_deallocate(
+                                        old, member_type, member_struct, true);
+                                }, [](){});
+                                builder->CreateStore(llvm::Constant::getNullValue(mem_type),
+                                    dest_member_ptr);
+                                dest_member = llvm_utils->CreateLoad2(mem_type, dest_member_ptr);
+                            }
                         }
                         llvm::Value* dest_member_copy = dest_member;
                         llvm_utils->create_if_else(is_allocated, [&]() {
@@ -11002,7 +11357,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                             src_member = builder->CreateBitCast(src_member, llvm_utils->i8_ptr);
                             dest_member = builder->CreateBitCast(dest_member, llvm_utils->i8_ptr);
-                            builder->CreateCall(fnTy, fn, {src_member, dest_member});
+                            if (finalize_dest && !use_defined_assignment) {
+                                builder->CreateCall(fnTy, fn, {src_member, dest_member});
+                            } else {
+                                call_struct_copy(vtable_ptr, src_member, dest_member,
+                                    !finalize_dest || ASRUtils::is_allocatable(member_type),
+                                    false, use_defined_assignment);
+                            }
                         }, [&]() {
                             if (ASRUtils::is_allocatable(member_type)) {
                                 // If source allocatable struct is not allocated, then
@@ -11074,7 +11435,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
-                            module);
+                            module, use_defined_assignment, finalize_dest);
                         }, [&]() {
                             if (is_alloc_scalar_intrinsic) {
                                 // The source component is unallocated, so the
@@ -11140,7 +11501,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                         llvm::Value* data_not_null = builder->CreateICmpNE(
                                             dest_data, llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()));
                                         llvm_utils->create_if_else(data_not_null, [&]() {
-                                            llvm_utils->lfortran_free(dest_data);
+                                            if (ASR::is_a<ASR::StructType_t>(
+                                                    *ASRUtils::extract_type(member_type))) {
+                                                auto* member_struct = ASR::down_cast<ASR::Struct_t>(
+                                                    ASRUtils::symbol_get_past_external(
+                                                        ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration));
+                                                auto* destroy = finalizer_instnace.get_raw_finalizer(
+                                                    ASRUtils::type_get_past_allocatable_pointer(member_type),
+                                                    member_struct, finalize_dest);
+                                                builder->CreateCall(destroy,
+                                                    {builder->CreateBitCast(dest_descr, llvm_utils->i8_ptr)});
+                                            } else {
+                                                llvm_utils->lfortran_free(dest_data);
+                                            }
                                         }, [](){});
                                         llvm_utils->arr_api->reset_is_allocated_flag(llvm_array_type, dest_descr, llvm_data_type);
                                     }

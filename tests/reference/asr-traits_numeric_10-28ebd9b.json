@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_numeric_10-28ebd9b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/traits_numeric_10.f90",
+    "infile_hash": "f32f16f8202072c7644a6427dd838d7f074ae88a09e70382d70985b4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-traits_numeric_10-28ebd9b.stdout",
+    "stdout_hash": "211906e2d03b60b292e2779db3491be646a4ee128c7ca0926d7ce991",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

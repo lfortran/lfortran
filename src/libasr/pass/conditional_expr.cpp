@@ -4,6 +4,7 @@
 #include <libasr/exception.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/conditional_expr.h>
+#include <libasr/pass/function_result_scope.h>
 #include <libasr/pass/pass_utils.h>
 
 /*
@@ -25,8 +26,8 @@ these results cannot be joined by the backends: there is no single descriptor
 they could write into before knowing which arm runs. Assigning into an
 allocatable temporary inside the branch gets all three right.
 
-Scalars of intrinsic type, including character, are left as IfExp. The
-backends lower those directly, and they must: the standard requires that the
+Scalars of intrinsic type without finalizable result references are left as
+IfExp. The backends lower those directly: the standard requires that the
 arm which is not chosen is never evaluated (10.1.4 NOTE 3), which the
 generated If statement preserves here and a real branch preserves there.
 */
@@ -35,11 +36,15 @@ namespace LCompilers {
 
 // The backends can join a result that is a plain scalar of intrinsic type by
 // value. Everything else is described by a descriptor whose contents are only
-// known once an arm has been chosen.
-static bool requires_temporary(ASR::ttype_t* type) {
+// known once an arm has been chosen. Result-bearing scalar arms also need a
+// branch before call lowering can split them into statements.
+static bool requires_temporary(const ASR::IfExp_t& expression) {
+    ASR::ttype_t* type = expression.m_type;
     return ASRUtils::is_array(type)
         || ASRUtils::is_struct(*type)
-        || ASRUtils::is_class_type(ASRUtils::extract_type(type));
+        || ASRUtils::is_class_type(ASRUtils::extract_type(type))
+        || references_function_results(expression.m_body)
+        || references_function_results(expression.m_orelse);
 }
 
 class ConditionalExprCollector:
@@ -50,7 +55,7 @@ public:
     ConditionalExprCollector(): found(false) {}
 
     void visit_IfExp(const ASR::IfExp_t& x) {
-        if (requires_temporary(x.m_type)) {
+        if (requires_temporary(x)) {
             found = true;
             return;
         }
@@ -122,7 +127,7 @@ public:
         // is no statement list the If could be inserted into, and a backend
         // reporting that it cannot lower the node beats a crash here.
         if (current_body == nullptr
-                || (!requires_temporary(x->m_type)
+                || (!requires_temporary(*x)
                     && !contains_lowered_conditional_expr(x->m_body)
                     && !contains_lowered_conditional_expr(x->m_orelse))) {
             ASR::expr_t** arms_copy = current_expr;
@@ -141,8 +146,13 @@ public:
             temporary_type = ASRUtils::duplicate_type_with_empty_dims(al,
                 temporary_type);
         }
-        temporary_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
-            loc, temporary_type));
+        if (ASRUtils::is_array(temporary_type) ||
+                ASRUtils::is_struct(*temporary_type) ||
+                ASRUtils::is_class_type(ASRUtils::extract_type(temporary_type)) ||
+                ASRUtils::is_character(*temporary_type)) {
+            temporary_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                loc, temporary_type));
+        }
         ASR::expr_t* temporary_var = PassUtils::create_var(counter++,
             "conditional_expr", loc, temporary_type, al, current_scope,
             x->m_body);

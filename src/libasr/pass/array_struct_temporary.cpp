@@ -1445,7 +1445,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
 bool is_directly_addressable_expr(ASR::expr_t* value) {
     value = ASRUtils::get_past_array_physical_cast(value);
     switch( value->type ) {
-        case ASR::exprType::Var: {
+        case ASR::exprType::Var:
+        case ASR::exprType::TraitReceiver: {
             return true;
         }
         case ASR::exprType::ArrayItem: {
@@ -1973,6 +1974,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                        !ASR::is_a<ASR::Var_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
+                            *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       !ASR::is_a<ASR::TraitReceiver_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
@@ -2538,6 +2541,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         visit_Call(x, "_subroutine_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
+    }
+
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+        visit_Call(x, "_trait_subroutine_call_");
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_TraitSubroutineCall(x);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        visit_Call(x, "_trait_function_call_");
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_TraitFunctionCall(x);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {

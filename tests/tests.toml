@@ -5841,6 +5841,114 @@ filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "../integration_tests/traits_static_01.f90"
+ast = true
+ast_f90 = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/traits_runtime_01.f90"
+ast_f90 = true
+asr = true
+c = true
+
+[[test]]
+filename = "../integration_tests/traits_static_declaration_01.f90"
+fortran = true
+
+[[test]]
+filename = "../integration_tests/traits_inheritance_03.f90"
+ast_f90 = true
+
+# Traits are an LFortran extension. Keep these unused declarations stage-only
+# until aggregate-return lowering preserves the original trait signatures.
+[[test]]
+filename = "../integration_tests/traits_dependent_result_01.f90"
+asr = true
+options = "--pass=function_call_in_declaration --cumulative --verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_dependent_result_02.f90"
+asr = true
+options = "--pass=function_call_in_declaration --cumulative --verify-all-passes"
+
+[[test]]
+filename = "errors/continue_compilation_traits_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/traits_numeric_01.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_02.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_03.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_04.f90"
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_05_contracts.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_05.f90"
+extrafiles = "../integration_tests/traits_numeric_05_contracts.f90, ../integration_tests/traits_numeric_05_ops.f90, ../integration_tests/traits_numeric_05_facade.f90"
+ast = true
+ast_f90 = true
+asr = true
+# Snapshot checked ASR before the per-invocation separate-compilation suffixes.
+# The integration target and fresh-process module tests use separate compilation.
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_06.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_09.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_10.f90"
+extrafiles = "../integration_tests/traits_numeric_10_ops.f90, ../integration_tests/traits_numeric_10_facade.f90"
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
+filename = "../integration_tests/traits_numeric_10_ops.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
 filename = "coarray_collectives_01.f90"
 fortran = true
 pass = "coarray"   

@@ -4,6 +4,7 @@
 #include <string>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
@@ -13,6 +14,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
+#include <lfortran/semantics/trait_procedures.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -23,6 +25,8 @@ namespace LCompilers::LFortran {
 
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
+    std::map<SymbolTable*, std::vector<const AST::Implements_t*>>
+        pending_trait_implementations;
     struct ClassProcInfo {
         std::string name;
         Location loc;
@@ -129,6 +133,24 @@ public:
         }
     };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    struct ProcedureScopeRecovery {
+        SymbolTableVisitor &visitor;
+        SymbolTable *scope;
+        std::vector<std::string> arguments;
+        int exceptions;
+        bool checking_traits = false;
+
+        ProcedureScopeRecovery(SymbolTableVisitor &v)
+            : visitor(v), scope(v.current_scope), arguments(v.current_procedure_args),
+              exceptions(std::uncaught_exceptions()) {}
+
+        ~ProcedureScopeRecovery() {
+            if (checking_traits && std::uncaught_exceptions() > exceptions) {
+                visitor.current_scope = scope;
+                visitor.current_procedure_args = std::move(arguments);
+            }
+        }
+    };
     // Names of the symbols an INSTANTIATE statement adds to the specification
     // part of the module being visited. They are entities of that module, so
     // their accessibility comes from its PUBLIC/PRIVATE statements, which are
@@ -200,6 +222,14 @@ public:
         AST::program_unit_t *find(const std::string &name) {
             for (size_t i = 0; i < n_procedures; i++) {
                 AST::program_unit_t *p = procedures[i];
+                if (AST::is_a<AST::TraitProcedure_t>(*p)) {
+                    AST::program_unit_t *inner =
+                        AST::down_cast<AST::TraitProcedure_t>(p)->m_procedure;
+                    const char *inner_name = AST::is_a<AST::Function_t>(*inner)
+                        ? AST::down_cast<AST::Function_t>(inner)->m_name
+                        : AST::down_cast<AST::Subroutine_t>(inner)->m_name;
+                    if (to_lower(inner_name) == name) return p;
+                }
                 if (AST::is_a<AST::Function_t>(*p)) {
                     if (to_lower(AST::down_cast<AST::Function_t>(p)->m_name) == name) {
                         return p;
@@ -237,7 +267,8 @@ public:
                 if (procedures->scope != scope) continue;
                 AST::program_unit_t *declaration = procedures->find(name);
                 if (!declaration) continue;
-                if ((AST::is_a<AST::Function_t>(*declaration)
+                if (AST::is_a<AST::TraitProcedure_t>(*declaration)
+                        || (AST::is_a<AST::Function_t>(*declaration)
                         && AST::down_cast<AST::Function_t>(declaration)->n_temp_args > 0)
                         || (AST::is_a<AST::Subroutine_t>(*declaration)
                         && AST::down_cast<AST::Subroutine_t>(declaration)->n_temp_args > 0)) {
@@ -711,6 +742,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_runtime_trait_locals();
         // Update access of use-associated ExternalSymbol entries based on the
         // final dflt_access (set by private/public statements processed above).
         // use statements are processed before private/public, so ExternalSymbols
@@ -737,6 +769,12 @@ public:
                 } else {
                     co->m_access = dflt_access;
                 }
+            } else if (ASR::is_a<ASR::Trait_t>(*item.second)) {
+                auto *contract = ASRUtils::trait_runtime_contract(item.second);
+                if (contract && contract->m_anonymous) continue;
+                ASR::down_cast<ASR::Trait_t>(item.second)->m_access =
+                    assgnd_access.count(item.first)
+                        ? assgnd_access[item.first] : dflt_access;
             } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
                 // A derived type may precede the `public :: t` or default
                 // `private` statement that sets its access.
@@ -779,6 +817,7 @@ public:
         add_generic_procedures();
         add_overloaded_procedures();
         add_class_procedures();
+        complete_trait_implementations();
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
@@ -829,6 +868,19 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
+        // Postponed bounds are complete now; two missing bounds could have
+        // compared equal when the trait declarations were first visited.
+        try {
+            for (const auto &entry : m->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Trait_t>(*entry.second)) {
+                    auto *trait = ASR::down_cast<ASR::Trait_t>(entry.second);
+                    check_trait_methods(*trait, trait->base.base.loc);
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_scope->erase_symbol(m->m_name);
+            throw;
+        }
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
@@ -858,6 +910,84 @@ public:
             }
             default_storage_save = false;
         }
+    }
+
+    void check_runtime_trait_dummies(ASR::Function_t &function) {
+        bool invalid = false;
+        if (function.m_return_var && ASR::is_a<ASR::TraitObjectType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(function.m_return_var)))) {
+            auto *result = ASRUtils::EXPR2VAR(function.m_return_var);
+            auto *signature = ASRUtils::get_FunctionType(function);
+            std::string message;
+            if (!ASRUtils::is_trait_owner(result->m_type) ||
+                    result->m_storage != ASR::storage_typeType::Default ||
+                    result->m_presence != ASR::presenceType::Required ||
+                    result->m_value_attr || result->m_symbolic_value || result->m_value ||
+                    result->n_codims) {
+                message = "runtime trait function results require uninitialized "
+                    "scalar allocatable storage";
+            } else if ((signature->m_abi != ASR::abiType::Source &&
+                        signature->m_abi != ASR::abiType::ExternalUndefined) ||
+                    ASRUtils::is_bare_implicit_interface(*signature)) {
+                message = "runtime trait function results require the Fortran source ABI";
+            } else if (signature->m_pure) {
+                message = "runtime trait function results with unchecked dynamic "
+                    "lifecycle effects are not allowed in pure procedures";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {result->base.base.loc}, "");
+                invalid = true;
+            }
+        }
+        for (size_t i = 0; i < function.n_args; i++) {
+            auto *symbol = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
+            auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
+            if (!ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(dummy->m_type))) continue;
+            std::string message;
+            bool slot = ASRUtils::is_trait_owner(dummy->m_type);
+            bool pointer = ASRUtils::is_trait_pointer(dummy->m_type);
+            if ((!slot && !pointer && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) ||
+                    dummy->n_codims) {
+                message = "runtime trait objects currently require a scalar dummy";
+            } else if (dummy->m_storage != ASR::storage_typeType::Default ||
+                    dummy->m_symbolic_value || dummy->m_value) {
+                message = "runtime trait dummies cannot have saved or initialized storage";
+            } else if ((slot || pointer) && (dummy->m_presence != ASR::presenceType::Required ||
+                    dummy->m_value_attr)) {
+                message = pointer
+                    ? "optional or value pointer runtime trait dummies are not implemented yet"
+                    : "optional or value allocatable runtime trait dummies are not implemented yet";
+            } else if ((slot || pointer) && ASRUtils::get_FunctionType(function)->m_abi ==
+                    ASR::abiType::BindC) {
+                message = pointer
+                    ? "bind(c) pointer runtime trait dummies are not implemented yet"
+                    : "bind(c) allocatable runtime trait dummies are not implemented yet";
+            } else if (slot && dummy->m_intent == ASR::intentType::Out &&
+                    ASRUtils::get_FunctionType(function)->m_pure) {
+                message = "runtime trait intent(out) cleanup with unchecked dynamic "
+                    "lifecycle effects is not allowed inside a pure procedure";
+            } else if (pointer && dummy->m_intent == ASR::intentType::Out &&
+                    ASRUtils::get_FunctionType(function)->m_pure) {
+                message = "an intent(out) dummy of a pure procedure cannot be polymorphic";
+            } else if (!slot && !pointer && (dummy->m_intent != ASR::intentType::In ||
+                    dummy->m_presence != ASR::presenceType::Required ||
+                    dummy->m_value_attr)) {
+                message = "runtime trait dummies currently require intent(in) "
+                    "without optional or value";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {dummy->base.base.loc}, "");
+                invalid = true;
+            }
+        }
+        if (ASRUtils::has_trait_out_cleanup(function)) {
+            function.m_side_effect_free = false;
+            function.m_deterministic = false;
+        }
+        if (invalid) throw SemanticAbort();
     }
 
     // C1610 (J3/26-007r1, 16.3): within a template or templated procedure, or a
@@ -985,7 +1115,8 @@ public:
             if (is_common_declaration(x.m_items[i])) continue;
             if(AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                if(decl->m_vartype) {
+                if(decl->m_vartype &&
+                        !AST::is_a<AST::AttrTraitClass_t>(*decl->m_vartype)) {
 
                     AST::AttrType_t* type = nullptr;
                     if (AST::is_a<AST::AttrType_t>(*decl->m_vartype)) {
@@ -1076,6 +1207,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
+        check_runtime_trait_locals();
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
@@ -1094,6 +1226,7 @@ public:
         pending_proc_placeholders.clear();
         try {
             add_class_procedures();
+            complete_trait_implementations();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
@@ -1826,6 +1959,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        ProcedureScopeRecovery procedure_scope_recovery(*this);
         // Restored on exit: a subroutine nested in a template (e.g. a deferred
         // interface body) must not end the enclosing template's context.
         bool is_template_copy = is_template;
@@ -1991,7 +2125,8 @@ public:
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
-                if(decl.m_vartype) {
+                if(decl.m_vartype &&
+                        !AST::is_a<AST::AttrTraitClass_t>(*decl.m_vartype)) {
                     AST::AttrType_t* type = nullptr;
                     if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
                         type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
@@ -2284,6 +2419,10 @@ public:
             is_requirement, init_deterministic, init_side_effect_free);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        procedure_scope_recovery.checking_traits = true;
+        check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
+        check_runtime_trait_locals();
+        procedure_scope_recovery.checking_traits = false;
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
@@ -2425,7 +2564,8 @@ public:
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
         for (size_t i=0; i<n; i++) {
-            if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
+            if (AST::is_a<AST::AttrType_t>(*attributes[i]) ||
+                    AST::is_a<AST::AttrTraitClass_t>(*attributes[i])) {
                 if (found) {
                     diag.add(diag::Diagnostic(
                         "Return type declared twice",
@@ -2433,7 +2573,11 @@ public:
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
                 } else {
-                    r = AST::down_cast<AST::AttrType_t>(attributes[i]);
+                    r = AST::is_a<AST::AttrTraitClass_t>(*attributes[i])
+                        ? AST::down_cast2<AST::AttrType_t>(AST::make_AttrType_t(al,
+                            attributes[i]->base.loc, AST::decl_typeType::TypeType,
+                            nullptr, 0, attributes[i], nullptr, AST::symbolType::None))
+                        : AST::down_cast<AST::AttrType_t>(attributes[i]);
                     found = true;
                 }
             }
@@ -2442,6 +2586,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        ProcedureScopeRecovery procedure_scope_recovery(*this);
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -2605,7 +2750,8 @@ public:
             is_Function = true;
             if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
-                if(decl.m_vartype) {
+                if(decl.m_vartype &&
+                        !AST::is_a<AST::AttrTraitClass_t>(*decl.m_vartype)) {
                     AST::AttrType_t* type = nullptr;
                     if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
                         type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
@@ -2842,6 +2988,15 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
+                    if (return_type->m_attr &&
+                            AST::is_a<AST::AttrTraitClass_t>(*return_type->m_attr)) {
+                        Vec<ASR::dimension_t> dims;
+                        dims.reserve(al, 0);
+                        type = determine_type(x.base.base.loc, return_var_name,
+                            return_type->m_attr, false, false, dims, nullptr,
+                            type_decl, current_procedure_abi_type);
+                        break;
+                    }
                     if (return_type->m_attr && return_type->m_attr && return_type->m_attr->type == AST::decl_attributeType::AttrType) {
                         AST::AttrType_t *return_attr_type = AST::down_cast<AST::AttrType_t>(return_type->m_attr);
 
@@ -3155,6 +3310,10 @@ public:
         }
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
+        procedure_scope_recovery.checking_traits = true;
+        check_runtime_trait_dummies(*ASR::down_cast2<ASR::Function_t>(tmp));
+        check_runtime_trait_locals();
+        procedure_scope_recovery.checking_traits = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
@@ -3836,7 +3995,8 @@ public:
                         return t;
                     };
 
-                var->m_type = replace_deferred_struct_type(var_type);
+                var->m_type = ASRUtils::import_trait_type(al,
+                    replace_deferred_struct_type(var_type), var->m_parent_symtab);
                 if (var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
                     ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
                     ptr_null->m_type = var->m_type;
@@ -4130,6 +4290,739 @@ public:
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {item->base.loc})}));
                 throw SemanticAbort();
+            }
+        }
+    }
+
+    [[noreturn]] void trait_error(const std::string &message,
+            const Location &loc) {
+        diag.semantic_error_label(message, {loc}, "");
+        throw SemanticAbort();
+    }
+
+    ASR::Trait_t *resolve_trait(const std::string &name, const Location &loc) {
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(to_lower(name));
+        if (!symbol || !ASR::is_a<ASR::Trait_t>(
+                *ASRUtils::symbol_get_past_external(symbol))) {
+            trait_error("'" + name + "' is not a visible trait", loc);
+        }
+        return ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(symbol));
+    }
+
+    Vec<ASR::ttype_t*> resolve_type_set_members(
+            AST::decl_attribute_t **members, size_t count, std::string name) {
+        Vec<ASR::ttype_t*> member_types;
+        member_types.reserve(al, count);
+        for (size_t j = 0; j < count; j++) {
+            if (!AST::is_a<AST::AttrType_t>(*members[j])) {
+                trait_error("non-numeric type-set members are not implemented yet",
+                    members[j]->base.loc);
+            }
+            auto *attribute = AST::down_cast<AST::AttrType_t>(members[j]);
+            for (size_t k = 0; k < attribute->n_kind; k++) {
+                if (attribute->m_kind[k].m_type == AST::kind_item_typeType::Star) {
+                    trait_error("type-set kind wildcards are not implemented yet",
+                        attribute->m_kind[k].loc);
+                }
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t *declaration = nullptr;
+            ASR::ttype_t *type = determine_type(attribute->base.base.loc,
+                name, members[j], false, false, dims, nullptr,
+                declaration, current_procedure_abi_type);
+            if (!ASR::is_a<ASR::Integer_t>(*type) &&
+                    !ASR::is_a<ASR::Real_t>(*type) &&
+                    !ASR::is_a<ASR::Complex_t>(*type)) {
+                trait_error("non-numeric type-set members are not implemented yet",
+                    attribute->base.base.loc);
+            }
+            bool duplicate = false;
+            for (auto *member : member_types) {
+                if (ASRUtils::types_equal(member, type, nullptr, nullptr)) {
+                    duplicate = true;
+                }
+            }
+            if (!duplicate) member_types.push_back(al, type);
+        }
+        return member_types;
+    }
+
+    AST::decl_attribute_t *bare_type_set_member(
+            const std::string &name, const Location &loc) {
+        static const std::map<std::string, AST::decl_typeType> types = {
+            {"integer", AST::TypeInteger}, {"real", AST::TypeReal},
+            {"complex", AST::TypeComplex}, {"logical", AST::TypeLogical},
+            {"character", AST::TypeCharacter}, {"byte", AST::TypeInteger},
+            {"doubleprecision", AST::TypeDoublePrecision},
+            {"doublecomplex", AST::TypeDoubleComplex}};
+        auto type = types.find(name);
+        if (type == types.end()) return nullptr;
+        Vec<AST::kind_item_t> kind;
+        kind.reserve(al, 1);
+        if (name == "byte") {
+            AST::kind_item_t item;
+            item.loc = loc;
+            item.m_id = nullptr;
+            item.m_value = AST::down_cast<AST::expr_t>(
+                AST::make_Num_t(al, loc, 1, nullptr));
+            item.m_type = AST::kind_item_typeType::Value;
+            kind.push_back(al, item);
+        }
+        return AST::down_cast<AST::decl_attribute_t>(AST::make_AttrType_t(
+            al, loc, type->second, kind.size() ? kind.p : nullptr, kind.size(),
+            nullptr, nullptr, AST::None));
+    }
+
+    void check_trait_methods(ASR::Trait_t &trait, const Location &loc) {
+        std::map<std::string, ASR::Function_t*> methods;
+        for (ASR::symbol_t *member : checked_trait_hierarchy(trait, loc).members) {
+            auto *method = ASRUtils::trait_method_function(member);
+            for (size_t i = 0; i < method->n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
+                        !ASR::is_a<ASR::Variable_t>(
+                            *ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(method->m_args[i])->m_v))) {
+                    trait_error("procedure dummy arguments in trait methods "
+                        "are not implemented yet", method->base.base.loc);
+                }
+            }
+            auto previous = methods.emplace(method->m_name, method);
+            if (!previous.second) {
+                check_trait_method_compatibility(*previous.first->second,
+                    *method, loc);
+            }
+        }
+    }
+
+    void visit_Trait(const AST::Trait_t &x) {
+        warn_traits_extension(x.base.base.loc);
+        if (scoping_unit_kind != ScopingUnitKind::Module) {
+            trait_error("trait declarations currently require a module scope", x.base.base.loc);
+        }
+        std::string name = to_lower(x.m_name);
+        if (current_scope->get_symbol(name)) {
+            trait_error("trait '" + name + "' is already declared",
+                x.base.base.loc);
+        }
+        SymbolTable *parent = current_scope;
+        ASR::accessType saved_access = dflt_access;
+        current_scope = al.make_new<SymbolTable>(parent);
+        ASR::symbol_t *trait = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Trait_t(al, x.base.base.loc, current_scope,
+                s2c(al, name), nullptr, 0,
+                assgnd_access.count(name) ? assgnd_access[name] : saved_access,
+                ASR::trait_kindType::UniversalTrait, nullptr, 0));
+        parent->add_symbol(name, trait);
+        dflt_access = ASR::accessType::Public;
+        try {
+            auto *trait_definition = ASR::down_cast<ASR::Trait_t>(trait);
+            Vec<ASR::ttype_t*> member_types;
+            member_types.reserve(al, 1);
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::InterfaceTypeSet_t>(*x.m_items[i])) continue;
+                if (x.n_items != 1 || x.n_parents) {
+                    trait_error("type-set trait composition and inheritance "
+                        "are not implemented yet", x.m_items[i]->base.loc);
+                }
+                trait_definition->m_kind = ASR::trait_kindType::IntrinsicTypeSet;
+                auto *set = AST::down_cast<AST::InterfaceTypeSet_t>(x.m_items[i]);
+                member_types = resolve_type_set_members(
+                    set->m_member_types, set->n_member_types, name);
+            }
+            trait_definition->m_member_types = member_types.p;
+            trait_definition->n_member_types = member_types.size();
+            Vec<ASR::symbol_t*> parents;
+            parents.reserve(al, x.n_parents);
+            for (size_t i = 0; i < x.n_parents; i++) {
+                if (resolve_trait(x.m_parents[i], x.base.base.loc)->m_kind ==
+                        ASR::trait_kindType::IntrinsicTypeSet) {
+                    trait_error("type-set trait composition and inheritance "
+                        "are not implemented yet", x.base.base.loc);
+                }
+                ASR::symbol_t *parent_trait = parent->resolve_symbol(
+                    to_lower(x.m_parents[i]));
+                parents.push_back(al, parent_trait);
+                ASRUtils::insert_module_dependency(
+                    parent_trait, al, current_module_dependencies);
+            }
+            trait_definition->m_parents = parents.p;
+            trait_definition->n_parents = parents.size();
+            checked_trait_hierarchy(*trait_definition, x.base.base.loc);
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (AST::is_a<AST::InterfaceTypeSet_t>(*x.m_items[i])) continue;
+                if (!AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
+                    trait_error("a trait must contain procedure signatures",
+                        x.m_items[i]->base.loc);
+                }
+                AST::program_unit_t *procedure =
+                    AST::down_cast<AST::InterfaceProc_t>(x.m_items[i])->m_proc;
+                if (AST::is_a<AST::TraitProcedure_t>(*procedure)) {
+                    procedure = AST::down_cast<AST::TraitProcedure_t>(procedure)->m_procedure;
+                }
+                AST::decl_stmt_t **items;
+                size_t n_items;
+                const char *procedure_name;
+                if (AST::is_a<AST::Function_t>(*procedure)) {
+                    auto *function = AST::down_cast<AST::Function_t>(procedure);
+                    items = function->m_items;
+                    n_items = function->n_items;
+                    procedure_name = function->m_name;
+                } else {
+                    auto *subroutine = AST::down_cast<AST::Subroutine_t>(procedure);
+                    items = subroutine->m_items;
+                    n_items = subroutine->n_items;
+                    procedure_name = subroutine->m_name;
+                }
+                if (current_scope->get_symbol(to_lower(procedure_name))) {
+                    trait_error("overloaded declarations of trait method '" +
+                        to_lower(procedure_name) + "' are not implemented yet",
+                        procedure->base.loc);
+                }
+                for (size_t j = 0; j < n_items; j++) {
+                    if (AST::is_executable_stmt(*items[j])) {
+                        trait_error("a trait procedure cannot have an executable body",
+                            items[j]->base.loc);
+                    }
+                }
+                visit_interface_item(*x.m_items[i]);
+            }
+            check_trait_methods(*trait_definition, x.base.base.loc);
+        } catch (const SemanticAbort &) {
+            current_scope = parent;
+            dflt_access = saved_access;
+            parent->erase_symbol(name);
+            throw;
+        }
+        current_scope = parent;
+        dflt_access = saved_access;
+        if (ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
+                ASR::trait_kindType::UniversalTrait) {
+            create_runtime_trait_contract(ASR::down_cast<ASR::Trait_t>(trait));
+        }
+        tmp = &trait->base;
+    }
+
+    ASR::TraitWitness_t *create_runtime_trait_witness(
+            ASR::TraitImplementation_t *implementation,
+            ASR::TraitRuntimeContract_t *contract) {
+        if (!contract) return nullptr;
+        if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
+            return existing;
+        }
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *binding = ASRUtils::find_trait_binding(
+                *implementation, contract->m_slots[i].m_origins[0]);
+            LCOMPILERS_ASSERT(binding);
+            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
+            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
+            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return nullptr;
+            auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
+            if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
+            if (auto *generic = ASRUtils::trait_method_template(*procedure)) {
+                create_trait_erasure(*generic, implementation->m_parent_symtab,
+                    binding->loc);
+            }
+        }
+        const Location &loc = implementation->base.base.loc;
+        std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==
+                ASRUtils::symbol_get_past_external(contract->m_trait)
+            ? "" : "_" + std::string(ASRUtils::symbol_name(contract->m_trait));
+        std::string name = current_scope->get_unique_name(
+            std::string(implementation->m_name) + suffix + "_witness");
+        auto *witness_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::trait_lifecycle_t lifecycle;
+        lifecycle.loc = loc;
+        lifecycle.m_type_declaration = implementation->m_type_declaration;
+        auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
+            al, loc, witness_scope, s2c(al, name),
+            make_operator_proc_visible(&contract->base, "trait", current_scope),
+            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
+            lifecycle, nullptr, 0, nullptr, 0));
+        current_scope->add_symbol(name, &witness->base);
+        Vec<ASR::symbol_t*> procedures;
+        Vec<char*> dependencies;
+        procedures.reserve(al, contract->n_slots);
+        dependencies.reserve(al, contract->n_slots);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto &slot = contract->m_slots[i];
+            auto *binding = ASRUtils::find_trait_binding(*implementation, slot.m_origins[0]);
+            LCOMPILERS_ASSERT(binding);
+            auto *procedure = trait_adapter(
+                ASR::down_cast<ASR::Function_t>(slot.m_procedure),
+                implementation->m_implementing_type, implementation->m_type_declaration,
+                *binding, witness_scope, loc, witness, i);
+            procedures.push_back(al, procedure);
+            dependencies.push_back(al, ASRUtils::symbol_name(procedure));
+        }
+        witness->m_procedures = procedures.p;
+        witness->n_procedures = procedures.size();
+        witness->m_dependencies = dependencies.p;
+        witness->n_dependencies = dependencies.size();
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(contract->m_trait));
+        Vec<ASR::symbol_t*> projections;
+        projections.reserve(al, trait->n_parents);
+        for (size_t i = 0; i < trait->n_parents; i++) {
+            auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
+            LCOMPILERS_ASSERT(parent_contract);
+            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract);
+            LCOMPILERS_ASSERT(parent_witness);
+            projections.push_back(al, &parent_witness->base);
+        }
+        witness->m_projections = projections.p;
+        witness->n_projections = projections.size();
+        return witness;
+    }
+
+    void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
+        warn_traits_extension(x.base.base.loc);
+        std::set<std::string> parameters;
+        std::vector<std::vector<ASR::symbol_t*>> parameter_traits(x.n_parameters);
+        std::vector<Vec<ASR::ttype_t*>> parameter_members(x.n_parameters);
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            const auto &parameter = x.m_parameters[i];
+            std::string name = to_lower(parameter.m_name);
+            if (!parameters.insert(name).second) {
+                trait_error("duplicate generic type parameter '" + name + "'",
+                    parameter.loc);
+            }
+            parameter_members[i].reserve(al, 0);
+            if (parameter.n_member_types) {
+                parameter_members[i] = resolve_type_set_members(
+                    parameter.m_member_types, parameter.n_member_types, name);
+                continue;
+            }
+            if (parameter.n_traits == 0) {
+                trait_error("unconstrained generic parameters are not implemented yet",
+                    parameter.loc);
+            }
+            for (size_t j = 0; j < parameter.n_traits; j++) {
+                std::string trait_name = to_lower(parameter.m_traits[j]);
+                ASR::symbol_t *symbol = current_scope->resolve_symbol(trait_name);
+                // Bare intrinsic keywords remain names in the AST. A visible
+                // trait wins; an explicit kind or union takes the type-set path.
+                if (!symbol || !ASR::is_a<ASR::Trait_t>(
+                        *ASRUtils::symbol_get_past_external(symbol))) {
+                    if (auto *member = bare_type_set_member(trait_name, parameter.loc)) {
+                        if (parameter.n_traits != 1) {
+                            trait_error("type-set trait composition is not implemented yet",
+                                parameter.loc);
+                        }
+                        parameter_members[i] = resolve_type_set_members(&member, 1, name);
+                        continue;
+                    }
+                }
+                auto *trait = resolve_trait(trait_name, parameter.loc);
+                if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
+                        parameter.n_traits != 1) {
+                    trait_error("type-set trait composition is not implemented yet",
+                        parameter.loc);
+                }
+                parameter_traits[i].push_back(symbol);
+            }
+        }
+        AST::program_unit_t *lowered = lower_trait_procedure(al, x);
+        visit_program_unit(*lowered);
+        const char *name = AST::is_a<AST::Function_t>(*lowered)
+            ? AST::down_cast<AST::Function_t>(lowered)->m_name
+            : AST::down_cast<AST::Subroutine_t>(lowered)->m_name;
+        ASR::Template_t *generic = ASR::down_cast<ASR::Template_t>(
+            current_scope->get_symbol(to_lower(name)));
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            const auto &parameter = x.m_parameters[i];
+            ASR::symbol_t *type_symbol = generic->m_symtab->get_symbol(
+                to_lower(parameter.m_name));
+            if (parameter_members[i].size()) {
+                std::string name = generic->m_symtab->get_unique_name(
+                    "__type_set_" + to_lower(parameter.m_name));
+                auto *scope = al.make_new<SymbolTable>(generic->m_symtab);
+                auto *trait = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(
+                    al, parameter.loc, scope, s2c(al, name), nullptr, 0,
+                    ASR::accessType::Private, ASR::trait_kindType::IntrinsicTypeSet,
+                    parameter_members[i].p, parameter_members[i].size()));
+                generic->m_symtab->add_symbol(name, trait);
+                parameter_traits[i].push_back(trait);
+            }
+            std::map<std::string, std::pair<ASR::Function_t*, ASR::symbol_t*>> methods;
+            for (auto *trait_symbol : parameter_traits[i]) {
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(trait_symbol));
+                auto hierarchy = checked_trait_hierarchy(*trait, parameter.loc);
+                Vec<ASR::trait_requirement_t> requirements;
+                requirements.reserve(al, hierarchy.members.size());
+                for (ASR::symbol_t *member : hierarchy.members) {
+                    auto *method = ASRUtils::trait_method_function(member);
+                    if (ASRUtils::trait_method_template(*method)) {
+                        trait_error("generic methods in generic type parameter constraints "
+                            "are not implemented yet", parameter.loc);
+                    }
+                    auto found = methods.find(method->m_name);
+                    ASR::symbol_t *procedure;
+                    if (found == methods.end()) {
+                        procedure = normalize_trait_requirement(method, type_symbol,
+                            generic->m_symtab, parameter.loc);
+                        methods.emplace(method->m_name, std::make_pair(method, procedure));
+                    } else {
+                        check_trait_method_compatibility(*found->second.first,
+                            *method, parameter.loc);
+                        procedure = found->second.second;
+                    }
+                    ASR::trait_requirement_t requirement;
+                    requirement.loc = parameter.loc;
+                    requirement.m_member = reference_trait_member(
+                        member, generic->m_symtab, parameter.loc);
+                    requirement.m_procedure = procedure;
+                    requirements.push_back(al, requirement);
+                }
+                std::string constraint_name = generic->m_symtab->get_unique_name(
+                    "__constraint_" + to_lower(parameter.m_name));
+                ASR::symbol_t *constraint = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_TraitConstraint_t(al, parameter.loc, generic->m_symtab,
+                        s2c(al, constraint_name), type_symbol, trait_symbol,
+                        requirements.p, requirements.size(), nullptr, 0));
+                generic->m_symtab->add_symbol(constraint_name, constraint);
+            }
+        }
+        tmp = &generic->base.base;
+    }
+
+    void visit_Implements(const AST::Implements_t &x) {
+        warn_traits_extension(x.base.base.loc);
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program) {
+            trait_error("an implements block must appear in a module or main program",
+                x.base.base.loc);
+        }
+        if (x.n_traits == 0) {
+            trait_error("inherent implements blocks are not implemented yet",
+                x.base.base.loc);
+        }
+        pending_trait_implementations[current_scope].push_back(&x);
+        tmp = nullptr;
+    }
+
+    void check_trait_binding(ASR::Function_t *requirement,
+            ASR::Function_t *procedure, ASR::symbol_t *implementing_type,
+            ASR::trait_binding_t &binding, const Location &loc) {
+        size_t receiver = procedure->n_args;
+        if (!binding.m_is_nopass) {
+            if (!binding.m_self_argument && procedure->n_args > 0) {
+                binding.m_self_argument = ASRUtils::EXPR2VAR(procedure->m_args[0])->m_name;
+            }
+            for (size_t i = 0; binding.m_self_argument && i < procedure->n_args; i++) {
+                if (std::string(ASRUtils::EXPR2VAR(procedure->m_args[i])->m_name)
+                        == binding.m_self_argument) receiver = i;
+            }
+            if (receiver == procedure->n_args) {
+                trait_error("trait implementation has no matching passed-object argument", loc);
+            }
+            ASR::Variable_t *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
+            ASR::symbol_t *self_type = ASRUtils::get_struct_sym_from_struct_expr(
+                procedure->m_args[receiver]);
+            ASR::symbol_t *expected_type =
+                ASRUtils::symbol_get_past_external(implementing_type);
+            if (!self_type || ASRUtils::symbol_get_past_external(self_type) != expected_type
+                    || ASRUtils::is_array(self->m_type)) {
+                trait_error("passed-object argument must have the implementing type", loc);
+            }
+            if (self->m_intent != ASR::intentType::In
+                    || ASRUtils::is_pointer(self->m_type)
+                    || ASRUtils::is_allocatable(self->m_type)) {
+                trait_error("trait receivers currently require intent(in) "
+                    "without pointer or allocatable", loc);
+            }
+        }
+        size_t expected_args = requirement->n_args + (binding.m_is_nopass ? 0 : 1);
+        if (procedure->n_args != expected_args) {
+            trait_error("argument count does not match trait method '" +
+                std::string(requirement->m_name) + "'", loc);
+        }
+        std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+        auto generic_mismatch = ASRUtils::trait_generic_correspondence(
+            *requirement, *procedure, parameters);
+        if (!generic_mismatch.empty()) {
+            trait_error("generic contract does not match trait method '" +
+                std::string(requirement->m_name) + "': " + generic_mismatch, loc);
+        }
+        for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
+            if (i == receiver) continue;
+            parameters.emplace(&ASRUtils::EXPR2VAR(requirement->m_args[j++])->base,
+                &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
+        }
+        for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
+            if (i == receiver) continue;
+            ASR::Variable_t *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
+            ASR::Variable_t *required = ASRUtils::EXPR2VAR(requirement->m_args[j]);
+            int required_rank = ASRUtils::extract_n_dims_from_ttype(required->m_type);
+            int actual_rank = ASRUtils::extract_n_dims_from_ttype(actual->m_type);
+            if (required_rank != actual_rank) {
+                trait_error("rank of argument '" + std::string(required->m_name)
+                    + "' does not match trait method '" + requirement->m_name
+                    + "': expected rank " + std::to_string(required_rank)
+                    + ", got rank " + std::to_string(actual_rank), loc);
+            }
+            if (!ASRUtils::trait_types_equal(
+                    requirement->m_args[j], procedure->m_args[i], parameters)) {
+                trait_error("argument '" + std::string(required->m_name)
+                    + "' does not match trait method '" + requirement->m_name
+                    + "': expected " + ASRUtils::type_to_str_with_kind(
+                        required->m_type, requirement->m_args[j])
+                    + ", got " + ASRUtils::type_to_str_with_kind(
+                        actual->m_type, procedure->m_args[i]), loc);
+            }
+            if (required->m_intent != actual->m_intent
+                    || required->m_presence != actual->m_presence
+                    || required->m_value_attr != actual->m_value_attr) {
+                trait_error("intent, optionality or value attribute of argument '"
+                    + std::string(required->m_name) + "' does not match trait method '"
+                    + requirement->m_name + "'", loc);
+            }
+            j++;
+        }
+        if (bool(requirement->m_return_var) != bool(procedure->m_return_var)) {
+            trait_error("function or subroutine category does not match trait method '"
+                + std::string(requirement->m_name) + "'", loc);
+        }
+        if (requirement->m_return_var) {
+            int required_rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(requirement->m_return_var));
+            int actual_rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(procedure->m_return_var));
+            if (required_rank != actual_rank) {
+                trait_error("result rank does not match trait method '"
+                    + std::string(requirement->m_name) + "': expected rank "
+                    + std::to_string(required_rank) + ", got rank "
+                    + std::to_string(actual_rank), loc);
+            }
+        }
+        if (requirement->m_return_var
+                && !ASRUtils::trait_types_equal(
+                    requirement->m_return_var, procedure->m_return_var, parameters)) {
+            trait_error("result type does not match trait method '"
+                + std::string(requirement->m_name) + "': expected "
+                + ASRUtils::type_to_str_with_kind(
+                    ASRUtils::expr_type(requirement->m_return_var),
+                    requirement->m_return_var)
+                + ", got " + ASRUtils::type_to_str_with_kind(
+                    ASRUtils::expr_type(procedure->m_return_var),
+                    procedure->m_return_var), loc);
+        }
+        auto *required_signature = ASRUtils::get_FunctionType(requirement);
+        auto *actual_signature = ASRUtils::get_FunctionType(procedure);
+        if ((required_signature->m_pure && !actual_signature->m_pure)
+                || (required_signature->m_elemental && !actual_signature->m_elemental)) {
+            trait_error("procedure attributes do not match trait method '"
+                + std::string(requirement->m_name) + "'", loc);
+        }
+    }
+
+    void complete_trait_implementation(const AST::Implements_t &x) {
+        ASR::symbol_t *type_symbol = nullptr;
+        ASR::ttype_t *type = nullptr;
+        std::string type_name;
+        if (AST::is_a<AST::AttrName_t>(*x.m_implementing_type)) {
+            auto *name = AST::down_cast<AST::AttrName_t>(x.m_implementing_type);
+            type_name = to_lower(name->m_name);
+        } else if (AST::is_a<AST::AttrType_t>(*x.m_implementing_type)) {
+            auto *attribute = AST::down_cast<AST::AttrType_t>(x.m_implementing_type);
+            if (attribute->m_type == AST::decl_typeType::TypeType && attribute->m_name) {
+                type_name = to_lower(attribute->m_name);
+            }
+        }
+        if (!type_name.empty()) {
+            type_symbol = current_scope->resolve_symbol(type_name);
+            if (type_symbol && ASR::is_a<ASR::Struct_t>(
+                    *ASRUtils::symbol_get_past_external(type_symbol))) {
+                type = ASRUtils::make_StructType_t_util(
+                    al, x.base.base.loc, type_symbol, true);
+            }
+        }
+        if (!type) {
+            trait_error("implements currently requires a concrete derived type",
+                x.base.base.loc);
+        }
+        ASR::Struct_t *structure = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(type_symbol));
+        if (structure->m_is_abstract) {
+            trait_error("an implements block cannot target an abstract type",
+                x.base.base.loc);
+        }
+        std::map<std::string, ASR::trait_binding_t> declared;
+        for (size_t i = 0; i < x.n_procedures; i++) {
+            if (!AST::is_a<AST::DerivedTypeProc_t>(*x.m_procedures[i])) {
+                trait_error("this trait binding form is not implemented yet",
+                    x.m_procedures[i]->base.loc);
+            }
+            auto *declaration = AST::down_cast<AST::DerivedTypeProc_t>(x.m_procedures[i]);
+            ASR::trait_binding_t binding;
+            binding.loc = declaration->base.base.loc;
+            binding.m_member = nullptr;
+            binding.m_procedure = nullptr;
+            binding.m_self_argument = nullptr;
+            binding.m_is_nopass = false;
+            bool has_pass = false;
+            for (size_t j = 0; j < declaration->n_attr; j++) {
+                AST::decl_attribute_t *attribute = declaration->m_attr[j];
+                if (AST::is_a<AST::AttrPass_t>(*attribute)) {
+                    has_pass = true;
+                    auto *pass = AST::down_cast<AST::AttrPass_t>(attribute);
+                    binding.m_self_argument = pass->m_name
+                        ? s2c(al, to_lower(pass->m_name)) : nullptr;
+                } else if (AST::is_a<AST::SimpleAttribute_t>(*attribute)) {
+                    auto attr = AST::down_cast<AST::SimpleAttribute_t>(attribute)->m_attr;
+                    if (attr == AST::simple_attributeType::AttrNoPass) {
+                        binding.m_is_nopass = true;
+                    } else if (attr != AST::simple_attributeType::AttrPublic) {
+                        trait_error("a trait witness must be a public, nondeferred binding",
+                            attribute->base.loc);
+                    }
+                } else {
+                    trait_error("this trait binding attribute is not implemented yet",
+                        attribute->base.loc);
+                }
+            }
+            if (has_pass && binding.m_is_nopass) {
+                trait_error("a binding cannot specify both pass and nopass", binding.loc);
+            }
+            for (size_t j = 0; j < declaration->n_symbols; j++) {
+                auto *symbol = AST::down_cast<AST::UseSymbol_t>(declaration->m_symbols[j]);
+                std::string name = to_lower(symbol->m_local_rename
+                    ? symbol->m_local_rename : symbol->m_remote_sym);
+                ASR::symbol_t *procedure = current_scope->resolve_symbol(
+                    to_lower(symbol->m_remote_sym));
+                if (!ASRUtils::trait_method_function(procedure)) {
+                    trait_error("trait implementation procedure '"
+                        + std::string(symbol->m_remote_sym) + "' is not defined", binding.loc);
+                }
+                binding.m_procedure = ASRUtils::symbol_get_past_external(procedure);
+                if (!declared.emplace(name, binding).second) {
+                    trait_error("duplicate trait method binding '" + name + "'", binding.loc);
+                }
+            }
+        }
+        std::vector<ASRUtils::TraitHierarchy> hierarchies;
+        std::map<std::string, ASR::Function_t*> methods;
+        for (size_t i = 0; i < x.n_traits; i++) {
+            ASR::Trait_t *trait = resolve_trait(x.m_traits[i], x.base.base.loc);
+            if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet) {
+                trait_error("a type-set trait cannot be manually implemented",
+                    x.base.base.loc);
+            }
+            hierarchies.push_back(checked_trait_hierarchy(*trait, x.base.base.loc));
+            for (ASR::symbol_t *member : hierarchies.back().members) {
+                auto *method = ASRUtils::trait_method_function(member);
+                auto previous = methods.emplace(method->m_name, method);
+                if (!previous.second) {
+                    check_trait_method_compatibility(*previous.first->second,
+                        *method, x.base.base.loc);
+                }
+            }
+        }
+        std::set<std::string> used;
+        for (size_t i = 0; i < x.n_traits; i++) {
+            const auto &hierarchy = hierarchies[i];
+            const ASR::Trait_t *trait = hierarchy.traits.front();
+            Vec<ASR::trait_binding_t> bindings;
+            bindings.reserve(al, hierarchy.members.size());
+            for (ASR::symbol_t *member : hierarchy.members) {
+                std::string member_name = ASRUtils::symbol_name(member);
+                ASR::trait_binding_t binding;
+                auto found = declared.find(member_name);
+                if (found != declared.end()) {
+                    binding = found->second;
+                    used.insert(member_name);
+                } else {
+                    ASR::symbol_t *method = nullptr;
+                    for (ASR::Struct_t *s = structure; s && !method; ) {
+                        method = s->m_symtab->get_symbol(member_name);
+                        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr;
+                    }
+                    if (!method || !ASR::is_a<ASR::StructMethodDeclaration_t>(
+                            *ASRUtils::symbol_get_past_external(method))) {
+                        trait_error("missing implementation of trait method '"
+                            + member_name + "'", x.base.base.loc);
+                    }
+                    auto *declaration = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                        ASRUtils::symbol_get_past_external(method));
+                    if (declaration->m_is_deferred) {
+                        trait_error("trait method '" + member_name + "' is deferred",
+                            x.base.base.loc);
+                    }
+                    binding.loc = x.base.base.loc;
+                    binding.m_procedure = ASRUtils::symbol_get_past_external(declaration->m_proc);
+                    binding.m_self_argument = declaration->m_self_argument;
+                    binding.m_is_nopass = declaration->m_is_nopass;
+                }
+                binding.m_member = member;
+                check_trait_binding(ASRUtils::trait_method_function(member),
+                    ASRUtils::trait_method_function(binding.m_procedure), type_symbol,
+                    binding, x.base.base.loc);
+                binding.m_member = reference_trait_member(
+                    member, current_scope, x.base.base.loc);
+                binding.m_procedure = make_operator_proc_visible(
+                    binding.m_procedure, "trait", current_scope);
+                bindings.push_back(al, binding);
+            }
+            for (const auto &entry : current_scope->get_scope()) {
+                if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+                auto *previous = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(previous->m_trait) == &trait->base
+                        && ASRUtils::symbol_get_past_external(previous->m_type_declaration)
+                            == &structure->base) {
+                    trait_error("duplicate implementation of trait '"
+                        + std::string(trait->m_name) + "'", x.base.base.loc);
+                }
+            }
+            std::string name = current_scope->get_unique_name(
+                "__implements_" + std::string(structure->m_name) + "_" + trait->m_name);
+            ASR::symbol_t *implementation = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_TraitImplementation_t(al, x.base.base.loc, current_scope,
+                    s2c(al, name), type, type_symbol,
+                    current_scope->resolve_symbol(to_lower(x.m_traits[i])),
+                    bindings.p, bindings.size(),
+                    ASR::accessType::Public));
+            for (auto *previous : visible_trait_implementations()) {
+                if (ASRUtils::symbol_get_past_external(previous->m_type_declaration)
+                        != &structure->base) continue;
+                ASR::symbol_t *conflict = ASRUtils::conflicting_trait_binding(
+                    *previous, *ASR::down_cast<ASR::TraitImplementation_t>(implementation));
+                if (conflict) {
+                    trait_error("conflicting implementations of inherited trait method '"
+                        + std::string(ASRUtils::symbol_name(conflict))
+                        + "': procedure and receiver bindings must agree",
+                        x.base.base.loc);
+                }
+            }
+            current_scope->add_symbol(name, implementation);
+            // A static-only child can still supply a runtime-eligible parent.
+            for (auto *provided : hierarchies[i].traits) {
+                create_runtime_trait_witness(
+                    ASR::down_cast<ASR::TraitImplementation_t>(implementation),
+                    ASRUtils::trait_runtime_contract(
+                        const_cast<ASR::symbol_t*>(&provided->base)));
+            }
+        }
+        for (const auto &entry : declared) {
+            if (!used.count(entry.first)) {
+                trait_error("binding methods outside the adopted traits is not implemented yet",
+                    entry.second.loc);
+            }
+        }
+    }
+
+    void complete_trait_implementations() {
+        auto found = pending_trait_implementations.find(current_scope);
+        if (found == pending_trait_implementations.end()) return;
+        auto pending = std::move(found->second);
+        pending_trait_implementations.erase(found);
+        for (const AST::Implements_t *implementation : pending) {
+            try {
+                complete_trait_implementation(*implementation);
+            } catch (const SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
             }
         }
     }

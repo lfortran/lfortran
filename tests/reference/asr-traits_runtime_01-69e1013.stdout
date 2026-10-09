@@ -1,0 +1,1568 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            traits_runtime_01:
+                (Program
+                    (SymbolTable
+                        17
+                        {
+                            1_directvalue_payload:
+                                (ExternalSymbol
+                                    17
+                                    1_directvalue_payload
+                                    7 payload
+                                    traits_runtime_01_m
+                                    [directvalue]
+                                    payload
+                                    Public
+                                ),
+                            1_scaledvalue_factor:
+                                (ExternalSymbol
+                                    17
+                                    1_scaledvalue_factor
+                                    8 factor
+                                    traits_runtime_01_m
+                                    [scaledvalue]
+                                    factor
+                                    Public
+                                ),
+                            1_scaledvalue_payload:
+                                (ExternalSymbol
+                                    17
+                                    1_scaledvalue_payload
+                                    8 payload
+                                    traits_runtime_01_m
+                                    [scaledvalue]
+                                    payload
+                                    Public
+                                ),
+                            __implements_directvalue_ivalue:
+                                (ExternalSymbol
+                                    17
+                                    __implements_directvalue_ivalue
+                                    2 __implements_directvalue_ivalue
+                                    traits_runtime_01_m
+                                    []
+                                    __implements_directvalue_ivalue
+                                    Public
+                                ),
+                            __implements_directvalue_ivalue_witness@trait:
+                                (ExternalSymbol
+                                    17
+                                    __implements_directvalue_ivalue_witness@trait
+                                    2 __implements_directvalue_ivalue_witness
+                                    traits_runtime_01_m
+                                    []
+                                    __implements_directvalue_ivalue_witness
+                                    Private
+                                ),
+                            __implements_scaledvalue_ivalue:
+                                (ExternalSymbol
+                                    17
+                                    __implements_scaledvalue_ivalue
+                                    2 __implements_scaledvalue_ivalue
+                                    traits_runtime_01_m
+                                    []
+                                    __implements_scaledvalue_ivalue
+                                    Public
+                                ),
+                            __implements_scaledvalue_ivalue_witness@trait:
+                                (ExternalSymbol
+                                    17
+                                    __implements_scaledvalue_ivalue_witness@trait
+                                    2 __implements_scaledvalue_ivalue_witness
+                                    traits_runtime_01_m
+                                    []
+                                    __implements_scaledvalue_ivalue_witness
+                                    Private
+                                ),
+                            __trait_contract_ivalue@trait:
+                                (ExternalSymbol
+                                    17
+                                    __trait_contract_ivalue@trait
+                                    2 __trait_contract_ivalue
+                                    traits_runtime_01_m
+                                    []
+                                    __trait_contract_ivalue
+                                    Private
+                                ),
+                            a:
+                                (Variable
+                                    17
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    17 directvalue
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            actual:
+                                (Variable
+                                    17
+                                    actual
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            b:
+                                (Variable
+                                    17
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    17 scaledvalue
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            choice:
+                                (Variable
+                                    17
+                                    choice
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            choose_value:
+                                (ExternalSymbol
+                                    17
+                                    choose_value
+                                    2 choose_value
+                                    traits_runtime_01_m
+                                    []
+                                    choose_value
+                                    Public
+                                ),
+                            direct_value:
+                                (ExternalSymbol
+                                    17
+                                    direct_value
+                                    2 direct_value
+                                    traits_runtime_01_m
+                                    []
+                                    direct_value
+                                    Public
+                                ),
+                            directvalue:
+                                (ExternalSymbol
+                                    17
+                                    directvalue
+                                    2 directvalue
+                                    traits_runtime_01_m
+                                    []
+                                    directvalue
+                                    Public
+                                ),
+                            i:
+                                (Variable
+                                    17
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            ivalue:
+                                (ExternalSymbol
+                                    17
+                                    ivalue
+                                    2 ivalue
+                                    traits_runtime_01_m
+                                    []
+                                    ivalue
+                                    Public
+                                ),
+                            observe:
+                                (ExternalSymbol
+                                    17
+                                    observe
+                                    2 observe
+                                    traits_runtime_01_m
+                                    []
+                                    observe
+                                    Public
+                                ),
+                            scaled_value:
+                                (ExternalSymbol
+                                    17
+                                    scaled_value
+                                    2 scaled_value
+                                    traits_runtime_01_m
+                                    []
+                                    scaled_value
+                                    Public
+                                ),
+                            scaledvalue:
+                                (ExternalSymbol
+                                    17
+                                    scaledvalue
+                                    2 scaledvalue
+                                    traits_runtime_01_m
+                                    []
+                                    scaledvalue
+                                    Public
+                                )
+                        })
+                    traits_runtime_01
+                    [traits_runtime_01_m]
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 17 a)
+                            17 1_directvalue_payload
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 11 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 17 b)
+                            17 1_scaledvalue_factor
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 17 b)
+                            17 1_scaledvalue_payload
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 7 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 17 i)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ())
+                        [(Assignment
+                            (Var 17 choice)
+                            (IntrinsicElementalFunction
+                                Mod
+                                [(IntegerBinOp
+                                    (IntrinsicElementalFunction
+                                        CommandArgumentCount
+                                        []
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (Var 17 i)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 17 actual)
+                            (FunctionCall
+                                17 choose_value
+                                ()
+                                [((Var 17 choice))
+                                ((TraitPack
+                                    (Var 17 a)
+                                    17 __implements_directvalue_ivalue_witness@trait
+                                    (TraitObjectType
+                                        17 __trait_contract_ivalue@trait
+                                    )
+                                ))
+                                ((TraitPack
+                                    (Var 17 b)
+                                    17 __implements_scaledvalue_ivalue_witness@trait
+                                    (TraitObjectType
+                                        17 __trait_contract_ivalue@trait
+                                    )
+                                ))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 17 choice)
+                                Eq
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                ()
+                                (IntegerCompare
+                                    (Var 17 actual)
+                                    NotEq
+                                    (IntegerConstant 11 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    (IntegerConstant 101 (Integer 4) Decimal)
+                                )]
+                                []
+                            )]
+                            [(If
+                                ()
+                                (IntegerCompare
+                                    (Var 17 actual)
+                                    NotEq
+                                    (IntegerConstant 29 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(ErrorStop
+                                    (IntegerConstant 102 (Integer 4) Decimal)
+                                )]
+                                []
+                            )]
+                        )]
+                        []
+                    )]
+                    ()
+                ),
+            traits_runtime_01_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            __implements_directvalue_ivalue:
+                                (TraitImplementation
+                                    2
+                                    __implements_directvalue_ivalue
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 directvalue
+                                    2 ivalue
+                                    [(2 __trait_member_ivalue_value
+                                    2 direct_value
+                                    self
+                                    .false.)]
+                                    Public
+                                ),
+                            __implements_directvalue_ivalue_witness:
+                                (TraitWitness
+                                    (SymbolTable
+                                        13
+                                        {
+                                            __implements_directvalue_ivalue_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        14
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    14
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    14
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __implements_directvalue_ivalue_witness_0
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [direct_value]
+                                                    [(Var 14 self)]
+                                                    [(Assignment
+                                                        (Var 14 r)
+                                                        (FunctionCall
+                                                            2 direct_value
+                                                            ()
+                                                            [((TraitReceiver
+                                                                (Var 14 self)
+                                                                2 __implements_directvalue_ivalue_witness
+                                                                2 directvalue
+                                                                (StructType
+                                                                    [(Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 14 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    __implements_directvalue_ivalue_witness
+                                    2 __trait_contract_ivalue
+                                    2 __implements_directvalue_ivalue
+                                    [13 __implements_directvalue_ivalue_witness_0]
+                                    [__implements_directvalue_ivalue_witness_0]
+                                    Source
+                                    (2 directvalue)
+                                    []
+                                    []
+                                ),
+                            __implements_scaledvalue_ivalue:
+                                (TraitImplementation
+                                    2
+                                    __implements_scaledvalue_ivalue
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 scaledvalue
+                                    2 ivalue
+                                    [(2 __trait_member_ivalue_value
+                                    2 scaled_value
+                                    self
+                                    .false.)]
+                                    Public
+                                ),
+                            __implements_scaledvalue_ivalue_witness:
+                                (TraitWitness
+                                    (SymbolTable
+                                        15
+                                        {
+                                            __implements_scaledvalue_ivalue_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    16
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    16
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __implements_scaledvalue_ivalue_witness_0
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [scaled_value]
+                                                    [(Var 16 self)]
+                                                    [(Assignment
+                                                        (Var 16 r)
+                                                        (FunctionCall
+                                                            2 scaled_value
+                                                            ()
+                                                            [((TraitReceiver
+                                                                (Var 16 self)
+                                                                2 __implements_scaledvalue_ivalue_witness
+                                                                2 scaledvalue
+                                                                (StructType
+                                                                    [(Integer 4)
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 16 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    __implements_scaledvalue_ivalue_witness
+                                    2 __trait_contract_ivalue
+                                    2 __implements_scaledvalue_ivalue
+                                    [15 __implements_scaledvalue_ivalue_witness_0]
+                                    [__implements_scaledvalue_ivalue_witness_0]
+                                    Source
+                                    (2 scaledvalue)
+                                    []
+                                    []
+                                ),
+                            __trait_contract_ivalue:
+                                (TraitRuntimeContract
+                                    (SymbolTable
+                                        5
+                                        {
+                                            __trait_ivalue_value:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    6
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    6
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalue
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __trait_ivalue_value
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalue
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 6 self)]
+                                                    []
+                                                    (Var 6 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            __trait_member_ivalue_value:
+                                                (ExternalSymbol
+                                                    5
+                                                    __trait_member_ivalue_value
+                                                    3 value
+                                                    traits_runtime_01_m
+                                                    [ivalue]
+                                                    value
+                                                    Private
+                                                )
+                                        })
+                                    __trait_contract_ivalue
+                                    2 ivalue
+                                    [([5 __trait_member_ivalue_value]
+                                    5 __trait_ivalue_value)]
+                                    .false.
+                                ),
+                            __trait_member_ivalue_value:
+                                (ExternalSymbol
+                                    2
+                                    __trait_member_ivalue_value
+                                    3 value
+                                    traits_runtime_01_m
+                                    [ivalue]
+                                    value
+                                    Private
+                                ),
+                            choose_value:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            choice:
+                                                (Variable
+                                                    12
+                                                    choice
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            first:
+                                                (Variable
+                                                    12
+                                                    first
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TraitObjectType
+                                                        2 __trait_contract_ivalue
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            r:
+                                                (Variable
+                                                    12
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            second:
+                                                (Variable
+                                                    12
+                                                    second
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TraitObjectType
+                                                        2 __trait_contract_ivalue
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    choose_value
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (TraitObjectType
+                                            2 __trait_contract_ivalue
+                                        )
+                                        (TraitObjectType
+                                            2 __trait_contract_ivalue
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [observe]
+                                    [(Var 12 choice)
+                                    (Var 12 first)
+                                    (Var 12 second)]
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (Var 12 choice)
+                                            Eq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 12 r)
+                                            (FunctionCall
+                                                2 observe
+                                                ()
+                                                [((Var 12 first))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        [(Assignment
+                                            (Var 12 r)
+                                            (FunctionCall
+                                                2 observe
+                                                ()
+                                                [((Var 12 second))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                    )]
+                                    (Var 12 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            direct_value:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            1_directvalue_payload:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_directvalue_payload
+                                                    7 payload
+                                                    traits_runtime_01_m
+                                                    [directvalue]
+                                                    payload
+                                                    Public
+                                                ),
+                                            r:
+                                                (Variable
+                                                    9
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    9
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 directvalue
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    direct_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 9 self)]
+                                    [(Assignment
+                                        (Var 9 r)
+                                        (StructInstanceMember
+                                            (Var 9 self)
+                                            9 1_directvalue_payload
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 9 r)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            directvalue:
+                                (Struct
+                                    (SymbolTable
+                                        7
+                                        {
+                                            payload:
+                                                (Variable
+                                                    7
+                                                    payload
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    directvalue
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [payload]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            ivalue:
+                                (Trait
+                                    (SymbolTable
+                                        3
+                                        {
+                                            value:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    4
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    value
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    []
+                                                    []
+                                                    (Var 4 r)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    ivalue
+                                    []
+                                    Public
+                                    UniversalTrait
+                                    []
+                                ),
+                            observe:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            __trait_contract_ivalue_value:
+                                                (ExternalSymbol
+                                                    11
+                                                    __trait_contract_ivalue_value
+                                                    5 __trait_ivalue_value
+                                                    traits_runtime_01_m
+                                                    [__trait_contract_ivalue]
+                                                    __trait_ivalue_value
+                                                    Private
+                                                ),
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TraitObjectType
+                                                        2 __trait_contract_ivalue
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            r:
+                                                (Variable
+                                                    11
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    observe
+                                    (FunctionType
+                                        [(TraitObjectType
+                                            2 __trait_contract_ivalue
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    [(Assignment
+                                        (Var 11 r)
+                                        (TraitFunctionCall
+                                            11 __trait_contract_ivalue_value
+                                            0
+                                            [((Var 11 object))]
+                                            (Integer 4)
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 11 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            scaled_value:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            1_scaledvalue_factor:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_scaledvalue_factor
+                                                    8 factor
+                                                    traits_runtime_01_m
+                                                    [scaledvalue]
+                                                    factor
+                                                    Public
+                                                ),
+                                            1_scaledvalue_payload:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_scaledvalue_payload
+                                                    8 payload
+                                                    traits_runtime_01_m
+                                                    [scaledvalue]
+                                                    payload
+                                                    Public
+                                                ),
+                                            r:
+                                                (Variable
+                                                    10
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            self:
+                                                (Variable
+                                                    10
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    2 scaledvalue
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    scaled_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 self)]
+                                    [(Assignment
+                                        (Var 10 r)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (StructInstanceMember
+                                                    (Var 10 self)
+                                                    10 1_scaledvalue_factor
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Mul
+                                                (StructInstanceMember
+                                                    (Var 10 self)
+                                                    10 1_scaledvalue_payload
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 10 r)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            scaledvalue:
+                                (Struct
+                                    (SymbolTable
+                                        8
+                                        {
+                                            factor:
+                                                (Variable
+                                                    8
+                                                    factor
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            payload:
+                                                (Variable
+                                                    8
+                                                    payload
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    scaledvalue
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [factor
+                                    payload]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                )
+                        })
+                    traits_runtime_01_m
+                    ()
+                    [traits_runtime_01_m]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

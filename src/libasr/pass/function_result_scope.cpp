@@ -46,6 +46,10 @@
  *   evaluated a number of times not known here. The temporaries later passes
  *   make for the statement are variables of the BLOCK, so they too are
  *   finalized when the statement is done, and not when the procedure returns.
+ * - An allocatable trait result is captured into an owning local with an
+ *   allocation-moving Assignment, not a pointer association. Result lowering
+ *   returns directly into that slot. This internal capture is not the user's
+ *   value assignment, which still copies and preserves result finalization.
  * - An elemental reference with an array argument and a finalizable result
  *   is an array. It is finalized (7.5.6.2) only if its type has an elemental
  *   final subroutine, and then its temporary is made a variable of the
@@ -83,6 +87,21 @@ bool is_result_reference(ASR::expr_t* expr) {
     ASR::Function_t* func = ASRUtils::get_function(fc->m_name);
     return func != nullptr &&
         ASRUtils::get_FunctionType(func)->m_abi != ASR::abiType::BindC;
+}
+
+// A result already bound to this scope must not be captured a second time.
+ASR::expr_t* bound_result_reference(ASR::stmt_t* statement) {
+    ASR::expr_t* value = nullptr;
+    if (ASR::is_a<ASR::Associate_t>(*statement)) {
+        value = ASR::down_cast<ASR::Associate_t>(statement)->m_value;
+    } else if (ASR::is_a<ASR::Assignment_t>(*statement)) {
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(statement);
+        if (assignment->m_move_allocation &&
+                ASRUtils::is_trait_owner(ASRUtils::expr_type(assignment->m_target))) {
+            value = assignment->m_value;
+        }
+    }
+    return value && is_result_reference(value) ? value : nullptr;
 }
 
 // Whether the derived type `struct_sym`, or a type it extends, has an
@@ -400,19 +419,26 @@ public:
         }
         const Location &loc = expr->base.loc;
         std::string name = scope->get_unique_name("__libasr_function_result");
-        ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
-            loc, ASRUtils::duplicate_type(al, ASRUtils::expr_type(expr))));
+        bool owning_result = ASRUtils::is_trait_owner(x->m_type);
+        ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, x->m_type);
+        if (!owning_result) {
+            result_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, result_type));
+        }
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, name),
                 nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, pointer_type,
-                ASRUtils::get_struct_sym_from_struct_expr(expr),
+                ASR::storage_typeType::Default, result_type,
+                owning_result ? nullptr : ASRUtils::get_struct_sym_from_struct_expr(expr),
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false));
         scope->add_symbol(name, sym);
         ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-        associations.push_back(al, ASRUtils::STMT(
-            ASR::make_Associate_t(al, loc, var, expr)));
+        // An allocatable result is captured into its own slot, not associated
+        // through a pointer or copied. Result lowering turns this move into
+        // the callee's hidden OUT argument; the using construct owns cleanup.
+        associations.push_back(al, ASRUtils::STMT(owning_result
+            ? ASR::make_Assignment_t(al, loc, var, expr, nullptr, false, true)
+            : ASR::make_Associate_t(al, loc, var, expr)));
         replaced[expr] = var;
         *current_expr = var;
     }
@@ -795,9 +821,7 @@ public:
     bool is_selector_statement(ASR::stmt_t* x,
             std::unordered_set<ASR::symbol_t*> &associated) {
         if (current_scope->asr_owner == nullptr ||
-                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
-                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
-                    current_scope->asr_owner))) {
+                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
             return false;
         }
         ASR::expr_t* target = nullptr;
@@ -810,6 +834,9 @@ public:
             return false;
         }
         ASR::symbol_t* name = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                    current_scope->asr_owner)) &&
+                !ASRUtils::association_variable(target)) return false;
         return current_scope->get_symbol(ASRUtils::symbol_name(name)) == name &&
             associated.insert(name).second;
     }
@@ -823,9 +850,8 @@ public:
     // references in its arguments are replaced.
     void associate_selector_results(ASR::stmt_t* x, Vec<ASR::stmt_t*> &body) {
         AssociateResults replacer(al, current_scope, body);
-        ASR::expr_t* value = ASR::is_a<ASR::Associate_t>(*x) ?
-            ASR::down_cast<ASR::Associate_t>(x)->m_value : nullptr;
-        if (value != nullptr && is_result_reference(value)) {
+        ASR::expr_t* value = bound_result_reference(x);
+        if (value != nullptr) {
             replacer.replace_call_arguments(ASR::down_cast<ASR::FunctionCall_t>(
                 ASRUtils::get_past_array_physical_cast(value)));
         } else {
@@ -856,9 +882,7 @@ public:
             if (ASR::is_a<ASR::Where_t>(*x) || ASRUtils::is_single_statement(*x)) {
                 // The associate name of an ASSOCIATE construct is associated
                 // with the result by semantics already.
-                bool associates_result = ASR::is_a<ASR::Associate_t>(*x) &&
-                    is_result_reference(
-                        ASR::down_cast<ASR::Associate_t>(x)->m_value);
+                bool associates_result = bound_result_reference(x) != nullptr;
                 if (!associates_result && references_results(*x)) {
                     body.push_back(al, make_statement_block(x));
                     continue;
