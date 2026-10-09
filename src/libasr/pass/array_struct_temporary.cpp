@@ -2858,7 +2858,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
-            if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
+            // An allocatable polymorphic target takes the dynamic type of a
+            // non-polymorphic allocatable result. subroutine_from_function
+            // moves the result into it; a temporary of the declared result
+            // type would turn the assignment into an element-wise copy.
+            bool polymorphic_target_of_result =
+                ASRUtils::is_allocatable(target) &&
+                ASRUtils::is_allocatable(x->m_type) &&
+                ASRUtils::is_class_type(ASRUtils::extract_type(
+                    ASRUtils::expr_type(target))) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(x->m_type));
+            if( (target_Type == targetType::OriginalTarget &&
+                 ((realloc_lhs && !polymorphic_target_of_result) ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&

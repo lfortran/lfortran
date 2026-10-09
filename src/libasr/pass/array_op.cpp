@@ -2264,7 +2264,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
+        // A move into a polymorphic target deallocates the target and takes
+        // the value's descriptor, so it is neither reallocated nor checked
+        // against the value's shape first.
+        bool move_into_polymorphic_target = xx.m_move_allocation &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(
+                ASRUtils::expr_type(xx.m_target)));
+        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
+                !move_into_polymorphic_target) {
             bool per_assign_realloc = xx.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(xx.m_target);
             insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
@@ -2279,7 +2286,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        if (bounds_checking && 
+        if (bounds_checking && !move_into_polymorphic_target &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
