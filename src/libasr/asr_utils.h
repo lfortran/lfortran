@@ -10850,7 +10850,10 @@ bool trait_bindings_equal(const ASR::trait_binding_t &left,
 // A conformance may inherit a passed-object method, but only through its
 // real EXTENDS chain and only when that ancestor receiver is polymorphic.
 bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
-    ASR::symbol_t *implementing_type);
+    ASR::symbol_t *implementing_type, ASR::ttype_t *intrinsic_type = nullptr);
+
+bool trait_implementation_matches_type(const ASR::TraitImplementation_t &implementation,
+    ASR::symbol_t *declaration, ASR::ttype_t *type = nullptr);
 
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);

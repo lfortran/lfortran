@@ -1179,7 +1179,15 @@ public:
         r.append("end implements");
         r += syn();
         r += " ";
-        if (x.m_implementing_type->type == decl_attributeType::AttrType) {
+        if (x.m_end_type) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_end_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_end_type);
+                r.append(s);
+            }
+        } else if (x.m_implementing_type->type == decl_attributeType::AttrType) {
             const AttrType_t &t = *down_cast<AttrType_t>(x.m_implementing_type);
             if (t.m_name) {
                 r.append(t.m_name);

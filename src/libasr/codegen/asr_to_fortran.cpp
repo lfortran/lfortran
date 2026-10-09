@@ -1059,9 +1059,13 @@ public:
             }
         }
         if (!for_compilation &&
-                ASRUtils::trait_runtime_witness(const_cast<ASR::TraitImplementation_t&>(x))) {
+                (!x.m_type_declaration ||
+                 ASRUtils::trait_runtime_witness(const_cast<ASR::TraitImplementation_t&>(x)))) {
+            std::string type_name = x.m_type_declaration
+                ? ASRUtils::symbol_name(x.m_type_declaration)
+                : ASRUtils::type_to_str_fortran_symbol(x.m_implementing_type, nullptr, true);
             std::string r = indent + "implements " + ASRUtils::symbol_name(x.m_trait) +
-                " :: " + ASRUtils::symbol_name(x.m_type_declaration) + "\n";
+                " :: " + type_name + "\n";
             inc_indent();
             std::set<std::string> methods;
             for (size_t i = 0; i < x.n_bindings; i++) {

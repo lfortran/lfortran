@@ -19,7 +19,7 @@ TraitImplementation(symbol_table parent_symtab, identifier name,
 | `parent_symtab` | Scope defining the implementation. |
 | `name` | Internal name of the conformance record. |
 | `implementing_type` | Resolved storage type information, not a generic type parameter. |
-| `type_declaration` | Nominal derived-type symbol; required for a derived-type conformance. |
+| `type_declaration` | Nominal derived-type symbol; required for a derived-type conformance and absent for an intrinsic conformance. |
 | `trait` | Trait being implemented. |
 | `bindings` | One compatible implementation for each canonical message in the trait's transitive requirements. |
 | `access` | Visibility of the conformance evidence. |
@@ -41,6 +41,13 @@ An implementation also satisfies the trait's ancestors. When several visible
 paths satisfy the same constraint, their procedure and receiver bindings must
 agree; distinct nominal conformance paths are not resolved by import order.
 This record itself generates no runtime code in the static-traits subset.
+
+Scalar intrinsic conformances use the same record and binding checks, with
+exact intrinsic type/kind identity instead of a nominal declaration.
+Their receiver must have that exact type and be read-only, nonpointer and
+nonallocatable. They are available through explicitly imported provider
+evidence and use the shared static specializer. A null `type_declaration`
+does not authorize an intrinsic runtime payload; that ABI is not implemented.
 
 Derived-type adoption uses the same complete records as retroactive blocks.
 `Struct::trait_obligations` separately retains the nominal requirements,

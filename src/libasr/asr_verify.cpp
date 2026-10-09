@@ -1594,6 +1594,11 @@ public:
                         *ASRUtils::symbol_get_past_external(x.m_type_declaration)),
                 "asr.verify.trait_implementation.nominal_type_required",
                 "a derived-type conformance must identify its nominal type");
+        } else {
+            require_id(x.m_type_declaration == nullptr &&
+                    type_set_concrete_kind(x.m_implementing_type),
+                "asr.verify.trait_implementation.intrinsic_type",
+                "An intrinsic conformance requires a scalar numeric or logical type and no nominal declaration");
         }
         ASR::symbol_t *trait = check_external
             ? ASRUtils::symbol_get_past_external(x.m_trait) : x.m_trait;
@@ -1638,7 +1643,7 @@ public:
         require(bound_members.size() == trait_members.size(),
             "TraitImplementation bindings must cover each trait member exactly once");
         for (size_t i = 0; i < x.n_bindings; i++) {
-            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false);
+            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false, x.m_implementing_type);
         }
     }
 
@@ -2221,11 +2226,12 @@ public:
 
     void verify_runtime_binding(const TraitImplementation_t &implementation,
             const trait_binding_t &binding) {
-        verify_trait_binding(implementation.m_type_declaration, binding, true);
+        verify_trait_binding(implementation.m_type_declaration, binding, true,
+            implementation.m_implementing_type);
     }
 
     void verify_trait_binding(symbol_t *type_declaration,
-            const trait_binding_t &binding, bool runtime) {
+            const trait_binding_t &binding, bool runtime, ttype_t *implementing_type = nullptr) {
         const Location &loc = binding.loc;
         auto *required = verify_runtime_trait_procedure(binding.m_member, loc,
             "asr.verify.trait_binding.member_is_function");
@@ -2257,7 +2263,7 @@ public:
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
             require_with_loc_id(self->m_intent == intentType::In &&
-                    ASRUtils::trait_receiver_type_matches(*self, type_declaration),
+                    ASRUtils::trait_receiver_type_matches(*self, type_declaration, implementing_type),
                 "asr.verify.trait_witness.receiver_type",
                 "A witness receiver must borrow its nominal implementing type "
                 "or a polymorphic ancestor read-only", loc);

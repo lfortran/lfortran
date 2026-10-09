@@ -5979,6 +5979,276 @@ end module
     }
 }
 
+TEST_CASE("Intrinsic conformances retain exact kinds and checked receivers") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module intrinsic_conformance_m
+implicit none
+integer, parameter :: real64 = 8
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+implements IValue :: real(real64)
+    procedure :: value => real_value
+end implements real(kind=real64)
+implements IValue :: integer
+    procedure :: value => integer_value
+end implements integer
+contains
+integer function real_value(self) result(n)
+    real(real64), intent(in) :: self
+    n = int(self)
+end function
+integer function integer_value(self) result(n)
+    integer, intent(in) :: self
+    n = self
+end function
+function read_value{IValue :: T}(item) result(n)
+    type(T), intent(in) :: item
+    integer :: n
+    n = item%value()
+end function
+subroutine check()
+    real(real64) :: number
+    number = 4.9_real64
+    if (number%value() /= 4) error stop
+    if (read_value(number) /= 4) error stop
+    if (read_value(9) /= 9) error stop
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("intrinsic_conformance_m"));
+    ASR::TraitImplementation_t *real_implementation = nullptr;
+    size_t implementations = 0;
+    for (const auto &entry : module->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        CHECK(implementation->m_type_declaration == nullptr);
+        CHECK(implementation->n_bindings == 1);
+        implementations++;
+        if (ASR::is_a<ASR::Real_t>(*implementation->m_implementing_type)) {
+            real_implementation = implementation;
+        }
+    }
+    REQUIRE(implementations == 2);
+    REQUIRE(real_implementation);
+    auto *real_type = ASR::down_cast<ASR::Real_t>(real_implementation->m_implementing_type);
+    CHECK(real_type->m_kind == 8);
+    CHECK(ASRUtils::trait_implementation_matches_type(
+        *real_implementation, nullptr, real_implementation->m_implementing_type));
+    auto *real4 = ASRUtils::TYPE(ASR::make_Real_t(al, real_type->base.base.loc, 4));
+    CHECK_FALSE(ASRUtils::trait_implementation_matches_type(*real_implementation, nullptr, real4));
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "intrinsic_conformance.asr", lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("an intrinsic conformance cannot claim a nominal declaration") {
+        real_implementation->m_type_declaration = module->m_symtab->get_symbol("ivalue");
+        rejects("asr.verify.trait_implementation.intrinsic_type");
+    }
+    SUBCASE("unresolved kind placeholders are not concrete intrinsic types") {
+        real_type->m_kind = 1000;
+        rejects("asr.verify.trait_implementation.intrinsic_type");
+    }
+    SUBCASE("a receiver must have the implementing intrinsic kind") {
+        real_type->m_kind = 4;
+        rejects("asr.verify.trait_witness.receiver_type");
+    }
+    SUBCASE("a pointer receiver cannot impersonate an intrinsic value") {
+        auto *procedure = ASRUtils::trait_method_function(
+            real_implementation->m_bindings[0].m_procedure);
+        auto *self = ASRUtils::EXPR2VAR(procedure->m_args[0]);
+        self->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+            al, self->base.base.loc, self->m_type));
+        ASRUtils::get_FunctionType(procedure)->m_arg_types[0] = self->m_type;
+        rejects("asr.verify.trait_witness.receiver_type");
+    }
+}
+
+TEST_CASE("Intrinsic provider imports remain lexical and recoverable") {
+    const std::string provider = R"(
+module intrinsic_import_contracts
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+end module
+module intrinsic_import_provider
+use intrinsic_import_contracts
+integer, parameter :: marker = 8
+implements IValue :: real(8)
+    procedure :: value => get_value
+end implements real(8)
+contains
+integer function get_value(self)
+    real(8), intent(in) :: self
+    get_value = int(self)
+end function
+end module
+module intrinsic_import_other
+use intrinsic_import_contracts
+implements IValue :: real(8)
+    procedure :: value => other_value
+end implements real(8)
+contains
+integer function other_value(self)
+    real(8), intent(in) :: self
+    other_value = int(self) + 1
+end function
+end module
+module intrinsic_import_private
+use intrinsic_import_provider
+private
+end module
+)";
+    struct Case {
+        const char *imports;
+        const char *declaration;
+        const char *statement;
+        const char *error;
+    };
+    const Case cases[] = {
+        {"", "real(8) :: x", "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider, only: marker\n", "real(8) :: x",
+            "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider, only:\n", "real(8) :: x",
+            "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider, only: IValue\n", "real(8) :: x",
+            "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider\n", "real(4) :: x",
+            "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider\n", "real(8) :: x(2)",
+            "n = x%value()", "currently require a scalar receiver"},
+        {"use intrinsic_import_private\n", "real(8) :: x",
+            "n = x%value()", "no visible intrinsic trait method"},
+        {"use intrinsic_import_provider\nuse intrinsic_import_other\n", "real(8) :: x",
+            "n = x%value()", "ambiguous visible implementations"},
+        {"use intrinsic_import_provider\n", "real(8) :: x",
+            "call consume(x)", "runtime trait packing currently requires"},
+        {"use intrinsic_import_provider\n", "real(8) :: x", "n = x%value()", ""}
+    };
+    for (const auto &test : cases) {
+        CAPTURE(test.imports);
+        CAPTURE(test.declaration);
+        CAPTURE(test.statement);
+        const std::string source = provider +
+            "module intrinsic_import_client\n"
+            "use intrinsic_import_contracts, only: IValue\n" + test.imports +
+            "contains\nsubroutine probe()\n" + test.declaration +
+            "\ninteger :: n\nx = 2\n" + test.statement +
+            "\nend subroutine\n"
+            "subroutine consume(x)\nclass(IValue), intent(in) :: x\nend subroutine\n"
+            "end module\n";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        CHECK(diagnostics.has_error() == (std::string(test.error) != ""));
+        if (std::string(test.error) != "") {
+            CHECK(diagnostics.render2().find(test.error) != std::string::npos);
+        }
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
+TEST_CASE("Generic trait array receivers fail before specialization") {
+    const std::string definition = R"(
+module intrinsic_array_receiver_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+implements IValue :: real(8)
+    procedure :: value => real_value
+end implements real(kind=8)
+contains
+integer function real_value(self) result(n)
+    real(8), intent(in) :: self
+    n = int(self)
+end function
+function read_value{IValue :: T}(x) result(n)
+    type(T), intent(in) :: x(:)
+    integer :: n
+    n = x%value()
+end function
+end module
+)";
+    for (bool instantiate : {false, true}) {
+        CAPTURE(instantiate);
+        std::string source = definition;
+        if (instantiate) {
+            source += R"(
+program check_intrinsic_array
+use intrinsic_array_receiver_m
+real(8) :: values(2)
+values = [4.9d0, 8.1d0]
+print *, read_value(values)
+end program
+)";
+        }
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        CHECK(diagnostics.render2().find(
+            "a non-elemental trait method requires a scalar receiver") != std::string::npos);
+        for (const auto &diagnostic : diagnostics.diagnostics) {
+            CHECK(diagnostic.stage == LCompilers::diag::Stage::Semantic);
+        }
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

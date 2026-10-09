@@ -51,6 +51,65 @@ implementation before using its conformance. An `ONLY` import of a type retains
 the public conformance records exported for that type by the explicitly used
 module. It does not make implementations in unrelated, unseen modules visible.
 
+## Intrinsic types and explicit provider imports
+
+An implementation can add ordinary messages to a scalar `integer`, `real`,
+`complex`, or `logical` type of a concrete kind:
+
+```fortran
+module real64_module
+    use iso_fortran_env, only: real64
+    abstract interface :: IPrintable
+        subroutine output()
+        end subroutine
+    end interface
+    implements IPrintable :: real(real64)
+        procedure, pass :: output
+    end implements real(real64)
+contains
+    subroutine output(self)
+        real(real64), intent(in) :: self
+        print *, "I am ", self
+    end subroutine
+end module
+
+program printy
+    use iso_fortran_env, only: real64
+    use real64_module
+    real(real64) :: y
+    y = 4.9d0
+    call y%output()
+end program
+```
+
+The provider `USE` is required. Importing only `real64` from `iso_fortran_env`
+does not discover other modules, and putting the provider and client in the
+same source file does not change their visibility. Unrestricted provider
+imports and explicit facade re-exports use the existing public conformance
+records. An `ONLY` list containing an unrelated constant, or an empty `ONLY`
+list, does not import intrinsic conformances. Named conformance import syntax
+is not introduced by this implementation.
+
+This is an intentional deviation from the proposal's provider-independent
+augmentation rule, discussed in
+[difference-scheme/Traits-for-Fortran#2](https://github.com/difference-scheme/Traits-for-Fortran/issues/2).
+`traits_paper_printy.f90` preserves the original paper example byte-for-byte
+except for one `use real64_module` statement. Its native driver checks both
+that adaptation and the printed value, and compiles a provider, facade and
+generic client in separate compiler invocations.
+
+Intrinsic type and kind identity are exact: a conformance for `real(8)` does
+not also cover `real(4)` or `integer(8)`. Kind selectors use ordinary Fortran
+constant resolution, including imported kind parameters; an explicitly typed
+`END IMPLEMENTS` must name the same resolved type. PASS, named non-first PASS,
+NOPASS and static trait-constrained generic calls reuse the derived-type
+conformance and specialization machinery. Receiver dummies remain read-only,
+nonpointer and nonallocatable. Intrinsic operations are not redefined.
+
+This slice supports direct scalar-variable receivers and static generic
+specialization. Character targets, kind wildcards, array receiver calls and
+intrinsic payloads in runtime trait views/owners are not added.
+
 ## Adopting traits in a derived type
 
 A type can instead adopt contracts in its declaration. Its ordinary type-bound

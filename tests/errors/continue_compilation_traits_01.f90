@@ -4097,3 +4097,182 @@ contains
         n = self%n
     end function
 end module
+
+module traits_intrinsic_errors_contracts
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IEmpty
+    end interface
+end module
+
+module traits_intrinsic_errors_provider
+    use traits_intrinsic_errors_contracts
+    integer, parameter :: unrelated = 8
+    implements IValue :: real(8)
+        procedure :: value => real_value
+    end implements real(8)
+contains
+    integer function real_value(self)
+        real(8), intent(in) :: self
+        real_value = int(self)
+    end function
+end module
+
+module traits_intrinsic_errors_no_use
+contains
+    subroutine probe()
+        real(8) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_only
+    use traits_intrinsic_errors_provider, only: unrelated
+contains
+    subroutine probe()
+        real(unrelated) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_empty_only
+    use traits_intrinsic_errors_provider, only:
+contains
+    subroutine probe()
+        real(8) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_kind
+    use traits_intrinsic_errors_provider
+contains
+    subroutine probe()
+        real(4) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_receiver
+    use traits_intrinsic_errors_contracts
+    implements IValue :: real(8)
+        procedure :: value => wrong_receiver
+    end implements real(8)
+contains
+    integer function wrong_receiver(self)
+        real(4), intent(in) :: self
+        wrong_receiver = int(self)
+    end function
+end module
+
+module traits_intrinsic_errors_readonly
+    use traits_intrinsic_errors_contracts
+    implements IValue :: integer
+        procedure :: value => modifying_receiver
+    end implements integer
+contains
+    integer function modifying_receiver(self)
+        integer, intent(inout) :: self
+        self = self + 1
+        modifying_receiver = self
+    end function
+end module
+
+module traits_intrinsic_errors_duplicate
+    use traits_intrinsic_errors_contracts
+    integer, parameter :: double_kind = 8
+    implements IEmpty :: real(8)
+    end implements real(8)
+    implements IEmpty :: real(double_kind)
+    end implements real(double_kind)
+end module
+
+module traits_intrinsic_errors_end_kind
+    use traits_intrinsic_errors_contracts
+    implements IEmpty :: real(8)
+    end implements real(4)
+end module
+
+module traits_intrinsic_errors_character
+    use traits_intrinsic_errors_contracts
+    implements IEmpty :: character(8)
+    end implements character(8)
+end module
+
+module traits_intrinsic_errors_wildcard
+    use traits_intrinsic_errors_contracts
+    implements IEmpty :: real(*)
+    end implements
+end module
+
+module traits_intrinsic_errors_array
+    use traits_intrinsic_errors_provider
+contains
+    subroutine probe()
+        real(8) :: x(2)
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_runtime
+    use traits_intrinsic_errors_provider
+contains
+    subroutine consume(x)
+        class(IValue), intent(in) :: x
+        print *, x%value()
+    end subroutine
+    subroutine probe()
+        real(8) :: x
+        call consume(x)
+    end subroutine
+end module
+
+module traits_intrinsic_errors_private_facade
+    use traits_intrinsic_errors_provider
+    private
+    public :: marker
+    integer, parameter :: marker = 1
+end module
+
+module traits_intrinsic_errors_private_client
+    use traits_intrinsic_errors_private_facade
+contains
+    subroutine probe()
+        real(8) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_second_provider
+    use traits_intrinsic_errors_contracts
+    implements IValue :: real(8)
+        procedure :: value => different_value
+    end implements real(8)
+contains
+    integer function different_value(self)
+        real(8), intent(in) :: self
+        different_value = 1 + int(self)
+    end function
+end module
+
+module traits_intrinsic_errors_conflicting
+    use traits_intrinsic_errors_provider
+    use traits_intrinsic_errors_second_provider
+contains
+    subroutine probe()
+        real(8) :: x
+        print *, x%value()
+    end subroutine
+end module
+
+module traits_intrinsic_errors_generic_array
+    use traits_intrinsic_errors_provider
+contains
+    function read_array{IValue :: T}(x) result(n)
+        type(T), intent(in) :: x(:)
+        integer :: n
+        n = x%value()
+    end function
+end module
