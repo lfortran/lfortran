@@ -10983,9 +10983,17 @@ public:
             tmp = builder->CreateICmpEQ(to_int64(ptr), to_int64(tgt));
             return ;
         }
-        // The data field of the class wrapper {VTable*, data*} of a
-        // polymorphic array, or null if the array is a disassociated
-        // pointer, whose wrapper is null.
+        // The data field of the non-null class wrapper {VTable*, data*} of a
+        // polymorphic array, as i8*.
+        auto get_class_wrapper_data = [&](llvm::Type* wrapper_type,
+                llvm::Value* wrapper) -> llvm::Value* {
+            llvm::Type* data_type = llvm::cast<llvm::StructType>(
+                wrapper_type)->getElementType(1);
+            return builder->CreateBitCast(llvm_utils->CreateLoad2(data_type,
+                llvm_utils->create_gep2(wrapper_type, wrapper, 1)), llvm_utils->i8_ptr);
+        };
+        // As get_class_wrapper_data, but null if the array is a
+        // disassociated pointer, whose wrapper is null.
         auto load_class_wrapper_data = [&](llvm::Type* wrapper_type,
                 llvm::Value* wrapper) -> llvm::Value* {
             llvm::Value* data = llvm_utils->CreateAlloca(llvm_utils->i8_ptr,
@@ -10993,11 +11001,7 @@ public:
             builder->CreateStore(llvm::ConstantPointerNull::get(
                 llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)), data);
             llvm_utils->create_if_else(builder->CreateIsNotNull(wrapper), [&]() {
-                llvm::Type* data_type = llvm::cast<llvm::StructType>(
-                    wrapper_type)->getElementType(1);
-                builder->CreateStore(builder->CreateBitCast(llvm_utils->CreateLoad2(
-                    data_type, llvm_utils->create_gep2(wrapper_type, wrapper, 1)),
-                    llvm_utils->i8_ptr), data);
+                builder->CreateStore(get_class_wrapper_data(wrapper_type, wrapper), data);
             }, []() {});
             return llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data);
         };
@@ -11074,9 +11078,9 @@ public:
                         }
                     }
                 }
-                if (ptr_is_class_array) { // {VTable*, i8*} -- Check equality on data field
-                    ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                        llvm_utils->create_gep2(ptr_array_inner_type, ptr, 1));
+                if (ptr_is_class_array) {
+                    // The pointer is associated, so its wrapper is non-null.
+                    ptr = get_class_wrapper_data(ptr_array_inner_type, ptr);
                 }
                 if (!ASRUtils::is_array(p_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
