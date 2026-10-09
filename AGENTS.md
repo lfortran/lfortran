@@ -158,9 +158,6 @@ only once, redirect to a log file and then examine the log file.
 - Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
   labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
   third-party application catalog; only publishing and deployment are push-only.
-- Quick also runs on `merge_group` so required checks report in the merge
-  queue. Keep `merge_group` on every workflow that produces a required check;
-  merge queue runs must not save caches.
 - Third-party applications are **bug generators for integration tests**, not
   part of ordinary PR checks. They run on the latest `main` and in every
   requested Exhaustive run, including applications such as FIATS.

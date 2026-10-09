@@ -9,12 +9,10 @@ on:
   pull_request:
     branches:
       - main
-  # Required checks must also report on merge queue groups.
-  merge_group:
   workflow_dispatch:
 
 # Main runs stay independent per commit; only superseded PR runs are cancelled.
-# Manual and merge queue runs use a commit SHA, distinct from PR groups.
+# Manual runs use a commit SHA, distinct from ordinary PR concurrency groups.
 concurrency:
   group: quick-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -295,7 +293,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-ubuntu-latest-19
-          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Install libunwind
         run: micromamba install -y -n lf libunwind=1.7.2
@@ -417,7 +414,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-ubuntu-latest
-          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -466,7 +462,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
-          save: ${{ github.event_name != 'merge_group' }}
 
       # ── Set up Emscripten 4 from conda instead of outdated emsdk 3.1.35 ──
       - name: Install Emscripten 4 environment
