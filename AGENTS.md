@@ -170,15 +170,15 @@ only once, redirect to a log file and then examine the log file.
   touched. Manual dispatch in a fork is an alternative; dispatch Quick
   separately if it has not run on that revision, and verify both tested SHAs
   and results.
-- Exhaustive on `main` (full compiler matrix and application validation) is
-  coalesced: at most one run is in progress and one is pending. A running
-  main run is never cancelled; a newer push replaces the pending run, so the
-  latest `main` is always tested but intermediate commits may be skipped.
-  To locate a regression, dispatch Exhaustive manually on the skipped
-  commits. Release-tag workflows keep compiler and packaging checks without
+- Quick and Exhaustive (full compiler matrix and application validation) on
+  `main` are each coalesced: at most one run is in progress and one is
+  pending. A running main run is never cancelled; a newer push replaces the
+  pending run, so the latest `main` is always tested but intermediate commits
+  may be skipped. To locate a regression, dispatch the workflow manually on
+  the skipped commits. Release-tag workflows keep compiler and packaging checks without
   repeating the application catalog.
-- Release only a main commit whose own Exhaustive run, including
-  applications, is green (dispatch one if it was skipped). Quick or extended
+- Release only a main commit whose own Quick and Exhaustive runs, including
+  applications, are green (dispatch them if they were skipped). Quick or extended
   PR checks alone do not qualify a release.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary

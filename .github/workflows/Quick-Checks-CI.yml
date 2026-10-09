@@ -11,10 +11,11 @@ on:
       - main
   workflow_dispatch:
 
-# Main runs stay independent per commit; only superseded PR runs are cancelled.
-# Manual runs use a commit SHA, distinct from ordinary PR concurrency groups.
+# Main pushes share one group: a running main run is never cancelled, and a
+# newer push replaces the pending one, so the latest main is always tested.
+# PRs cancel superseded runs; tags and manual runs stay independent per commit.
 concurrency:
-  group: quick-${{ github.event.number || github.sha }}
+  group: quick-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -57,7 +58,7 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
-          echo "Concurrency Group: quick-${{ github.event.number || github.sha }}"
+          echo "Concurrency Group: quick-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Test (Linux / macOS)

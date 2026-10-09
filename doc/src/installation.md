@@ -636,17 +636,17 @@ not a reason to silently ignore the failing application check.
 
 Exhaustive on main runs the full LLVM matrix, full platform suites, application,
 documentation, packaging and JupyterLite checks. Main pushes share one
-Exhaustive concurrency group, so at most one main run is in progress and one
-is pending. A running main run is never cancelled; a newer push replaces the
-pending run. The latest main is therefore always tested, but when several
-pushes land while a run is in progress, the intermediate commits are not
-tested individually. Their changes are covered by the next run. To locate a
-regression, dispatch Exhaustive manually on the skipped commits; manual runs
-are never coalesced.
+concurrency group per workflow (Quick and Exhaustive), so for each workflow at
+most one main run is in progress and one is pending. A running main run is
+never cancelled; a newer push replaces the pending run. The latest main is
+therefore always tested, but when several pushes land while a run is in
+progress, the intermediate commits are not tested individually. Their changes
+are covered by the next run. To locate a regression, dispatch Quick or
+Exhaustive manually on the skipped commits; manual runs are never coalesced.
 
 **Releases require green main, including application validation.** The commit
-selected for release must have its own green Exhaustive run on main; dispatch
-one if that commit was skipped by coalescing. A green Quick PR or
+selected for release must have its own green Quick and Exhaustive runs on
+main; dispatch them if that commit was skipped by coalescing. A green Quick PR or
 extended compiler run is not a substitute. Release-tag workflows still run
 compiler, documentation and packaging checks; they do not repeat the application
 catalog already validated on main.
