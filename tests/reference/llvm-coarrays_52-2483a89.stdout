@@ -219,7 +219,7 @@ Finalize_Variable___libasr_created_variable_2:    ; preds = %Finalize_Variable__
 
 declare void @__module_prif_prif_allocate_coarray(%array.1.0*, %array.1.0*, i64*, void (%prif_coarray_handle.8*)**, %prif_coarray_handle.8*, void**, i32*, i32*, i8*, i32*, %string_descriptor*, i32*, i64)
 
-declare void @__module_prif_prif_get(i32*, %prif_coarray_handle.8*, i64*, void*, i64*, i32*, i32*, i8*, i32*, %string_descriptor*, i32*, i64)
+declare void @__module_prif_prif_get(i32*, %prif_coarray_handle.8*, i64*, void**, i64*, i32*, i32*, i8*, i32*, %string_descriptor*, i32*, i64)
 
 declare void @__module_prif_prif_init(i32*)
 
@@ -253,10 +253,11 @@ FINALIZE_SYMTABLE_coarrays_52_sub:                ; preds = %return
 define i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8* %coarray_handle, i64* %sub, i32* %__1sub, i64 %offset) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
-  %call_arg_value4 = alloca i64, align 8
+  %call_arg_value5 = alloca i64, align 8
+  %call_arg_value4 = alloca i32, align 4
   %call_arg_value3 = alloca i32, align 4
-  %call_arg_value2 = alloca i32, align 4
-  %call_arg_value1 = alloca i64, align 8
+  %call_arg_value2 = alloca i64, align 8
+  %call_arg_value1 = alloca void*, align 8
   %call_arg_value = alloca i32, align 4
   %__libasr_created_variable_3 = alloca %string_descriptor, align 8
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
@@ -285,15 +286,16 @@ define i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8
   store i32 0, i32* %call_arg_value, align 4
   call void @__module_prif_prif_initial_team_index_integer____1(%prif_coarray_handle.8* %coarray_handle, i64* %sub_value, i32* %__1sub, i32* %image_num, i32* %__libasr_created_variable_, i32* %call_arg_value)
   %11 = bitcast i32* %result to void*
-  store i64 4, i64* %call_arg_value1, align 8
+  store void* %11, void** %call_arg_value1, align 8
+  store i64 4, i64* %call_arg_value2, align 8
   store i32 0, i32* %call_arg_value, align 4
   %12 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
   %13 = load i8*, i8** %12, align 8
-  store i32 0, i32* %call_arg_value2, align 4
   store i32 0, i32* %call_arg_value3, align 4
-  store i64 0, i64* %call_arg_value4, align 8
-  %14 = load i64, i64* %call_arg_value4, align 8
-  call void @__module_prif_prif_get(i32* %image_num, %prif_coarray_handle.8* %coarray_handle, i64* %offset_value, void* %11, i64* %call_arg_value1, i32* %__libasr_created_variable_1, i32* %call_arg_value, i8* %13, i32* %call_arg_value2, %string_descriptor* %__libasr_created_variable_3, i32* %call_arg_value3, i64 %14)
+  store i32 0, i32* %call_arg_value4, align 4
+  store i64 0, i64* %call_arg_value5, align 8
+  %14 = load i64, i64* %call_arg_value5, align 8
+  call void @__module_prif_prif_get(i32* %image_num, %prif_coarray_handle.8* %coarray_handle, i64* %offset_value, void** %call_arg_value1, i64* %call_arg_value2, i32* %__libasr_created_variable_1, i32* %call_arg_value, i8* %13, i32* %call_arg_value3, %string_descriptor* %__libasr_created_variable_3, i32* %call_arg_value4, i64 %14)
   br label %return
 
 return:                                           ; preds = %.entry

@@ -262,16 +262,18 @@ class ASRToLLVMVisitor;
                     != ASR::abiType::BindC;
         }
 
-        // A type(c_ptr) dummy argument that is intent(out), intent(inout),
-        // or of unspecified intent without VALUE is passed by reference
-        // (`void**`); any other type(c_ptr) dummy is passed by value
-        // (`void*`). The function signature, the callee and every call site
-        // must agree on this.
+        // A type(c_ptr) dummy argument without VALUE is passed by reference
+        // (`void**`), like any other non-VALUE dummy, except an intent(in)
+        // dummy of a bind(c) procedure; any other type(c_ptr) dummy is
+        // passed by value (`void*`). The function signature, the callee and
+        // every call site must agree on this.
         static inline bool is_cptr_dummy_passed_by_reference(const ASR::Variable_t& v) {
             return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
                 (v.m_intent == ASR::intentType::Out ||
                  v.m_intent == ASR::intentType::InOut ||
-                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr));
+                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr) ||
+                 (v.m_intent == ASR::intentType::In && !v.m_value_attr &&
+                  v.m_abi != ASR::abiType::BindC));
         }
 
         static inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t& v) {
