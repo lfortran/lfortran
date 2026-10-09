@@ -2035,8 +2035,10 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
         while(decls.size() != 0) {
+            bool kw_matched = false;
             for (unsigned int i=0;i<decls.size();++i) {
                 if (next_is(cpy, decls[i])) {
+                    kw_matched = true;
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
                     if (decls[i].back() == '*') {
@@ -2067,8 +2069,11 @@ struct FixedFormRecursiveDescent {
 			  declaration_type + "declaration");
                 }
             }
+            // no prefix keyword matched: this is not a declaration of
+            // `declaration_type` (e.g. `end subroutine`), stop scanning
+            if (!kw_matched) break;
         }
-        if (kw_found.size() == 0 && !next_is(cpy, declaration_type))
+        if (!next_is(cpy, declaration_type))
             return false;
 
         // tokenize all keywords
