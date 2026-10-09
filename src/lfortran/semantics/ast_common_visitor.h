@@ -23544,13 +23544,12 @@ public:
     }
 
     std::vector<ASR::TraitImplementation_t*> trait_implementations_for_type(
-            ASR::symbol_t *declaration, const Location &loc) {
+            ASR::symbol_t *declaration, const Location &loc, ASR::ttype_t *type = nullptr) {
         std::vector<ASR::TraitImplementation_t*> result;
         declaration = ASRUtils::symbol_get_past_external(declaration);
-        if (!declaration) return result;
+        if (!declaration && !type) return result;
         for (auto *implementation : visible_trait_implementations()) {
-            if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration)
-                    != declaration) continue;
+            if (!ASRUtils::trait_implementation_matches_type(*implementation, declaration, type)) continue;
             for (auto *previous : result) {
                 ASR::symbol_t *conflict =
                     ASRUtils::conflicting_trait_binding(*previous, *implementation);
@@ -24398,7 +24397,8 @@ public:
             }
             if (!forwarding && !available.count(parameter)) {
                 available.emplace(parameter,
-                    trait_implementations_for_type(types.at(parameter).second, loc));
+                    trait_implementations_for_type(types.at(parameter).second, loc,
+                        types.at(parameter).first));
             }
             bool matched = false;
             if (forwarding) {
@@ -24601,10 +24601,12 @@ public:
                         + "' is not provided by the declared trait constraints", loc);
                 }
                 abstract_method = true;
-            } else if (ASR::is_a<ASR::StructType_t>(*type)) {
+            } else if (ASR::is_a<ASR::StructType_t>(*type) ||
+                    ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+                    ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)) {
                 ASR::symbol_t *declaration =
                     ASR::down_cast<ASR::Variable_t>(variable)->m_type_declaration;
-                for (auto *implementation : trait_implementations_for_type(declaration, loc)) {
+                for (auto *implementation : trait_implementations_for_type(declaration, loc, type)) {
                     for (size_t i = 0; i < implementation->n_bindings; i++) {
                         auto &binding = implementation->m_bindings[i];
                         auto *member = ASRUtils::trait_method_function(binding.m_member);
@@ -24622,7 +24624,17 @@ public:
                         }
                     }
                 }
-                if (!callee) return false;
+                if (!callee) {
+                    if (!declaration) {
+                        trait_call_error("no visible intrinsic trait method '" + name +
+                            "' for " + ASRUtils::type_to_str_fortran_symbol(type, nullptr, true) +
+                            "; use its implementation module", loc);
+                    }
+                    return false;
+                }
+                if (!declaration && ASRUtils::is_array(ASRUtils::symbol_type(variable))) {
+                    trait_call_error("intrinsic trait method calls currently require a scalar receiver", loc);
+                }
             } else {
                 return false;
             }
@@ -24696,6 +24708,10 @@ public:
             callee = prepare_trait_procedure_call(generic, signature, args,
                 explicit_args, n_explicit_args, loc);
         } else if (abstract_method) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(receiver)) &&
+                    !ASRUtils::get_FunctionType(signature)->m_elemental) {
+                trait_call_error("a non-elemental trait method requires a scalar receiver", loc);
+            }
             args = prepend_call_arg(receiver, args);
         } else if (!concrete_binding->m_is_nopass) {
             auto *implementation = ASRUtils::trait_method_function(callee);
@@ -29404,7 +29420,7 @@ public:
         if (msym == "ieee_arithmetic") {
             msym = "lfortran_intrinsic_" + msym;
         }
-        if (x.n_symbols == 0) {
+        if (x.n_symbols == 0 && !x.m_only_present) {
             modules_imported_all.insert({current_scope, msym});
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {

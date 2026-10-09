@@ -826,6 +826,54 @@ semantic error: a sealed override passed-object dummy must preserve the inherite
 4087 |         procedure :: value => child_value
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: passed-object argument must have the implementing type
+    --> tests/errors/continue_compilation_traits_01.f90:4160:5 - 4162:27
+     |
+4160 |        implements IValue :: real(8)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4162 |        end implements real(8)
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: trait receivers currently require intent(in) without pointer or allocatable
+    --> tests/errors/continue_compilation_traits_01.f90:4172:5 - 4174:27
+     |
+4172 |        implements IValue :: integer
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4174 |        end implements integer
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implementation of trait 'iempty'
+    --> tests/errors/continue_compilation_traits_01.f90:4188:5 - 4189:37
+     |
+4188 |        implements IEmpty :: real(double_kind)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4189 |        end implements real(double_kind)
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: end implements type does not match its implementing type
+    --> tests/errors/continue_compilation_traits_01.f90:4195:20
+     |
+4195 |     end implements real(4)
+     |                    ^^^^^^^ 
+
+semantic error: intrinsic implementations currently require a scalar numeric or logical type
+    --> tests/errors/continue_compilation_traits_01.f90:4200:26
+     |
+4200 |     implements IEmpty :: character(8)
+     |                          ^^^^^^^^^^^^ 
+
+semantic error: an intrinsic implementation requires a concrete kind
+    --> tests/errors/continue_compilation_traits_01.f90:4206:31
+     |
+4206 |     implements IEmpty :: real(*)
+     |                               ^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

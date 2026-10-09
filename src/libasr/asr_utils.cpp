@@ -6603,8 +6603,18 @@ bool trait_bindings_equal(const ASR::trait_binding_t &left,
 }
 
 bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
-    ASR::symbol_t *implementing_type)
+    ASR::symbol_t *implementing_type, ASR::ttype_t *intrinsic_type)
 {
+    if (!implementing_type) {
+        return intrinsic_type && receiver.m_type &&
+            receiver.m_type->type == intrinsic_type->type &&
+            !receiver.m_type_declaration &&
+            (ASR::is_a<ASR::Integer_t>(*intrinsic_type) ||
+             ASR::is_a<ASR::Real_t>(*intrinsic_type) ||
+             ASR::is_a<ASR::Complex_t>(*intrinsic_type) ||
+             ASR::is_a<ASR::Logical_t>(*intrinsic_type)) &&
+            ASRUtils::types_equal(receiver.m_type, intrinsic_type, nullptr, nullptr);
+    }
     if (!receiver.m_type || !ASR::is_a<ASR::StructType_t>(*receiver.m_type)) {
         return false;
     }
@@ -6615,6 +6625,16 @@ bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
     return self == concrete || (is_class_type(receiver.m_type) &&
         is_parent(ASR::down_cast<ASR::Struct_t>(self),
             ASR::down_cast<ASR::Struct_t>(concrete)));
+}
+
+bool trait_implementation_matches_type(const ASR::TraitImplementation_t &implementation,
+    ASR::symbol_t *declaration, ASR::ttype_t *type)
+{
+    auto *provided = symbol_get_past_external(implementation.m_type_declaration);
+    declaration = symbol_get_past_external(declaration);
+    if (provided || declaration) return provided && provided == declaration;
+    return type && implementation.m_implementing_type->type == type->type &&
+        types_equal(implementation.m_implementing_type, type, nullptr, nullptr);
 }
 
 const ASR::trait_binding_t *find_trait_binding(

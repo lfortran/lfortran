@@ -194,7 +194,7 @@ decl_stmt
             decl_stmt* body, trivia? t_inside, trivia? trivia)
     | Trait(identifier name, identifier* parents, interface_item* items)
     | Implements(identifier* traits, decl_attribute implementing_type,
-        procedure_decl* procedures)
+        procedure_decl* procedures, decl_attribute? end_type)
     | InferDoLoop(int label, identifier? stmt_name, int do_label, identifier var,
             expr start, expr end, expr? increment, decl_stmt* body,
             trivia? t_inside, trivia? trivia, location var_loc)

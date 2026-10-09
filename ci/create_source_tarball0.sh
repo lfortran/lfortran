@@ -44,6 +44,9 @@ cmake -E copy \
     integration_tests/traits_type_adoption.py \
     integration_tests/traits_type_adoption_02*.f90 \
     integration_tests/traits_type_adoption_04*.f90 \
+    integration_tests/traits_paper_printy.py \
+    integration_tests/traits_paper_printy.f90 \
+    integration_tests/traits_intrinsic_02*.f90 \
     integration_tests/traits_paper_manual_values.f90 \
     $dest/integration_tests
 cmake -E copy_directory integration_tests/traits_paper_functional \

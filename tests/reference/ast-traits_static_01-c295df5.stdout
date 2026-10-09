@@ -126,6 +126,7 @@
                 )]
                 ()
             )]
+            ()
         )
         (Implements
             [IValue]
@@ -147,6 +148,7 @@
                 )]
                 ()
             )]
+            ()
         )]
         [(Function
             small_value

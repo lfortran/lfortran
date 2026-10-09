@@ -4790,7 +4790,8 @@ public:
 
     void check_trait_binding(ASR::Function_t *requirement,
             ASR::Function_t *procedure, ASR::symbol_t *implementing_type,
-            ASR::trait_binding_t &binding, const Location &loc) {
+            ASR::trait_binding_t &binding, const Location &loc,
+            ASR::ttype_t *intrinsic_type = nullptr) {
         size_t receiver = procedure->n_args;
         if (!binding.m_is_nopass) {
             if (!binding.m_self_argument && procedure->n_args > 0) {
@@ -4806,7 +4807,7 @@ public:
             ASR::Variable_t *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
             ASR::symbol_t *expected_type =
                 ASRUtils::symbol_get_past_external(implementing_type);
-            if (!ASRUtils::trait_receiver_type_matches(*self, expected_type)) {
+            if (!ASRUtils::trait_receiver_type_matches(*self, expected_type, intrinsic_type)) {
                 trait_error("passed-object argument must have the implementing type", loc);
             }
             if (self->m_intent != ASR::intentType::In
@@ -4900,34 +4901,69 @@ public:
         }
     }
 
-    void complete_trait_implementation(const AST::Implements_t &x) {
-        ASR::symbol_t *type_symbol = nullptr;
-        ASR::ttype_t *type = nullptr;
+    ASR::ttype_t *resolve_implements_type(AST::decl_attribute_t *attribute,
+            ASR::symbol_t *&type_symbol, const Location &loc) {
+        type_symbol = nullptr;
         std::string type_name;
-        if (AST::is_a<AST::AttrName_t>(*x.m_implementing_type)) {
-            auto *name = AST::down_cast<AST::AttrName_t>(x.m_implementing_type);
+        if (AST::is_a<AST::AttrName_t>(*attribute)) {
+            auto *name = AST::down_cast<AST::AttrName_t>(attribute);
             type_name = to_lower(name->m_name);
-        } else if (AST::is_a<AST::AttrType_t>(*x.m_implementing_type)) {
-            auto *attribute = AST::down_cast<AST::AttrType_t>(x.m_implementing_type);
-            if (attribute->m_type == AST::decl_typeType::TypeType && attribute->m_name) {
-                type_name = to_lower(attribute->m_name);
+        } else if (AST::is_a<AST::AttrType_t>(*attribute)) {
+            auto *type = AST::down_cast<AST::AttrType_t>(attribute);
+            if (type->m_type == AST::decl_typeType::TypeType && type->m_name) {
+                type_name = to_lower(type->m_name);
             }
         }
         if (!type_name.empty()) {
-            type_symbol = current_scope->resolve_symbol(type_name);
-            if (type_symbol && ASR::is_a<ASR::Struct_t>(
-                    *ASRUtils::symbol_get_past_external(type_symbol))) {
-                type = ASRUtils::make_StructType_t_util(
-                    al, x.base.base.loc, type_symbol, true);
+            auto *symbol = current_scope->resolve_symbol(type_name);
+            if (symbol && ASR::is_a<ASR::Struct_t>(
+                    *ASRUtils::symbol_get_past_external(symbol))) {
+                type_symbol = symbol;
+                return ASRUtils::make_StructType_t_util(al, loc, symbol, true);
+            }
+            attribute = bare_type_set_member(type_name, loc);
+        }
+        if (!attribute || !AST::is_a<AST::AttrType_t>(*attribute)) {
+            trait_error("implements requires a concrete derived or intrinsic type", loc);
+        }
+        auto *spec = AST::down_cast<AST::AttrType_t>(attribute);
+        for (size_t i = 0; i < spec->n_kind; i++) {
+            if (spec->m_kind[i].m_type == AST::kind_item_typeType::Star) {
+                trait_error("an intrinsic implementation requires a concrete kind",
+                    spec->m_kind[i].loc);
             }
         }
-        if (!type) {
-            trait_error("implements currently requires a concrete derived type",
-                x.base.base.loc);
+        if (spec->m_type != AST::TypeInteger && spec->m_type != AST::TypeReal &&
+                spec->m_type != AST::TypeComplex && spec->m_type != AST::TypeLogical &&
+                spec->m_type != AST::TypeDoublePrecision &&
+                spec->m_type != AST::TypeDoubleComplex) {
+            trait_error("intrinsic implementations currently require a scalar numeric or logical type", loc);
         }
-        ASR::Struct_t *structure = ASR::down_cast<ASR::Struct_t>(
-            ASRUtils::symbol_get_past_external(type_symbol));
-        if (structure->m_is_abstract) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+        std::string name = "__trait_implementation";
+        return determine_type(loc, name, attribute, false, false, dims,
+            nullptr, type_symbol, current_procedure_abi_type);
+    }
+
+    void complete_trait_implementation(const AST::Implements_t &x) {
+        ASR::symbol_t *type_symbol = nullptr;
+        auto *type = resolve_implements_type(x.m_implementing_type, type_symbol,
+            x.m_implementing_type->base.loc);
+        if (x.m_end_type) {
+            ASR::symbol_t *end_symbol = nullptr;
+            auto *end_type = resolve_implements_type(x.m_end_type, end_symbol,
+                x.m_end_type->base.loc);
+            if (ASRUtils::symbol_get_past_external(type_symbol) !=
+                    ASRUtils::symbol_get_past_external(end_symbol) ||
+                    (!type_symbol && !ASRUtils::types_equal(type, end_type, nullptr, nullptr))) {
+                trait_error("end implements type does not match its implementing type",
+                    x.m_end_type->base.loc);
+            }
+        }
+        auto *structure = type_symbol ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(type_symbol)) : nullptr;
+        if (structure && structure->m_is_abstract) {
             trait_error("an implements block cannot target an abstract type",
                 x.base.base.loc);
         }
@@ -4988,7 +5024,7 @@ public:
         for (size_t i = 0; i < x.n_traits; i++) {
             traits.push_back(&resolve_trait(x.m_traits[i], x.base.base.loc)->base);
         }
-        complete_type_trait_implementation(*structure, traits, declared,
+        complete_trait_implementation(type, type_symbol, traits, declared,
             x.base.base.loc, false);
     }
 
@@ -5000,6 +5036,15 @@ public:
             al, &structure.base, current_scope);
         ASR::ttype_t *type = ASRUtils::make_StructType_t_util(
             al, loc, type_symbol, true);
+        complete_trait_implementation(type, type_symbol, traits, declared, loc, allow_deferred);
+    }
+
+    void complete_trait_implementation(ASR::ttype_t *type, ASR::symbol_t *type_symbol,
+            const std::vector<ASR::symbol_t*> &traits,
+            const std::map<std::string, ASR::trait_binding_t> &declared,
+            const Location &loc, bool allow_deferred) {
+        auto *structure = type_symbol ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(type_symbol)) : nullptr;
         std::vector<ASRUtils::TraitHierarchy> hierarchies;
         std::map<std::string, ASR::Function_t*> methods;
         for (auto *symbol : traits) {
@@ -5035,7 +5080,7 @@ public:
                     used.insert(member_name);
                 } else {
                     ASR::symbol_t *method = nullptr;
-                    for (ASR::Struct_t *s = &structure; s && !method; ) {
+                    for (ASR::Struct_t *s = structure; s && !method; ) {
                         method = s->m_symtab->get_symbol(member_name);
                         s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
                             ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr;
@@ -5067,7 +5112,7 @@ public:
                 binding.m_member = member;
                 check_trait_binding(ASRUtils::trait_method_function(member),
                     ASRUtils::trait_method_function(binding.m_procedure), type_symbol,
-                    binding, loc);
+                    binding, loc, type);
                 binding.m_member = reference_trait_member(
                     member, current_scope, loc);
                 binding.m_procedure = make_operator_proc_visible(
@@ -5079,14 +5124,14 @@ public:
                 if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
                 auto *previous = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
                 if (ASRUtils::symbol_get_past_external(previous->m_trait) == &trait->base
-                        && ASRUtils::symbol_get_past_external(previous->m_type_declaration)
-                            == &structure.base) {
+                        && ASRUtils::trait_implementation_matches_type(*previous, type_symbol, type)) {
                     trait_error("duplicate implementation of trait '"
                         + std::string(trait->m_name) + "'", loc);
                 }
             }
             std::string name = current_scope->get_unique_name(
-                "__implements_" + std::string(structure.m_name) + "_" + trait->m_name);
+                "__implements_" + (structure ? std::string(structure->m_name)
+                    : ASRUtils::get_type_code(type)) + "_" + trait->m_name);
             ASR::symbol_t *implementation = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_TraitImplementation_t(al, loc, current_scope,
                     s2c(al, name), type, type_symbol,
@@ -5094,8 +5139,7 @@ public:
                     bindings.p, bindings.size(),
                     ASR::accessType::Public));
             for (auto *previous : visible_trait_implementations()) {
-                if (ASRUtils::symbol_get_past_external(previous->m_type_declaration)
-                        != &structure.base) continue;
+                if (!ASRUtils::trait_implementation_matches_type(*previous, type_symbol, type)) continue;
                 ASR::symbol_t *conflict = ASRUtils::conflicting_trait_binding(
                     *previous, *ASR::down_cast<ASR::TraitImplementation_t>(implementation));
                 if (conflict) {
@@ -5106,7 +5150,7 @@ public:
                 }
             }
             current_scope->add_symbol(name, implementation);
-            if (structure.m_is_abstract) continue;
+            if (!structure || structure->m_is_abstract) continue;
             // A static-only child can still supply a runtime-eligible parent.
             for (auto *provided : hierarchies[i].traits) {
                 create_runtime_trait_witness(

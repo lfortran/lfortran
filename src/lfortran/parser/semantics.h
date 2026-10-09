@@ -1215,7 +1215,7 @@ static inline ast_t *IMPLEMENTS(Allocator &al, const Vec<ast_t*> &traits,
     return make_Implements_t(al, loc,
         REDUCE_ARGS(al, traits), traits.size(),
         down_cast<decl_attribute_t>(implementing_type),
-        VEC_CAST(procedures, procedure_decl), procedures.size());
+        VEC_CAST(procedures, procedure_decl), procedures.size(), nullptr);
 }
 
 

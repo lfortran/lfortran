@@ -416,6 +416,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_decl
 %type <ast> trait_decl
 %type <ast> implements_decl
+%type <ast> implements_intrinsic_type
+%type <ast> implements_intrinsic_end
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <ast> derived_type_modifier
@@ -733,6 +735,28 @@ implements_decl
         end_implements id_opt sep {
             $$ = IMPLEMENTS(p.m_a, $2, $4, $6, $8, TRIVIA($5, $9, @$), @$,
                 p.diag); }
+    | KW_IMPLEMENTS trait_name_spec "::" implements_intrinsic_type sep procedure_list_opt
+        end_implements implements_intrinsic_end sep {
+            $$ = make_Implements_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $2), $2.size(),
+                down_cast<decl_attribute_t>($4),
+                VEC_CAST($6, procedure_decl), $6.size(),
+                $8 ? down_cast<decl_attribute_t>($8) : nullptr); }
+    ;
+
+implements_intrinsic_type
+    : KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
+    | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
+    | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
+    | KW_LOGICAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Logical, $3, @$); }
+    | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
+    ;
+
+implements_intrinsic_end
+    : %empty { $$ = nullptr; }
+    | implements_intrinsic_type { $$ = $1; }
+    | id {
+            $$ = make_AttrType_t(p.m_a, @$, decl_typeType::TypeType,
+                nullptr, 0, nullptr, name2char($1), None); }
     ;
 
 interface_stmt
