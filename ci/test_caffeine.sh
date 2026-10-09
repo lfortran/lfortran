@@ -129,6 +129,8 @@ clang --version
  echo "##[group] Caffeine unit tests"
 )
 
+# Failures here can indicate regressions compiling Caffeine's ordinary Fortran,
+# independently of LFortran's coarray lowering.
 # The generated wrapper selects LFortran and GASNet; keep its four-image
 # unit-test setting local so integration tests retain their own image counts.
 CAF_IMAGES=4 ./run-fpm.sh test --verbose

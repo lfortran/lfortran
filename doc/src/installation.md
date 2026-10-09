@@ -575,7 +575,7 @@ capability test remain part of Quick, just as
 Metal and CUDA-on-CPU integration tests validate particular backends and
 platforms. Toolchain/runtime dependencies are not the application catalog.
 
-`ci/test_caffeine.sh` uses Caffeine 0.8.2 and its generated `run-fpm.sh` wrapper,
+`ci/test_caffeine.sh` uses Caffeine and its generated `run-fpm.sh` wrapper,
 which selects LFortran and the GASNet runner. Unit tests use four images;
 the PRIF smoke test and integration tests keep their existing image settings.
 The missing-tool installer uses the same `fpm=0.12.0` pin as the application
