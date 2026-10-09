@@ -2148,3 +2148,64 @@ subroutine intent_in_bound_before_decl_error(a, nz)
     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
     a = 1
 end subroutine intent_in_bound_before_decl_error
+
+module pointer_dummy_actual_1_m
+    implicit none
+    type :: pda_t
+        integer :: i
+    contains
+        procedure :: pda_tb
+    end type
+    interface pda_gen
+        module procedure pda_real_inout
+    end interface
+contains
+    subroutine pda_class_inout(w)
+        class(pda_t), pointer, intent(inout) :: w
+    end subroutine
+    subroutine pda_type_none(w)
+        type(pda_t), pointer :: w
+    end subroutine
+    subroutine pda_int_inout(w)
+        integer, pointer, intent(inout) :: w
+    end subroutine
+    subroutine pda_int_in(w)
+        integer, pointer, intent(in) :: w
+    end subroutine
+    subroutine pda_class_in(w)
+        class(pda_t), pointer, intent(in) :: w
+    end subroutine
+    subroutine pda_real_inout(w)
+        real, pointer, intent(inout) :: w
+    end subroutine
+    integer function pda_int_in_f(w)
+        integer, pointer, intent(in) :: w
+        pda_int_in_f = 1
+    end function
+    subroutine pda_tb(self, w)
+        class(pda_t), intent(in) :: self
+        integer, pointer :: w
+    end subroutine
+end module
+
+subroutine pointer_dummy_actual_1()
+    use pointer_dummy_actual_1_m
+    implicit none
+    type(pda_t), target :: x
+    class(pda_t), allocatable, target :: ca
+    integer, target :: it
+    integer :: n, k
+    real, target :: r
+    call pda_class_inout(x)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    call pda_type_none(x)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    call pda_class_inout(ca)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    call pda_int_inout(it)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    call pda_int_in(n)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    call pda_class_in(pda_t(1))  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    call pda_gen(r)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    call x%pda_tb(it)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+    k = pda_int_in_f(n)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    k = pda_int_in_f(it)
+    call pda_int_in(it)
+    call pda_class_in(x)
+end subroutine pointer_dummy_actual_1

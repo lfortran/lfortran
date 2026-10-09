@@ -3112,3 +3112,57 @@ semantic error: Cannot assign to an intent(in) variable `nz`
      |
 2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
      |     ^^ 
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2199:26
+     |
+2199 |     call pda_class_inout(x)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                          ^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2200:24
+     |
+2200 |     call pda_type_none(x)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                        ^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2201:26
+     |
+2201 |     call pda_class_inout(ca)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                          ^^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2202:24
+     |
+2202 |     call pda_int_inout(it)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                        ^^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    --> tests/errors/continue_compilation_1.f90:2203:21
+     |
+2203 |     call pda_int_in(n)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+     |                     ^ it is neither a pointer nor a valid target for a pointer assignment
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    --> tests/errors/continue_compilation_1.f90:2204:23
+     |
+2204 |     call pda_class_in(pda_t(1))  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+     |                       ^^^^^^^^ it is neither a pointer nor a valid target for a pointer assignment
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2205:18
+     |
+2205 |     call pda_gen(r)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                  ^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer
+    --> tests/errors/continue_compilation_1.f90:2206:19
+     |
+2206 |     call x%pda_tb(it)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer
+     |                   ^^ a non-pointer actual argument is allowed only when the dummy argument has intent(in)
+
+semantic error: actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+    --> tests/errors/continue_compilation_1.f90:2207:22
+     |
+2207 |     k = pda_int_in_f(n)  ! {Error} actual argument for pointer dummy argument 'w' must be a pointer or a valid target
+     |                      ^ it is neither a pointer nor a valid target for a pointer assignment

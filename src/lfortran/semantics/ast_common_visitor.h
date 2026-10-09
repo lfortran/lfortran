@@ -15861,6 +15861,40 @@ public:
         }
     }
 
+    // F2018 15.5.2.7: a data pointer dummy without INTENT(IN) is associated
+    // with the actual pointer itself, so the actual must be a pointer. An
+    // INTENT(IN) one may instead become associated with the actual, which
+    // must then be a valid target for it in a pointer assignment.
+    void check_pointer_dummy_actual(ASR::Variable_t* dummy, ASR::expr_t* actual) {
+        if (actual == nullptr || !ASRUtils::is_pointer(dummy->m_type)
+                || ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(dummy->m_type))
+                || ASR::is_a<ASR::PointerNullConstant_t>(*actual)) {
+            return;
+        }
+        if (dummy->m_intent != ASR::intentType::In) {
+            if (!ASRUtils::is_pointer(ASRUtils::expr_type(actual))) {
+                diag.add(diag::Diagnostic(
+                    "actual argument for pointer dummy argument '"
+                    + std::string(dummy->m_name) + "' must be a pointer",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("a non-pointer actual argument is allowed "
+                            "only when the dummy argument has intent(in)",
+                            {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+        } else if (!ASRUtils::is_valid_pointer_assignment_target(actual)) {
+            diag.add(diag::Diagnostic(
+                "actual argument for pointer dummy argument '"
+                + std::string(dummy->m_name)
+                + "' must be a pointer or a valid target",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("it is neither a pointer nor a valid target "
+                        "for a pointer assignment", {actual->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void validate_missing_required_arguments(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::Function_t* func,
                 ASR::expr_t* dt=nullptr, bool nopass=false) {
@@ -15908,6 +15942,7 @@ public:
                                 diag::Label("", {args[i].m_value->base.loc})}));
                         throw SemanticAbort();
                     }
+                    check_pointer_dummy_actual(dummy_var, args[i].m_value);
                 }
             } else if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
                 dummy_name = ASR::down_cast<ASR::Function_t>(dummy_sym)->m_name;
