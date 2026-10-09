@@ -7297,7 +7297,8 @@ public:
                 throw SemanticAbort();
             }
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y,
-                ASRUtils::expr_type(y), real_type, diag);
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(y)),
+                real_type, diag);
         };
         if (ASR::is_a<ASR::Cast_t>(*target)) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(target);
@@ -7316,7 +7317,7 @@ public:
                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
                 convert_to_complex_part(y, real_type);
                 ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
-                    val, real_type, nullptr));
+                    val, cast->m_type, nullptr));
                 ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
                     al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
@@ -7337,7 +7338,7 @@ public:
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
             convert_to_complex_part(y, real_type);
             ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
-                val, real_type, nullptr));
+                val, re->m_type, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
                 al, loc, y, im, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
@@ -7355,7 +7356,7 @@ public:
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target))));
             convert_to_complex_part(y, real_type);
             ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
-                ASR::cast_kindType::ComplexToReal, real_type, nullptr, nullptr));
+                ASR::cast_kindType::ComplexToReal, im->m_type, nullptr, nullptr));
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;

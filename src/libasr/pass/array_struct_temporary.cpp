@@ -2617,6 +2617,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         replace_expr_with_temporary_variable(xx.m_re, x.m_re, "_complex_constructor_re");
 
         replace_expr_with_temporary_variable(xx.m_im, xx.m_im, "_complex_constructor_im");
+
+        // Also simplify the arguments in a scalar part, such as the section
+        // in `maxval(z(3:4)%re)`
+        CallReplacerOnExpressionsVisitor::visit_ComplexConstructor(x);
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
@@ -2830,6 +2834,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        // A scalar part, such as `maxval(z%re)` in `z(1:2)%re = maxval(z%re)`,
+        // is evaluated once into a temporary, not once per element
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ComplexConstructor(x);
         replace_current_expr(x, "_complex_constructor_");
     }
 
