@@ -400,17 +400,17 @@ semantic error: LEN parameters in parameterized derived types are not supported 
 305 |         integer, len :: n
     |         ^^^^^^^^^^^^^^^^^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
-   --> tests/errors/continue_compilation_1.f90:614:14
+semantic error: 'out_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
+   --> tests/errors/continue_compilation_1.f90:614:29
     |
 614 |     integer, intent(out) :: out_intent
-    |              ^^^^^^^^^^^ 
+    |                             ^^^^^^^^^^ 'out_intent' is not a dummy argument
 
-semantic error: Intent attribute can only be applied to procedure arguments
-   --> tests/errors/continue_compilation_1.f90:615:14
+semantic error: 'in_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
+   --> tests/errors/continue_compilation_1.f90:615:28
     |
 615 |     integer, intent(in) :: in_intent
-    |              ^^^^^^^^^^ 
+    |                            ^^^^^^^^^ 'in_intent' is not a dummy argument
 
 semantic error: Parameterized derived type 'container' parameter 'ik' has no default value and must be specified
    --> tests/errors/continue_compilation_1.f90:626:5
@@ -928,11 +928,17 @@ semantic error: component `cihs_l` cannot be referenced in a component declarati
 2127 |         character(len=cihs_l) :: cihs_g  ! {Error} component `cihs_l` cannot be referenced in a component declaration
      |                       ^^^^^^ `cihs_l` is a component of the derived type being defined
 
-semantic error: Intent attribute can only be applied to procedure arguments
-    --> tests/errors/continue_compilation_1.f90:2141:5
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
+    --> tests/errors/continue_compilation_1.f90:2141:22
      |
-2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
-     |     ^^^^^^^^^^ 
+2141 |     intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
+     |                      ^ 'y' is not a dummy argument
+
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+    --> tests/errors/continue_compilation_1.f90:2155:19
+     |
+2155 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+     |                   ^ 'y' is not a dummy argument
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
