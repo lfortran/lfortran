@@ -5914,6 +5914,21 @@ public:
                 + std::to_string(null_array_descriptor_count++));
     }
 
+    // Constant for a CHARACTER array struct member: one string descriptor
+    // over the consecutive element bytes, not an array of descriptors. The
+    // backing data buffer is writable, since this constant initializes a
+    // writable struct/common-block global and a later assignment to an
+    // element must not write into read-only memory.
+    llvm::Constant* get_character_array_member_constant(
+            const ASR::ArrayConstant_t* arr_const) {
+        llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+            llvm_utils->declare_constant_stringArray(al, arr_const, false));
+        if (!gv || !gv->hasInitializer()) {
+            throw CodeGenError("Non-constant CHARACTER array in struct initializer");
+        }
+        return gv->getInitializer();
+    }
+
     // Builds the constant of type `struct_` from `args`, which hold the
     // members of its parent types first and then its own members. The
     // parent type is the first element of the LLVM structure, so the
@@ -5975,16 +5990,7 @@ public:
                     initializer = get_const_array(value, type->getArrayElementType());
                 } else if (ASRUtils::is_character(
                                *ASRUtils::type_get_past_array(ASRUtils::expr_type(value)))) {
-                    // Build the character array's backing data buffer as
-                    // writable. This constant initializes a writable
-                    // struct/common-block global, so a later assignment to an
-                    // element of the CHARACTER array must not write into
-                    // read-only memory (which would fault at runtime).
-                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
-                        llvm_utils->declare_constant_stringArray(al, arr_expr, false));
-                    if (gv && gv->hasInitializer()) {
-                        initializer = gv->getInitializer();
-                    }
+                    initializer = get_character_array_member_constant(arr_expr);
                 } else {
                     throw CodeGenError("Unsupported non-array type in struct ArrayConstant initializer");
                 }
@@ -8548,17 +8554,8 @@ public:
             }
             case ASR::exprType::ArrayConstant: {
                 if (ASRUtils::is_character(*ASRUtils::expr_type(expr))) {
-                    // A CHARACTER array is one string descriptor over its
-                    // consecutive element bytes, not an array of descriptors.
-                    // Build the backing data buffer as writable, since this
-                    // constant initializes a writable struct global.
-                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
-                        llvm_utils->declare_constant_stringArray(al,
-                            ASR::down_cast<ASR::ArrayConstant_t>(expr), false));
-                    if (gv && gv->hasInitializer()) {
-                        return gv->getInitializer();
-                    }
-                    break;
+                    return get_character_array_member_constant(
+                        ASR::down_cast<ASR::ArrayConstant_t>(expr));
                 }
                 // Infer LLVM element/array type from the ASR expression
                 llvm::Type* elem_type = nullptr;
