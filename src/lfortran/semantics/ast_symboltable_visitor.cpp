@@ -188,6 +188,13 @@ public:
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
     std::set<std::string> loaded_submodules;
     std::string dt_name;
+    struct TypeInitializer {
+        SymbolTable *scope, *type_scope;
+        std::string type_name, procedure_name;
+        Location loc;
+    };
+    std::vector<TypeInitializer> pending_type_initializers;
+    std::map<SymbolTable*, std::map<std::string, ASR::accessType>> initializer_access;
     bool in_submodule = false;
     bool is_interface = false;
     bool in_program = false;
@@ -4269,6 +4276,71 @@ public:
         }
     }
 
+    void visit_InitialProcedure(const AST::InitialProcedure_t &x) {
+        warn_traits_extension(x.base.base.loc);
+        LCOMPILERS_ASSERT(is_derived_type && current_scope->parent);
+        SymbolTable *scope = current_scope->parent;
+        for (size_t i = 0; i < x.n_names; i++) {
+            std::string name = to_lower(x.m_names[i]);
+            pending_type_initializers.push_back({scope, current_scope, dt_name, name, x.base.base.loc});
+            generic_procedures[dt_name].push_back({name, x.base.base.loc, scope});
+        }
+    }
+
+    void check_type_initializers() {
+        std::map<SymbolTable*, std::set<ASR::symbol_t*>> seen;
+        for (const auto &binding : pending_type_initializers) {
+            try {
+                auto *type = binding.scope->get_symbol(binding.type_name);
+                if (!type || !ASR::is_a<ASR::Struct_t>(*type) ||
+                        ASR::down_cast<ASR::Struct_t>(type)->m_symtab != binding.type_scope) {
+                    trait_error("initializer binding requires a complete derived type declaration",
+                        binding.loc);
+                }
+                auto *structure = ASR::down_cast<ASR::Struct_t>(type);
+                auto *symbol = binding.scope->resolve_symbol(binding.procedure_name +
+                    ASRUtils::genericprocedure_suffix);
+                if (!symbol) symbol = binding.scope->resolve_symbol(binding.procedure_name);
+                auto *procedure = ASRUtils::trait_method_function(symbol);
+                if (!procedure || !procedure->m_return_var) {
+                    trait_error("initializer '" + binding.procedure_name +
+                        "' must be a function returning type '" + binding.type_name + "'",
+                        binding.loc);
+                }
+                if (!seen[binding.type_scope].insert(&procedure->base).second) {
+                    trait_error("initializer '" + binding.procedure_name +
+                        "' is declared more than once", binding.loc);
+                }
+                if (ASRUtils::trait_method_template(*procedure) || structure->n_kind_params) {
+                    trait_error("parameterized initializer bindings are not implemented yet",
+                        binding.loc);
+                }
+                if (structure->m_is_abstract) {
+                    trait_error("an initializer cannot construct an abstract type", binding.loc);
+                }
+                auto *result_type = ASRUtils::expr_type(procedure->m_return_var);
+                if (!ASR::is_a<ASR::StructType_t>(*result_type) ||
+                        ASRUtils::is_class_type(result_type) ||
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(procedure->m_return_var)) != type) {
+                    trait_error("initializer '" + binding.procedure_name +
+                        "' must return a nonpointer, nonallocatable scalar of type '" +
+                        binding.type_name + "'", binding.loc);
+                }
+                initializer_access[binding.scope][binding.type_name] = structure->m_access;
+            } catch (const SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
+                auto &specifics = generic_procedures[binding.type_name];
+                specifics.erase(std::remove_if(specifics.begin(), specifics.end(),
+                    [&](const GenericSpecific &specific) {
+                        return specific.scope == binding.scope &&
+                            specific.name == binding.procedure_name;
+                    }), specifics.end());
+            }
+        }
+        pending_type_initializers.clear();
+    }
+
     void fill_interface_proc_names(const AST::Interface_t& x,
                                     std::vector<std::string>& proc_names) {
         for (size_t i = 0; i < x.n_items; i++) {
@@ -5851,6 +5923,7 @@ public:
     }
 
     void add_generic_procedures() {
+        check_type_initializers();
         // Interface blocks of the same name in different scopes declare
         // different generic interfaces: build one in each of those scopes.
         std::vector<std::pair<std::string, std::vector<GenericSpecific>>> generics;
@@ -5937,13 +6010,20 @@ public:
                     }
                 }
             }
+            auto access = ASR::accessType::Public;
+            auto initializers = initializer_access.find(current_scope);
+            if (initializers != initializer_access.end() &&
+                    initializers->second.count(proc.first)) {
+                access = initializers->second.at(proc.first);
+            }
             ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
                 current_scope, generic_name,
-                symbols.p, symbols.size(), ASR::Public);
+                symbols.p, symbols.size(), access);
             current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
         current_scope = current_scope_copy;
         generic_procedures.clear();
+        initializer_access.clear();
     }
 
     /* 

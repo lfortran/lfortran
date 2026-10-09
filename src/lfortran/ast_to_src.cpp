@@ -857,6 +857,16 @@ public:
         s = r;
     }
 
+    void visit_InitialProcedure(const InitialProcedure_t &x) {
+        std::string r = syn(gr::String) + "initial :: " + syn();
+        for (size_t i = 0; i < x.n_names; i++) {
+            if (i) r += ", ";
+            r += x.m_names[i];
+        }
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
+        s = r;
+    }
+
     void visit_Private(const Private_t &x) {
         std::string r;
         r += syn(gr::Type);

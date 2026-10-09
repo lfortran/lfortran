@@ -3840,6 +3840,15 @@ RUN(NAME traits_intrinsic_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_intrinsic_03 LABELS llvm c NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_intrinsic_03_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_initializers_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_initializers_02_provider.f90 traits_initializers_02_facade.f90)
+RUN(NAME traits_initializers_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --fixed-form)
 RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_method_02 LABELS llvm c fortran wasm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES

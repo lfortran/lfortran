@@ -243,6 +243,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"rewind", KW_REWIND},
     {"save", KW_SAVE},
     {"sealed", KW_SEALED},
+    {"initial", KW_INITIAL},
     {"select", KW_SELECT},
     {"select_case", KW_SELECT_CASE},
     {"select_rank", KW_SELECT_RANK},

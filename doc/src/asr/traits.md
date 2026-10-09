@@ -51,6 +51,37 @@ implementation before using its conformance. An `ONLY` import of a type retains
 the public conformance records exported for that type by the explicitly used
 module. It does not make implementations in unrelated, unseen modules visible.
 
+## User-defined initializer bindings
+
+A derived type can register module functions as constructor overloads:
+
+```fortran
+type :: Box
+    integer :: n
+contains
+    initial :: from_integer, from_real
+end type
+```
+
+Each initializer must return a nonpointer, nonallocatable scalar of the exact
+declared type. Its arguments are the constructor arguments; no passed-object
+argument is inserted. Ordinary generic resolution handles overloaded calls,
+keyword arguments and optional dummies. When no user initializer matches, the
+ordinary structure constructor remains available under its usual accessibility
+and component rules. The constructor interface has the type's accessibility,
+even when its implementation functions are private, and follows the existing
+type import/renaming mechanism.
+
+The frontend lowers these bindings to the same `GenericProcedure` representation
+as an ordinary generic interface sharing a derived type's name. Calls use the
+original functions directly, not receiver adapters or new virtual slots, so
+existing function-result ownership and finalization apply. AST printing retains
+the `initial ::` syntax. `initial` remains usable as an ordinary identifier.
+
+This first initializer slice covers bindings in derived-type definitions.
+Initializer requirements inside traits, retroactive initializer blocks and
+parameterized initializer bindings remain separate work.
+
 ## Intrinsic types and explicit provider imports
 
 An implementation can add ordinary messages to a scalar `integer`, `real`,

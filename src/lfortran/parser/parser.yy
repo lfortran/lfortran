@@ -388,6 +388,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_TUPLE
 %token <string> KW_UNION_TYPE
 %token <string> KW_END_UNION_TYPE
+%token <string> KW_INITIAL
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
@@ -1062,6 +1063,9 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
+    | KW_INITIAL "::" id_list sep {
+            $$ = make_InitialProcedure_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $3),
+                $3.size(), trivia_cast(TRIVIA_AFTER($4, @$))); }
     ;
 
 access_spec_list
@@ -2947,6 +2951,7 @@ id
     | KW_IN { $$ = SYMBOL($1, @$); }
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
+    | KW_INITIAL { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
     | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }

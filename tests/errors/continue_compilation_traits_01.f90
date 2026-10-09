@@ -4276,3 +4276,59 @@ contains
         n = x%value()
     end function
 end module
+
+module traits_initializers_error_nominal
+    type :: Other
+        integer :: n
+    end type
+    type :: Box
+        integer :: n
+    contains
+        initial :: make
+    end type
+contains
+    function make() result(x)
+        type(Other) :: x
+        x%n = 1
+    end function
+end module
+
+module traits_initializers_error_subroutine
+    type :: Box
+    contains
+        initial :: make
+    end type
+contains
+    subroutine make()
+    end subroutine
+end module
+
+module traits_initializers_error_missing
+    type :: Box
+    contains
+        initial :: missing
+    end type
+end module
+
+module traits_initializers_error_duplicate
+    type :: Box
+    contains
+        initial :: make, make
+    end type
+contains
+    function make() result(x)
+        type(Box) :: x
+    end function
+end module
+
+module traits_initializers_error_pointer
+    type :: Box
+    contains
+        initial :: make
+    end type
+contains
+    function make() result(x)
+        type(Box), pointer :: x
+        x => null()
+    end function
+end module

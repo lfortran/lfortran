@@ -6249,6 +6249,139 @@ end program
     }
 }
 
+TEST_CASE("Initializer bindings reuse ordinary generic constructor interfaces") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module initial_binding_m
+implicit none
+private
+public :: Box
+type, sealed :: Box
+    integer :: n = 0
+contains
+    initial :: from_int, from_real
+end type
+contains
+function from_int(value) result(object)
+    integer, intent(in) :: value
+    type(Box) :: object
+    object%n = value + 10
+end function
+function from_real(value) result(object)
+    real, intent(in) :: value
+    type(Box) :: object
+    object%n = int(value) + 20
+end function
+subroutine check()
+    type(Box) :: x
+    integer :: initial
+    initial = 3
+    x = Box(value=initial)
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("initial :: from_int, from_real") != std::string::npos);
+    CHECK(printed.find("integer :: initial") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("initial_binding_m"));
+    auto *constructor = ASR::down_cast<ASR::GenericProcedure_t>(
+        module->m_symtab->get_symbol("~box"));
+    REQUIRE(constructor->n_procs == 2);
+    CHECK(constructor->m_access == ASR::accessType::Public);
+    CHECK(constructor->m_procs[0] == module->m_symtab->get_symbol("from_int"));
+    CHECK(constructor->m_procs[1] == module->m_symtab->get_symbol("from_real"));
+    auto *box = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("box"));
+    CHECK(box->m_symtab->get_symbol("from_int") == nullptr);
+    CHECK(box->m_symtab->get_symbol("from_real") == nullptr);
+    auto *check = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("check"));
+    auto *call = ASR::down_cast<ASR::FunctionCall_t>(
+        ASR::down_cast<ASR::Assignment_t>(check->m_body[1])->m_value);
+    CHECK(ASRUtils::symbol_get_past_external(call->m_name) ==
+        module->m_symtab->get_symbol("from_int"));
+    CHECK(call->n_args == 1);
+    CHECK(call->m_dt == nullptr);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "initial_binding.asr", lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+}
+
+TEST_CASE("Invalid initializer bindings receive semantic diagnostics") {
+    struct Case {
+        const char *bindings, *result, *message;
+    };
+    const Case cases[] = {
+        {"make", "integer :: object", "must return a nonpointer, nonallocatable scalar"},
+        {"make", "type(Other) :: object", "must return a nonpointer, nonallocatable scalar"},
+        {"make", "type(Box), pointer :: object", "must return a nonpointer, nonallocatable scalar"},
+        {"make", "type(Box), allocatable :: object", "must return a nonpointer, nonallocatable scalar"},
+        {"make", "type(Box) :: object(2)", "must return a nonpointer, nonallocatable scalar"},
+        {"make, make", "type(Box) :: object", "is declared more than once"},
+        {"missing", "type(Box) :: object", "must be a function returning"}
+    };
+    for (const auto &test : cases) {
+        CAPTURE(test.bindings);
+        CAPTURE(test.result);
+        std::string source = R"(
+module invalid_initializer_m
+implicit none
+type :: Other
+    integer :: n
+end type
+type :: Box
+    integer :: n
+contains
+    initial :: )" + std::string(test.bindings) + R"(
+end type
+contains
+function make(value) result(object)
+    integer, intent(in) :: value
+)" + test.result + R"(
+end function
+end module
+)";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        CHECK(diagnostics.render2().find(test.message) != std::string::npos);
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

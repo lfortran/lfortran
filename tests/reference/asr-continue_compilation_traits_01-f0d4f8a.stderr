@@ -874,6 +874,36 @@ semantic error: an intrinsic implementation requires a concrete kind
 4206 |     implements IEmpty :: real(*)
      |                               ^ 
 
+semantic error: initializer 'make' must return a nonpointer, nonallocatable scalar of type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:4287:9
+     |
+4287 |         initial :: make
+     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: initializer 'make' must be a function returning type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:4299:9
+     |
+4299 |         initial :: make
+     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: initializer 'missing' must be a function returning type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:4309:9
+     |
+4309 |         initial :: missing
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: initializer 'make' is declared more than once
+    --> tests/errors/continue_compilation_traits_01.f90:4316:9
+     |
+4316 |         initial :: make, make
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: initializer 'make' must return a nonpointer, nonallocatable scalar of type 'box'
+    --> tests/errors/continue_compilation_traits_01.f90:4327:9
+     |
+4327 |         initial :: make
+     |         ^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17
    |

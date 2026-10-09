@@ -281,6 +281,7 @@ procedure_decl
     | GenericRead(decl_attribute* attr, identifier id, identifier* names, trivia? trivia)
     | FinalName(identifier name, trivia? trivia)
     | Private(trivia? trivia)
+    | InitialProcedure(identifier* names, trivia? trivia)
 
 decl_attribute
     = AttrBind(bind bind)
