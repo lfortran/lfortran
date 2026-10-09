@@ -1,5 +1,16 @@
+module allocate_75_mod
+    implicit none
+    integer :: cnt = 0
+contains
+    integer function next()
+        cnt = cnt + 1
+        next = cnt
+    end function
+end module
+
 program allocate_75
     ! A typed allocation applies its type-spec to every allocation object
+    use allocate_75_mod, only: cnt, next
     implicit none
     character(:), allocatable :: a, b, c(:), d(:)
     class(*), allocatable :: x, y
@@ -47,5 +58,13 @@ program allocate_75
     class default
         error stop
     end select
+
+    ! The type parameter is evaluated once for the whole statement
+    deallocate(a, b)
+    cnt = 0
+    allocate(character(len=next()) :: a, b)
+    if (cnt /= 1) error stop
+    if (len(a) /= 1) error stop
+    if (len(b) /= 1) error stop
     print *, "ok"
 end program
