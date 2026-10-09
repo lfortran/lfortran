@@ -382,8 +382,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+        // The new type is `v`'s own, so its symbols are resolved in the
+        // scope that declares `v`, not in the scope of this call.
         ASR::ttype_t* new_type = ASRUtils::TYPE(
-            ASRUtils::ExprStmtWithScopeDuplicator(al, scope).
+            ASRUtils::ExprStmtWithScopeDuplicator(al, v->m_parent_symtab).
                 duplicate_FunctionType(ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)))));
         if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
