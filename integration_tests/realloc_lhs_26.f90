@@ -2,10 +2,15 @@ program realloc_lhs_26
 ! Intrinsic assignment to an unallocated allocatable array component from
 ! a whole allocatable array component takes the bounds of the right-hand side
 implicit none
+type :: item_t
+    integer :: v = 0
+    integer, allocatable :: q(:)
+end type
 type :: data_t
     integer, allocatable :: a(:)
     real, allocatable :: b(:,:)
     character(len=:), allocatable :: c(:)
+    type(item_t), allocatable :: e(:)
 end type
 type(data_t) :: source, dest, arr(2)
 
@@ -35,6 +40,20 @@ dest%c = source%c
 if (lbound(dest%c, 1) /= 4) error stop
 if (len(dest%c) /= 3) error stop
 if (dest%c(5) /= 'def') error stop
+
+allocate(source%e(0:1))
+source%e(0)%v = 3
+source%e(1)%v = 4
+allocate(source%e(1)%q(-1:0))
+source%e(1)%q = [9, 8]
+dest%e = source%e
+if (lbound(dest%e, 1) /= 0) error stop
+if (ubound(dest%e, 1) /= 1) error stop
+if (dest%e(0)%v /= 3) error stop
+if (dest%e(1)%v /= 4) error stop
+if (allocated(dest%e(0)%q)) error stop
+if (lbound(dest%e(1)%q, 1) /= -1) error stop
+if (any(dest%e(1)%q /= [9, 8])) error stop
 
 ! Same shape: no reallocation, the left-hand side keeps its bounds
 dest%a = [7]
