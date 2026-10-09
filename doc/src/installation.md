@@ -471,7 +471,7 @@ configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
 alternate-backend or descriptor-mode suites; Linux references stay in Quick.
 
 All native compatibility profiles enable runtime-stacktrace support, including
-the LLVM 11/19 and macOS application compilers. Caffeine 0.8.2 removes LFortran
+the LLVM 11/19 and macOS application compilers. Caffeine removes LFortran
 `-g` from its defaults and GASNet linker flags; its `--enable-debug` build does
 not require disabling runtime stacktraces. Actual LFortran `-g` links invoke
 `llvm-dwarfdump` and `dwarf_convert.py` (also `dsymutil` on macOS); ordinary
