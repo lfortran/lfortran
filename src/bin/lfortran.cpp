@@ -1107,6 +1107,17 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     const LCompilers::CompilerOptions &compiler_options,
     LCompilers::LocationManager lm)
 {
+    // The modules that the modules of this translation unit depend on
+    std::set<std::string> dependencies;
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            if (m->m_loaded_from_mod) continue;
+            for (size_t i = 0; i < m->n_dependencies; i++) {
+                dependencies.insert(m->m_dependencies[i]);
+            }
+        }
+    }
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
@@ -1114,6 +1125,15 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             // Do not save modfiles for modules that were already loaded
             // from modfiles (as full ASR)
             if (m->m_loaded_from_mod) continue;
+
+            // The module holding a COMMON block is saved only for a module
+            // of this translation unit that depends on it. Other translation
+            // units may declare the block with other member names, and must
+            // not replace the layout such a module was compiled against.
+            if (LCompilers::startswith(m->m_name, "file_common_block_")
+                    && dependencies.find(m->m_name) == dependencies.end()) {
+                continue;
+            }
 
             Allocator al(4*1024);
             LCompilers::SymbolTable *symtab =
