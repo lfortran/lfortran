@@ -2193,3 +2193,8 @@ contains
         paim_g = n
     end function
 end subroutine pointer_assign_interface_mismatch_error
+subroutine namelist_object_before_decl_error
+    implicit none
+    namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
+    real :: v
+end subroutine namelist_object_before_decl_error

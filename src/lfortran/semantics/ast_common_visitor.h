@@ -8548,8 +8548,43 @@ public:
                             }
                         }
                         for (size_t i = 0; i < group.n_objects; i++) {
-                            var_list.push_back(al, current_scope->resolve_symbol(
-                                to_lower(group.m_objects[i].m_name)));
+                            AST::var_sym_t &object = group.m_objects[i];
+                            std::string object_name = to_lower(object.m_name);
+                            ASR::symbol_t *member = current_scope->resolve_symbol(
+                                object_name);
+                            if (member == nullptr) {
+                                // A namelist group object not declared yet is
+                                // typed by the implicit typing rules in effect;
+                                // a later type declaration confirms that type.
+                                ASR::ttype_t *implicit_type = nullptr;
+                                if (compiler_options.implicit_typing) {
+                                    implicit_type = implicit_dictionary[
+                                        std::string(1, object_name[0])];
+                                }
+                                if (implicit_type == nullptr) {
+                                    diag.add(Diagnostic(
+                                        "symbol '" + object_name + "' in namelist '"
+                                        + group_name + "' must be declared before "
+                                        "the namelist statement",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {object.loc})
+                                        }));
+                                    if (!compiler_options.continue_compilation) {
+                                        throw SemanticAbort();
+                                    }
+                                    continue;
+                                }
+                                bool is_argument = std::find(
+                                    current_procedure_args.begin(),
+                                    current_procedure_args.end(), object_name)
+                                    != current_procedure_args.end();
+                                member = declare_implicit_variable2(object.loc,
+                                    object_name, is_argument
+                                        ? ASRUtils::intent_unspecified
+                                        : ASRUtils::intent_local,
+                                    implicit_type);
+                            }
+                            var_list.push_back(al, member);
                         }
                         ASR::asr_t* namelist = ASR::make_Namelist_t(al,
                             group.loc, current_scope, s2c(al, group_name),
