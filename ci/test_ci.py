@@ -861,7 +861,12 @@ class CaffeineTests(unittest.TestCase):
             "    present = os.environ['CI_FPM_PRESENT' if name == 'fpm' else 'CI_MPI_PRESENT']\n"
             "    marker = Path(os.environ['HOME']) / (name + '-installed')\n"
             "    if present != 'true' and not marker.exists(): sys.exit(127)\n"
-            "    print('Version: 0.12.0' if name == 'fpm' else 'GNU Fortran')\n"
+            "    if (name == 'mpifort' and args == ['--version'] and\n"
+            "            os.environ.get('CI_MPI_BUILD_COMPILER_MISSING') == 'true'):\n"
+            "        print('The Open MPI wrapper compiler was unable to find the specified compiler')\n"
+            "        print('x86_64-conda-linux-gnu-gfortran in your PATH.')\n"
+            "        sys.exit(1)\n"
+            "    print('Version: 0.12.0' if name == 'fpm' else 'mpifort: Open MPI 5.0.6')\n"
             "elif name == 'micromamba':\n"
             "    tool = 'fpm' if any(a.startswith('fpm=') for a in args) else 'mpifort'\n"
             "    (Path(os.environ['HOME']) / (tool + '-installed')).touch()\n"
@@ -976,6 +981,27 @@ class CaffeineTests(unittest.TestCase):
         versions = [call for call in calls if call["command"] == "fpm"]
         self.assertEqual(len(versions), 2)
         self.assertLess(calls.index(versions[0]), calls.index(installs[0]))
+
+    def test_reference_probe_does_not_require_mpi_build_time_compiler(self):
+        for scope in ("quick", "exhaustive"):
+            for present in ("true", "false"):
+                with self.subTest(scope=scope, mpi_present=present):
+                    (self.directory / "mpifort-installed").unlink(missing_ok=True)
+                    result, calls = self.run_caffeine(
+                        scope, base="", CI_MPI_PRESENT=present,
+                        CI_MPI_BUILD_COMPILER_MISSING="true",
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assert_capability_coverage(calls)
+                    probes = [call["args"] for call in calls if call["command"] == "mpifort"]
+                    self.assertEqual(probes, [["--showme:version"]] * (1 if present == "true" else 2))
+                    installs = [call["args"] for call in calls if call["command"] == "micromamba"]
+                    self.assertEqual(installs, [] if present == "true" else [
+                        ["install", "-y", "-c", "conda-forge", "openmpi=5.0.6=hb85ec53_102"],
+                    ])
+                    references = [call for call in calls if call["command"] == "caf" and
+                                  call["args"] != ["--version"]]
+                    self.assertEqual(len(references), 2)
 
     def test_unit_failure_stops_before_smoke_and_integration(self):
         result, calls = self.run_caffeine(CI_FAIL="unit")

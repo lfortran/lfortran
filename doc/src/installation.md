@@ -620,6 +620,10 @@ Invalid test registrations fail explicitly.
 Standalone/default and Exhaustive invocations always request full Linux reference
 validation. macOS retains its existing no-OpenCoarrays behavior; Caffeine unit,
 smoke and all LFortran integration tests still run.
+The OpenMPI availability probe uses `mpifort --showme:version`, which checks the
+wrapper without invoking its configured build-time compiler. OpenCoarrays'
+CMake build still selects GFortran and checks that it can compile and link MPI;
+a missing or broken reference compiler remains an error.
 
 When an application finds a compiler bug, reduce the failure to a registered
 integration regression in the relevant modes, fix the compiler, and verify

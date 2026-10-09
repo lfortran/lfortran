@@ -59,7 +59,9 @@ if [[ "$reference" == true ]] ; then
  echo "##[group] Install OpenMPI"
 )
 
-ensure_tool openmpi=5.0.6=hb85ec53_102 mpifort --version
+# Probe the MPI wrapper itself, not its configured build-time compiler.
+# OpenCoarrays' CMake build selects the available GFortran separately.
+ensure_tool openmpi=5.0.6=hb85ec53_102 mpifort --showme:version
 export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
 export OMPI_MCA_rmaps_base_oversubscribe=1
 
