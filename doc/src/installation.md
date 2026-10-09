@@ -570,8 +570,9 @@ Without this explicit migration, the workflow retains its safe aggregate
 default; code alone cannot remove its queue while preserving the old settings.
 
 **Third-party applications generate bugs for the integration suite; they are
-not part of ordinary PR checks.** The application catalog runs on every push
-to `main`, where it both finds coverage gaps and demonstrates compatibility
+not part of ordinary PR checks.** The application catalog runs in every
+Exhaustive run on `main` (coalesced, so always on the latest main), where it
+both finds coverage gaps and demonstrates compatibility
 with real applications, and in every explicitly requested Exhaustive run.
 There is no automatic exception for changes to serialization, finalization,
 I/O or GPU lowering.
@@ -639,13 +640,19 @@ The lasting protection for future PRs is the integration test, not adding the
 whole application to Quick. Finding such a gap on main is an accepted trade-off,
 not a reason to silently ignore the failing application check.
 
-Every main push keeps the full LLVM matrix, full platform suites, application,
-documentation, packaging and JupyterLite checks. Main runs are not automatically
-cancelled or rotated. Maintainers may cancel older runs manually when runners
-are saturated, keeping the latest run.
+Exhaustive on main runs the full LLVM matrix, full platform suites, application,
+documentation, packaging and JupyterLite checks. Main pushes share one
+Exhaustive concurrency group, so at most one main run is in progress and one
+is pending. A running main run is never cancelled; a newer push replaces the
+pending run. The latest main is therefore always tested, but when several
+pushes land while a run is in progress, the intermediate commits are not
+tested individually. Their changes are covered by the next run. To locate a
+regression, dispatch Exhaustive manually on the skipped commits; manual runs
+are never coalesced.
 
 **Releases require green main, including application validation.** The commit
-selected for release must have passed the full main CI. A green Quick PR or
+selected for release must have its own green Exhaustive run on main; dispatch
+one if that commit was skipped by coalescing. A green Quick PR or
 extended compiler run is not a substitute. Release-tag workflows still run
 compiler, documentation and packaging checks; they do not repeat the application
 catalog already validated on main.

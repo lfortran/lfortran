@@ -440,6 +440,32 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn("needs.gate.outputs.run == 'true'", body, name)
         self.assertIn("scope: exhaustive", source)
 
+    def test_exhaustive_main_runs_are_coalesced_but_never_cancelled(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
+        block = source.split("\nconcurrency:\n", 1)[1].split("\n\n", 1)[0]
+        group = re.search(r"^\s*group: \$\{\{ (.+) \}\}-\$\{\{ (.+) \}\}$", block, re.MULTILINE)
+        cancel = re.search(r"^\s*cancel-in-progress: \$\{\{ (.+) \}\}$", block, re.MULTILINE)
+        self.assertEqual(group.group(1), "github.workflow")
+        self.assertEqual(cancel.group(1), "github.event_name == 'pull_request'")
+
+        def evaluate(expression, event, ref, number=None):
+            context = {"github.event_name": event, "github.ref": ref,
+                       "github.event.number": number, "github.sha": "sha-" + ref}
+            python = re.sub(r"github(\.\w+)+", lambda m: repr(context[m.group(0)]), expression)
+            return eval(python.replace("&&", " and ").replace("||", " or "))
+
+        def key(event, ref, number=None):
+            return (evaluate(group.group(2), event, ref, number),
+                    evaluate(cancel.group(1), event, ref, number))
+
+        main = key("push", "refs/heads/main")
+        self.assertEqual(main, ("main", False))
+        self.assertEqual(key("push", "refs/heads/main"), main)
+        self.assertEqual(key("pull_request", "refs/pull/7/merge", 7), (7, True))
+        self.assertEqual(key("push", "refs/tags/v1.0.0"), ("sha-refs/tags/v1.0.0", False))
+        self.assertEqual(key("workflow_dispatch", "refs/heads/main"),
+                         ("sha-refs/heads/main", False))
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1].split("\n  compatibility:\n", 1)[1]

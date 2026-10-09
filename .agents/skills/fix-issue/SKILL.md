@@ -401,7 +401,7 @@ Expected skips of unrequested Exhaustive jobs, including application
 validation, do not block a PR.
 
 Third-party applications are bug generators for the integration suite and
-release compatibility checks on every main push, not an ordinary PR test suite.
+release compatibility checks on the latest main, not an ordinary PR test suite.
 When the reported bug comes from an application, reduce it, add the registered
 integration regression, fix the compiler and verify the original application
 failure locally. Do not add that application to Quick. Caffeine-backed
