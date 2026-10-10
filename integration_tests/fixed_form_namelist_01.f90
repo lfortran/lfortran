@@ -4,6 +4,8 @@
       IF (A /= 1) ERROR STOP
       IF (B /= 2) ERROR STOP
       IF (C /= 3) ERROR STOP
+      CALL T(A)
+      IF (A /= 12) ERROR STOP
       PRINT *, A, B, C
       END
 
@@ -20,4 +22,13 @@
       READ(REC, NML=N)
       REC = '&M B=2, C=3 /'
       READ(REC, NML=M)
+      END
+
+      SUBROUTINE T(K)
+      INTEGER K
+      INTEGER NAMELIST(2), NAMELISTX
+      NAMELIST(1) = 5
+      NAMELIST(2) = 3
+      NAMELISTX = 4
+      K = NAMELIST(1) + NAMELIST(2) + NAMELISTX
       END
