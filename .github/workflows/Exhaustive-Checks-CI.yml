@@ -224,6 +224,61 @@ jobs:
               --source-dir . --build-dir . --install-prefix inst \
               --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
+  benchmarks:
+    name: Check performance against main
+    runs-on: ubuntu-latest
+    # Tests::Run-Exhaustive PRs only. Builds the PR and its base in the same
+    # job, so both are timed on the same runner, and fails if a benchmark in
+    # benchmarks/ got slower.
+    needs: gate
+    if: needs.gate.outputs.run == 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build base and PR
+        shell: bash -e -l {0}
+        run: |
+            build() {
+                ./build0.sh
+                cmake . -GNinja \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DWITH_LLVM=yes \
+                  -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+                  -DCMAKE_INSTALL_PREFIX="$1" \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+                cmake --build . -j16 --target install
+            }
+            # HEAD is the PR merged into main, so HEAD^1 is main
+            pr=$(git rev-parse HEAD)
+            git checkout -q HEAD^1
+            build "$HOME/inst_base"
+            git checkout -q "$pr"
+            build "$HOME/inst_pr"
+
+      - name: Compare
+        shell: bash -e -l {0}
+        run: |
+            cd benchmarks
+            ./run_benchmarks.py --no-gfortran -r 5 \
+              --lfortran "$HOME/inst_base/bin/lfortran" --json base.json
+            ./run_benchmarks.py --no-gfortran -r 5 \
+              --lfortran "$HOME/inst_pr/bin/lfortran" --compare base.json
+
 
 # Commented out to save CI runners:
 #  test-pixi:
