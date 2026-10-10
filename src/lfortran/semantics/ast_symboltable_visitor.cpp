@@ -760,6 +760,10 @@ public:
             }
         }
         module_instantiated_symbols.clear();
+        // The layout of the COMMON blocks of the specification part is
+        // complete: a module procedure, or a later program unit, declaring
+        // one of them is associated with it from the start of the block.
+        mark_common_blocks_as_declared();
         // Module_t already exists, so persist before CONTAINS. Nested
         // procedures can then find these names via parent-scope mapping
         // lookup even while their own accumulator is isolated.
@@ -4269,7 +4273,6 @@ public:
     }
 
     void visit_BlockData(const AST::BlockData_t& x) {
-        std::string base_module_name = "file_common_block_";
         std::string base_struct_instance_name = "struct_instance_";
 
         SymbolTable* global_scope = current_scope->get_tu_scope();
@@ -4418,7 +4421,7 @@ public:
                             }
                             // Convert to lowercase to match how symbols are stored
                             std::string common_block_name_lower = to_lower(common_block_name);
-                            std::string module_name = base_module_name + common_block_name_lower;
+                            std::string module_name = ASRUtils::common_block_module_name(common_block_name_lower);
 
                             ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
 
@@ -4523,9 +4526,6 @@ public:
                                 ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
                             var_s->m_symbolic_value = structc;
                             var_s->m_value = structc;
-
-                            // Mark the common block as declared
-                            common_block_dictionary[common_block_name].first = false;
                         }
                         // We processed the common attribute, no need to check any more attributes
                         break;
@@ -4533,6 +4533,10 @@ public:
                 }
             }
         }
+        // The layout of every COMMON block of this unit, the blank one
+        // included, is complete: another program unit declaring a block
+        // starts at its beginning instead of appending to it.
+        mark_common_blocks_as_declared();
     }
 
     void add_custom_operator(

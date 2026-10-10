@@ -3804,7 +3804,7 @@ public:
             ASR::symbol_t* curr_struct = common_variables_hash[hash];
             ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(curr_struct);
             std::string ext_sym_name = std::string(struct_type->m_name);
-            std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
+            std::string module_name = ASRUtils::common_block_module_name(struct_type->m_name);
             add_common_block_module_dependency(module_name);
             // Import the COMMON struct type into the using scope, like `use`.
             import_common_external_symbol(
@@ -3828,6 +3828,21 @@ public:
             std::string actual_member_name = target_var_name;
             ASR::symbol_t* struct_member_sym = struct_type->m_symtab->get_symbol(target_var_name);
             size_t offset_within_member = 0;
+            auto var_offset_it = common_variables_byte_offset.find(hash);
+            if (struct_member_sym && var_offset_it != common_variables_byte_offset.end()) {
+                // COMMON objects are associated by storage position. A
+                // member of the same name, declared by another program unit
+                // at another position, is not this variable's storage.
+                size_t member_offset = 0;
+                for (size_t i = 0; i < struct_type->n_members; i++) {
+                    if (std::string(struct_type->m_members[i]) == target_var_name) break;
+                    member_offset += get_type_byte_size(ASRUtils::symbol_type(
+                        struct_type->m_symtab->get_symbol(struct_type->m_members[i])));
+                }
+                if (member_offset != var_offset_it->second) {
+                    struct_member_sym = nullptr;
+                }
+            }
             if (!struct_member_sym) {
                 // Name lookup failed - match by byte offset instead. Find the
                 // struct member whose storage range [offset, offset+size) contains
@@ -5351,9 +5366,8 @@ public:
     }
 
     ASR::symbol_t* create_common_module(Location loc, std::string common_block_name) {
-        std::string base_module_name = "file_common_block_";
         std::string base_struct_instance_name = "struct_instance_";
-        std::string module_name = base_module_name + common_block_name;
+        std::string module_name = ASRUtils::common_block_module_name(common_block_name);
         SymbolTable *parent_scope = current_scope;
         SymbolTable *global_scope = current_scope;
         // get global scope
@@ -5394,6 +5408,7 @@ public:
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
+            compiler_options.common_block_modules.insert(to_lower(module_name));
             current_scope = parent_scope;
             add_common_block_module_dependency(module_name);
             return struct_symbol;
@@ -5454,8 +5469,14 @@ public:
     }
 
     void add_sym_to_struct(ASR::Variable_t* var_, ASR::Struct_t* struct_type) {
-        char* var_name = var_->m_name;
         SymbolTable* struct_scope = struct_type->m_symtab;
+        // The members of a COMMON block are associated by storage position.
+        // Another program unit may have given its member at another
+        // position the same name: this member then gets a name of its own.
+        char* var_name = var_->m_name;
+        if (struct_scope->get_symbol(var_name) != nullptr) {
+            var_name = s2c(al, struct_scope->get_unique_name(var_name, false));
+        }
         
         ASR::ttype_t* var_type = evaluate_type_bounds(al, var_->m_type, var_->base.base.loc);
 
@@ -5464,7 +5485,7 @@ public:
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type, var_->m_symbolic_value, var_->m_value);
 
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, var_->base.base.loc, struct_scope,
-                        var_->m_name, variable_dependencies_vec.p, variable_dependencies_vec.size(), var_->m_intent,
+                        var_name, variable_dependencies_vec.p, variable_dependencies_vec.size(), var_->m_intent,
                         var_->m_symbolic_value, var_->m_value, var_->m_storage, var_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
@@ -5526,6 +5547,20 @@ public:
 	    ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(common_block_struct_sym);
 	    size_t const num_cb_var = blk.second.size();
 
+	    if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()
+		    && struct_type->n_members > 0) {
+		// The block was read from a modfile, together with a module that
+		// uses it: it has been declared in a different program unit.
+		size_t byte_size = 0;
+		for (size_t i = 0; i < struct_type->n_members; i++) {
+		    ASR::symbol_t* member = struct_type->m_symtab->get_symbol(
+			struct_type->m_members[i]);
+		    byte_size += get_type_byte_size(ASRUtils::symbol_type(member));
+		}
+		common_block_byte_sizes[common_block_name] = byte_size;
+		common_block_dictionary[common_block_name].first = false;
+	    }
+
 	    auto cbd_it = common_block_dictionary.find(common_block_name);
 
 	    if (cbd_it == common_block_dictionary.end()) {
@@ -5576,12 +5611,10 @@ public:
 			// canonical size (avoids duplicate fields when a COMMON
 			// block is re-declared in a different program unit with
 			// different variable names at the same storage position)
-            if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
-                auto deferred_it = common_block_deferred_size_check.find(common_block_name);
-                if (deferred_it == common_block_deferred_size_check.end() ||
-                    byte_offset > deferred_it->second.first) {
-                    add_sym_to_struct(var_, struct_type);
-                }
+            auto deferred_it = common_block_deferred_size_check.find(common_block_name);
+            if (deferred_it == common_block_deferred_size_check.end() ||
+                byte_offset > deferred_it->second.first) {
+                add_sym_to_struct(var_, struct_type);
             }
 		    }
 		    // Update total byte size
@@ -5617,9 +5650,7 @@ public:
 			// If this variable extends beyond the existing struct,
 			// add it so codegen can resolve it by offset.
 			if (byte_offset + var_size > previous_size) {
-			    if (struct_type->m_symtab->resolve_symbol(var__->m_name) == nullptr) {
-				add_sym_to_struct(var__, struct_type);
-			    }
+			    add_sym_to_struct(var__, struct_type);
 			}
 			byte_offset += var_size;
 		    }
@@ -8571,7 +8602,7 @@ public:
                                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
                                 struct_->m_abi = abi_type;
                             }
-                            std::string module_name = "file_common_block_" + common_block_name;
+                            std::string module_name = ASRUtils::common_block_module_name(common_block_name);
                             SymbolTable *global_scope = current_scope;
                             while (global_scope->parent) {
                                 global_scope = global_scope->parent;
