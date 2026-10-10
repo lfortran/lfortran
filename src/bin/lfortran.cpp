@@ -1936,6 +1936,9 @@ int compile_to_binary_fortran(const std::string &infile,
     }
 
     std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
+    if (!compiler_options.po.mod_files_dir.empty()) {
+        cmd += " -J\"" + compiler_options.po.mod_files_dir.string() + "\"";
+    }
     int err = system(cmd.c_str());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;

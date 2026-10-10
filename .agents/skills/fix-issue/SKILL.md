@@ -6,9 +6,10 @@ description: >
   lfortran/lfortran, but also a pasted snippet, error report, or third-party
   failure), then orchestrates fresh subagents that run repro-issue, then
   create-mre and fix-mre repeatedly (one MRE per underlying bug) until the
-  original issue is fully fixed, open a draft PR from the user's fork with
-  `gh`, review it with pr-review, and keep fixing CI failures and review
-  blockers until Quick checks is green and the PR is clean, then mark it
+  original issue is fully fixed, review the branch locally with pr-review
+  until it is clean, open a draft PR from the user's fork with `gh`, and keep
+  fixing CI failures and review blockers until Quick checks is green and the
+  PR is clean, then mark it
   ready for review. Third-party applications run in Exhaustive (main or an
   explicit request) to generate integration-test regressions, not as a PR gate. Extended PR compiler checks
   are opt-in only when the user requests them. Unrelated pre-existing bugs
@@ -30,16 +31,20 @@ setup ─► repro-issue ─► ┌─► create-mre ─► fix-mre ─► issue
                         │                                          │
                         └──────── original issue still fails ◄─────┤
                                                                    │ fixed
-            ┌──────────────────────── open draft PR ◄──────────────┘
-            ▼
-   ┌─► CI watch  +  fresh pr-review  +  human comments
+                  ┌─► local pr-review ─ clean ─► open draft PR ◄───┘
+                  │        │                          │
+                  └── fix (commit, no push)           ▼
+   ┌─► CI watch (returns on first failure)  +  human comments
    │        │
    │        ├─ Quick green + clean ─► mark PR ready ─► final report
    │        ▼
-   └── fix subagent (commit, push)
+   └── fix subagent (commit; push per the push rules)
 
 unrelated pre-existing bugs (any phase) ─► followups.md ─► file issues, link in PR
 ```
+
+Every push reruns the full Quick checks and cancels the run in progress, so
+review happens locally before publishing and pushes are batched.
 
 ## You are the orchestrator: delegate everything
 
@@ -82,7 +87,8 @@ and status. Update it after every phase. If your context is compacted or the
 session resumes, reread `state.md` to find where you are.
 
 Subagents write their artifacts there: `repro.md`; for each MRE iteration `j`,
-`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`; then `pr_body.md`, and for each
+`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`; for each local review round `r`,
+`local_review_<r>.md`, `local_round_<r>.md`; then `pr_body.md`, and for each
 review round `k`, `review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. You maintain
 `followups.md`: one line per unrelated bug, with its status (`unfiled`,
 `filed #M`, `duplicate of #M`, or `regression, sent to fix loop`) and the
@@ -105,35 +111,26 @@ Never, under any circumstances:
 - push to the upstream `lfortran/lfortran` repository;
 - use an unconditional force-push; when the policy below calls for rebasing,
   update the fork branch only with `git push --force-with-lease`;
+- merge `main` into the PR branch;
 - comment on, close, or relabel the original issue, add a label to
-  the PR except an explicitly requested `Tests::Run-Exhaustive`, comment on
+  the PR, comment on
   other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
 
 ### Keeping the PR branch current
 
-Keep commit history clean by rebasing the PR branch onto `upstream/main` while
-the PR is a draft. Run `git rebase <upstream-remote>/main`, resolve any
-conflicts, rebuild and retest, then update the fork with
-`git push --force-with-lease`.
+Keep PR history linear: the branch must never contain a merge of `main`. Do
+not update the branch only because `main` moved; every push reruns CI, and
+Quick on `main` catches integration breakage after merging. Update it only when
+the PR has base conflicts, needs a change that landed on `main`, or CI
+failures look caused by a stale base.
 
-Switch permanently to merging `<upstream-remote>/main` when any of these
-review-sensitive events occurs:
-
-- the PR is marked ready for review;
-- a human other than the PR author submits a formal review;
-- a human other than the PR author leaves an inline code-review comment;
-- the user explicitly says not to rebase the PR.
-
-Top-level PR conversation comments, reactions, bot activity, and comments by
-the PR author do not change the mode. Before updating the branch, use `gh` to
-inspect the PR's draft state, author, submitted reviews, and inline review
-comments. Once the mode changes to `merge`, preserve the commits reviewers may
-have seen: merge `<upstream-remote>/main` for all later updates and push
-normally. Never return to rebasing that PR even if a review or inline comment
-is later dismissed, hidden, or deleted. Record the chosen mode (`rebase` or
-`merge`) in `state.md`.
+To update, run `git rebase <upstream-remote>/main`, resolve any conflicts,
+rebuild and retest, then update the fork with `git push --force-with-lease`.
+This applies in every PR state, including after review. Rebasing only moves
+the existing commits; address review feedback with new commits and do not
+squash or reword commits reviewers have already seen.
 
 ## Inputs
 
@@ -282,7 +279,39 @@ Report, also written to `check_<j>.md`: fully fixed yes/no. If no, report the
 exact new failure (the command, the error or the output diff, and the file
 involved) and whether it is the same failure as in `check_<j-1>.md`.
 
-If it is fully fixed, go to Phase 4. Otherwise start iteration `j+1`.
+If it is fully fixed, go to Phase 3.5. Otherwise start iteration `j+1`.
+
+### Phase 3.5: Local review loop (before publishing)
+
+Review the branch locally before it is pushed, so CI normally runs once, on a
+branch that is already clean under `pr-review`. Each finding fixed after
+publishing would cost another push and another full Quick run.
+
+Repeat rounds `r = 1, 2, ...` up to **5 rounds**:
+
+1. **Review subagent (fresh, read-only):** run the `pr-review` skill on the
+   local branch: all commits since the merge base with
+   `<upstream-remote>/main`, not just the latest commit. It must not edit,
+   commit, or push. It may build and run tests in the checkout to confirm a
+   finding, as long as it leaves the tree unchanged. It writes the full review
+   to `local_review_<r>.md` and reports the number of findings in each class
+   (blocker / rework / follow-up), with a one-line title and file:line for
+   each blocker and rework item. Tell it to review the change on its merits
+   and report only real findings it has checked. It must not invent findings
+   to fill a quota, and must not soften findings because an automated agent
+   wrote the change.
+2. If there is **no blocker and no rework** finding, go to Phase 4.
+3. Otherwise spawn a **fresh fix subagent.** For each blocker and rework
+   finding, it first confirms the finding is real by reproducing it. Then it
+   fixes it, or records in `local_round_<r>.md` exactly why it is not valid.
+   It leaves **follow-up** items unfixed and lists them for the final report.
+   It rebuilds and reruns the MRE, the new integration tests, and the full
+   integration and reference suites whenever compiler source changed. It
+   commits focused commits. **Do not push.**
+
+If the same finding survives two rounds, or the round cap is reached, stop
+and report to the user with the outstanding items. Never publish a branch
+with an open blocker or rework finding.
 
 ### Phase 4: Publish subagent
 
@@ -295,7 +324,8 @@ It should:
      the issue and a bullet per bug fixed, in commit order.
    - Scope: what is and is not covered, including unrelated bugs found along
      the way (linked once filed, see below) and non-bug follow-ups such as
-     refactoring ideas or missing tests for existing behaviour.
+     refactoring ideas or missing tests for existing behaviour, including
+     follow-up findings from `local_review_<r>.md`.
    - Verification: the integration tests added, each failing before its fix
      and passing after; the original reproducer now passing; the suite
      results.
@@ -341,12 +371,14 @@ Report: issues filed, duplicates linked, regressions sent back.
 Repeat rounds `k = 1, 2, ...` up to **5 rounds**. Each round works on the
 current head SHA.
 
-**6a. Start the CI watch and a fresh review, concurrently.**
+**6a. Start the CI watch, and a fresh review when needed, concurrently.**
 
 - **CI watch (orchestrator):** run in the background so it does not block,
-  and send the output to a file, not your context:
+  and send the output to a file, not your context. `--fail-fast` makes it
+  return on the first failing check, so fixing starts immediately while the
+  remaining checks keep running:
   ```bash
-  gh pr checks <PR> --repo lfortran/lfortran --watch --interval 120 \
+  gh pr checks <PR> --repo lfortran/lfortran --watch --fail-fast --interval 120 \
       > .fix-issue/<id>/ci_<k>.log 2>&1; echo "exit=$?"
   ```
   Checks can take a minute to appear after a push. If `gh`
@@ -357,8 +389,14 @@ current head SHA.
   gh pr checks <PR> --repo lfortran/lfortran --json name,bucket \
       --jq 'group_by(.bucket)[] | "\(.[0].bucket): \(length) \([.[].name] | join(", "))"'
   ```
-  If checks sit in `action_required` or never start, tell the user.
-- **Review subagent (fresh, read-only):** run the `pr-review` skill on
+  If checks sit in `action_required` or never start, tell the user. If the
+  watch returned on a failure, go to 6d right away; do not cancel the run.
+  After the fix is committed, check whether other jobs failed meanwhile, and
+  restart the watch for the remaining checks while no push is pending.
+- **Review subagent (fresh, read-only):** only when the current head contains
+  commits that no clean review has covered. Phase 3.5 already reviewed the
+  first published head, so round 1 normally needs only the CI watch. Run the
+  `pr-review` skill on
   PR `<PR>` in `lfortran/lfortran`. It must not edit, commit, or push. It may
   build and run tests in the checkout to confirm a finding, as long as it
   leaves the tree unchanged. It writes the full review to `review_<k>.md` and
@@ -385,49 +423,42 @@ head SHA:
 - every applicable CI check passed, or each failing check was shown by a subagent to
   also fail on `main` (it is pre-existing, so report it but do not fix it
   here);
-- the latest fresh review has **no blocker and no rework** findings;
+- the latest fresh review of the current head (Phase 3.5 or 6a) has **no
+  blocker and no rework** findings;
 - no human review comment or requested change is unaddressed;
 - `mergeable` is not `CONFLICTING`.
 
 The PR is **done** when it is clean and `Quick checks` ran for the current
 PR revision, with every applicable job passed or shown to also fail on `main`.
 Quick includes the shared compiler compatibility jobs; those are not optional.
-Requested Exhaustive checks supplement Quick rather than replacing it;
-require both on the same current revision.
+Explicitly requested Exhaustive checks supplement Quick rather than replacing
+it; require both on the same current revision.
 Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
 Do not treat missing or all-skipped Quick checks as success.
-Expected skips of unrequested Exhaustive jobs, including application
-validation, do not block a PR.
+Exhaustive does not run on PRs; its absence does not block a PR.
 
 Third-party applications are bug generators for the integration suite and
-release compatibility checks on every main push, not an ordinary PR test suite.
+release compatibility checks on the latest main, not an ordinary PR test suite.
 When the reported bug comes from an application, reduce it, add the registered
 integration regression, fix the compiler and verify the original application
 failure locally. Do not add that application to Quick. Caffeine-backed
 coarray and GPU integration checks remain required capability tests.
 
-Do not add CI labels or dispatch extended CI automatically, including for
-serialization, finalization, I/O or GPU changes. Do not cancel older main runs.
-The rare `Tests::Run-Exhaustive` label is for an explicit request for extended
-coverage; it runs the same Exhaustive checks as main, including applications.
+Do not dispatch extended CI automatically, including for serialization,
+finalization, I/O or GPU changes. Do not cancel older main runs.
 
-Only when the user requests extended checks, add the label with
-`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
-If it is already present, wait for the applicable checks rather than removing
-it. They must pass for the current revision before finishing, subject to the
-pre-existing-failure rule above. Label addition reruns the current PR's
-Exhaustive workflow; subsequent pushes rerun it while the label remains.
-If labeling is unavailable, an explicitly requested manual run in the fork
-is an alternative:
+Only when the user explicitly requests extended checks, dispatch Exhaustive on
+the PR branch in the fork (the same checks as main, including applications):
 `gh workflow run Exhaustive-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Exhaustive never invokes Quick. If there is no successful Quick run for the
-same revision, also dispatch
-`gh workflow run Quick-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Record each run ID, URL and head SHA in `state.md` and wait with
-`gh run watch <run-id> --repo <login>/lfortran`; it may not appear in upstream
-`gh pr checks`. A push invalidates the old result. Extended-check failures
-go to the fix subagent like any other CI failure.
+If the fork's Actions are disabled, tell the user. Exhaustive never invokes
+Quick; the PR's Quick checks must also be green for the same revision.
+Record the run ID, URL and head SHA in `state.md`, wait with
+`gh run watch <run-id> --repo <login>/lfortran`, and report the run URL; it
+does not appear in upstream `gh pr checks`. A push invalidates the old result,
+so dispatch again for the new head when needed. Failures go to the fix
+subagent like any other CI failure, subject to the pre-existing-failure rule
+above.
 
 Release qualification is separate: the release commit must have green full
 main CI, including applications. Quick or extended PR success is not enough.
@@ -450,21 +481,32 @@ comments are new. It should:
   unfixed; list them for the final report.
 - For human review comments: address each one in code, or draft a reply in
   `round_<k>.md`. Do not post replies automatically; the user decides.
-- For base conflicts or an outdated branch: follow **Keeping the PR branch
-  current**. Rebase onto `<upstream-remote>/main` and push with
-  `--force-with-lease` while the PR remains in `rebase` mode; once a
-  review-sensitive event switches it to `merge` mode, merge
-  `<upstream-remote>/main` and push normally. Resolve conflicts, rebuild, and
-  retest either way.
+- For base conflicts, or when the PR needs a change from `main`: follow
+  **Keeping the PR branch current**. Rebase onto `<upstream-remote>/main`,
+  resolve conflicts, rebuild, and retest; push it with `--force-with-lease`
+  under the push rules below.
 - Rebuild, rerun the MRE, the new integration test, and the affected suites
   (the full integration and reference suites whenever compiler source
   changed). Update `pr_body.md` and the PR description
   (`gh pr edit <PR> --body-file ...`) if scope or rationale changed.
-- Commit focused follow-up commits and push them to the fork remote (a normal
-  push).
+- Commit focused follow-up commits. Fixing always starts immediately; these
+  **push rules** decide only when to push to the fork remote (a normal push):
+  - **A CI job failed:** push as soon as the fix passes locally. Before
+    pushing, check `gh pr checks` for other jobs that failed meanwhile and
+    include their fixes in the same push. Do not wait for the remaining
+    jobs; a failed job stops early, so only a new push can reveal later
+    problems in it.
+  - **CI is still running with no failures, and the change is not a CI fix**
+    (a review finding, a human comment, a cleanup): commit locally but do not
+    push yet. Pushing would cancel a run that may turn out all green. Push
+    when CI finishes, or together with a CI fix if a job fails meanwhile.
+  - **CI has finished:** push everything collected in one push.
 
-Report: what was fixed, what was rejected and why, the new head SHA, and test
-results. Then start round `k+1`.
+Report: what was fixed, what was rejected and why, the local head SHA,
+whether it was pushed (and if not, which push rule held it back), and test
+results. Record the last pushed head SHA in `state.md`. Then start round
+`k+1`; a round with an unpushed commit keeps watching the CI of the last
+pushed head and pushes when the push rules allow.
 
 If the same finding or CI failure survives two fix rounds, or the round cap is
 reached, stop the loop and report to the user with the outstanding items.
@@ -488,7 +530,7 @@ Bugs fixed (<count> MRE iterations, one commit each):
 
 CI:      green  (pre-existing failures on main: <none | names>)
 Extended compiler CI: <not requested | green, run URL and tested SHA>
-Review:  <rounds> round(s); blockers/rework fixed: <n>; rejected with reason: <n>
+Review:  <local rounds> local + <PR rounds> PR round(s); pushes: <n>; blockers/rework fixed: <n>; rejected with reason: <n>
 Follow-up issues filed: <#M, #M (duplicate of existing), ... or none>
 Other follow-ups (not bugs, not filed): <list or none>
 Human comments needing your reply: <list or none>
@@ -502,8 +544,8 @@ Human comments needing your reply: <list or none>
   `git log`, `gh pr view`, and the `.fix-issue/<id>/` artifacts, then continue
   from the first phase that is not finished.
 - **Base freshness:** if `main` moved a lot during a long loop and CI failures
-  look unrelated to the PR, have the fix subagent update from `upstream/main`
-  before debugging, using the review-aware rebase-or-merge policy above.
+  look unrelated to the PR, have the fix subagent rebase onto `upstream/main`
+  before debugging, as described in **Keeping the PR branch current**.
 - **Build errors in CI only:** other platforms (Windows/MSVC, WASM, other
   backends) often fail where macOS/Linux pass. The fix subagent should read
   the CI step's exact command and reproduce that backend locally where

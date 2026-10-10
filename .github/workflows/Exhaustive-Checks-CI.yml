@@ -6,64 +6,25 @@ on:
       - main
     tags:
       - 'v*'
+  # Exhaustive never runs on PRs. For a rare, explicitly requested check of a
+  # PR, dispatch this workflow on the PR branch in a fork (see
+  # doc/src/installation.md).
   workflow_dispatch:
-  # Label events rerun this workflow through Exhaustive-Checks-Label-CI.yml.
-  # Unrelated labels must not replace the latest result with a skipped run.
-  pull_request:
-    types: [opened, reopened, synchronize]
-    branches:
-      - main
 
-# Main pushes remain independent and are never automatically cancelled.
+# Main pushes share one group: a running main run is never cancelled, and a
+# newer push replaces the pending one, so the latest main is always tested.
+# Tags and manual runs stay independent per commit.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.sha }}
+  cancel-in-progress: false
 
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 15.0
 
 jobs:
-  gate:
-    name: Check Tests::Run-Exhaustive label
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-    outputs:
-      run: ${{ steps.label.outputs.run }}
-    steps:
-      - name: Decide whether to run extended compiler checks
-        id: label
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ github.event.number }}
-        run: |
-          case "$GITHUB_EVENT_NAME" in
-            push|workflow_dispatch)
-              run=true
-              ;;
-            pull_request)
-              # A rerun reuses the event payload, so read the current labels.
-              run=$(gh pr view "$PR" --json labels \
-                --jq 'any(.labels[]; .name == "Tests::Run-Exhaustive")')
-              ;;
-            *)
-              echo "::error::Unexpected event: $GITHUB_EVENT_NAME"
-              exit 1
-              ;;
-          esac
-          case "$run" in
-            true|false) ;;
-            *) echo "::error::Invalid exhaustive decision: $run"; exit 1 ;;
-          esac
-          echo "run=$run" >> "$GITHUB_OUTPUT"
-
   compatibility:
     name: Extended compiler checks
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml
     with:
       scope: exhaustive
@@ -71,8 +32,6 @@ jobs:
   platform:
     name: Full platform coverage (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     env:
       MACOSX_DEPLOYMENT_TARGET: 26.0
     strategy:
@@ -112,8 +71,6 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -130,7 +87,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -193,8 +151,6 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -210,7 +166,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -310,8 +267,6 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -343,8 +298,6 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -358,7 +311,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Kernel
         shell: bash -e -l {0}
@@ -396,8 +350,6 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     permissions:
       contents: read
       packages: write
@@ -438,8 +390,6 @@ jobs:
   build_xlfortran_jupyterlite:
     name: Build xlfortran JupyterLite kernel and run tests
     runs-on: ubuntu-24.04
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     defaults:
       run:
         shell: bash -l {0}

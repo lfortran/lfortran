@@ -149,6 +149,8 @@ Ask whether the patch:
   shared helper;
 - mixes a bug fix with refactoring, formatting, generated-output churn, or an
   unrelated cleanup;
+- contains a merge of `main` in its commits (PR history must be linear; ask
+  for a rebase onto `main`);
 - adds comments that repeat the code or describe behavior not implemented; or
 - introduces unused, dead, or unreachable code.
 

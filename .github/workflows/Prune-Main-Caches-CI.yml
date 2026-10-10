@@ -1,0 +1,28 @@
+name: Prune superseded main caches
+
+# Runs after main CI; only main's own code runs here, never PR code.
+on:
+  workflow_run:
+    workflows: ["Quick checks", "Exhaustive checks"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: prune-main-caches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Delete all but the newest main cache per key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 ci/prune_main_caches.py

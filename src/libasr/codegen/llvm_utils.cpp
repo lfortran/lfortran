@@ -1996,6 +1996,38 @@ namespace LCompilers {
         return builder->CreateBitCast(mem, type->getPointerTo());
     }
 
+    llvm::Value* LLVMUtils::get_class_array_wrapper(llvm::Type* desc_type,
+            llvm::Value* desc, llvm::Type* wrapper_type) {
+        llvm::PointerType* wrapper_ptr_type = wrapper_type->getPointerTo();
+        llvm::Value* wrapper = CreateAlloca(wrapper_ptr_type, nullptr,
+            "class_array_wrapper");
+        builder->CreateStore(llvm::ConstantPointerNull::get(wrapper_ptr_type),
+            wrapper);
+        create_if_else(builder->CreateIsNotNull(desc), [&]() {
+            builder->CreateStore(CreateLoad2(wrapper_ptr_type,
+                create_gep2(desc_type, desc, 0)), wrapper);
+        }, []() {});
+        return CreateLoad2(wrapper_ptr_type, wrapper);
+    }
+
+    llvm::Value* LLVMUtils::reuse_or_alloc_class_array_wrapper(
+            llvm::Value* wrapper, llvm::Type* wrapper_type) {
+        llvm::PointerType* wrapper_ptr_type = wrapper_type->getPointerTo();
+        llvm::Value* owned_wrapper = CreateAlloca(wrapper_ptr_type, nullptr,
+            "owned_class_array_wrapper");
+        builder->CreateStore(wrapper, owned_wrapper);
+        create_if_else(builder->CreateIsNull(wrapper), [&]() {
+            builder->CreateStore(alloc_zeroed_type(wrapper_type), owned_wrapper);
+        }, []() {});
+        return CreateLoad2(wrapper_ptr_type, owned_wrapper);
+    }
+
+    llvm::Value* LLVMUtils::get_or_alloc_class_array_wrapper(llvm::Type* desc_type,
+            llvm::Value* desc, llvm::Type* wrapper_type) {
+        return reuse_or_alloc_class_array_wrapper(
+            get_class_array_wrapper(desc_type, desc, wrapper_type), wrapper_type);
+    }
+
     LLVMUtils::UpolyWrapperFields LLVMUtils::extract_upoly_wrapper(
             llvm::Value* wrapper, llvm::Type* wrapper_type) {
         UpolyWrapperFields f;
@@ -4078,12 +4110,39 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         descr_type->getPointerTo(), src);
                     llvm::Value* dest_descr = CreateLoad2(
                         descr_type->getPointerTo(), dest);
+                    // The data of a polymorphic pointer array descriptor is a
+                    // {vptr, data*} wrapper owned by the pointer, so the
+                    // destination keeps (or gets) a wrapper of its own.
+                    const bool class_elem = ASRUtils::is_class_type(
+                        ASRUtils::extract_type(pointer_type->m_type));
+                    llvm::Type* wrapper_type = nullptr;
+                    llvm::Value* dest_wrapper = nullptr;
+                    if (class_elem) {
+                        wrapper_type = get_el_type(src_expr,
+                            ASRUtils::extract_type(pointer_type->m_type), module);
+                        dest_wrapper = CreateLoad2(wrapper_type->getPointerTo(),
+                            create_gep2(descr_type, dest_descr, 0));
+                    }
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t descr_size = data_layout.getTypeAllocSize(descr_type);
                     llvm::Value* size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, descr_size));
                     builder->CreateMemCpy(dest_descr, llvm::MaybeAlign(),
                                           src_descr, llvm::MaybeAlign(), size_val);
+                    if (class_elem) {
+                        llvm::Value* dest_data = create_gep2(descr_type, dest_descr, 0);
+                        llvm::Value* src_wrapper = CreateLoad2(
+                            wrapper_type->getPointerTo(), dest_data);
+                        create_if_else(builder->CreateIsNull(src_wrapper), [&]() {
+                            lfortran_free_nocheck(dest_wrapper);
+                        }, [&]() {
+                            llvm::Value* wrapper = reuse_or_alloc_class_array_wrapper(
+                                dest_wrapper, wrapper_type);
+                            builder->CreateStore(CreateLoad2(wrapper_type, src_wrapper),
+                                wrapper);
+                            builder->CreateStore(wrapper, dest_data);
+                        });
+                    }
                 } else if (ASRUtils::is_class_type(pointer_type->m_type) &&
                            !ASRUtils::is_array(pointer_type->m_type)) {
                     // dest gets the same target and dynamic type without
