@@ -28,7 +28,7 @@ if (first) then
         r2 = sum(u**2)
         if (r2 < 1 .and. r2 > 0) exit
     end do
-    u = u*sqrt((-2)*log(r2)/r2)
+    u = u*sqrt(-2*log(r2)/r2)
     x = u(1)
 else
     x = u(2)

@@ -322,7 +322,7 @@
                         sqrt
                         []
                         [(()
-                        (/ (* (u- 2) (FuncCallOrArray
+                        (u- (/ (* 2 (FuncCallOrArray
                             log
                             []
                             [(()
@@ -332,7 +332,7 @@
                             []
                             []
                             []
-                        )) r2)
+                        )) r2))
                         ()
                         0)]
                         []

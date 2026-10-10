@@ -60,9 +60,9 @@ associate_block_start:                            ; preds = %.entry
   %6 = load float, float* %y, align 4
   %7 = fmul float %6, 2.000000e+00
   %8 = fadd float %5, %7
-  %9 = fneg float %8
-  %10 = call float @_lcompilers_cos_f32(float* %theta)
-  %11 = fmul float %9, %10
+  %9 = call float @_lcompilers_cos_f32(float* %theta)
+  %10 = fmul float %8, %9
+  %11 = fneg float %10
   store float %11, float* %z, align 4
   store float* %myreal, float** %v, align 8
   %12 = alloca i64, align 8

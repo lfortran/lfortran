@@ -247,18 +247,23 @@
                         (Cast
                             (IntrinsicElementalFunction
                                 Exp
-                                [(RealBinOp
+                                [(RealUnaryMinus
                                     (RealBinOp
-                                        (RealUnaryMinus
+                                        (RealBinOp
                                             (RealConstant
                                                 0.250000
                                                 (Real 8)
                                             )
-                                            (Real 8)
-                                            (RealConstant
-                                                -0.250000
+                                            Mul
+                                            (Cast
+                                                (Var 2 z)
+                                                RealToReal
                                                 (Real 8)
+                                                ()
+                                                ()
                                             )
+                                            (Real 8)
+                                            ()
                                         )
                                         Mul
                                         (Cast
@@ -269,14 +274,6 @@
                                             ()
                                         )
                                         (Real 8)
-                                        ()
-                                    )
-                                    Mul
-                                    (Cast
-                                        (Var 2 z)
-                                        RealToReal
-                                        (Real 8)
-                                        ()
                                         ()
                                     )
                                     (Real 8)
