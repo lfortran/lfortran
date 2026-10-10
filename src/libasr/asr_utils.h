@@ -4422,6 +4422,50 @@ static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
     return false;
 }
 
+// Returns a symbol that names `sym` from `scope`: `sym` itself when it is
+// visible there, otherwise an existing import of the same target, otherwise
+// a new ExternalSymbol in `scope`. Returns `sym` unchanged when it cannot be
+// imported, because its owner is not a module or a derived type.
+static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
+        ASR::symbol_t* sym, SymbolTable* scope) {
+    // Already visible as given: prefer the symbol the caller passed, which
+    // may be an import that keeps a module boundary intact.
+    if (is_visible_from(sym, scope)) return sym;
+    // Otherwise the definition itself may be visible, which happens when the
+    // caller handed over an import made for some other scope.
+    ASR::symbol_t* definition = symbol_get_past_external(sym);
+    if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
+        return sym;
+    }
+    if (is_visible_from(definition, scope)) return definition;
+    std::string name = symbol_name(definition);
+    // Reuse a name already standing for this symbol in the scope chain.
+    ASR::symbol_t* existing = scope->resolve_symbol(name);
+    if (existing != nullptr &&
+            symbol_get_past_external(existing) == definition) {
+        return existing;
+    }
+    // An ExternalSymbol names its target through the module or derived type
+    // that owns it. A symbol owned by a program or a procedure cannot be
+    // named that way, so it cannot be imported at all.
+    ASR::symbol_t* module_sym = get_asr_owner(definition);
+    if (module_sym == nullptr) return sym;
+    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
+            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
+        return sym;
+    }
+    std::string local_name = name;
+    if (scope->get_symbol(local_name) != nullptr) {
+        local_name = scope->get_unique_name(name);
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
+            s2c(al, local_name), definition, symbol_name(module_sym),
+            nullptr, 0, s2c(al, name), ASR::accessType::Public));
+    scope->add_symbol(local_name, imported);
+    return imported;
+}
+
 // A variable's type declaration has to be visible from the variable's own
 // scope, the same way its name is. A producer that carries a type over from
 // somewhere else -- the frontend declaring an entity of a type it imported,
@@ -4455,46 +4499,7 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-
-    // Already visible as given: prefer the symbol the caller passed, which
-    // may be an import that keeps a module boundary intact.
-    SymbolTable* given_owner = symbol_parent_symtab(type_declaration);
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == given_owner) return type_declaration;
-    }
-    // Otherwise the definition itself may be visible, which happens when the
-    // caller handed over an import made for some other scope.
-    SymbolTable* owner = symbol_parent_symtab(definition);
-    if (owner == nullptr) return type_declaration;
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == owner) return definition;
-    }
-    std::string name = symbol_name(definition);
-    // Reuse a name already standing for this type in the scope chain.
-    ASR::symbol_t* existing = scope->resolve_symbol(name);
-    if (existing != nullptr &&
-            symbol_get_past_external(existing) == definition) {
-        return existing;
-    }
-    // An ExternalSymbol names its target through the module or derived type
-    // that owns it. A symbol owned by a program or a procedure cannot be
-    // named that way, so it cannot be imported at all.
-    ASR::symbol_t* module_sym = get_asr_owner(definition);
-    if (module_sym == nullptr) return type_declaration;
-    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
-        return type_declaration;
-    }
-    std::string local_name = name;
-    if (scope->get_symbol(local_name) != nullptr) {
-        local_name = scope->get_unique_name(name);
-    }
-    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
-            s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), ASR::accessType::Public));
-    scope->add_symbol(local_name, imported);
-    return imported;
+    return import_symbol_into_scope(al, type_declaration, scope);
 }
 
 static inline void set_cptr_type_declaration(ASR::ttype_t* type,
