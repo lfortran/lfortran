@@ -1,0 +1,23 @@
+semantic error: namelist object 'n' was implicitly typed integer(4) at the namelist statement; its declaration as real(4) does not confirm that type
+  --> tests/errors/namelist_implicit_type_01.f90:11:13
+   |
+11 |     real :: n  ! {Error} namelist object 'n' was implicitly typed integer(4) at the namelist statement; its declaration as real(4) does not confirm that type
+   |             ^ 
+
+semantic error: namelist object 'tv' was implicitly typed real(4) at the namelist statement; its declaration as type(pt) does not confirm that type
+  --> tests/errors/namelist_implicit_type_01.f90:17:17
+   |
+17 |     type(pt) :: tv  ! {Error} namelist object 'tv' was implicitly typed real(4) at the namelist statement; its declaration as type(pt) does not confirm that type
+   |                 ^^ 
+
+semantic error: namelist object 'c' was implicitly typed real(4) at the namelist statement; its declaration as character(len=5) does not confirm that type
+  --> tests/errors/namelist_implicit_type_01.f90:22:25
+   |
+22 |     character(len=5) :: c  ! {Error} namelist object 'c' was implicitly typed real(4) at the namelist statement; its declaration as character(len=5) does not confirm that type
+   |                         ^ 
+
+semantic error: namelist object 'd' was implicitly typed real(4) at the namelist statement; its declaration as real(8) does not confirm that type
+  --> tests/errors/namelist_implicit_type_01.f90:27:16
+   |
+27 |     real(8) :: d  ! {Error} namelist object 'd' was implicitly typed real(4) at the namelist statement; its declaration as real(8) does not confirm that type
+   |                ^ 

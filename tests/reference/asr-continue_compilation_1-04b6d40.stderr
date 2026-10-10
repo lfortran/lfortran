@@ -934,10 +934,10 @@ semantic error: Intent attribute can only be applied to procedure arguments
 2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
      |     ^^^^^^^^^^ 
 
-semantic error: symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
+semantic error: symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
     --> tests/errors/continue_compilation_1.f90:2159:32
      |
-2159 |     namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
+2159 |     namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
      |                                ^ 
 
 semantic error: Restriction type mismatch with provided function argument

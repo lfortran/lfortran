@@ -1,5 +1,7 @@
 ! A namelist group object may be declared after the NAMELIST statement when
-! the implicit typing rules give it a type; the later declaration confirms it.
+! the implicit typing rules give it a type; a later type declaration must
+! confirm that type and kind. Giving `y` its rank after the NAMELIST statement
+! is an extension (the implied type is scalar) that GFortran also accepts.
 module namelist_40_mod
     implicit none
     integer :: shift = 3
