@@ -5107,7 +5107,7 @@ namespace FindLoc {
             args_.reserve(al, 2);
             args_.push_back(al, args[0]);
             args_.push_back(al, args[1]);
-            promote_arguments_kinds(al, loc, args_, diag);
+            promote_arguments_kinds(al, loc, args_, diag, true);
             array = args_[0];
             value = args_[1];
         }
