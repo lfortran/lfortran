@@ -17,6 +17,7 @@
 #include <libasr/pass/function_result_scope.h>
 #include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/intent_out_deallocate.h>
+#include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/utils.h>
 #include <lfortran/ast_to_src.h>
 
@@ -1855,6 +1856,92 @@ end module
     SUBCASE("a dynamic call names the slot of its member") {
         concrete_calls.dynamic[0]->m_slot = 1;
         rejects("asr.verify.trait_call.slot");
+    }
+}
+
+TEST_CASE("Promoted allocatables reach runtime trait calls through descriptor casts") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module promoted_trait_arguments_m
+    implicit none
+    abstract interface :: IProbe
+        function total(x) result(s)
+            integer, intent(in) :: x(:)
+            integer :: s
+        end function total
+        subroutine show(x, t)
+            integer, intent(in) :: x(:)
+            integer, intent(out) :: t
+        end subroutine show
+    end interface IProbe
+    type, sealed, implements(IProbe) :: Prober
+    contains
+        procedure, nopass :: total => prober_total
+        procedure, nopass :: show => prober_show
+    end type Prober
+contains
+    function prober_total(x) result(s)
+        integer, intent(in) :: x(:)
+        integer :: s
+        s = sum(x)
+    end function prober_total
+    subroutine prober_show(x, t)
+        integer, intent(in) :: x(:)
+        integer, intent(out) :: t
+        t = size(x)
+    end subroutine prober_show
+    subroutine run(v, s, t)
+        class(IProbe), intent(in) :: v
+        integer, intent(out) :: s, t
+        integer, allocatable :: x(:)
+        allocate(x(3))
+        x(1) = 1
+        x(2) = 2
+        x(3) = 3
+        s = v%total(x)
+        call v%show(x, t)
+    end subroutine run
+end module promoted_trait_arguments_m
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    LCompilers::pass_promote_allocatable_to_nonallocatable(al, *result.result, options.po);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("promoted_trait_arguments_m"));
+    auto *run = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("run"));
+    ASR::symbol_t *x = run->m_symtab->get_symbol("x");
+    REQUIRE(ASRUtils::is_fixed_size_array(ASRUtils::symbol_type(x)));
+    struct Calls : ASR::BaseWalkVisitor<Calls> {
+        std::vector<ASR::expr_t*> arrays;
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &call) {
+            if (call.n_args == 2) arrays.push_back(call.m_args[1].m_value);
+            ASR::BaseWalkVisitor<Calls>::visit_TraitFunctionCall(call);
+        }
+        void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &call) {
+            if (call.n_args == 3) arrays.push_back(call.m_args[1].m_value);
+            ASR::BaseWalkVisitor<Calls>::visit_TraitSubroutineCall(call);
+        }
+    };
+    Calls calls;
+    calls.visit_symbol(run->base);
+    REQUIRE(calls.arrays.size() == 2);
+    for (auto *array : calls.arrays) {
+        REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*array));
+        auto *cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(array);
+        CHECK(cast->m_old == ASR::array_physical_typeType::FixedSizeArray);
+        CHECK(cast->m_new == ASR::array_physical_typeType::DescriptorArray);
+        REQUIRE(ASR::is_a<ASR::Var_t>(*cast->m_arg));
+        CHECK(ASR::down_cast<ASR::Var_t>(cast->m_arg)->m_v == x);
     }
 }
 
