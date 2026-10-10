@@ -2,12 +2,12 @@
     "basename": "asr-namelist_implicit_type_01-543f075",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/namelist_implicit_type_01.f90",
-    "infile_hash": "9da4eb7f57f5eec966a77c058ccab3504b17bacf2f3e6a6ba2daaca5",
+    "infile_hash": "b2803b466b93fad776ef1209d8f689342b179cb29721f88900a9313e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-namelist_implicit_type_01-543f075.stderr",
-    "stderr_hash": "9d61c160d24090c2f823aae1ec7bd21cea2154253b1b261bc348d5c7",
+    "stderr_hash": "f674f4531352ab8dde63ea69fd248b7a0fdfa724b9c9d1c24e9e2221",
     "returncode": 1
 }

@@ -2308,6 +2308,9 @@ public:
     // Namelist group objects that were typed by the implicit typing rules at
     // the NAMELIST statement; a later type declaration must confirm that type.
     std::set<ASR::symbol_t*> namelist_implicitly_typed_objects;
+    // Whether an IMPLICIT NONE statement is in effect in the scoping unit
+    // whose specification part is being visited.
+    bool implicit_none_in_effect = false;
 
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
@@ -8600,7 +8603,8 @@ public:
                                         "symbol '" + object_name + "' in namelist '"
                                         + group_name + "' must be declared before "
                                         "the namelist statement" + std::string(
-                                            compiler_options.implicit_typing ? ""
+                                            compiler_options.implicit_typing
+                                                || implicit_none_in_effect ? ""
                                             : " (or enable implicit typing with "
                                               "--implicit-typing)"),
                                         Level::Error, Stage::Semantic, {

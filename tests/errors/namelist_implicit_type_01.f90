@@ -27,8 +27,14 @@ subroutine namelist_confirm_real_kind
     real(8) :: d  ! {Error} namelist object 'd' was implicitly typed real(4) at the namelist statement; its declaration as real(8) does not confirm that type
 end subroutine
 
+subroutine namelist_implicit_none
+    implicit none
+    namelist /g5/ e  ! {Error} symbol 'e' in namelist 'g5' must be declared before the namelist statement
+    real :: e
+end subroutine
+
 subroutine namelist_confirm_ok
-    namelist /g5/ x, y, k
+    namelist /g6/ x, y, k
     real :: x
     real :: y(3)
     integer :: k

@@ -2195,6 +2195,11 @@ contains
 end subroutine pointer_assign_interface_mismatch_error
 subroutine namelist_object_before_decl_error
     implicit none
-    namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+    namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
     real :: v
 end subroutine namelist_object_before_decl_error
+
+subroutine namelist_object_before_decl_no_implicit_typing_error
+    namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+    real :: w
+end subroutine namelist_object_before_decl_no_implicit_typing_error
