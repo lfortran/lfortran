@@ -456,6 +456,17 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn('if [ "$(head_sha)" != "$sha" ]; then', source)
 
 
+    def test_cache_cleanup_deletes_fork_pr_caches_without_running_pr_code(self):
+        source = (ROOT / ".github/workflows/Clean-Cache-CI.yml").read_text()
+        triggers = source.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+        self.assertIn("pull_request_target:", triggers)
+        self.assertNotIn("  pull_request:", triggers)
+        self.assertIn("permissions:\n  actions: write\n", source)
+        self.assertNotIn("actions/checkout", source)
+        self.assertNotIn("gh extension", source)
+        self.assertIn("REF: refs/pull/${{ github.event.pull_request.number }}/merge", source)
+        self.assertIn('gh cache delete --all --ref "$REF" --succeed-on-no-caches', source)
+
 class QuickScriptTests(unittest.TestCase):
     def setUp(self):
         workspace = tempfile.TemporaryDirectory(prefix="lfortran-ci-routing-")
