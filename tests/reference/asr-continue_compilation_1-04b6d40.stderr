@@ -3160,3 +3160,9 @@ semantic error: type mismatch in pointer assignment, the types must be compatibl
      |
 2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
      |     ^^    ^^ type mismatch (integer(4) and character(len=5))
+
+semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:2216:20
+     |
+2216 |     call take_proc(x)
+     |                    ^ 

@@ -2193,3 +2193,25 @@ contains
         paim_g = n
     end function
 end subroutine pointer_assign_interface_mismatch_error
+
+! A required dummy procedure must not be omitted in a call.
+module missing_proc_arg_mod
+    implicit none
+contains
+    subroutine take_proc(x, get_ptr)
+        integer, intent(out) :: x
+        interface
+            subroutine get_ptr(ptr)
+                integer, intent(out) :: ptr
+            end subroutine get_ptr
+        end interface
+        call get_ptr(x)
+    end subroutine
+end module
+
+subroutine missing_proc_arg_caller()
+    use missing_proc_arg_mod
+    implicit none
+    integer :: x
+    call take_proc(x)
+end subroutine
