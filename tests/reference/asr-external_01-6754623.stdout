@@ -71,7 +71,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -89,7 +89,7 @@
                                     (FunctionType
                                         []
                                         (Complex 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -126,7 +126,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -150,7 +150,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -168,7 +168,7 @@
                                     (FunctionType
                                         [(Complex 4)]
                                         (Complex 4)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -202,7 +202,7 @@
                                         (FunctionType
                                             [(Complex 4)]
                                             (Complex 4)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -237,7 +237,7 @@
                         (FunctionType
                             []
                             (Complex 4)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -274,7 +274,7 @@
                             (FunctionType
                                 [(Complex 4)]
                                 (Complex 4)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
