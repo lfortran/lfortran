@@ -460,12 +460,20 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_wasm_build_uses_the_compiler_cache(self):
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
-        native = wasm.split("      - name: Build native LFortran\n", 1)[1].split("\n      - name:", 1)[0]
-        self.assertIn("-DCMAKE_C_COMPILER_LAUNCHER=sccache", native)
-        self.assertIn("-DCMAKE_CXX_COMPILER_LAUNCHER=sccache", native)
-        emscripten = wasm.split("      - name: Build to WASM\n", 1)[1].split("\n      - name:", 1)[0]
-        self.assertIn("EM_COMPILER_WRAPPER: sccache", emscripten)
-        self.assertIn("key: ${{ github.job }}-ubuntu-latest\n", wasm)
+        cache = wasm.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertNotIn("variant: sccache", cache)
+        self.assertIn("key: ${{ github.job }}-ubuntu-latest\n", cache)
+        self.assertIn("max-size: 1500M", cache)
+        for name in ("Build native LFortran", "Build to WASM"):
+            step = wasm.split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
+            self.assertIn("-DCMAKE_C_COMPILER_LAUNCHER=ccache", step, name)
+            self.assertIn("-DCMAKE_CXX_COMPILER_LAUNCHER=ccache", step, name)
+        self.assertNotIn("EM_COMPILER_WRAPPER", wasm)
+        # The action keeps the cache in the workspace; git clean must not delete it.
+        cleans = re.findall(r"git clean [^\n]*", wasm)
+        self.assertTrue(cleans)
+        for clean in cleans:
+            self.assertIn("-e .ccache", clean)
 
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()

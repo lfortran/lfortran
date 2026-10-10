@@ -500,8 +500,10 @@ requested extended check of a PR, dispatch it in a fork (see below).
 ##### Compiler caches
 
 Every C/C++ build runs through ccache or sccache
-(`hendrikmuhs/ccache-action`), including both halves of the WASM build: the
-Emscripten build sets `EM_COMPILER_WRAPPER=sccache`. Caches are **saved only on
+(`hendrikmuhs/ccache-action`), including both halves of the WASM build, which
+use ccache as the CMake compiler launcher for the native compiler and for
+`em++`. The action keeps the cache in the workspace (`.ccache` or
+`.sccache`), so a build that runs `git clean` must exclude it. Caches are **saved only on
 `main`** (`save: ${{ github.ref == 'refs/heads/main' }}`) and restored
 everywhere. A cache saved for a PR or tag can only be restored by that same
 ref, and the repository's 10 GB cache limit evicts the least recently used
