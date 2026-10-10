@@ -1340,6 +1340,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "namelist")) {
+            push_token_advance(cur, "namelist");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "implicit")) {
             lex_implicit(cur);
             return true;

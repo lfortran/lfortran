@@ -2308,6 +2308,12 @@ public:
     // if pre_declared_array_dims[key] = 1 (means it's implicitly typed but not yet declared)
     // if pre_declared_array_dims[key] = 2 (means it's declared and so safe to use)
     std::map<std::string, int8_t> pre_declared_array_dims;
+    // Namelist group objects that were typed by the implicit typing rules at
+    // the NAMELIST statement; a later type declaration must confirm that type.
+    std::set<ASR::symbol_t*> namelist_implicitly_typed_objects;
+    // Whether an IMPLICIT NONE statement is in effect in the scoping unit
+    // whose specification part is being visited.
+    bool implicit_none_in_effect = false;
 
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
@@ -2631,6 +2637,36 @@ public:
         return v;
     }
 
+
+    // F2018 8.9: a namelist group object typed by the implicit typing rules
+    // at the NAMELIST statement may appear in a later type declaration only
+    // if that declaration confirms the implied type and kind. The rank may
+    // still be given later, as other compilers accept.
+    void check_namelist_object_type_confirmed(ASR::Variable_t *object,
+            ASR::ttype_t *declared_type, ASR::symbol_t *declared_type_decl,
+            const Location &loc) {
+        ASR::ttype_t *implied = ASRUtils::extract_type(object->m_type);
+        ASR::ttype_t *declared = ASRUtils::extract_type(declared_type);
+        if (implied->type == declared->type
+                && ASRUtils::types_equal(implied, declared, nullptr, nullptr)) {
+            return;
+        }
+        auto type_name = [](ASR::ttype_t *t, ASR::symbol_t *type_decl) {
+            if (ASR::is_a<ASR::StructType_t>(*t) && type_decl != nullptr) {
+                return "type(" + std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(type_decl))) + ")";
+            }
+            return ASRUtils::type_to_str_fortran_symbol(t, type_decl, true);
+        };
+        diag.add(Diagnostic("namelist object '" + std::string(object->m_name)
+            + "' was implicitly typed " + type_name(implied,
+                object->m_type_declaration)
+            + " at the namelist statement; its declaration as "
+            + type_name(declared, declared_type_decl)
+            + " does not confirm that type",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
 
     void reject_null_initializer_if_not_pointer_or_allocatable(
             const std::string& name, ASR::ttype_t* type,
@@ -8551,8 +8587,49 @@ public:
                             }
                         }
                         for (size_t i = 0; i < group.n_objects; i++) {
-                            var_list.push_back(al, current_scope->resolve_symbol(
-                                to_lower(group.m_objects[i].m_name)));
+                            AST::var_sym_t &object = group.m_objects[i];
+                            std::string object_name = to_lower(object.m_name);
+                            ASR::symbol_t *member = current_scope->resolve_symbol(
+                                object_name);
+                            if (member == nullptr) {
+                                // A namelist group object not declared yet is
+                                // typed by the implicit typing rules in effect;
+                                // a later type declaration must confirm that
+                                // type.
+                                ASR::ttype_t *implicit_type = nullptr;
+                                if (compiler_options.implicit_typing) {
+                                    implicit_type = implicit_dictionary[
+                                        std::string(1, object_name[0])];
+                                }
+                                if (implicit_type == nullptr) {
+                                    diag.add(Diagnostic(
+                                        "symbol '" + object_name + "' in namelist '"
+                                        + group_name + "' must be declared before "
+                                        "the namelist statement" + std::string(
+                                            compiler_options.implicit_typing
+                                                || implicit_none_in_effect ? ""
+                                            : " (or enable implicit typing with "
+                                              "--implicit-typing)"),
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {object.loc})
+                                        }));
+                                    if (!compiler_options.continue_compilation) {
+                                        throw SemanticAbort();
+                                    }
+                                    continue;
+                                }
+                                bool is_argument = std::find(
+                                    current_procedure_args.begin(),
+                                    current_procedure_args.end(), object_name)
+                                    != current_procedure_args.end();
+                                member = declare_implicit_variable2(object.loc,
+                                    object_name, is_argument
+                                        ? ASRUtils::intent_unspecified
+                                        : ASRUtils::intent_local,
+                                    implicit_type);
+                                namelist_implicitly_typed_objects.insert(member);
+                            }
+                            var_list.push_back(al, member);
                         }
                         ASR::asr_t* namelist = ASR::make_Namelist_t(al,
                             group.loc, current_scope, s2c(al, group_name),
@@ -9413,6 +9490,10 @@ public:
                     } else if ( is_implicitly_declared ) {
                         ASR::symbol_t* symbol = current_scope->get_symbol(sym);
                         ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        if (namelist_implicitly_typed_objects.erase(symbol) > 0) {
+                            check_namelist_object_type_confirmed(symbol_variable,
+                                type, type_declaration, s.loc);
+                        }
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
                         } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
@@ -15385,7 +15466,10 @@ public:
                             (expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                         // Only convert top-level ArrayItem to ArraySection.
                         // Do NOT recurse into nested ArrayItem expressions in indices.
-                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
+                        // A vector-subscripted ArrayItem is an array expression, not an
+                        // array element designator, so it is left unchanged.
+                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
+                                !ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
                             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                             ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
                             ASR::ttype_t* section_type =
@@ -15723,7 +15807,10 @@ public:
                     ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(array_arg_idx[i]);
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
-                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                    // A vector-subscripted ArrayItem is an array expression, not an
+                    // array element designator, so it is passed unchanged.
+                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
+                            !ASRUtils::is_array(ASRUtils::expr_type(arg_expr))) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
 
@@ -16560,6 +16647,13 @@ public:
                 }
             }
             if( member != nullptr ) {
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *ASRUtils::symbol_get_past_external(member))) {
+                    diag.add(Diagnostic("Type-bound procedure '" + var_name
+                        + "' requires an argument list",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
