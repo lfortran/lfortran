@@ -4446,12 +4446,14 @@ static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
         return existing;
     }
     // The name may stand for something else, so an earlier import can have
-    // been given another name.
+    // been given another name. Only an import that can be found under its
+    // own name can be referenced.
     for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
         for (auto &item : s->get_scope()) {
             if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
                     ASR::down_cast<ASR::ExternalSymbol_t>(
-                        item.second)->m_external == definition) {
+                        item.second)->m_external == definition &&
+                    item.first == symbol_name(item.second)) {
                 return item.second;
             }
         }
