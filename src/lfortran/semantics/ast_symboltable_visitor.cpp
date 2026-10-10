@@ -760,6 +760,10 @@ public:
             }
         }
         module_instantiated_symbols.clear();
+        // The layout of the COMMON blocks of the specification part is
+        // complete: a module procedure, or a later program unit, declaring
+        // one of them is associated with it from the start of the block.
+        mark_common_blocks_as_declared();
         // Module_t already exists, so persist before CONTAINS. Nested
         // procedures can then find these names via parent-scope mapping
         // lookup even while their own accumulator is isolated.
