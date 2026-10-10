@@ -2599,6 +2599,37 @@ end program
     CHECK(r.result.i32 == 7);
 }
 
+TEST_CASE("FortranEvaluator a module's bind(c) globals across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A bind(c) global keeps its abi when a later cell marks the earlier
+    // cells external, so it has to be declared there, not defined again.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(module zb
+implicit none
+type, bind(c) :: tc
+integer :: z = 7
+end type
+integer, bind(c) :: gi = 7
+type(tc), bind(c) :: gx
+end module
+)");
+    CHECK(r.ok);
+    CHECK(e.evaluate2("use zb\n").ok);
+    r = e.evaluate2("gi\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 7);
+    CHECK(e.evaluate2("gi = 8\n").ok);
+    CHECK(e.evaluate2("gx%z = 9\n").ok);
+    r = e.evaluate2("gi\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 8);
+    r = e.evaluate2("gx%z\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 9);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;

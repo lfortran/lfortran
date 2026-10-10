@@ -741,6 +741,8 @@ public:
     llvm::Value* current_round_mode = nullptr;
 
     SymbolTable* current_scope;
+    // The translation unit's symbol table: in interactive mode, this cell's
+    SymbolTable* cell_symtab = nullptr;
     std::unique_ptr<LLVMUtils> llvm_utils;
     LLVMFinalize llvm_symtab_finalizer;
     std::unique_ptr<LLVMList> list_api;
@@ -2271,6 +2273,7 @@ public:
         // compiled and are marked ExternalUndefined, so walking them here only
         // declares them. Oldest cell first, so that a name redeclared by a
         // newer cell is the one left in llvm_symtab.
+        cell_symtab = x.m_symtab;
         std::vector<SymbolTable*> cell_scopes;
         for (SymbolTable *s = x.m_symtab; s != nullptr; s = s->parent) {
             cell_scopes.push_back(s);
@@ -6809,10 +6812,15 @@ public:
 
     // In interactive mode, a global of an earlier cell. That cell defined it
     // and set up its members when it ran; this one only declares it, and
-    // setting it up again would overwrite whatever it holds by now.
+    // setting it up again would overwrite whatever it holds by now. A bind(c)
+    // global stays BindC when its cell is marked external, for its C name
+    // and layout, so it is told apart by the cell it belongs to.
     bool is_earlier_cell_global(const ASR::Variable_t &x) {
-        return compiler_options.interactive
-            && x.m_abi == ASR::abiType::ExternalUndefined;
+        if (!compiler_options.interactive) return false;
+        if (x.m_abi == ASR::abiType::BindC) {
+            return ASRUtils::get_tu_symtab(x.m_parent_symtab) != cell_symtab;
+        }
+        return x.m_abi == ASR::abiType::ExternalUndefined;
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -6831,7 +6839,8 @@ public:
         // BindC variables defined in this module (intent local) are
         // definitions, not external declarations
         if (x.m_abi == ASR::abiType::BindC &&
-                (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
+                (x.m_symbolic_value != nullptr || x.m_intent == intent_local)
+                && !is_earlier_cell_global(x)) {
             external = false;
         }
         llvm::Constant* init_value = get_static_pointer_association(x);
