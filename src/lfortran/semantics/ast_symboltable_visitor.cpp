@@ -583,6 +583,20 @@ public:
         }
     }
 
+    // The access-spec of a bare `private` or `public` statement (one without
+    // an access-id-list), or nullptr if `item` is not such a statement.
+    static const AST::SimpleAttribute_t *bare_access_stmt(const AST::decl_stmt_t &item) {
+        if (!AST::is_a<AST::Declaration_t>(item)) return nullptr;
+        const AST::Declaration_t &d = *AST::down_cast<AST::Declaration_t>(&item);
+        if (d.m_vartype != nullptr || d.n_syms != 0 || d.n_attributes != 1
+                || !AST::is_a<AST::SimpleAttribute_t>(*d.m_attributes[0])) return nullptr;
+        const AST::SimpleAttribute_t *sa =
+            AST::down_cast<AST::SimpleAttribute_t>(d.m_attributes[0]);
+        if (sa->m_attr != AST::simple_attributeType::AttrPrivate
+                && sa->m_attr != AST::simple_attributeType::AttrPublic) return nullptr;
+        return sa;
+    }
+
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
         ScopingUnitScope scoping_unit_scope(*this,
@@ -695,6 +709,32 @@ public:
                             diag::Label("", {x.m_items[i]->base.loc})}));
                     throw SemanticAbort();
                 }
+            }
+        }
+        // A bare `private` statement sets the default accessibility of the
+        // whole specification part, not only of the declarations that follow
+        // it (F2018 8.6.1), so apply it before visiting any declaration, the
+        // same way `use` and `implicit` statements are processed above.
+        // Otherwise a variable, derived type or interface declared ahead of
+        // the statement would take the initial (public) default. Only one
+        // such statement is permitted in a module (F2018 C869).
+        const AST::decl_stmt_t *first_bare_access = nullptr;
+        for (size_t i=0; i<x.n_items; i++) {
+            const AST::SimpleAttribute_t *sa = bare_access_stmt(*x.m_items[i]);
+            if (!sa) continue;
+            if (first_bare_access) {
+                diag.add(diag::Diagnostic(
+                    "Only one PRIVATE or PUBLIC statement without an access-id-list "
+                    "is permitted in a module",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_items[i]->base.loc}),
+                        diag::Label("first one here", {first_bare_access->base.loc}, false)}));
+                if ( !compiler_options.continue_compilation ) throw SemanticAbort();
+                continue;
+            }
+            first_bare_access = x.m_items[i];
+            if (sa->m_attr == AST::simple_attributeType::AttrPrivate) {
+                dflt_access = ASR::accessType::Private;
             }
         }
         for (size_t i=0; i<x.n_items; i++) {
