@@ -756,6 +756,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 if (is_pointer && !ASRUtils::is_pointer(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
+                // A copy of a target scalar would have a different address and
+                // its copy-back would overwrite writes made through host pointers,
+                // so associate the context variable with the host variable instead.
+                if (var->m_target_attr && !ASRUtils::is_allocatable(var->m_type) &&
+                        !ASRUtils::is_pointer(var_type) && !ASRUtils::is_allocatable(var_type)) {
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+                }
                 ASR::symbol_t* type_decl = nullptr;
                 if (m_derived_type_or_class_type) {
                     type_decl = m_derived_type_or_class_type;
