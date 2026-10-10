@@ -10329,8 +10329,9 @@ static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
     return is_argument;
 }
 
-// Converts integer or real arguments of different kinds (a non-standard
-// extension accepted for MIN, MAX and FINDLOC) to a common kind. By default
+// Converts integer or real arguments of different kinds to a common kind
+// (used for MIN and MAX, where mixed kinds are a non-standard extension, and
+// for FINDLOC, whose VALUE may have a different kind than ARRAY). By default
 // that is the largest kind among the arguments; with `use_first_array_kind`
 // it is the kind of the first array argument. Array arguments are converted
 // element-wise, keeping their shape.
