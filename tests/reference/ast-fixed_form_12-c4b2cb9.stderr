@@ -1,0 +1,5 @@
+tokenizer error: unterminated character literal
+ --> tests/errors/fixed_form_12.f:2:15
+  |
+2 |       include 'fixed_form_12.inc
+  |               ^ not closed before the end of the line
