@@ -175,6 +175,8 @@ bool struct_needs_finalization(ASR::symbol_t* struct_sym);
 // that F2018 7.5.6.3 p5 finalizes after its using construct: an ordinary
 // nonpointer, nonallocatable, nonpolymorphic derived scalar whose finalization
 // does anything, or an owning scalar trait result with dynamic lifecycle.
+// A derived scalar owning trait components counts too: F2023 9.7.3.2
+// deallocates them after the construct, with their dynamic lifecycle.
 // Ordinary results suppress intent(out) entry finalization; allocatable trait
 // results instead use an initially empty caller-owned OUT slot.
 bool is_finalizable_function_result(ASR::ttype_t* type,
@@ -6771,7 +6773,8 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             new_args.push_back(al, arg);
         }
 
-        ASR::ttype_t* new_type = ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true);
+        ASR::ttype_t* new_type = import_trait_type(al,
+            ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true), scope);
         return ASRUtils::EXPR(ASR::make_StructConstant_t(al, init_expr->base.loc,
             ext_sym, new_args.p, new_args.size(), new_type));
     } else if (ASR::is_a<ASR::StructConstructor_t>(*init_expr)) {
@@ -6788,7 +6791,8 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             new_args.push_back(al, arg);
         }
 
-        ASR::ttype_t* new_type = ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true);
+        ASR::ttype_t* new_type = import_trait_type(al,
+            ASRUtils::make_StructType_t_util(al, init_expr->base.loc, ext_sym, true), scope);
         ASR::expr_t* new_value = externalize_struct_refs_in_init(al, sc->m_value, scope);
         return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, init_expr->base.loc,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
@@ -10800,6 +10804,13 @@ inline bool is_trait_pointer(const ASR::ttype_t *type) {
             *ASR::down_cast<ASR::Pointer_t>(type)->m_type);
 }
 
+bool contains_trait_owner(const ASR::ttype_t *type);
+// Whether assigning to or deallocating a designator of `type` runs dynamic
+// trait lifecycle code. A designated pointer's target counts: assignment
+// defines it and deallocation destroys it, unlike pointer association.
+bool has_trait_lifecycle_target(const ASR::ttype_t *type);
+bool has_trait_component_cleanup(const SymbolTable *scope);
+
 inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
     for (size_t i = 0; i < function.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*function.m_args[i])) continue;
@@ -10807,7 +10818,7 @@ inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
             ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
         auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
-        if (dummy->m_intent == ASR::intentType::Out && is_trait_owner(dummy->m_type)) {
+        if (dummy->m_intent == ASR::intentType::Out && contains_trait_owner(dummy->m_type)) {
             return true;
         }
     }
@@ -10821,6 +10832,9 @@ ASR::Variable_t *association_variable(ASR::expr_t *expr);
 ASR::expr_t *association_value(const ASR::Variable_t &variable);
 bool association_is_definable(ASR::expr_t *value);
 bool association_has_target(ASR::expr_t *value);
+ASR::Variable_t *trait_owner_variable(ASR::expr_t *value);
+bool trait_owner_is_definable(ASR::expr_t *value);
+bool trait_owner_same_slot(ASR::expr_t *left, ASR::expr_t *right);
 void order_select_type_guards(ASR::type_stmt_t **guards, size_t n);
 
 // Walk parents in declaration order and retain each original member once.

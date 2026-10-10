@@ -2285,6 +2285,10 @@ end module
     body.push_back(al, retention);
     block->m_body = body.p;
     block->n_body = body.size();
+    // Retaining results has unchecked lifecycle effects that the enclosing
+    // procedure's effect metadata must keep.
+    function->m_side_effect_free = false;
+    function->m_deterministic = false;
     LCompilers::diag::Diagnostics valid;
     REQUIRE(LCompilers::asr_verify(*result.result, true, valid));
     auto rejects = [&](const std::string &code) {
@@ -2293,6 +2297,10 @@ end module
         REQUIRE(!invalid.diagnostics.empty());
         CHECK(invalid.diagnostics.back().code == code);
     };
+    SUBCASE("retained results keep their procedure's lifecycle effects") {
+        function->m_side_effect_free = true;
+        rejects("asr.verify.trait_owner.lifecycle_effects");
+    }
     SUBCASE("named and positional round trips retain the ownership operation") {
         for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
             LCompilers::ASRTextOptions text_options;
@@ -6364,6 +6372,263 @@ function make(value) result(object)
 end function
 end module
 )";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        CHECK(diagnostics.render2().find(test.message) != std::string::npos);
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
+TEST_CASE("Trait component ownership retains declaration and expression scopes") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module component_contracts_m
+abstract interface :: IValue
+    pure integer function value()
+    end function
+end interface
+end module
+module component_storage_m
+use component_contracts_m, only: IValue
+type :: Payload
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure :: value => payload_value
+end implements
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+contains
+pure integer function payload_value(self)
+    type(Payload), intent(in) :: self
+    payload_value = self%n
+end function
+subroutine fill(object, source)
+    type(Holder), intent(inout) :: object
+    type(Payload), intent(in) :: source
+    object%item = source
+end subroutine
+subroutine release(a, b)
+    type(Holder), intent(inout) :: a, b
+    deallocate(a%item, b%item)
+end subroutine
+subroutine copy(a, b)
+    type(Holder), intent(inout) :: a
+    type(Holder), intent(in) :: b
+    a = b
+end subroutine
+subroutine release_target(p)
+    type(Holder), pointer, intent(inout) :: p
+    deallocate(p)
+end subroutine
+end module
+module component_client_m
+use component_storage_m, only: Box => Holder
+contains
+pure integer function read_value(object)
+    type(Box), intent(in) :: object
+    read_value = object%item%value()
+end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "component_storage_m");
+    asr_mod(source, "component_client_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("component_storage_m"));
+    auto *holder = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("holder"));
+    auto *item = ASR::down_cast<ASR::Variable_t>(holder->m_symtab->get_symbol("item"));
+    CHECK(ASRUtils::is_trait_owner(item->m_type));
+    CHECK(ASRUtils::contains_trait_owner(holder->m_struct_signature));
+    CHECK(item->m_type_declaration == nullptr);
+    auto *fill = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("fill"));
+    auto *assignment = ASR::down_cast<ASR::TraitAssignment_t>(fill->m_body[0]);
+    CHECK(ASRUtils::trait_owner_variable(assignment->m_target) == item);
+    CHECK(ASRUtils::trait_owner_is_definable(assignment->m_target));
+    auto *release = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("release"));
+    auto *deallocation = ASR::down_cast<ASR::ExplicitDeallocate_t>(release->m_body[0]);
+    REQUIRE(deallocation->n_vars == 2);
+    CHECK_FALSE(ASRUtils::trait_owner_same_slot(deallocation->m_vars[0], deallocation->m_vars[1]));
+    for (const char *name : {"copy", "release_target"}) {
+        CAPTURE(name);
+        auto *procedure = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
+        CHECK(ASR::has_trait_lifecycle_effects(procedure->m_body, procedure->n_body));
+        CHECK_FALSE(procedure->m_side_effect_free);
+        CHECK_FALSE(procedure->m_deterministic);
+    }
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "trait_components.asr", lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("a readonly containing object cannot define its owner component") {
+        ASRUtils::EXPR2VAR(fill->m_args[0])->m_intent = ASR::intentType::In;
+        rejects("asr.verify.trait_owner.definable");
+    }
+    SUBCASE("deallocation distinguishes component instances") {
+        deallocation->m_vars[1] = deallocation->m_vars[0];
+        rejects("asr.verify.trait_owner.duplicate_cleanup");
+    }
+    SUBCASE("pointer trait components remain outside this owning slice") {
+        item->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+            al, item->base.base.loc, ASRUtils::extract_type(item->m_type)));
+        rejects("asr.verify.trait_view.borrowed_storage");
+    }
+    SUBCASE("containing-object assignment retains its lifecycle effects") {
+        auto *copy = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("copy"));
+        copy->m_side_effect_free = true;
+        copy->m_deterministic = true;
+        rejects("asr.verify.trait_owner.lifecycle_effects");
+    }
+    SUBCASE("deallocating a pointer target retains its lifecycle effects") {
+        auto *release_target = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("release_target"));
+        release_target->m_side_effect_free = true;
+        rejects("asr.verify.trait_owner.lifecycle_effects");
+    }
+}
+
+TEST_CASE("Trait component effects and readonly storage fail semantically") {
+    const std::string prefix = R"(
+module trait_component_errors_m
+abstract interface :: IValue
+    pure integer function value()
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure :: value => payload_value
+end implements
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+)";
+    struct Case {
+        const char *header, *declarations, *body, *message;
+    };
+    const Case cases[] = {
+        {"subroutine probe(x, source)", "type(Holder), intent(in) :: x\n"
+            "type(Payload), intent(in) :: source", "x%item = source", "nondefinable"},
+        {"subroutine probe(x, source)", "type(Holder), intent(in) :: x\n"
+            "type(Payload), intent(in) :: source", "allocate(x%item, source=source)", "intent(in)"},
+        {"subroutine probe(x)", "type(Holder), intent(in) :: x",
+            "deallocate(x%item)", "nondefinable"},
+        {"subroutine probe(x)", "type(Holder), intent(inout) :: x",
+            "deallocate(x%item, x%item)", "cannot appear twice"},
+        {"pure subroutine probe(x)", "type(Holder), intent(out) :: x", "",
+            "component intent(out) cleanup"},
+        {"pure subroutine probe()", "type(Holder) :: x", "", "component cleanup"},
+        {"pure subroutine probe(x, y)", "type(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y", "x = y", "component assignment"},
+        {"pure subroutine probe()", "", "block\ntype(Holder) :: x\nend block",
+            "component cleanup"},
+        {"pure subroutine probe(x, y)", "type(Holder), pointer, intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y", "x = y", "component assignment"},
+        {"pure subroutine probe(x)", "type(Holder), pointer, intent(inout) :: x",
+            "deallocate(x)", "trait deallocation"},
+        {"subroutine copy(x, y)\ntype(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y\nx = y\nend subroutine\n"
+            "pure subroutine probe(x, y)", "type(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y", "call copy(x, y)", "impure procedure 'copy'"},
+        {"subroutine replace(item)\nclass(IValue), allocatable, intent(inout) :: item\n"
+            "end subroutine\nsubroutine probe(x)", "type(Holder), intent(in) :: x",
+            "call replace(x%item)", "definable allocatable actual"},
+        {"subroutine probe(source)", "type(Payload), intent(in) :: source\n"
+            "type(Holder) :: x", "x = Holder(source)", "structure constructor"},
+        {"subroutine probe(x)", "type(Holder), value :: x", "", "value dummies"},
+        {"subroutine probe(x, y)", "type(Holder), intent(inout) :: x, y",
+            "call move_alloc(x%item, y%item)", "move_alloc for runtime trait owners"}
+    };
+    for (const auto &test : cases) {
+        CAPTURE(test.header);
+        CAPTURE(test.body);
+        std::string source = prefix +
+            "contains\npure integer function payload_value(self)\n"
+            "type(Payload), intent(in) :: self\npayload_value = self%n\nend function\n" +
+            test.header + "\n" + test.declarations + "\n" + test.body +
+            "\nend subroutine\nend module\n";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        REQUIRE(diagnostics.has_error());
+        CHECK(diagnostics.render2().find(test.message) != std::string::npos);
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
+TEST_CASE("Trait components outside owning storage layouts fail semantically") {
+    const std::string prefix = R"(
+module trait_component_layouts_m
+abstract interface :: IValue
+    pure integer function value()
+    end function
+end interface
+)";
+    struct Case {
+        const char *declaration, *message;
+    };
+    const Case cases[] = {
+        {"type :: Bad\nsequence\nclass(IValue), allocatable :: item\nend type",
+            "a sequence derived type cannot have a runtime trait component"},
+        {"type, bind(c) :: Bad\nclass(IValue), allocatable :: item\nend type",
+            "a bind(c) derived type cannot have a runtime trait component"},
+        {"type :: Bad\nclass(IValue), allocatable :: item[:]\nend type",
+            "runtime trait coarray components are not implemented yet"},
+        {"_lfortran_union_type :: Bad\nclass(IValue), allocatable :: item\n"
+            "integer :: n\nend _lfortran_union_type",
+            "a union cannot have a runtime trait component"}
+    };
+    for (const auto &test : cases) {
+        CAPTURE(test.declaration);
+        std::string source = prefix + test.declaration + "\nend module\n";
         Allocator al(1024 * 1024);
         LCompilers::diag::Diagnostics diagnostics;
         LCompilers::CompilerOptions options;

@@ -15,7 +15,8 @@ TraitObjectType(symbol contract)
 symbol. Its slot interfaces describe all ordinary arguments and results.
 A bare view is a required, nonpointer, nonallocatable scalar `intent(in)` dummy.
 `Allocatable(TraitObjectType)` instead denotes scalar owning storage: a local,
-saved, module or BLOCK variable, or an allocatable dummy's caller-owned slot.
+saved, module or BLOCK variable, an allocatable dummy's caller-owned slot,
+or a scalar allocatable component of an ordinary derived type.
 Every dummy intent requires the same canonical declared contract and an
 allocatable actual; child contracts and concrete allocatables are not covariant
 slots. INTENT(IN) permits inquiry and borrowing but cannot define the slot.
@@ -44,6 +45,10 @@ Owning allocation and assignment use `TraitAllocate` and `TraitAssignment`;
 ordinary deallocation statements release only verified owners. The verifier
 rejects ordinary header assignment and association that would duplicate or
 discard ownership. NULLIFY is allowed only for definable pointer descriptors.
+Component designators retain their containing object's definability, with
+declaration-scoped contract validation separate from use-site imported types.
+Containing-object copies use independent component allocations and selected
+witnesses; their cleanup follows the existing aggregate lifecycle policy.
 
 The LLVM representation carries a three-word common prefix (concrete CLASS
 metadata, payload address, concrete lifecycle) followed by one inline selected

@@ -4332,3 +4332,88 @@ contains
         x => null()
     end function
 end module
+
+module traits_component_error_types
+    abstract interface :: IValue
+        pure integer function value()
+        end function
+    end interface
+    type :: Holder
+        class(IValue), allocatable :: item
+    end type
+end module
+
+module traits_component_error_borrow
+    use traits_component_error_types
+    type :: Bad
+        class(IValue) :: item
+    end type
+end module
+
+module traits_component_error_pointer
+    use traits_component_error_types
+    type :: Bad
+        class(IValue), pointer :: item
+    end type
+end module
+
+module traits_component_error_array
+    use traits_component_error_types
+    type :: Bad
+        class(IValue), allocatable :: items(:)
+    end type
+end module
+
+module traits_component_error_pure_out
+    use traits_component_error_types
+contains
+    pure subroutine clear(object)
+        type(Holder), intent(out) :: object
+    end subroutine
+end module
+
+module traits_component_error_pure_local
+    use traits_component_error_types
+contains
+    pure subroutine local()
+        type(Holder) :: object
+    end subroutine
+end module
+
+module traits_component_error_pure_result
+    use traits_component_error_types
+contains
+    pure function make() result(object)
+        type(Holder) :: object
+    end function
+end module
+
+module traits_component_error_value
+    use traits_component_error_types
+contains
+    subroutine take(x)
+        type(Holder), value :: x
+    end subroutine
+end module
+
+module traits_component_error_sequence
+    use traits_component_error_types
+    type :: Bad
+        sequence
+        class(IValue), allocatable :: item
+    end type
+end module
+
+module traits_component_error_bindc
+    use traits_component_error_types
+    type, bind(c) :: Bad
+        class(IValue), allocatable :: item
+    end type
+end module
+
+module traits_component_error_coarray
+    use traits_component_error_types
+    type :: Bad
+        class(IValue), allocatable :: item[:]
+    end type
+end module

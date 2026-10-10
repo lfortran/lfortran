@@ -3988,6 +3988,37 @@ RUN(NAME traits_runtime_character_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_character_01_m.f90)
 RUN(NAME traits_runtime_character_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_component_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_runtime_component_03_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME traits_runtime_component_04 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_component_04_provider.f90 traits_runtime_component_04_facade.f90)
+RUN(NAME traits_runtime_component_05 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_06 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_07 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_08 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_09 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_10 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_11 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_12 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_13 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_14 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
 RUN(NAME traits_runtime_pure_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_attributes_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_separate_01 LABELS llvm llvm2 NO_STD_F23

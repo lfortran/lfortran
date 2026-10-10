@@ -10,7 +10,8 @@ Intrinsic scalar owning value assignment with explicit snapshot ordering.
 TraitAssignment(expr target, expr value, symbol? witness)
 ```
 
-`target` is a scalar allocatable trait owner. `value` is either an exact
+`target` is a scalar allocatable trait variable or a definable owning component.
+`value` is either an exact
 nonpolymorphic concrete value with selected `witness`, or a same-contract
 borrowed view carrying its witness. Conformance is never reselected for an
 already formed view.
@@ -29,3 +30,7 @@ Allocatable components copy independently and pointer components preserve
 association. Borrowed views are not assignment targets. Ordinary `Assignment`
 or `Associate` of a trait header is rejected by verification because neither
 expresses this ownership protocol.
+
+This describes direct assignment to the owner slot. When an ordinary containing
+derived object is assigned instead, its noncoarray allocatable components are
+recreated before component assignment, following Fortran 2023 10.2.1.3.

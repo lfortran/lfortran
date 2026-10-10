@@ -12,6 +12,8 @@ TraitBorrow(expr owner, ttype type)
 
 `owner` is a scalar variable or function reference of
 `Allocatable(TraitObjectType(contract))`.
+An allocatable component designator is also a variable: borrowing preserves
+its containing object's lifetime and does not own or reassign that component.
 It may also be a scalar variable of `Pointer(TraitObjectType(contract))`.
 It may be an allocatable dummy slot, including INTENT(IN); borrowing neither
 defines that slot nor changes which scope owns its allocation.

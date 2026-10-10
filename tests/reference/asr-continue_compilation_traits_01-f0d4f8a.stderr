@@ -488,12 +488,6 @@ semantic error: runtime trait objects currently require a scalar dummy
 2239 |         class(IValue) :: owner
      |                          ^^^^^ 
 
-semantic error: runtime trait components are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:2246:9
-     |
-2246 |         class(IValue), allocatable :: owner
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: incompatible declarations of trait method 'count': argument 'a' has different array shapes
     --> tests/errors/continue_compilation_traits_01.f90:2271:5 - 2272:18
      |
@@ -576,7 +570,7 @@ semantic error: a type-set trait cannot be used as a runtime class
 2963 |     class(A + INumeric), pointer :: not_universal
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait components are not implemented yet
+semantic error: runtime trait components currently require scalar allocatable storage
     --> tests/errors/continue_compilation_traits_01.f90:2965:9
      |
 2965 |         class(A + B), pointer :: component
@@ -903,6 +897,74 @@ semantic error: initializer 'make' must return a nonpointer, nonallocatable scal
      |
 4327 |         initial :: make
      |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait components currently require scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:4349:9
+     |
+4349 |         class(IValue) :: item
+     |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait components currently require scalar allocatable storage
+    --> tests/errors/continue_compilation_traits_01.f90:4356:9
+     |
+4356 |         class(IValue), pointer :: item
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait arrays are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:4363:9
+     |
+4363 |         class(IValue), allocatable :: items(:)
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait component intent(out) cleanup with unchecked dynamic lifecycle effects is not allowed inside a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:4371:38
+     |
+4371 |         type(Holder), intent(out) :: object
+     |                                      ^^^^^^ 
+
+semantic error: runtime trait component cleanup with unchecked dynamic lifecycle effects is not allowed inside a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:4378:5 - 4380:18
+     |
+4378 |        pure subroutine local()
+     |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4380 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait component cleanup with unchecked dynamic lifecycle effects is not allowed inside a pure procedure
+    --> tests/errors/continue_compilation_traits_01.f90:4386:5 - 4388:16
+     |
+4386 |        pure function make() result(object)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4388 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: value dummies with runtime trait components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:4395:32
+     |
+4395 |         type(Holder), value :: x
+     |                                ^ 
+
+semantic error: a sequence derived type cannot have a runtime trait component
+    --> tests/errors/continue_compilation_traits_01.f90:4403:39
+     |
+4403 |         class(IValue), allocatable :: item
+     |                                       ^^^^ 
+
+semantic error: a bind(c) derived type cannot have a runtime trait component
+    --> tests/errors/continue_compilation_traits_01.f90:4410:39
+     |
+4410 |         class(IValue), allocatable :: item
+     |                                       ^^^^ 
+
+semantic error: runtime trait coarray components are not implemented yet
+    --> tests/errors/continue_compilation_traits_01.f90:4417:39
+     |
+4417 |         class(IValue), allocatable :: item[:]
+     |                                       ^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_01.f90:63:17

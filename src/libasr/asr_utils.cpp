@@ -2940,7 +2940,7 @@ bool is_finalizable_function_result(ASR::ttype_t* type,
             ASRUtils::is_class_type(type)) {
         return false;
     }
-    return struct_needs_finalization(struct_sym);
+    return struct_needs_finalization(struct_sym) || contains_trait_owner(type);
 }
 
 bool is_finalizable_function_reference(ASR::expr_t* expr) {
@@ -6217,6 +6217,13 @@ static ASR::expr_t *association_source(ASR::expr_t *value) {
 bool association_is_definable(ASR::expr_t *value) {
     if (!value) return false;
     if (auto *source = association_source(value)) return association_is_definable(source);
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+        auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
+        return is_pointer(expr_type(value)) || association_is_definable(member->m_v);
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+        return association_is_definable(ASR::down_cast<ASR::ArrayItem_t>(value)->m_v);
+    }
     if (auto *variable = association_variable(value)) {
         return variable->m_intent != ASR::intentType::In;
     }
@@ -6227,10 +6234,120 @@ bool association_is_definable(ASR::expr_t *value) {
         (variable->m_intent != ASR::intentType::In || is_pointer(variable->m_type));
 }
 
+ASR::Variable_t *trait_owner_variable(ASR::expr_t *value) {
+    if (!value || !is_trait_owner(typed_expr_type(value))) return nullptr;
+    ASR::symbol_t *symbol = nullptr;
+    if (ASR::is_a<ASR::Var_t>(*value)) {
+        symbol = ASR::down_cast<ASR::Var_t>(value)->m_v;
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+        auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(value);
+        auto *base = member->m_v;
+        while (base) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+                base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+                base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
+                base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base)->m_arg;
+            } else if (ASR::is_a<ASR::Cast_t>(*base) &&
+                    (ASR::down_cast<ASR::Cast_t>(base)->m_kind == ASR::cast_kindType::ClassToStruct ||
+                     ASR::down_cast<ASR::Cast_t>(base)->m_kind == ASR::cast_kindType::ClassToClass)) {
+                // A SELECT TYPE guard views the same polymorphic object.
+                base = ASR::down_cast<ASR::Cast_t>(base)->m_arg;
+            } else {
+                break;
+            }
+        }
+        if (!base || !ASR::is_a<ASR::Var_t>(*base)) return nullptr;
+        auto *root = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(base)->m_v));
+        if (!root || root->m_storage == ASR::storage_typeType::Parameter) return nullptr;
+        symbol = member->m_m;
+    }
+    return symbol ? get_variable_from_symbol(symbol_get_past_external(symbol)) : nullptr;
+}
+
+static bool contains_trait_owner_impl(const ASR::ttype_t *type,
+        std::set<const ASR::ttype_t*> &seen) {
+    if (!type || !seen.insert(type).second || ASR::is_a<ASR::Pointer_t>(*type)) return false;
+    if (is_trait_owner(type)) return true;
+    if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+        return contains_trait_owner_impl(ASR::down_cast<ASR::Allocatable_t>(type)->m_type, seen);
+    }
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        return contains_trait_owner_impl(ASR::down_cast<ASR::Array_t>(type)->m_type, seen);
+    }
+    if (ASR::is_a<ASR::StructType_t>(*type)) {
+        auto *structure = ASR::down_cast<ASR::StructType_t>(type);
+        for (size_t i = 0; i < structure->n_data_member_types; i++) {
+            if (contains_trait_owner_impl(structure->m_data_member_types[i], seen)) return true;
+        }
+    }
+    return false;
+}
+
+bool contains_trait_owner(const ASR::ttype_t *type) {
+    std::set<const ASR::ttype_t*> seen;
+    return contains_trait_owner_impl(type, seen);
+}
+
+bool has_trait_lifecycle_target(const ASR::ttype_t *type) {
+    if (type && ASR::is_a<ASR::Pointer_t>(*type)) {
+        type = ASR::down_cast<ASR::Pointer_t>(type)->m_type;
+    }
+    return contains_trait_owner(type);
+}
+
+bool has_trait_component_cleanup(const SymbolTable *scope) {
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+        auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
+        if (variable->m_intent == ASR::intentType::Local &&
+                variable->m_storage == ASR::storage_typeType::Default &&
+                !is_trait_owner(variable->m_type) && contains_trait_owner(variable->m_type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool trait_owner_is_definable(ASR::expr_t *value) {
+    auto *variable = trait_owner_variable(value);
+    if (!variable || variable->m_intent == ASR::intentType::In ||
+            variable->m_storage == ASR::storage_typeType::Parameter) return false;
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+        return association_is_definable(
+            ASR::down_cast<ASR::StructInstanceMember_t>(value)->m_v);
+    }
+    return true;
+}
+
+bool trait_owner_same_slot(ASR::expr_t *left, ASR::expr_t *right) {
+    if (!left || !right || left->type != right->type) return false;
+    if (ASR::is_a<ASR::Var_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::Var_t>(left)->m_v;
+        auto *b = ASR::down_cast<ASR::Var_t>(right)->m_v;
+        auto *resolved = symbol_get_past_external(a);
+        return resolved ? resolved == symbol_get_past_external(b) : a == b;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*left)) {
+        auto *a = ASR::down_cast<ASR::StructInstanceMember_t>(left);
+        auto *b = ASR::down_cast<ASR::StructInstanceMember_t>(right);
+        auto *resolved = symbol_get_past_external(a->m_m);
+        return (resolved ? resolved == symbol_get_past_external(b->m_m) : a->m_m == b->m_m) &&
+            trait_owner_same_slot(a->m_v, b->m_v);
+    }
+    return false;
+}
+
 bool association_has_target(ASR::expr_t *value) {
     if (!value) return false;
     if (auto *source = association_source(value)) return association_has_target(source);
     if (association_variable(value)) return is_valid_pointer_assignment_target(value);
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*value) ||
+            ASR::is_a<ASR::ArrayItem_t>(*value)) {
+        return is_valid_pointer_assignment_target(value);
+    }
     if (!ASR::is_a<ASR::Var_t>(*value)) return false;
     auto *variable = get_variable_from_symbol(symbol_get_past_external(
         ASR::down_cast<ASR::Var_t>(value)->m_v));

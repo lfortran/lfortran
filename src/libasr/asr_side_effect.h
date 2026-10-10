@@ -20,6 +20,9 @@ public:
     bool found = false;
     Location loc;
     std::string description;
+    // Report only unchecked dynamic trait lifecycle effects. Every procedure's
+    // effect metadata retains them, not only the bodies of PURE procedures.
+    bool lifecycle_only = false;
 
     void mark_found(const Location &l, const std::string &desc) {
         found = true;
@@ -29,6 +32,11 @@ public:
 
     template <typename Scope>
     void visit_executable_body(const Scope &scope) {
+        if (ASRUtils::has_trait_component_cleanup(scope.m_symtab)) {
+            mark_found(scope.base.base.loc,
+                "runtime trait component cleanup with unchecked dynamic lifecycle effects");
+            return;
+        }
         for (size_t i = 0; i < scope.n_body && !found; i++) {
             visit_stmt(*scope.m_body[i]);
         }
@@ -47,42 +55,42 @@ public:
     }
 
     void visit_Print(const Print_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "PRINT statement");
     }
 
     void visit_FileOpen(const FileOpen_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "OPEN statement");
     }
 
     void visit_FileClose(const FileClose_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "CLOSE statement");
     }
 
     void visit_FileBackspace(const FileBackspace_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "BACKSPACE statement");
     }
 
     void visit_FileRewind(const FileRewind_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "REWIND statement");
     }
 
     void visit_FileEndfile(const FileEndfile_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "ENDFILE statement");
     }
 
     void visit_FileInquire(const FileInquire_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "INQUIRE statement");
     }
 
     void visit_Flush(const Flush_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         mark_found(x.base.base.loc, "FLUSH statement");
     }
 
@@ -103,6 +111,7 @@ public:
                 "runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects");
             return true;
         }
+        if (lifecycle_only) return false;
         std::string proc_name;
         if (is_a<Function_t>(*sym)) {
             if (down_cast<Function_t>(sym)->m_side_effect_free) {
@@ -132,7 +141,7 @@ public:
     }
 
     void visit_IntrinsicImpureSubroutine(const IntrinsicImpureSubroutine_t &x) {
-        if (found) return;
+        if (found || lifecycle_only) return;
         if (is_side_effect_free_intrinsic_impure_subroutine(x.m_sub_intrinsic_id)) {
             return;
         }
@@ -141,7 +150,7 @@ public:
 
     void visit_FunctionCall(const FunctionCall_t &x) {
         if (found) return;
-        if (ASRUtils::is_trait_owner(x.m_type)) {
+        if (ASRUtils::contains_trait_owner(x.m_type)) {
             mark_found(x.base.base.loc,
                 "runtime trait result cleanup with unchecked dynamic lifecycle effects");
             return;
@@ -189,10 +198,21 @@ public:
             "retained runtime trait results with unchecked dynamic lifecycle effects");
     }
 
+    void visit_Assignment(const Assignment_t &x) {
+        if (found) return;
+        if (!x.m_overloaded &&
+                ASRUtils::has_trait_lifecycle_target(ASRUtils::expr_type(x.m_target))) {
+            mark_found(x.base.base.loc,
+                "runtime trait component assignment with unchecked dynamic lifecycle effects");
+            return;
+        }
+        BaseWalkVisitor::visit_Assignment(x);
+    }
+
     void check_trait_deallocation(const Location &location,
             expr_t **vars, size_t n_vars) {
         for (size_t i = 0; i < n_vars && !found; i++) {
-            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(vars[i]))) {
+            if (ASRUtils::has_trait_lifecycle_target(ASRUtils::expr_type(vars[i]))) {
                 mark_found(location,
                     "runtime trait deallocation with unchecked dynamic lifecycle effects");
             }
@@ -209,6 +229,24 @@ public:
         if (!found) BaseWalkVisitor::visit_ImplicitDeallocate(x);
     }
 };
+
+// Whether `body` performs an operation with unchecked dynamic trait lifecycle
+// effects, so that its procedure is neither side-effect free nor deterministic.
+inline bool has_trait_lifecycle_effects(stmt_t **body, size_t n_body) {
+    SideEffectFinder finder;
+    finder.lifecycle_only = true;
+    for (size_t i = 0; i < n_body && !finder.found; i++) {
+        finder.visit_stmt(*body[i]);
+    }
+    return finder.found;
+}
+
+// Whether `function` has such effects, including intent(out) and local cleanup.
+inline bool has_trait_lifecycle_effects(const Function_t &function) {
+    return ASRUtils::has_trait_out_cleanup(function) ||
+        ASRUtils::has_trait_component_cleanup(function.m_symtab) ||
+        has_trait_lifecycle_effects(function.m_body, function.n_body);
+}
 
 } // namespace ASR
 

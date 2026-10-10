@@ -806,7 +806,7 @@ diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
-Trait arrays, pointer results, components, general ASSOCIATE
+Trait arrays, pointer results, general ASSOCIATE
 views, `move_alloc`, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
@@ -885,6 +885,83 @@ Both runtime selection orders observe 17 and 29, and the archive hash is checked
 after client compilation, linking and execution. Normal/fast native CTests and
 their complete source-archive fixture closure are registered.
 
+## Scalar allocatable trait components
+
+Ordinary derived types can contain scalar owning trait components:
+
+```fortran
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+```
+
+Components start unallocated and support assignment, typed/SOURCE/MOLD
+allocation, `allocated`, explicit deallocation, allocation-slot dummy arguments,
+typed NULL molds and concrete SELECT TYPE inspection. Nested member calls such
+as `object%item%value()` borrow the selected payload without changing its witness.
+Readonly containing objects cannot define or deallocate their owner components.
+Pointer components and arrays of trait objects remain outside this slice;
+an array of an ordinary containing derived type is different and is supported.
+Structure constructors may omit an owner component or give it `null()`, but a
+component value, VALUE dummies of containing types and coarray components are
+not implemented yet. SEQUENCE, BIND(C) and union types cannot own trait
+components because they have no fixed storage layout for them.
+
+Containing-object assignment snapshots its source before replacing allocatable
+components. It gives each replacement fresh storage and preserves the source's
+selected methods. Component-defined assignment sees the newly initialized
+destination, not the previously allocated payload. Self-assignment preserves
+values while still performing the required cleanup. Destruction recurses through
+nested and inherited components, including INTENT(OUT), constructor-result
+lifetimes, ordinary scope exit and storage-only program teardown.
+
+When finalizing the variable can run a final subroutine, the whole value of
+expr is first copied into storage that the variable's finalization cannot
+reach (F2023 7.5.6.3 finalizes the variable after expr is evaluated). That
+copy is defined without defined assignment and released without finalization,
+so a final subroutine that changes or deallocates its own components cannot
+change the value being assigned, as in `x = x`. Function results owning trait
+components are released after the statement that references them, as F2023
+9.7.3.2 requires for allocated components of function results.
+
+The lifecycle rules follow Fortran 2023 10.2.1.3 and 7.5.6.2-3. In particular,
+containing-object self-assignment deallocates/recreates an allocated component
+and finalizes its old payload. Fortran 2018's wording differed for finalization
+of such subobjects. Some GFortran configurations also omit finalization during
+direct polymorphic dynamic-type replacement; those observations are retained as
+reference limitations rather than weakened trait expectations.
+
+Owned-component assignment, results and cleanup have unchecked dynamic
+lifecycle effects, just like standalone owners. PURE procedures cannot perform
+those operations or own local component storage without an effect guarantee.
+Assigning to or deallocating through a pointer to a containing object counts,
+because it defines or destroys the target's owned components; pointer
+association does not. Every procedure whose body performs such an operation is
+neither side-effect free nor deterministic, so a PURE caller rejects it, and
+the verifier checks that this metadata is kept. A defined assignment is judged
+by its procedure instead. Readonly PURE observation remains supported when the
+contract's message is PURE.
+
+A containing type can be a generic or template argument, adopt another trait
+and be inspected by SELECT TYPE. An instantiation recomputes these effects
+from its own locals and body; instantiating a PURE generic procedure with such
+a type is diagnosed. Types built in scopes that cannot see a component's
+contract, such as a structure constructor, an array constructor type-spec, a
+SELECT TYPE guard or an adoption in a client module, import that contract.
+
+`traits_runtime_component_01` through `_09` cover scalar/nested lifecycles,
+fresh defined assignment, constructors, imported private contracts, renamed
+separate modules, array-element owners, single receiver evaluation and generic
+methods. `_10` checks finalization during containing-object assignment, `_11`
+fresh destinations, function results and structure constructors, and `_12` the
+effects of holder copies through ordinary and pointer dummies. `_13` and `_14`
+cover generic and template instantiation, adoption and SELECT TYPE views, the
+latter from scopes that cannot see the component's contract.
+`traits_runtime_component_03_oracle` supplies a standard Fortran counterpart
+for the interface/copying operations without relying on reference-compiler
+finalization omissions. `continue_compilation_traits_02` collects the readonly,
+PURE, constructor, `move_alloc` and PURE instantiation diagnostics.
+
 ## Persistent scalar pointer views (R3)
 
 Rank and corank eligibility is checked before pointer/owner initialization.
@@ -943,7 +1020,7 @@ LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
 contract-only consumer before its providers, then checks forwarding against a
 frozen provider archive in normal and fast modes.
 Pointer results, allocation/deallocation through
-trait pointers and arrays/components remain
+trait pointers, pointer components and arrays of trait objects remain
 subsequent work.
 
 ## Named parent projections (R3)
@@ -1129,7 +1206,7 @@ before any matching/default decision, even when the construct has no default.
 
 A trait name in TYPE IS or CLASS IS is diagnosed: inspection is not an
 unrelated-interface conformance query. Intrinsic guards, runtime trait arrays,
-components, pointer results, unrestricted generic methods, and mutation-message syntax are
+pointer components, pointer results, unrestricted generic methods, and mutation-message syntax are
 not added by this scalar slice. Parameterized implementation declarations remain
 part of the separate generic-derived-type work; inspection reuses the existing
 concrete kind-specialized metadata rather than introducing another type system.

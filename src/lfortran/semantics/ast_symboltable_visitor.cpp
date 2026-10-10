@@ -926,8 +926,47 @@ public:
         }
     }
 
+    // Owning trait components have no BIND(C), sequence or union storage
+    // layout, and coarray components are outside the scalar owning slice.
+    void check_runtime_trait_components(SymbolTable *scope, char **members,
+            size_t n_members, bool bindc, bool sequence, bool union_storage,
+            SymbolTable *parent_scope) {
+        for (size_t i = 0; i < n_members; i++) {
+            ASR::symbol_t *member = scope->get_symbol(members[i]);
+            if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(member);
+            if (!ASRUtils::is_trait_owner(variable->m_type)) continue;
+            std::string message;
+            if (union_storage) {
+                message = "a union cannot have a runtime trait component";
+            } else if (bindc) {
+                message = "a bind(c) derived type cannot have a runtime trait component";
+            } else if (sequence) {
+                message = "a sequence derived type cannot have a runtime trait component";
+            } else if (variable->n_codims) {
+                message = "runtime trait coarray components are not implemented yet";
+            }
+            if (!message.empty()) {
+                diag.semantic_error_label(message, {variable->base.base.loc}, "");
+                current_scope = parent_scope;
+                is_derived_type = false;
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void check_runtime_trait_dummies(ASR::Function_t &function) {
         bool invalid = false;
+        if (ASRUtils::get_FunctionType(function)->m_pure &&
+                (ASRUtils::has_trait_component_cleanup(function.m_symtab) ||
+                 (function.m_return_var &&
+                  !ASRUtils::is_trait_owner(ASRUtils::expr_type(function.m_return_var)) &&
+                  ASRUtils::contains_trait_owner(ASRUtils::expr_type(function.m_return_var))))) {
+            diag.semantic_error_label("runtime trait component cleanup with unchecked dynamic "
+                "lifecycle effects is not allowed inside a pure procedure",
+                {function.base.base.loc}, "");
+            invalid = true;
+        }
         if (function.m_return_var && ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(function.m_return_var)))) {
             auto *result = ASRUtils::EXPR2VAR(function.m_return_var);
@@ -958,6 +997,21 @@ public:
                 ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
             if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
             auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
+            if (dummy->m_intent == ASR::intentType::Out &&
+                    ASRUtils::contains_trait_owner(dummy->m_type) &&
+                    !ASRUtils::is_trait_owner(dummy->m_type) &&
+                    ASRUtils::get_FunctionType(function)->m_pure) {
+                diag.semantic_error_label("runtime trait component intent(out) cleanup with "
+                    "unchecked dynamic lifecycle effects is not allowed inside a pure procedure",
+                    {dummy->base.base.loc}, "");
+                invalid = true;
+            }
+            if (dummy->m_value_attr && ASRUtils::contains_trait_owner(dummy->m_type) &&
+                    !ASRUtils::is_trait_owner(dummy->m_type)) {
+                diag.semantic_error_label("value dummies with runtime trait components "
+                    "are not implemented yet", {dummy->base.base.loc}, "");
+                invalid = true;
+            }
             if (!ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(dummy->m_type))) continue;
             std::string message;
@@ -997,7 +1051,8 @@ public:
                 invalid = true;
             }
         }
-        if (ASRUtils::has_trait_out_cleanup(function)) {
+        if (ASRUtils::has_trait_out_cleanup(function) ||
+                ASRUtils::has_trait_component_cleanup(function.m_symtab)) {
             function.m_side_effect_free = false;
             function.m_deterministic = false;
         }
@@ -3921,6 +3976,8 @@ public:
             struct_->n_member_functions = final_proc_names.size();
             ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
             struct_->m_struct_signature = struct_signature;
+            check_runtime_trait_components(current_scope, struct_->m_members,
+                struct_->n_members, is_bindc, is_sequence, false, parent_scope_pdt);
 
             current_scope = parent_scope_pdt;
             return;
@@ -4009,6 +4066,8 @@ public:
         if (obligations.size()) {
             pending_type_adoptions[parent_scope].push_back(struct_);
         }
+        check_runtime_trait_components(current_scope, data_member_names.p,
+            data_member_names.size(), is_bindc, is_sequence, false, parent_scope);
 
         // Fortran requires CHARACTER components of BIND(C) types to have
         // length 1 (F2023 18.3.1 / C1806). Accepting len>1 is an extension
@@ -4122,6 +4181,8 @@ public:
                 throw;
             }
         }
+        check_runtime_trait_components(current_scope, data_member_names.p,
+            data_member_names.size(), false, false, true, parent_scope);
 
         std::string sym_name = to_lower(x.m_name);
         if (current_scope->get_symbol(sym_name) != nullptr) {
@@ -5206,7 +5267,8 @@ public:
                     : ASRUtils::get_type_code(type)) + "_" + trait->m_name);
             ASR::symbol_t *implementation = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_TraitImplementation_t(al, loc, current_scope,
-                    s2c(al, name), type, type_symbol,
+                    s2c(al, name), ASRUtils::import_trait_type(al, type, current_scope),
+                    type_symbol,
                     make_operator_proc_visible(traits[i], "trait", current_scope),
                     bindings.p, bindings.size(),
                     ASR::accessType::Public));

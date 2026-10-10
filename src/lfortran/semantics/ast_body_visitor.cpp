@@ -273,6 +273,18 @@ public:
         current_function_side_effect_free = false;
     }
 
+    // Dynamic trait lifecycle operations anywhere in the body, including its
+    // BLOCK constructs, keep the procedure from being side-effect free or
+    // deterministic for its callers and their PURE checks.
+    void finish_function_effects(ASR::Function_t &function) {
+        if (ASR::has_trait_lifecycle_effects(function.m_body, function.n_body)) {
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+        }
+        function.m_deterministic = current_function_deterministic;
+        function.m_side_effect_free = current_function_side_effect_free;
+    }
+
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
             visit_DeclarationUtil(x);
@@ -4021,13 +4033,13 @@ public:
                     "errmsg or other options is not implemented yet", x.base.base.loc);
             }
             auto &arg = alloc_args_vec[0];
-            if (!ASR::is_a<ASR::Var_t>(*arg.m_a) ||
+            if (!ASRUtils::trait_owner_variable(arg.m_a) ||
                     !ASRUtils::is_allocatable(ASRUtils::expr_type(arg.m_a)) ||
                     arg.n_dims || arg.n_codims) {
                 trait_call_error("runtime trait allocation requires a scalar allocatable owner",
                     arg.loc);
             }
-            if (ASRUtils::EXPR2VAR(arg.m_a)->m_intent == ASR::intentType::In) {
+            if (!ASRUtils::trait_owner_is_definable(arg.m_a)) {
                 trait_call_error("cannot allocate an intent(in) runtime trait slot", arg.loc);
             }
             if ((source && mold) || (arg.m_type && (source || mold))) {
@@ -4551,7 +4563,7 @@ public:
     void visit_Deallocate(const AST::Deallocate_t& x) {
         Vec<ASR::expr_t*> arg_vec;
         arg_vec.reserve(al, x.n_args);
-        std::set<ASR::symbol_t*> trait_owners;
+        std::vector<ASR::expr_t*> trait_owners;
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
@@ -4565,17 +4577,26 @@ public:
                 trait_call_error("runtime trait deallocation with stat, errmsg or other "
                     "options is not implemented yet", x.base.base.loc);
             }
+            if (ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr))) {
+                for (auto *previous : trait_owners) {
+                    if (ASRUtils::trait_owner_same_slot(previous, tmp_expr)) {
+                        trait_call_error("an owner cannot appear twice in one deallocation",
+                            tmp_expr->base.loc);
+                    }
+                }
+                trait_owners.push_back(tmp_expr);
+            }
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
-                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr)) &&
-                        !trait_owners.insert(ASRUtils::symbol_get_past_external(tmp_sym)).second) {
-                    trait_call_error("an owner cannot appear twice in one deallocation",
-                        tmp_expr->base.loc);
-                }
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
             } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
                 const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr)) &&
+                        !ASRUtils::trait_owner_is_definable(tmp_expr)) {
+                    trait_call_error("cannot deallocate a nondefinable runtime trait component",
+                        tmp_expr->base.loc);
+                }
                 ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
                 check_for_deallocation(tmp_member, tmp_expr->base.loc);
             } else {
@@ -4887,12 +4908,14 @@ public:
 
     void visit_data_select_type(const AST::SelectType_t &x, ASR::expr_t *selector) {
         if (!ASR::is_a<ASR::Var_t>(*selector) &&
+                !ASRUtils::trait_owner_variable(selector) &&
                 !(ASR::is_a<ASR::FunctionCall_t>(*selector) &&
                   ASRUtils::is_trait_owner(ASRUtils::expr_type(selector)))) {
             trait_call_error("runtime trait inspection requires a scalar variable "
                 "or an owning function result", selector->base.loc);
         }
-        if (!x.m_assoc_name && !AST::is_a<AST::Name_t>(*x.m_selector)) {
+        if (!x.m_assoc_name && (!AST::is_a<AST::Name_t>(*x.m_selector) ||
+                !ASR::is_a<ASR::Var_t>(*selector))) {
             trait_call_error("an associate name is required for this select type selector",
                 selector->base.loc);
         }
@@ -5343,7 +5366,8 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
+                        assoc_variable->m_type = ASRUtils::import_trait_type(al, selector_type,
+                            assoc_variable->m_parent_symtab);
                         // The associate name lives in the type guard's own
                         // block, which the selector's type need not enclose.
                         assoc_variable->m_type_declaration =
@@ -5427,7 +5451,8 @@ public:
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, nullptr, nullptr, ASRUtils::symbol_name(sym_underlying));
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
-                        assoc_variable->m_type = selector_type;
+                        assoc_variable->m_type = ASRUtils::import_trait_type(al, selector_type,
+                            assoc_variable->m_parent_symtab);
                         assoc_variable->m_type_declaration = selector_m_type_declaration;
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
@@ -5529,7 +5554,8 @@ public:
                                 nullptr, nullptr, ASRUtils::symbol_name(struct_sym));
                             assoc_variable->m_dependencies = assoc_deps.p;
                             assoc_variable->n_dependencies = assoc_deps.size();
-                            assoc_variable->m_type = stype;
+                            assoc_variable->m_type = ASRUtils::import_trait_type(al, stype,
+                                assoc_variable->m_parent_symtab);
                             assoc_variable->m_type_declaration = sym;
                         }
                         Vec<ASR::stmt_t*> type_stmt_name_body;
@@ -6716,7 +6742,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_deterministic = !(ASRUtils::has_trait_out_cleanup(*v) ||
+            ASRUtils::has_trait_component_cleanup(v->m_symtab));
         current_function_side_effect_free = current_function_deterministic;
         transform_stmts(body, x.n_items, x.m_items);
         handle_format();
@@ -6730,8 +6757,7 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
-        v->m_deterministic = current_function_deterministic;
-        v->m_side_effect_free = current_function_side_effect_free;
+        finish_function_effects(*v);
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
                 compiler_options.continue_compilation, implicit_call_procedures);
@@ -6824,7 +6850,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_deterministic = !(ASRUtils::has_trait_out_cleanup(*v) ||
+            ASRUtils::has_trait_component_cleanup(v->m_symtab));
         current_function_side_effect_free = current_function_deterministic;
         body.reserve(al, x.n_items);
         auto& scope_data_func = data_structure[current_scope->counter];
@@ -6846,8 +6873,7 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
-        v->m_deterministic = current_function_deterministic;
-        v->m_side_effect_free = current_function_side_effect_free;
+        finish_function_effects(*v);
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
                 compiler_options.continue_compilation, implicit_call_procedures);
@@ -6933,7 +6959,8 @@ public:
         current_function_dependencies.clear(al);
         bool old_deterministic = current_function_deterministic;
         bool old_side_effect_free = current_function_side_effect_free;
-        current_function_deterministic = !ASRUtils::has_trait_out_cleanup(*v);
+        current_function_deterministic = !(ASRUtils::has_trait_out_cleanup(*v) ||
+            ASRUtils::has_trait_component_cleanup(v->m_symtab));
         current_function_side_effect_free = current_function_deterministic;
         transform_stmts(body, x.n_items, x.m_items);
         handle_format();
@@ -6947,8 +6974,7 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
-        v->m_deterministic = current_function_deterministic;
-        v->m_side_effect_free = current_function_side_effect_free;
+        finish_function_effects(*v);
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
                 compiler_options.continue_compilation, implicit_call_procedures);
@@ -7631,8 +7657,12 @@ public:
         if (ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(target)))) {
             if (!ASRUtils::is_allocatable(ASRUtils::expr_type(target)) ||
-                    !ASR::is_a<ASR::Var_t>(*target)) {
+                    !ASRUtils::trait_owner_variable(target)) {
                 trait_call_error("runtime trait assignment requires an allocatable owner",
+                    target->base.loc);
+            }
+            if (!ASRUtils::trait_owner_is_definable(target)) {
+                trait_call_error("cannot assign to a nondefinable runtime trait component",
                     target->base.loc);
             }
             auto *witness = prepare_runtime_trait_value(value, ASRUtils::expr_type(target));
@@ -8814,6 +8844,19 @@ public:
                 return;
             }
         }
+        ASR::expr_t *prepared_receiver = nullptr;
+        if (x.n_member > 1 && x.n_temp_args > 0) {
+            visit_NameUtil(x.m_member, x.n_member - 1,
+                x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
+            prepared_receiver = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(prepared_receiver))) &&
+                    handle_trait_call(sub_name, x.m_member, x.n_member,
+                        x.m_args, x.n_args, x.m_keywords, x.n_keywords,
+                        x.m_temp_args, x.n_temp_args, false, x.base.base.loc, prepared_receiver)) {
+                return;
+            }
+        }
         if (x.n_temp_args > 0) {
             sub_name = handle_templated(x.m_name,
                 ASRUtils::is_owned_by_template(current_scope),
@@ -8840,9 +8883,20 @@ public:
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
-            visit_NameUtil(x.m_member, x.n_member - 1,
-                x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
+            if (prepared_receiver) {
+                tmp = &prepared_receiver->base;
+            } else {
+                visit_NameUtil(x.m_member, x.n_member - 1,
+                    x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
+            }
             v_expr = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::TraitObjectType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(v_expr))) &&
+                    handle_trait_call(sub_name, x.m_member, x.n_member,
+                        x.m_args, x.n_args, x.m_keywords, x.n_keywords,
+                        x.m_temp_args, x.n_temp_args, false, x.base.base.loc, v_expr)) {
+                return;
+            }
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);

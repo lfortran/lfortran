@@ -28235,7 +28235,7 @@ public:
     llvm::Value *trait_owner_slot(ASR::expr_t *owner) {
         int64_t saved_loads = ptr_loads;
         ptr_loads = 0;
-        visit_expr_wrapper(owner, true);
+        visit_expr_wrapper(owner);
         ptr_loads = saved_loads;
         if (ASRUtils::is_trait_pointer(ASRUtils::expr_type(owner)) &&
                 ASR::is_a<ASR::PointerNullConstant_t>(*owner)) {

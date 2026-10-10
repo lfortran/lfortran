@@ -1,0 +1,89 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/continue_compilation_traits_02.f90:2:5 - 5:18
+  |
+2 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+5 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: this instantiation adds runtime trait component lifecycle effects, which are not allowed inside a pure procedure
+   --> tests/errors/continue_compilation_traits_02.f90:137:9 - 143:22
+    |
+137 |            pure subroutine exchange(x, y)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+143 |            end subroutine
+    | ...^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot deallocate a nondefinable runtime trait component
+  --> tests/errors/continue_compilation_traits_02.f90:31:20
+   |
+31 |         deallocate(object%item)
+   |                    ^^^^^^^^^^^ 
+
+semantic error: cannot assign to a nondefinable runtime trait component
+  --> tests/errors/continue_compilation_traits_02.f90:36:9
+   |
+36 |         object%item = source
+   |         ^^^^^^^^^^^ 
+
+semantic error: a defining runtime trait dummy requires a definable allocatable actual
+  --> tests/errors/continue_compilation_traits_02.f90:40:22
+   |
+40 |         call replace(object%item)
+   |                      ^^^^^^^^^^^ 
+
+semantic error: runtime trait component assignment with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+  --> tests/errors/continue_compilation_traits_02.f90:50:9
+   |
+50 |         x = y
+   |         ^^^^^ 
+
+semantic error: runtime trait deallocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+  --> tests/errors/continue_compilation_traits_02.f90:54:9
+   |
+54 |         deallocate(x)
+   |         ^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
+  --> tests/errors/continue_compilation_traits_02.f90:73:9
+   |
+73 |         call overwrite(x, y)
+   |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'dispose' is not allowed inside a PURE procedure
+  --> tests/errors/continue_compilation_traits_02.f90:77:9
+   |
+77 |         call dispose(x)
+   |         ^^^^^^^^^^^^^^^ 
+
+semantic error: a runtime trait component value in a structure constructor is not implemented yet
+  --> tests/errors/continue_compilation_traits_02.f90:87:20
+   |
+87 |         x = Holder(s)
+   |                    ^ 
+
+semantic error: move_alloc for runtime trait owners is not implemented yet
+  --> tests/errors/continue_compilation_traits_02.f90:96:9
+   |
+96 |         call move_alloc(x%item, y%item)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: this instantiation adds runtime trait component lifecycle effects, which are not allowed inside a pure procedure
+   --> tests/errors/continue_compilation_traits_02.f90:114:5 - 120:18
+    |
+114 |        pure subroutine swap{ITagged :: T}(x, y)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+120 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'exchange_holder' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_traits_02.f90:149:9
+    |
+149 |         call exchange_holder(a, b)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
