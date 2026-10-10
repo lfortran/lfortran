@@ -475,6 +475,21 @@ class WorkflowPolicyTests(unittest.TestCase):
         for clean in cleans:
             self.assertIn("-e .ccache", clean)
 
+    def test_every_job_has_a_timeout(self):
+        # Without timeout-minutes, a hung job holds a runner for GitHub's
+        # 6-hour default. Jobs calling a reusable workflow cannot set it;
+        # the called workflow's jobs do.
+        for path in (ROOT / ".github/workflows").glob("*.yml"):
+            jobs = path.read_text().split("\njobs:\n", 1)[1]
+            blocks = re.split(r"(?m)^  ([\w-]+):\n", jobs)
+            for index in range(1, len(blocks), 2):
+                name, body = blocks[index:index + 2]
+                with self.subTest(workflow=path.name, job=name):
+                    if re.search(r"(?m)^    uses: ", body):
+                        self.assertNotIn("\n    timeout-minutes:", body)
+                    else:
+                        self.assertRegex(body, r"(?m)^    timeout-minutes: \S")
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
