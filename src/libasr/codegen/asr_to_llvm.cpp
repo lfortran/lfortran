@@ -669,6 +669,11 @@ public:
     // that declare; the decision is this set, not LLVM type inequality.
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
+    // The incoming pointer of each optional dummy of a bind(c) procedure
+    // that is passed by reference, which is null when the argument is
+    // absent. llvm_symtab may hold a local copy instead (e.g. an array
+    // descriptor), so present() has to look at this pointer.
+    std::map<uint64_t, llvm::Value*> llvm_symtab_bindc_optional_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     // The BLOCK and ASSOCIATE constructs that contain each labeled statement
     // of the procedure being generated (see GoToTargetScopes).
@@ -4640,6 +4645,14 @@ public:
                 ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(
                     ASR::down_cast<ASR::Var_t>(arg_expr)->m_v);
                 uint32_t h = get_hash((ASR::asr_t*) arg_var);
+                if (llvm_symtab_bindc_optional_arg.find(h) !=
+                        llvm_symtab_bindc_optional_arg.end()) {
+                    llvm::Value* arg_ptr = llvm_symtab_bindc_optional_arg[h];
+                    tmp = builder->CreateICmpNE(arg_ptr,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(arg_ptr->getType())));
+                    break;
+                }
                 llvm::Value* arg_ptr = llvm_symtab[h];
                 llvm::Type* ptr_type = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
                 llvm::Value* loaded = llvm_utils->CreateLoad2(ptr_type, arg_ptr);
@@ -9711,6 +9724,12 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
+                    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+                        arg->m_presence == ASR::presenceType::Optional &&
+                        !arg->m_value_attr && !LLVM::is_cptr_dummy_held_by_value(*arg) &&
+                        llvm_arg.getType()->isPointerTy()) {
+                        llvm_symtab_bindc_optional_arg[h] = &llvm_arg;
+                    }
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
