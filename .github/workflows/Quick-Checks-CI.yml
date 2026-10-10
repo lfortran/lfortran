@@ -534,30 +534,3 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
-
-  quick_status:
-    # Keep the existing protection until every Quick job is required directly.
-    name: Build LFortran to WASM and Upload
-    needs: [Build, compatibility, test_llvm_wasm, test_without_llvm, test_mlir, build_to_wasm_and_upload]
-    if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Require all Quick checks
-        env:
-          BUILD_RESULT: ${{ needs.Build.result }}
-          WASM_RESULT: ${{ needs.build_to_wasm_and_upload.result }}
-          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
-          LLVM_WASM_RESULT: ${{ needs.test_llvm_wasm.result }}
-          NO_LLVM_RESULT: ${{ needs.test_without_llvm.result }}
-          MLIR_RESULT: ${{ needs.test_mlir.result }}
-        run: |
-          if [ "$BUILD_RESULT" != success ] || \
-             [ "$COMPATIBILITY_RESULT" != success ] || \
-             [ "$LLVM_WASM_RESULT" != success ] || \
-             [ "$NO_LLVM_RESULT" != success ] || \
-             [ "$MLIR_RESULT" != success ] || \
-             [ "$WASM_RESULT" != success ]; then
-            echo "::error::Not all Quick checks passed"
-            exit 1
-          fi

@@ -177,21 +177,20 @@ only once, redirect to a log file and then examine the log file.
   `main` are each coalesced: at most one run is in progress and one is
   pending. A running main run is never cancelled; a newer push replaces the
   pending run, so the latest `main` is always tested but intermediate commits
-  may be skipped. To locate a regression, dispatch the workflow manually on
-  the skipped commits. Release-tag workflows keep compiler and packaging checks without
+  may be skipped. To test a skipped commit, re-run its cancelled run
+  (`gh run rerun <run-id>`); `workflow_dispatch` accepts only a branch or tag. Release-tag workflows keep compiler and packaging checks without
   repeating the application catalog.
 - Release only a main commit whose own Quick and Exhaustive runs, including
-  applications, are green (dispatch them if they were skipped). Quick or extended
+  applications, are green (re-run them if they were skipped). Quick or extended
   PR checks alone do not qualify a release.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
-- The status-only aggregate may be disabled only after all Quick jobs are
-  required directly in branch protection: retain all four platform contexts
-  and add the seven compatibility/backend contexts. Follow the documented
-  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout and rollback; a conditionally
-  skipped aggregate does not block merging and no longer protects its
-  dependencies. Do not weaken protection to remove a queue.
+- The `main` ruleset requires all eleven Quick jobs directly (listed in
+  `doc/src/installation.md`); there is no aggregate status job. Keep their
+  job names stable, and update the ruleset in the same rollout when a
+  required Quick job is renamed or added. Do not gate required jobs on
+  repository variables: `vars` is not passed to PRs from forks.
 
 See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
 and the distinction between capability tests and application validation.

@@ -129,34 +129,14 @@ class SmokeSelectionTests(unittest.TestCase):
 
 
 class RunnerTests(unittest.TestCase):
-    def test_protected_status_requires_every_quick_job_on_every_event(self):
+    def test_quick_has_no_status_aggregate(self):
+        # Branch protection requires every Quick job directly. Repository
+        # variables are not passed to PRs from forks, so a vars-gated
+        # aggregate cannot be switched off for PRs.
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
-        status = source.split("\n  quick_status:\n", 1)[1]
-        self.assertIn(
-            "needs: [Build, compatibility, test_llvm_wasm, test_without_llvm, "
-            "test_mlir, build_to_wasm_and_upload]\n", status,
-        )
-        self.assertIn("if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}", status)
-        script = status.split("        run: |\n", 1)[1]
-        names = (
-            "BUILD_RESULT", "COMPATIBILITY_RESULT", "LLVM_WASM_RESULT",
-            "NO_LLVM_RESULT", "MLIR_RESULT", "WASM_RESULT",
-        )
-        cases = [(None, "success")] + [
-            (name, result) for name in names
-            for result in ("failure", "skipped", "cancelled", "")
-        ]
-        for event in ("pull_request", "push", "workflow_dispatch"):
-            for failed_job, conclusion in cases:
-                with self.subTest(event=event, job=failed_job, conclusion=conclusion):
-                    results = dict.fromkeys(names, "success")
-                    if failed_job:
-                        results[failed_job] = conclusion
-                    env = dict(os.environ, GITHUB_EVENT_NAME=event, EVENT_NAME=event, **results)
-                    result = subprocess.run(["bash"], input=script, env=env,
-                                            capture_output=True, text=True)
-                    self.assertEqual(result.returncode == 0, failed_job is None,
-                                     result.stdout + result.stderr)
+        self.assertNotIn("quick_status", source)
+        self.assertNotIn("name: Build LFortran to WASM and Upload", source)
+        self.assertNotIn("vars.", source)
 
     def test_smoke_flag_reaches_cmake_before_build_and_ctest(self):
         spec = importlib.util.spec_from_file_location(
@@ -346,14 +326,10 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("if: matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'", options)
         self.assertIn("bash ci/test_llvm_integration.sh --options", options)
 
-    def test_direct_check_rollout_keeps_distinct_stable_names(self):
+    def test_required_checks_have_stable_names(self):
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
-        wasm = source.split("\n  build_to_wasm_and_upload:\n", 1)[1].split("\n  quick_status:", 1)[0]
-        gate = source.split("\n  quick_status:\n", 1)[1]
+        wasm = source.split("\n  build_to_wasm_and_upload:\n", 1)[1]
         self.assertIn("name: Build LFortran to WASM\n", wasm)
-        self.assertIn("name: Build LFortran to WASM and Upload\n", gate)
-        self.assertNotIn("vars.", wasm)
-        self.assertIn("!cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true'", gate)
         platform = source.split("\n  Build:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
         self.assertIn("name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})", platform)
         platforms = re.findall(r'- os: ([\w-]+)\n\s+llvm-version: "(\d+)"', platform)
