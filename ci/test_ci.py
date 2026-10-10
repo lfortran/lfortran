@@ -146,7 +146,7 @@ class RunnerTests(unittest.TestCase):
             (name, result) for name in names
             for result in ("failure", "skipped", "cancelled", "")
         ]
-        for event in ("pull_request", "merge_group", "push", "workflow_dispatch"):
+        for event in ("pull_request", "push", "workflow_dispatch"):
             for failed_job, conclusion in cases:
                 with self.subTest(event=event, job=failed_job, conclusion=conclusion):
                     results = dict.fromkeys(names, "success")
@@ -251,7 +251,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         workflows = ROOT / ".github/workflows"
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
-        self.assertIn("group: quick-${{ github.event.number || github.sha }}", quick)
+        self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", quick)
         self.assertIn("  workflow_dispatch:\n", quick)
         self.assertNotIn("inputs.full", quick)
         self.assertNotIn("LFORTRAN_CI_RELEASE", quick)
@@ -269,24 +269,6 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertNotIn("Quick-Checks-CI.yml", extra)
         self.assertIn("name: Extended compiler checks", extra)
         self.assertNotIn("name: Compiler compatibility\n", extra)
-
-    def test_quick_reports_on_merge_queue_without_saving_caches(self):
-        workflows = ROOT / ".github/workflows"
-        quick = (workflows / "Quick-Checks-CI.yml").read_text()
-        triggers = quick.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
-        self.assertIn("\n  merge_group:\n", triggers)
-        # Exhaustive is optional and runs on the resulting main push.
-        extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
-        self.assertNotIn("merge_group:", extra)
-        # Queue refs are ephemeral; caches saved there can never be restored.
-        save = "save: ${{ github.event_name != 'merge_group' }}"
-        for path in (workflows / "Quick-Checks-CI.yml",
-                     workflows / "Compiler-Compatibility-CI.yml",
-                     ROOT / ".github/actions/build-platform/action.yml"):
-            steps = path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]
-            self.assertTrue(steps, path)
-            for step in steps:
-                self.assertIn(save, step.split("\n\n", 1)[0], path)
 
     def test_coverage_matrix_has_quick_and_exhaustive_roles(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
@@ -439,6 +421,40 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn("needs: gate", body, name)
             self.assertIn("needs.gate.outputs.run == 'true'", body, name)
         self.assertIn("scope: exhaustive", source)
+
+    def test_main_runs_are_coalesced_but_never_cancelled(self):
+        workflows = ROOT / ".github/workflows"
+        for name, prefix in (("Quick-Checks-CI.yml", "quick-"),
+                             ("Exhaustive-Checks-CI.yml", "${{ github.workflow }}-")):
+            with self.subTest(workflow=name):
+                source = (workflows / name).read_text()
+                block = source.split("\nconcurrency:\n", 1)[1].split("\n\n", 1)[0]
+                group = re.search(r"^\s*group: (.+)$", block, re.MULTILINE).group(1)
+                cancel = re.search(r"^\s*cancel-in-progress: \$\{\{ (.+) \}\}$",
+                                   block, re.MULTILINE).group(1)
+                self.assertTrue(group.startswith(prefix + "${{ "), group)
+                self.assertTrue(group.endswith(" }}"), group)
+                group = group[len(prefix) + 4:-3]
+                self.assertEqual(cancel, "github.event_name == 'pull_request'")
+
+                def evaluate(expression, event, ref, number=None):
+                    context = {"github.event_name": event, "github.ref": ref,
+                               "github.event.number": number, "github.sha": "sha-" + ref}
+                    python = re.sub(r"github(\.\w+)+",
+                                    lambda m: repr(context[m.group(0)]), expression)
+                    return eval(python.replace("&&", " and ").replace("||", " or "))
+
+                def key(event, ref, number=None):
+                    return (evaluate(group, event, ref, number),
+                            evaluate(cancel, event, ref, number))
+
+                # Main pushes share one group and never cancel a running run.
+                self.assertEqual(key("push", "refs/heads/main"), ("main", False))
+                self.assertEqual(key("pull_request", "refs/pull/7/merge", 7), (7, True))
+                self.assertEqual(key("push", "refs/tags/v1.0.0"),
+                                 ("sha-refs/tags/v1.0.0", False))
+                self.assertEqual(key("workflow_dispatch", "refs/heads/main"),
+                                 ("sha-refs/heads/main", False))
 
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()

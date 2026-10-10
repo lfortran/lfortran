@@ -158,11 +158,8 @@ only once, redirect to a log file and then examine the log file.
 - Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
   labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
   third-party application catalog; only publishing and deployment are push-only.
-- Quick also runs on `merge_group` so required checks report in the merge
-  queue. Keep `merge_group` on every workflow that produces a required check;
-  merge queue runs must not save caches.
 - Third-party applications are **bug generators for integration tests**, not
-  part of ordinary PR checks. They run on every push to `main` and in every
+  part of ordinary PR checks. They run on the latest `main` and in every
   requested Exhaustive run, including applications such as FIATS.
 - A compiler failure found by an application must become a reduced, registered
   integration regression. Fix it promptly or revert the offending change,
@@ -173,12 +170,16 @@ only once, redirect to a log file and then examine the log file.
   touched. Manual dispatch in a fork is an alternative; dispatch Quick
   separately if it has not run on that revision, and verify both tested SHAs
   and results.
-- Every main push keeps the full compiler matrix and application validation.
-  Main runs are not automatically cancelled or coalesced; maintainers may
-  manually cancel older runs while keeping the latest. Release-tag workflows
-  keep compiler and packaging checks without repeating the application catalog.
-- Release only a tested main commit whose full CI, including applications,
-  is green. Quick or extended PR checks alone do not qualify a release.
+- Quick and Exhaustive (full compiler matrix and application validation) on
+  `main` are each coalesced: at most one run is in progress and one is
+  pending. A running main run is never cancelled; a newer push replaces the
+  pending run, so the latest `main` is always tested but intermediate commits
+  may be skipped. To locate a regression, dispatch the workflow manually on
+  the skipped commits. Release-tag workflows keep compiler and packaging checks without
+  repeating the application catalog.
+- Release only a main commit whose own Quick and Exhaustive runs, including
+  applications, are green (dispatch them if they were skipped). Quick or extended
+  PR checks alone do not qualify a release.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.

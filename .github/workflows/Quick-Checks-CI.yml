@@ -9,14 +9,13 @@ on:
   pull_request:
     branches:
       - main
-  # Required checks must also report on merge queue groups.
-  merge_group:
   workflow_dispatch:
 
-# Main runs stay independent per commit; only superseded PR runs are cancelled.
-# Manual and merge queue runs use a commit SHA, distinct from PR groups.
+# Main pushes share one group: a running main run is never cancelled, and a
+# newer push replaces the pending one, so the latest main is always tested.
+# PRs cancel superseded runs; tags and manual runs stay independent per commit.
 concurrency:
-  group: quick-${{ github.event.number || github.sha }}
+  group: quick-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -59,7 +58,7 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
-          echo "Concurrency Group: quick-${{ github.event.number || github.sha }}"
+          echo "Concurrency Group: quick-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Test (Linux / macOS)
@@ -295,7 +294,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-ubuntu-latest-19
-          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Install libunwind
         run: micromamba install -y -n lf libunwind=1.7.2
@@ -417,7 +415,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-ubuntu-latest
-          save: ${{ github.event_name != 'merge_group' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -466,7 +463,6 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
-          save: ${{ github.event_name != 'merge_group' }}
 
       # ── Set up Emscripten 4 from conda instead of outdated emsdk 3.1.35 ──
       - name: Install Emscripten 4 environment

@@ -50,7 +50,6 @@ runs:
     - uses: hendrikmuhs/ccache-action@main
       with:
         key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}
-        save: ${{ github.event_name != 'merge_group' }}
 
     - name: Setup Platform
       shell: bash -e -l {0}
