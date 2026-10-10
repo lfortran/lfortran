@@ -509,6 +509,14 @@ caches first, so PR caches would push out the `main` caches that every run
 starts from. The `Cleanup caches by a branch` workflow also deletes a PR's
 caches when it closes.
 
+The action appends a timestamp to every saved key, so each save on `main` adds
+a new copy. After every Quick or Exhaustive run on `main`,
+`Prune-Main-Caches-CI.yml` (`ci/prune_main_caches.py`) deletes all but the
+newest copy of each key, keeping the total under the limit. This leaves room
+for a 1.5 GB ccache per platform build (`max-size: 1500M` in
+`.github/actions/build-platform`); the action's 500 MB default is smaller than
+one Debug build, so ccache evicted objects it still needed.
+
 ##### Required checks
 
 The `main` ruleset requires these eleven Quick checks directly, bound to the
