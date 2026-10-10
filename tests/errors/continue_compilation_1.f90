@@ -2203,3 +2203,13 @@ subroutine namelist_object_before_decl_no_implicit_typing_error
     namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
     real :: w
 end subroutine namelist_object_before_decl_no_implicit_typing_error
+
+subroutine block_derived_type_bound_procedure()
+    block
+        type :: bdtbp_t
+            integer :: a
+        contains
+            procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+        end type
+    end block
+end subroutine

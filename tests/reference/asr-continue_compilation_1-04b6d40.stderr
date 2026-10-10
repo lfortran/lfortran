@@ -3172,3 +3172,9 @@ semantic error: type mismatch in pointer assignment, the types must be compatibl
      |
 2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
      |     ^^    ^^ type mismatch (integer(4) and character(len=5))
+
+semantic error: type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+    --> tests/errors/continue_compilation_1.f90:2212:13
+     |
+2212 |             procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
