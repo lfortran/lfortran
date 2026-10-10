@@ -6618,7 +6618,12 @@ public:
                 if (!func) {
                     trait_error("a type-bound binding must name a procedure", loc);
                 }
-                proc_sym = &func->base;
+                // A generic binding's specific procedure is owned by its
+                // Template; the type's scope names it through an import, which
+                // also keeps the binding loadable from a module file.
+                proc_sym = ASRUtils::trait_method_template(*func)
+                    ? make_operator_proc_visible(&func->base, "trait", proc_scope)
+                    : &func->base;
                 // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
                 //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
                 // if (!is_deferred &&

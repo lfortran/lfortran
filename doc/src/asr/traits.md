@@ -207,9 +207,11 @@ static-only trait can still supply its runtime-eligible ancestor interfaces;
 an unsupported extra message does not disable those subsets.
 
 This currently supports nonparameterized adopting types in modules and main
-programs, within the existing static and scalar runtime domains. It does not
-add initializers, trait-valued components, generic derived types, or numeric
-runtime array/result protocols.
+programs, within the existing static and scalar runtime domains. A type-bound
+binding of a generic procedure names the procedure through an import in the
+type's module, so clients that load the module resolve it like any other
+binding. It does not add initializers, trait-valued components, generic
+derived types, or numeric runtime array/result protocols.
 
 The byte-exact, module-only paper examples `extends_parent.f90` and
 `abstract_new.f90` are registered through `traits_type_adoption.py` in normal

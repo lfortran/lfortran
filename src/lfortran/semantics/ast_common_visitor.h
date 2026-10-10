@@ -15094,7 +15094,8 @@ public:
         visit_expr_list(m_args, n_args, args);
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v_class_proc->m_proc));
         const size_t pass_idx = ASRUtils::get_pass_arg_index(v);
         if (n_kwargs > 0) {
             diag::Diagnostics diags;
@@ -26140,7 +26141,8 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*op_proc)) {
                 ASR::StructMethodDeclaration_t* temp_struct_method =
                     ASR::down_cast<ASR::StructMethodDeclaration_t>(op_proc);
-                func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(temp_struct_method->m_proc));
 
             } else {
                 func = ASR::down_cast<ASR::Function_t>(

@@ -10001,6 +10001,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(
                     method_decl->m_dispatch_proc ? method_decl->m_dispatch_proc
                         : method_decl->m_proc);
+                if (ASR::is_a<ASR::Function_t>(*impl_sym) && ASRUtils::trait_method_template(
+                        *ASR::down_cast<ASR::Function_t>(impl_sym))) {
+                    // A generic binding has no single executable implementation;
+                    // calls are specialized statically or use runtime trait slots.
+                    struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;
+                    impls.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                    continue;
+                }
                 if (method_decl->m_is_deferred) {
                     llvm::FunctionType *func_type = llvm_utils->get_function_type(
                         *(ASR::down_cast<ASR::Function_t>(
