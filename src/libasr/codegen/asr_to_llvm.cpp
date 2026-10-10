@@ -15668,7 +15668,10 @@ public:
             return;
         }
 
+        // A null pointer constant is already the pointer value itself, not a
+        // reference to one.
         if (load_ref && LLVM::is_llvm_pointer(*ASRUtils::expr_type(x)) &&
+                !ASR::is_a<ASR::PointerNullConstant_t>(*x) &&
                 (ASRUtils::is_unlimited_polymorphic_type(x) || ASR::is_a<ASR::Cast_t>(*x))) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
             tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
