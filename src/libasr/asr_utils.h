@@ -10329,13 +10329,19 @@ static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
     return is_argument;
 }
 
+// Converts integer or real arguments of different kinds (a non-standard
+// extension accepted for MIN, MAX and FINDLOC) to a common kind. By default
+// that is the largest kind among the arguments; with `use_first_array_kind`
+// it is the kind of the first array argument. Array arguments are converted
+// element-wise, keeping their shape.
 static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
-        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
+        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag,
+        bool use_first_array_kind=false) {
     int target_kind = -1;
     for (size_t i = 0; i < args.size(); i++) {
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (is_array(arg_type)){
+        if (use_first_array_kind && is_array(arg_type)){
             target_kind = kind;
             break;
         }
@@ -10350,29 +10356,37 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         if (kind==target_kind) {
             continue;
         }
-        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr, nullptr));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr, nullptr));
-            }
+        ASR::ttype_t *arg_elem_type = ASRUtils::extract_type(arg_type);
+        ASR::ttype_t *target_type = nullptr;
+        ASR::cast_kindType cast_kind;
+        if (ASR::is_a<ASR::Real_t>(*arg_elem_type)) {
+            target_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind));
+            cast_kind = ASR::cast_kindType::RealToReal;
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_elem_type)) {
+            target_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind));
+            cast_kind = ASR::cast_kindType::IntegerToInteger;
         } else {
             diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
                 "help: ensure all arguments are of a convertible type");
+            continue;
+        }
+        if (is_array(arg_type)) {
+            ASR::dimension_t *m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, m_dims);
+            target_type = ASRUtils::make_Array_t_util(al, loc, target_type, m_dims, n_dims);
+            args.p[i] = EXPR(ASRUtils::make_Cast_t_value(
+                al, loc, args[i], cast_kind, target_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+            args.p[i] = EXPR(ASR::make_RealConstant_t(
+                al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
+                target_type));
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
+            args.p[i] = EXPR(ASR::make_IntegerConstant_t(
+                al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
+                target_type));
+        } else {
+            args.p[i] = EXPR(ASR::make_Cast_t(
+                al, loc, args.p[i], cast_kind, target_type, nullptr, nullptr));
         }
     }
 }
