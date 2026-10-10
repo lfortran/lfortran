@@ -3172,3 +3172,51 @@ semantic error: type mismatch in pointer assignment, the types must be compatibl
      |
 2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
      |     ^^    ^^ type mismatch (integer(4) and character(len=5))
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2257:25
+     |
+2257 |     call papm_class_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                         ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2258:24
+     |
+2258 |     call papm_type_ptr(cp)  ! {Error} the actual argument for pointer dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+     |                        ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2259:27
+     |
+2259 |     call papm_class_alloc(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                           ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2260:26
+     |
+2260 |     call papm_type_alloc(ca)  ! {Error} the actual argument for allocatable dummy argument `w` of type `type(papm_s)` must not be polymorphic, but it is `class(papm_s)`
+     |                          ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must have the same declared type, but it is `class(papm_t)`
+    --> tests/errors/continue_compilation_1.f90:2261:25
+     |
+2261 |     call papm_class_ptr(ctp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must have the same declared type, but it is `class(papm_t)`
+     |                         ^^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(*)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2262:24
+     |
+2262 |     call papm_star_ptr(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(*)` must be polymorphic, but it is `type(papm_s)`
+     |                        ^^ 
+
+semantic error: the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2263:28
+     |
+2263 |     k = papm_class_alloc_f(ta)  ! {Error} the actual argument for allocatable dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                            ^^ 
+
+semantic error: the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+    --> tests/errors/continue_compilation_1.f90:2264:22
+     |
+2264 |     k = y%papm_bound(tp)  ! {Error} the actual argument for pointer dummy argument `w` of type `class(papm_s)` must be polymorphic, but it is `type(papm_s)`
+     |                      ^^ 
