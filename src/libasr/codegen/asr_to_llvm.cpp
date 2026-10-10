@@ -19375,7 +19375,7 @@ public:
                         ASRUtils::get_struct_sym_from_struct_expr(x.m_dest));
                 }
                 this->visit_expr_load_wrapper(x.m_arg, 0);
-                tmp = convert_class_to_class(x.m_arg, tmp, x.m_type, struct_sym);
+                tmp = convert_class_to_class(x.m_arg, tmp, x.m_type, struct_sym, x.m_dest);
                 if (struct_sym) {
                     current_der_type_name = get_type_key(struct_sym);
                 }
@@ -26726,7 +26726,7 @@ public:
 
     // Convert from one polymorphic class type to another (class is() in select type)
     llvm::Value* convert_class_to_class(ASR::expr_t* arg_expr, llvm::Value* dt,
-            ASR::ttype_t* dest_type, ASR::symbol_t* dest_sym) {
+            ASR::ttype_t* dest_type, ASR::symbol_t* dest_sym, ASR::expr_t* dest_expr) {
         ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
         
         if (!ASRUtils::is_class_type(ASRUtils::extract_type(dest_type)) || 
@@ -26739,7 +26739,21 @@ public:
             ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
             // TODO: Handle this properly 
             llvm::Type* dest_array_type = llvm_utils->get_type_from_ttype_t_util(
-                nullptr, dest_type, module.get());
+                dest_expr, dest_type, module.get());
+            if (LLVM::is_llvm_pointer(*dest_type)) {
+                if (LLVM::is_llvm_pointer(*arg_type)) {
+                    // `dt` already points to the selector's descriptor pointer.
+                    return builder->CreateBitCast(dt, dest_array_type->getPointerTo());
+                }
+                // `dt` is the selector's descriptor itself (e.g. an assumed-shape
+                // dummy), but a pointer destination is a pointer to the
+                // descriptor pointer: add the missing level of indirection.
+                llvm::Value* desc_ptr_ptr = llvm_utils->CreateAlloca(
+                    dest_array_type, nullptr, "class_array_descriptor_ptr");
+                builder->CreateStore(builder->CreateBitCast(dt, dest_array_type),
+                    desc_ptr_ptr);
+                return desc_ptr_ptr;
+            }
             return builder->CreateBitCast(dt, dest_array_type);
         }
     
