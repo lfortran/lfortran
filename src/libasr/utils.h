@@ -1,6 +1,7 @@
 #ifndef LIBASR_UTILS_H
 #define LIBASR_UTILS_H
 
+#include <set>
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -193,6 +194,9 @@ struct CompilerOptions {
     std::vector<std::string> import_paths;
     Platform platform;
     bool detect_leaks = false;
+    // Set by the frontend: the modules it synthesized in this compilation
+    // to hold the storage of a COMMON block.
+    std::set<std::string> common_block_modules;
 
     CompilerOptions () : platform{get_platform()} {};
 };

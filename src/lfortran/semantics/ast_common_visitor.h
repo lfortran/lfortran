@@ -5408,6 +5408,7 @@ public:
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
+            compiler_options.common_block_modules.insert(to_lower(module_name));
             current_scope = parent_scope;
             add_common_block_module_dependency(module_name);
             return struct_symbol;
