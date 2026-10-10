@@ -28,7 +28,7 @@ program proc_ptr_nopass_09
     if (any(z /= 5.0)) error stop
 contains
     subroutine fa(a)
-        real :: a(2)
+        real :: a(nn(1))
         a = 5.0
     end subroutine
 end program
