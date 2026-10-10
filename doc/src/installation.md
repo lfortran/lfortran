@@ -497,6 +497,18 @@ Docker build/tests, JupyterLite and source packaging remain additional checks.
 PRs do not run the Exhaustive workflow at all. For a rare, explicitly
 requested extended check of a PR, dispatch it in a fork (see below).
 
+##### Compiler caches
+
+Every C/C++ build runs through ccache or sccache
+(`hendrikmuhs/ccache-action`), including both halves of the WASM build: the
+Emscripten build sets `EM_COMPILER_WRAPPER=sccache`. Caches are **saved only on
+`main`** (`save: ${{ github.ref == 'refs/heads/main' }}`) and restored
+everywhere. A cache saved for a PR or tag can only be restored by that same
+ref, and the repository's 10 GB cache limit evicts the least recently used
+caches first, so PR caches would push out the `main` caches that every run
+starts from. The `Cleanup caches by a branch` workflow also deletes a PR's
+caches when it closes.
+
 ##### Required checks
 
 The `main` ruleset requires these eleven Quick checks directly, bound to the

@@ -50,6 +50,7 @@ runs:
     - uses: hendrikmuhs/ccache-action@main
       with:
         key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}
+        save: ${{ github.ref == 'refs/heads/main' }}
 
     - name: Setup Platform
       shell: bash -e -l {0}

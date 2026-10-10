@@ -406,6 +406,29 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertEqual(key("workflow_dispatch", "refs/heads/main"),
                                  ("sha-refs/heads/main", False))
 
+    def test_compiler_caches_are_saved_only_on_main(self):
+        # PR and tag caches can only be restored by the same ref; saving them
+        # evicts the main caches that every run restores from.
+        save = "save: ${{ github.ref == 'refs/heads/main' }}"
+        paths = [*(ROOT / ".github/workflows").glob("*.yml"),
+                 *(ROOT / ".github/actions").glob("*/action.yml")]
+        steps = 0
+        for path in paths:
+            for step in path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]:
+                steps += 1
+                self.assertIn(save, step.split("\n\n", 1)[0], path)
+        self.assertGreaterEqual(steps, 8)
+
+    def test_wasm_build_uses_the_compiler_cache(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
+        native = wasm.split("      - name: Build native LFortran\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("-DCMAKE_C_COMPILER_LAUNCHER=sccache", native)
+        self.assertIn("-DCMAKE_CXX_COMPILER_LAUNCHER=sccache", native)
+        emscripten = wasm.split("      - name: Build to WASM\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("EM_COMPILER_WRAPPER: sccache", emscripten)
+        self.assertIn("key: ${{ github.job }}-ubuntu-latest\n", wasm)
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
