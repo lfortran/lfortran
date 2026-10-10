@@ -12300,7 +12300,11 @@ public:
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
-                type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+                // The interface's bounds can reference symbols of the scope
+                // that declared it, which have to be visible from here.
+                type = ASRUtils::import_procedure_type(al,
+                    ASR::down_cast<ASR::Function_t>(v)->m_function_signature,
+                    current_scope);
             }
             } // else (named procedure interface)
             if (is_pointer) {

@@ -197,7 +197,8 @@ public:
                     ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
                     if (decl_sym && ASR::is_a<ASR::Function_t>(*decl_sym)) {
                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl_sym);
-                        ASR::ttype_t* new_type = func->m_function_signature;
+                        ASR::ttype_t* new_type = ASRUtils::import_procedure_type(al,
+                            func->m_function_signature, x_ptr->m_parent_symtab);
                         if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
                         }
@@ -274,7 +275,8 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
             ASR::ttype_t* new_type = transformed_procedure_variable_type(x);
             if (new_type != nullptr) {
-                const_cast<ASR::Variable_t&>(x).m_type = new_type;
+                const_cast<ASR::Variable_t&>(x).m_type = ASRUtils::import_procedure_type(
+                    al, new_type, x.m_parent_symtab);
             }
         }
 
