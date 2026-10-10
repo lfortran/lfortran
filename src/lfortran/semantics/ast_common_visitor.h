@@ -9187,6 +9187,34 @@ public:
                             }
                         }
                     }
+                    if (x.m_vartype && AST::is_a<AST::AttrType_t>(*x.m_vartype)) {
+                        AST::AttrType_t *cptr_check_type =
+                            AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                        if (cptr_check_type->m_type == AST::decl_typeType::TypeType
+                                && cptr_check_type->m_name) {
+                            std::string cptr_type_name = to_lower(cptr_check_type->m_name);
+                            ASR::symbol_t *cptr_sym = current_scope->resolve_symbol(cptr_type_name);
+                            bool is_team_type = cptr_sym
+                                && ASR::is_a<ASR::ExternalSymbol_t>(*cptr_sym)
+                                && std::string(ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    cptr_sym)->m_module_name) == "lfortran_intrinsic_iso_fortran_env"
+                                && std::string(ASR::down_cast<ASR::ExternalSymbol_t>(
+                                    cptr_sym)->m_original_name) == "team_type";
+                            if (cptr_sym
+                                    && (ASRUtils::is_iso_c_ptr_type_symbol(current_scope, cptr_sym)
+                                    || ASRUtils::is_iso_c_funptr_type_symbol(current_scope, cptr_sym)
+                                    || is_team_type)) {
+                                diag.add(Diagnostic(
+                                    "A coarray must not be of type `c_ptr`, "
+                                    "`c_funptr` or `team_type`",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("`" + std::string(s.m_name) + "` is a coarray of type `"
+                                            + cptr_type_name + "`", {s.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     // C827: A coarray with the ALLOCATABLE attribute shall have
                     // a coarray-spec that is a deferred-coshape-spec-list (i.e.
                     // every codimension is a bare ':', no explicit bounds or '*').
