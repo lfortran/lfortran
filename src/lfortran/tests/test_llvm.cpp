@@ -2650,6 +2650,9 @@ TEST_CASE("FortranEvaluator the calls the kernel makes") {
     }
 }
 
+// These two tests hang on Windows since
+// https://github.com/lfortran/lfortran/pull/14350
+#if !defined(_WIN32)
 TEST_CASE("FortranEvaluator a SAVE class pointer across cells") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -2751,3 +2754,4 @@ end subroutine
     CHECK(r.ok);
     CHECK(r.result.i32 == 2);
 }
+#endif
