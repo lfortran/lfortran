@@ -1928,6 +1928,7 @@ RUN(NAME intrinsics_482 LABELS gfortran llvm) # dot_product on a derived-type co
 RUN(NAME intrinsics_483 LABELS gfortran llvm EXTRAFILES intrinsics_483b.f90) # sum/sin/string-concatenation helpers in two object files link (#14496, #14179)
 RUN(NAME intrinsics_484 LABELS gfortran llvm EXTRAFILES intrinsics_484b.f90) # cpu_time/random_number/system_clock helpers in two object files link (#14496)
 RUN(NAME intrinsics_485 LABELS gfortran llvm) # array intrinsics on allocatable/pointer arrays with lower bound not 1 (#14369)
+RUN(NAME intrinsics_486 LABELS gfortran llvm) # array intrinsic results are 1-based for explicit-shape arguments with lower bound not 1 (#14369)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
