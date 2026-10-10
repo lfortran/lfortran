@@ -113,7 +113,7 @@ Never, under any circumstances:
   update the fork branch only with `git push --force-with-lease`;
 - merge `main` into the PR branch;
 - comment on, close, or relabel the original issue, add a label to
-  the PR except an explicitly requested `Tests::Run-Exhaustive`, comment on
+  the PR, comment on
   other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
@@ -431,13 +431,12 @@ head SHA:
 The PR is **done** when it is clean and `Quick checks` ran for the current
 PR revision, with every applicable job passed or shown to also fail on `main`.
 Quick includes the shared compiler compatibility jobs; those are not optional.
-Requested Exhaustive checks supplement Quick rather than replacing it;
-require both on the same current revision.
+Explicitly requested Exhaustive checks supplement Quick rather than replacing
+it; require both on the same current revision.
 Check with
 `gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
 Do not treat missing or all-skipped Quick checks as success.
-Expected skips of unrequested Exhaustive jobs, including application
-validation, do not block a PR.
+Exhaustive does not run on PRs; its absence does not block a PR.
 
 Third-party applications are bug generators for the integration suite and
 release compatibility checks on the latest main, not an ordinary PR test suite.
@@ -446,27 +445,20 @@ integration regression, fix the compiler and verify the original application
 failure locally. Do not add that application to Quick. Caffeine-backed
 coarray and GPU integration checks remain required capability tests.
 
-Do not add CI labels or dispatch extended CI automatically, including for
-serialization, finalization, I/O or GPU changes. Do not cancel older main runs.
-The rare `Tests::Run-Exhaustive` label is for an explicit request for extended
-coverage; it runs the same Exhaustive checks as main, including applications.
+Do not dispatch extended CI automatically, including for serialization,
+finalization, I/O or GPU changes. Do not cancel older main runs.
 
-Only when the user requests extended checks, add the label with
-`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
-If it is already present, wait for the applicable checks rather than removing
-it. They must pass for the current revision before finishing, subject to the
-pre-existing-failure rule above. Label addition reruns the current PR's
-Exhaustive workflow; subsequent pushes rerun it while the label remains.
-If labeling is unavailable, an explicitly requested manual run in the fork
-is an alternative:
+Only when the user explicitly requests extended checks, dispatch Exhaustive on
+the PR branch in the fork (the same checks as main, including applications):
 `gh workflow run Exhaustive-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Exhaustive never invokes Quick. If there is no successful Quick run for the
-same revision, also dispatch
-`gh workflow run Quick-Checks-CI.yml --repo <login>/lfortran --ref <branch>`.
-Record each run ID, URL and head SHA in `state.md` and wait with
-`gh run watch <run-id> --repo <login>/lfortran`; it may not appear in upstream
-`gh pr checks`. A push invalidates the old result. Extended-check failures
-go to the fix subagent like any other CI failure.
+If the fork's Actions are disabled, tell the user. Exhaustive never invokes
+Quick; the PR's Quick checks must also be green for the same revision.
+Record the run ID, URL and head SHA in `state.md`, wait with
+`gh run watch <run-id> --repo <login>/lfortran`, and report the run URL; it
+does not appear in upstream `gh pr checks`. A push invalidates the old result,
+so dispatch again for the new head when needed. Failures go to the fix
+subagent like any other CI failure, subject to the pre-existing-failure rule
+above.
 
 Release qualification is separate: the release commit must have green full
 main CI, including applications. Quick or extended PR success is not enough.

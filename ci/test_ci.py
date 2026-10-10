@@ -351,67 +351,40 @@ class WorkflowPolicyTests(unittest.TestCase):
             "Compiler compatibility / Test MLIR backend",
         ])
 
-    def test_exhaustive_gate_reads_current_labels(self):
-        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
-        self.assertIn("types: [opened, reopened, synchronize]", source)
-        gate = source.split("\n  gate:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
-        script = gate.split("        run: |\n", 1)[1]
-        with tempfile.TemporaryDirectory(prefix="lfortran-ci-gate-") as temporary:
-            directory = Path(temporary)
-            gh = directory / "gh"
-            gh.write_text(
-                "#!/bin/sh\n"
-                'if [ "$LABEL_RESULT" = error ]; then echo "API failed" >&2; exit 1; fi\n'
-                'printf "%s\\n" "$LABEL_RESULT"\n'
-            )
-            gh.chmod(0o755)
-            output = directory / "output"
-            cases = (
-                ("pull_request", "true", "run=true\n"),
-                ("pull_request", "false", "run=false\n"),
-                ("pull_request", "error", None),
-                ("pull_request", "invalid", None),
-                ("push", "error", "run=true\n"),
-                ("workflow_dispatch", "error", "run=true\n"),
-                ("pull_request_target", "true", None),
-            )
-            for event, label, expected in cases:
-                with self.subTest(event=event, label=label):
-                    output.write_text("")
-                    env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ["PATH"],
-                               GITHUB_EVENT_NAME=event, GITHUB_OUTPUT=str(output),
-                               LABEL_RESULT=label, PR="123")
-                    result = subprocess.run(
-                        ["bash", "-e", "-o", "pipefail"], input=script, env=env,
-                        capture_output=True, text=True,
-                    )
-                    self.assertEqual(result.returncode == 0, expected is not None)
-                    self.assertEqual(output.read_text(), expected or "")
-
-        jobs = source.split("\njobs:\n", 1)[1]
-        blocks = re.split(r"(?m)^  ([\w-]+):\n", jobs)
-        for index in range(1, len(blocks), 2):
-            name, body = blocks[index:index + 2]
-            if name in ("gate", "deploy_jupyterlite"):
-                continue
-            self.assertIn("needs: gate", body, name)
-            self.assertIn("needs.gate.outputs.run == 'true'", body, name)
-        self.assertIn("scope: exhaustive", source)
+    def test_exhaustive_never_runs_on_prs(self):
+        workflows = ROOT / ".github/workflows"
+        source = (workflows / "Exhaustive-Checks-CI.yml").read_text()
+        triggers = source.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
+        triggers = "\n".join(l for l in triggers.splitlines() if not l.lstrip().startswith("#"))
+        self.assertEqual(triggers.strip(),
+                         "push:\n    branches:\n      - main\n    tags:\n"
+                         "      - 'v*'\n  workflow_dispatch:")
+        self.assertNotIn("gate", source)
+        self.assertFalse((workflows / "Exhaustive-Checks-Label-CI.yml").exists())
+        for path in [*workflows.glob("*.yml"), ROOT / "AGENTS.md",
+                     *(ROOT / "doc/src").glob("*.md"),
+                     *(ROOT / ".agents/skills").glob("*/SKILL.md")]:
+            self.assertNotIn("Run-Exhaustive", path.read_text(), path)
 
     def test_main_runs_are_coalesced_but_never_cancelled(self):
         workflows = ROOT / ".github/workflows"
-        for name, prefix in (("Quick-Checks-CI.yml", "quick-"),
-                             ("Exhaustive-Checks-CI.yml", "${{ github.workflow }}-")):
+        # Quick cancels superseded PR runs; Exhaustive never runs on PRs.
+        for name, prefix, cancel_expected in (
+                ("Quick-Checks-CI.yml", "quick-", "${{ github.event_name == 'pull_request' }}"),
+                ("Exhaustive-Checks-CI.yml", "${{ github.workflow }}-", "false")):
             with self.subTest(workflow=name):
                 source = (workflows / name).read_text()
                 block = source.split("\nconcurrency:\n", 1)[1].split("\n\n", 1)[0]
                 group = re.search(r"^\s*group: (.+)$", block, re.MULTILINE).group(1)
-                cancel = re.search(r"^\s*cancel-in-progress: \$\{\{ (.+) \}\}$",
-                                   block, re.MULTILINE).group(1)
+                cancel = re.search(r"^\s*cancel-in-progress: (.+)$", block, re.MULTILINE).group(1)
                 self.assertTrue(group.startswith(prefix + "${{ "), group)
                 self.assertTrue(group.endswith(" }}"), group)
                 group = group[len(prefix) + 4:-3]
-                self.assertEqual(cancel, "github.event_name == 'pull_request'")
+                self.assertEqual(cancel, cancel_expected)
+                if cancel.startswith("${{ "):
+                    cancel = cancel[4:-3]
+                else:
+                    cancel = "True" if cancel == "true" else "False"
 
                 def evaluate(expression, event, ref, number=None):
                     context = {"github.event_name": event, "github.ref": ref,
@@ -426,7 +399,8 @@ class WorkflowPolicyTests(unittest.TestCase):
 
                 # Main pushes share one group and never cancel a running run.
                 self.assertEqual(key("push", "refs/heads/main"), ("main", False))
-                self.assertEqual(key("pull_request", "refs/pull/7/merge", 7), (7, True))
+                if name == "Quick-Checks-CI.yml":
+                    self.assertEqual(key("pull_request", "refs/pull/7/merge", 7), (7, True))
                 self.assertEqual(key("push", "refs/tags/v1.0.0"),
                                  ("sha-refs/tags/v1.0.0", False))
                 self.assertEqual(key("workflow_dispatch", "refs/heads/main"),
@@ -434,7 +408,7 @@ class WorkflowPolicyTests(unittest.TestCase):
 
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
-        jobs = source.split("\njobs:\n", 1)[1].split("\n  compatibility:\n", 1)[1]
+        jobs = source.split("\njobs:\n", 1)[1]
         self.assertNotIn("--smoke", jobs)
         self.assertNotIn("GITHUB_EVENT_NAME", jobs)
         publishing = {
@@ -445,15 +419,6 @@ class WorkflowPolicyTests(unittest.TestCase):
         }
         conditions = re.findall(r"^\s*(if: .*github\.event_name.*)$", jobs, re.MULTILINE)
         self.assertEqual(set(conditions), publishing)
-
-    def test_label_controller_never_executes_pr_code(self):
-        source = (ROOT / ".github/workflows/Exhaustive-Checks-Label-CI.yml").read_text()
-        self.assertIn("pull_request_target:", source)
-        self.assertIn("if: github.event.label.name == 'Tests::Run-Exhaustive'", source)
-        self.assertNotIn("actions/checkout", source)
-        self.assertNotIn("workflow_dispatch", source)
-        self.assertIn('gh run rerun "$run_id"', source)
-        self.assertIn('if [ "$(head_sha)" != "$sha" ]; then', source)
 
 
 class QuickScriptTests(unittest.TestCase):

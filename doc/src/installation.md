@@ -423,8 +423,8 @@ Pull requests normally run only **Quick checks**. Quick uses the same
 builds, test suites and selection rules on PRs, main pushes, release tags and
 manual runs. Publishing steps remain push-only. Main runs Quick plus
 Exhaustive. Exhaustive adds configurations and broader suites, never another
-invocation of Quick, and runs identically on main, on labeled PRs and on
-manual dispatch.
+invocation of Quick, and runs identically on main and on manual dispatch.
+Exhaustive never runs on PRs.
 
 The shared native compiler workflow has two explicit coverage roles:
 
@@ -494,8 +494,8 @@ The distinct Kokkos/out-of-source and custom-install configurations run
 full suites. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
 
-Ordinary PRs run only the small gate of the standalone Exhaustive workflow;
-its compiler jobs require an explicit request.
+PRs do not run the Exhaustive workflow at all. For a rare, explicitly
+requested extended check of a PR, dispatch it in a fork (see below).
 
 ##### Required checks
 
@@ -617,36 +617,43 @@ extended compiler run is not a substitute. Release-tag workflows still run
 compiler, documentation and packaging checks; they do not repeat the application
 catalog already validated on main.
 
-Use `Tests::Run-Exhaustive` only for rare, explicitly requested extended compiler
-coverage, for example a particular major refactor. It is not a normal condition
-for marking a PR ready, and automation must not apply it based on the subsystem
-being changed. Add it with:
+##### Running Exhaustive for a PR
+
+Exhaustive does not run on PRs. Run it only for rare, explicitly requested
+extended coverage, for example a particular major refactor. It is not a normal
+condition for marking a PR ready, and automation must not request it based on
+the subsystem being changed.
+
+`workflow_dispatch` accepts only a branch or tag, and PR branches live in
+forks, so dispatch the workflow in the fork that holds the branch:
 
 ```bash
-gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive
-```
-
-The label controller reruns the current PR revision's Exhaustive workflow,
-whose gate reads the live labels. Subsequent pushes run extended checks while
-the label remains present. Unrelated label changes do not replace the result.
-GitHub cannot rerun workflows older than 30 days; push a new commit or close
-and reopen an older PR before requesting these checks.
-
-Alternatively, explicitly dispatch checks on your fork. Run Quick as well if
-the same revision does not already have a successful Quick result:
-
-```bash
-gh workflow run Quick-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
 gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
-gh run list --repo <fork-owner>/lfortran --branch <branch> --event workflow_dispatch
+gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
+    --branch <branch> --event workflow_dispatch --limit 1
 gh run watch <run-id> --repo <fork-owner>/lfortran
 ```
 
-Check both workflows' results and head SHAs. Labeled and manually dispatched
-Exhaustive runs are purely supplemental: neither invokes Quick. A green
-Exhaustive result alone does not imply a green Quick result. Manual runs do
-not publish or deploy. Manual fork runs need not
-appear among the upstream PR's checks.
+For someone else's PR, push its head to a branch in your own fork first:
+
+```bash
+gh pr checkout <PR> --repo lfortran/lfortran
+git push <your-fork-remote> HEAD:exhaustive-pr-<PR>
+gh workflow run Exhaustive-Checks-CI.yml --repo <your-login>/lfortran --ref exhaustive-pr-<PR>
+```
+
+Notes:
+
+- Forks have GitHub Actions workflows disabled until enabled once in the
+  fork's **Actions** tab.
+- The run uses the fork owner's runners, so it does not compete with
+  `lfortran/lfortran` CI.
+- The result does not appear among the upstream PR's checks. Post the run URL
+  and the tested head SHA in the PR, and rerun after new pushes if needed.
+- Exhaustive never invokes Quick, and a green Exhaustive result does not imply
+  a green Quick result. If the PR's current revision has no successful Quick
+  run, dispatch `Quick-Checks-CI.yml` the same way.
+- Manual runs do not publish or deploy.
 
 To run the representative integration subset locally:
 
