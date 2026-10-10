@@ -1234,8 +1234,19 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASRUtils::is_class_type(value_unwrapped);
                 bool type_to_class_mismatch = ASRUtils::is_class_type(target_unwrapped) &&
                     !ASRUtils::is_class_type(value_unwrapped);
+                // The scalar temporary of an assignment receives the result,
+                // so it is allocatable or a pointer only when the result is.
+                // With the attributes of the target instead, the result of
+                // `p = f(p)` for a pointer `p` would be stored through a
+                // pointer that is never associated.
+                ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+                ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+                bool attribute_mismatch = ASR::is_a<ASR::Assignment_t>(xx) &&
+                    !ASRUtils::is_array(target_type) &&
+                    (ASRUtils::is_pointer(target_type) != ASRUtils::is_pointer(value_type) ||
+                     ASRUtils::is_allocatable(target_type) != ASRUtils::is_allocatable(value_type));
 
-                if (class_to_type_mismatch || type_to_class_mismatch) {
+                if (class_to_type_mismatch || type_to_class_mismatch || attribute_mismatch) {
                     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
