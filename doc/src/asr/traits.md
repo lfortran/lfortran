@@ -936,9 +936,10 @@ lifecycle effects, just like standalone owners. PURE procedures cannot perform
 those operations or own local component storage without an effect guarantee.
 Assigning to or deallocating through a pointer to a containing object counts,
 because it defines or destroys the target's owned components; pointer
-association does not. So do `MOVE_ALLOC` of containing objects, which
-deallocates an allocated TO, and temporaries of such types other than function
-results, such as the result of `RESHAPE` or an array constructor. Every
+association does not. So do `MOVE_ALLOC` of arrays of containing objects,
+which deallocates an allocated TO, and temporaries of such types other than
+function results, such as the result of `RESHAPE`, `PACK` or an array
+constructor. Every
 procedure whose body performs such an operation is neither side-effect free
 nor deterministic, so a PURE caller rejects it. A defined assignment is judged
 by its procedure instead. Readonly PURE observation remains supported when the
@@ -959,9 +960,21 @@ type compiled elsewhere, an impure trait slot) has unknown effects unless the
 interface is pure: it keeps its flags, but a PURE procedure that reaches it is
 rejected, as it would be had the callee been analyzed first. A PURE procedure
 that reaches an impure procedure only through ordinary effects such as PRINT,
-when the bodies are in the opposite order, is still accepted, as before. The
-verifier recomputes the summary for procedures compiled in the unit and
-requires their flags to retain every effect they are known to reach.
+when the bodies are in the opposite order, is still accepted, as before. Once
+the whole unit has been verified, the verifier recomputes the summary for the
+procedures compiled in the unit and requires their flags to retain every
+effect they are known to reach. The summary only sees an unresolved or
+malformed reference as unknown effects; the verifier reports the reference.
+
+`MOVE_ALLOC` of arrays of containing objects moves the array and finalizes only
+the old payloads of TO. The scalar lowering copies FROM and then deallocates
+it, which would finalize the payloads it moves, so `MOVE_ALLOC` of a scalar
+containing object, polymorphic or not, is diagnosed as not implemented yet, and
+the verifier rejects that lowering for it. Array-by-data specialization keeps
+the descriptor arguments of a procedure that names runtime trait storage, such
+as a procedure taking an array of containing objects or the helper of `PACK`:
+the trait contracts, slot procedures and inspection types it imports into its
+own scopes would not be visible from a specialized copy.
 
 A containing type can be a generic or template argument, adopt another trait
 and be inspected by SELECT TYPE. An instantiation recomputes these effects
@@ -992,7 +1005,12 @@ instantiation diagnostics, including PURE procedures that reach the effects
 through later, recursive, contained, type-bound, dummy, defined-assignment and
 generic calls. `traits_component_loaded_pure_01` and `_02` check PURE callers
 of procedures loaded from a separately compiled module, which reach the effects
-through a later procedure and a dummy procedure.
+through a later procedure and a dummy procedure. `_17` passes arrays of
+containing objects to procedures of a client module that imports only the
+types, which allocate, assign, inspect, copy in a BLOCK, PACK, `MOVE_ALLOC`
+and deallocate them, and `continue_compilation_traits_03` collects the
+diagnostics for `MOVE_ALLOC` of scalar, polymorphic and nested containing
+objects.
 
 ## Persistent scalar pointer views (R3)
 

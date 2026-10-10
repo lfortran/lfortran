@@ -15,6 +15,43 @@ inline bool is_side_effect_free_intrinsic_impure_subroutine(int64_t id) {
         || id == static_cast<int64_t>(ASRUtils::IntrinsicImpureSubroutines::Mvbits);
 }
 
+// The symbol that `symbol` names, past an import, or nullptr if the reference
+// is unresolved. These analyses can see references the verifier has not
+// checked yet; it reports malformed ones, so they only see them as unknown.
+inline symbol_t *resolved_reference(symbol_t *symbol) {
+    if (symbol && is_a<ExternalSymbol_t>(*symbol)) {
+        symbol = down_cast<ExternalSymbol_t>(symbol)->m_external;
+        if (symbol && is_a<ExternalSymbol_t>(*symbol)) return nullptr;
+    }
+    return symbol;
+}
+
+// The procedure a call naming `symbol` executes or is declared by: the
+// procedure itself, a procedure variable's interface or a binding's procedure.
+inline Function_t *called_function(symbol_t *symbol) {
+    symbol = resolved_reference(symbol);
+    if (symbol && is_a<Variable_t>(*symbol)) {
+        symbol = resolved_reference(down_cast<Variable_t>(symbol)->m_type_declaration);
+    } else if (symbol && is_a<StructMethodDeclaration_t>(*symbol)) {
+        symbol = resolved_reference(down_cast<StructMethodDeclaration_t>(symbol)->m_proc);
+    }
+    return symbol && is_a<Function_t>(*symbol) ? down_cast<Function_t>(symbol) : nullptr;
+}
+
+// The name of the procedure a trait slot was declared as, if the slot exists.
+inline std::string trait_slot_origin_name(symbol_t *name, int64_t slot) {
+    symbol_t *symbol = resolved_reference(name);
+    symbol_t *owner = symbol ? ASRUtils::get_asr_owner(symbol) : nullptr;
+    if (!owner || !is_a<TraitRuntimeContract_t>(*owner)) return "";
+    auto *contract = down_cast<TraitRuntimeContract_t>(owner);
+    if (slot < 0 || static_cast<size_t>(slot) >= contract->n_slots ||
+            contract->m_slots[slot].n_origins == 0) {
+        return "";
+    }
+    symbol_t *origin = resolved_reference(contract->m_slots[slot].m_origins[0]);
+    return origin ? ASRUtils::symbol_name(origin) : "";
+}
+
 class SideEffectFinder : public BaseWalkVisitor<SideEffectFinder> {
 public:
     bool found = false;
@@ -68,15 +105,15 @@ public:
     }
 
     void visit_BlockCall(const BlockCall_t &x) {
-        if (found) return;
-        visit_executable_body(*down_cast<Block_t>(
-            ASRUtils::symbol_get_past_external(x.m_m)));
+        symbol_t *block = resolved_reference(x.m_m);
+        if (found || !block || !is_a<Block_t>(*block)) return;
+        visit_executable_body(*down_cast<Block_t>(block));
     }
 
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
-        if (found) return;
-        visit_executable_body(*down_cast<AssociateBlock_t>(
-            ASRUtils::symbol_get_past_external(x.m_m)));
+        symbol_t *block = resolved_reference(x.m_m);
+        if (found || !block || !is_a<AssociateBlock_t>(*block)) return;
+        visit_executable_body(*down_cast<AssociateBlock_t>(block));
     }
 
     void visit_Print(const Print_t &x) {
@@ -129,8 +166,9 @@ public:
     // Marks the call to `name` at `l` if the called procedure is not known to
     // be free of side effects.
     bool check_call(const Location &l, symbol_t* name) {
-        symbol_t* sym = ASRUtils::symbol_get_past_external(name);
-        auto *declared = ASRUtils::get_function(sym);
+        symbol_t* sym = resolved_reference(name);
+        if (!sym) return false;
+        auto *declared = called_function(sym);
         if (declared && ASRUtils::has_trait_out_cleanup(*declared)) {
             mark_found(l,
                 "runtime trait intent(out) cleanup with unchecked dynamic lifecycle effects");
@@ -200,12 +238,8 @@ public:
 
     bool check_trait_call(const Location &l, symbol_t *name, int64_t slot) {
         if (!check_call(l, name)) return false;
-        auto *contract = down_cast<TraitRuntimeContract_t>(ASRUtils::get_asr_owner(
-            ASRUtils::symbol_get_past_external(name)));
-        auto *origin = ASRUtils::symbol_get_past_external(
-            contract->m_slots[slot].m_origins[0]);
         description = "call to impure trait procedure '" +
-            std::string(ASRUtils::symbol_name(origin)) + "'";
+            trait_slot_origin_name(name, slot) + "'";
         return true;
     }
 
@@ -428,21 +462,24 @@ private:
         }
 
         void visit_BlockCall(const BlockCall_t &x) {
-            collect_scope(*down_cast<Block_t>(ASRUtils::symbol_get_past_external(x.m_m)));
+            symbol_t *block = resolved_reference(x.m_m);
+            if (block && is_a<Block_t>(*block)) collect_scope(*down_cast<Block_t>(block));
         }
 
         void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
-            collect_scope(*down_cast<AssociateBlock_t>(
-                ASRUtils::symbol_get_past_external(x.m_m)));
+            symbol_t *block = resolved_reference(x.m_m);
+            if (block && is_a<AssociateBlock_t>(*block)) {
+                collect_scope(*down_cast<AssociateBlock_t>(block));
+            }
         }
 
         void add(const Location &loc, symbol_t *name, expr_t *dt) {
             Call call;
             call.loc = loc;
-            symbol_t *symbol = ASRUtils::symbol_get_past_external(name);
+            symbol_t *symbol = resolved_reference(name);
             call.procedure = symbol;
             call.description = "Call to impure procedure '" +
-                std::string(ASRUtils::symbol_name(symbol)) + "'";
+                std::string(ASRUtils::symbol_name(symbol ? symbol : name)) + "'";
             summary.add_procedure(symbol, dt, call);
             if (call.unknown || !call.callees.empty()) calls.push_back(call);
         }
@@ -459,16 +496,13 @@ private:
 
         // A slot is implemented by whichever procedures implement the trait.
         void add_trait_call(const Location &loc, symbol_t *name, int64_t slot) {
-            symbol_t *symbol = ASRUtils::symbol_get_past_external(name);
-            if (is_a<Function_t>(*symbol) &&
+            symbol_t *symbol = resolved_reference(name);
+            if (symbol && is_a<Function_t>(*symbol) &&
                     interface_is_pure(*down_cast<Function_t>(symbol))) return;
-            auto *contract = down_cast<TraitRuntimeContract_t>(ASRUtils::get_asr_owner(symbol));
-            auto *origin = ASRUtils::symbol_get_past_external(
-                contract->m_slots[slot].m_origins[0]);
             Call call;
             call.loc = loc;
             call.description = "call to impure trait procedure '" +
-                std::string(ASRUtils::symbol_name(origin)) + "'";
+                trait_slot_origin_name(name, slot) + "'";
             call.unknown = true;
             calls.push_back(call);
         }
@@ -485,7 +519,11 @@ private:
     };
 
     void add_procedure(symbol_t *symbol, expr_t *dt, Call &call) {
-        symbol = ASRUtils::symbol_get_past_external(symbol);
+        symbol = resolved_reference(symbol);
+        if (!symbol) {
+            call.unknown = true;
+            return;
+        }
         switch (symbol->type) {
             case symbolType::Function: {
                 auto *function = down_cast<Function_t>(symbol);
@@ -509,9 +547,8 @@ private:
                 break;
             }
             case symbolType::Variable: {
-                symbol_t *declaration = down_cast<Variable_t>(symbol)->m_type_declaration;
-                declaration = declaration ? ASRUtils::symbol_get_past_external(declaration)
-                    : nullptr;
+                symbol_t *declaration = resolved_reference(
+                    down_cast<Variable_t>(symbol)->m_type_declaration);
                 if (!declaration || !is_a<Function_t>(*declaration) ||
                         !interface_is_pure(*down_cast<Function_t>(declaration))) {
                     call.unknown = true;
@@ -539,9 +576,8 @@ private:
                 visit_trait_lifecycle_scopes(scope, true, [&](symbol_t *symbol) {
                     if (!is_a<Struct_t>(*symbol)) return;
                     auto *type = down_cast<Struct_t>(symbol);
-                    if (!type->m_parent) return;
-                    symbol_t *parent = ASRUtils::symbol_get_past_external(type->m_parent);
-                    if (is_a<Struct_t>(*parent)) {
+                    symbol_t *parent = resolved_reference(type->m_parent);
+                    if (parent && is_a<Struct_t>(*parent)) {
                         extensions[down_cast<Struct_t>(parent)].push_back(type);
                     }
                 });
@@ -560,8 +596,8 @@ private:
             auto found = extensions.find(type);
             if (found == extensions.end()) continue;
             for (Struct_t *extension : found->second) {
-                symbol_t *member = extension->m_symtab->get_symbol(binding.m_name);
-                member = member ? ASRUtils::symbol_get_past_external(member) : nullptr;
+                symbol_t *member = resolved_reference(
+                    extension->m_symtab->get_symbol(binding.m_name));
                 if (member && is_a<StructMethodDeclaration_t>(*member)) {
                     auto *override_binding = down_cast<StructMethodDeclaration_t>(member);
                     add_procedure(override_binding->m_proc, nullptr, call);
@@ -573,9 +609,9 @@ private:
             }
         }
         symbol_t *scope_owner = ASRUtils::get_asr_owner(owner);
-        symbol_t *procedure = ASRUtils::symbol_get_past_external(binding.m_proc);
+        symbol_t *procedure = resolved_reference(binding.m_proc);
         if (scope_owner && is_a<Module_t>(*scope_owner) &&
-                !(is_a<Function_t>(*procedure) &&
+                !(procedure && is_a<Function_t>(*procedure) &&
                     interface_is_pure(*down_cast<Function_t>(procedure)))) {
             call.unknown = true;
         }

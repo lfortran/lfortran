@@ -7,7 +7,6 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
-#include <memory>
 #include <set>
 
 namespace LCompilers {
@@ -112,8 +111,10 @@ private:
     bool _inside_template = false;
     bool _inside_trait_subroutine = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
-    // Built on first use, once every body of the unit is available.
-    std::unique_ptr<ASR::TraitLifecycleSummary> trait_lifecycle_summary;
+    // Procedures whose effect flags must retain the trait lifecycle effects
+    // they reach. They are checked once the whole unit has been verified, so
+    // the summary only follows references the verifier has already checked.
+    std::vector<const Function_t*> trait_lifecycle_callers;
 
 public:
     // See ASRVerifyOptions::string_length_arguments.
@@ -235,7 +236,20 @@ public:
                 this->visit_expr(*down_cast<expr_t>(item));
             }
         }
+        verify_reached_trait_lifecycle_effects(x);
         current_symtab = nullptr;
+    }
+
+    void verify_reached_trait_lifecycle_effects(const TranslationUnit_t &unit) {
+        if (trait_lifecycle_callers.empty()) return;
+        ASR::TraitLifecycleSummary summary(unit.m_symtab);
+        for (const Function_t *caller : trait_lifecycle_callers) {
+            require_with_loc_id(summary.effect(const_cast<Function_t&>(*caller)) !=
+                    ASR::TraitLifecycleSummary::Effect::Lifecycle,
+                "asr.verify.trait_owner.reached_lifecycle_effects",
+                "A procedure must retain the unchecked dynamic trait lifecycle "
+                "effects of the procedures it calls", caller->base.base.loc);
+        }
     }
 
     void visit_Select(const Select_t& x) {
@@ -3069,19 +3083,7 @@ public:
             // overrides compiled here may add to what it reaches.
             if (!own_effects && !in_loaded_module(x.m_symtab) &&
                     ASR::TraitLifecycleSummary::analyzable(x)) {
-                if (!trait_lifecycle_summary) {
-                    SymbolTable *unit_scope = x.m_symtab;
-                    while (unit_scope->parent && !ASRUtils::is_tu_scope(unit_scope)) {
-                        unit_scope = unit_scope->parent;
-                    }
-                    trait_lifecycle_summary = std::make_unique<ASR::TraitLifecycleSummary>(
-                        unit_scope);
-                }
-                require_id(trait_lifecycle_summary->effect(const_cast<Function_t&>(x)) !=
-                        ASR::TraitLifecycleSummary::Effect::Lifecycle,
-                    "asr.verify.trait_owner.reached_lifecycle_effects",
-                    "A procedure must retain the unchecked dynamic trait lifecycle "
-                    "effects of the procedures it calls");
+                trait_lifecycle_callers.push_back(&x);
             }
         }
         if (x.m_return_var) {

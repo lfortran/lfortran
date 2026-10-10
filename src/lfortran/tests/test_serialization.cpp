@@ -6731,6 +6731,133 @@ end subroutine
     }
 }
 
+TEST_CASE("Trait lifecycle summaries follow the verifier on malformed calls") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    using Effect = ASR::TraitLifecycleSummary::Effect;
+    // `a_caller` is verified first and keeps optimistic effect flags, so its
+    // summary reaches `b_callee` before the verifier has checked that body.
+    const std::string source = R"(
+module malformed_lifecycle_m
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure :: value => payload_value
+end implements
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+type :: Base
+    integer :: k = 0
+contains
+    procedure :: run
+end type
+type, extends(Base) :: Child
+end type
+integer :: counter = 0
+contains
+integer function payload_value(self)
+    type(Payload), intent(in) :: self
+    payload_value = self%n
+end function
+subroutine a_caller(x, b)
+    type(Holder), intent(inout) :: x
+    class(Base), intent(in) :: b
+    call b_callee(x)
+    call b%run()
+end subroutine
+subroutine b_callee(x)
+    type(Holder), intent(inout) :: x
+    integer :: k
+    block
+        k = 1
+    end block
+    k = x%item%value()
+    call helper()
+end subroutine
+subroutine helper()
+end subroutine
+subroutine run(self)
+    class(Base), intent(in) :: self
+end subroutine
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("malformed_lifecycle_m"));
+    auto *caller = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("a_caller"));
+    auto *callee = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("b_callee"));
+    REQUIRE(caller->m_side_effect_free);
+    {
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*result.result, true, valid));
+    }
+    class Find : public ASR::BaseWalkVisitor<Find> {
+    public:
+        ASR::BlockCall_t *block = nullptr;
+        ASR::SubroutineCall_t *call = nullptr;
+        ASR::TraitFunctionCall_t *trait_call = nullptr;
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            block = const_cast<ASR::BlockCall_t*>(&x);
+        }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            call = const_cast<ASR::SubroutineCall_t*>(&x);
+        }
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+            trait_call = const_cast<ASR::TraitFunctionCall_t*>(&x);
+        }
+    } find;
+    for (size_t i = 0; i < callee->n_body; i++) find.visit_stmt(*callee->m_body[i]);
+    REQUIRE(find.block);
+    REQUIRE(find.call);
+    REQUIRE(find.trait_call);
+    auto *counter = module->m_symtab->get_symbol("counter");
+    // The summary itself degrades to unknown effects instead of following a
+    // malformed reference, and the verifier reports the reference.
+    auto rejects = [&](const std::string &message) {
+        ASR::TraitLifecycleSummary summary(result.result->m_symtab);
+        CHECK(summary.effect(*caller) != Effect::Lifecycle);
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        const auto &diagnostic = invalid.diagnostics.back();
+        CHECK((diagnostic.code == message ||
+            diagnostic.message.find(message) != std::string::npos));
+    };
+    SUBCASE("a block call that does not name a block") {
+        find.block->m_m = counter;
+        rejects("asr.verify.block_call.target_is_block");
+    }
+    SUBCASE("a call that does not name a procedure") {
+        find.call->m_name = module->m_symtab->get_symbol("holder");
+        rejects("must be a Function or StructMethodDeclaration");
+    }
+    SUBCASE("a trait call outside the contract's slots") {
+        find.trait_call->m_slot = 7;
+        rejects("asr.verify.trait_call.slot");
+    }
+    SUBCASE("an extension whose parent is not a type") {
+        auto *child = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("child"));
+        child->m_parent = counter;
+        rejects("asr.verify.struct.parent_is_struct");
+    }
+}
+
 TEST_CASE("Trait component effects and readonly storage fail semantically") {
     const std::string prefix = R"(
 module trait_component_errors_m
@@ -6783,8 +6910,12 @@ end type
         {"subroutine probe(x)", "type(Holder), value :: x", "", "value dummies"},
         {"subroutine probe(x, y)", "type(Holder), intent(inout) :: x, y",
             "call move_alloc(x%item, y%item)", "move_alloc for runtime trait owners"},
-        {"pure subroutine probe(x, y)", "type(Holder), allocatable, intent(inout) :: x, y",
+        {"pure subroutine probe(x, y)", "type(Holder), allocatable, intent(inout) :: x(:), y(:)",
             "call move_alloc(x, y)", "trait move_alloc with unchecked"},
+        {"subroutine probe(x, y)", "type(Holder), allocatable, intent(inout) :: x, y",
+            "call move_alloc(x, y)", "move_alloc of a scalar with runtime trait components"},
+        {"subroutine probe(x, y)", "class(Holder), allocatable, intent(inout) :: x, y",
+            "call move_alloc(x, y)", "move_alloc of a scalar with runtime trait components"},
         {"pure subroutine probe(x, n)", "type(Holder), intent(in) :: x(:)\n"
             "integer, intent(out) :: n", "n = size(reshape(x, [size(x)]))", "trait temporary"},
         {"pure subroutine caller(x, y)\ntype(Holder), intent(inout) :: x\n"

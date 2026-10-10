@@ -84,6 +84,21 @@ static void remap_block_calls(Vec<ASR::stmt_t*>& body,
     }
 }
 
+// Whether a procedure, including its BLOCK and contained scopes, names runtime
+// trait storage. Such a procedure imports the trait contracts, slot procedures
+// and inspection types it uses into its own scopes, which a specialized copy
+// does not carry over, so it keeps its descriptor arguments instead.
+static bool names_runtime_trait_storage(const ASR::Function_t &x) {
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+    public:
+        bool found = false;
+        void visit_TraitObjectType(const ASR::TraitObjectType_t &) { found = true; }
+        void visit_TraitOwnerList(const ASR::TraitOwnerList_t &) { found = true; }
+    } finder;
+    finder.visit_Function(x);
+    return finder.found;
+}
+
 /*
 The following visitor converts function/subroutines (a.k.a procedures)
 with array arguments having empty dimensions to arrays having dimensional
@@ -342,7 +357,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         continue;
                     }
                     pass_array_by_data_functions.push_back(subrout);
-                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) &&
+                            !names_runtime_trait_storage(*subrout) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);

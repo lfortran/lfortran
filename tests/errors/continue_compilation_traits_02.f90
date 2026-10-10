@@ -181,7 +181,7 @@ contains
         call apply(overwrite, x, y)
     end subroutine
     pure subroutine move_holders(x, y)
-        type(Holder), allocatable, intent(inout) :: x, y
+        type(Holder), allocatable, intent(inout) :: x(:), y(:)
         call move_alloc(x, y)
     end subroutine
     pure integer function count_reshaped(x)
