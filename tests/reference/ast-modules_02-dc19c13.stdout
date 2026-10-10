@@ -880,7 +880,9 @@
                     (Assignment
                         0
                         v
-                        (** (+ 1 (* c x)) 3)
+                        (** (Parenthesis
+                            (+ 1 (* c x))
+                        ) 3)
                         ()
                     )
                     (If
@@ -947,17 +949,19 @@
                             []
                             []
                             []
-                        ) (+ (/ (** x 2) 2) (* d (+ (- 1 v) (FuncCallOrArray
-                            log
-                            []
-                            [(()
-                            v
-                            ()
-                            0)]
-                            []
-                            []
-                            []
-                        )))))
+                        ) (+ (/ (** x 2) 2) (* d (Parenthesis
+                            (+ (- 1 v) (FuncCallOrArray
+                                log
+                                []
+                                [(()
+                                v
+                                ()
+                                0)]
+                                []
+                                []
+                                []
+                            ))
+                        ))))
                         [(Assignment
                             0
                             fn_val

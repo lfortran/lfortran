@@ -1,0 +1,196 @@
+(TranslationUnit
+    [(Program
+        expr_25
+        (TriviaNode
+            [(EndOfLine)
+            (Comment
+                "! Parentheses that the grouping does not need are kept in the AST,"
+            )
+            (Comment
+                "! so that --show-ast-f90 prints them back: the standard requires"
+            )
+            (Comment
+                "! them to be honored, and compilers do"
+            )]
+            []
+        )
+        [(ImplicitNone
+            []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (b
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (c
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (x
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Assignment
+            0
+            a
+            (Real "1.0")
+            ()
+        )
+        (Assignment
+            0
+            b
+            (Real "2.0")
+            ()
+        )
+        (Assignment
+            0
+            c
+            (Real "3.0")
+            ()
+        )
+        (Assignment
+            0
+            x
+            (+ (Parenthesis
+                (* a b)
+            ) c)
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x (Real "5.0"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            x
+            (* (Parenthesis
+                (/ a b)
+            ) c)
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x (Real "1.5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            x
+            (Parenthesis
+                (Parenthesis
+                    (+ a b)
+                )
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x (Real "3.0"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            x
+            (- c (Parenthesis
+                (* a b)
+            ))
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x (Real "1.0"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (Parenthesis
+                (+ a b)
+            ) c)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            .true.
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)

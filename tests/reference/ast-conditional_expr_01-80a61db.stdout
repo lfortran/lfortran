@@ -384,11 +384,13 @@
         (Assignment
             0
             x
-            (+ (ConditionalExpr
-                (Logical .false. ())
-                1
-                2
-            ) 3)
+            (Parenthesis
+                (+ (ConditionalExpr
+                    (Logical .false. ())
+                    1
+                    2
+                ) 3)
+            )
             ()
         )
         (If
