@@ -3918,6 +3918,7 @@ RUN(NAME implied_do_loops45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops47 LABELS gfortran llvm)
 RUN(NAME implied_do_loops48 LABELS gfortran llvm)
+RUN(NAME implied_do_loops49 LABELS gfortran llvm) # trim in implied-do with size() bound
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
