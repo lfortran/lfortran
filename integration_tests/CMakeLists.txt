@@ -1924,6 +1924,7 @@ RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees 
 RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
 RUN(NAME intrinsics_481 LABELS gfortran llvm c) # sign on real(4)/real(8) with negative zero, C backend RealCopySign (#13918)
 RUN(NAME intrinsics_482 LABELS gfortran llvm) # dot_product on a derived-type component section (#14036)
+RUN(NAME intrinsics_483 LABELS gfortran llvm) # array intrinsics on allocatable/pointer arrays with lower bound not 1 (#14369)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
