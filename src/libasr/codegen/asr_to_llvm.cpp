@@ -8232,10 +8232,13 @@ public:
                             // scope-exit finalizer would then try to free.
                             ASR::ttype_t* value_type = ASRUtils::expr_type(member_init);
                             ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
+                            // Extract array size and kind (bytes per character) for correct total byte calculation
+                            int64_t array_size = ASRUtils::get_fixed_size_of_array(v->m_type);
+                            int64_t kind_multiplier = str_type->m_kind;
                             llvm::Value* n_bytes = builder->CreateMul(
                                 llvm_utils->get_string_length(str_type, ptr_member),
                                 llvm::ConstantInt::get(context, llvm::APInt(64,
-                                    ASRUtils::get_fixed_size_of_array(v->m_type))));
+                                      array_size * kind_multiplier)));
                             builder->CreateMemCpy(
                                 llvm_utils->get_stringArray_data(v->m_type, ptr_member, false),
                                 llvm::MaybeAlign(),
