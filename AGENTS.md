@@ -30,7 +30,7 @@ Available skills:
 
 | Skill | Purpose |
 | --- | --- |
-| `classify-issue` | Triage issues with evidence-based, additive labels and optional frequency-first prioritization |
+| `classify-issue` | Triage issues with evidence-based, additive labels and a frequency-first High/Medium/Low priority for every issue |
 | `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
@@ -38,10 +38,14 @@ Available skills:
 | `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, review locally, open a PR from a fork, and iterate until CI is green |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
-enhancements, new features, and maintenance or internal-correctness work. It
-uses the live label catalog, preserves existing labels, and asks about
-uncertain cases. GitHub changes require a labeling request; recommendation
-and local-priority requests stay read-only.
+enhancements, new features, and maintenance or internal-correctness work.
+Every classification also recommends exactly one High, Medium, or Low
+priority by expected encounter frequency in ordinary Fortran programming,
+with severity only secondary; High is reserved for frequent failures of valid
+standard Fortran on the default LLVM path. It uses the live label catalog,
+preserves existing labels, and asks about uncertain cases. GitHub changes
+require a labeling request and stay within its requested scope;
+recommendation and local-priority requests stay read-only.
 
 ### The reproduce → reduce → fix loop
 
