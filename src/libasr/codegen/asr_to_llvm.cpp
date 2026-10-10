@@ -2417,14 +2417,15 @@ public:
         struct_array_global_members_details.clear();
     }
 
-    // In interactive mode the members of the derived type globals a cell
-    // declares are set up when that cell runs, whether or not it has a
-    // program, and never again: a later cell only declares them (see
-    // `is_earlier_cell_global`). The evaluator calls this before anything
-    // else of the cell. The JIT runs no static constructors, so it cannot be
-    // one.
+    // In interactive mode the allocatable and pointer array globals and the
+    // members of the derived type globals a cell declares are set up when
+    // that cell runs, whether or not it has a program, and never again: a
+    // later cell only declares them (see `is_earlier_cell_global`). The
+    // evaluator calls this before anything else of the cell. The JIT runs no
+    // static constructors, so it cannot be one.
     void emit_interactive_global_setup() {
-        if (allocatable_struct_array_members_details.empty()
+        if (allocatable_array_details.empty()
+                && allocatable_struct_array_members_details.empty()
                 && struct_array_global_members_details.empty()) {
             return;
         }
@@ -2435,6 +2436,13 @@ public:
             compiler_options.po.run_fun + "_setup", module.get());
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
         builder->SetCurrentDebugLocation(nullptr);
+        // The function returns, so the descriptor cannot be a stack one: the
+        // array's static descriptor is set up in place.
+        for(to_be_allocated_array array : allocatable_array_details){
+            fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
+                true, true, false, array.var_type, false, true, true);
+        }
+        allocatable_array_details.clear();
         emit_global_struct_members_setup();
         builder->CreateRetVoid();
         builder->ClearInsertionPoint();
@@ -7232,13 +7240,15 @@ public:
                 if (init_value && init_value->getType() != x_ptr) {
                     init_value = nullptr;
                 }
-                allocatable_array_details.push_back(
-                    { ASRUtils::EXPR(ASR::make_Var_t(
-                          al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
-                      ptr,
-                      type_,
-                      x.m_type,
-                      ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims) });
+                if (!is_earlier_cell_global(x)) {
+                    allocatable_array_details.push_back(
+                        { ASRUtils::EXPR(ASR::make_Var_t(
+                              al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
+                          ptr,
+                          type_,
+                          x.m_type,
+                          ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims) });
+                }
             } else if (ASRUtils::is_character(*x.m_type) && !init_value) {
                 // set all members of string_descriptor to null and zeroes.
                 init_value = llvm::ConstantAggregateZero::get(string_descriptor);
@@ -7928,7 +7938,7 @@ public:
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false,
-        bool reserve_data_memory=true) {
+        bool reserve_data_memory=true, bool descriptor_in_place=false) {
         // Skip function call for AssumedLength strings
         // Their descriptors come from the original parameter inside subroutines
         if (ASRUtils::is_character(*m_type)) {
@@ -7946,12 +7956,28 @@ public:
         llvm::Value* ptr_ = nullptr;
         bool pointer_null_array_init = has_pointer_null_array_initializer(expr);
         if( is_malloc_array_type && !is_list && !is_data_only ) {
-            ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
+            if (descriptor_in_place) {
+                // `ptr` already points at the descriptor to set up.
+                ptr_ = llvm_utils->CreateLoad2(type_->getPointerTo(), ptr);
+            } else {
+                ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
+            }
             if(ASRUtils::is_character(*m_type)){
                 if (pointer_null_array_init) {
                     arr_descr->reset_is_allocated_flag(type_, ptr_, llvm_data_type);
                 } else {
-                    llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
+                    llvm::Value* str_desc = nullptr;
+                    if (descriptor_in_place) {
+                        // The string descriptor has to outlive the set up too.
+                        str_desc = new llvm::GlobalVariable(*module, string_descriptor, false,
+                            llvm::GlobalVariable::InternalLinkage,
+                            llvm::ConstantAggregateZero::get(string_descriptor), "arr_desc_str_desc");
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
+                            ASRUtils::extract_type(m_type));
+                        setup_string_length(str_desc, str_type, str_type->m_len);
+                    } else {
+                        str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
+                    }
                     builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
                 }
             } else if (ASRUtils::non_unlimited_polymorphic_class(m_type)){ 
