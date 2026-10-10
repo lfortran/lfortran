@@ -357,6 +357,71 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
 };
 
+// A bind(c) procedure takes an absent optional argument as a null pointer,
+// but an optional dummy of a transformed procedure always points to
+// something and has a presence flag instead. When such a dummy is passed on
+// to an optional dummy of a bind(c) procedure, pass a pointer to it that is
+// null when the flag is false.
+template <typename T>
+bool forward_optional_args_to_bindc(Vec<ASR::call_arg_t>& new_args,
+    Allocator& al, const T& x, ASR::Function_t* func,
+    ASR::Function_t* owning_function, SymbolTable* scope,
+    std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx,
+    Vec<ASR::stmt_t*>& pass_result) {
+    if( owning_function == nullptr ||
+        ASRUtils::get_FunctionType(func)->m_abi != ASR::abiType::BindC ||
+        sym2optionalargidx.find(&(owning_function->base)) == sym2optionalargidx.end() ) {
+        return false;
+    }
+    std::vector<int32_t>& optional_idx = sym2optionalargidx[&(owning_function->base)];
+    bool replaced = false;
+    new_args.reserve(al, x.n_args);
+    for( size_t i = 0; i < x.n_args; i++ ) {
+        new_args.push_back(al, x.m_args[i]);
+        ASR::expr_t* actual = x.m_args[i].m_value;
+        if( i >= func->n_args || actual == nullptr ||
+            !ASR::is_a<ASR::Var_t>(*actual) || ASRUtils::is_array(ASRUtils::expr_type(actual)) ||
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(actual)) ) {
+            continue;
+        }
+        ASR::symbol_t* formal_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+        if( !ASR::is_a<ASR::Variable_t>(*formal_sym) ||
+            ASR::down_cast<ASR::Variable_t>(formal_sym)->m_presence != ASR::presenceType::Optional ) {
+            continue;
+        }
+        ASR::symbol_t* actual_sym = ASR::down_cast<ASR::Var_t>(actual)->m_v;
+        int32_t k = -1;
+        for( int32_t idx: optional_idx ) {
+            if( ASR::down_cast<ASR::Var_t>(owning_function->m_args[idx])->m_v == actual_sym ) {
+                k = idx;
+                break;
+            }
+        }
+        if( k == -1 ) {
+            continue;
+        }
+        ASR::expr_t* is_present = owning_function->m_args[k + 1];
+        const Location& loc = actual->base.loc;
+        ASR::Variable_t* actual_var = ASRUtils::EXPR2VAR(actual);
+        std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
+        ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            ASRUtils::duplicate_type(al, actual_var->m_type)));
+        ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
+            loc, pointer_name, al, scope, pointer_type, ASR::intentType::Local,
+            actual_var->m_type_declaration, actual);
+        Vec<ASR::expr_t*> nullify_vars;
+        nullify_vars.reserve(al, 1);
+        nullify_vars.push_back(al, pointer_variable);
+        ASRUtils::ASRBuilder builder(al, loc);
+        pass_result.push_back(al, builder.If(is_present,
+            {ASRUtils::STMT(ASR::make_Associate_t(al, loc, pointer_variable, actual))},
+            {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_vars.p, nullify_vars.size()))}));
+        new_args.p[i].m_value = pointer_variable;
+        replaced = true;
+    }
+    return replaced;
+}
+
 template <typename T>
 bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx, Vec<ASR::stmt_t*>& pass_result) {
@@ -412,7 +477,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     if( !replace_func_call ) {
-        return false;
+        return forward_optional_args_to_bindc(new_args, al, x, func,
+            owning_function, scope, sym2optionalargidx, pass_result);
     }
 
     // Self is now explicitly in call args, so no offset is needed.
