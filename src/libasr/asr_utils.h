@@ -4561,6 +4561,81 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     return import_symbol_into_scope(al, type_declaration, scope);
 }
 
+// The bounds of a procedure type's dummy arguments can reference module
+// symbols that are only visible from the module that declared the interface
+// (for example the getter of a use-associated explicit-shape bound). Replaces
+// every such reference with one that is visible from `scope`. With
+// `only_check` set, it only records in `found` whether there is any. The
+// member types of a derived type belong to its Struct and are shared by every
+// use of the type, so they are left alone.
+class ProcedureTypeSymbolImporter:
+    public ASR::BaseExprReplacer<ProcedureTypeSymbolImporter> {
+    Allocator &al;
+    SymbolTable *scope;
+    bool only_check;
+
+    public:
+
+    bool found = false;
+
+    ProcedureTypeSymbolImporter(Allocator &al_, SymbolTable *scope_,
+        bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
+
+    ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
+        // Passes look these symbols up by name, so a symbol of the same
+        // name in between must not shadow the one referenced.
+        if (ASRUtils::resolves_to(sym, scope)) {
+            return sym;
+        }
+        found = true;
+        if (only_check) {
+            return sym;
+        }
+        return ASRUtils::import_symbol_into_scope(al, sym, scope, true);
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        ASR::BaseExprReplacer<ProcedureTypeSymbolImporter>::replace_FunctionCall(x);
+        ASR::symbol_t *name = x->m_name;
+        x->m_name = import_symbol(name);
+        if (x->m_original_name == name) {
+            x->m_original_name = x->m_name;
+        } else if (x->m_original_name) {
+            x->m_original_name = import_symbol(x->m_original_name);
+        }
+    }
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = import_symbol(x->m_v);
+    }
+
+    void replace_StructType(ASR::StructType_t */*x*/) {
+    }
+};
+
+// Whether the procedure type `type` references a symbol that is not visible
+// from `scope`. With no `scope`, whether it references any symbol at all.
+static inline bool procedure_type_references_symbols(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    ProcedureTypeSymbolImporter checker(al, scope, true);
+    checker.replace_ttype(type);
+    return checker.found;
+}
+
+// Returns the procedure type `type` as it can be referenced from `scope`:
+// `type` itself, or a copy whose module symbols are imported into `scope`.
+static inline ASR::ttype_t* import_procedure_type(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    if (!procedure_type_references_symbols(al, type, scope)) {
+        return type;
+    }
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t *new_type = duplicator.duplicate_ttype(type);
+    ProcedureTypeSymbolImporter importer(al, scope, false);
+    importer.replace_ttype(new_type);
+    return new_type;
+}
+
 static inline void set_cptr_type_declaration(ASR::ttype_t* type,
         ASR::symbol_t* type_declaration) {
     if (type == nullptr || type_declaration == nullptr) {
@@ -4592,6 +4667,12 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    // The same holds for the symbols in the bounds of a procedure type, for
+    // example in a variable a pass creates in another scope.
+    if (a_type != nullptr && a_parent_symtab != nullptr &&
+            ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(a_type))) {
+        a_type = import_procedure_type(al, a_type, a_parent_symtab);
+    }
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
@@ -6715,81 +6796,6 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
     return init_expr;
 }
 
-// The bounds of a procedure type's dummy arguments can reference module
-// symbols that are only visible from the module that declared the interface
-// (for example the getter of a use-associated explicit-shape bound). Replaces
-// every such reference with one that is visible from `scope`. With
-// `only_check` set, it only records in `found` whether there is any. The
-// member types of a derived type belong to its Struct and are shared by every
-// use of the type, so they are left alone.
-class ProcedureTypeSymbolImporter:
-    public ASR::BaseExprReplacer<ProcedureTypeSymbolImporter> {
-    Allocator &al;
-    SymbolTable *scope;
-    bool only_check;
-
-    public:
-
-    bool found = false;
-
-    ProcedureTypeSymbolImporter(Allocator &al_, SymbolTable *scope_,
-        bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
-
-    ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
-        // Passes look these symbols up by name, so a symbol of the same
-        // name in between must not shadow the one referenced.
-        if (ASRUtils::resolves_to(sym, scope)) {
-            return sym;
-        }
-        found = true;
-        if (only_check) {
-            return sym;
-        }
-        return ASRUtils::import_symbol_into_scope(al, sym, scope, true);
-    }
-
-    void replace_FunctionCall(ASR::FunctionCall_t *x) {
-        ASR::BaseExprReplacer<ProcedureTypeSymbolImporter>::replace_FunctionCall(x);
-        ASR::symbol_t *name = x->m_name;
-        x->m_name = import_symbol(name);
-        if (x->m_original_name == name) {
-            x->m_original_name = x->m_name;
-        } else if (x->m_original_name) {
-            x->m_original_name = import_symbol(x->m_original_name);
-        }
-    }
-
-    void replace_Var(ASR::Var_t *x) {
-        x->m_v = import_symbol(x->m_v);
-    }
-
-    void replace_StructType(ASR::StructType_t */*x*/) {
-    }
-};
-
-// Whether the procedure type `type` references a symbol that is not visible
-// from `scope`. With no `scope`, whether it references any symbol at all.
-static inline bool procedure_type_references_symbols(Allocator &al,
-        ASR::ttype_t *type, SymbolTable *scope) {
-    ProcedureTypeSymbolImporter checker(al, scope, true);
-    checker.replace_ttype(type);
-    return checker.found;
-}
-
-// Returns the procedure type `type` as it can be referenced from `scope`:
-// `type` itself, or a copy whose module symbols are imported into `scope`.
-static inline ASR::ttype_t* import_procedure_type(Allocator &al,
-        ASR::ttype_t *type, SymbolTable *scope) {
-    if (!procedure_type_references_symbols(al, type, scope)) {
-        return type;
-    }
-    ASRUtils::ExprStmtDuplicator duplicator(al);
-    ASR::ttype_t *new_type = duplicator.duplicate_ttype(type);
-    ProcedureTypeSymbolImporter importer(al, scope, false);
-    importer.replace_ttype(new_type);
-    return new_type;
-}
-
 class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     private:
@@ -7366,7 +7372,17 @@ class SymbolDuplicator {
             return nullptr;
         }
         node_duplicator.success = true;
-        ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(variable->m_type);
+        ASR::ttype_t* m_type = nullptr;
+        if (ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(variable->m_type))) {
+            // A procedure type references the symbols of its interface's
+            // module, which can be shadowed by name in the destination, so
+            // they are imported rather than looked up by name.
+            m_type = import_procedure_type(al,
+                ExprStmtDuplicator(al).duplicate_ttype(variable->m_type),
+                destination_symtab);
+        } else {
+            m_type = node_duplicator.duplicate_ttype(variable->m_type);
+        }
         if( !node_duplicator.success ) {
             return nullptr;
         }

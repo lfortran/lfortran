@@ -5039,6 +5039,7 @@ RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_95 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_96 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_97 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_98 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -5296,6 +5297,8 @@ RUN(NAME proc_ptr_25 LABELS gfortran) # ASR checked in tests.toml; --separate-co
 RUN(NAME proc_ptr_26 LABELS gfortran llvm)
 RUN(NAME proc_ptr_27 LABELS gfortran llvm)
 RUN(NAME proc_ptr_28 LABELS gfortran llvm)
+RUN(NAME proc_ptr_29 LABELS gfortran llvm)
+RUN(NAME proc_ptr_30 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_03 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_04 LABELS gfortran llvm)

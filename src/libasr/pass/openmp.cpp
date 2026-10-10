@@ -871,6 +871,17 @@ class ParallelRegionVisitor :
             ASR::ttype_t* target_type = ASRUtils::expr_type(target);
             if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(target_type))) {
+                // One side is the thread data member, whose procedure type
+                // names symbols of the thread data type's scope. The other
+                // side is a variable of this scope with the same procedure
+                // type, as it is named from here.
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_type =
+                        ASRUtils::expr_type(value);
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+                    ASR::down_cast<ASR::StructInstanceMember_t>(value)->m_type =
+                        target_type;
+                }
                 return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
                     target, value));
             }
