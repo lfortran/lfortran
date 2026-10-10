@@ -6405,7 +6405,8 @@ static inline bool is_elemental(ASR::symbol_t* x) {
 
 
 // Whether a derived actual has visible nominal conformance to a borrowed
-// runtime trait view dummy. Without it, only views match view dummies.
+// runtime trait view dummy. Passing it selects the conformance tier of generic
+// resolution; without it, view dummies match only views of an equal contract.
 using TraitConformance = std::function<bool (ASR::expr_t *, ASR::ttype_t *)>;
 
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
@@ -6422,7 +6423,7 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     // of a type-bound procedure call). A `nopass` specific procedure does not
     // receive the passed-object, so it must be matched against the arguments
     // excluding `args[0]`.
-    auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+    auto matches = [&](ASR::symbol_t* proc_sym, const TraitConformance &with) -> bool {
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             ASR::StructMethodDeclaration_t *clss_fn
                 = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
@@ -6430,27 +6431,45 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
                 Vec<ASR::call_arg_t> args_no_dt;
                 args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
-                return select_func_subrout(proc, args_no_dt, loc, err, conforms);
+                return select_func_subrout(proc, args_no_dt, loc, err, with);
             }
-            return select_func_subrout(proc, args, loc, err, conforms);
+            return select_func_subrout(proc, args, loc, err, with);
         } else {
-            return select_func_subrout(proc_sym, args, loc, err, conforms);
+            return select_func_subrout(proc_sym, args, loc, err, with);
         }
     };
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
-            continue;
-        }
-        if( matches(p.m_procs[i]) ) {
-            return i;
+    // Exact matching, non-elemental specifics before elemental ones.
+    for (bool elemental : {false, true}) {
+        for (size_t i=0; i < p.n_procs; i++) {
+            if (is_elemental(p.m_procs[i]) != elemental) continue;
+            if( matches(p.m_procs[i], nullptr) ) {
+                return i;
+            }
         }
     }
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (!is_elemental(p.m_procs[i])) {
-            continue;
-        }
-        if( matches(p.m_procs[i]) ) {
-            return i;
+    // Only when no specific matches exactly may a borrowed trait view dummy
+    // accept an implying view or a conforming derived value, and then the
+    // reference must select a single specific.
+    if (conforms) {
+        for (bool elemental : {false, true}) {
+            std::vector<size_t> found;
+            for (size_t i=0; i < p.n_procs; i++) {
+                if (is_elemental(p.m_procs[i]) != elemental) continue;
+                if( matches(p.m_procs[i], conforms) ) found.push_back(i);
+            }
+            if (found.size() == 1) return found[0];
+            if (found.size() > 1) {
+                std::string candidates;
+                for (size_t k = 0; k < found.size(); k++) {
+                    candidates += std::string(k == 0 ? "" :
+                        k + 1 == found.size() ? " and " : ", ") + "'" +
+                        symbol_name(p.m_procs[found[k]]) + "'";
+                }
+                err("ambiguous reference to generic procedure '" + std::string(p.m_name) +
+                    "': specific procedures " + candidates +
+                    " accept these arguments through trait conformance", loc);
+                return -1;
+            }
         }
     }
     if( raise_error ) {

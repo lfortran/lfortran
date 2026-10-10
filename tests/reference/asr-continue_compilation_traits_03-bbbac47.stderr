@@ -161,3 +161,15 @@ semantic error: a runtime trait component value in a structure constructor is no
     |
 184 |         h = Holder(Unrelated())
     |                    ^^^^^^^^^^^ 
+
+semantic error: ambiguous reference to generic procedure 'pick': specific procedures 'pick_a' and 'pick_b' accept these arguments through trait conformance
+   --> tests/errors/continue_compilation_traits_03.f90:273:18
+    |
+273 |         print *, pick(x)
+    |                  ^^^^^^^ 
+
+semantic error: ambiguous reference to generic procedure 'level': specific procedures 'level_parent' and 'level_child' accept these arguments through trait conformance
+   --> tests/errors/continue_compilation_traits_03.f90:277:18
+    |
+277 |         print *, level(y)
+    |                  ^^^^^^^^ 

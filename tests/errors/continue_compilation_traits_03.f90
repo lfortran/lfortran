@@ -205,3 +205,75 @@ contains
         class(IBounded), intent(in) :: method
     end subroutine
 end module
+
+! Without an exact match, trait conformance must select a single specific:
+! unrelated views that both accept a value, or a parent and a child view that
+! both accept it, make the reference ambiguous.
+module traits_runtime_resolution_ambiguous
+    implicit none
+    abstract interface :: IA
+        integer function a()
+        end function a
+    end interface IA
+    abstract interface :: IB
+        integer function b()
+        end function b
+    end interface IB
+    abstract interface, extends(IA) :: IAChild
+        integer function c()
+        end function c
+    end interface IAChild
+    type, sealed, implements(IA + IB) :: Both
+    contains
+        procedure, nopass :: a => both_a
+        procedure, nopass :: b => both_b
+    end type Both
+    type, sealed, implements(IAChild) :: Leaf
+    contains
+        procedure, nopass :: a => leaf_a
+        procedure, nopass :: c => leaf_c
+    end type Leaf
+    interface pick
+        module procedure pick_a, pick_b
+    end interface pick
+    interface level
+        module procedure level_parent, level_child
+    end interface level
+contains
+    integer function both_a()
+        both_a = 1
+    end function
+    integer function both_b()
+        both_b = 2
+    end function
+    integer function leaf_a()
+        leaf_a = 3
+    end function
+    integer function leaf_c()
+        leaf_c = 4
+    end function
+    integer function pick_a(item)
+        class(IA), intent(in) :: item
+        pick_a = item%a()
+    end function
+    integer function pick_b(item)
+        class(IB), intent(in) :: item
+        pick_b = item%b()
+    end function
+    integer function level_parent(item)
+        class(IA), intent(in) :: item
+        level_parent = item%a()
+    end function
+    integer function level_child(item)
+        class(IAChild), intent(in) :: item
+        level_child = item%c()
+    end function
+    subroutine use_both()
+        type(Both) :: x
+        print *, pick(x)
+    end subroutine
+    subroutine use_leaf()
+        type(Leaf) :: y
+        print *, level(y)
+    end subroutine
+end module

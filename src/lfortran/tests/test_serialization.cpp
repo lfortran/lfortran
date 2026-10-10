@@ -3875,6 +3875,161 @@ contains
     }
 }
 
+TEST_CASE("Generic resolution matches exactly before trait conformance") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string contracts = R"(
+module generic_conformance_m
+implicit none
+abstract interface :: IA
+    integer function a()
+    end function
+end interface
+abstract interface :: IB
+    integer function b()
+    end function
+end interface
+abstract interface, extends(IA) :: IAChild
+    integer function c()
+    end function
+end interface
+type, sealed, implements(IAChild + IB) :: Cell
+contains
+    procedure, nopass :: a => cell_a
+    procedure, nopass :: b => cell_b
+    procedure, nopass :: c => cell_c
+end type
+)";
+    const std::string specifics = R"(
+contains
+integer function cell_a()
+    cell_a = 1
+end function
+integer function cell_b()
+    cell_b = 2
+end function
+integer function cell_c()
+    cell_c = 3
+end function
+integer function on_a(item)
+    class(IA), intent(in) :: item
+    on_a = item%a()
+end function
+integer function on_b(item)
+    class(IB), intent(in) :: item
+    on_b = item%b()
+end function
+integer function on_child(item)
+    class(IAChild), intent(in) :: item
+    on_child = item%c()
+end function
+integer function on_cell(item)
+    type(Cell), intent(in) :: item
+    on_cell = 0
+end function
+)";
+    auto compile = [&](Allocator &al, const std::string &source,
+            LCompilers::diag::Diagnostics &diagnostics) {
+        LCompilers::CompilerOptions options;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        return LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    };
+    SUBCASE("exact specifics win in either order and views are associated only by conformance") {
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        auto result = compile(al, contracts + R"(
+interface view_first
+    module procedure on_a, on_cell
+end interface
+interface cell_first
+    module procedure on_cell, on_a
+end interface
+interface parent_first
+    module procedure on_a, on_child
+end interface
+interface child_first
+    module procedure on_child, on_a
+end interface
+interface only_a
+    module procedure on_a
+end interface
+)" + specifics + R"(
+subroutine exact(x, child)
+    type(Cell), intent(in) :: x
+    class(IAChild), intent(in) :: child
+    integer :: r
+    r = view_first(x)
+    r = cell_first(x)
+    r = parent_first(child)
+    r = child_first(child)
+end subroutine
+subroutine conforming(x, child)
+    type(Cell), intent(in) :: x
+    class(IAChild), intent(in) :: child
+    integer :: r
+    r = only_a(x)
+    r = only_a(child)
+end subroutine
+end module
+)", diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        LCompilers::diag::Diagnostics verified;
+        CHECK(LCompilers::asr_verify(*result.result, true, verified));
+        INFO(verified.render2());
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            result.result->m_symtab->get_symbol("generic_conformance_m"));
+        auto call = [&](const std::string &procedure, size_t statement) {
+            auto *body = ASR::down_cast<ASR::Function_t>(
+                module->m_symtab->get_symbol(procedure));
+            REQUIRE(statement < body->n_body);
+            return ASR::down_cast<ASR::FunctionCall_t>(
+                ASR::down_cast<ASR::Assignment_t>(body->m_body[statement])->m_value);
+        };
+        auto selected = [&](ASR::FunctionCall_t *reference) {
+            return ASRUtils::symbol_get_past_external(reference->m_name);
+        };
+        auto *on_cell = module->m_symtab->get_symbol("on_cell");
+        auto *on_child = module->m_symtab->get_symbol("on_child");
+        auto *on_a = module->m_symtab->get_symbol("on_a");
+        const ASR::symbol_t *exact[] = {on_cell, on_cell, on_child, on_child};
+        for (size_t i = 0; i < 4; i++) {
+            auto *reference = call("exact", i);
+            CHECK(selected(reference) == exact[i]);
+            CHECK(ASR::is_a<ASR::Var_t>(*reference->m_args[0].m_value));
+        }
+        CHECK(selected(call("conforming", 0)) == on_a);
+        CHECK(ASR::is_a<ASR::TraitPack_t>(*call("conforming", 0)->m_args[0].m_value));
+        CHECK(selected(call("conforming", 1)) == on_a);
+        CHECK(ASR::is_a<ASR::TraitProject_t>(*call("conforming", 1)->m_args[0].m_value));
+    }
+    SUBCASE("several conforming specifics make the reference ambiguous") {
+        for (const std::string &pair : {std::string("on_a, on_b"), std::string("on_a, on_child")}) {
+            Allocator al(1024 * 1024);
+            LCompilers::diag::Diagnostics diagnostics;
+            auto result = compile(al, contracts + "interface pick\n    module procedure " +
+                pair + "\nend interface\n" + specifics + R"(
+subroutine ambiguous(x)
+    type(Cell), intent(in) :: x
+    integer :: r
+    r = pick(x)
+end subroutine
+end module
+)", diagnostics);
+            INFO(diagnostics.render2());
+            CHECK_FALSE(result.ok);
+            std::string candidates = pair == "on_a, on_b" ? "'on_a' and 'on_b'"
+                : "'on_a' and 'on_child'";
+            CHECK(diagnostics.render2().find("ambiguous reference to generic procedure "
+                "'pick': specific procedures " + candidates +
+                " accept these arguments through trait conformance") != std::string::npos);
+        }
+    }
+}
+
 TEST_CASE("Runtime trait slots retain diamonds and independent nominal origins") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

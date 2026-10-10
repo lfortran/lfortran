@@ -15045,11 +15045,7 @@ public:
         ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
         ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
         ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
-        int idx = ASRUtils::select_generic_procedure(args, *g, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        }, true, false, runtime_trait_conformance(loc));
+        int idx = select_generic_specific(args, *g, loc, true);
         return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
     }
 
@@ -15060,12 +15056,7 @@ public:
         ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
         ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
         ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
-        int idx = ASRUtils::select_generic_procedure(args, *g, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    },
-                    false, false, runtime_trait_conformance(loc));
+        int idx = select_generic_specific(args, *g, loc, false);
         if( idx == -1 ) {
             // if no GenericProcedure matches, we try matching it with
             // StructConstructor first, we do this before trying an intrinsic
@@ -15153,12 +15144,7 @@ public:
                     args);
         } else {
             ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-            int idx = ASRUtils::select_generic_procedure(args, *p, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        },
-                    false, false, runtime_trait_conformance(loc));
+            int idx = select_generic_specific(args, *p, loc, false);
             if( idx == -1 ) {
                 std::string v_name = ASRUtils::symbol_name(v);
                 v = resolve_intrinsic_function(loc, v_name);
@@ -15210,12 +15196,7 @@ public:
                     args);
         } else {
             ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-            int idx = ASRUtils::select_generic_procedure(args, *p, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        },
-                    false, is_dt_present, runtime_trait_conformance(loc));
+            int idx = select_generic_specific(args, *p, loc, false, is_dt_present);
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
@@ -21777,12 +21758,7 @@ public:
                         if( diags.has_error() ) {
                             continue ;
                         }
-                        int idx = ASRUtils::select_generic_procedure(args_copy, *gp, x.base.base.loc,
-                                        [&](const std::string &msg, const Location &loc) {
-                                                diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                                                throw SemanticAbort();
-                                            },
-                                        false, false, runtime_trait_conformance(x.base.base.loc));
+                        int idx = select_generic_specific(args_copy, *gp, x.base.base.loc, false);
                         if( idx == i ) {
                             function_found = true;
                             args.n = 0;
@@ -23993,27 +23969,44 @@ public:
         }
     }
 
-    // Generic resolution's view of nominal conformance: a derived actual
-    // matches a borrowed trait view dummy when its visible implementations
-    // provide every requirement of the view's contract, as association does.
-    ASRUtils::TraitConformance runtime_trait_conformance(const Location &loc) {
-        return [this, loc](ASR::expr_t *actual, ASR::ttype_t *view) {
+    // The conformance tier of generic resolution: a derived actual matches a
+    // borrowed trait view dummy when its visible implementations provide
+    // every requirement of the view's contract. It reports nothing itself;
+    // associating the selected specific's actuals diagnoses an implementation
+    // or runtime witness that cannot be used.
+    ASRUtils::TraitConformance runtime_trait_conformance() {
+        return [this](ASR::expr_t *actual, ASR::ttype_t *view) {
             auto *declaration = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(actual));
             if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
-            auto implementations = trait_implementations_for_type(declaration, loc);
+            std::set<const ASR::symbol_t*> provided;
+            for (auto *implementation : visible_trait_implementations()) {
+                if (!ASRUtils::trait_implementation_matches_type(*implementation,
+                        declaration, nullptr)) continue;
+                auto *trait = ASRUtils::symbol_get_past_external(implementation->m_trait);
+                if (!trait || !ASR::is_a<ASR::Trait_t>(*trait)) continue;
+                auto hierarchy = ASRUtils::trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(trait));
+                if (hierarchy.error != ASRUtils::TraitHierarchyError::None) continue;
+                for (auto *provider : hierarchy.traits) provided.insert(&provider->base);
+            }
             for (auto *required : ASRUtils::trait_contract_requirements(
                     *ASRUtils::trait_runtime_contract(view))) {
-                bool provided = false;
-                for (auto *implementation : implementations) {
-                    auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
-                        ASRUtils::symbol_get_past_external(implementation->m_trait)), loc);
-                    for (auto *trait : hierarchy.traits) provided |= &trait->base == required;
-                }
-                if (!provided) return false;
+                if (!provided.count(required)) return false;
             }
             return true;
         };
+    }
+
+    // Selects the specific of a generic procedure reference: exact matches
+    // first, then the conformance tier (ASRUtils::select_generic_procedure).
+    template <typename T>
+    int select_generic_specific(const Vec<ASR::call_arg_t> &args, const T &generic,
+            const Location &loc, bool raise_error, bool is_dt_present = false) {
+        return ASRUtils::select_generic_procedure(args, generic, loc,
+            [&](const std::string &msg, const Location &loc) {
+                diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }, raise_error, is_dt_present, runtime_trait_conformance());
     }
 
     // Associates the actual arguments of a resolved generic specific with its

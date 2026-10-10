@@ -776,10 +776,13 @@ completed procedure interface. Saved or initialized borrowed view storage is not
 supported. A structure constructor or a concrete nonallocatable, nonpointer
 function result can be borrowed as an ordinary or generic procedure's view
 actual for the duration of that call; existing result storage and its lifetime
-are unchanged. Generic resolution, including `initial` constructors, matches a
-view dummy with a view whose contract implies its own, or with a
-nonpolymorphic derived value whose visible implementations provide every
-required trait, the same nominal evidence its association then selects.
+are unchanged. Generic resolution, including `initial` constructors, first
+matches specifics exactly, as in ordinary Fortran: a view dummy then accepts
+only a view of an equal contract. Only when no specific matches exactly may a
+view dummy accept a view whose contract implies its own, or a nonpolymorphic
+derived value whose visible implementations provide every required trait,
+the same nominal evidence its association then selects. A reference that more
+than one specific accepts in that second tier is diagnosed as ambiguous.
 Trait arrays, aggregate method results, unrestricted generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described

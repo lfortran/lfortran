@@ -8767,15 +8767,7 @@ public:
                         args_.push_front(al, this_arg);
                     }
                     if (!diags.has_error()) {
-                        if (static_cast<size_t>(ASRUtils::select_generic_procedure(args_, *f3, x.base.base.loc,
-                            [&](const std::string& msg, const Location& loc) {
-                                diag.add(Diagnostic(
-                                    msg,
-                                    Level::Error, Stage::Semantic, {
-                                        Label("", {loc})
-                                    }));
-                                throw SemanticAbort();
-                            }, false, false, runtime_trait_conformance(x.base.base.loc))) == i) {
+                        if (static_cast<size_t>(select_generic_specific(args_, *f3, x.base.base.loc, false)) == i) {
                             function_found = true;
                             args.n = 0;
                             if (is_class_procedure && !is_nopass) {
@@ -9321,25 +9313,9 @@ public:
 
                 int idx;
                 if( x.n_member >= 1 ) {
-                    idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) {
-                                diag.add(Diagnostic(
-                                    msg,
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{loc})
-                                    }));
-                                throw SemanticAbort();
-                                }, true, false, runtime_trait_conformance(x.base.base.loc));
+                    idx = select_generic_specific(args_with_mdt, *p, x.base.base.loc, true);
                 } else {
-                    idx = ASRUtils::select_generic_procedure(args, *p, x.base.base.loc,
-                            [&](const std::string &msg, const Location &loc) {
-                                diag.add(Diagnostic(
-                                    msg,
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{loc})
-                                    }));
-                                throw SemanticAbort();
-                                }, true, false, runtime_trait_conformance(x.base.base.loc));
+                    idx = select_generic_specific(args, *p, x.base.base.loc, true);
                 }
                 ASR::symbol_t* func_sym = p->m_procs[idx];
 
@@ -9370,15 +9346,7 @@ public:
                 LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*final_sym))
                 if (ASR::is_a<ASR::GenericProcedure_t>(*final_sym)) {
                     ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(final_sym);
-                    int idx = ASRUtils::select_generic_procedure(args, *g, x.base.base.loc,
-                                [&](const std::string &msg, const Location &loc) {
-                                    diag.add(Diagnostic(
-                                        msg,
-                                        Level::Error, Stage::Semantic, {
-                                            Label("",{loc})
-                                        }));
-                                    throw SemanticAbort();
-                                    }, true, false, runtime_trait_conformance(x.base.base.loc));
+                    int idx = select_generic_specific(args, *g, x.base.base.loc, true);
                     // FIXME
                     // Create ExternalSymbol for the final subroutine here
                     final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
