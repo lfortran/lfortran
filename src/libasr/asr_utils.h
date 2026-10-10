@@ -6659,8 +6659,10 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
 // The bounds of a procedure type's dummy arguments can reference module
 // symbols that are only visible from the module that declared the interface
 // (for example the getter of a use-associated explicit-shape bound). Replaces
-// every such reference with an ExternalSymbol imported into `scope`. With
-// `only_check` set, it only records in `found` whether there is any.
+// every such reference with one that is visible from `scope`. With
+// `only_check` set, it only records in `found` whether there is any. The
+// member types of a derived type belong to its Struct and are shared by every
+// use of the type, so they are left alone.
 class ProcedureTypeSymbolImporter:
     public ASR::BaseExprReplacer<ProcedureTypeSymbolImporter> {
     Allocator &al;
@@ -6675,33 +6677,14 @@ class ProcedureTypeSymbolImporter:
         bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
 
     ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
-        SymbolTable *sym_scope = ASRUtils::symbol_parent_symtab(sym);
-        for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
-            if (s->counter == sym_scope->counter) {
-                return sym;
-            }
-        }
-        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(sym);
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(target);
-        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+        if (ASRUtils::is_visible_from(sym, scope)) {
             return sym;
         }
         found = true;
         if (only_check) {
             return sym;
         }
-        std::string name = ASRUtils::symbol_name(target);
-        ASR::symbol_t *existing = scope->resolve_symbol(name);
-        if (existing && ASRUtils::symbol_get_past_external(existing) == target) {
-            return existing;
-        }
-        std::string unique_name = scope->get_unique_name(name, false);
-        ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_ExternalSymbol_t(al, target->base.loc, scope,
-                s2c(al, unique_name), target, ASRUtils::symbol_name(owner),
-                nullptr, 0, s2c(al, name), ASR::accessType::Private));
-        scope->add_symbol(unique_name, ext_sym);
-        return ext_sym;
+        return ASRUtils::import_symbol_into_scope(al, sym, scope);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
@@ -6715,23 +6698,29 @@ class ProcedureTypeSymbolImporter:
     void replace_Var(ASR::Var_t *x) {
         x->m_v = import_symbol(x->m_v);
     }
+
+    void replace_StructType(ASR::StructType_t */*x*/) {
+    }
 };
+
+// Whether the procedure type `type` references a symbol that is not visible
+// from `scope`. With no `scope`, whether it references any symbol at all.
+static inline bool procedure_type_references_symbols(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    ProcedureTypeSymbolImporter checker(al, scope, true);
+    checker.replace_ttype(type);
+    return checker.found;
+}
 
 // Returns the procedure type `type` as it can be referenced from `scope`:
 // `type` itself, or a copy whose module symbols are imported into `scope`.
 static inline ASR::ttype_t* import_procedure_type(Allocator &al,
         ASR::ttype_t *type, SymbolTable *scope) {
-    ProcedureTypeSymbolImporter checker(al, scope, true);
-    checker.replace_ttype(type);
-    if (!checker.found) {
+    if (!procedure_type_references_symbols(al, type, scope)) {
         return type;
     }
-    ASR::ttype_t *new_type = ASRUtils::duplicate_type(al, type);
-    ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
-        ASRUtils::type_get_past_pointer(new_type));
-    if (ft->m_return_var_type) {
-        ft->m_return_var_type = ASRUtils::duplicate_type(al, ft->m_return_var_type);
-    }
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t *new_type = duplicator.duplicate_ttype(type);
     ProcedureTypeSymbolImporter importer(al, scope, false);
     importer.replace_ttype(new_type);
     return new_type;
