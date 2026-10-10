@@ -2294,13 +2294,13 @@ semantic error: interface mismatch in procedure pointer assignment
     --> tests/errors/continue_compilation_traits_01.f90:3854:9
      |
 3854 |         p => total{real(8)}
-     |         ^^^^^^^^^^^^^^^^^^^ 
+     |         ^    ^^^^^^^^^^^^^^ incompatible interfaces (procedure(integer_vector) and procedure)
 
 semantic error: interface mismatch in procedure pointer assignment
     --> tests/errors/continue_compilation_traits_01.f90:3858:9
      |
 3858 |         p => total{integer}
-     |         ^^^^^^^^^^^^^^^^^^^ 
+     |         ^    ^^^^^^^^^^^^^^ incompatible interfaces (procedure(integer_scalar) and procedure)
 
 semantic error: interface mismatch in procedure pointer assignment: procedure pointer target, argument 1 'x', must have the same intent as 'x'
     --> tests/errors/continue_compilation_traits_01.f90:3862:9
@@ -2336,7 +2336,7 @@ semantic error: interface mismatch in procedure pointer assignment
     --> tests/errors/continue_compilation_traits_01.f90:3882:9
      |
 3882 |         p => ordinary
-     |         ^^^^^^^^^^^^^ 
+     |         ^    ^^^^^^^^ incompatible interfaces (procedure(real_vector) and procedure(ordinary))
 
 semantic error: Cannot assign to a constant variable
     --> tests/errors/continue_compilation_traits_01.f90:3886:13

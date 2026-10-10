@@ -91,8 +91,7 @@ namespace RandomInit {
 
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 2);
-        ASR::ttype_t* logical_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(arg_types[0]));
+        ASR::ttype_t* logical_type = ASRUtils::extract_type(arg_types[0]);
         {
             ASR::expr_t *rep_arg = b.Variable(fn_symtab_1, "repeatable_c",
                 logical_type, ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
@@ -158,12 +157,13 @@ namespace RandomSeed {
         int flag = 0;
         if (!is_real(*arg_types[0])) {
             fill_func_arg_sub("size", arg_types[0], Out);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 1, arg_types[0]);
+            ASR::ttype_t* size_type = ASRUtils::extract_type(arg_types[0]);
+            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 1, size_type);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, b.i32(8));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, size_type)));
         } else {
             fill_func_arg_sub("size", real32, In);
         }
@@ -184,8 +184,7 @@ namespace RandomSeed {
                 dep.push_back(al, s2c(al, put_func_name));
             }
             ASR::symbol_t* s_put = fn_symtab->get_symbol(put_func_name);
-            ASR::ttype_t* put_elem_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_allocatable(arg_types[1]));
+            ASR::ttype_t* put_elem_type = ASRUtils::extract_type(arg_types[1]);
             for (int i = 1; i <= 8; i++) {
                 std::vector<ASR::expr_t*> idx = {b.i32(i)};
                 auto elem_var = declare("_put_elem_" + std::to_string(i),
@@ -289,11 +288,10 @@ namespace Srand {
         std::string new_name = "_lcompilers_srand_";
         declare_basic_variables(new_name);
         fill_func_arg_sub("r", arg_types[0], In);
-        ASR::ttype_t* seed_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(arg_types[0]));
+        ASR::ttype_t* seed_type = ASRUtils::extract_type(arg_types[0]);
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
-        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
+        ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", seed_type,
             ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
         args_1.push_back(al, arg);
 

@@ -129,34 +129,14 @@ class SmokeSelectionTests(unittest.TestCase):
 
 
 class RunnerTests(unittest.TestCase):
-    def test_protected_status_requires_every_quick_job_on_every_event(self):
+    def test_quick_has_no_status_aggregate(self):
+        # Branch protection requires every Quick job directly. Repository
+        # variables are not passed to PRs from forks, so a vars-gated
+        # aggregate cannot be switched off for PRs.
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
-        status = source.split("\n  quick_status:\n", 1)[1]
-        self.assertIn(
-            "needs: [Build, compatibility, test_llvm_wasm, test_without_llvm, "
-            "test_mlir, build_to_wasm_and_upload]\n", status,
-        )
-        self.assertIn("if: ${{ !cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true' }}", status)
-        script = status.split("        run: |\n", 1)[1]
-        names = (
-            "BUILD_RESULT", "COMPATIBILITY_RESULT", "LLVM_WASM_RESULT",
-            "NO_LLVM_RESULT", "MLIR_RESULT", "WASM_RESULT",
-        )
-        cases = [(None, "success")] + [
-            (name, result) for name in names
-            for result in ("failure", "skipped", "cancelled", "")
-        ]
-        for event in ("pull_request", "merge_group", "push", "workflow_dispatch"):
-            for failed_job, conclusion in cases:
-                with self.subTest(event=event, job=failed_job, conclusion=conclusion):
-                    results = dict.fromkeys(names, "success")
-                    if failed_job:
-                        results[failed_job] = conclusion
-                    env = dict(os.environ, GITHUB_EVENT_NAME=event, EVENT_NAME=event, **results)
-                    result = subprocess.run(["bash"], input=script, env=env,
-                                            capture_output=True, text=True)
-                    self.assertEqual(result.returncode == 0, failed_job is None,
-                                     result.stdout + result.stderr)
+        self.assertNotIn("quick_status", source)
+        self.assertNotIn("name: Build LFortran to WASM and Upload", source)
+        self.assertNotIn("vars.", source)
 
     def test_smoke_flag_reaches_cmake_before_build_and_ctest(self):
         spec = importlib.util.spec_from_file_location(
@@ -251,7 +231,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         workflows = ROOT / ".github/workflows"
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
-        self.assertIn("group: quick-${{ github.event.number || github.sha }}", quick)
+        self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", quick)
         self.assertIn("  workflow_dispatch:\n", quick)
         self.assertNotIn("inputs.full", quick)
         self.assertNotIn("LFORTRAN_CI_RELEASE", quick)
@@ -269,24 +249,6 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertNotIn("Quick-Checks-CI.yml", extra)
         self.assertIn("name: Extended compiler checks", extra)
         self.assertNotIn("name: Compiler compatibility\n", extra)
-
-    def test_quick_reports_on_merge_queue_without_saving_caches(self):
-        workflows = ROOT / ".github/workflows"
-        quick = (workflows / "Quick-Checks-CI.yml").read_text()
-        triggers = quick.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
-        self.assertIn("\n  merge_group:\n", triggers)
-        # Exhaustive is optional and runs on the resulting main push.
-        extra = (workflows / "Exhaustive-Checks-CI.yml").read_text()
-        self.assertNotIn("merge_group:", extra)
-        # Queue refs are ephemeral; caches saved there can never be restored.
-        save = "save: ${{ github.event_name != 'merge_group' }}"
-        for path in (workflows / "Quick-Checks-CI.yml",
-                     workflows / "Compiler-Compatibility-CI.yml",
-                     ROOT / ".github/actions/build-platform/action.yml"):
-            steps = path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]
-            self.assertTrue(steps, path)
-            for step in steps:
-                self.assertIn(save, step.split("\n\n", 1)[0], path)
 
     def test_coverage_matrix_has_quick_and_exhaustive_roles(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
@@ -364,14 +326,10 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("if: matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'", options)
         self.assertIn("bash ci/test_llvm_integration.sh --options", options)
 
-    def test_direct_check_rollout_keeps_distinct_stable_names(self):
+    def test_required_checks_have_stable_names(self):
         source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
-        wasm = source.split("\n  build_to_wasm_and_upload:\n", 1)[1].split("\n  quick_status:", 1)[0]
-        gate = source.split("\n  quick_status:\n", 1)[1]
+        wasm = source.split("\n  build_to_wasm_and_upload:\n", 1)[1]
         self.assertIn("name: Build LFortran to WASM\n", wasm)
-        self.assertIn("name: Build LFortran to WASM and Upload\n", gate)
-        self.assertNotIn("vars.", wasm)
-        self.assertIn("!cancelled() && vars.LFORTRAN_DIRECT_REQUIRED_CHECKS != 'true'", gate)
         platform = source.split("\n  Build:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
         self.assertIn("name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})", platform)
         platforms = re.findall(r'- os: ([\w-]+)\n\s+llvm-version: "(\d+)"', platform)
@@ -393,56 +351,125 @@ class WorkflowPolicyTests(unittest.TestCase):
             "Compiler compatibility / Test MLIR backend",
         ])
 
-    def test_exhaustive_gate_reads_current_labels(self):
-        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
-        self.assertIn("types: [opened, reopened, synchronize]", source)
-        gate = source.split("\n  gate:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
-        script = gate.split("        run: |\n", 1)[1]
-        with tempfile.TemporaryDirectory(prefix="lfortran-ci-gate-") as temporary:
-            directory = Path(temporary)
-            gh = directory / "gh"
-            gh.write_text(
-                "#!/bin/sh\n"
-                'if [ "$LABEL_RESULT" = error ]; then echo "API failed" >&2; exit 1; fi\n'
-                'printf "%s\\n" "$LABEL_RESULT"\n'
-            )
-            gh.chmod(0o755)
-            output = directory / "output"
-            cases = (
-                ("pull_request", "true", "run=true\n"),
-                ("pull_request", "false", "run=false\n"),
-                ("pull_request", "error", None),
-                ("pull_request", "invalid", None),
-                ("push", "error", "run=true\n"),
-                ("workflow_dispatch", "error", "run=true\n"),
-                ("pull_request_target", "true", None),
-            )
-            for event, label, expected in cases:
-                with self.subTest(event=event, label=label):
-                    output.write_text("")
-                    env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ["PATH"],
-                               GITHUB_EVENT_NAME=event, GITHUB_OUTPUT=str(output),
-                               LABEL_RESULT=label, PR="123")
-                    result = subprocess.run(
-                        ["bash", "-e", "-o", "pipefail"], input=script, env=env,
-                        capture_output=True, text=True,
-                    )
-                    self.assertEqual(result.returncode == 0, expected is not None)
-                    self.assertEqual(output.read_text(), expected or "")
+    def test_exhaustive_never_runs_on_prs(self):
+        workflows = ROOT / ".github/workflows"
+        source = (workflows / "Exhaustive-Checks-CI.yml").read_text()
+        triggers = source.split("\non:\n", 1)[1].split("\nconcurrency:\n", 1)[0]
+        triggers = "\n".join(l for l in triggers.splitlines() if not l.lstrip().startswith("#"))
+        self.assertEqual(triggers.strip(),
+                         "push:\n    branches:\n      - main\n    tags:\n"
+                         "      - 'v*'\n  workflow_dispatch:")
+        self.assertNotIn("gate", source)
+        self.assertFalse((workflows / "Exhaustive-Checks-Label-CI.yml").exists())
+        for path in [*workflows.glob("*.yml"), ROOT / "AGENTS.md",
+                     *(ROOT / "doc/src").glob("*.md"),
+                     *(ROOT / ".agents/skills").glob("*/SKILL.md")]:
+            self.assertNotIn("Run-Exhaustive", path.read_text(), path)
 
-        jobs = source.split("\njobs:\n", 1)[1]
-        blocks = re.split(r"(?m)^  ([\w-]+):\n", jobs)
-        for index in range(1, len(blocks), 2):
-            name, body = blocks[index:index + 2]
-            if name in ("gate", "deploy_jupyterlite"):
-                continue
-            self.assertIn("needs: gate", body, name)
-            self.assertIn("needs.gate.outputs.run == 'true'", body, name)
-        self.assertIn("scope: exhaustive", source)
+    def test_main_runs_are_coalesced_but_never_cancelled(self):
+        workflows = ROOT / ".github/workflows"
+        # Quick cancels superseded PR runs; Exhaustive never runs on PRs.
+        for name, prefix, cancel_expected in (
+                ("Quick-Checks-CI.yml", "quick-", "${{ github.event_name == 'pull_request' }}"),
+                ("Exhaustive-Checks-CI.yml", "${{ github.workflow }}-", "false")):
+            with self.subTest(workflow=name):
+                source = (workflows / name).read_text()
+                block = source.split("\nconcurrency:\n", 1)[1].split("\n\n", 1)[0]
+                group = re.search(r"^\s*group: (.+)$", block, re.MULTILINE).group(1)
+                cancel = re.search(r"^\s*cancel-in-progress: (.+)$", block, re.MULTILINE).group(1)
+                self.assertTrue(group.startswith(prefix + "${{ "), group)
+                self.assertTrue(group.endswith(" }}"), group)
+                group = group[len(prefix) + 4:-3]
+                self.assertEqual(cancel, cancel_expected)
+                if cancel.startswith("${{ "):
+                    cancel = cancel[4:-3]
+                else:
+                    cancel = "True" if cancel == "true" else "False"
+
+                def evaluate(expression, event, ref, number=None):
+                    context = {"github.event_name": event, "github.ref": ref,
+                               "github.event.number": number, "github.sha": "sha-" + ref}
+                    python = re.sub(r"github(\.\w+)+",
+                                    lambda m: repr(context[m.group(0)]), expression)
+                    return eval(python.replace("&&", " and ").replace("||", " or "))
+
+                def key(event, ref, number=None):
+                    return (evaluate(group, event, ref, number),
+                            evaluate(cancel, event, ref, number))
+
+                # Main pushes share one group and never cancel a running run.
+                self.assertEqual(key("push", "refs/heads/main"), ("main", False))
+                if name == "Quick-Checks-CI.yml":
+                    self.assertEqual(key("pull_request", "refs/pull/7/merge", 7), (7, True))
+                self.assertEqual(key("push", "refs/tags/v1.0.0"),
+                                 ("sha-refs/tags/v1.0.0", False))
+                self.assertEqual(key("workflow_dispatch", "refs/heads/main"),
+                                 ("sha-refs/heads/main", False))
+
+    def test_compiler_caches_are_saved_only_on_main(self):
+        # PR and tag caches can only be restored by the same ref; saving them
+        # evicts the main caches that every run restores from.
+        save = "save: ${{ github.ref == 'refs/heads/main' }}"
+        paths = [*(ROOT / ".github/workflows").glob("*.yml"),
+                 *(ROOT / ".github/actions").glob("*/action.yml")]
+        steps = 0
+        for path in paths:
+            for step in path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]:
+                steps += 1
+                self.assertIn(save, step.split("\n\n", 1)[0], path)
+        self.assertGreaterEqual(steps, 8)
+
+    def test_platform_ccache_fits_a_debug_build(self):
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("max-size: 1500M", step)
+
+    def test_superseded_main_caches_are_pruned(self):
+        spec = importlib.util.spec_from_file_location(
+            "prune_main_caches", ROOT / "ci/prune_main_caches.py")
+        prune = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(prune)
+
+        def cache(id, key, created):
+            return {"id": id, "key": key, "created_at": created, "size_in_bytes": 1}
+
+        caches = [
+            cache(1, "ccache-Build-ubuntu-latest-11-2026-10-10T02:50:51.192Z", "2026-10-10T02:50:51Z"),
+            cache(2, "ccache-Build-ubuntu-latest-11-2026-10-10T04:02:23.463Z", "2026-10-10T04:02:23Z"),
+            cache(3, "ccache-Build-ubuntu-latest-21-2026-10-10T02:53:39.706Z", "2026-10-10T02:53:39Z"),
+            cache(4, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T03:43:56.480Z", "2026-10-10T03:43:56Z"),
+            cache(5, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T04:24:39.131Z", "2026-10-10T04:24:39Z"),
+            cache(6, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T03:56:07.464Z", "2026-10-10T03:56:07Z"),
+            # A different base key whose prefix matches another key must be kept.
+            cache(7, "sccache-test_llvm-ubuntu-latest-2026-10-10T01:00:00.000Z", "2026-10-10T01:00:00Z"),
+            # Keys without an action timestamp are not managed here.
+            cache(8, "pip-cache", "2026-10-09T00:00:00Z"),
+        ]
+        self.assertEqual(sorted(c["id"] for c in prune.superseded(caches)), [1, 4, 6])
+        self.assertEqual(prune.superseded([]), [])
+
+        workflow = (ROOT / ".github/workflows/Prune-Main-Caches-CI.yml").read_text()
+        triggers = workflow.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+        self.assertIn("workflow_run:", triggers)
+        self.assertIn('workflows: ["Quick checks", "Exhaustive checks"]', triggers)
+        self.assertIn("branches: [main]", triggers)
+        self.assertNotIn("pull_request", triggers)
+        self.assertIn("  actions: write\n", workflow)
+        self.assertIn("run: python3 ci/prune_main_caches.py", workflow)
+
+    def test_wasm_build_uses_the_compiler_cache(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
+        native = wasm.split("      - name: Build native LFortran\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("-DCMAKE_C_COMPILER_LAUNCHER=sccache", native)
+        self.assertIn("-DCMAKE_CXX_COMPILER_LAUNCHER=sccache", native)
+        emscripten = wasm.split("      - name: Build to WASM\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("EM_COMPILER_WRAPPER: sccache", emscripten)
+        self.assertIn("key: ${{ github.job }}-ubuntu-latest\n", wasm)
 
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
-        jobs = source.split("\njobs:\n", 1)[1].split("\n  compatibility:\n", 1)[1]
+        jobs = source.split("\njobs:\n", 1)[1]
         self.assertNotIn("--smoke", jobs)
         self.assertNotIn("GITHUB_EVENT_NAME", jobs)
         publishing = {
@@ -454,15 +481,17 @@ class WorkflowPolicyTests(unittest.TestCase):
         conditions = re.findall(r"^\s*(if: .*github\.event_name.*)$", jobs, re.MULTILINE)
         self.assertEqual(set(conditions), publishing)
 
-    def test_label_controller_never_executes_pr_code(self):
-        source = (ROOT / ".github/workflows/Exhaustive-Checks-Label-CI.yml").read_text()
-        self.assertIn("pull_request_target:", source)
-        self.assertIn("if: github.event.label.name == 'Tests::Run-Exhaustive'", source)
-        self.assertNotIn("actions/checkout", source)
-        self.assertNotIn("workflow_dispatch", source)
-        self.assertIn('gh run rerun "$run_id"', source)
-        self.assertIn('if [ "$(head_sha)" != "$sha" ]; then', source)
 
+    def test_cache_cleanup_deletes_fork_pr_caches_without_running_pr_code(self):
+        source = (ROOT / ".github/workflows/Clean-Cache-CI.yml").read_text()
+        triggers = source.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+        self.assertIn("pull_request_target:", triggers)
+        self.assertNotIn("  pull_request:", triggers)
+        self.assertIn("permissions:\n  actions: write\n", source)
+        self.assertNotIn("actions/checkout", source)
+        self.assertNotIn("gh extension", source)
+        self.assertIn("REF: refs/pull/${{ github.event.pull_request.number }}/merge", source)
+        self.assertIn('gh cache delete --all --ref "$REF" --succeed-on-no-caches', source)
 
 class QuickScriptTests(unittest.TestCase):
     def setUp(self):

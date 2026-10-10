@@ -35,7 +35,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
-| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, open a PR from a fork, review, and iterate until CI is green |
+| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, review locally, open a PR from a fork, and iterate until CI is green |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work. It
@@ -65,9 +65,12 @@ Reproducers are written to the repository root by convention (`run.sh`,
 `fix-issue` automates this loop for a single issue: its top-level agent
 only orchestrates, and fresh subagents run `repro-issue`, then `create-mre`
 and `fix-mre` repeatedly (one commit with its own integration test per bug)
-until the original issue is fixed. It then opens a draft PR from the user's
-fork and iterates on CI failures and `pr-review` findings until the PR is
-ready for review.
+until the original issue is fixed. It reviews the branch locally with
+`pr-review` until it is clean, then opens a draft PR from the user's fork and
+iterates on CI failures and review findings until the PR is ready for
+review. Every push reruns the full Quick checks, so it batches pushes: CI
+fixes are pushed as soon as they pass locally, while other changes wait
+until the current CI run finishes rather than cancelling a healthy run.
 
 The reproduction and fix skills assume `build/src/bin` is first on `PATH`
 (so `lfortran` is the in-tree build) and that a reference compiler — `gfortran`,
@@ -135,8 +138,8 @@ only once, redirect to a log file and then examine the log file.
   selections on PRs, main, release tags and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
-  capability checks in Quick. No exhaustive label is required before review
-  or merge.
+  capability checks in Quick. Exhaustive never runs on PRs and is not
+  required before review or merge.
   Caffeine's own LFortran unit tests and all coarray capability tests always run.
   Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
   use the same input comparison on every event, validate conservatively when
@@ -155,39 +158,41 @@ only once, redirect to a log file and then examine the log file.
   Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
-- Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
-  labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
-  third-party application catalog; only publishing and deployment are push-only.
-- Quick also runs on `merge_group` so required checks report in the merge
-  queue. Keep `merge_group` on every workflow that produces a required check;
-  merge queue runs must not save caches.
+- Main runs Quick plus Exhaustive. Exhaustive is identical on main and on
+  manual dispatch, including the third-party application catalog; only
+  publishing and deployment are push-only.
 - Third-party applications are **bug generators for integration tests**, not
-  part of ordinary PR checks. They run on every push to `main` and in every
+  part of ordinary PR checks. They run on the latest `main` and in every
   requested Exhaustive run, including applications such as FIATS.
 - A compiler failure found by an application must become a reduced, registered
   integration regression. Fix it promptly or revert the offending change,
   and verify the original application failure as well as the regression.
   Do not add whole applications to Quick or waive their failures.
-- Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
-  checks. Do not apply it automatically based on files or compiler subsystems
-  touched. Manual dispatch in a fork is an alternative; dispatch Quick
-  separately if it has not run on that revision, and verify both tested SHAs
-  and results.
-- Every main push keeps the full compiler matrix and application validation.
-  Main runs are not automatically cancelled or coalesced; maintainers may
-  manually cancel older runs while keeping the latest. Release-tag workflows
-  keep compiler and packaging checks without repeating the application catalog.
-- Release only a tested main commit whose full CI, including applications,
-  is green. Quick or extended PR checks alone do not qualify a release.
+- Run Exhaustive for a PR only when explicitly requested, by dispatching it on
+  the PR branch in a fork (`gh workflow run Exhaustive-Checks-CI.yml --repo
+  <fork-owner>/lfortran --ref <branch>`; see `doc/src/installation.md`). Never
+  do it automatically based on files or compiler subsystems touched. Verify the
+  tested SHA and result, and link the run from the PR.
+- Quick and Exhaustive (full compiler matrix and application validation) on
+  `main` are each coalesced: at most one run is in progress and one is
+  pending. A running main run is never cancelled; a newer push replaces the
+  pending run, so the latest `main` is always tested but intermediate commits
+  may be skipped. To test a skipped commit, re-run its cancelled run
+  (`gh run rerun <run-id>`); `workflow_dispatch` accepts only a branch or tag. Release-tag workflows keep compiler and packaging checks without
+  repeating the application catalog.
+- Release only a main commit whose own Quick and Exhaustive runs, including
+  applications, are green (re-run them if they were skipped). Quick or extended
+  PR checks alone do not qualify a release.
+- Compiler caches are saved only on `main` and restored everywhere; keep
+  `save: ${{ github.ref == 'refs/heads/main' }}` on every cache step.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
-- The status-only aggregate may be disabled only after all Quick jobs are
-  required directly in branch protection: retain all four platform contexts
-  and add the seven compatibility/backend contexts. Follow the documented
-  `LFORTRAN_DIRECT_REQUIRED_CHECKS` rollout and rollback; a conditionally
-  skipped aggregate does not block merging and no longer protects its
-  dependencies. Do not weaken protection to remove a queue.
+- The `main` ruleset requires all eleven Quick jobs directly (listed in
+  `doc/src/installation.md`); there is no aggregate status job. Keep their
+  job names stable, and update the ruleset in the same rollout when a
+  required Quick job is renamed or added. Do not gate required jobs on
+  repository variables: `vars` is not passed to PRs from forks.
 
 See [CI coverage and policy](doc/src/installation.md#ci-coverage) for commands
 and the distinction between capability tests and application validation.
@@ -275,8 +280,12 @@ and the distinction between capability tests and application validation.
 - Never mix refactoring or formatting with bug fixes. Send those separately.
 - Every fix PR must demonstrate: test fails on main, test passes on branch.
   If you cannot find such a test, the fix is not understood well enough.
-- Once a PR is in review, merge upstream into it (do not rebase) —
-  rebasing forces complete re-review.
+- Keep PR history linear: never merge `main` into a PR branch. When a PR must
+  be updated (base conflicts, or it needs a change that landed on `main`),
+  rebase it onto `upstream/main` and push with `git push --force-with-lease`.
+  Do not update a PR only to keep it current; every push reruns CI, and
+  Quick on `main` catches integration breakage after merging. Address review feedback
+  with new commits rather than rewriting commits reviewers have seen.
 - PRs target `upstream/main`; reference issues (`fixes #123`), explain rationale.
 - Include test evidence (commands + summary); ensure CI passes.
 - Do not commit generated artifacts, large binaries, or local configs.

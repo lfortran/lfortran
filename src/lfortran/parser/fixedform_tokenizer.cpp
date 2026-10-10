@@ -2014,7 +2014,9 @@ struct FixedFormRecursiveDescent {
                 // Handle procedure declaration within the interface
                 lex_procedure(cur);
             } else if (next_is(cur, "moduleprocedure")) {
-                // TODO: handle module procedure
+                push_token_advance(cur, "module");
+                push_token_advance(cur, "procedure");
+                tokenize_line(cur);
             } else {
                 error(cur, "Unexpected token in interface block");
             }
@@ -2048,8 +2050,10 @@ struct FixedFormRecursiveDescent {
         std::vector<std::string> kw_found;
         std::vector<std::string> decls{keywords.begin(), keywords.end()};
         while(decls.size() != 0) {
+            bool kw_matched = false;
             for (unsigned int i=0;i<decls.size();++i) {
                 if (next_is(cpy, decls[i])) {
+                    kw_matched = true;
                     kw_found.push_back(decls[i]);
                     cpy += decls[i].size();
                     if (decls[i].back() == '*') {
@@ -2064,6 +2068,15 @@ struct FixedFormRecursiveDescent {
 			    error(cpy, "Syntax error: expecting length "
 				  "specification after " + decls[i]);
 			}
+                    } else if (*cpy == '(') {
+                        // kind or length selector, such as `real(8)`,
+                        // `real(kind=8)` or `character(len=32)`
+                        unsigned char *end = cpy + 1;
+                        if (try_expr(end, true) && *end == ')') {
+                            end++;
+                            kw_found.back() += tostr(cpy, end);
+                            cpy = end;
+                        }
                     }
                     decls.erase(decls.begin() + i);
                     break;
@@ -2080,14 +2093,18 @@ struct FixedFormRecursiveDescent {
 			  declaration_type + "declaration");
                 }
             }
+            // no prefix keyword matched: this is not a declaration of
+            // `declaration_type` (e.g. `end subroutine`), stop scanning
+            if (!kw_matched) break;
         }
-        if (kw_found.size() == 0 && !next_is(cpy, declaration_type))
+        if (!next_is(cpy, declaration_type))
             return false;
 
         // tokenize all keywords
         for(auto const &kw : kw_found) {
-            if (kw.find('*') != std::string::npos) {
+            if (kw.find_first_of("*(") != std::string::npos) {
                 tokenize_until(cur + kw.size());
+                cur += kw.size();
             } else {
                 push_token_advance(cur, kw);
             }

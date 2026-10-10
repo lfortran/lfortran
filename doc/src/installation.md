@@ -420,17 +420,11 @@ policy."
 #### CI coverage
 
 Pull requests normally run only **Quick checks**. Quick uses the same
-builds, test suites and selection rules on PRs, merge queue groups, main pushes,
-release tags and manual runs. Publishing steps remain push-only. Main runs
-Quick plus Exhaustive. Exhaustive adds configurations and broader suites, never
-another invocation of Quick, and runs identically on main, on labeled PRs and
-on manual dispatch.
-
-Quick is triggered by the `merge_group` event so that its required checks
-report when a merge queue is enabled for `main`. Exhaustive is optional and is
-not run on merge groups; it runs on the resulting main push. Merge queue runs
-restore compiler caches but do not save them, because caches on the temporary
-`gh-readonly-queue/main/*` branches cannot be reused.
+builds, test suites and selection rules on PRs, main pushes, release tags and
+manual runs. Publishing steps remain push-only. Main runs Quick plus
+Exhaustive. Exhaustive adds configurations and broader suites, never another
+invocation of Quick, and runs identically on main and on manual dispatch.
+Exhaustive never runs on PRs.
 
 The shared native compiler workflow has two explicit coverage roles:
 
@@ -500,24 +494,33 @@ The distinct Kokkos/out-of-source and custom-install configurations run
 full suites. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
 
-Ordinary PRs run only the small gate of the standalone Exhaustive workflow;
-its compiler jobs require an explicit request.
+PRs do not run the Exhaustive workflow at all. For a rare, explicitly
+requested extended check of a PR, dispatch it in a fork (see below).
 
-##### Required-check rollout
+##### Compiler caches
 
-By default, the existing protected `Build LFortran to WASM and Upload` status
-still aggregates every Quick job. This is safe with the existing branch
-protection, but its tiny final job can wait for a runner after all real work
-has finished. Changing its runner size cannot bypass account-wide concurrency
-limits.
+Every C/C++ build runs through ccache or sccache
+(`hendrikmuhs/ccache-action`), including both halves of the WASM build: the
+Emscripten build sets `EM_COMPILER_WRAPPER=sccache`. Caches are **saved only on
+`main`** (`save: ${{ github.ref == 'refs/heads/main' }}`) and restored
+everywhere. A cache saved for a PR or tag can only be restored by that same
+ref, and the repository's 10 GB cache limit evicts the least recently used
+caches first, so PR caches would push out the `main` caches that every run
+starts from. The `Cleanup caches by a branch` workflow also deletes a PR's
+caches when it closes.
 
-To eliminate that final runner job, first deploy this workflow version with
-the legacy gate still enabled. A repository administrator can then migrate
-to direct required checks. **Do not enable the variable before updating
-protection.** Keep the four existing platform requirements and add the seven
-compatibility/backend requirements below, retaining the expected GitHub Actions
-app binding (currently app ID `15368`). All eleven real-work contexts must
-remain required, in addition to the legacy aggregate during the transition:
+The action appends a timestamp to every saved key, so each save on `main` adds
+a new copy. After every Quick or Exhaustive run on `main`,
+`Prune-Main-Caches-CI.yml` (`ci/prune_main_caches.py`) deletes all but the
+newest copy of each key, keeping the total under the limit. This leaves room
+for a 1.5 GB ccache per platform build (`max-size: 1500M` in
+`.github/actions/build-platform`); the action's 500 MB default is smaller than
+one Debug build, so ccache evicted objects it still needed.
+
+##### Required checks
+
+The `main` ruleset requires these eleven Quick checks directly, bound to the
+GitHub Actions app (app ID `15368`). There is no aggregate status job.
 
 ```text
 LFortran CI (OS=macos-latest, LLVM=11)
@@ -533,45 +536,21 @@ Compiler compatibility / Test without LLVM Backend
 Compiler compatibility / Test MLIR backend
 ```
 
-Verify those requirements and their app binding on a fresh PR run **before**
-setting the repository Actions variable `LFORTRAN_DIRECT_REQUIRED_CHECKS`
-to `true`. Then verify another fresh PR run with all eleven contexts still
-required. Job names stay stable; the legacy summary is skipped without a runner.
-Only after verifying direct protection may an administrator remove the old
-`Build LFortran to WASM and Upload` requirement. Do not remove any of the four
-platform requirements: they own backend, GPU, reference and full descriptor-mode
-coverage that the compatibility jobs do not replace. Exhaustive uses the
-distinct `Extended compiler checks` prefix, so an optional Exhaustive result
-cannot substitute for a required Quick result. Existing PRs may need their
-checks refreshed after a protection change; a manual-dispatch run alone is
-not evidence that a PR's required checks are satisfied.
-
-A [conditionally skipped job reports success and does not block merging even
-when required](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions).
-Thus the old aggregate requirement may remain while its job is skipped, but
-then it provides **no protection** for failed dependencies. This differs from a
-missing check or a [whole workflow skipped by branch/path/commit filtering,
-whose required checks remain pending](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
-Do not rely on a skipped summary to validate the migration.
-
-For rollback, clear the variable **but keep all direct requirements in place**.
-Restore the legacy aggregate requirement, with its GitHub Actions app binding,
-if it was removed.
-Changing a variable does not replace completed checks: an old direct-mode
-summary is still skipped, even if a compatibility job failed.
-Drain outstanding direct-mode runs, then rerun Quick for every active PR's
-current revision. Verify that the protected status comes from an executed,
-successful `quick_status` aggregate, not an old skipped result, before
-optionally removing the seven newly added direct requirements. Keep the four
-platform requirements throughout rollback as well. Leaving all eleven direct
-requirements in place is safe and adds no runner work.
-
-Without this explicit migration, the workflow retains its safe aggregate
-default; code alone cannot remove its queue while preserving the old settings.
+Keep these job names stable. When a required Quick job is renamed or added,
+update the ruleset in the same rollout; a required check that is never
+reported leaves PRs blocked. A [conditionally skipped job reports success and
+does not block merging even when
+required](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions),
+so required jobs must not be skipped by conditions. Repository variables
+(`vars`) are not passed to workflows triggered by PRs from forks, so required
+jobs must not depend on them either. Exhaustive uses the distinct
+`Extended compiler checks` prefix, so an optional Exhaustive result cannot
+substitute for a required Quick result.
 
 **Third-party applications generate bugs for the integration suite; they are
-not part of ordinary PR checks.** The application catalog runs on every push
-to `main`, where it both finds coverage gaps and demonstrates compatibility
+not part of ordinary PR checks.** The application catalog runs in every
+Exhaustive run on `main` (coalesced, so always on the latest main), where it
+both finds coverage gaps and demonstrates compatibility
 with real applications, and in every explicitly requested Exhaustive run.
 There is no automatic exception for changes to serialization, finalization,
 I/O or GPU lowering.
@@ -639,47 +618,62 @@ The lasting protection for future PRs is the integration test, not adding the
 whole application to Quick. Finding such a gap on main is an accepted trade-off,
 not a reason to silently ignore the failing application check.
 
-Every main push keeps the full LLVM matrix, full platform suites, application,
-documentation, packaging and JupyterLite checks. Main runs are not automatically
-cancelled or rotated. Maintainers may cancel older runs manually when runners
-are saturated, keeping the latest run.
+Exhaustive on main runs the full LLVM matrix, full platform suites, application,
+documentation, packaging and JupyterLite checks. Main pushes share one
+concurrency group per workflow (Quick and Exhaustive), so for each workflow at
+most one main run is in progress and one is pending. A running main run is
+never cancelled; a newer push replaces the pending run. The latest main is
+therefore always tested, but when several pushes land while a run is in
+progress, the intermediate commits are not tested individually. Their changes
+are covered by the next run. To test a skipped commit, re-run its cancelled
+run (`gh run rerun <run-id>`), which tests exactly that commit; it rejoins the
+main concurrency group and waits behind the run in progress.
+`workflow_dispatch` accepts only a branch or tag, not a commit.
 
 **Releases require green main, including application validation.** The commit
-selected for release must have passed the full main CI. A green Quick PR or
+selected for release must have its own green Quick and Exhaustive runs on
+main; re-run them if that commit was skipped by coalescing. A green Quick PR or
 extended compiler run is not a substitute. Release-tag workflows still run
 compiler, documentation and packaging checks; they do not repeat the application
 catalog already validated on main.
 
-Use `Tests::Run-Exhaustive` only for rare, explicitly requested extended compiler
-coverage, for example a particular major refactor. It is not a normal condition
-for marking a PR ready, and automation must not apply it based on the subsystem
-being changed. Add it with:
+##### Running Exhaustive for a PR
+
+Exhaustive does not run on PRs. Run it only for rare, explicitly requested
+extended coverage, for example a particular major refactor. It is not a normal
+condition for marking a PR ready, and automation must not request it based on
+the subsystem being changed.
+
+`workflow_dispatch` accepts only a branch or tag, and PR branches live in
+forks, so dispatch the workflow in the fork that holds the branch:
 
 ```bash
-gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive
-```
-
-The label controller reruns the current PR revision's Exhaustive workflow,
-whose gate reads the live labels. Subsequent pushes run extended checks while
-the label remains present. Unrelated label changes do not replace the result.
-GitHub cannot rerun workflows older than 30 days; push a new commit or close
-and reopen an older PR before requesting these checks.
-
-Alternatively, explicitly dispatch checks on your fork. Run Quick as well if
-the same revision does not already have a successful Quick result:
-
-```bash
-gh workflow run Quick-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
 gh workflow run Exhaustive-Checks-CI.yml --repo <fork-owner>/lfortran --ref <branch>
-gh run list --repo <fork-owner>/lfortran --branch <branch> --event workflow_dispatch
+gh run list --repo <fork-owner>/lfortran --workflow Exhaustive-Checks-CI.yml \
+    --branch <branch> --event workflow_dispatch --limit 1
 gh run watch <run-id> --repo <fork-owner>/lfortran
 ```
 
-Check both workflows' results and head SHAs. Labeled and manually dispatched
-Exhaustive runs are purely supplemental: neither invokes Quick. A green
-Exhaustive result alone does not imply a green Quick result. Manual runs do
-not publish or deploy. Manual fork runs need not
-appear among the upstream PR's checks.
+For someone else's PR, push its head to a branch in your own fork first:
+
+```bash
+gh pr checkout <PR> --repo lfortran/lfortran
+git push <your-fork-remote> HEAD:exhaustive-pr-<PR>
+gh workflow run Exhaustive-Checks-CI.yml --repo <your-login>/lfortran --ref exhaustive-pr-<PR>
+```
+
+Notes:
+
+- Forks have GitHub Actions workflows disabled until enabled once in the
+  fork's **Actions** tab.
+- The run uses the fork owner's runners, so it does not compete with
+  `lfortran/lfortran` CI.
+- The result does not appear among the upstream PR's checks. Post the run URL
+  and the tested head SHA in the PR, and rerun after new pushes if needed.
+- Exhaustive never invokes Quick, and a green Exhaustive result does not imply
+  a green Quick result. If the PR's current revision has no successful Quick
+  run, dispatch `Quick-Checks-CI.yml` the same way.
+- Manual runs do not publish or deploy.
 
 To run the representative integration subset locally:
 

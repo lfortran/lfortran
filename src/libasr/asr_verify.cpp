@@ -6068,7 +6068,15 @@ public:
             if (struct_type->m_parent == nullptr) break;
             ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
                 struct_type->m_parent);
-            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+            if (parent == nullptr) {
+                // The parent is an external symbol that is not resolved
+                // yet (a module file is verified with check_external=false
+                // before fix_external_symbols runs), so the inherited
+                // members cannot be counted here; the check runs again
+                // once external symbols are resolved.
+                return;
+            }
+            if (!ASR::is_a<ASR::Struct_t>(*parent)) {
                 break;
             }
             struct_type = ASR::down_cast<ASR::Struct_t>(parent);

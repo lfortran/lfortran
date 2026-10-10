@@ -821,6 +821,21 @@ class ASRToLLVMVisitor;
             // Returns a typed pointer (bitcast of malloc+memset result).
             llvm::Value* alloc_zeroed_type(llvm::Type* type);
 
+            // The data of a polymorphic pointer array descriptor is a
+            // {vptr, data*} class wrapper owned by the descriptor. It is
+            // always on the heap, so that whoever nullifies or finalizes the
+            // pointer frees it.
+            // Returns the wrapper of `desc` (a `desc_type*`, null if the
+            // pointer has no descriptor yet), or null if it has none.
+            llvm::Value* get_class_array_wrapper(llvm::Type* desc_type,
+                llvm::Value* desc, llvm::Type* wrapper_type);
+            // Returns `wrapper`, or a new zeroed heap wrapper if it is null.
+            llvm::Value* reuse_or_alloc_class_array_wrapper(
+                llvm::Value* wrapper, llvm::Type* wrapper_type);
+            // Returns the wrapper of `desc`, allocating one if it has none.
+            llvm::Value* get_or_alloc_class_array_wrapper(llvm::Type* desc_type,
+                llvm::Value* desc, llvm::Type* wrapper_type);
+
             // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
             // Also derives elem_size and copy_fn from the vptr.
             struct UpolyWrapperFields {
@@ -1478,13 +1493,21 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
             auto const t_past = ASRUtils::type_get_past_pointer(t);
             switch (t_past->type) {
-                case ASR::Array: {    
-                    const bool upoly_descr_arr =   ASRUtils::is_unlimited_polymorphic_type(t_past) 
-                    && ASRUtils::is_array_physically_descriptor(t_past);
-                    if(upoly_descr_arr) {
-                        llvm::Value* const wrapper = builder_->CreateLoad(llvm_utils_->getClassType(struct_sym, true), 
-                                        llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0));
+                case ASR::Array: {
+                    // The data of a polymorphic pointer array descriptor is a
+                    // {vptr, data*} wrapper that the pointer owns.
+                    const bool class_descr_arr = ASRUtils::is_class_type(ASRUtils::extract_type(t_past))
+                        && ASRUtils::is_array_physically_descriptor(t_past);
+                    if(class_descr_arr) {
+                        llvm::Value* const data_ptr = llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0);
+                        llvm::Type* const wrapper_ptr_type = llvm_utils_->getClassType(struct_sym, true);
+                        llvm::Value* const wrapper = builder_->CreateLoad(wrapper_ptr_type, data_ptr);
                         llvm_utils_->lfortran_free_nocheck(wrapper);
+                        // A pointer local to a BLOCK or SELECT TYPE construct
+                        // is finalized each time the construct completes, so
+                        // leave it disassociated for the next execution.
+                        builder_->CreateStore(llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(wrapper_ptr_type)), data_ptr);
                     }
                     if(in_struct) { llvm_utils_->lfortran_free_nocheck(ptr); }
                 }
@@ -2853,9 +2876,9 @@ class ASRToLLVMVisitor;
                     return false;
                 case ASR::Array:{
                     const bool in_struct_descr_arr = in_struct && ASRUtils::is_array_physically_descriptor(t_past);
-                    const bool upoly_descr_array = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(t_past)) 
-                    && ASRUtils::is_array_physically_descriptor(t_past);
-                    return in_struct_descr_arr || upoly_descr_array;
+                    const bool class_descr_array = ASRUtils::is_class_type(ASRUtils::extract_type(t_past))
+                        && ASRUtils::is_array_physically_descriptor(t_past);
+                    return in_struct_descr_arr || class_descr_array;
                 }
                 case ASR::StructType:
                     return ASRUtils::is_class_type(t_past);
