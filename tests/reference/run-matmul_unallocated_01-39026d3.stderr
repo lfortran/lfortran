@@ -1,4 +1,4 @@
-runtime error: Argument 3 of subroutine _lcompilers_matmul_real_______2 is unallocated.
+runtime error: Argument 7 of subroutine _lcompilers_matmul_real_______0_real_______1_real_______2 is unallocated.
   --> tests/errors/matmul_unallocated_01.f90:10:1
    |
 10 | C = matmul(A, B)
