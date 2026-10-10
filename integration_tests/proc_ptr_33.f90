@@ -18,7 +18,7 @@ module proc_ptr_33_m
     end interface
 contains
     subroutine fa(a)
-        real :: a(2)
+        real :: a(nn(1))
         a = 5.0
     end subroutine
     subroutine s(z, k)

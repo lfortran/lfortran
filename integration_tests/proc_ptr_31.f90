@@ -26,7 +26,8 @@ module proc_ptr_31_m
     end interface
 contains
     subroutine fa(a)
-        real :: a(2)
+        use proc_ptr_31_sizes, only: nn
+        real :: a(nn(1))
         a = 5.0
     end subroutine
 end module
