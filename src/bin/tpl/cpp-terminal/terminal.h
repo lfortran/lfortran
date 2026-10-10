@@ -20,6 +20,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <locale>
+#include <codecvt>
 
 #define CTRL_KEY(k) (char)(((unsigned char)(k) & 0x1f))
 #define ALT_KEY(k) (char)(((unsigned char)(k) + 0x80))
@@ -445,40 +447,6 @@ public:
 
 /*----------------------------------------------------------------------------*/
 
-#define	UTF8_ACCEPT	0
-#define	UTF8_REJECT	0xf
-
-static inline uint8_t
-utf8_decode_step(uint8_t state, uint8_t octet, uint32_t *cpp)
-{
-    static const uint32_t utf8_classtab[0x10] = {
-        0x88888888UL,0x88888888UL,0x99999999UL,0x99999999UL,
-        0xaaaaaaaaUL,0xaaaaaaaaUL,0xaaaaaaaaUL,0xaaaaaaaaUL,
-        0x222222ffUL,0x22222222UL,0x22222222UL,0x22222222UL,
-        0x3333333bUL,0x33433333UL,0xfff5666cUL,0xffffffffUL,
-    };
-
-    static const uint32_t utf8_statetab[0x10] = {
-        0xfffffff0UL,0xffffffffUL,0xfffffff1UL,0xfffffff3UL,
-        0xfffffff4UL,0xfffffff7UL,0xfffffff6UL,0xffffffffUL,
-        0x33f11f0fUL,0xf3311f0fUL,0xf33f110fUL,0xfffffff2UL,
-        0xfffffff5UL,0xffffffffUL,0xffffffffUL,0xffffffffUL,
-    };
-
-	const uint8_t reject = (state >> 3), nonascii = (octet >> 7);
-	const uint8_t class_ = (!nonascii? 0 :
-	    (0xf & (utf8_classtab[(octet >> 3) & 0xf] >> (4 * (octet & 7)))));
-
-	*cpp = (state == UTF8_ACCEPT
-	    ? (octet & (0xffU >> class_))
-	    : ((octet & 0x3fU) | (*cpp << 6)));
-
-	return (reject? 0xf :
-	    (0xf & (utf8_statetab[class_] >> (4 * (state & 7)))));
-}
-
-/*----------------------------------------------------------------------------*/
-
 inline void codepoint_to_utf8(std::string &s, char32_t c) {
     if (c > 0x0010FFFF) {
         throw std::runtime_error("Invalid UTF32 codepoint.");
@@ -508,22 +476,16 @@ inline void codepoint_to_utf8(std::string &s, char32_t c) {
 // Converts an UTF8 string to UTF32.
 inline std::u32string utf8_to_utf32(const std::string &s)
 {
-    uint32_t codepoint;
-    uint8_t state=UTF8_ACCEPT;
-    std::u32string r;
-    for (size_t i=0; i < s.size(); i++) {
-        state = utf8_decode_step(state, s[i], &codepoint);
-        if (state == UTF8_ACCEPT) {
-            r.push_back(codepoint);
-        }
-        if (state == UTF8_REJECT) {
-            throw std::runtime_error("Invalid byte in UTF8 encoded string");
-        }
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv32;
+    std::u32string str32;
+
+    try {
+        str32 = conv32.from_bytes(s);
+    } catch(const std::range_error& e) {
+        throw std::runtime_error("Invalid byte in UTF8 encoded string");
     }
-    if (state != UTF8_ACCEPT) {
-        throw std::runtime_error("Expected more bytes in UTF8 encoded string");
-    }
-    return r;
+
+    return str32;
 }
 
 
