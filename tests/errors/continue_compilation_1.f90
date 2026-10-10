@@ -2203,3 +2203,21 @@ subroutine namelist_object_before_decl_no_implicit_typing_error
     namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
     real :: w
 end subroutine namelist_object_before_decl_no_implicit_typing_error
+
+subroutine intent_in_pointer_assoc_error(w, c, a)
+    implicit none
+    type :: iipa_t
+        integer :: i
+    end type
+    integer, pointer, intent(in) :: w
+    class(iipa_t), pointer, intent(in) :: c
+    integer, pointer, intent(in) :: a(:)
+    integer, target :: y
+    w => y  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    w => null()  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    nullify(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    allocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    deallocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    allocate(c)  ! {Error} pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
+    allocate(a(3))  ! {Error} pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
+end subroutine intent_in_pointer_assoc_error
