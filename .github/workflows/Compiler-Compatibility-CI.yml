@@ -20,6 +20,7 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:

@@ -129,6 +129,33 @@ public:
         }
     };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
+    // Tracks whether an IMPLICIT NONE statement is in effect in the scoping
+    // unit being visited. A scoping unit without IMPLICIT statements keeps
+    // the value of its host, except an interface body, which does not
+    // inherit the implicit typing rules of its host.
+    struct ImplicitNoneScope {
+        SymbolTableVisitor &v;
+        bool enclosing;
+
+        ImplicitNoneScope(SymbolTableVisitor &v_, AST::decl_stmt_t **items,
+                size_t n_items) : v(v_) {
+            enclosing = v.implicit_none_in_effect;
+            if (AST::count_kind(items, n_items, AST::DeclStmtKind::Implicit) > 0) {
+                v.implicit_none_in_effect = false;
+                for (size_t i = 0; i < n_items; i++) {
+                    if (AST::is_a<AST::ImplicitNone_t>(*items[i])) {
+                        v.implicit_none_in_effect = true;
+                    }
+                }
+            } else if (v.is_interface) {
+                v.implicit_none_in_effect = false;
+            }
+        }
+
+        ~ImplicitNoneScope() {
+            v.implicit_none_in_effect = enclosing;
+        }
+    };
     // Names of the symbols an INSTANTIATE statement adds to the specification
     // part of the module being visited. They are entities of that module, so
     // their accessibility comes from its PUBLIC/PRIVATE statements, which are
@@ -588,6 +615,7 @@ public:
         ScopingUnitScope scoping_unit_scope(*this,
             x.class_type == AST::modType::Submodule
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
         // Access assigned by name in an earlier module of the same file must
@@ -930,6 +958,7 @@ public:
             return;
         }
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
@@ -1839,6 +1868,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -2454,6 +2484,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
