@@ -118,7 +118,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -150,7 +150,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -184,7 +184,7 @@
                                         (FunctionType
                                             []
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -238,7 +238,7 @@
                             (FunctionType
                                 []
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -261,7 +261,7 @@
                             (FunctionType
                                 []
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

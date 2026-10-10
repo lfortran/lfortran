@@ -3332,9 +3332,80 @@ static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
 static inline ASR::ttype_t* make_opaque_procedure_type(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type) {
     return ASRUtils::TYPE(ASR::make_FunctionType_t(al, loc, nullptr, 0,
-        return_type, ASR::abiType::BindC, ASR::deftypeType::ImplicitInterface,
+        return_type, ASR::abiType::Source, ASR::deftypeType::ImplicitInterface,
         nullptr, false, false, false, false, false, nullptr, 0, false,
         ASR::exec_spaceType::Host));
+}
+
+// Character dummy arguments passed as a data pointer plus a hidden length.
+//
+// A procedure of type `ft` passes each of its nonallocatable, nonpointer
+// character dummies (scalars, and explicit-shape or assumed-size arrays) as a
+// pointer to the character data, and the length of the actual (the element
+// length for an array) by value in a hidden `integer(8), value, intent(in)`
+// dummy. The hidden dummies follow all the other dummies, in the order of the
+// character dummies they belong to. This is the convention of gfortran and the
+// other Unix Fortran compilers. The `string_length_arguments` pass adds the
+// hidden dummies to every such procedure and the lengths to every call, and a
+// code generator passes such a dummy as its data pointer alone.
+//
+// It applies to every procedure without BIND(C), whatever kind (external,
+// module, internal, procedure dummy or pointer, interface, implicit
+// interface), except for intrinsic procedures, whose arguments are lowered by
+// the compiler, and device code.
+static inline bool has_hidden_string_lengths(const ASR::FunctionType_t &ft) {
+    switch (ft.m_abi) {
+        case ASR::abiType::Source:
+        case ASR::abiType::LFortranModule:
+        case ASR::abiType::GFortranModule:
+        case ASR::abiType::ExternalUndefined:
+            break;
+        default:
+            return false;
+    }
+    return ft.m_exec_space == ASR::exec_spaceType::Host;
+}
+
+// True if dummy `v` of a procedure of type `ft` is passed as a data pointer
+// with a hidden length (see has_hidden_string_lengths). Deferred-length
+// (allocatable, pointer) dummies, assumed-shape arrays and VALUE dummies are
+// passed differently and are not.
+static inline bool is_string_dummy_with_hidden_length(
+        const ASR::FunctionType_t &ft, const ASR::Variable_t &v) {
+    if (!has_hidden_string_lengths(ft) || !is_arg_dummy(v.m_intent) ||
+            v.m_value_attr || v.n_codims > 0) {
+        return false;
+    }
+    ASR::ttype_t *t = v.m_type;
+    if (ASR::is_a<ASR::Array_t>(*t)) {
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(t);
+        if (array->m_physical_type != ASR::array_physical_typeType::PointerArray &&
+                array->m_physical_type !=
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
+            return false;
+        }
+        t = array->m_type;
+    }
+    if (!ASR::is_a<ASR::String_t>(*t)) {
+        return false;
+    }
+    ASR::String_t *str = ASR::down_cast<ASR::String_t>(t);
+    return str->m_physical_type == ASR::string_physical_typeType::DescriptorString &&
+        str->m_len_kind != ASR::string_length_kindType::DeferredLength;
+}
+
+// True if `x` is a dummy of procedure `fn` passed as a data pointer with a
+// hidden length.
+static inline bool is_string_dummy_with_hidden_length(
+        const ASR::Function_t &fn, ASR::expr_t *x) {
+    if (!ASR::is_a<ASR::Var_t>(*x)) {
+        return false;
+    }
+    ASR::symbol_t *sym = symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(x)->m_v);
+    return ASR::is_a<ASR::Variable_t>(*sym) && is_string_dummy_with_hidden_length(
+        *ASR::down_cast<ASR::FunctionType_t>(fn.m_function_signature),
+        *ASR::down_cast<ASR::Variable_t>(sym));
 }
 
 // True if a procedure of type `a` can be used where type `b` is expected

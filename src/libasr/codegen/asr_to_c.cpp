@@ -1215,10 +1215,13 @@ R"(    // Initialise Numpy
             const std::string &indent, const std::string &result_data,
             const std::string &result_len, const std::string &decimal_mode,
             const std::string &sign_mode, const std::string &round_mode) {
-        if (x.m_kind != ASR::string_format_kindType::FormatFortran) {
+        if (x.m_kind != ASR::string_format_kindType::FormatFortran
+                && x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank) {
             throw CodeGenError("only Fortran formatting is supported by the C backend",
                 x.base.base.loc);
         }
+        std::string leading_blank =
+            x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank ? "1" : "0";
         std::string out;
         std::string fmt_data = "NULL", fmt_len = "0";
         if (x.m_fmt) {
@@ -1285,7 +1288,7 @@ R"(    // Initialise Numpy
         out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
             "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
             + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
-            + sign_mode + ", " + round_mode + item_ptrs + ");\n";
+            + sign_mode + ", " + round_mode + ", " + leading_blank + item_ptrs + ");\n";
         return out;
     }
 

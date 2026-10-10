@@ -1022,14 +1022,24 @@ bool set_allocation_size(
                 ASR::down_cast<ASR::StructInstanceMember_t>(value);
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(struct_instance_member_t->m_type);
             allocate_dims.reserve(al, n_dims);
+            // A component of a scalar is a whole array, so the temporary
+            // keeps its bounds (F2018 10.2.1.3: an allocatable variable
+            // allocated by intrinsic assignment takes the bounds of the
+            // expression).
+            bool is_whole_array = true;
             if( ASRUtils::is_array(ASRUtils::expr_type(struct_instance_member_t->m_v)) ) {
                 value = struct_instance_member_t->m_v;
+                is_whole_array = false;
             }
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             for( size_t i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
+                if( is_whole_array ) {
+                    allocate_dim.m_start = PassUtils::get_bound(
+                        expr_duplicator.duplicate_expr(value), i + 1, "lbound", al);
+                }
                 allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                     al, loc, expr_duplicator.duplicate_expr(
                         ASRUtils::get_past_array_physical_cast(value)),
@@ -1974,10 +1984,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       // A component is passed as it is to a procedure,
+                       // which may define the dummy, e.g. `h%item` with an
+                       // allocatable `item` bound to a dummy without intent.
+                       // A VALUE dummy gets a copy of the actual, so the
+                       // copy is still made for it.
                        !(ASR::is_a<ASR::StructInstanceMember_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
-                         !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))) &&
+                         ((is_call && !(dummy && dummy->m_value_attr)) ||
+                          (!ASRUtils::is_allocatable(ASRUtils::expr_type(x_m_args[i].m_value)) &&
+                           !ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args[i].m_value))))) &&
                        !ASR::is_a<ASR::PointerNullConstant_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) ) {
                 visit_call_arg(x_m_args[i]);
@@ -2491,16 +2507,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_Call(const T& x, const std::string& name_hint) {
         // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
+        // The dummy arguments of the procedure, of the type-bound one, or of
+        // the interface of a procedure pointer or a dummy procedure.
         ASR::expr_t **orig_args = nullptr;
         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
-        if (ASR::is_a<ASR::Function_t>(*sym)) {
-            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
-        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-            // For type-bound procedures, get the actual function from m_proc
-            ASR::StructMethodDeclaration_t* smd = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(smd->m_proc);
-            if (ASR::is_a<ASR::Function_t>(*proc)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+        if (ASR::is_a<ASR::Function_t>(*sym) ||
+            ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ||
+            ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Function_t* func = ASRUtils::get_function(sym);
+            if (func) {
                 orig_args = func->m_args;
             }
         }
@@ -2612,6 +2627,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         replace_expr_with_temporary_variable(xx.m_re, x.m_re, "_complex_constructor_re");
 
         replace_expr_with_temporary_variable(xx.m_im, xx.m_im, "_complex_constructor_im");
+
+        // Also simplify the arguments in a scalar part, such as the section
+        // in `maxval(z(3:4)%re)`
+        CallReplacerOnExpressionsVisitor::visit_ComplexConstructor(x);
     }
 
     void visit_ArrayTranspose(const ASR::ArrayTranspose_t& x) {
@@ -2678,7 +2697,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
      *     DO while (.true.)
      *      temp1 = x == skip_tokens
      *      temp2 = Any(temp1)
-     *          if (temp2 == .false.) exit
+     *          if (.not. temp2) exit
      *      ...
      *     END DO
      */
@@ -2690,7 +2709,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         visit_expr(*x.m_test);
         if (!while_test_body_.empty()){ // Temps Created! 
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
-            while_test_body_.push_back(al, builder.If(builder.Eq(x.m_test, builder.logical_false()), {builder.Exit()}, {}));
+            while_test_body_.push_back(al, builder.If(builder.Not(x.m_test), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 while_test_body_.push_back(al, x.m_body[i]);
             }
@@ -2825,6 +2844,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        // A scalar part, such as `maxval(z%re)` in `z(1:2)%re = maxval(z%re)`,
+        // is evaluated once into a temporary, not once per element
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ComplexConstructor(x);
         replace_current_expr(x, "_complex_constructor_");
     }
 
@@ -3311,8 +3333,9 @@ class ReplaceExprWithTemporaryVisitor:
             return;
         }
         
-        // Create condition variable 'c' which is a scalar logical
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+        // Create condition variable 'c' with the condition's own logical type
+        ASR::ttype_t* logical_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(x.m_test));
         char* c_name = s2c(al, current_scope->get_unique_name("_while_cond"));
         ASR::symbol_t* c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
                 current_scope, c_name, 
