@@ -6280,3 +6280,7 @@ options = "--gpu=metal"
 [[test]]
 filename = "../integration_tests/string_122.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/proc_ptr_25.f90"
+asr = true

@@ -4445,6 +4445,17 @@ static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
             symbol_get_past_external(existing) == definition) {
         return existing;
     }
+    // The name may stand for something else, so an earlier import can have
+    // been given another name.
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        for (auto &item : s->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
+                    ASR::down_cast<ASR::ExternalSymbol_t>(
+                        item.second)->m_external == definition) {
+                return item.second;
+            }
+        }
+    }
     // An ExternalSymbol names its target through the module or derived type
     // that owns it. A symbol owned by a program or a procedure cannot be
     // named that way, so it cannot be imported at all.
@@ -6689,8 +6700,11 @@ class ProcedureTypeSymbolImporter:
 
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
         ASR::BaseExprReplacer<ProcedureTypeSymbolImporter>::replace_FunctionCall(x);
-        x->m_name = import_symbol(x->m_name);
-        if (x->m_original_name) {
+        ASR::symbol_t *name = x->m_name;
+        x->m_name = import_symbol(name);
+        if (x->m_original_name == name) {
+            x->m_original_name = x->m_name;
+        } else if (x->m_original_name) {
             x->m_original_name = import_symbol(x->m_original_name);
         }
     }
