@@ -1706,6 +1706,14 @@ contains
     end function
 end subroutine
 
+! Allocating an unlimited polymorphic (class(*)) variable requires a
+! type-spec, SOURCE=, or MOLD= so the runtime type is known.
+subroutine unlimited_polymorphic_allocate_no_typespec_1()
+    implicit none
+    class(*), allocatable :: u(:)
+    allocate(u(2))  ! {Error} Allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+end subroutine
+
 ! `null()` is not permitted as the TARGET= argument to the `associated`
 ! intrinsic.
 subroutine associated_null_target_in_continue_compilation_1()
