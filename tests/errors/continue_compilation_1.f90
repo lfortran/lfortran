@@ -2149,6 +2149,51 @@ subroutine intent_in_bound_before_decl_error(a, nz)
     a = 1
 end subroutine intent_in_bound_before_decl_error
 
+subroutine reshape_zero_size_pad_error()
+    implicit none
+    print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+end subroutine reshape_zero_size_pad_error
+
+subroutine pointer_assign_type_mismatch_error()
+    implicit none
+    type :: patm_s
+        integer :: i
+    end type
+    type :: patm_o
+        real :: r
+    end type
+    type(patm_s), pointer :: p
+    type(patm_o), target :: y
+    integer, pointer :: ip
+    real, target :: r
+    class(*), pointer :: q
+    p => y  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
+end subroutine pointer_assign_type_mismatch_error
+
+subroutine pointer_assign_interface_mismatch_error()
+    implicit none
+    abstract interface
+        real function paim_iface(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    procedure(paim_iface), pointer :: fp
+    real, target :: r
+    integer, pointer :: ip
+    character(len=5), target :: cs
+    fp => paim_g  ! {Error} interface mismatch in procedure pointer assignment
+    fp => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+    ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
+contains
+    real function paim_g(n)
+        integer, intent(in) :: n
+        paim_g = n
+    end function
+end subroutine pointer_assign_interface_mismatch_error
+
 module pointer_dummy_actual_1_m
     implicit none
     type :: pda_t
