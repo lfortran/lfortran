@@ -490,6 +490,16 @@ class WorkflowPolicyTests(unittest.TestCase):
                     else:
                         self.assertRegex(body, r"(?m)^    timeout-minutes: \S")
 
+    def test_headers_do_not_expand_the_version(self):
+        # LFORTRAN_VERSION changes with every commit. Expanding it in a header
+        # changes the preprocessed output of every including file, so compiler
+        # caches miss on every commit. Use it only in .cpp files.
+        headers = [path for path in (ROOT / "src").rglob("*")
+                   if path.suffix in (".h", ".hpp") and path.name != "config.h"]
+        uses = [str(path.relative_to(ROOT)) for path in headers
+                if "LFORTRAN_VERSION" in path.read_text(errors="ignore")]
+        self.assertEqual(uses, [])
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
