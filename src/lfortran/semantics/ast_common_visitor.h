@@ -5468,8 +5468,14 @@ public:
     }
 
     void add_sym_to_struct(ASR::Variable_t* var_, ASR::Struct_t* struct_type) {
-        char* var_name = var_->m_name;
         SymbolTable* struct_scope = struct_type->m_symtab;
+        // The members of a COMMON block are associated by storage position.
+        // Another program unit may have given its member at another
+        // position the same name: this member then gets a name of its own.
+        char* var_name = var_->m_name;
+        if (struct_scope->get_symbol(var_name) != nullptr) {
+            var_name = s2c(al, struct_scope->get_unique_name(var_name, false));
+        }
         
         ASR::ttype_t* var_type = evaluate_type_bounds(al, var_->m_type, var_->base.base.loc);
 
@@ -5478,7 +5484,7 @@ public:
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type, var_->m_symbolic_value, var_->m_value);
 
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, var_->base.base.loc, struct_scope,
-                        var_->m_name, variable_dependencies_vec.p, variable_dependencies_vec.size(), var_->m_intent,
+                        var_name, variable_dependencies_vec.p, variable_dependencies_vec.size(), var_->m_intent,
                         var_->m_symbolic_value, var_->m_value, var_->m_storage, var_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
@@ -5604,12 +5610,10 @@ public:
 			// canonical size (avoids duplicate fields when a COMMON
 			// block is re-declared in a different program unit with
 			// different variable names at the same storage position)
-            if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
-                auto deferred_it = common_block_deferred_size_check.find(common_block_name);
-                if (deferred_it == common_block_deferred_size_check.end() ||
-                    byte_offset > deferred_it->second.first) {
-                    add_sym_to_struct(var_, struct_type);
-                }
+            auto deferred_it = common_block_deferred_size_check.find(common_block_name);
+            if (deferred_it == common_block_deferred_size_check.end() ||
+                byte_offset > deferred_it->second.first) {
+                add_sym_to_struct(var_, struct_type);
             }
 		    }
 		    // Update total byte size
@@ -5645,9 +5649,7 @@ public:
 			// If this variable extends beyond the existing struct,
 			// add it so codegen can resolve it by offset.
 			if (byte_offset + var_size > previous_size) {
-			    if (struct_type->m_symtab->resolve_symbol(var__->m_name) == nullptr) {
-				add_sym_to_struct(var__, struct_type);
-			    }
+			    add_sym_to_struct(var__, struct_type);
 			}
 			byte_offset += var_size;
 		    }

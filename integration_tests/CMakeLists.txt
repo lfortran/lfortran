@@ -4435,6 +4435,7 @@ RUN(NAME common_44 LABELS gfortran llvm EXTRAFILES common_44_module.f90 common_4
 RUN(NAME common_46 LABELS gfortran llvm EXTRAFILES common_46_module.f90)
 RUN(NAME common_47 LABELS gfortran llvm)
 RUN(NAME common_48 LABELS gfortran llvm)
+RUN(NAME common_49 LABELS gfortran llvm EXTRAFILES common_49_module.f90)
 RUN(NAME common_50 LABELS gfortran llvm)
 RUN(NAME common_array_section_01 LABELS gfortran llvm)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
