@@ -240,10 +240,49 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             return fn;
         }
 
+        // The scope of the expressions being visited. A signature given to
+        // one of them is imported into it.
+        SymbolTable* current_scope = nullptr;
+
+        template <typename T>
+        void visit_scope(const T &x, void (ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::*visit)(const T&)) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = x.m_symtab;
+            (this->*visit)(x);
+            current_scope = current_scope_copy;
+        }
+
+        ASR::ttype_t* import_into_current_scope(ASR::ttype_t* type) {
+            if (current_scope == nullptr) {
+                return type;
+            }
+            return ASRUtils::import_procedure_type(al, type, current_scope);
+        }
+
     public:
         UpdateFunctionPointerCastTypes(Allocator &al_,
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
             : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP) {}
+
+        void visit_Program(const ASR::Program_t &x) {
+            visit_scope(x, &ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Program);
+        }
+
+        void visit_Module(const ASR::Module_t &x) {
+            visit_scope(x, &ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Module);
+        }
+
+        void visit_Function(const ASR::Function_t &x) {
+            visit_scope(x, &ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Function);
+        }
+
+        void visit_Block(const ASR::Block_t &x) {
+            visit_scope(x, &ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Block);
+        }
+
+        void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
+            visit_scope(x, &ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_AssociateBlock);
+        }
 
         void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
             ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
@@ -251,7 +290,8 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             if (to_fn == nullptr) {
                 return;
             }
-            const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
+                import_into_current_scope(to_fn->m_function_signature);
         }
 
         // The type of the procedure variable `x` declared by a transformed
@@ -292,7 +332,8 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             ASR::ttype_t* new_type = transformed_procedure_variable_type(
                 *ASR::down_cast<ASR::Variable_t>(member));
             if (new_type != nullptr) {
-                const_cast<ASR::StructInstanceMember_t&>(x).m_type = new_type;
+                const_cast<ASR::StructInstanceMember_t&>(x).m_type =
+                    import_into_current_scope(new_type);
             }
         }
 };
