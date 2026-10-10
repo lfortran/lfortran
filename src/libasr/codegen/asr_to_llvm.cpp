@@ -451,24 +451,84 @@ private:
         builder->CreateStore(llvm::ConstantPointerNull::get(wrapper_ptr_type), slot);
     }
 
+    // The static class wrapper of the SAVE class pointer `sym`. It is a
+    // companion of the variable's own global (the slot), named after it, so
+    // it is exactly as unique as the slot: per module, per interactive cell
+    // and per program unit. It is defined where the slot is defined, with the
+    // slot's linkage, and only declared in a translation unit or cell that
+    // just declares the slot, so all of them share the one wrapper.
+    llvm::GlobalVariable* get_static_class_wrapper(ASR::symbol_t* sym,
+            llvm::Type* wrapper_llvm_type) {
+        llvm::GlobalVariable* slot_g = nullptr;
+        uint32_t h = get_hash((ASR::asr_t*)sym);
+        auto slot = llvm_symtab.find(h);
+        if (slot != llvm_symtab.end()) {
+            slot_g = llvm::dyn_cast<llvm::GlobalVariable>(
+                slot->second->stripPointerCasts());
+        }
+        if (!slot_g) {
+            throw CodeGenError("internal error: the SAVE class pointer '"
+                + std::string(ASRUtils::symbol_name(sym))
+                + "' has no global variable for its static class wrapper",
+                sym->base.loc);
+        }
+        std::string wrapper_name = slot_g->getName().str() + ".class_wrapper";
+        llvm::GlobalVariable* wrapper_g = module->getGlobalVariable(
+            wrapper_name, true);
+        if (!wrapper_g) {
+            bool is_definition = !slot_g->isDeclaration();
+            wrapper_g = new llvm::GlobalVariable(
+                *module,
+                wrapper_llvm_type,
+                false,
+                is_definition ? slot_g->getLinkage()
+                    : llvm::GlobalValue::ExternalLinkage,
+                is_definition ? llvm::Constant::getNullValue(wrapper_llvm_type) : nullptr,
+                wrapper_name);
+            wrapper_g->setVisibility(slot_g->getVisibility());
+            wrapper_g->setThreadLocalMode(slot_g->getThreadLocalMode());
+        }
+        return wrapper_g;
+    }
+
+    // Disassociates the scalar class pointer `ptr_expr` with slot `slot`. An
+    // owned heap wrapper is freed. Any other wrapper may be a static SAVE
+    // wrapper or belong to the actual argument of a dummy, so it is kept and
+    // reset to the empty state of a new wrapper (null vptr and data); the
+    // actual argument then sees the disassociation as well; associated()
+    // checks the wrapper's data. A SAVE variable itself keeps only its own
+    // static wrapper and frees any other wrapper in its slot (see
+    // install_static_class_wrapper_for_dummy).
+    void disassociate_class_pointer(ASR::expr_t* ptr_expr, llvm::Value* slot,
+            llvm::Type* wrapper_llvm_type) {
+        if (owns_heap_class_wrapper(ptr_expr)) {
+            free_class_pointer_wrapper(slot, wrapper_llvm_type);
+            return;
+        }
+        llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+        llvm::Value* wrapper = llvm_utils->CreateLoad2(wrapper_ptr_type, slot);
+        if (ASR::symbol_t* static_sym = get_static_class_wrapper_sym(ptr_expr)) {
+            llvm::Value* static_wrapper = builder->CreateBitCast(
+                get_static_class_wrapper(static_sym, wrapper_llvm_type), wrapper_ptr_type);
+            llvm_utils->create_if_else(builder->CreateICmpEQ(wrapper, static_wrapper), [&]() {
+                builder->CreateStore(llvm::Constant::getNullValue(wrapper_llvm_type), wrapper);
+            }, [&]() {
+                free_class_pointer_wrapper(slot, wrapper_llvm_type);
+            });
+            return;
+        }
+        llvm_utils->create_if_else(builder->CreateICmpNE(wrapper,
+                llvm::ConstantPointerNull::get(wrapper_ptr_type)), [&]() {
+            builder->CreateStore(llvm::Constant::getNullValue(wrapper_llvm_type), wrapper);
+        }, [](){});
+    }
+
     llvm::Value* allocate_class_wrapper_storage(ASR::expr_t* target_expr,
                                                 llvm::Type* target_llvm_type,
                                                 llvm::Value* wrapper_size) {
         if (ASR::symbol_t* target_sym = get_static_class_wrapper_sym(target_expr)) {
-            std::string wrapper_name = "__lfortran_save_class_wrapper_"
-                + std::to_string(get_hash((ASR::asr_t*)target_sym));
-            llvm::GlobalVariable* wrapper_g = module->getGlobalVariable(
-                wrapper_name, true);
-            if (!wrapper_g) {
-                wrapper_g = new llvm::GlobalVariable(
-                    *module,
-                    target_llvm_type,
-                    false,
-                    llvm::GlobalValue::InternalLinkage,
-                    llvm::Constant::getNullValue(target_llvm_type),
-                    wrapper_name);
-            }
-            return wrapper_g;
+            return llvm::ConstantExpr::getBitCast(get_static_class_wrapper(
+                target_sym, target_llvm_type), target_llvm_type->getPointerTo());
         }
 
         llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
@@ -476,6 +536,58 @@ private:
         builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
             wrapper_size, llvm::MaybeAlign());
         return builder->CreateBitCast(wrapper_ptr, target_llvm_type->getPointerTo());
+    }
+
+    // Returns the class wrapper in `slot` (loaded as `slot_ptr_type`) of the
+    // scalar class pointer `ptr_expr`, which does not own its wrapper. A
+    // wrapper kept by disassociate_class_pointer is reused, so it is neither
+    // leaked nor replaced; only a null slot gets a new wrapper.
+    llvm::Value* get_or_allocate_class_wrapper(ASR::expr_t* ptr_expr, llvm::Value* slot,
+            llvm::Type* slot_ptr_type, llvm::Type* wrapper_llvm_type,
+            llvm::Value* wrapper_size) {
+        llvm_utils->create_if_else(builder->CreateICmpEQ(
+            llvm_utils->CreateLoad2(slot_ptr_type, slot),
+            llvm::ConstantPointerNull::get(
+                llvm::cast<llvm::PointerType>(slot_ptr_type))), [&]() {
+            builder->CreateStore(builder->CreateBitCast(
+                allocate_class_wrapper_storage(ptr_expr, wrapper_llvm_type, wrapper_size),
+                slot_ptr_type), slot);
+        }, [](){});
+        return llvm_utils->CreateLoad2(slot_ptr_type, slot);
+    }
+
+    // Before the SAVE scalar class pointer `actual` is passed to the pointer
+    // dummy `dummy`, which may associate it, installs the static wrapper in
+    // a null slot. The callee then reuses it rather than installing a heap
+    // wrapper, which a disassociation through the dummy would keep in the
+    // slot, so a SAVE slot only ever holds its static wrapper.
+    void install_static_class_wrapper_for_dummy(ASR::expr_t* actual,
+            ASR::Variable_t* dummy) {
+        ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
+        if (!ASRUtils::is_pointer(dummy->m_type)
+                || dummy->m_intent == ASRUtils::intent_in
+                || !ASRUtils::is_pointer(actual_type)
+                || ASRUtils::is_array(actual_type)
+                || !ASRUtils::is_class_type(ASRUtils::extract_type(actual_type))) {
+            return;
+        }
+        ASR::symbol_t* sym = get_static_class_wrapper_sym(actual);
+        if (!sym) {
+            return;
+        }
+        uint32_t h = get_hash((ASR::asr_t*)sym);
+        auto slot = llvm_symtab.find(h);
+        if (slot == llvm_symtab.end()) {
+            return;
+        }
+        llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            actual, ASRUtils::extract_type(actual_type), module.get());
+        llvm::PointerType* wrapper_ptr_type = wrapper_llvm_type->getPointerTo();
+        llvm_utils->create_if_else(builder->CreateIsNull(
+                llvm_utils->CreateLoad2(wrapper_ptr_type, slot->second)), [&]() {
+            builder->CreateStore(llvm::ConstantExpr::getBitCast(get_static_class_wrapper(
+                sym, wrapper_llvm_type), wrapper_ptr_type), slot->second);
+        }, [](){});
     }
 
     // The data of a polymorphic array descriptor is a single class wrapper
@@ -2530,7 +2642,28 @@ public:
 
                         llvm::Value* target_addr_as_i8pp = builder->CreateBitCast(
                             target_addr, llvm_utils->i8_ptr->getPointerTo());
-                        builder->CreateCall(alloc_fn_type, alloc_fn_slot, { target_addr_as_i8pp });
+                        bool keep_class_wrapper = ASRUtils::is_pointer(tmp_expr_type)
+                            && !owns_heap_class_wrapper(tmp_expr);
+                        if (keep_class_wrapper) {
+                            // The allocator installs a new wrapper. Allocate into a
+                            // temporary slot and move the new wrapper's contents
+                            // into the kept one (see disassociate_class_pointer).
+                            llvm::Value* new_slot = llvm_utils->CreateAlloca(
+                                *builder, llvm_utils->i8_ptr);
+                            builder->CreateCall(alloc_fn_type, alloc_fn_slot, { new_slot });
+                            llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
+                                tmp_expr, ASRUtils::extract_type(tmp_expr_type), module.get());
+                            llvm::Value* wrapper_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type,
+                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            llvm::Value* wrapper = get_or_allocate_class_wrapper(tmp_expr, target_addr,
+                                wrapper_type->getPointerTo(), wrapper_type, wrapper_size);
+                            llvm::Value* new_wrapper = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, new_slot);
+                            builder->CreateMemCpy(builder->CreateBitCast(wrapper, llvm_utils->i8_ptr),
+                                llvm::MaybeAlign(), new_wrapper, llvm::MaybeAlign(), wrapper_size);
+                            llvm_utils->lfortran_free_nocheck(new_wrapper);
+                        } else {
+                            builder->CreateCall(alloc_fn_type, alloc_fn_slot, { target_addr_as_i8pp });
+                        }
 
                         llvm::Value* target_struct_i8 = llvm_utils->CreateLoad2(
                             llvm_utils->i8_ptr, target_addr_as_i8pp);
@@ -2661,12 +2794,23 @@ public:
                             // Allocate class wrapper first
                             llvm::Value* wrapper_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type,
                                 llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                            llvm::Value* wrapper_ptr = LLVMArrUtils::lfortran_malloc(
-                                context, *module, *builder, wrapper_size);
-                            builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-                                wrapper_size, llvm::MaybeAlign());
-                            wrapper_ptr = builder->CreateBitCast(wrapper_ptr, src_struct_type_);
-                            builder->CreateStore(wrapper_ptr, x_arr);
+                            llvm::Value* wrapper_ptr = nullptr;
+                            if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))
+                                    && !owns_heap_class_wrapper(tmp_expr)) {
+                                // Keep a static or caller's wrapper; see
+                                // disassociate_class_pointer.
+                                llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
+                                    ASRUtils::extract_type(curr_arg_m_a_type), &src_struct_sym->base, module.get());
+                                wrapper_ptr = get_or_allocate_class_wrapper(tmp_expr, x_arr,
+                                    src_struct_type_, wrapper_type, wrapper_size);
+                            } else {
+                                wrapper_ptr = LLVMArrUtils::lfortran_malloc(
+                                    context, *module, *builder, wrapper_size);
+                                builder->CreateMemSet(wrapper_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                                    wrapper_size, llvm::MaybeAlign());
+                                wrapper_ptr = builder->CreateBitCast(wrapper_ptr, src_struct_type_);
+                                builder->CreateStore(wrapper_ptr, x_arr);
+                            }
                             
                             // Now allocate its data
                             x_arr = llvm_utils->CreateLoad2(src_struct_type_, x_arr);
@@ -3160,7 +3304,7 @@ public:
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 0)), len);
                 builder->CreateStore(np, data_target);
             } else if(ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(sym_type))) {
-                free_class_pointer_wrapper(target, tp);
+                disassociate_class_pointer(x.m_vars[i], target, tp);
             } else {
                 llvm::Value* np = builder->CreateIntToPtr(
                     llvm::ConstantInt::get(context, llvm::APInt(32, 0)), dest_type);
@@ -3363,6 +3507,11 @@ public:
                             if(ASRUtils::non_unlimited_polymorphic_class(ASRUtils::type_get_past_allocatable_pointer(cur_type)) && ASRUtils::is_pointer(cur_type) ){
                                 auto const inner_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(struct_sym, module.get(), true), llvm_utils->create_gep2(llvm_data_type, tmp, 1));
                                 llvm_utils->lfortran_free(inner_struct);
+                            }
+                            if (ASRUtils::is_pointer(cur_type)
+                                    && ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
+                                disassociate_class_pointer(tmp_expr, tmp_, llvm_data_type);
+                                return;
                             }
                             llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
                             builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
@@ -7225,6 +7374,15 @@ public:
             if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
                 gv->setLinkage(llvm::GlobalValue::InternalLinkage);
             }
+        }
+        if (!external && x.m_storage == ASR::storage_typeType::Save
+                && ASRUtils::is_class_type(ASRUtils::extract_type(x.m_type))) {
+            // Define the static class wrapper with the variable, for the
+            // translation units and cells that only declare both.
+            get_static_class_wrapper(const_cast<ASR::symbol_t*>(&x.base),
+                llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                    al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))),
+                    ASRUtils::extract_type(x.m_type), module.get()));
         }
     }
 
@@ -11110,6 +11268,15 @@ public:
                 }
                 builder->CreateStore(builder->CreateICmpEQ(to_int64(ptr), to_int64(nptr)), res);
             } else {
+                if (!ASRUtils::is_array(p_type) &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
+                    // A disassociated class pointer may keep an empty wrapper
+                    // (see disassociate_class_pointer); check its data.
+                    llvm::Type* p_class_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_ptr, ASRUtils::extract_type(p_type), module.get());
+                    ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(p_class_type, ptr, 1));
+                }
                 llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0));
                 builder->CreateStore(builder->CreateICmpNE(to_int64(ptr), zero), res);
             }
@@ -11946,9 +12113,8 @@ public:
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
                 if (is_target_class && ASRUtils::is_pointer(target_type)
-                        && !ASRUtils::is_array(target_type)
-                        && owns_heap_class_wrapper(x.m_target)) {
-                    free_class_pointer_wrapper(llvm_target, llvm_utils->get_type_from_ttype_t_util(
+                        && !ASRUtils::is_array(target_type)) {
+                    disassociate_class_pointer(x.m_target, llvm_target, llvm_utils->get_type_from_ttype_t_util(
                         x.m_target, ASRUtils::extract_type(target_type), module.get()));
                     return;
                 }
@@ -12134,10 +12300,9 @@ public:
                         value_is_null,
                         [&]() {
                             // Source class wrapper is null (unallocated);
-                            // store null into target to preserve unallocated status
-                            if (ASRUtils::is_pointer(target_type)
-                                    && owns_heap_class_wrapper(x.m_target)) {
-                                free_class_pointer_wrapper(llvm_target, target_llvm_type);
+                            // disassociate or deallocate the target as well
+                            if (ASRUtils::is_pointer(target_type)) {
+                                disassociate_class_pointer(x.m_target, llvm_target, target_llvm_type);
                             } else {
                                 builder->CreateStore(
                                     llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()),
@@ -24917,6 +25082,10 @@ public:
                 }
                 args.push_back(tmp);
                 continue;
+            }
+
+            if (orig_arg != nullptr && x.m_args[i].m_value != nullptr) {
+                install_static_class_wrapper_for_dummy(x.m_args[i].m_value, orig_arg);
             }
 
             if( x.m_args[i].m_value == nullptr ) {
