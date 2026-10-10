@@ -18,9 +18,9 @@ do i = 1, 5
 2 end do
 if (s /= 12) error stop
 s = 0
-do i = 1, 5
+do 3 i = 1, 5
     if (i == 3) go to 3
     s = s + i
-3 end do
+    3 continue
 if (s /= 12) error stop
 end program doloop_19

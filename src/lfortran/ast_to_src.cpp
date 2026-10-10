@@ -1,4 +1,5 @@
 #include <cctype>
+#include <set>
 #include <lfortran/ast_to_src.h>
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
@@ -115,6 +116,9 @@ public:
     // The precedence of the last expression, using the table
     // 10.1 in the Fortran 2018 standard:
     int last_expr_precedence;
+    // Statement labels printed so far: the label of the statement that
+    // terminates nested `do <label>` loops must only be printed once
+    std::set<int64_t> printed_labels;
 
     // Syntax highlighting groups
     enum gr {
@@ -2590,6 +2594,9 @@ public:
         r += syn(gr::Repeat);
         r += "do";
         r += syn();
+        if (x.m_nonblock) {
+            r += " " + std::to_string(x.m_do_label);
+        }
         if (x.m_var) {
             r.append(" ");
             r.append(x.m_var);
@@ -2614,15 +2621,43 @@ public:
         } else {
             r.append("\n");
         }
+        // Only a label printed within the body of this loop counts: the
+        // same label may have been printed in an earlier program unit
+        printed_labels.erase(x.m_do_label);
         inc_indent();
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
         }
+        if (x.m_nonblock) {
+            // The loop ends on its labelled terminal statement: the body
+            // printed it if it is an action statement or an inner loop
+            // sharing it, otherwise it was a `<label> continue`
+            if (printed_labels.insert(x.m_do_label).second) {
+                r += indent;
+                r += std::to_string(x.m_do_label);
+                r += " continue";
+                if (x.m_trivia) {
+                    r += print_trivia_after(*x.m_trivia);
+                } else {
+                    r.append("\n");
+                }
+            } else if (x.m_trivia) {
+                // The comments after the terminal statement of the body
+                r.pop_back();
+                r += print_trivia_after(*x.m_trivia);
+            }
+            dec_indent();
+            s = r;
+            return;
+        }
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
-        if (x.m_do_label != 0) {
+        // The body already printed the label if it ends with the labelled
+        // statement that terminates the loop (`10 a(i) = 0`) or with an
+        // inner loop sharing it (`do 10 j = ...` / `do 10 i = ...`)
+        if (x.m_do_label != 0 && printed_labels.insert(x.m_do_label).second) {
             r += std::to_string(x.m_do_label);
             r += " ";
         }
@@ -3568,6 +3603,7 @@ public:
         if (x.m_label == 0) {
             return "";
         } else {
+            printed_labels.insert(x.m_label);
             return std::to_string(x.m_label) + " ";
         }
     }

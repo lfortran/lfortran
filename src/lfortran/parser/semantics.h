@@ -2296,23 +2296,47 @@ static inline void drop_trailing_matching_continue(
     }
 }
 
+// A `DO <label>` loop that ends on a `<label> CONTINUE` or on another
+// labelled action statement, possibly shared with the `DO <label>` loops it
+// is nested in, is a nonblock DO construct (F2008 R835). Drop the trailing
+// `<label> CONTINUE` as above, and record the form in `nonblock` so that it
+// can be printed back as written.
+static inline LCompilers::LFortran::AST::ast_t* nonblock_do(
+        LCompilers::LFortran::AST::ast_t *a) {
+    using namespace LCompilers::LFortran::AST;
+    DoLoop_t *d = (DoLoop_t*)a;
+    if (d->n_body == 0) return a;
+    decl_stmt_t *last = d->m_body[d->n_body - 1];
+    if (last->type == decl_stmtType::Continue
+            && ((Continue_t*)last)->m_label == d->m_do_label) {
+        d->n_body--;
+        d->m_nonblock = true;
+    } else if (last->type == decl_stmtType::DoLoop) {
+        DoLoop_t *inner = (DoLoop_t*)last;
+        d->m_nonblock = inner->m_nonblock
+            && inner->m_do_label == d->m_do_label;
+    } else {
+        d->m_nonblock = stmt_label(*last) == d->m_do_label;
+    }
+    return a;
+}
+
 #define DO1(trivia, body, end_label, l) ( \
         drop_trailing_matching_continue(body, end_label), \
-        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, false, \
         nullptr, nullptr, nullptr, nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr))
 
 #define DO2(i, a, b, trivia, body, end_label, l) ( \
         drop_trailing_matching_continue(body, end_label), \
-        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, false, \
         name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)))
-#define DO2_LABEL(label, i, a, b, trivia, body, end_label, l) ( \
-        drop_trailing_matching_continue(body, label), \
-        make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, name2char(i), EXPR(a), EXPR(b), nullptr, \
+#define DO2_LABEL(label, i, a, b, trivia, body, end_label, l) \
+        nonblock_do(make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, false, name2char(i), EXPR(a), EXPR(b), nullptr, \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))); \
         if (label == 0) { \
@@ -2322,10 +2346,9 @@ static inline void drop_trailing_matching_continue(
             throw LCompilers::LFortran::parser_local::ParserAbort();  \
         }
 
-#define DO3_LABEL(label, i, a, b, c, trivia, body, end_label, l) ( \
-        drop_trailing_matching_continue(body, label), \
-        make_DoLoop_t(p.m_a, l, 0, nullptr, \
-        label, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
+#define DO3_LABEL(label, i, a, b, c, trivia, body, end_label, l) \
+        nonblock_do(make_DoLoop_t(p.m_a, l, 0, nullptr, \
+        label, false, name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc))); \
         if (label == 0) { \
@@ -2336,7 +2359,7 @@ static inline void drop_trailing_matching_continue(
         }
 #define DO3(i, a, b, c, trivia, body, end_label, l) ( \
         drop_trailing_matching_continue(body, end_label), \
-        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
+        make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, false, \
         name2char(i), EXPR(a), EXPR(b), EXPR(c), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr, &((i)->loc)))
