@@ -497,6 +497,15 @@ Docker build/tests, JupyterLite and source packaging remain additional checks.
 PRs do not run the Exhaustive workflow at all. For a rare, explicitly
 requested extended check of a PR, dispatch it in a fork (see below).
 
+##### Job timeouts
+
+Every job sets `timeout-minutes`, about twice its slowest normal run (for
+example 60 minutes for the Windows platform build, 150 for macOS). Without
+it, a hung job holds a runner for GitHub's 6-hour default; under the
+organization's 20 concurrent-job limit, one hang in a test that runs on every
+PR can block CI for hours. When a job's normal duration grows, raise its
+timeout in the same change.
+
 ##### Compiler caches
 
 Every C/C++ build runs through ccache or sccache
