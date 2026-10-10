@@ -1411,6 +1411,7 @@ RUN(NAME procedure_pointer_24 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME procedure_pointer_26 LABELS gfortran llvm EXTRAFILES procedure_pointer_26_mod.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME procedure_pointer_27 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_28 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -3573,6 +3574,7 @@ RUN(NAME class_162 LABELS gfortran llvm)
 RUN(NAME class_165 LABELS gfortran llvm)
 RUN(NAME class_166 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME class_167 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME class_168 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
