@@ -177,7 +177,9 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    int64_t i = r->m_r;
+                    // kind=10 m_r is a pointer to the long double bytes
+                    int64_t i = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 10
+                        ? ASRUtils::real_constant_get_r10(r) : r->m_r;
                     value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                         i, dest_type2);
                 } else {
@@ -226,7 +228,12 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                    if (ASRUtils::extract_kind_from_ttype_t(dest_type2) != 16) {
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    if (dest_kind == 10) {
+                        // kind=10 m_r is a pointer to the long double bytes
+                        value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                            static_cast<long double>(i->m_n), dest_type2);
+                    } else if (dest_kind != 16) {
                         double rval = static_cast<double>(i->m_n);
                         value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                     rval, dest_type2);
@@ -286,9 +293,23 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    double rval = r->m_r;
-                    value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                        rval, dest_type2);
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    if (src_kind == 10 || dest_kind == 10) {
+                        // kind=10 m_r is a pointer to the long double bytes.
+                        // A cast between kind=10 and kind=16 is left to run time.
+                        value = nullptr;
+                        if (src_kind != 16 && dest_kind != 16) {
+                            double rval = src_kind == 10
+                                ? ASRUtils::real_constant_get_r10(r) : r->m_r;
+                            value = ASRUtils::make_RealConstant_util(al, a_loc,
+                                rval, dest_type2);
+                        }
+                    } else {
+                        double rval = r->m_r;
+                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
+                            rval, dest_type2);
+                    }
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                   ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -325,7 +346,9 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::RealConstant_t>(*value) ) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    double rval = r->m_r;
+                    // kind=10 m_r is a pointer to the long double bytes
+                    double rval = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 10
+                        ? ASRUtils::real_constant_get_r10(r) : r->m_r;
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       rval, 0, dest_type2);
                 } else {

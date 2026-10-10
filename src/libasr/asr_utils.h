@@ -304,6 +304,13 @@ static inline const uint8_t* real_constant_get_r10_bytes(
     return real_constant_unpack_r10(c->m_r);
 }
 
+// Read the value of a kind=10 RealConstant as a host long double.
+static inline long double real_constant_get_r10(const ASR::RealConstant_t* c) {
+    long double v;
+    std::memcpy(&v, real_constant_get_r10_bytes(c), sizeof(long double));
+    return v;
+}
+
 static inline double real_constant_pack_r10(const uint8_t* bytes) {
     uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
     double m_r;

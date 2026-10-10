@@ -3980,8 +3980,12 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                         ASRUtils::expr_value(a_arg));
             // kind=16 m_r is a pointer-encoded payload, not a double — skip
             // compile-time folding and let the runtime fptosi handle it.
-            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
-                int64_t v = rc->m_r;
+            // kind=10 m_r is a pointer to the long double bytes, which
+            // real_constant_get_r10 reads.
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
+            if (src_kind != 16) {
+                int64_t v = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
             }
@@ -3995,21 +3999,31 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             // and folding through double would silently truncate. Runtime
             // cast handles it.
             if (src_kind != 16 && dest_kind != 16) {
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_RealConstant_t(al, a_loc, rc->m_r, a_type));
+                // kind=10 m_r is a pointer to the long double bytes, so
+                // read it with real_constant_get_r10 and build a kind=10
+                // result with make_RealConstant_util.
+                double v = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
+                value = ASRUtils::make_RealConstant_util(al, a_loc, v, a_type);
             }
         } else if (a_kind == ASR::cast_kindType::RealToComplex) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
                                   ASRUtils::expr_value(a_arg));
-            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
+            if (src_kind != 16) {
+                double re = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(
-                            al, a_loc, rc->m_r, 0, a_type));
+                            al, a_loc, re, 0, a_type));
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
             // TODO: Clashes with the pow functions
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            if (dest_kind != 16) {
+            if (dest_kind == 10) {
+                value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                    (long double)int_value, a_type);
+            } else if (dest_kind != 16) {
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
             } else {
                 // int -> real(16) is always exact for int64; build the binary128
@@ -4293,6 +4307,9 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
             } else {
                 result = perform_compare(lf_f128_cmp(lv, rv), 0, op);
             }
+        } else if (ASRUtils::extract_kind_from_ttype_t(lc->m_type) == 10) {
+            result = perform_compare(ASRUtils::real_constant_get_r10(lc),
+                ASRUtils::real_constant_get_r10(rc), op);
         } else {
             result = perform_compare(lc->m_r, rc->m_r, op);
         }
