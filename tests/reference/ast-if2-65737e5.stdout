@@ -61,6 +61,7 @@
                     ()
                 )]
                 .false.
+                .true.
                 ()
                 (TriviaNode
                     [(EOLComment
@@ -72,6 +73,7 @@
                 )
                 ()
             )]
+            .false.
             .false.
             (TriviaNode
                 []
