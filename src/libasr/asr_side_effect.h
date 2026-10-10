@@ -52,6 +52,21 @@ inline std::string trait_slot_origin_name(symbol_t *name, int64_t slot) {
     return origin ? ASRUtils::symbol_name(origin) : "";
 }
 
+// The interface of a deferred member call's family, if its view is resolved.
+// Every member slot of a family shares the message's effects.
+inline symbol_t *trait_deferred_call_interface(const TraitDeferredCall_t &x) {
+    if (!x.n_args || !x.m_args || !x.m_args[0].m_value) return nullptr;
+    ttype_t *type = ASRUtils::expr_type(x.m_args[0].m_value);
+    if (!type || !is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) return nullptr;
+    symbol_t *contract = resolved_reference(
+        down_cast<TraitObjectType_t>(ASRUtils::extract_type(type))->m_contract);
+    if (!contract || !is_a<TraitRuntimeContract_t>(*contract)) return nullptr;
+    auto *layout = down_cast<TraitRuntimeContract_t>(contract);
+    if (x.m_family < 0 || static_cast<size_t>(x.m_family) >= layout->n_slots ||
+            !layout->m_slots) return nullptr;
+    return layout->m_slots[x.m_family].m_procedure;
+}
+
 class SideEffectFinder : public BaseWalkVisitor<SideEffectFinder> {
 public:
     bool found = false;
@@ -253,6 +268,14 @@ public:
         if (found) return;
         if (check_trait_call(x.base.base.loc, x.m_name, x.m_slot)) return;
         BaseWalkVisitor::visit_TraitSubroutineCall(x);
+    }
+
+    void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
+        if (found) return;
+        if (check_trait_call(x.base.base.loc, trait_deferred_call_interface(x), x.m_family)) {
+            return;
+        }
+        BaseWalkVisitor::visit_TraitDeferredCall(x);
     }
 
     void visit_TraitAllocate(const TraitAllocate_t &x) {
@@ -515,6 +538,11 @@ private:
         void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {
             add_trait_call(x.base.base.loc, x.m_name, x.m_slot);
             BaseWalkVisitor::visit_TraitSubroutineCall(x);
+        }
+
+        void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
+            add_trait_call(x.base.base.loc, trait_deferred_call_interface(x), x.m_family);
+            BaseWalkVisitor::visit_TraitDeferredCall(x);
         }
     };
 

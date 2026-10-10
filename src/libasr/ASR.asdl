@@ -14,8 +14,11 @@ trait_requirement
 trait_binding
     = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)
 
+-- type_arguments is empty except for one member tuple of a generic message
+-- whose binders are all closed type-set traits; such a message has one slot
+-- per member tuple, in binder order and declared member order.
 trait_slot
-    = (symbol* origins, symbol procedure)
+    = (symbol* origins, symbol procedure, ttype* type_arguments)
 
 trait_projection_slot
     = (int source)
@@ -23,8 +26,10 @@ trait_projection_slot
 trait_erased_operation
     = (symbol requirement, symbol procedure)
 
+-- An open binder has a nominal contract and operations; a closed binder has
+-- exactly its member type instead, and no operations.
 trait_erased_parameter
-    = (symbol parameter, symbol contract, trait_erased_operation* operations)
+    = (symbol parameter, symbol? contract, trait_erased_operation* operations, ttype? member)
 
 -- Concrete, not conformance, identity of the scalar owned-value protocol.
 -- Its callbacks default-initialize raw storage, initialize-copy without
@@ -290,6 +295,10 @@ expr
     -- Template instantiation must replace this with selected concrete evidence
     -- or a proved projection of an already-erased argument.
     | TraitDeferredPack(expr payload, symbol constraint, ttype type)
+    -- A call whose closed type arguments are still deferred binders. family is
+    -- the first slot of the message's member family in args[0]'s contract.
+    -- Template instantiation selects the member slot or forwards the call.
+    | TraitDeferredCall(int family, ttype* type_arguments, call_arg* args, ttype type)
 
 ttype
     = Integer(int kind)

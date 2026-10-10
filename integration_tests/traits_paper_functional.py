@@ -14,7 +14,9 @@ import time
 SOURCE_HASHES = {
     "functional1": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25",
     "functional2": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1",
+    "mixed": "6f9515b4230468ee7f179395713a2b90ed1759e91ce26dd69c884c9115c0516a",
 }
+SOURCE_DIRECTORIES = {"mixed": "traits_paper_dynamic"}
 INLINE_HASHES = {
     "inline_25.f90": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
     "inline_28.f90": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
@@ -64,8 +66,8 @@ def main():
 
     source_dir = Path(__file__).resolve().parent
     sources = ([args.source.resolve()] if args.source else
-               [source_dir / "traits_paper_functional" / f"{name}.f90"
-                for name in SOURCE_HASHES])
+               [source_dir / SOURCE_DIRECTORIES.get(name, "traits_paper_functional") /
+                f"{name}.f90" for name in SOURCE_HASHES])
     if args.executable and len(sources) != 1:
         parser.error("--executable requires --source")
     for source in sources:

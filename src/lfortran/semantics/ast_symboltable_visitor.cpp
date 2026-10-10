@@ -4739,8 +4739,13 @@ public:
             auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
             if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
             if (auto *generic = ASRUtils::trait_method_template(*procedure)) {
-                create_trait_erasure(*generic, implementation->m_parent_symtab,
-                    binding->loc);
+                if (contract->m_slots[i].n_type_arguments) {
+                    create_trait_member_entry(*generic, implementation->m_parent_symtab,
+                        contract->m_slots[i], binding->loc);
+                } else {
+                    create_trait_erasure(*generic, implementation->m_parent_symtab,
+                        binding->loc);
+                }
             }
         }
         const Location &loc = implementation->base.base.loc;

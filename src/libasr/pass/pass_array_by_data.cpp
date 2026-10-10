@@ -800,6 +800,27 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             const LCompilers::PassOptions& pass_options_):
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_), pass_options(pass_options_) {}
 
+        // A witness adapter forwards the descriptors its runtime slot received.
+        // Calling a by-data copy of the implementation would copy noncontiguous
+        // or reversed actuals, so adapters keep calling the descriptor
+        // procedure, which therefore must not be removed.
+        void visit_TraitWitness(const ASR::TraitWitness_t &x) {
+            class Callees : public ASR::BaseWalkVisitor<Callees> {
+            public:
+                std::set<ASR::symbol_t*> &kept;
+                explicit Callees(std::set<ASR::symbol_t*> &kept_) : kept(kept_) {}
+                void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                    kept.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::BaseWalkVisitor<Callees>::visit_FunctionCall(x);
+                }
+                void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                    kept.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::BaseWalkVisitor<Callees>::visit_SubroutineCall(x);
+                }
+            } callees(not_to_be_erased);
+            callees.visit_TraitWitness(x);
+        }
+
         // this is exactly the same as the one in EditProcedureReplacer
         ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
             ASR::symbol_t* ext_sym = ASRUtils::symbol_get_past_external(old_sym);

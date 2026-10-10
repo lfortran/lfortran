@@ -1119,9 +1119,20 @@ public:
                 r += " " + std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(origin)))
                     + "%" + ASRUtils::symbol_name(origin);
             }
-            r += "\n";
+            r += trait_type_arguments(x.m_slots[i].m_type_arguments,
+                x.m_slots[i].n_type_arguments) + "\n";
         }
         src = r;
+    }
+
+    std::string trait_type_arguments(ASR::ttype_t **types, size_t n) {
+        if (!n) return "";
+        std::string r = "{";
+        for (size_t i = 0; i < n; i++) {
+            if (i) r += ", ";
+            r += ASRUtils::type_to_str_fortran_symbol(types[i], nullptr, true);
+        }
+        return r + "}";
     }
 
     void visit_TraitWitness(const ASR::TraitWitness_t &x) {
@@ -1131,9 +1142,14 @@ public:
     }
 
     void visit_TraitErasure(const ASR::TraitErasure_t &x) {
-        src = indent + "! erased generic entry " +
+        std::vector<ASR::ttype_t*> members;
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            if (x.m_parameters[i].m_member) members.push_back(x.m_parameters[i].m_member);
+        }
+        src = indent + (members.empty() ? "! erased generic entry " : "! member entry ") +
             ASRUtils::symbol_name(x.m_procedure) + " from checked template " +
-            ASRUtils::symbol_name(x.m_generic) + "\n";
+            ASRUtils::symbol_name(x.m_generic) +
+            trait_type_arguments(members.data(), members.size()) + "\n";
     }
 
     void visit_TraitDeferredPack(const ASR::TraitDeferredPack_t &x) {
@@ -1222,6 +1238,21 @@ public:
 
     void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
         print_trait_call(x, false);
+    }
+
+    void visit_TraitDeferredCall(const ASR::TraitDeferredCall_t &x) {
+        auto *contract = ASRUtils::trait_runtime_contract(
+            ASRUtils::expr_type(x.m_args[0].m_value));
+        visit_expr(*x.m_args[0].m_value);
+        std::string r = src + "%" + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+            contract->m_slots[x.m_family].m_origins[0])) +
+            trait_type_arguments(x.m_type_arguments, x.n_type_arguments) + "(";
+        for (size_t i = 1; i < x.n_args; i++) {
+            if (i > 1) r += ", ";
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+        }
+        src = r + ")";
     }
 
     void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {

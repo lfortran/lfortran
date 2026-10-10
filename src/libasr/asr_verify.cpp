@@ -1731,7 +1731,21 @@ public:
             "A callable interface must take its read-only view as its first argument", loc);
         for (size_t i = 0; i < slot.n_origins; i++) {
             auto *method = ASRUtils::trait_method_function(slot.m_origins[i]);
-            if (method && ASRUtils::trait_method_template(*method)) {
+            auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            require_with_loc_id(!slot.n_type_arguments ||
+                    (slot.m_type_arguments && generic &&
+                     !ASRUtils::trait_member_tuples(*generic).empty()),
+                "asr.verify.trait_contract.type_arguments",
+                "Only a member slot of a closed generic message has type arguments", loc);
+            if (generic && slot.n_type_arguments) {
+                verify_runtime_trait_procedure(slot.m_origins[i], loc,
+                    "asr.verify.trait_contract.origin");
+                require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
+                        ASRUtils::trait_member_signature_matches(*method, *procedure,
+                            slot.m_type_arguments, slot.n_type_arguments, 1),
+                    "asr.verify.trait_contract.member_signature",
+                    "A member slot must instantiate its message at exactly its type arguments", loc);
+            } else if (generic) {
                 verify_runtime_trait_procedure(slot.m_origins[i], loc,
                     "asr.verify.trait_contract.origin");
                 require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
@@ -1944,18 +1958,34 @@ public:
                 if (inserted.second) expected.emplace_back();
                 expected[inserted.first->second].push_back(member);
             }
-            require_id(x.n_slots == expected.size() && (!x.n_slots || x.m_slots),
+            // A callable whose generic binders are all closed has one slot per
+            // member tuple; any other callable has exactly one slot.
+            std::vector<std::pair<size_t, std::vector<ttype_t*>>> layout;
+            for (size_t i = 0; i < expected.size(); i++) {
+                auto *method = ASRUtils::trait_method_function(expected[i][0]);
+                auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
+                auto tuples = generic ? ASRUtils::trait_member_tuples(*generic)
+                    : std::vector<std::vector<ttype_t*>>();
+                if (tuples.empty()) layout.push_back({i, {}});
+                for (auto &tuple : tuples) layout.push_back({i, tuple});
+            }
+            require_id(x.n_slots == layout.size() && (!x.n_slots || x.m_slots),
                 "asr.verify.trait_contract.complete",
-                "A runtime contract must have one slot for each canonical callable");
+                "A runtime contract must have one slot for each canonical callable and closed member tuple");
             for (size_t i = 0; i < x.n_slots; i++) {
                 auto &slot = x.m_slots[i];
-                require_id(slot.n_origins == expected[i].size() && slot.m_origins,
+                auto &origins = expected[layout[i].first];
+                require_id(slot.n_origins == origins.size() && slot.m_origins,
                     "asr.verify.trait_contract.origins",
                     "A callable slot must retain every nominal origin exactly once");
+                require_id(ASRUtils::trait_type_arguments_equal(slot.m_type_arguments,
+                        slot.n_type_arguments, layout[i].second.data(), layout[i].second.size()),
+                    "asr.verify.trait_contract.member_slots",
+                    "Member slots must cover each closed member tuple once in binder and declaration order");
                 auto *procedure = verify_runtime_trait_slot(x, i, x.base.base.loc);
                 for (size_t j = 0; j < slot.n_origins; j++) {
                     auto *origin = ASRUtils::symbol_get_past_external(slot.m_origins[j]);
-                    require_id(origin == expected[i][j] &&
+                    require_id(origin == origins[j] &&
                             symtab_in_scope(current_symtab, slot.m_origins[j]),
                         "asr.verify.trait_contract.origin_order",
                         "Runtime slot origins must follow the canonical trait hierarchy");
@@ -1971,6 +2001,40 @@ public:
         }
         for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
         current_symtab = parent;
+    }
+
+    // A closed generic's provider-owned entry: the checked template at exactly
+    // one member tuple, unique per generic and tuple in its provider scope.
+    void verify_trait_member_entry(const TraitErasure_t &x, Template_t &generic,
+            const Function_t &original, const Function_t &entry, SymbolTable &provider) {
+        std::vector<ttype_t*> members;
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            auto &parameter = x.m_parameters[i];
+            auto *binder = generic.m_symtab->get_symbol(generic.m_args[i]);
+            require_id(parameter.m_parameter && parameter.m_member && !parameter.m_contract &&
+                    !parameter.n_operations && symtab_in_scope(current_symtab, parameter.m_parameter) &&
+                    ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder,
+                "asr.verify.trait_erasure.member",
+                "A closed binder is substituted by exactly its member type, without nominal evidence");
+            members.push_back(parameter.m_member);
+        }
+        bool declared = false;
+        for (auto &tuple : ASRUtils::trait_member_tuples(generic)) {
+            declared |= ASRUtils::trait_type_arguments_equal(tuple.data(), tuple.size(),
+                members.data(), members.size());
+        }
+        require_id(declared,
+            "asr.verify.trait_erasure.member",
+            "A member entry must instantiate a declared member of each closed binder");
+        require_id(ASRUtils::symbol_parent_symtab(&entry.base) == current_symtab &&
+                ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
+                ASRUtils::trait_member_signature_matches(original, entry,
+                    members.data(), members.size()),
+            "asr.verify.trait_erasure.member_signature",
+            "A member entry must preserve its template's signature at exactly its members");
+        require_id(ASRUtils::trait_erasure(generic, &provider, members.data(), members.size()) == &x,
+            "asr.verify.trait_erasure.unique",
+            "A provider owns at most one entry per generic and member tuple");
     }
 
     void visit_TraitErasure(const TraitErasure_t &x) {
@@ -1997,17 +2061,23 @@ public:
                 "asr.verify.trait_erasure.original");
             auto *entry = verify_runtime_trait_procedure(x.m_procedure, x.base.base.loc,
                 "asr.verify.trait_erasure.entry");
+            require_id(x.n_parameters == generic->n_args,
+                "asr.verify.trait_erasure.parameters",
+                "Erasure must retain exactly one substitution per scoped binder");
+            if (!ASRUtils::trait_member_tuples(*generic).empty()) {
+                verify_trait_member_entry(x, *generic, *original, *entry, *parent);
+                for (const auto &item : current_symtab->get_scope()) visit_symbol(*item.second);
+                current_symtab = parent;
+                return;
+            }
             require_id(ASRUtils::symbol_parent_symtab(&entry->base) == current_symtab &&
                     ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
                     ASRUtils::trait_erased_signature_matches(*original, *entry),
                 "asr.verify.trait_erasure.signature",
                 "The reusable entry must preserve its template's arguments and erase only checked scalar binders");
-            require_id(x.n_parameters == generic->n_args,
-                "asr.verify.trait_erasure.parameters",
-                "Erasure must retain exactly one substitution per scoped binder");
             for (size_t i = 0; i < x.n_parameters; i++) {
                 auto &parameter = x.m_parameters[i];
-                require_id(parameter.m_parameter && parameter.m_contract &&
+                require_id(parameter.m_parameter && parameter.m_contract && !parameter.m_member &&
                         symtab_in_scope(current_symtab, parameter.m_parameter) &&
                         symtab_in_scope(current_symtab, parameter.m_contract) &&
                         (!parameter.n_operations || parameter.m_operations),
@@ -2234,6 +2304,16 @@ public:
                     "asr.verify.trait_witness.origin_covered",
                     "A runtime witness must prove every nominal origin of a slot");
                 verify_runtime_binding(*selected, *binding);
+                if (contract->m_slots[i].n_type_arguments) {
+                    auto *implemented = ASRUtils::trait_method_function(binding->m_procedure);
+                    auto *generic = implemented
+                        ? ASRUtils::trait_method_template(*implemented) : nullptr;
+                    require_id(generic && ASRUtils::trait_erasure(*generic,
+                            selected->m_parent_symtab, contract->m_slots[i].m_type_arguments,
+                            contract->m_slots[i].n_type_arguments),
+                        "asr.verify.trait_witness.member_entry",
+                        "A member slot requires its provider's entry of the bound generic at that member");
+                }
                 TraitImplementation_t *first_implementation = nullptr;
                 auto *first = ASRUtils::runtime_trait_binding(
                     x, contract->m_slots[i].m_origins[0], first_implementation);
@@ -2365,9 +2445,13 @@ public:
             "A borrowed pack requires exact, nonpolymorphic concrete storage and its contract");
         require_id(ASR::is_a<Var_t>(*x.m_payload) ||
                 ASR::is_a<StructInstanceMember_t>(*x.m_payload) ||
-                ASR::is_a<ArrayItem_t>(*x.m_payload),
+                ASR::is_a<ArrayItem_t>(*x.m_payload) ||
+                ASR::is_a<StructConstructor_t>(*x.m_payload) ||
+                ASR::is_a<StructConstant_t>(*x.m_payload) ||
+                (ASR::is_a<FunctionCall_t>(*x.m_payload) &&
+                 !ASRUtils::is_allocatable(type) && !ASRUtils::is_pointer(type)),
             "asr.verify.trait_pack.borrowed_designator",
-            "A borrowed pack must preserve an existing payload designator");
+            "A borrowed pack must preserve an existing payload designator or a value of its statement");
         require_id(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) ==
                 ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
@@ -2769,6 +2853,84 @@ public:
         call.n_args = x.n_args;
         call.m_type = x.m_type;
         visit_FunctionCall(call);
+    }
+
+    // The scoped generic binder declared as `name` in an enclosing scope.
+    symbol_t *declared_trait_binder(const std::string &name) {
+        for (SymbolTable *scope = current_symtab; scope; scope = scope->parent) {
+            for (const auto &entry : scope->get_scope()) {
+                if (!ASR::is_a<TraitConstraint_t>(*entry.second)) continue;
+                auto *parameter = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitConstraint_t>(entry.second)->m_parameter);
+                if (parameter && name == ASRUtils::symbol_name(parameter)) return parameter;
+            }
+        }
+        return nullptr;
+    }
+
+    void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
+        require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
+                typed_expr_type(x.m_args[0].m_value) &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)) &&
+                x.n_type_arguments && x.m_type_arguments && x.m_type,
+            "asr.verify.trait_deferred_call.fields",
+            "A deferred member call requires a borrowed view, its type arguments and a result type");
+        require_id(_inside_template,
+            "asr.verify.trait_deferred_call.scope",
+            "A deferred member call may exist only within a checked generic definition");
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitDeferredCall(x);
+        if (!check_external) return;
+        auto *contract = ASRUtils::trait_runtime_contract(typed_expr_type(x.m_args[0].m_value));
+        require_id(x.m_family >= 0 && (size_t)x.m_family < contract->n_slots &&
+                contract->m_slots && contract->m_slots[x.m_family].n_type_arguments ==
+                    x.n_type_arguments,
+            "asr.verify.trait_deferred_call.family",
+            "A deferred member call must name a member family of its view's contract");
+        auto &head = contract->m_slots[x.m_family];
+        verify_runtime_trait_slot(*contract, x.m_family, x.base.base.loc);
+        for (int64_t i = 0; i < x.m_family; i++) {
+            require_id(!ASRUtils::trait_slots_same_family(contract->m_slots[i], head),
+                "asr.verify.trait_deferred_call.family",
+                "A deferred member call must name the first slot of its family");
+        }
+        auto *message = ASRUtils::trait_method_function(head.m_origins[0]);
+        auto *method = ASRUtils::trait_method_template(*message);
+        require_id(x.n_type_arguments == method->n_args && x.n_args == message->n_args + 1,
+            "asr.verify.trait_deferred_call.signature",
+            "A deferred member call must supply every binder and message argument");
+        std::map<std::string, std::string> binders;
+        for (size_t i = 0; i < x.n_type_arguments; i++) {
+            auto *type = x.m_type_arguments[i];
+            auto *binder = ASR::is_a<TypeParameter_t>(*type) ? declared_trait_binder(
+                ASR::down_cast<TypeParameter_t>(type)->m_param) : nullptr;
+            auto *set = binder ? ASRUtils::trait_parameter_type_set(binder) : nullptr;
+            require_id(set && set == ASRUtils::trait_parameter_type_set(
+                    method->m_symtab->get_symbol(method->m_args[i])),
+                "asr.verify.trait_deferred_call.type_arguments",
+                "Deferred member types must be scoped binders of the message's exact type-set traits");
+            binders[method->m_args[i]] = ASR::down_cast<TypeParameter_t>(type)->m_param;
+        }
+        auto deferred = [&](ttype_t *formal, ttype_t *actual) {
+            if (!formal || !actual || ASRUtils::extract_n_dims_from_ttype(formal) !=
+                    ASRUtils::extract_n_dims_from_ttype(actual)) return false;
+            formal = ASRUtils::extract_type(formal);
+            actual = ASRUtils::extract_type(actual);
+            if (!ASR::is_a<TypeParameter_t>(*formal)) {
+                return ASRUtils::types_equal(formal, actual, nullptr, nullptr);
+            }
+            auto binder = binders.find(ASR::down_cast<TypeParameter_t>(formal)->m_param);
+            return binder != binders.end() && ASR::is_a<TypeParameter_t>(*actual) &&
+                binder->second == ASR::down_cast<TypeParameter_t>(actual)->m_param;
+        };
+        for (size_t i = 0; i < message->n_args; i++) {
+            require_id(x.m_args[i + 1].m_value && deferred(
+                    typed_expr_type(message->m_args[i]), typed_expr_type(x.m_args[i + 1].m_value)),
+                "asr.verify.trait_deferred_call.signature",
+                "A deferred member argument must have its message type with deferred binders");
+        }
+        require_id(deferred(typed_expr_type(message->m_return_var), x.m_type),
+            "asr.verify.trait_deferred_call.signature",
+            "A deferred member call's result must be its message result with deferred binders");
     }
 
     void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {

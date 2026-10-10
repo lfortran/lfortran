@@ -1608,6 +1608,256 @@ end module
     }
 }
 
+TEST_CASE("Closed numeric runtime messages use verified member slots and entries") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module closed_member_slots_m
+    implicit none
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface INumeric
+    abstract interface :: ISum
+        function sum{INumeric :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T) :: s
+        end function sum
+    end interface ISum
+    abstract interface :: ICount
+        integer function count(x)
+            real(8), intent(in) :: x(:)
+        end function count
+    end interface ICount
+    abstract interface, extends(ISum + ICount) :: IBoth
+    end interface IBoth
+    type, sealed, implements(IBoth) :: Total
+    contains
+        procedure, nopass :: sum => total_sum
+        procedure, nopass :: count => total_count
+    end type Total
+contains
+    function total_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        integer :: i
+        s = T(0)
+        do i = 1, size(x)
+            s = s + x(i)
+        end do
+    end function
+    integer function total_count(x)
+        real(8), intent(in) :: x(:)
+        total_count = size(x)
+    end function
+    function twice{INumeric :: T}(summer, x) result(r)
+        class(ISum), intent(in) :: summer
+        type(T), intent(in) :: x(:)
+        type(T) :: r
+        r = summer%sum(x) + summer%sum{T}(x)
+    end function
+    integer function concrete(both, x)
+        class(IBoth), intent(in) :: both
+        integer, intent(in) :: x(:)
+        concrete = twice(both, x) + both%sum(x)
+    end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "closed_member_slots_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("closed_member_slots_m"));
+    auto *sum = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("isum"));
+    auto *both = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("iboth"));
+    REQUIRE(sum);
+    REQUIRE(both);
+    REQUIRE(sum->n_slots == 2);
+    REQUIRE(both->n_slots == 3);
+    auto *int_member = ASRUtils::TYPE(ASR::make_Integer_t(al, module->base.base.loc, 4));
+    auto *wide_member = ASRUtils::TYPE(ASR::make_Integer_t(al, module->base.base.loc, 8));
+    auto *double_member = ASRUtils::TYPE(ASR::make_Real_t(al, module->base.base.loc, 8));
+    CHECK(ASRUtils::trait_type_arguments_equal(sum->m_slots[0].m_type_arguments,
+        sum->m_slots[0].n_type_arguments, &int_member, 1));
+    CHECK(ASRUtils::trait_type_arguments_equal(sum->m_slots[1].m_type_arguments,
+        sum->m_slots[1].n_type_arguments, &double_member, 1));
+    CHECK(ASRUtils::trait_slots_same_family(sum->m_slots[0], sum->m_slots[1]));
+    CHECK(ASRUtils::trait_member_slot(*sum, 0, &double_member, 1) == 1);
+    CHECK(ASRUtils::trait_member_slot(*sum, 0, &wide_member, 1) == sum->n_slots);
+    CHECK(both->m_slots[2].n_type_arguments == 0);
+    auto *message = ASRUtils::trait_method_function(sum->m_slots[0].m_origins[0]);
+    REQUIRE(message);
+    CHECK(ASRUtils::runtime_trait_method_supported(*message));
+    CHECK(ASRUtils::trait_member_tuples(*ASRUtils::trait_method_template(*message)).size() == 2);
+    for (size_t i = 0; i < 2; i++) {
+        auto *slot = ASRUtils::trait_method_function(sum->m_slots[i].m_procedure);
+        CHECK(ASRUtils::trait_member_signature_matches(*message, *slot,
+            sum->m_slots[i].m_type_arguments, sum->m_slots[i].n_type_arguments, 1));
+        CHECK_FALSE(ASRUtils::trait_member_signature_matches(*message, *slot,
+            sum->m_slots[1 - i].m_type_arguments, 1, 1));
+    }
+    auto *implementation = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("total_sum"));
+    auto *integer_entry = ASRUtils::trait_erasure(*implementation, module->m_symtab,
+        &int_member, 1);
+    auto *real64_entry = ASRUtils::trait_erasure(*implementation, module->m_symtab,
+        &double_member, 1);
+    REQUIRE(integer_entry);
+    REQUIRE(real64_entry);
+    CHECK(integer_entry != real64_entry);
+    CHECK(ASRUtils::trait_erasure(*implementation, module->m_symtab) == nullptr);
+    CHECK(integer_entry->m_parameters[0].m_contract == nullptr);
+    CHECK(integer_entry->m_parameters[0].n_operations == 0);
+    struct Calls : ASR::BaseWalkVisitor<Calls> {
+        std::vector<ASR::TraitDeferredCall_t*> deferred;
+        std::vector<ASR::TraitFunctionCall_t*> dynamic;
+        std::vector<ASR::TraitProject_t*> projections;
+        void visit_TraitDeferredCall(const ASR::TraitDeferredCall_t &x) {
+            deferred.push_back(const_cast<ASR::TraitDeferredCall_t*>(&x));
+            ASR::BaseWalkVisitor<Calls>::visit_TraitDeferredCall(x);
+        }
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+            dynamic.push_back(const_cast<ASR::TraitFunctionCall_t*>(&x));
+            ASR::BaseWalkVisitor<Calls>::visit_TraitFunctionCall(x);
+        }
+        void visit_TraitProject(const ASR::TraitProject_t &x) {
+            projections.push_back(const_cast<ASR::TraitProject_t*>(&x));
+            ASR::BaseWalkVisitor<Calls>::visit_TraitProject(x);
+        }
+    };
+    auto *twice = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("twice"));
+    Calls generic_calls;
+    generic_calls.visit_symbol(twice->base);
+    REQUIRE(generic_calls.deferred.size() == 2);
+    CHECK(generic_calls.dynamic.empty());
+    auto *deferred = generic_calls.deferred[0];
+    CHECK(deferred->m_family == 0);
+    CHECK(ASR::is_a<ASR::TypeParameter_t>(*deferred->m_type_arguments[0]));
+    CHECK(ASR::is_a<ASR::TypeParameter_t>(*deferred->m_type));
+    CHECK(ASRUtils::trait_type_parameter(&deferred->base) == twice->m_symtab->get_symbol("t"));
+    Calls concrete_calls;
+    concrete_calls.visit_symbol(*module->m_symtab->get_symbol("concrete"));
+    REQUIRE(concrete_calls.dynamic.size() == 3);
+    REQUIRE(concrete_calls.projections.size() == 1);
+    for (auto *call : concrete_calls.dynamic) {
+        CHECK(call->m_slot == 0);
+        CHECK(ASR::is_a<ASR::Integer_t>(*call->m_type));
+    }
+    Calls entry_calls;
+    entry_calls.visit_symbol(real64_entry->base);
+    CHECK(entry_calls.deferred.empty());
+    // Witnesses precede contracts and entries in their module's scope; most
+    // subcases check the later records on their own.
+    auto drop_witnesses = [&]() {
+        std::vector<std::string> witnesses;
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) witnesses.push_back(entry.first);
+        }
+        REQUIRE(witnesses.size() == 3);
+        for (const auto &name : witnesses) module->m_symtab->erase_symbol(name);
+    };
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("named and positional text preserve member slots, entries and deferred calls") {
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            std::string text = LCompilers::asr_to_text(*result.result, text_options);
+            CHECK(text.find("TraitDeferredCall") != std::string::npos);
+            LCompilers::diag::Diagnostics loaded_diagnostics;
+            LCompilers::LocationManager loaded_lm;
+            auto loaded = LCompilers::asr_from_text(al, text, "closed_member_slots.asr",
+                loaded_lm, loaded_diagnostics);
+            INFO(loaded_diagnostics.render2());
+            REQUIRE(loaded.ok);
+            CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        }
+    }
+    SUBCASE("a contract cannot drop a declared member") {
+        drop_witnesses();
+        sum->n_slots = 1;
+        rejects("asr.verify.trait_contract.complete");
+    }
+    SUBCASE("member slots follow the declared member order") {
+        drop_witnesses();
+        std::swap(sum->m_slots[0].m_type_arguments, sum->m_slots[1].m_type_arguments);
+        rejects("asr.verify.trait_contract.member_slots");
+    }
+    SUBCASE("a member slot cannot name an undeclared kind") {
+        drop_witnesses();
+        sum->m_slots[1].m_type_arguments[0] = wide_member;
+        rejects("asr.verify.trait_contract.member_slots");
+    }
+    SUBCASE("a member slot instantiates its message at exactly its members") {
+        drop_witnesses();
+        auto *slot = ASRUtils::trait_method_function(sum->m_slots[0].m_procedure);
+        ASRUtils::EXPR2VAR(slot->m_return_var)->m_type = double_member;
+        rejects("asr.verify.trait_contract.member_signature");
+    }
+    SUBCASE("an ordinary slot has no type arguments") {
+        drop_witnesses();
+        both->m_slots[2].m_type_arguments = &int_member;
+        both->m_slots[2].n_type_arguments = 1;
+        rejects("asr.verify.trait_contract.member_slots");
+    }
+    SUBCASE("a member entry carries no nominal evidence") {
+        drop_witnesses();
+        integer_entry->m_parameters[0].m_contract = &sum->base;
+        rejects("asr.verify.trait_erasure.member");
+    }
+    SUBCASE("a member entry instantiates a declared member") {
+        drop_witnesses();
+        integer_entry->m_parameters[0].m_member = wide_member;
+        rejects("asr.verify.trait_erasure.member");
+    }
+    SUBCASE("a member entry keeps its template signature at its member") {
+        drop_witnesses();
+        integer_entry->m_parameters[0].m_member = double_member;
+        rejects("asr.verify.trait_erasure.member_signature");
+    }
+    SUBCASE("every member slot of a generic binding needs its provider entry") {
+        module->m_symtab->erase_symbol(real64_entry->m_name);
+        rejects("asr.verify.trait_witness.member_entry");
+    }
+    SUBCASE("a deferred call names the head of its member family") {
+        deferred->m_family = 1;
+        rejects("asr.verify.trait_deferred_call.family");
+    }
+    SUBCASE("a deferred call keeps its scoped binder") {
+        deferred->m_type_arguments[0] = int_member;
+        rejects("asr.verify.trait_deferred_call.type_arguments");
+    }
+    SUBCASE("a deferred call passes its message arguments at the binder") {
+        deferred->m_args[1].m_value = deferred->m_args[0].m_value;
+        rejects("asr.verify.trait_deferred_call.signature");
+    }
+    SUBCASE("a projection preserves each member slot") {
+        auto *projection = concrete_calls.projections[0];
+        REQUIRE(projection->n_slots == 2);
+        std::swap(projection->m_slots[0].m_source, projection->m_slots[1].m_source);
+        rejects("asr.verify.trait_project.slot_origin");
+    }
+    SUBCASE("a dynamic call names the slot of its member") {
+        concrete_calls.dynamic[0]->m_slot = 1;
+        rejects("asr.verify.trait_call.slot");
+    }
+}
+
 TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
@@ -5727,16 +5977,30 @@ TEST_CASE("Type adoption preserves AST, binary, module and text metadata") {
         rejects("asr.verify.struct.trait_obligations");
     }
     SUBCASE("concrete completion requires its own nominal evidence") {
+        ASR::symbol_t *erased = nullptr;
         for (const auto &entry : module->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
             auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
             if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
                     &child->base && ASRUtils::symbol_get_past_external(
                         implementation->m_trait) == module->m_symtab->get_symbol("iextra")) {
+                erased = entry.second;
                 module->m_symtab->erase_symbol(entry.first);
                 break;
             }
         }
+        // IExtra's real result is runtime-eligible, so the erased conformance
+        // also had a runtime witness, which would be rejected first.
+        std::vector<std::string> witnesses;
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitWitness_t>(*entry.second) &&
+                    ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::TraitWitness_t>(
+                        entry.second)->m_implementation) == erased) {
+                witnesses.push_back(entry.first);
+            }
+        }
+        CHECK(witnesses.size() == 1);
+        for (const auto &name : witnesses) module->m_symtab->erase_symbol(name);
         rejects("asr.verify.struct.concrete_trait_obligations");
     }
     SUBCASE("the conformance must retain the effective inherited binding") {

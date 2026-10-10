@@ -15032,6 +15032,7 @@ public:
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         validate_missing_required_arguments(loc, args, func);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        adapt_runtime_trait_arguments(args, *func);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
             value, nullptr, current_scope, current_function_dependencies,
@@ -15048,7 +15049,7 @@ public:
                     [&](const std::string &msg, const Location &loc) {
                             diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
-                        });
+                        }, true, false, runtime_trait_conformance(loc));
         return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
     }
 
@@ -15064,7 +15065,7 @@ public:
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     },
-                    false);
+                    false, false, runtime_trait_conformance(loc));
         if( idx == -1 ) {
             // if no GenericProcedure matches, we try matching it with
             // StructConstructor first, we do this before trying an intrinsic
@@ -15157,7 +15158,7 @@ public:
                             diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
                         },
-                    false);
+                    false, false, runtime_trait_conformance(loc));
             if( idx == -1 ) {
                 std::string v_name = ASRUtils::symbol_name(v);
                 v = resolve_intrinsic_function(loc, v_name);
@@ -15193,6 +15194,7 @@ public:
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             validate_missing_required_arguments(loc, args, func);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+            adapt_runtime_trait_arguments(args, *func);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr, current_scope, current_function_dependencies,
@@ -15213,7 +15215,7 @@ public:
                             diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
                         },
-                    false, is_dt_present);
+                    false, is_dt_present, runtime_trait_conformance(loc));
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
@@ -15297,6 +15299,7 @@ public:
                     // the call arguments map directly onto the procedure's args.
                     validate_missing_required_arguments(loc, args, func);
                     ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                    adapt_runtime_trait_arguments(args, *func);
                     return ASRUtils::make_FunctionCall_t_util(al, loc,
                         cp_s, nullptr, args.p, args.size(), type,
                         nullptr, passed_object, current_scope, current_function_dependencies,
@@ -15308,6 +15311,8 @@ public:
                 }
                 validate_missing_required_arguments(loc, args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                adapt_runtime_trait_arguments(args_without_dt, *func,
+                    ASRUtils::get_pass_arg_index(cp_s));
                 ASR::call_arg_t* call_args = args_without_dt.p;
                 size_t n_call_args = args_without_dt.size();
                 ASRUtils::insert_self_arg(al, cp_s, call_args, n_call_args, args[0].m_value);
@@ -15323,6 +15328,7 @@ public:
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
                 validate_missing_required_arguments(loc, args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                adapt_runtime_trait_arguments(args, *func);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
                     nullptr, nullptr, current_scope, current_function_dependencies,
@@ -21776,7 +21782,7 @@ public:
                                                 diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                                                 throw SemanticAbort();
                                             },
-                                        false);
+                                        false, false, runtime_trait_conformance(x.base.base.loc));
                         if( idx == i ) {
                             function_found = true;
                             args.n = 0;
@@ -23261,6 +23267,23 @@ public:
         return copy;
     }
 
+    // A dimension bound postponed to the end of its module still reads as
+    // assumed-shape here, but it is an explicit bound: not a runtime array.
+    bool has_postponed_array_bounds(const ASR::Function_t &method) {
+        for (size_t i = 0; i < method.n_args; i++) {
+            auto *type = ASRUtils::expr_type(method.m_args[i]);
+            if (!type || !ASR::is_a<ASR::Array_t>(*type)) continue;
+            auto *array = ASR::down_cast<ASR::Array_t>(type);
+            for (size_t j = 0; j < array->n_dims; j++) {
+                for (const auto &call : postponed_genericProcedure_calls_vec) {
+                    if (call.holder == &array->m_dims[j].m_start ||
+                            call.holder == &array->m_dims[j].m_length) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     ASR::TraitRuntimeContract_t *create_runtime_trait_contract(ASR::Trait_t *trait,
             bool anonymous = false) {
         const Location &loc = trait->base.base.loc;
@@ -23268,7 +23291,8 @@ public:
         std::map<std::string, ASR::Function_t*> methods;
         for (auto *member : hierarchy.members) {
             auto *method = ASRUtils::trait_method_function(member);
-            if (!ASRUtils::runtime_trait_method_supported(*method)) return nullptr;
+            if (!ASRUtils::runtime_trait_method_supported(*method) ||
+                    has_postponed_array_bounds(*method)) return nullptr;
             auto previous = methods.emplace(method->m_name, method);
             if (!previous.second) {
                 check_trait_method_compatibility(*previous.first->second, *method, loc);
@@ -23284,19 +23308,50 @@ public:
         parent->add_symbol(name, &contract->base);
         auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
             al, loc, &contract->base));
+        // One family of slots per canonical callable: a single slot, or one per
+        // member tuple of a generic message whose binders are all closed.
         std::map<std::string, size_t> indices;
-        std::vector<Vec<ASR::symbol_t*>> origins;
+        std::vector<std::pair<size_t, size_t>> families;
+        std::vector<std::vector<ASR::symbol_t*>> origins;
         Vec<ASR::trait_slot_t> slots;
         slots.reserve(al, hierarchy.members.size());
         for (auto *member : hierarchy.members) {
             auto *method = ASRUtils::trait_method_function(member);
-            auto inserted = indices.emplace(method->m_name, slots.size());
+            auto inserted = indices.emplace(method->m_name, families.size());
             if (inserted.second) {
+                size_t first = slots.size();
                 ASR::trait_slot_t slot;
                 slot.loc = method->base.base.loc;
                 slot.m_origins = nullptr;
                 slot.n_origins = 0;
-                if (auto *generic = ASRUtils::trait_method_template(*method)) {
+                slot.m_type_arguments = nullptr;
+                slot.n_type_arguments = 0;
+                auto *generic = ASRUtils::trait_method_template(*method);
+                auto tuples = generic ? ASRUtils::trait_member_tuples(*generic)
+                    : std::vector<std::vector<ASR::ttype_t*>>();
+                if (!tuples.empty()) {
+                    for (const auto &tuple : tuples) {
+                        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+                        Vec<ASR::ttype_t*> arguments;
+                        arguments.reserve(al, tuple.size());
+                        std::string name = method->m_name;
+                        for (size_t i = 0; i < tuple.size(); i++) {
+                            types[generic->m_args[i]] = {ASRUtils::duplicate_type(al, tuple[i]), nullptr};
+                            arguments.push_back(al, ASRUtils::duplicate_type(al, tuple[i]));
+                            name += "_" + ASRUtils::get_type_code(tuple[i]);
+                        }
+                        std::map<std::string, ASR::symbol_t*> symbols;
+                        name = scope->get_unique_name(name);
+                        auto *instance = ASRUtils::trait_method_function(instantiate_symbol(
+                            al, scope, types, symbols, name, &method->base, diag));
+                        slot.m_procedure = normalize_trait_requirement(instance, view_type,
+                            trait->m_name, scope, loc, false);
+                        scope->erase_symbol(name);
+                        slot.m_type_arguments = arguments.p;
+                        slot.n_type_arguments = arguments.size();
+                        slots.push_back(al, slot);
+                    }
+                } else if (generic) {
                     std::map<std::string, ASR::symbol_t*> symbols;
                     std::string name = scope->get_unique_name("__erased_signature");
                     auto *erased = ASRUtils::trait_method_function(instantiate_symbol(
@@ -23305,20 +23360,26 @@ public:
                     slot.m_procedure = normalize_trait_requirement(erased, view_type,
                         trait->m_name, scope, loc, false);
                     scope->erase_symbol(name);
+                    slots.push_back(al, slot);
                 } else {
                     slot.m_procedure = normalize_trait_requirement(method, view_type,
                         trait->m_name, scope, loc, false);
+                    slots.push_back(al, slot);
                 }
-                slots.push_back(al, slot);
+                families.push_back({first, slots.size() - first});
                 origins.emplace_back();
-                origins.back().reserve(al, 1);
             }
-            origins[inserted.first->second].push_back(al,
+            origins[inserted.first->second].push_back(
                 reference_trait_member(member, scope, loc));
         }
-        for (size_t i = 0; i < slots.size(); i++) {
-            slots.p[i].m_origins = origins[i].p;
-            slots.p[i].n_origins = origins[i].size();
+        for (size_t i = 0; i < families.size(); i++) {
+            for (size_t j = families[i].first; j < families[i].first + families[i].second; j++) {
+                Vec<ASR::symbol_t*> references;
+                references.reserve(al, origins[i].size());
+                for (auto *origin : origins[i]) references.push_back(al, origin);
+                slots.p[j].m_origins = references.p;
+                slots.p[j].n_origins = references.size();
+            }
         }
         contract->m_slots = slots.p;
         contract->n_slots = slots.size();
@@ -23468,6 +23529,71 @@ public:
         check_trait_erased_storage(*function.m_symtab);
     }
 
+    // The provider-owned member entry: the same checked template body,
+    // instantiated by the shared engine with each closed binder := its member.
+    ASR::TraitErasure_t *create_trait_member_entry(ASR::Template_t &generic,
+            SymbolTable *provider_scope, const ASR::trait_slot_t &slot, const Location &loc) {
+        if (auto *existing = ASRUtils::trait_erasure(generic, provider_scope,
+                slot.m_type_arguments, slot.n_type_arguments)) return existing;
+        auto *owner = provider_scope->asr_owner;
+        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            trait_call_error("runtime generic trait implementations outside module "
+                "scope are not implemented yet", loc);
+        }
+        if (ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner))->m_loaded_from_mod) {
+            // Clients never instantiate a provider's body; a missing entry
+            // means the provider was compiled against a different contract.
+            trait_call_error("the separately compiled provider of generic '" +
+                std::string(generic.m_name) + "' has no runtime entry for this "
+                "type-set member; recompile it against the current trait", loc);
+        }
+        LCOMPILERS_ASSERT(slot.n_type_arguments == generic.n_args);
+        auto *original = ASRUtils::trait_method_function(&generic.base);
+        std::string name = "__trait_erasure_" + std::string(generic.m_name);
+        for (size_t i = 0; i < slot.n_type_arguments; i++) {
+            name += "_" + ASRUtils::get_type_code(slot.m_type_arguments[i]);
+        }
+        name = provider_scope->get_unique_name(name);
+        auto *scope = al.make_new<SymbolTable>(provider_scope);
+        auto *erasure = ASR::down_cast2<ASR::TraitErasure_t>(ASR::make_TraitErasure_t(
+            al, loc, scope, s2c(al, name),
+            make_operator_proc_visible(&generic.base, "trait", provider_scope),
+            nullptr, nullptr, 0));
+        provider_scope->add_symbol(name, &erasure->base);
+        Vec<ASR::trait_erased_parameter_t> parameters;
+        parameters.reserve(al, generic.n_args);
+        for (size_t i = 0; i < generic.n_args; i++) {
+            ASR::trait_erased_parameter_t parameter;
+            parameter.loc = loc;
+            parameter.m_parameter = make_operator_proc_visible(
+                generic.m_symtab->get_symbol(generic.m_args[i]), "trait", scope);
+            parameter.m_contract = nullptr;
+            parameter.m_operations = nullptr;
+            parameter.n_operations = 0;
+            parameter.m_member = ASRUtils::duplicate_type(al, slot.m_type_arguments[i]);
+            parameters.push_back(al, parameter);
+        }
+        erasure->m_parameters = parameters.p;
+        erasure->n_parameters = parameters.size();
+        std::map<std::string, ASR::symbol_t*> symbols;
+        erasure->m_procedure = instantiate_symbol(al, scope, trait_member_entry_types(*erasure),
+            symbols, name + "_entry", &original->base, diag);
+        return erasure;
+    }
+
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+    trait_member_entry_types(const ASR::TraitErasure_t &erasure) {
+        auto *generic = ASR::down_cast<ASR::Template_t>(
+            ASRUtils::symbol_get_past_external(erasure.m_generic));
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        for (size_t i = 0; i < erasure.n_parameters; i++) {
+            types[generic->m_args[i]] = {
+                ASRUtils::duplicate_type(al, erasure.m_parameters[i].m_member), nullptr};
+        }
+        return types;
+    }
+
     ASR::TraitErasure_t *create_trait_erasure(ASR::Template_t &generic,
             SymbolTable *provider_scope, const Location &loc) {
         if (auto *existing = ASRUtils::trait_erasure(generic, provider_scope)) return existing;
@@ -23494,6 +23620,7 @@ public:
         for (size_t i = 0; i < generic.n_args; i++) {
             ASR::trait_erased_parameter_t parameter;
             parameter.loc = loc;
+            parameter.m_member = nullptr;
             auto *binder = generic.m_symtab->get_symbol(generic.m_args[i]);
             parameter.m_parameter = make_operator_proc_visible(binder, "trait", scope);
             auto *contract = ASRUtils::trait_parameter_contract(binder);
@@ -23650,8 +23777,14 @@ public:
                 ASR::TraitImplementation_t *provider = nullptr;
                 ASRUtils::runtime_trait_binding(*witness, binding.m_member, provider);
                 LCOMPILERS_ASSERT(provider);
-                implementation_symbol = create_trait_erasure(
-                    *generic, provider->m_parent_symtab, loc)->m_procedure;
+                auto *contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                    ASRUtils::symbol_get_past_external(witness->m_contract));
+                const auto &selected = contract->m_slots[slot];
+                implementation_symbol = (selected.n_type_arguments
+                    ? create_trait_member_entry(*generic, provider->m_parent_symtab,
+                        selected, loc)
+                    : create_trait_erasure(*generic, provider->m_parent_symtab,
+                        loc))->m_procedure;
                 implementation = ASRUtils::trait_method_function(implementation_symbol);
             }
         }
@@ -23849,7 +23982,7 @@ public:
             }
             return;
         }
-        make_runtime_trait_view(actual, target);
+        make_runtime_trait_view(actual, target, true);
     }
 
     void check_association_definable(ASR::expr_t *expression) {
@@ -23860,7 +23993,50 @@ public:
         }
     }
 
-    void make_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target) {
+    // Generic resolution's view of nominal conformance: a derived actual
+    // matches a borrowed trait view dummy when its visible implementations
+    // provide every requirement of the view's contract, as association does.
+    ASRUtils::TraitConformance runtime_trait_conformance(const Location &loc) {
+        return [this, loc](ASR::expr_t *actual, ASR::ttype_t *view) {
+            auto *declaration = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(actual));
+            if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
+            auto implementations = trait_implementations_for_type(declaration, loc);
+            for (auto *required : ASRUtils::trait_contract_requirements(
+                    *ASRUtils::trait_runtime_contract(view))) {
+                bool provided = false;
+                for (auto *implementation : implementations) {
+                    auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                        ASRUtils::symbol_get_past_external(implementation->m_trait)), loc);
+                    for (auto *trait : hierarchy.traits) provided |= &trait->base == required;
+                }
+                if (!provided) return false;
+            }
+            return true;
+        };
+    }
+
+    // Associates the actual arguments of a resolved generic specific with its
+    // runtime trait dummies, skipping the dummy at `skip` (a passed object).
+    void adapt_runtime_trait_arguments(Vec<ASR::call_arg_t> &args,
+            const ASR::Function_t &function, size_t skip = SIZE_MAX) {
+        for (size_t i = 0, j = 0; i < args.size() && j < function.n_args; j++) {
+            if (j == skip) continue;
+            auto &arg = args.p[i++];
+            if (!arg.m_value) continue;
+            auto *dummy = ASRUtils::expr_type(function.m_args[j]);
+            auto *actual = ASRUtils::expr_type(arg.m_value);
+            if ((dummy && ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(dummy))) ||
+                    (actual && ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(actual)))) {
+                adapt_runtime_trait_argument(arg.m_value, function.m_args[j]);
+            }
+        }
+    }
+
+    // `value_payload` borrows a constructor or concrete function result for
+    // the duration of the call it is an argument of.
+    void make_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target,
+            bool value_payload = false) {
         auto *source = ASRUtils::expr_type(actual);
         target = ASRUtils::extract_type(target);
         tmp = nullptr;
@@ -23882,7 +24058,11 @@ public:
             trait_call_error("runtime trait packing currently requires an exact "
                 "nonpolymorphic scalar derived type", actual->base.loc);
         }
-        if (!ASR::is_a<ASR::Var_t>(*actual) &&
+        bool value = value_payload && (ASR::is_a<ASR::StructConstructor_t>(*actual) ||
+            ASR::is_a<ASR::StructConstant_t>(*actual) ||
+            (ASR::is_a<ASR::FunctionCall_t>(*actual) &&
+             !ASRUtils::is_allocatable(source) && !ASRUtils::is_pointer(source)));
+        if (!value && !ASR::is_a<ASR::Var_t>(*actual) &&
                 !ASR::is_a<ASR::StructInstanceMember_t>(*actual) &&
                 !ASR::is_a<ASR::ArrayItem_t>(*actual)) {
             trait_call_error("borrowing a runtime trait from this expression "
@@ -24251,7 +24431,8 @@ public:
     ASR::symbol_t *prepare_trait_procedure_call(ASR::Template_t *generic,
             ASR::Function_t *procedure, Vec<ASR::call_arg_t> &args,
             AST::decl_attribute_t **explicit_args, size_t n_explicit_args,
-            const Location &loc, ASR::Function_t *runtime_signature = nullptr) {
+            const Location &loc, ASR::Function_t *runtime_signature = nullptr,
+            std::vector<ASR::ttype_t*> *closed_members = nullptr) {
         if (!is_body_visitor) {
             for (auto *constraint : trait_constraints(generic)) {
                 auto *trait = ASR::down_cast<ASR::Trait_t>(
@@ -24509,6 +24690,13 @@ public:
             }
         }
         if (runtime_signature) {
+            if (closed_members) {
+                // Closed binders select a member slot instead of packing views.
+                for (size_t i = 0; i < generic->n_args; i++) {
+                    closed_members->push_back(types.at(generic->m_args[i]).first);
+                }
+                return &runtime_signature->base;
+            }
             for (size_t i = 0; i < args.size(); i++) {
                 auto *formal = ASRUtils::expr_type(procedure->m_args[i]);
                 if (!ASR::is_a<ASR::TypeParameter_t>(*formal)) continue;
@@ -24565,6 +24753,37 @@ public:
                     *requirement.binding, target, loc);
         }
         return instantiate_trait_signature(target, generic, types, evidence, symbols);
+    }
+
+    // A runtime call inside a generic definition whose closed type arguments
+    // are still that definition's binders. Instantiation selects the slot.
+    ASR::asr_t *make_trait_deferred_call(ASR::TraitRuntimeContract_t &contract,
+            int64_t family, const std::vector<ASR::ttype_t*> &members,
+            ASR::expr_t *receiver, Vec<ASR::call_arg_t> &args,
+            ASR::Function_t &message, const Location &loc) {
+        auto *method = ASRUtils::trait_method_template(message);
+        LCOMPILERS_ASSERT(method && method->n_args == members.size());
+        auto *head = ASRUtils::trait_method_function(contract.m_slots[family].m_procedure);
+        args = prepend_call_arg(receiver, args);
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i].m_value) adapt_runtime_trait_argument(args.p[i].m_value, head->m_args[i]);
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(message.m_return_var);
+        if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
+            std::string binder = ASR::down_cast<ASR::TypeParameter_t>(type)->m_param;
+            for (size_t i = 0; i < method->n_args; i++) {
+                if (binder == method->m_args[i]) type = members[i];
+            }
+        }
+        Vec<ASR::ttype_t*> type_arguments;
+        type_arguments.reserve(al, members.size());
+        for (auto *member : members) {
+            type_arguments.push_back(al, ASRUtils::duplicate_type(al, member));
+        }
+        if (!head->m_deterministic) current_function_deterministic = false;
+        if (!head->m_side_effect_free) current_function_side_effect_free = false;
+        return ASR::make_TraitDeferredCall_t(al, loc, family, type_arguments.p,
+            type_arguments.size(), args.p, args.size(), ASRUtils::duplicate_type(al, type));
     }
 
     bool handle_trait_call(const std::string &name, AST::struct_member_t *members,
@@ -24714,24 +24933,30 @@ public:
         trait_call_arguments(signature, actuals, n_actuals, keywords, n_keywords, args, loc);
         tmp = nullptr;
         if (runtime_slot >= 0) {
+            auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
+            std::vector<ASR::ttype_t*> member_types;
             if (auto *method = ASRUtils::trait_method_template(*signature)) {
+                bool closed = contract->m_slots[runtime_slot].n_type_arguments > 0;
                 prepare_trait_procedure_call(method, signature, args,
                     explicit_args, n_explicit_args, loc,
-                    ASRUtils::trait_method_function(callee));
+                    ASRUtils::trait_method_function(callee), closed ? &member_types : nullptr);
             }
-            auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
-            std::string local_name = current_scope->get_unique_name(
-                std::string(contract->m_name) + "_" + name);
-            auto *module = ASRUtils::get_sym_module(&contract->base);
-            Vec<char*> scopes;
-            scopes.reserve(al, 1);
-            if (module) scopes.push_back(al, contract->m_name);
-            callee = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, loc, current_scope, s2c(al, local_name), callee,
-                module ? module->m_name : contract->m_name,
-                scopes.p, scopes.size(), ASRUtils::symbol_name(callee),
-                ASR::accessType::Private));
-            current_scope->add_symbol(local_name, callee);
+            if (!member_types.empty() && ASR::is_a<ASR::TypeParameter_t>(*member_types[0])) {
+                tmp = make_trait_deferred_call(*contract, runtime_slot, member_types,
+                    receiver, args, *signature, loc);
+                return true;
+            }
+            ASR::ttype_t *result = signature->m_return_var
+                ? ASRUtils::expr_type(signature->m_return_var) : nullptr;
+            if (!member_types.empty()) {
+                runtime_slot = ASRUtils::trait_member_slot(*contract, runtime_slot,
+                    member_types.data(), member_types.size());
+                LCOMPILERS_ASSERT((size_t)runtime_slot < contract->n_slots);
+                result = ASRUtils::expr_type(ASRUtils::trait_method_function(
+                    contract->m_slots[runtime_slot].m_procedure)->m_return_var);
+            }
+            callee = ASRUtils::import_trait_slot(al, *contract, runtime_slot,
+                current_scope, name, loc);
             args = prepend_call_arg(receiver, args);
             validate_create_function_arguments(args, callee);
             auto *function = ASR::down_cast<ASR::Function_t>(
@@ -24740,7 +24965,7 @@ public:
             if (is_function) {
                 auto *call = ASR::down_cast2<ASR::FunctionCall_t>(
                     ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr,
-                        args.p, args.size(), ASRUtils::expr_type(signature->m_return_var),
+                        args.p, args.size(), result,
                         nullptr, nullptr, current_scope, current_function_dependencies,
                         compiler_options.implicit_argument_casting));
                 tmp = ASR::make_TraitFunctionCall_t(al, loc, callee, runtime_slot,
@@ -25219,7 +25444,9 @@ public:
                         }
                     }
                     if (!bound) {
-                        std::string name = target->get_unique_name("__type_set_selected");
+                        // Entries share their module's linkage namespace.
+                        std::string name = trait_specialization_name(target,
+                            "__type_set_selected");
                         bound = instantiate_symbol(al, target, p.type_subs,
                             p.symbol_subs, name, witness, diag);
                         p.symbols.push_back({bound, witness});
@@ -25259,7 +25486,9 @@ public:
         for (auto *erasure : collect.erasures) {
             auto *generic = ASR::down_cast<ASR::Template_t>(
                 ASRUtils::symbol_get_past_external(erasure->m_generic));
-            auto types = trait_erased_types(*generic, erasure->m_symtab);
+            bool member = erasure->n_parameters && erasure->m_parameters[0].m_member;
+            auto types = member ? trait_member_entry_types(*erasure)
+                : trait_erased_types(*generic, erasure->m_symtab);
             std::map<std::string, ASR::symbol_t*> symbols;
             std::vector<TraitEvidence> evidence;
             symbols[generic->m_name] = erasure->m_procedure;

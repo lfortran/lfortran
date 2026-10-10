@@ -12,8 +12,13 @@ TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
 
 `name` is the normalized contract interface at `slot`, not a concrete
 implementation. `args[0]` is the borrowed view; the remaining arguments have
-the message's normal types, order, and association attributes. `type` is its
-scalar integer result type in the initial runtime subset.
+the message's normal types, order, and association attributes, including
+read-only assumed-shape numeric or logical array descriptors passed by
+reference. `type` is its scalar integer, real or logical result type.
+For a closed generic message, `slot` is the member slot whose `type_arguments`
+equal the call's concrete type arguments, so its arguments and result are
+ordinary concrete values; a still-generic caller uses
+[TraitDeferredCall](TraitDeferredCall.md) instead.
 For a generic message, those remaining arguments use the verified erased slot
 signature: each generic scalar is a checked `TraitPack`/view, or a
 `TraitDeferredPack` within a still-generic consumer. The first view selects the

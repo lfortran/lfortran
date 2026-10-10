@@ -21,11 +21,15 @@ messages while retaining every nominal origin. Shared diamond origins occur
 once. The verifier checks completeness, canonical order, signatures, and scope.
 Contracts are materialized for the supported ordinary and readonly scalar generic method
 subset; absence for other signatures means not implemented, not object-unsafe.
-For a generic origin, the slot has an explicitly erased ordinary signature:
-each `T` argument becomes a borrowed view of its nominal constraint. Its
-quantified `Template` origin is retained and verified, not replaced by a
-concrete specialization. The provider view remains the first argument even for
-`nopass`; each generic argument carries independent type/operation evidence.
+For a generic origin with open binders, the slot has an explicitly erased
+ordinary signature: each `T` argument becomes a borrowed view of its nominal
+constraint. Its quantified `Template` origin is retained and verified, not
+replaced by a concrete specialization. The provider view remains the first
+argument even for `nopass`; each generic argument carries independent
+type/operation evidence. A generic origin whose binders are all closed
+type-set traits has instead one consecutive slot per member tuple, each with
+the message instantiated at its `type_arguments`; a message mixing open and
+closed binders has no contract yet.
 
 `anonymous` is explicit provenance, never inferred from a generated name.
 For an anonymous conjunction, `trait` is a private, parent-only `Trait` whose

@@ -8775,7 +8775,7 @@ public:
                                         Label("", {loc})
                                     }));
                                 throw SemanticAbort();
-                            }, false)) == i) {
+                            }, false, false, runtime_trait_conformance(x.base.base.loc))) == i) {
                             function_found = true;
                             args.n = 0;
                             if (is_class_procedure && !is_nopass) {
@@ -9329,7 +9329,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                });
+                                }, true, false, runtime_trait_conformance(x.base.base.loc));
                 } else {
                     idx = ASRUtils::select_generic_procedure(args, *p, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -9339,7 +9339,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                });
+                                }, true, false, runtime_trait_conformance(x.base.base.loc));
                 }
                 ASR::symbol_t* func_sym = p->m_procs[idx];
 
@@ -9378,7 +9378,7 @@ public:
                                             Label("",{loc})
                                         }));
                                     throw SemanticAbort();
-                                    });
+                                    }, true, false, runtime_trait_conformance(x.base.base.loc));
                     // FIXME
                     // Create ExternalSymbol for the final subroutine here
                     final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);

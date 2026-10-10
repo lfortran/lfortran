@@ -28,6 +28,7 @@ BitCast
 Cast
 TraitInspect
 TraitDeferredPack
+TraitDeferredCall
 CLoc
 CoarrayRef
 CompilerOptions

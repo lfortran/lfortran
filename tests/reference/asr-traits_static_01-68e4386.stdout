@@ -1121,7 +1121,8 @@
                                     __trait_contract_ivalue
                                     2 ivalue
                                     [([5 __trait_member_ivalue_get_value]
-                                    5 __trait_ivalue_get_value)]
+                                    5 __trait_ivalue_get_value
+                                    [])]
                                     .false.
                                 ),
                             __trait_member_ivalue_get_value:

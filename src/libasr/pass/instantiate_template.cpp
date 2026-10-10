@@ -2575,6 +2575,35 @@ public:
         return &call->base.base;
     }
 
+    // Substituted closed type arguments select their member slot; binders of
+    // a still-generic caller keep the call deferred.
+    ASR::asr_t *duplicate_TraitDeferredCall(ASR::TraitDeferredCall_t *x) {
+        auto *call = ASR::down_cast2<ASR::TraitDeferredCall_t>(
+            BaseExprStmtDuplicator<BodyInstantiator>::duplicate_TraitDeferredCall(x));
+        for (size_t i = 0; i < call->n_type_arguments; i++) {
+            if (ASR::is_a<ASR::TypeParameter_t>(*call->m_type_arguments[i])) {
+                return &call->base.base;
+            }
+        }
+        auto *contract = ASRUtils::trait_runtime_contract(
+            ASRUtils::expr_type(call->m_args[0].m_value));
+        size_t slot = ASRUtils::trait_member_slot(*contract, call->m_family,
+            call->m_type_arguments, call->n_type_arguments);
+        LCOMPILERS_ASSERT(slot < contract->n_slots);
+        auto *origin = ASRUtils::symbol_get_past_external(
+            contract->m_slots[slot].m_origins[0]);
+        auto *callee = ASRUtils::import_trait_slot(al, *contract, slot, new_scope,
+            ASRUtils::symbol_name(origin), x->base.base.loc);
+        ADD_ASR_DEPENDENCIES(new_scope, callee, dependencies);
+        auto *result = ASRUtils::expr_type(
+            ASRUtils::trait_method_function(contract->m_slots[slot].m_procedure)->m_return_var);
+        auto *selected = ASR::down_cast2<ASR::FunctionCall_t>(ASRUtils::make_FunctionCall_t_util(
+            al, x->base.base.loc, callee, nullptr, call->m_args, call->n_args,
+            ASRUtils::duplicate_type(al, result), nullptr, nullptr, new_scope, dependencies));
+        return ASR::make_TraitFunctionCall_t(al, x->base.base.loc, callee, slot,
+            selected->m_args, selected->n_args, selected->m_type);
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -2974,6 +3003,12 @@ public:
                 ASR::Pointer_t *p = ASR::down_cast<ASR::Pointer_t>(ttype);
                 return ASRUtils::make_Pointer_t_util(al, ttype->base.loc,
                     substitute_type(expr, p->m_type));
+            }
+            // A trait contract the template named may be imported into a
+            // scope the instantiation cannot see, e.g. a component's.
+            case (ASR::ttypeType::TraitObjectType) :
+            case (ASR::ttypeType::TraitOwnerList) : {
+                return ASRUtils::import_trait_type(al, ttype, new_scope);
             }
             default : return ttype;
         }

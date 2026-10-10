@@ -6404,14 +6404,20 @@ static inline bool is_elemental(ASR::symbol_t* x) {
 }
 
 
+// Whether a derived actual has visible nominal conformance to a borrowed
+// runtime trait view dummy. Without it, only views match view dummies.
+using TraitConformance = std::function<bool (ASR::expr_t *, ASR::ttype_t *)>;
+
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
-    Location& loc, const std::function<void (const std::string &, const Location &)> err);
+    Location& loc, const std::function<void (const std::string &, const Location &)> err,
+    const TraitConformance &conforms = nullptr);
 
 template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
-    bool raise_error=true, bool is_dt_present=false) {
+    bool raise_error=true, bool is_dt_present=false,
+    const TraitConformance &conforms = nullptr) {
     // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
     // of a type-bound procedure call). A `nopass` specific procedure does not
     // receive the passed-object, so it must be matched against the arguments
@@ -6424,11 +6430,11 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
                 Vec<ASR::call_arg_t> args_no_dt;
                 args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
-                return select_func_subrout(proc, args_no_dt, loc, err);
+                return select_func_subrout(proc, args_no_dt, loc, err, conforms);
             }
-            return select_func_subrout(proc, args, loc, err);
+            return select_func_subrout(proc, args, loc, err, conforms);
         } else {
-            return select_func_subrout(proc_sym, args, loc, err);
+            return select_func_subrout(proc_sym, args, loc, err, conforms);
         }
     };
     for (size_t i=0; i < p.n_procs; i++) {
@@ -10770,9 +10776,33 @@ ASR::Template_t *trait_method_template(const ASR::Function_t &method);
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
 std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
-ASR::TraitErasure_t *trait_erasure(ASR::Template_t &generic, SymbolTable *scope);
+// The single normalized type-set trait of a closed binder, or nullptr.
+ASR::Trait_t *trait_parameter_type_set(ASR::symbol_t *parameter);
+// Every member tuple of a generic whose binders are all closed, in binder
+// order and declared member order; empty unless every binder is closed.
+std::vector<std::vector<ASR::ttype_t*>> trait_member_tuples(const ASR::Template_t &generic);
+std::map<std::string, ASR::ttype_t*> trait_member_substitution(
+    const ASR::Template_t &generic, ASR::ttype_t **members, size_t n_members);
+bool trait_type_arguments_equal(ASR::ttype_t **left, size_t n_left,
+    ASR::ttype_t **right, size_t n_right);
+// The open erasure (no members) or the closed member entry of `generic`.
+ASR::TraitErasure_t *trait_erasure(ASR::Template_t &generic, SymbolTable *scope,
+    ASR::ttype_t **members = nullptr, size_t n_members = 0);
 bool trait_erased_signature_matches(const ASR::Function_t &generic,
     const ASR::Function_t &erased, size_t offset = 0);
+// Whether `instance` is `generic`'s signature with its closed binders replaced
+// by `members`, after `offset` leading receiver arguments.
+bool trait_member_signature_matches(const ASR::Function_t &generic,
+    const ASR::Function_t &instance, ASR::ttype_t **members, size_t n_members,
+    size_t offset = 0);
+// Slots of one member family share their callable's exact origins.
+bool trait_slots_same_family(const ASR::trait_slot_t &left, const ASR::trait_slot_t &right);
+// The slot of `family` whose type arguments are `members`, or contract.n_slots.
+size_t trait_member_slot(const ASR::TraitRuntimeContract_t &contract, size_t family,
+    ASR::ttype_t **members, size_t n_members);
+// A private import of the contract's slot interface into `scope`.
+ASR::symbol_t *import_trait_slot(Allocator &al, ASR::TraitRuntimeContract_t &contract,
+    size_t slot, SymbolTable *scope, const std::string &message, const Location &loc);
 std::string trait_deferred_pack_key(const ASR::TraitDeferredPack_t &pack);
 std::string trait_generic_correspondence(const ASR::Function_t &left,
     const ASR::Function_t &right,

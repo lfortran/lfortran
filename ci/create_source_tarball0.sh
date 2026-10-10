@@ -38,6 +38,8 @@ cmake -E copy \
     integration_tests/traits_runtime_combination_01*.f90 \
     integration_tests/traits_runtime_inspection_separate_01*.f90 \
     integration_tests/traits_runtime_generic_01*.f90 \
+    integration_tests/traits_runtime_numeric_separate_01.py \
+    integration_tests/traits_runtime_numeric_separate_01*.f90 \
     integration_tests/traits_runtime_inspection_state_01.f90 \
     integration_tests/traits_runtime_07*.f90 \
     integration_tests/traits_paper_functional.py \
@@ -51,6 +53,8 @@ cmake -E copy \
     $dest/integration_tests
 cmake -E copy_directory integration_tests/traits_paper_functional \
     $dest/integration_tests/traits_paper_functional
+cmake -E copy_directory integration_tests/traits_paper_dynamic \
+    $dest/integration_tests/traits_paper_dynamic
 cmake -E copy_directory integration_tests/traits_paper_type_adoption \
     $dest/integration_tests/traits_paper_type_adoption
 

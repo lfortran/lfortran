@@ -7522,7 +7522,8 @@
                                     __trait_contract_integer
                                     16 integer
                                     [([19 __trait_member_integer_value]
-                                    19 __trait_integer_value)]
+                                    19 __trait_integer_value
+                                    [])]
                                     .false.
                                 ),
                             __trait_member_integer_value:

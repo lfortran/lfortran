@@ -34,5 +34,17 @@ runtime specialization cache. The initial subset is readonly scalar generic
 arguments and scalar integer results. Static-only backends may ignore the
 owned runtime routines; executable runtime use requires LLVM support.
 
+A generic whose binders are all closed type-set traits instead has one member
+entry per member tuple of its contract's family. Each parameter then records
+its exact `member` type and no contract or operations, and `procedure` is the
+same checked body instantiated by the same engine at that tuple, with the type
+set's checked member witnesses. Member entries are concrete: their arrays,
+locals and `T` results are ordinary intrinsic storage. A provider module owns
+at most one entry per generic and tuple, registered as that scope's
+specialization before any body is copied, so self-recursion reuses it. The
+verifier checks the declared membership, the exact member signature and
+uniqueness; a witness slot of that member requires the provider's entry.
+Clients only select a member slot; they never create or instantiate entries.
+
 See [traits](../../traits.md), [TraitWitness](TraitWitness.md), and
 [trait_erased_parameter](../helper_nodes/trait_erased_parameter.md).

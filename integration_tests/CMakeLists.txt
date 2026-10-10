@@ -4027,6 +4027,24 @@ RUN(NAME traits_runtime_component_17 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_binding_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_binding_01_provider.f90)
+RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_numeric_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_numeric_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_numeric_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_numeric_03_provider.f90)
+RUN(NAME traits_runtime_numeric_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_numeric_separate_01_contracts.f90
+        traits_runtime_numeric_separate_01_provider.f90
+        traits_runtime_numeric_separate_01_consumer.f90)
+RUN(NAME traits_runtime_numeric_separate_01_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --separate-compilation
+    EXTRAFILES traits_runtime_numeric_separate_01_oracle_contracts.f90
+        traits_runtime_numeric_separate_01_oracle_provider.f90
+        traits_runtime_numeric_separate_01_oracle_consumer.f90)
 RUN(NAME traits_runtime_pure_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_attributes_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_separate_01 LABELS llvm llvm2 NO_STD_F23
@@ -4045,6 +4063,9 @@ RUN(NAME traits_paper_functional1 FILE traits_paper_functional/functional1
     LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_paper_functional2 FILE traits_paper_functional/functional2
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_mixed FILE traits_paper_dynamic/mixed
     LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES

@@ -207,11 +207,12 @@ static-only trait can still supply its runtime-eligible ancestor interfaces;
 an unsupported extra message does not disable those subsets.
 
 This currently supports nonparameterized adopting types in modules and main
-programs, within the existing static and scalar runtime domains. A type-bound
-binding of a generic procedure names the procedure through an import in the
-type's module, so clients that load the module resolve it like any other
-binding. It does not add initializers, trait-valued components, generic
-derived types, or numeric runtime array/result protocols.
+programs, within the existing static and runtime domains; initializers,
+trait-valued components and closed numeric generic messages are described in
+their own sections. A type-bound binding of a generic procedure names the
+procedure through an import in the type's module, so clients that load the
+module resolve it like any other binding. Generic derived types are not
+supported.
 
 The byte-exact, module-only paper examples `extends_parent.f90` and
 `abstract_new.f90` are registered through `traits_type_adoption.py` in normal
@@ -403,7 +404,8 @@ The current erased subset deliberately excludes:
 - Generic messages inside another generic type parameter's constraint,
   associated types, mutable-message syntax and unrestricted generic results.
 - Finite intrinsic type sets as a replacement for the universal nominal domain.
-  Their existing static specialization remains supported separately.
+  Binders constrained only by type sets use closed member slots instead (see
+  below); a message mixing both kinds of binder is not implemented.
 
 Unsupported forms are diagnosed, not silently interpreted as read-only views.
 Runtime generic execution is LLVM-only. Static-only metadata does not force
@@ -434,6 +436,92 @@ whose generic helper was already serialized. `traits_generic_method_02` checks
 that unused generic declarations and erasure metadata remain harmless to C,
 executable Fortran and WASM lowering; it does not claim generic runtime support
 on those backends.
+
+### Closed numeric runtime generic methods
+
+A runtime generic message whose binders are all constrained by finite type-set
+traits uses closed member slots instead of erasure:
+
+```fortran
+abstract interface :: INumeric
+    integer | real(real64)
+end interface INumeric
+
+abstract interface :: ISum
+    function sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+    end function sum
+end interface ISum
+```
+
+The type argument is still chosen at compile time and only the provider behind
+`class(ISum)` is dynamic. The contract therefore has one slot per member tuple
+of the trait declaration: binders in declaration order, members in the type
+set's declared order, here `sum` at `integer(4)` and at `real(8)`. The members
+come only from the type-set trait every party imports, never from visible
+conformances or client types. Each slot's interface is the message signature
+instantiated at its members, so arguments are ordinary assumed-shape `T`
+element arrays passed by descriptor reference (including empty, strided,
+reversed and other noncontiguous sections) and results are ordinary scalar
+values of the member type. The slots share their callable's origins and carry
+the tuple in `trait_slot.type_arguments`; projections and combinations match
+both.
+
+Each conforming provider fills every member slot with a typed adapter that
+calls its own member entry: a `TraitErasure` whose parameters record the
+member, holding the same definition-time-checked template body instantiated by
+the shared `instantiate_symbol`/`instantiate_body` engine at that member, with
+the type set's checked member witnesses for `+`, `/`, `T(...)` and other
+operations. Entries are created with the provider's witnesses, registered as
+their scope's specializations before any body is copied, and reused by
+self-recursion; they are concrete code, so local `T` storage and arrays are
+ordinary values. Clients never instantiate a provider body: they select the
+member slot from the concrete argument types, or from an explicit
+`obj%sum{real(real64)}(x)` argument, and dispatch dynamically through the view.
+
+Inside a generic definition whose own binder has the same type-set trait, a
+runtime call keeps the member open as `TraitDeferredCall`. The same template
+instantiator turns it into the `TraitFunctionCall` of the substituted member's
+slot when a provider entry or a client's static specialization is created, or
+forwards it to an enclosing binder. Both static calls on concrete receivers and
+recursive or forwarded calls through trait components therefore keep their
+existing semantics. The paper's exact `mixed.f90` runs this way, including
+`initial` constructors that borrow constructor values or concrete function
+results as `class(ISum)` arguments for the duration of the call.
+
+Calls to a member slot cannot change argument association: a witness adapter
+keeps calling the descriptor version of its implementation rather than a
+by-data specialization, so a noncontiguous actual is not copied. Distinct
+member entries of one provider module receive distinct linkage names for their
+selected type-set witnesses.
+
+The closed domain is exactly `type_arguments` of the verified contract.
+Adding a member changes the trait and requires recompiling its dependents, as
+the proposal accepts for type sets; a stale separately compiled provider is
+diagnosed rather than specialized by a client. Unsupported forms remain
+diagnosed as not implemented: messages mixing closed and open binders, generic
+subroutine messages, type sets with kind wildcards, and member signatures
+outside the runtime slot surface (scalar arguments, read-only assumed-shape
+numeric or logical arrays, and scalar integer, real or logical results).
+`class(INumeric)` remains invalid: a type-set trait is not a runtime view.
+
+`traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
+recursion inside an entry, lengths 0 through 9, strided, reversed and 2-D
+sections, inferred and explicit type arguments, a generic consumer and an
+ordinary runtime array contiguity probe with its ordinary-call control.
+`traits_runtime_numeric_02` reproduces the `mixed.f90` structure with nested
+pairwise providers, a scaled leaf, exact recursive leaf counts and owner
+copies. `traits_runtime_numeric_03` loads a separately compiled provider of a
+two-binder message (one slot per member pair), ordinary runtime messages with
+complex 2-D, lower-bound and real arrays and real and logical results, and
+generic procedures borrowing constructor values and function results. The
+native `traits_runtime_numeric_separate_01.py` gate compiles and freezes the
+provider first, hides its sources and modules, and checks that the
+contract-only consumer and late driver contain no provider names, entries or
+witnesses while reaching both members in both selection orders.
+Standard-Fortran oracles with matching check counts accompany the first two
+tests and the gate.
 
 ## Inheritance and composed constraints
 
@@ -656,10 +744,14 @@ Fortran inspection preserves experimental trait declarations and implementations
 Executable Fortran output leaves this compile-only metadata as comments and
 continues to reject actual runtime views with an explicit backend diagnostic.
 
-Supported methods are ordinary scalar integer-result functions and
-subroutines with scalar integer, real, complex, logical, character, or
-nonpolymorphic derived-type arguments. Normal argument intents, kinds, keyword
-names, and the ordinary Fortran calling convention apply. BIND(C) contracts
+Supported methods are functions with scalar integer, real or logical results,
+and subroutines. Arguments are scalar integer, real, complex, logical,
+character, or nonpolymorphic derived-type values, or read-only, required,
+nonallocatable, nonpointer assumed-shape arrays of an intrinsic numeric or
+logical type. Array descriptors pass by reference, so strided, reversed and
+empty sections reach the implementation without a copy. Normal argument
+intents, kinds, keyword names, and the ordinary Fortran calling convention
+apply. BIND(C) contracts
 or implementations remain available statically but do not provide runtime
 dispatch in this slice. Receivers are read-only by default;
 future explicit per-message mutation effects have no settled syntax yet.
@@ -681,14 +773,21 @@ Bare borrowed view dummies require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
-supported. Trait arrays, aggregate method results, unrestricted generic methods, and adoption from unknown
+supported. A structure constructor or a concrete nonallocatable, nonpointer
+function result can be borrowed as an ordinary or generic procedure's view
+actual for the duration of that call; existing result storage and its lifetime
+are unchanged. Generic resolution, including `initial` constructors, matches a
+view dummy with a view whose contract implies its own, or with a
+nonpolymorphic derived value whose visible implementations provide every
+required trait, the same nominal evidence its association then selects.
+Trait arrays, aggregate method results, unrestricted generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
 below, tests concrete identity and real implementation inheritance, not
 unrelated-trait discovery.
-Universal traits with supported scalar generic methods have runtime contracts;
-other generic signatures are diagnosed as not implemented. Type-set traits
-remain constraint-only.
+Universal traits with supported open scalar or closed type-set generic methods
+have runtime contracts; other generic signatures are diagnosed as not
+implemented. Type-set traits remain constraint-only.
 
 The private same-build/target LLVM borrowed representation is a stack descriptor
 containing concrete CLASS metadata, the original payload address, a concrete
