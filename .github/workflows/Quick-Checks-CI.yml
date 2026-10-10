@@ -468,10 +468,12 @@ jobs:
           create-args: >-
             python=3.10
 
+      # ccache wraps both the native compiler and em++ (Emscripten documents
+      # `ccache emcc`). The cache holds both builds.
       - uses: hendrikmuhs/ccache-action@main
         with:
-          variant: sccache
           key: ${{ github.job }}-ubuntu-latest
+          max-size: 1500M
           save: ${{ github.ref == 'refs/heads/main' }}
 
       # ── Set up Emscripten 4 from conda instead of outdated emsdk 3.1.35 ──
@@ -503,20 +505,18 @@ jobs:
                 -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX" \
                 -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
                 -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
-                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                 .
             cmake --build . -j$(nproc) --target install
             mkdir -p src/bin/asset_dir
             cp src/runtime/*.mod src/bin/asset_dir
-            git clean -dfx -e src/bin/asset_dir
+            # Keep the compiler cache, which lives in the workspace.
+            git clean -dfx -e src/bin/asset_dir -e .ccache
 
       # Phase 2: Emscripten WASM build (needs emcmake from wasm-build env)
       - name: Build to WASM
         shell: bash -l {0}
-        env:
-          # Emscripten runs sccache around its internal clang invocations.
-          EM_COMPILER_WRAPPER: sccache
         run: |
             set -ex
             micromamba run -n xeus-lfortran-wasm-build bash -c '
@@ -532,6 +532,8 @@ jobs:
                   -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX" \
                   -DCMAKE_INSTALL_PREFIX=$(pwd)/inst \
                   -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
+                  -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                   .
               cmake --build . -j$(nproc)
             '
