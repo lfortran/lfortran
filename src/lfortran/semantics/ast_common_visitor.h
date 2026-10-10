@@ -15463,7 +15463,10 @@ public:
                             (expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                         // Only convert top-level ArrayItem to ArraySection.
                         // Do NOT recurse into nested ArrayItem expressions in indices.
-                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) ) {
+                        // A vector-subscripted ArrayItem is an array expression, not an
+                        // array element designator, so it is left unchanged.
+                        if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
+                                !ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
                             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                             ASR::ttype_t* array_type = ASRUtils::expr_type(array_item->m_v);
                             ASR::ttype_t* section_type =
@@ -15700,7 +15703,10 @@ public:
                     ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(array_arg_idx[i]);
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i], nullptr, expected_phys, true);
                     ASR::expr_t* arg_expr = arg.m_value;
-                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                    // A vector-subscripted ArrayItem is an array expression, not an
+                    // array element designator, so it is passed unchanged.
+                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
+                            !ASRUtils::is_array(ASRUtils::expr_type(arg_expr))) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
 
