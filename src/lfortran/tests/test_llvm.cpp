@@ -2649,3 +2649,105 @@ TEST_CASE("FortranEvaluator the calls the kernel makes") {
         CHECK(lm.files.back().in_filename == "some_file.f90");
     }
 }
+
+TEST_CASE("FortranEvaluator a SAVE class pointer across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Each cell is a separate LLVM module. Every one of them that associates
+    // or disassociates `gp` has to use the one static class wrapper of `gp`.
+    CHECK(e.evaluate2(R"(module mcp1
+implicit none
+type :: s
+    integer :: i = 0
+end type
+type(s), target :: x
+end module
+)").ok);
+    CHECK(e.evaluate2("use mcp1").ok);
+    CHECK(e.evaluate2("class(s), pointer :: gp => null()").ok);
+    CHECK(e.evaluate2("class(s), pointer, save :: gq").ok);
+    CHECK(e.evaluate2("x%i = 4").ok);
+    for (int k = 0; k < 2; k++) {
+        CHECK(e.evaluate2("gp => x").ok);
+        CHECK(e.evaluate2("gq => x").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("gp%i + gq%i");
+        CHECK(r.ok);
+        CHECK(r.result.i32 == 8);
+        CHECK(e.evaluate2("gp => null()").ok);
+        // A top-level `nullify(gq)` is taken for a function call (#13455).
+        CHECK(e.evaluate2("if (associated(gq)) nullify(gq)").ok);
+        r = e.evaluate2("associated(gp) .or. associated(gq)");
+        CHECK(r.ok);
+        CHECK(r.result.b == false);
+        CHECK(e.evaluate2("if (.not. associated(gp)) allocate(gp)").ok);
+        CHECK(e.evaluate2("gp%i = 9").ok);
+        r = e.evaluate2("gp%i");
+        CHECK(r.ok);
+        CHECK(r.result.i32 == 9);
+        CHECK(e.evaluate2("if (associated(gp)) deallocate(gp)").ok);
+        r = e.evaluate2("associated(gp)");
+        CHECK(r.ok);
+        CHECK(r.result.b == false);
+    }
+}
+
+TEST_CASE("FortranEvaluator a SAVE class pointer of a redefined module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The old and the new module `mcp2` each keep their own `p`, and so their
+    // own static class wrapper of it.
+    auto module_mcp2 = [](int i) {
+        return R"(module mcp2
+implicit none
+type :: s
+    integer :: i = 0
+end type
+class(s), pointer :: p => null()
+type(s), target :: x
+contains
+subroutine set()
+    x%i = )" + std::to_string(i) + R"(
+    p => x
+end subroutine
+integer function get()
+    get = -1
+    if (associated(p)) get = p%i
+end function
+end module
+)";
+    };
+    CHECK(e.evaluate2(module_mcp2(1)).ok);
+    CHECK(e.evaluate2(R"(integer function old_get()
+use mcp2, only: get
+old_get = get()
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(subroutine old_set()
+use mcp2, only: set
+call set()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2(module_mcp2(2)).ok);
+    CHECK(e.evaluate2(R"(integer function new_get()
+use mcp2, only: get
+new_get = get()
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(subroutine new_set()
+use mcp2, only: set
+call set()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call old_set()").ok);
+    CHECK(e.evaluate2("call new_set()").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_get()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("new_get()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+}

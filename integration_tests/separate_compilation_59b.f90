@@ -1,5 +1,5 @@
-module separate_compilation_57b_module
-use separate_compilation_57a_module, only: base
+module separate_compilation_59b_module
+use separate_compilation_59a_module, only: base
 implicit none
 contains
 integer function next_value()

@@ -28,9 +28,9 @@ src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
 # Compile several files with one -c, inferring the form of each file
-src/bin/lfortran --fixed-form-infer -c integration_tests/separate_compilation_57c.f integration_tests/separate_compilation_57a.f90 integration_tests/separate_compilation_57b.f90 integration_tests/separate_compilation_57.f90
-src/bin/lfortran separate_compilation_57c.o separate_compilation_57a.o separate_compilation_57b.o separate_compilation_57.o -o separate_compilation_57
-./separate_compilation_57
+src/bin/lfortran --fixed-form-infer -c integration_tests/separate_compilation_59c.f integration_tests/separate_compilation_59a.f90 integration_tests/separate_compilation_59b.f90 integration_tests/separate_compilation_59.f90
+src/bin/lfortran separate_compilation_59c.o separate_compilation_59a.o separate_compilation_59b.o separate_compilation_59.o -o separate_compilation_59
+./separate_compilation_59
 
 
 # Compile and link in one step
@@ -58,7 +58,13 @@ if [[ $WIN != "1" ]]; then
     echo "NPROC: ${NPROC}"
 
     if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
-        ./run_tests.py
+        if [[ $MACOS != "1" ]]; then
+            ./run_tests.py
+        else
+            if [[ $LFORTRAN_TEST_SUITE != "smoke" ]]; then
+                ./run_tests.py
+            fi
+        fi
     fi
 
     cd integration_tests
@@ -74,16 +80,23 @@ if [[ $WIN != "1" ]]; then
     ctest -j${NPROC} -R program_cmake
     cd ..
 
-    ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
-    if [[ $MACOS != "1" ]]; then
-        ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
+    # `shell` passes an empty expansion as an argument, unlike Bash. Keep
+    # the optional --smoke flag explicit rather than expanding an empty string.
+    if [[ $LFORTRAN_TEST_SUITE == "smoke" ]]; then
+        ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC} --smoke
+        if [[ $MACOS != "1" ]]; then
+            ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC} --smoke
+            ./run_tests.py -b llvm llvmImplicit -f -j${NPROC} --smoke
+        fi
+        ./run_tests.py -b llvm_submodule -j${NPROC} --smoke
+    else
+        ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
+        if [[ $MACOS != "1" ]]; then
+            ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
+            ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
+        fi
+        ./run_tests.py -b llvm_submodule -j${NPROC}
     fi
-    if [[ $MACOS != "1" ]]; then
-        ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
-    fi
-    ./run_tests.py -b llvm_submodule -j${NPROC}
-    # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
-    # checks (debug_outOfSource) so this Quick job stays under an hour.
     cd ..
 
     pip install src/server/tests tests/server
