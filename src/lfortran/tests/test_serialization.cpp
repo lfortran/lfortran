@@ -4030,6 +4030,101 @@ end module
     }
 }
 
+TEST_CASE("Type-bound generic subroutine references associate view actuals") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module generic_binding_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+type :: Cell
+    integer :: n = 0
+end type
+implements IValue :: Cell
+    procedure, pass :: value => cell_value
+end implements Cell
+type :: Visitor
+    integer :: seen = 0
+contains
+    procedure :: visit_view
+    procedure, nopass :: note_view
+    generic :: visit => visit_view
+    generic :: note => note_view
+end type
+type, extends(Visitor) :: Tally
+end type
+contains
+integer function cell_value(self)
+    class(Cell), intent(in) :: self
+    cell_value = self%n
+end function
+subroutine visit_view(self, item)
+    class(Visitor), intent(inout) :: self
+    class(IValue), intent(in) :: item
+    self%seen = self%seen + item%value()
+end subroutine
+subroutine note_view(item, n)
+    class(IValue), intent(in) :: item
+    integer, intent(out) :: n
+    n = item%value()
+end subroutine
+function make_cell() result(c)
+    type(Cell) :: c
+end function
+subroutine calls(v, t, x)
+    type(Visitor), intent(inout) :: v
+    type(Tally), intent(inout) :: t
+    type(Cell), intent(in) :: x
+    integer :: n
+    call v%visit(x)
+    call v%visit(Cell(2))
+    call v%visit(item=make_cell())
+    call t%visit(x)
+    call v%note(x, n)
+    call v%note(n=n, item=Cell(3))
+end subroutine
+end module
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    LCompilers::diag::Diagnostics verified;
+    CHECK(LCompilers::asr_verify(*result.result, true, verified));
+    INFO(verified.render2());
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("generic_binding_m"));
+    auto *calls = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("calls"));
+    std::vector<ASR::SubroutineCall_t*> references;
+    for (size_t i = 0; i < calls->n_body; i++) {
+        if (ASR::is_a<ASR::SubroutineCall_t>(*calls->m_body[i])) {
+            references.push_back(ASR::down_cast<ASR::SubroutineCall_t>(calls->m_body[i]));
+        }
+    }
+    REQUIRE(references.size() == 6);
+    auto *visit_view = module->m_symtab->get_symbol("visit_view");
+    auto *note_view = module->m_symtab->get_symbol("note_view");
+    for (size_t i = 0; i < references.size(); i++) {
+        auto *binding = ASRUtils::symbol_get_past_external(references[i]->m_name);
+        REQUIRE(ASR::is_a<ASR::StructMethodDeclaration_t>(*binding));
+        auto *procedure = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(binding)->m_proc);
+        bool pass = i < 4;
+        CHECK(procedure == (pass ? visit_view : note_view));
+        REQUIRE(references[i]->n_args == 2);
+        CHECK(ASR::is_a<ASR::TraitPack_t>(*references[i]->m_args[pass ? 1 : 0].m_value));
+    }
+}
+
 TEST_CASE("Runtime trait slots retain diamonds and independent nominal origins") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

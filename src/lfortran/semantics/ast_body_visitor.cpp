@@ -9281,36 +9281,6 @@ public:
                     current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 }
 
-                // If GenericProcedure resolves to a parent struct symbol, resolve the procedure names again with the original struct symbol
-                if (v_expr &&
-                    x.n_member >= 1 &&
-                    ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) && !ASRUtils::is_class_type(ASRUtils::expr_type(v_expr)) &&
-                    (ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(v_expr)))) !=
-                        ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
-                    for (size_t i = 0; i < p->n_procs; i++) {
-                        final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
-                                        to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
-                                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
-                        final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
-                            final_sym, current_scope);
-                        ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
-                        Location l = x.base.base.loc;
-                        // TODO: Add error message here
-                        if (ASRUtils::select_func_subrout(cp->m_proc, args_with_mdt, l,
-                            [&](const std::string &msg, const Location &loc) {
-                                diag.add(Diagnostic(
-                                    msg,
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{loc})
-                                    }));
-                                throw SemanticAbort();
-                                })) {
-                                    break;
-                                }
-                    }
-                    break;
-                }
-
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = select_generic_specific(args_with_mdt, *p, x.base.base.loc, true);
@@ -9319,16 +9289,33 @@ public:
                 }
                 ASR::symbol_t* func_sym = p->m_procs[idx];
 
-                // Case: GenericProcedure is present in abstract class and called from derived class object
+                // A generic binding names its specific binding, which the
+                // type of the passed object may override, including when
+                // the generic is inherited from a parent type.
                 if (x.n_member >= 1) {
                     func_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(func_sym),
                                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
                 }
-                // Create ExternalSymbol for procedures in different modules.
-                if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(func_sym)) ) {
-                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_sym));
+                // A specific procedure has its actuals checked and associated
+                // below. The actuals of a type-bound specific, which may be
+                // borrowed as trait views, are associated here as in a
+                // generic function reference; its binding decides which
+                // dummy, if any, receives the passed object.
+                ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(func_sym);
+                if( ASR::is_a<ASR::Function_t>(*specific) ) {
+                    f = ASR::down_cast<ASR::Function_t>(specific);
+                } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*specific)) {
+                    ASR::StructMethodDeclaration_t *binding =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(specific);
+                    ASR::symbol_t *procedure = ASRUtils::symbol_get_past_external(binding->m_proc);
+                    if (ASR::is_a<ASR::Function_t>(*procedure)) {
+                        adapt_runtime_trait_arguments(args,
+                            *ASR::down_cast<ASR::Function_t>(procedure),
+                            binding->m_is_nopass ? SIZE_MAX : ASRUtils::get_pass_arg_index(specific));
+                    }
                 }
+                // Create ExternalSymbol for procedures in different modules.
                 final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     func_sym, current_scope);
                 break;
