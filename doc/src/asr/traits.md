@@ -957,10 +957,14 @@ fresh destinations, function results and structure constructors, and `_12` the
 effects of holder copies through ordinary and pointer dummies. `_13` and `_14`
 cover generic and template instantiation, adoption and SELECT TYPE views, the
 latter from scopes that cannot see the component's contract.
-`traits_runtime_component_03_oracle` supplies a standard Fortran counterpart
-for the interface/copying operations without relying on reference-compiler
-finalization omissions. `continue_compilation_traits_02` collects the readonly,
-PURE, constructor, `move_alloc` and PURE instantiation diagnostics.
+`_15` combines a final subroutine of the containing type with a component
+type's defined assignment: neither runs for the copy of the expression, the
+variable's own component is assigned after finalization and the payload's in
+a fresh default-initialized payload. `traits_runtime_component_03_oracle`
+supplies a standard Fortran counterpart for the interface/copying operations
+without relying on reference-compiler finalization omissions.
+`continue_compilation_traits_02` collects the readonly, PURE, constructor,
+`move_alloc` and PURE instantiation diagnostics.
 
 ## Persistent scalar pointer views (R3)
 
