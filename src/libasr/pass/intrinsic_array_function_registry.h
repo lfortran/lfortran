@@ -2496,7 +2496,10 @@ namespace Cshift {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
         for(int i=0; i<array_rank; i++){
-            result_dims.push_back(al, b.set_dim(array_dims[i].m_start, array_dims[i].m_length));
+            // The result has the shape of `array` but its lower bounds are 1,
+            // so do not copy the lower bounds of `array`.
+            ASR::expr_t* start = array_dims[i].m_start ? b.i32(1) : nullptr;
+            result_dims.push_back(al, b.set_dim(start, array_dims[i].m_length));
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
@@ -2544,7 +2547,8 @@ namespace Cshift {
         }
         declare_basic_variables(cshift_fn_name);
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
-        fill_func_arg("shift", arg_types[1]);
+        fill_func_arg("shift", is_shift_array
+            ? duplicate_type_with_empty_dims(al, arg_types[1]) : arg_types[1]);
         ASR::ttype_t* return_type_ = return_type;
         /*
             cshift(array, shift, dim)
