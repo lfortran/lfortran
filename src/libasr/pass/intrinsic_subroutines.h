@@ -1350,6 +1350,13 @@ namespace MoveAlloc {
             !ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_args[1])),
             "Runtime trait ownership cannot use an unlowered move_alloc intrinsic",
             x.base.base.loc, diagnostics);
+        for (size_t i = 0; i < 2; i++) {
+            ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[i]);
+            ASRUtils::require_impl(ASRUtils::is_array(type) ||
+                    !ASRUtils::contains_trait_owner(type),
+                "A scalar owning runtime trait components cannot use the move_alloc lowering",
+                x.base.base.loc, diagnostics);
+        }
     }
 
     static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
@@ -1359,6 +1366,14 @@ namespace MoveAlloc {
             if (ASRUtils::is_trait_owner(ASRUtils::expr_type(expr))) {
                 diag.semantic_error_label(
                     "move_alloc for runtime trait owners is not implemented yet", {loc}, "");
+                return nullptr;
+            }
+            // The scalar lowering copies FROM and then deallocates it, which
+            // would finalize the payloads it is meant to move.
+            if (!ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
+                    ASRUtils::contains_trait_owner(ASRUtils::expr_type(expr))) {
+                diag.semantic_error_label("move_alloc of a scalar with runtime trait "
+                    "components is not implemented yet", {loc}, "");
                 return nullptr;
             }
             

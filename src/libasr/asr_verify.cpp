@@ -1,6 +1,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -110,6 +111,10 @@ private:
     bool _inside_template = false;
     bool _inside_trait_subroutine = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
+    // Procedures whose effect flags must retain the trait lifecycle effects
+    // they reach. They are checked once the whole unit has been verified, so
+    // the summary only follows references the verifier has already checked.
+    std::vector<const Function_t*> trait_lifecycle_callers;
 
 public:
     // See ASRVerifyOptions::string_length_arguments.
@@ -130,6 +135,18 @@ public:
     // let the comparison fall back to a structural one.
     ASR::expr_t* type_context(ASR::expr_t *e) {
         return check_external ? e : nullptr;
+    }
+
+    static bool in_loaded_module(const SymbolTable *scope) {
+        for (; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                auto *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)) {
+                    return ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod;
+                }
+            }
+        }
+        return false;
     }
 
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
@@ -219,7 +236,20 @@ public:
                 this->visit_expr(*down_cast<expr_t>(item));
             }
         }
+        verify_reached_trait_lifecycle_effects(x);
         current_symtab = nullptr;
+    }
+
+    void verify_reached_trait_lifecycle_effects(const TranslationUnit_t &unit) {
+        if (trait_lifecycle_callers.empty()) return;
+        ASR::TraitLifecycleSummary summary(unit.m_symtab);
+        for (const Function_t *caller : trait_lifecycle_callers) {
+            require_with_loc_id(summary.effect(const_cast<Function_t&>(*caller)) !=
+                    ASR::TraitLifecycleSummary::Effect::Lifecycle,
+                "asr.verify.trait_owner.reached_lifecycle_effects",
+                "A procedure must retain the unchecked dynamic trait lifecycle "
+                "effects of the procedures it calls", caller->base.base.loc);
+        }
     }
 
     void visit_Select(const Select_t& x) {
@@ -2392,6 +2422,7 @@ public:
             bool defining = true) {
         auto *type = typed_expr_type(owner);
         require_with_loc_id(owner && (ASR::is_a<Var_t>(*owner) ||
+                ASR::is_a<StructInstanceMember_t>(*owner) ||
                 (!defining && ASR::is_a<FunctionCall_t>(*owner))) &&
                 ASRUtils::is_trait_owner(type),
             "asr.verify.trait_owner.storage",
@@ -2400,14 +2431,21 @@ public:
             visit_expr(*owner);
             return ASRUtils::extract_type(type);
         }
-        auto *variable = ASRUtils::EXPR2VAR(owner);
-        require_with_loc_id(!defining || variable->m_intent != intentType::In,
+        if (!check_external) {
+            visit_expr(*owner);
+            return ASRUtils::extract_type(type);
+        }
+        auto *variable = ASRUtils::trait_owner_variable(owner);
+        require_with_loc_id(variable != nullptr,
+            "asr.verify.trait_owner.storage",
+            "An owning operation must designate a declared allocatable variable", loc);
+        require_with_loc_id(!defining || ASRUtils::trait_owner_is_definable(owner),
             "asr.verify.trait_owner.definable",
             "An owning operation cannot define an intent(in) allocation slot", loc);
         visit_expr(*owner);
         auto *saved_scope = current_symtab;
         current_symtab = variable->m_parent_symtab;
-        visit_ttype(*type);
+        visit_ttype(*variable->m_type);
         current_symtab = saved_scope;
         return ASRUtils::extract_type(type);
     }
@@ -3025,9 +3063,28 @@ public:
                 "dummy argument " + std::to_string(i + 1));
             visit_expr(*x.m_args[i]);
         }
+        if (ASRUtils::has_trait_out_cleanup(x) ||
+                ASRUtils::has_trait_component_cleanup(x.m_symtab)) {
+            require_id(!ASRUtils::get_FunctionType(x)->m_pure &&
+                    !x.m_side_effect_free && !x.m_deterministic,
+                "asr.verify.trait_component.cleanup_effects",
+                "Trait ownership cleanup must retain its unchecked dynamic lifecycle effects");
+        }
         for (size_t i=0; i<x.n_body; i++) {
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
+        }
+        if (check_external && (x.m_side_effect_free || x.m_deterministic)) {
+            bool own_effects = ASR::has_trait_lifecycle_effects(x.m_body, x.n_body);
+            require_id(!own_effects,
+                "asr.verify.trait_owner.lifecycle_effects",
+                "Trait lifecycle operations must retain their unchecked dynamic effects");
+            // A loaded procedure retains what its own compilation could see;
+            // overrides compiled here may add to what it reaches.
+            if (!own_effects && !in_loaded_module(x.m_symtab) &&
+                    ASR::TraitLifecycleSummary::analyzable(x)) {
+                trait_lifecycle_callers.push_back(&x);
+            }
         }
         if (x.m_return_var) {
             require_own_symbol(x.m_return_var, func_name, "result variable");
@@ -3608,7 +3665,7 @@ public:
                 x.m_parent_symtab->asr_owner &&
                 ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
                 (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
-                !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
+                !ASR::is_a<Union_t>(*ASR::down_cast<symbol_t>(
                     x.m_parent_symtab->asr_owner));
             bool association = x.m_storage == storage_typeType::Association &&
                 ASR::is_a<TraitObjectType_t>(*x.m_type);
@@ -4132,7 +4189,7 @@ public:
 
     template <typename T>
     void verify_trait_deallocation(const T &x, bool implicit = false) {
-        std::set<symbol_t*> owners;
+        std::vector<expr_t*> owners;
         for (size_t i = 0; i < x.n_vars; i++) {
             auto *association = ASRUtils::association_variable(x.m_vars[i]);
             require_id(!association || (association->m_intent != intentType::In &&
@@ -4142,13 +4199,19 @@ public:
             auto *type = typed_expr_type(x.m_vars[i]);
             if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
             verify_trait_owner(x.m_vars[i], x.base.base.loc);
-            require_id(!implicit ||
-                    ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent == intentType::Local,
+            // A component is released while its definable containing object
+            // takes a new value, such as an omitted constructor component.
+            require_id(!implicit || ASR::is_a<StructInstanceMember_t>(*x.m_vars[i]) ||
+                    (ASR::is_a<Var_t>(*x.m_vars[i]) &&
+                     ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent == intentType::Local),
                 "asr.verify.trait_owner.caller_lifetime",
                 "Implicit scope cleanup must not destroy a caller-owned dummy slot or result");
-            require_id(owners.insert(&ASRUtils::EXPR2VAR(x.m_vars[i])->base).second,
-                "asr.verify.trait_owner.duplicate_cleanup",
-                "One deallocation cannot destroy the same owner twice");
+            for (auto *previous : owners) {
+                require_id(!ASRUtils::trait_owner_same_slot(previous, x.m_vars[i]),
+                    "asr.verify.trait_owner.duplicate_cleanup",
+                    "One deallocation cannot destroy the same owner twice");
+            }
+            owners.push_back(x.m_vars[i]);
         }
     }
 
@@ -4754,7 +4817,9 @@ public:
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(formal_type)) &&
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)) &&
                         (slot ? ASRUtils::is_trait_owner(actual_type) &&
-                            ASR::is_a<Var_t>(*passed_arg_expr)
+                            (check_external ? ASRUtils::trait_owner_variable(passed_arg_expr) != nullptr
+                                : ASR::is_a<Var_t>(*passed_arg_expr) ||
+                                  ASR::is_a<StructInstanceMember_t>(*passed_arg_expr))
                             : pointer ? pointer_actual
                             : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
                         ASRUtils::check_equal_type(formal_type, actual_type,
@@ -4762,6 +4827,10 @@ public:
                         "asr.verify.trait_owner.argument",
                         "Trait arguments require the same declared contract and explicit slot or borrow association",
                         passed_arg_expr->base.loc);
+                    if (slot) {
+                        verify_trait_owner(passed_arg_expr, passed_arg_expr->base.loc,
+                            callee_param->m_intent != intentType::In);
+                    }
                     if (pointer && callee_param->m_intent != intentType::In) {
                         verify_trait_pointer(passed_arg_expr, passed_arg_expr->base.loc, true);
                     }
@@ -5443,9 +5512,7 @@ public:
             if (x.m_var_expr) {
                 auto *mold_type = typed_expr_type(x.m_var_expr);
                 bool owner_variable = ASRUtils::is_trait_owner(mold_type) &&
-                    ASR::is_a<Var_t>(*x.m_var_expr) &&
-                    ASRUtils::get_variable_from_symbol(
-                        ASR::down_cast<Var_t>(x.m_var_expr)->m_v);
+                    ASRUtils::trait_owner_variable(x.m_var_expr);
                 require_id(mold_type &&
                         (ASRUtils::is_trait_pointer(mold_type) || owner_variable),
                     "asr.verify.trait_pointer.null_mold",
@@ -5539,7 +5606,8 @@ public:
                     static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated) &&
                 x.n_args == 1 && x.m_args &&
                 ASRUtils::is_trait_owner(typed_expr_type(x.m_args[0]))) {
-            require_id(ASR::is_a<Var_t>(*x.m_args[0]),
+            require_id(check_external ? ASRUtils::trait_owner_variable(x.m_args[0]) != nullptr
+                    : ASR::is_a<Var_t>(*x.m_args[0]) || ASR::is_a<StructInstanceMember_t>(*x.m_args[0]),
                 "asr.verify.trait_owner.inquiry_variable",
                 "An allocated inquiry requires a variable, not a function result");
         }

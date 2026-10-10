@@ -1,0 +1,27 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/continue_compilation_traits_03.f90:2:5 - 5:18
+  |
+2 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+5 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
+  --> tests/errors/continue_compilation_traits_03.f90:30:9
+   |
+30 |         call move_alloc(a, b)
+   |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
+  --> tests/errors/continue_compilation_traits_03.f90:34:9
+   |
+34 |         call move_alloc(a, b)
+   |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
+  --> tests/errors/continue_compilation_traits_03.f90:38:9
+   |
+38 |         call move_alloc(from=a, to=b)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

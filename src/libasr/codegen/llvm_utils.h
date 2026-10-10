@@ -916,11 +916,13 @@ class ASRToLLVMVisitor;
             llvm::Value* trait_malloc(llvm::Type* type);
             llvm::Value* create_trait_value(llvm::StructType* type,
                 llvm::Value* view, llvm::Value* source);
-            void destroy_trait_value(llvm::Value* view);
+            void destroy_trait_value(llvm::Value* view, bool finalize = true);
             void retain_trait_owner(llvm::Value* storage, llvm::Value* owner);
             void release_trait_owners(llvm::Value* storage);
             void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot,
                 llvm::StructType* type);
+            void copy_trait_component(llvm::Value* source, llvm::Value* destination,
+                llvm::StructType* type, bool use_defined_assignment, bool finalize_destination);
             llvm::Value* value_lifecycle_function(llvm::Value* vptr,
                 unsigned entry, llvm::FunctionType* type);
 
@@ -1457,7 +1459,7 @@ class ASRToLLVMVisitor;
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
             switch (t_past->type) {
                 case ASR::TraitObjectType:
-                    llvm_utils_->destroy_trait_value(ptr);
+                    llvm_utils_->destroy_trait_value(ptr, invoke_user_finalizers_);
                     break;
                 case ASR::StructType:
                 case ASR::Array:{

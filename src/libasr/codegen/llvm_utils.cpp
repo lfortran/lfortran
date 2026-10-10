@@ -10397,12 +10397,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return copy;
     }
 
-    void LLVMUtils::destroy_trait_value(llvm::Value* view) {
+    void LLVMUtils::destroy_trait_value(llvm::Value* view, bool finalize) {
         create_if_else(builder->CreateIsNotNull(view), [&]() {
             auto *payload = trait_field(view, 1);
             auto *destroy = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {i8_ptr}, false);
-            trait_lifecycle_call(trait_field(view, 2), TraitLifecycleEntry::Destroy,
+            trait_lifecycle_call(trait_field(view, 2),
+                finalize ? TraitLifecycleEntry::Destroy : TraitLifecycleEntry::Discard,
                 destroy, {payload});
             lfortran_free(payload);
             lfortran_free(view);
@@ -10477,6 +10478,27 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         trait_lifecycle_call(witness, TraitLifecycleEntry::Discard, release, {source});
         lfortran_free(source);
         lfortran_free(snapshot);
+    }
+
+    void LLVMUtils::copy_trait_component(llvm::Value* source, llvm::Value* destination,
+            llvm::StructType* type, bool use_defined_assignment, bool finalize_destination) {
+        create_if_else(builder->CreateIsNotNull(source), [&]() {
+            auto *copy = create_trait_value(type, source, trait_field(source, 1));
+            auto *old = CreateLoad2(type->getPointerTo(), destination);
+            destroy_trait_value(old, finalize_destination);
+            if (use_defined_assignment) {
+                // Allocatable components are recreated before component assignment,
+                // including self-assignment; the source snapshot stays independent.
+                builder->CreateStore(llvm::ConstantPointerNull::get(type->getPointerTo()), destination);
+                assign_trait_value(destination, copy, type);
+            } else {
+                builder->CreateStore(copy, destination);
+            }
+        }, [&]() {
+            auto *old = CreateLoad2(type->getPointerTo(), destination);
+            destroy_trait_value(old, finalize_destination);
+            builder->CreateStore(llvm::ConstantPointerNull::get(type->getPointerTo()), destination);
+        });
     }
 
     llvm::GlobalVariable* LLVMStruct::get_trait_lifecycle(
@@ -11282,6 +11304,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
+            // F2023 7.5.6.3 finalizes the variable after expr is evaluated, so the
+            // value is first copied into storage that the variable's final
+            // subroutines cannot reach. Like other compiler copies, the snapshot is
+            // defined without defined assignment and released without finalization.
+            llvm::Value* value_snapshot = nullptr;
+            ASR::Struct_t* snapshot_struct = struct_sym;
+            if (finalize_dest && !is_src_class && src->getType()->isPointerTy() &&
+                    !ASRUtils::is_unlimited_polymorphic_type(struct_sym) &&
+                    ASRUtils::struct_needs_finalization(&struct_sym->base)) {
+                llvm::Type* value_type = llvm_utils->getStructType(struct_sym, module);
+                value_snapshot = llvm_utils->CreateAlloca(value_type);
+                builder->CreateStore(llvm::Constant::getNullValue(value_type), value_snapshot);
+                allocate_struct_members(struct_sym, value_snapshot, struct_sym->m_struct_signature);
+                struct_deepcopy(src_expr, src, src_ty, src_ty,
+                    builder->CreateBitCast(value_snapshot, src->getType()), module, false, false);
+                src = builder->CreateBitCast(value_snapshot, src->getType());
+            }
             if (finalize_dest) {
                 call_struct_finalize_fn(dest, dest_ty,
                     ASR::down_cast<ASR::Struct_t>(
@@ -11403,6 +11442,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     llvm::Value* dest_member = llvm_utils->create_gep2(
                         llvm_utils->name2dertype[der_type_name], dest, mem_idx);
+                    if (ASRUtils::is_trait_owner(member_type)) {
+                        llvm_utils->copy_trait_component(src_member, dest_member,
+                            llvm_utils->getTraitType(member_type), use_defined_assignment,
+                            finalize_dest);
+                        continue;
+                    }
                     llvm::Value* dest_member_orig = dest_member;
                     llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
@@ -11727,6 +11772,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 } else {
                     struct_sym = nullptr;
                 }
+            }
+            if (value_snapshot) {
+                builder->CreateCall(finalizer_instnace.get_storage_release_fn(
+                    snapshot_struct->m_struct_signature, snapshot_struct),
+                    {builder->CreateBitCast(value_snapshot, llvm_utils->i8_ptr)});
             }
         }
 

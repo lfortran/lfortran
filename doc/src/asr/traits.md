@@ -806,7 +806,7 @@ diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
-Trait arrays, pointer results, components, general ASSOCIATE
+Trait arrays, pointer results, general ASSOCIATE
 views, `move_alloc`, and mutable receivers remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
@@ -885,6 +885,133 @@ Both runtime selection orders observe 17 and 29, and the archive hash is checked
 after client compilation, linking and execution. Normal/fast native CTests and
 their complete source-archive fixture closure are registered.
 
+## Scalar allocatable trait components
+
+Ordinary derived types can contain scalar owning trait components:
+
+```fortran
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+```
+
+Components start unallocated and support assignment, typed/SOURCE/MOLD
+allocation, `allocated`, explicit deallocation, allocation-slot dummy arguments,
+typed NULL molds and concrete SELECT TYPE inspection. Nested member calls such
+as `object%item%value()` borrow the selected payload without changing its witness.
+Readonly containing objects cannot define or deallocate their owner components.
+Pointer components and arrays of trait objects remain outside this slice;
+an array of an ordinary containing derived type is different and is supported.
+Structure constructors may omit an owner component or give it `null()`, but a
+component value, VALUE dummies of containing types and coarray components are
+not implemented yet. SEQUENCE, BIND(C) and union types cannot own trait
+components because they have no fixed storage layout for them.
+
+Containing-object assignment snapshots its source before replacing allocatable
+components. It gives each replacement fresh storage and preserves the source's
+selected methods. Component-defined assignment sees the newly initialized
+destination, not the previously allocated payload. Self-assignment preserves
+values while still performing the required cleanup. Destruction recurses through
+nested and inherited components, including INTENT(OUT), constructor-result
+lifetimes, ordinary scope exit and storage-only program teardown.
+
+When finalizing the variable can run a final subroutine, the whole value of
+expr is first copied into storage that the variable's finalization cannot
+reach (F2023 7.5.6.3 finalizes the variable after expr is evaluated). That
+copy is defined without defined assignment and released without finalization,
+so a final subroutine that changes or deallocates its own components cannot
+change the value being assigned, as in `x = x`. Function results owning trait
+components are released after the statement that references them, as F2023
+9.7.3.2 requires for allocated components of function results.
+
+The lifecycle rules follow Fortran 2023 10.2.1.3 and 7.5.6.2-3. In particular,
+containing-object self-assignment deallocates/recreates an allocated component
+and finalizes its old payload. Fortran 2018's wording differed for finalization
+of such subobjects. Some GFortran configurations also omit finalization during
+direct polymorphic dynamic-type replacement; those observations are retained as
+reference limitations rather than weakened trait expectations.
+
+Owned-component assignment, results and cleanup have unchecked dynamic
+lifecycle effects, just like standalone owners. PURE procedures cannot perform
+those operations or own local component storage without an effect guarantee.
+Assigning to or deallocating through a pointer to a containing object counts,
+because it defines or destroys the target's owned components; pointer
+association does not. So do `MOVE_ALLOC` of arrays of containing objects,
+which deallocates an allocated TO, and temporaries of such types other than
+function results, such as the result of `RESHAPE`, `PACK` or an array
+constructor. Every
+procedure whose body performs such an operation is neither side-effect free
+nor deterministic, so a PURE caller rejects it. A defined assignment is judged
+by its procedure instead. Readonly PURE observation remains supported when the
+contract's message is PURE.
+
+A procedure also has these effects when it calls one that has them, however
+the bodies are ordered. Once every body of the unit exists, including
+contained procedures and instantiations, `ASR::TraitLifecycleSummary` collects
+each procedure's calls: ordinary and type-bound calls (including overrides an
+extension visible here declares), defined assignments and operators, trait
+slots and calls in specification expressions. It solves them as a fixpoint,
+so recursion is covered, and the effect flags of every procedure that reaches
+lifecycle effects are cleared. Procedures loaded from module files are
+analyzed through their bodies; their own compilation already cleared their
+flags. A callee known only through an interface (an external, dummy or
+pointer procedure, a deferred binding, an override of a binding of a module
+type compiled elsewhere, an impure trait slot) has unknown effects unless the
+interface is pure: it keeps its flags, but a PURE procedure that reaches it is
+rejected, as it would be had the callee been analyzed first. A PURE procedure
+that reaches an impure procedure only through ordinary effects such as PRINT,
+when the bodies are in the opposite order, is still accepted, as before. Once
+the whole unit has been verified, the verifier recomputes the summary for the
+procedures compiled in the unit and requires their flags to retain every
+effect they are known to reach. The summary only sees an unresolved or
+malformed reference as unknown effects; the verifier reports the reference.
+
+`MOVE_ALLOC` of arrays of containing objects moves the array and finalizes only
+the old payloads of TO. The scalar lowering copies FROM and then deallocates
+it, which would finalize the payloads it moves, so `MOVE_ALLOC` of a scalar
+containing object, polymorphic or not, is diagnosed as not implemented yet, and
+the verifier rejects that lowering for it. Array-by-data specialization keeps
+the descriptor arguments of a procedure that names runtime trait storage, such
+as a procedure taking an array of containing objects or the helper of `PACK`:
+the trait contracts, slot procedures and inspection types it imports into its
+own scopes would not be visible from a specialized copy.
+
+A containing type can be a generic or template argument, adopt another trait
+and be inspected by SELECT TYPE. An instantiation recomputes these effects
+from its own locals and body; instantiating a PURE generic procedure with such
+a type is diagnosed. Types built in scopes that cannot see a component's
+contract, such as a structure constructor, an array constructor type-spec, a
+SELECT TYPE guard or an adoption in a client module, import that contract.
+
+`traits_runtime_component_01` through `_09` cover scalar/nested lifecycles,
+fresh defined assignment, constructors, imported private contracts, renamed
+separate modules, array-element owners, single receiver evaluation and generic
+methods. `_10` checks finalization during containing-object assignment, `_11`
+fresh destinations, function results and structure constructors, and `_12` the
+effects of holder copies through ordinary and pointer dummies. `_13` and `_14`
+cover generic and template instantiation, adoption and SELECT TYPE views, the
+latter from scopes that cannot see the component's contract.
+`_15` combines a final subroutine of the containing type with a component
+type's defined assignment: neither runs for the copy of the expression, the
+variable's own component is assigned after finalization and the payload's in
+a fresh default-initialized payload. `_16` keeps procedures that call later
+procedures with these effects valid outside PURE code, and keeps PURE
+procedures valid that reach only harmless defined assignments or readonly
+observation. `traits_runtime_component_03_oracle` supplies a standard Fortran
+counterpart for the interface/copying operations without relying on
+reference-compiler finalization omissions. `continue_compilation_traits_02`
+collects the readonly, PURE, constructor, `move_alloc`, temporary and PURE
+instantiation diagnostics, including PURE procedures that reach the effects
+through later, recursive, contained, type-bound, dummy, defined-assignment and
+generic calls. `traits_component_loaded_pure_01` and `_02` check PURE callers
+of procedures loaded from a separately compiled module, which reach the effects
+through a later procedure and a dummy procedure. `_17` passes arrays of
+containing objects to procedures of a client module that imports only the
+types, which allocate, assign, inspect, copy in a BLOCK, PACK, `MOVE_ALLOC`
+and deallocate them, and `continue_compilation_traits_03` collects the
+diagnostics for `MOVE_ALLOC` of scalar, polymorphic and nested containing
+objects.
+
 ## Persistent scalar pointer views (R3)
 
 Rank and corank eligibility is checked before pointer/owner initialization.
@@ -943,7 +1070,7 @@ LFortran lowering failure. `traits_runtime_pointer_separate_01` also compiles a
 contract-only consumer before its providers, then checks forwarding against a
 frozen provider archive in normal and fast modes.
 Pointer results, allocation/deallocation through
-trait pointers and arrays/components remain
+trait pointers, pointer components and arrays of trait objects remain
 subsequent work.
 
 ## Named parent projections (R3)
@@ -1129,7 +1256,7 @@ before any matching/default decision, even when the construct has no default.
 
 A trait name in TYPE IS or CLASS IS is diagnosed: inspection is not an
 unrelated-interface conformance query. Intrinsic guards, runtime trait arrays,
-components, pointer results, unrestricted generic methods, and mutation-message syntax are
+pointer components, pointer results, unrestricted generic methods, and mutation-message syntax are
 not added by this scalar slice. Parameterized implementation declarations remain
 part of the separate generic-derived-type work; inspection reuses the existing
 concrete kind-specialized metadata rather than introducing another type system.

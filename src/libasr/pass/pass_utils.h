@@ -1711,7 +1711,7 @@ namespace LCompilers {
                 a_args.push_back(al, x->m_return_var);
                 x->m_args = a_args.p;
                 x->n_args = a_args.n;
-                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(x->m_return_var))) {
+                if (ASRUtils::contains_trait_owner(ASRUtils::expr_type(x->m_return_var))) {
                     x->m_side_effect_free = false;
                     x->m_deterministic = false;
                 }

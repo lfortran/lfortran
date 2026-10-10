@@ -2,6 +2,7 @@
 #include <set>
 
 #include <libasr/asr_utils.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -9,6 +10,15 @@
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
+
+// An instantiation for a type that owns runtime trait components can have
+// dynamic lifecycle effects that its generic definition does not have.
+static void retain_trait_lifecycle_effects(ASR::Function_t &function) {
+    if (ASR::has_trait_lifecycle_effects(function)) {
+        function.m_side_effect_free = false;
+        function.m_deterministic = false;
+    }
+}
 
 namespace LPython {
 
@@ -257,6 +267,7 @@ public:
         new_f->n_body = body.size();
         new_f->m_dependencies = deps_vec.p;
         new_f->n_dependencies = deps_vec.size();
+        retain_trait_lifecycle_effects(*new_f);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(new_sym_name);
         return t;
@@ -1312,6 +1323,13 @@ public:
         ASR::symbol_t *f = ASR::down_cast<ASR::symbol_t>(result);
         target_scope->add_symbol(new_sym_name, f);
         symbol_subs[x->m_name] = f;
+        ASR::Function_t &instance = *ASR::down_cast<ASR::Function_t>(f);
+        if (ASRUtils::get_FunctionType(instance)->m_pure &&
+                ASR::has_trait_lifecycle_effects(instance)) {
+            report_error("this instantiation adds runtime trait component lifecycle "
+                "effects, which are not allowed inside a pure procedure", x->base.base.loc);
+        }
+        retain_trait_lifecycle_effects(instance);
 
         return f;
     }
@@ -2363,6 +2381,7 @@ public:
         new_f->n_body = body.size();
         new_f->m_dependencies = deps_vec.p;
         new_f->n_dependencies = deps_vec.size();
+        retain_trait_lifecycle_effects(*new_f);
     }
 
     void instantiate_Variable(ASR::Variable_t* x) {
