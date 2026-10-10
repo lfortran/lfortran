@@ -13519,6 +13519,14 @@ public:
                         al, v_expr->base.loc, v_expr, v_ext, struct_t_mem_type, nullptr));
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
+            // A COMMON object is accessed through its block's struct member.
+            // Refer to that member up front, so that the implied bounds and
+            // lengths computed from `v_Var` below (e.g. for `a(:)`) do not
+            // reference the local declaration, which is removed later.
+            ASR::expr_t* common_member = replace_with_common_block_variables(v_Var);
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*common_member)) {
+                v_Var = common_member;
+            }
             if (is_assumed_rank) {
                 ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, 
                     v_Var, ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, 
@@ -17470,6 +17478,26 @@ public:
                 dims.push_back(al, dim);
                 new_shape_size *= ASR::down_cast<ASR::IntegerConstant_t>(dim.m_length)->m_n;
             }
+            // Compile-time values of `source` and `pad`, used to apply
+            // `pad` and a constant `order` at compile time below. A named
+            // constant or array constructor `source` is only folded when
+            // `order` is constant.
+            ASR::expr_t* array_value = nullptr;
+            if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                array_value = array;
+            } else if (order_for_eval && ASR::is_a<ASR::ArrayConstant_t>(*order_for_eval)) {
+                array_value = ASRUtils::expr_value(array);
+                if (array_value && !ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+                    array_value = nullptr;
+                }
+            }
+            ASR::expr_t* pad_value = pad_expr;
+            if (pad_value && !ASR::is_a<ASR::ArrayConstant_t>(*pad_value)) {
+                pad_value = ASRUtils::expr_value(pad_expr);
+                if (pad_value && !ASR::is_a<ASR::ArrayConstant_t>(*pad_value)) {
+                    pad_value = nullptr;
+                }
+            }
             int64_t array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(array));
             if (array_size != -1 &&  new_shape_size > array_size) {
                 if (!pad){
@@ -17478,33 +17506,48 @@ public:
                                         std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
                                         std::to_string(array_size), {x.base.base.loc})}));
                     throw SemanticAbort();
-                } else if ( ASR::is_a<ASR::ArrayConstant_t>(*pad_expr) ) {
-                    if ( ASR::is_a<ASR::ArrayConstant_t>(*array) ) {
-                        ASR::ttype_t* a_type = ASRUtils::expr_type(array);
-                        a_type = ASRUtils::type_get_past_pointer(a_type);
-                        ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
-                        Vec<ASR::expr_t*> elements;
-                        elements.reserve(al, array_size);
-                        ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
-                        ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_expr);
-                        for (int i = 0; i < array_size; i++) {
-                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
-                        }
-                        int64_t diff = new_shape_size - array_size;
-                        int pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
-                        for (int i = 0; i < diff; i++) {
-                            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
-                        }
-                        size_t curr_idx = elements.size();
-                        ASR::ttype_t* new_type = ASRUtils::TYPE(
-                            ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
-                                            a_type_->m_physical_type, a_type_->m_memory_space)
-                        );
-                        void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
-                        array = ASRUtils::EXPR(
-                            ASRUtils::make_ArrayConstant_t_util(al, loc, data, new_type,
-                                                    ASR::arraystorageType::ColMajor)
-                        );
+                }
+                int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_expr));
+                if (pad_size == 0) {
+                    diag.add(Diagnostic("reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array",
+                                        Level::Error, Stage::Semantic, {Label("`pad` has size zero, but `shape` specifies size of " +
+                                        std::to_string(new_shape_size) + " which exceeds the `source` array size of " +
+                                        std::to_string(array_size), {pad->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (array_value && pad_value) {
+                ASR::ttype_t* a_type = ASRUtils::expr_type(array_value);
+                a_type = ASRUtils::type_get_past_pointer(a_type);
+                ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
+                int64_t value_size = ASRUtils::get_fixed_size_of_array(a_type);
+                int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(pad_value));
+                // Padding needs a non-empty `pad`; otherwise `source` is
+                // left unpadded so that it is not folded below
+                if (value_size != -1 && new_shape_size > value_size && pad_size > 0) {
+                    Vec<ASR::expr_t*> elements;
+                    elements.reserve(al, new_shape_size);
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
+                    ASR::ArrayConstant_t* const_pad = ASR::down_cast<ASR::ArrayConstant_t>(pad_value);
+                    for (int64_t i = 0; i < value_size; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_array, i));
+                    }
+                    int64_t diff = new_shape_size - value_size;
+                    for (int64_t i = 0; i < diff; i++) {
+                        elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, const_pad, i % pad_size));
+                    }
+                    size_t curr_idx = elements.size();
+                    ASR::ttype_t* new_type = ASRUtils::TYPE(
+                        ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
+                                        a_type_->m_physical_type, a_type_->m_memory_space)
+                    );
+                    void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
+                    array_value = ASRUtils::EXPR(
+                        ASRUtils::make_ArrayConstant_t_util(al, loc, data, new_type,
+                                                ASR::arraystorageType::ColMajor)
+                    );
+                    if (ASR::is_a<ASR::ArrayConstant_t>(*array)) {
+                        array = array_value;
                     }
                 }
             }
@@ -17529,19 +17572,17 @@ public:
                         throw SemanticAbort();
                     }
                 }
-                if (!ASR::is_a<ASR::ArrayConstant_t>(*array)) {
-                    if (ASR::is_a<ASR::ArrayConstructor_t>(*array) &&
-                        ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value != nullptr) {
-                        array = ASR::down_cast<ASR::ArrayConstructor_t>(array)->m_value;
-                    }
-                }
-                if (ASR::is_a<ASR::ArrayConstant_t>(*array) && ASR::is_a<ASR::ArrayConstant_t>(*newshape)){
-                    ASR::ttype_t* a_type = ASRUtils::expr_type(array);
+                // The permutation reads `product(shape)` elements, so it is
+                // only done when the (padded) `source` value has that many;
+                // otherwise `reshape` is evaluated at run time
+                if (array_value && ASRUtils::get_fixed_size_of_array(
+                        ASRUtils::expr_type(array_value)) >= new_shape_size) {
+                    ASR::ttype_t* a_type = ASRUtils::expr_type(array_value);
                     a_type = ASRUtils::type_get_past_pointer(a_type);
                     ASR::Array_t* a_type_ = ASR::down_cast<ASR::Array_t>(a_type);
                     Vec<ASR::expr_t*> elements_;
                     elements_.reserve(al, new_shape_size);
-                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array);
+                    ASR::ArrayConstant_t* const_array = ASR::down_cast<ASR::ArrayConstant_t>(array_value);
                     ASR::ArrayConstant_t* const_shape = ASR::down_cast<ASR::ArrayConstant_t>(newshape);
                     std::map<int, int> index_map;
                     for (int i=0; i<new_shape_size; i++){
@@ -17580,6 +17621,9 @@ public:
                         ASRUtils::make_ArrayConstant_t_util(al, loc, data, new_type,
                                                 ASR::arraystorageType::ColMajor)
                     );
+                    // `array` now has `pad` and `order` applied
+                    pad_expr = nullptr;
+                    order_expr = nullptr;
                 }
             }
         } else {
