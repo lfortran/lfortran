@@ -1,0 +1,13 @@
+{
+    "basename": "pass_transform_optional_argument_functions-proc_ptr_25-49c7daa",
+    "cmd": "lfortran --pass=transform_optional_argument_functions --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/proc_ptr_25.f90",
+    "infile_hash": "516807370c59461a2fdcbe5554aaa927e3a3f6ba500ff8363662d291",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_transform_optional_argument_functions-proc_ptr_25-49c7daa.stdout",
+    "stdout_hash": "93eb34c7a2ab0d0360160cf36680b7ca105dbc2afa45b9ae08b911c4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
