@@ -3457,6 +3457,11 @@ filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/namelist_implicit_type_01.f90"
+semantics_only_cc = true
+options = "--implicit-typing"
+
+[[test]]
 filename = "errors/mre_segfault.f90"
 continue_compilation = true
 
