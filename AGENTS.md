@@ -183,6 +183,8 @@ only once, redirect to a log file and then examine the log file.
 - Release only a main commit whose own Quick and Exhaustive runs, including
   applications, are green (re-run them if they were skipped). Quick or extended
   PR checks alone do not qualify a release.
+- Compiler caches are saved only on `main` and restored everywhere; keep
+  `save: ${{ github.ref == 'refs/heads/main' }}` on every cache step.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.

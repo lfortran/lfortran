@@ -87,7 +87,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -165,7 +166,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -309,7 +311,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Kernel
         shell: bash -e -l {0}

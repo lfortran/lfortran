@@ -197,6 +197,7 @@ jobs:
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
