@@ -27,4 +27,8 @@ program finalization_10
     if (nreleased /= 1) error stop 8
     if (.not. associated(started%counter%count)) error stop 9
     if (started%counter%count /= 1) error stop 10
+
+    ! The variables of the main program are not finalized when it ends
+    ! (F2018 7.5.6.4), so the counts are deallocated here.
+    deallocate(object%counter%count, started%counter%count)
 end program

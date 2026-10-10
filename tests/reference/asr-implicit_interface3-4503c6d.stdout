@@ -18,7 +18,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -55,7 +55,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -73,7 +73,7 @@
                                     (FunctionType
                                         [(Integer 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -107,7 +107,7 @@
                                         (FunctionType
                                             [(Integer 4)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -164,7 +164,7 @@
                         [(FunctionType
                             []
                             ()
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -201,7 +201,7 @@
                             (FunctionType
                                 [(Integer 4)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

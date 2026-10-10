@@ -10,6 +10,10 @@ namespace LCompilers {
         // modfile is being deserialized, where they are not yet resolved.
         bool check_external = true;
         bool require_main_program = false;
+        // Set once the string_length_arguments pass has run: every character
+        // dummy that ASRUtils::is_string_dummy_with_hidden_length() selects
+        // must then have its hidden length dummy, and every call must pass it.
+        bool string_length_arguments = false;
     };
 
     // Verifies that ASR is correctly constructed and contains valid Fortran

@@ -1505,6 +1505,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         aa.m_sym_subclass = nullptr;
         aa.m_codims = nullptr;
         aa.n_codims = 0;
+        set_dynamic_type_of_polymorphic_target(aa, target, value);
         alloc_args.push_back(al, aa);
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(al,
             loc, alloc_args.p, alloc_args.size())));
@@ -1621,10 +1622,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_sym_subclass = nullptr;
         alloc_arg.m_codims = nullptr;
         alloc_arg.n_codims = 0;
+        set_dynamic_type_of_polymorphic_target(alloc_arg, underlying_target, value);
         alloc_args.push_back(al, alloc_arg);
 
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
                 al, loc, alloc_args.p, alloc_args.size())));
+    }
+
+    // F2018 10.2.1.3: an allocatable polymorphic variable that is
+    // (re)allocated by an intrinsic assignment takes the dynamic type of
+    // the expression. When the expression is not polymorphic, that type is
+    // its declared type, so allocate the target with it.
+    void set_dynamic_type_of_polymorphic_target(ASR::alloc_arg_t& alloc_arg,
+            ASR::expr_t* target, ASR::expr_t* value) {
+        ASR::ttype_t* target_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(target));
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(value));
+        if (!ASRUtils::is_class_type(target_el_type) ||
+                !ASR::is_a<ASR::StructType_t>(*value_el_type) ||
+                ASRUtils::is_class_type(value_el_type)) {
+            return;
+        }
+        ASR::symbol_t* value_struct_sym =
+            ASRUtils::get_struct_sym_from_struct_expr(value);
+        if (value_struct_sym == nullptr) {
+            return;
+        }
+        alloc_arg.m_type = ASRUtils::make_StructType_t_util(al,
+            alloc_arg.loc, value_struct_sym, true);
+        alloc_arg.m_sym_subclass = value_struct_sym;
     }
 
     ASR::Variable_t* get_base_variable(ASR::expr_t* expr) {
