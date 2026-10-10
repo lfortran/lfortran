@@ -24997,12 +24997,19 @@ public:
                                 }
                             } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
                                 if (ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
-                                        LLVM::is_cptr_dummy_in_local_storage(*arg) &&
+                                        (LLVM::is_cptr_dummy_in_local_storage(*arg) ||
+                                         (arg->m_intent == ASR::intentType::In &&
+                                          LLVM::is_cptr_dummy_passed_by_reference(*arg))) &&
                                         LLVM::is_cptr_dummy_passed_by_value(*orig_arg) &&
                                         !orig_arg->m_value_attr) {
-                                    // A VALUE dummy is held in local
-                                    // storage (a void**). A VALUE CPtr dummy
-                                    // is handled below.
+                                    // A dummy passed by value is held in
+                                    // local storage and an intent(in)
+                                    // TARGET dummy is passed by reference
+                                    // (both a void**); pass the loaded
+                                    // pointer value, as the bind(c) callee
+                                    // receives a non-VALUE CPtr dummy as a
+                                    // void* (#14193, #14204). A VALUE CPtr
+                                    // dummy is handled below.
                                     llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }

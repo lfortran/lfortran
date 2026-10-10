@@ -264,14 +264,20 @@ class ASRToLLVMVisitor;
 
         // A type(c_ptr) dummy argument that is intent(out), intent(inout),
         // or of unspecified intent without VALUE is passed by reference
-        // (`void**`); any other type(c_ptr) dummy is passed by value
-        // (`void*`). The function signature, the callee and every call site
-        // must agree on this.
+        // (`void**`). So is an intent(in) TARGET dummy without VALUE of a
+        // non-bind(c) procedure, so that it is associated with the actual
+        // argument (F2018 15.5.2.4): c_loc of it is the address of the
+        // actual, and a pointer associated with it stays associated with the
+        // actual after the call. Any other type(c_ptr) dummy is passed by
+        // value (`void*`). The function signature, the callee and every call
+        // site must agree on this.
         static inline bool is_cptr_dummy_passed_by_reference(const ASR::Variable_t& v) {
             return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
                 (v.m_intent == ASR::intentType::Out ||
                  v.m_intent == ASR::intentType::InOut ||
-                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr));
+                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr) ||
+                 (v.m_intent == ASR::intentType::In && !v.m_value_attr &&
+                  v.m_target_attr && v.m_abi != ASR::abiType::BindC));
         }
 
         static inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t& v) {
@@ -281,8 +287,9 @@ class ASRToLLVMVisitor;
         }
 
         // A type(c_ptr) dummy of a non-bind(c) procedure that is passed by
-        // value (VALUE or intent(in)) is copied into local storage on entry,
-        // so, like a local variable, it is held as a `void**`.
+        // value (VALUE, or intent(in) without TARGET) is copied into local
+        // storage on entry, so, like a local variable, it is held as a
+        // `void**`.
         static inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t& v) {
             return is_cptr_dummy_passed_by_value(v) &&
                 v.m_abi != ASR::abiType::BindC;
