@@ -5293,7 +5293,7 @@ RUN(NAME proc_ptr_21 LABELS gfortran llvm)
 RUN(NAME proc_ptr_22 LABELS gfortran llvm)
 RUN(NAME proc_ptr_23 LABELS gfortran llvm)
 RUN(NAME proc_ptr_24 LABELS gfortran llvm)
-RUN(NAME proc_ptr_25 LABELS gfortran) # ASR checked in tests.toml; --separate-compilation fails in import_all for same-named getters
+RUN(NAME proc_ptr_25 LABELS gfortran llvm NO_LLVM_GOC) # --separate-compilation: #14437
 RUN(NAME proc_ptr_26 LABELS gfortran llvm)
 RUN(NAME proc_ptr_27 LABELS gfortran llvm)
 RUN(NAME proc_ptr_28 LABELS gfortran llvm)
