@@ -50,6 +50,9 @@ runs:
     - uses: hendrikmuhs/ccache-action@main
       with:
         key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}
+        # The action's 500M default is smaller than one Debug build, so ccache
+        # evicted objects it needed. Prune-Main-Caches-CI.yml keeps one copy per key.
+        max-size: 1500M
         save: ${{ github.ref == 'refs/heads/main' }}
 
     - name: Setup Platform

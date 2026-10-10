@@ -419,6 +419,44 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertIn(save, step.split("\n\n", 1)[0], path)
         self.assertGreaterEqual(steps, 8)
 
+    def test_platform_ccache_fits_a_debug_build(self):
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("max-size: 1500M", step)
+
+    def test_superseded_main_caches_are_pruned(self):
+        spec = importlib.util.spec_from_file_location(
+            "prune_main_caches", ROOT / "ci/prune_main_caches.py")
+        prune = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(prune)
+
+        def cache(id, key, created):
+            return {"id": id, "key": key, "created_at": created, "size_in_bytes": 1}
+
+        caches = [
+            cache(1, "ccache-Build-ubuntu-latest-11-2026-10-10T02:50:51.192Z", "2026-10-10T02:50:51Z"),
+            cache(2, "ccache-Build-ubuntu-latest-11-2026-10-10T04:02:23.463Z", "2026-10-10T04:02:23Z"),
+            cache(3, "ccache-Build-ubuntu-latest-21-2026-10-10T02:53:39.706Z", "2026-10-10T02:53:39Z"),
+            cache(4, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T03:43:56.480Z", "2026-10-10T03:43:56Z"),
+            cache(5, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T04:24:39.131Z", "2026-10-10T04:24:39Z"),
+            cache(6, "sccache-test_llvm-ubuntu-latest-7-2026-10-10T03:56:07.464Z", "2026-10-10T03:56:07Z"),
+            # A different base key whose prefix matches another key must be kept.
+            cache(7, "sccache-test_llvm-ubuntu-latest-2026-10-10T01:00:00.000Z", "2026-10-10T01:00:00Z"),
+            # Keys without an action timestamp are not managed here.
+            cache(8, "pip-cache", "2026-10-09T00:00:00Z"),
+        ]
+        self.assertEqual(sorted(c["id"] for c in prune.superseded(caches)), [1, 4, 6])
+        self.assertEqual(prune.superseded([]), [])
+
+        workflow = (ROOT / ".github/workflows/Prune-Main-Caches-CI.yml").read_text()
+        triggers = workflow.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
+        self.assertIn("workflow_run:", triggers)
+        self.assertIn('workflows: ["Quick checks", "Exhaustive checks"]', triggers)
+        self.assertIn("branches: [main]", triggers)
+        self.assertNotIn("pull_request", triggers)
+        self.assertIn("  actions: write\n", workflow)
+        self.assertIn("run: python3 ci/prune_main_caches.py", workflow)
+
     def test_wasm_build_uses_the_compiler_cache(self):
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
