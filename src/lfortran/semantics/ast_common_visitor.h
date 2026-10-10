@@ -18828,12 +18828,14 @@ public:
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
     }
 
-    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x,
+            bool is_c_associated = false) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
-        if (tgt_ != nullptr) {
+        // c_associated(c_ptr_1, c_null_ptr) is valid and is false
+        if (tgt_ != nullptr && !is_c_associated) {
             if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
                 if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
                     diag.add(diag::Diagnostic(
@@ -21264,7 +21266,7 @@ public:
                     if (orig_name == "c_loc") {
                         tmp = create_PointerToCptr(x, orig_name);
                     } else if (orig_name == "c_associated") {
-                        tmp = create_Associated(x);
+                        tmp = create_Associated(x, true);
                     } else if (orig_name == "c_funloc") {
                         tmp = create_PointerToCptr(x, orig_name);
                     } else if (orig_name == "c_sizeof") {
