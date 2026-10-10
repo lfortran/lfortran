@@ -138,8 +138,8 @@ only once, redirect to a log file and then examine the log file.
   selections on PRs, main, release tags and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
-  capability checks in Quick. No exhaustive label is required before review
-  or merge.
+  capability checks in Quick. Exhaustive never runs on PRs and is not
+  required before review or merge.
   Caffeine's own LFortran unit tests and all coarray capability tests always run.
   Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
   use the same input comparison on every event, validate conservatively when
@@ -158,9 +158,9 @@ only once, redirect to a log file and then examine the log file.
   Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
-- Main runs Quick plus Exhaustive. Exhaustive is identical on main, on a PR
-  labeled `Tests::Run-Exhaustive` and on manual dispatch, including the
-  third-party application catalog; only publishing and deployment are push-only.
+- Main runs Quick plus Exhaustive. Exhaustive is identical on main and on
+  manual dispatch, including the third-party application catalog; only
+  publishing and deployment are push-only.
 - Third-party applications are **bug generators for integration tests**, not
   part of ordinary PR checks. They run on the latest `main` and in every
   requested Exhaustive run, including applications such as FIATS.
@@ -168,11 +168,11 @@ only once, redirect to a log file and then examine the log file.
   integration regression. Fix it promptly or revert the offending change,
   and verify the original application failure as well as the regression.
   Do not add whole applications to Quick or waive their failures.
-- Keep `Tests::Run-Exhaustive` for rare, explicitly requested extended compiler
-  checks. Do not apply it automatically based on files or compiler subsystems
-  touched. Manual dispatch in a fork is an alternative; dispatch Quick
-  separately if it has not run on that revision, and verify both tested SHAs
-  and results.
+- Run Exhaustive for a PR only when explicitly requested, by dispatching it on
+  the PR branch in a fork (`gh workflow run Exhaustive-Checks-CI.yml --repo
+  <fork-owner>/lfortran --ref <branch>`; see `doc/src/installation.md`). Never
+  do it automatically based on files or compiler subsystems touched. Verify the
+  tested SHA and result, and link the run from the PR.
 - Quick and Exhaustive (full compiler matrix and application validation) on
   `main` are each coalesced: at most one run is in progress and one is
   pending. A running main run is never cancelled; a newer push replaces the
