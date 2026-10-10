@@ -511,6 +511,12 @@ semantic error: PARAMETER 'cc_param_arr' shall not appear in a DATA statement
 212 |     data (cc_param_arr(i), i=1,3) / 4, 5, 6 /  ! {Error} PARAMETER 'cc_param_arr' shall not appear in a DATA statement
     |          ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Type-bound procedure 'm' requires an argument list
+   --> tests/errors/continue_compilation_3.f90:213:9
+    |
+213 |     i = tbp_noarg_w%m  ! Error: type-bound procedure referenced without an argument list
+    |         ^^^^^^^^^^^^^ 
+
 semantic error: Argument of 'size' must be an array
    --> tests/errors/continue_compilation_3.f90:216:23
     |
