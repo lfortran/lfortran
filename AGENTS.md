@@ -35,7 +35,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
-| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, open a PR from a fork, review, and iterate until CI is green |
+| `fix-issue` | Orchestrate the whole loop for one issue in subagents: reproduce, reduce, fix, review locally, open a PR from a fork, and iterate until CI is green |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work. It
@@ -65,9 +65,12 @@ Reproducers are written to the repository root by convention (`run.sh`,
 `fix-issue` automates this loop for a single issue: its top-level agent
 only orchestrates, and fresh subagents run `repro-issue`, then `create-mre`
 and `fix-mre` repeatedly (one commit with its own integration test per bug)
-until the original issue is fixed. It then opens a draft PR from the user's
-fork and iterates on CI failures and `pr-review` findings until the PR is
-ready for review.
+until the original issue is fixed. It reviews the branch locally with
+`pr-review` until it is clean, then opens a draft PR from the user's fork and
+iterates on CI failures and review findings until the PR is ready for
+review. Every push reruns the full Quick checks, so it batches pushes: CI
+fixes are pushed as soon as they pass locally, while other changes wait
+until the current CI run finishes rather than cancelling a healthy run.
 
 The reproduction and fix skills assume `build/src/bin` is first on `PATH`
 (so `lfortran` is the in-tree build) and that a reference compiler — `gfortran`,
