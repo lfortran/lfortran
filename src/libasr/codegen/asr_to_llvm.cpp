@@ -16058,15 +16058,20 @@ public:
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*class_sym));
                     llvm::Value* static_ptr = llvm_selector;
-                    if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_selector))) {
+                    llvm::Type* static_ptr_type = llvm_selector_type_;
+                    ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
+                    // If selector is a pointer/allocatable type, load it first
+                    if (LLVM::is_llvm_pointer(*selector_var_type)) {
                         static_ptr = llvm_utils->CreateLoad2(llvm_selector_type_, static_ptr);
+                        selector_var_type = ASRUtils::type_get_past_allocatable_pointer(selector_var_type);
+                        static_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_selector, selector_var_type, module.get());
                     }
-                    if (ASRUtils::is_array(ASRUtils::expr_type(x.m_selector))) {
-                        static_ptr = arr_descr->get_pointer_to_data(llvm_selector_type_, static_ptr);
+                    if (ASRUtils::is_array(selector_var_type)) {
+                        static_ptr = arr_descr->get_pointer_to_data(static_ptr_type, static_ptr);
                         static_ptr = llvm_utils->CreateLoad2(
                             llvm_utils->get_el_type(
                                 x.m_selector,
-                                ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)),
+                                ASRUtils::extract_type(selector_var_type),
                                 module.get())->getPointerTo(),
                             static_ptr);
                     }
