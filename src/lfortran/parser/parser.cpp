@@ -667,6 +667,21 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
     }
 }
 
+// Reports an unterminated character literal whose opening quote is at `loc`.
+// `col` is the column where parse_string stopped.
+void report_unterminated_literal(diag::Diagnostics &diagnostics,
+                                 const Location &loc, int col)
+{
+    diagnostics.add(diag::Diagnostic(
+        "unterminated character literal",
+        diag::Level::Error, diag::Stage::Tokenizer, {
+        diag::Label(col > 72
+            ? "not closed by column 72 (text after column 72 "
+              "is ignored in fixed-form)"
+            : "not closed before the end of the line",
+            {loc})}));
+}
+
 // Only used in fixed-form
 // Returns false (and reports an error) on an unterminated character literal
 bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
@@ -684,14 +699,7 @@ bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             loc.first = out.size();
             loc.last = out.size();
             if (!parse_string(out, s, pos, true, col, &lm)) {
-                diagnostics.add(diag::Diagnostic(
-                    "unterminated character literal",
-                    diag::Level::Error, diag::Stage::Tokenizer, {
-                    diag::Label(col > 72
-                        ? "not closed by column 72 (text after column 72 "
-                          "is ignored in fixed-form)"
-                        : "not closed before the end of the line",
-                        {loc})}));
+                report_unterminated_literal(diagnostics, loc, col);
                 return false;
             }
         } else if (s[pos] == '!') {
@@ -744,7 +752,17 @@ bool process_include(std::string& out, const std::string& s,
                      int &col, diag::Diagnostics &diagnostics)
 {
     std::string include_filename;
-    parse_string(include_filename, s, pos, fixed_form, col, nullptr);
+    size_t quote_pos = pos;
+    if (!parse_string(include_filename, s, pos, fixed_form, col, nullptr)) {
+        // Map the current output position to the opening quote
+        lm.files.back().out_start.push_back(out.size());
+        lm.files.back().in_start.push_back(quote_pos);
+        Location loc;
+        loc.first = out.size();
+        loc.last = out.size();
+        report_unterminated_literal(diagnostics, loc, col);
+        return false;
+    }
     include_filename = include_filename.substr(1, include_filename.size() - 2);
 
     bool file_found = false;
