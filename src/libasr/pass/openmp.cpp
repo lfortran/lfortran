@@ -865,23 +865,27 @@ class ParallelRegionVisitor :
             return ASRUtils::get_struct_sym_from_struct_expr(var);
         }
 
+        // The member `member` of the thread data `data`, which holds the
+        // variable `var` of the current scope. A procedure member is given
+        // the procedure type of `var`, which names the symbols of its
+        // interface as they are seen from the current scope; the member's
+        // own type names them from the thread data type's scope.
+        ASR::expr_t* thread_data_member(const Location &loc, ASR::expr_t* data,
+                ASR::symbol_t* member, ASR::symbol_t* var) {
+            ASR::ttype_t* type = ASRUtils::symbol_type(member);
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(type))) {
+                type = ASRUtils::symbol_type(var);
+            }
+            return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data,
+                member, type, nullptr));
+        }
+
         // `target = value` for a variable passed to a region by value. A
         // procedure pointer is copied by pointer association.
         ASR::stmt_t* copy_value(ASR::expr_t* target, ASR::expr_t* value) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(target);
             if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(target_type))) {
-                // One side is the thread data member, whose procedure type
-                // names symbols of the thread data type's scope. The other
-                // side is a variable of this scope with the same procedure
-                // type, as it is named from here.
-                if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
-                    ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_type =
-                        ASRUtils::expr_type(value);
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
-                    ASR::down_cast<ASR::StructInstanceMember_t>(value)->m_type =
-                        target_type;
-                }
                 return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
                     target, value));
             }
@@ -1823,8 +1827,8 @@ class ParallelRegionVisitor :
                 if (!is_array && !is_shared) {
                     body.push_back(al, copy_value(
                         b.Var(current_scope->get_symbol(it.first)),
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr))
+                        thread_data_member(loc, tdata_expr, sym,
+                            current_scope->get_symbol(it.first))
                     ));
                 }
             }
@@ -2156,8 +2160,8 @@ class ParallelRegionVisitor :
                 } else {
                     // Handle private variables (direct value assignment)
                     nested_lowered_body.push_back(copy_value(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        thread_data_member(loc, data_expr, sym,
+                            current_scope->get_symbol(it.first)),
                         b.Var(current_scope->get_symbol(it.first))
                     ));
                 }
