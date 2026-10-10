@@ -9325,7 +9325,7 @@ public:
                         }
                     }
                 }
-                ASR::symbol_t *type_declaration;
+                ASR::symbol_t *type_declaration = nullptr;
                 ASR::ttype_t *type = nullptr;
                 if (is_assumed_rank && dims.n > 1) {
                     diag.semantic_error_label("Assumed-rank variable '" + std::string(s.m_name) + "' must not have any dimensions specified.",
@@ -9352,6 +9352,19 @@ public:
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                         (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                }
+                if (corank > 0
+                        && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
+                            || ASRUtils::is_iso_fortran_env_team_type_symbol(
+                                current_scope, type_declaration))) {
+                    diag.add(Diagnostic(
+                        "A coarray must not be of type `c_ptr`, "
+                        "`c_funptr` or `team_type`",
+                        Level::Error, Stage::Semantic, {
+                            Label("`" + std::string(s.m_name)
+                                + "` is a coarray of a forbidden type", {s.loc})
+                        }));
+                    throw SemanticAbort();
                 }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
