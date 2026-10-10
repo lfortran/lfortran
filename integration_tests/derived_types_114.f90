@@ -25,4 +25,8 @@ program derived_types_114
     if (.not. associated(a%counter%count_, b%counter%count_)) error stop
 
     print *, "PASS"
+
+    ! The variables of the main program are not finalized when it ends
+    ! (F2018 7.5.6.4), so the shared count is deallocated here.
+    deallocate(a%counter%count_)
 end program
