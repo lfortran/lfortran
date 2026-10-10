@@ -1,0 +1,47 @@
+warning: Branch to the shared DO termination label 10 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:12:17
+   |
+12 |     if (i == 2) go to 10
+   |                 ^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 20 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:20:21
+   |
+20 |         if (j == 2) go to 20
+   |                     ^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 40 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:35:17
+   |
+35 |     if (i == 2) go to 40
+   |                 ^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 70 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:51:12
+   |
+51 |     go to (70, 71), i
+   |            ^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 70 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:52:5
+   |
+52 | 71  if (i - 2) 70, 72, 70
+   |     ^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 80 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:59:5
+   |
+59 |     open(u, file="doloop_shared_term_branch_01.txt", err=80)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 80 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:60:5
+   |
+60 |     read(u, *, end=80, err=80) k
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 90 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_01.f90:67:5
+   |
+67 |     call alt(i, *90, *90)
+   |     ^^^^^^^^^^^^^^^^^^^^^ help: terminate each loop with its own statement
