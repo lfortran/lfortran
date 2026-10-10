@@ -913,7 +913,8 @@ public:
         }
         // An import whose local name starts with a digit is made by the
         // compiler, for example for the symbols in the bounds of a procedure
-        // type, and is never referenced by name from Fortran source.
+        // type. Such a name is not a valid Fortran identifier, so it cannot
+        // appear in a USE ONLY list.
         if (std::isdigit(static_cast<unsigned char>(x.m_name[0]))) {
             return;
         }
