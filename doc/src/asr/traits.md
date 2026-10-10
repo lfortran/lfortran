@@ -936,11 +936,32 @@ lifecycle effects, just like standalone owners. PURE procedures cannot perform
 those operations or own local component storage without an effect guarantee.
 Assigning to or deallocating through a pointer to a containing object counts,
 because it defines or destroys the target's owned components; pointer
-association does not. Every procedure whose body performs such an operation is
-neither side-effect free nor deterministic, so a PURE caller rejects it, and
-the verifier checks that this metadata is kept. A defined assignment is judged
+association does not. So do `MOVE_ALLOC` of containing objects, which
+deallocates an allocated TO, and temporaries of such types other than function
+results, such as the result of `RESHAPE` or an array constructor. Every
+procedure whose body performs such an operation is neither side-effect free
+nor deterministic, so a PURE caller rejects it. A defined assignment is judged
 by its procedure instead. Readonly PURE observation remains supported when the
 contract's message is PURE.
+
+A procedure also has these effects when it calls one that has them, however
+the bodies are ordered. Once every body of the unit exists, including
+contained procedures and instantiations, `ASR::TraitLifecycleSummary` collects
+each procedure's calls: ordinary and type-bound calls (including overrides an
+extension visible here declares), defined assignments and operators, trait
+slots and calls in specification expressions. It solves them as a fixpoint,
+so recursion is covered, and the effect flags of every procedure that reaches
+lifecycle effects are cleared. Procedures loaded from module files are
+analyzed through their bodies; their own compilation already cleared their
+flags. A callee known only through an interface (an external, dummy or
+pointer procedure, a deferred binding, an override of a binding of a module
+type compiled elsewhere, an impure trait slot) has unknown effects unless the
+interface is pure: it keeps its flags, but a PURE procedure that reaches it is
+rejected, as it would be had the callee been analyzed first. A PURE procedure
+that reaches an impure procedure only through ordinary effects such as PRINT,
+when the bodies are in the opposite order, is still accepted, as before. The
+verifier recomputes the summary for procedures compiled in the unit and
+requires their flags to retain every effect they are known to reach.
 
 A containing type can be a generic or template argument, adopt another trait
 and be inspected by SELECT TYPE. An instantiation recomputes these effects
@@ -960,11 +981,18 @@ latter from scopes that cannot see the component's contract.
 `_15` combines a final subroutine of the containing type with a component
 type's defined assignment: neither runs for the copy of the expression, the
 variable's own component is assigned after finalization and the payload's in
-a fresh default-initialized payload. `traits_runtime_component_03_oracle`
-supplies a standard Fortran counterpart for the interface/copying operations
-without relying on reference-compiler finalization omissions.
-`continue_compilation_traits_02` collects the readonly, PURE, constructor,
-`move_alloc` and PURE instantiation diagnostics.
+a fresh default-initialized payload. `_16` keeps procedures that call later
+procedures with these effects valid outside PURE code, and keeps PURE
+procedures valid that reach only harmless defined assignments or readonly
+observation. `traits_runtime_component_03_oracle` supplies a standard Fortran
+counterpart for the interface/copying operations without relying on
+reference-compiler finalization omissions. `continue_compilation_traits_02`
+collects the readonly, PURE, constructor, `move_alloc`, temporary and PURE
+instantiation diagnostics, including PURE procedures that reach the effects
+through later, recursive, contained, type-bound, dummy, defined-assignment and
+generic calls. `traits_component_loaded_pure_01` and `_02` check PURE callers
+of procedures loaded from a separately compiled module, which reach the effects
+through a later procedure and a dummy procedure.
 
 ## Persistent scalar pointer views (R3)
 

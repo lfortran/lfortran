@@ -25134,6 +25134,9 @@ public:
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
     };
     std::vector<PendingBodyInstantiation> pending_body_instantiations;
+    // The template procedure of each instantiated body, which diagnostics
+    // name instead of the instantiation.
+    std::map<const ASR::symbol_t*, const ASR::symbol_t*> instantiated_body_sources;
     bool type_set_bindings_changed = false;
 
     bool is_type_set_witness(ASR::symbol_t *symbol) {
@@ -25443,6 +25446,7 @@ public:
         for (auto &sym_pair : p.symbols) {
             instantiate_body(al, p.type_subs, p.symbol_subs, sym_pair.first,
                 sym_pair.second, instantiated_bodies);
+            instantiated_body_sources[sym_pair.first] = sym_pair.second;
             check_pure_trait_instantiation(sym_pair.first);
         }
     }

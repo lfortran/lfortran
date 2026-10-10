@@ -24,12 +24,13 @@ namespace LCompilers::LFortran {
 
 // `implicit_interface_procedures`: the procedure variables that calls through
 // an implicit interface are made through, mapped to the called procedure.
-static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
+// Returns whether an effect of the body was diagnosed.
+static bool check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
         size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation,
         const std::map<const ASR::symbol_t*, ASR::symbol_t*> &implicit_interface_procedures) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
     if (!fn_type->m_pure) {
-        return;
+        return false;
     }
     ASR::SideEffectFinder finder;
     finder.implicit_interface_procedures = &implicit_interface_procedures;
@@ -74,6 +75,7 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
             }
         }
     }
+    return finder.found;
 }
 
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
@@ -285,6 +287,69 @@ public:
         function.m_side_effect_free = current_function_side_effect_free;
     }
 
+    // Procedures whose body check_pure_function checked, and those whose
+    // own effects it diagnosed.
+    std::set<const ASR::Function_t*> pure_effects_checked, pure_effects_reported;
+
+    // A procedure can call one whose body is analyzed after it: a later or
+    // contained procedure, or an instantiation completed at the end of the
+    // unit. Once every body exists, retain the dynamic trait lifecycle effects
+    // each procedure reaches through its calls, and complete the PURE checks
+    // of the bodies checked so far, or instantiated: reject a PURE procedure
+    // that reaches them, or reaches a procedure whose effects are unknown.
+    // Its own effects are diagnosed where its body and declarations are.
+    void finish_trait_lifecycle_effects(ASR::TranslationUnit_t &unit) {
+        using Effect = ASR::TraitLifecycleSummary::Effect;
+        std::vector<ASR::Function_t*> functions;
+        ASR::visit_trait_lifecycle_scopes(unit.m_symtab, false, [&](ASR::symbol_t *symbol) {
+            if (!ASR::is_a<ASR::Function_t>(*symbol)) return;
+            auto *function = ASR::down_cast<ASR::Function_t>(symbol);
+            if (ASR::TraitLifecycleSummary::analyzable(*function)) {
+                functions.push_back(function);
+            }
+        });
+        ASR::TraitLifecycleSummary summary(unit.m_symtab);
+        for (auto *function : functions) {
+            if (summary.effect(*function) == Effect::Lifecycle) {
+                function->m_side_effect_free = false;
+                function->m_deterministic = false;
+            }
+        }
+        std::stable_sort(functions.begin(), functions.end(),
+            [](const ASR::Function_t *a, const ASR::Function_t *b) {
+                return a->base.base.loc.first < b->base.base.loc.first;
+            });
+        for (auto *function : functions) {
+            // Only bodies checked as PURE procedures are: a statement function
+            // is pure only if what it references is (F2018 15.7), so its host
+            // is checked instead.
+            bool checked = pure_effects_checked.count(function) ||
+                instantiated_body_sources.count(&function->base);
+            if (!checked || !ASRUtils::get_FunctionType(function)->m_pure ||
+                    pure_effects_reported.count(function) ||
+                    summary.effect(*function) == Effect::None ||
+                    ASR::has_trait_lifecycle_effects(*function)) {
+                continue;
+            }
+            auto *call = summary.first_effect_call(*function);
+            LCOMPILERS_ASSERT(call);
+            std::string description = call->description;
+            auto source = instantiated_body_sources.find(call->procedure);
+            if (source != instantiated_body_sources.end()) {
+                description = "Call to impure procedure '" +
+                    std::string(ASRUtils::symbol_name(source->second)) + "'";
+            }
+            diag.add(diag::Diagnostic(
+                description + " is not allowed inside a PURE procedure",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {call->loc})
+                }));
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_Declaration(const AST::Declaration_t& x) {
         if( from_block ) {
             visit_DeclarationUtil(x);
@@ -479,6 +544,7 @@ public:
         unit->n_items = items.size();
         queue_trait_erasures(*unit);
         instantiate_pending_bodies();
+        finish_trait_lifecycle_effects(*unit);
     }
 
     template <typename T>
@@ -6759,8 +6825,11 @@ public:
         v->n_dependencies = func_deps.size();
         finish_function_effects(*v);
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            pure_effects_checked.insert(v);
+            if (check_pure_function(v, v->m_body, v->n_body, diag,
+                    compiler_options.continue_compilation, implicit_call_procedures)) {
+                pure_effects_reported.insert(v);
+            }
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -6875,8 +6944,11 @@ public:
         v->n_dependencies = func_deps.size();
         finish_function_effects(*v);
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            pure_effects_checked.insert(v);
+            if (check_pure_function(v, v->m_body, v->n_body, diag,
+                    compiler_options.continue_compilation, implicit_call_procedures)) {
+                pure_effects_reported.insert(v);
+            }
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -6976,8 +7048,11 @@ public:
         v->n_dependencies = func_deps.size();
         finish_function_effects(*v);
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            pure_effects_checked.insert(v);
+            if (check_pure_function(v, v->m_body, v->n_body, diag,
+                    compiler_options.continue_compilation, implicit_call_procedures)) {
+                pure_effects_reported.insert(v);
+            }
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;

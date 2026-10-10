@@ -6525,6 +6525,212 @@ end module
     }
 }
 
+TEST_CASE("Trait lifecycle summaries do not depend on procedure order") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    using Effect = ASR::TraitLifecycleSummary::Effect;
+    const std::string types = R"(
+abstract interface :: IValue
+    pure integer function value()
+    end function
+end interface
+type :: Payload
+    integer :: n
+end type
+implements IValue :: Payload
+    procedure :: value => payload_value
+end implements
+type :: Holder
+    class(IValue), allocatable :: item
+end type
+type :: Tagged
+    type(Holder) :: h
+    integer :: tag = 0
+contains
+    procedure :: assign_tag
+    generic :: assignment(=) => assign_tag
+end type
+type :: Box
+    type(Holder) :: h
+contains
+    procedure :: assign_box
+    generic :: assignment(=) => assign_box
+end type
+type :: Copier
+    integer :: k = 0
+contains
+    procedure :: copy_into
+end type
+abstract interface
+    subroutine copy_holder(x, y)
+        import :: Holder
+        type(Holder), intent(inout) :: x
+        type(Holder), intent(in) :: y
+    end subroutine
+end interface
+contains
+pure integer function payload_value(self)
+    type(Payload), intent(in) :: self
+    payload_value = self%n
+end function
+)";
+    // Every caller precedes its callees in one module and follows them in
+    // the other.
+    const std::vector<std::string> procedures = {R"(
+subroutine caller(x, y)
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    call middle(x, y)
+end subroutine
+)", R"(
+subroutine middle(x, y)
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    call ping(x, y, 2)
+end subroutine
+)", R"(
+recursive subroutine ping(x, y, n)
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    integer, intent(in) :: n
+    if (n > 0) call pong(x, y, n - 1)
+end subroutine
+)", R"(
+recursive subroutine pong(x, y, n)
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    integer, intent(in) :: n
+    if (n == 0) then
+        x = y
+    else
+        call ping(x, y, n)
+    end if
+end subroutine
+)", R"(
+subroutine copy_box(x, y)
+    type(Box), intent(inout) :: x
+    type(Box), intent(in) :: y
+    x = y
+end subroutine
+)", R"(
+subroutine copy_tag(x, y)
+    type(Tagged), intent(inout) :: x
+    type(Tagged), intent(in) :: y
+    x = y
+end subroutine
+)", R"(
+subroutine copy_bound(c, x, y)
+    type(Copier), intent(in) :: c
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    call c%copy_into(x, y)
+end subroutine
+)", R"(
+subroutine apply(f, x, y)
+    procedure(copy_holder) :: f
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    call f(x, y)
+end subroutine
+)", R"(
+pure subroutine assign_tag(lhs, rhs)
+    class(Tagged), intent(inout) :: lhs
+    class(Tagged), intent(in) :: rhs
+    lhs%tag = rhs%tag
+end subroutine
+)", R"(
+subroutine assign_box(lhs, rhs)
+    class(Box), intent(inout) :: lhs
+    class(Box), intent(in) :: rhs
+    lhs%h = rhs%h
+end subroutine
+)", R"(
+subroutine copy_into(self, x, y)
+    class(Copier), intent(in) :: self
+    type(Holder), intent(inout) :: x
+    type(Holder), intent(in) :: y
+    x = y
+end subroutine
+)"};
+    std::string source;
+    for (const char *name : {"lifecycle_forward_m", "lifecycle_backward_m"}) {
+        source += "module " + std::string(name) + types;
+        if (std::string(name) == "lifecycle_forward_m") {
+            for (const auto &procedure : procedures) source += procedure;
+        } else {
+            for (auto i = procedures.rbegin(); i != procedures.rend(); ++i) source += *i;
+        }
+        source += "end module\n";
+    }
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "lifecycle_forward_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    const std::map<std::string, Effect> expected = {
+        {"caller", Effect::Lifecycle}, {"middle", Effect::Lifecycle},
+        {"ping", Effect::Lifecycle}, {"pong", Effect::Lifecycle},
+        {"copy_box", Effect::Lifecycle}, {"copy_bound", Effect::Lifecycle},
+        {"copy_tag", Effect::None}, {"apply", Effect::Unknown}};
+    ASR::TraitLifecycleSummary summary(result.result->m_symtab);
+    for (const char *name : {"lifecycle_forward_m", "lifecycle_backward_m"}) {
+        CAPTURE(name);
+        auto *module = ASR::down_cast<ASR::Module_t>(result.result->m_symtab->get_symbol(name));
+        for (const auto &entry : expected) {
+            CAPTURE(entry.first);
+            auto *procedure = ASR::down_cast<ASR::Function_t>(
+                module->m_symtab->get_symbol(entry.first));
+            CHECK(summary.effect(*procedure) == entry.second);
+            // Only effects known to be reached remove the procedure's flags.
+            bool retained = entry.second != Effect::Lifecycle;
+            CHECK(procedure->m_side_effect_free == retained);
+            CHECK(procedure->m_deterministic == retained);
+        }
+    }
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "trait_lifecycle.asr", lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("lifecycle_forward_m"));
+    auto rejects = [&](const char *name) {
+        CAPTURE(name);
+        auto *procedure = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
+        procedure->m_side_effect_free = true;
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code ==
+            "asr.verify.trait_owner.reached_lifecycle_effects");
+    };
+    SUBCASE("a transitive caller retains the effects") { rejects("caller"); }
+    SUBCASE("a recursive caller retains the effects") { rejects("ping"); }
+    SUBCASE("a defined assignment retains the effects") { rejects("copy_box"); }
+    SUBCASE("a type-bound call retains the effects") { rejects("copy_bound"); }
+    SUBCASE("unknown effects are not proven effects") {
+        auto *apply = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("apply"));
+        CHECK(apply->m_side_effect_free);
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*result.result, true, valid));
+    }
+}
+
 TEST_CASE("Trait component effects and readonly storage fail semantically") {
     const std::string prefix = R"(
 module trait_component_errors_m
@@ -6576,7 +6782,21 @@ end type
             "type(Holder) :: x", "x = Holder(source)", "structure constructor"},
         {"subroutine probe(x)", "type(Holder), value :: x", "", "value dummies"},
         {"subroutine probe(x, y)", "type(Holder), intent(inout) :: x, y",
-            "call move_alloc(x%item, y%item)", "move_alloc for runtime trait owners"}
+            "call move_alloc(x%item, y%item)", "move_alloc for runtime trait owners"},
+        {"pure subroutine probe(x, y)", "type(Holder), allocatable, intent(inout) :: x, y",
+            "call move_alloc(x, y)", "trait move_alloc with unchecked"},
+        {"pure subroutine probe(x, n)", "type(Holder), intent(in) :: x(:)\n"
+            "integer, intent(out) :: n", "n = size(reshape(x, [size(x)]))", "trait temporary"},
+        {"pure subroutine caller(x, y)\ntype(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y\ncall probe(x, y)\nend subroutine\n"
+            "subroutine probe(x, y)", "type(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y", "x = y", "impure procedure 'probe'"},
+        {"pure subroutine caller(x, y)\ntype(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y\ncall relay(x, y)\nend subroutine\n"
+            "subroutine relay(x, y)\ntype(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y\ncall probe(x, y)\nend subroutine\n"
+            "subroutine probe(x, y)", "type(Holder), intent(inout) :: x\n"
+            "type(Holder), intent(in) :: y", "x = y", "impure procedure 'relay'"}
     };
     for (const auto &test : cases) {
         CAPTURE(test.header);

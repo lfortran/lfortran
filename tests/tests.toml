@@ -5881,6 +5881,16 @@ filename = "errors/continue_compilation_traits_02.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/traits_component_loaded_pure_01.f90"
+asr = true
+extrafiles = "errors/traits_component_loaded_pure_mod.f90"
+
+[[test]]
+filename = "errors/traits_component_loaded_pure_02.f90"
+asr = true
+extrafiles = "errors/traits_component_loaded_pure_mod.f90"
+
+[[test]]
 filename = "../integration_tests/traits_numeric_01.f90"
 ast = true
 ast_f90 = true

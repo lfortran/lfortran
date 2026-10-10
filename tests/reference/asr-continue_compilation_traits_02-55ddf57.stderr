@@ -87,3 +87,63 @@ semantic error: Function 'exchange_holder' not found (not user defined nor intri
     |
 149 |         call exchange_holder(a, b)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait move_alloc with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:185:9
+    |
+185 |         call move_alloc(x, y)
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait temporary with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:189:31
+    |
+189 |         count_reshaped = size(reshape(x, [size(x)]))
+    |                               ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:166:9
+    |
+166 |         call overwrite(x, y)
+    |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'relay' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:171:9
+    |
+171 |         call relay(x, y)
+    |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'ping' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:176:9
+    |
+176 |         call ping(x, y, 2)
+    |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'apply' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:181:9
+    |
+181 |         call apply(overwrite, x, y)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'assign_box' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:249:9
+    |
+249 |         x = y
+    |         ^^^^^ 
+
+semantic error: Call to impure procedure 'copy_into' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:260:9
+    |
+260 |         call c%copy_into(x, y)
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'copy' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:293:9
+    |
+293 |         call copy(x, y)
+    |         ^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'overwrite_contained' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_02.f90:314:9
+    |
+314 |         call overwrite_contained(x, y)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
