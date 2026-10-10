@@ -5204,6 +5204,7 @@ RUN(NAME separate_compilation_54 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_55 LABELS gfortran llvm EXTRAFILES separate_compilation_55a.f90 EXTRA_ARGS --separate-compilation) # dot_product on a derived-type component section (#14036)
 RUN(NAME separate_compilation_56 LABELS gfortran llvm EXTRAFILES separate_compilation_56a.f90 EXTRA_ARGS --separate-compilation --legacy-array-sections) # imported elemental procedure with array actuals (#14094)
 RUN(NAME separate_compilation_57 LABELS gfortran llvm EXTRAFILES separate_compilation_57a.f90 EXTRA_ARGS --separate-compilation) # imported constructor of a type whose components are all inherited (#14339)
+RUN(NAME separate_compilation_58 LABELS gfortran llvm EXTRAFILES separate_compilation_58a.f90 EXTRA_ARGS --separate-compilation) # module class pointer wrapper shared across translation units (#14292)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
