@@ -3113,44 +3113,92 @@ semantic error: Cannot assign to an intent(in) variable `nz`
 2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
      |     ^^ 
 
-semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2161:5
+semantic error: reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+    --> tests/errors/continue_compilation_1.f90:2154:42
      |
-2161 |     w => y  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+2154 |     print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+     |                                          ^^^^^^^^^^^ `pad` has size zero, but `shape` specifies size of 4 which exceeds the `source` array size of 2
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2170:5
+     |
+2170 |     p => y  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and type(patm_o))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2171:5
+     |
+2171 |     ip => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (integer(4) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2172:5
+     |
+2172 |     p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and class(*))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2173:5
+     |
+2173 |     ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^^^^^^ type mismatch (integer(4) and derived type)
+
+semantic error: interface mismatch in procedure pointer assignment
+    --> tests/errors/continue_compilation_1.f90:2187:5
+     |
+2187 |     fp => paim_g  ! {Error} interface mismatch in procedure pointer assignment
+     |     ^^    ^^^^^^ incompatible interfaces (procedure(paim_iface) and procedure(paim_g))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2188:5
+     |
+2188 |     fp => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (procedure(paim_iface) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2189:5
+     |
+2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^ type mismatch (integer(4) and character(len=5))
+
+semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    --> tests/errors/continue_compilation_1.f90:2206:5
+     |
+2206 |     w => y  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
      |     ^ pointer assignment
 
 semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2162:5
+    --> tests/errors/continue_compilation_1.f90:2207:5
      |
-2162 |     w => null()  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+2207 |     w => null()  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
      |     ^ pointer assignment
 
 semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2163:13
+    --> tests/errors/continue_compilation_1.f90:2208:13
      |
-2163 |     nullify(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+2208 |     nullify(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
      |             ^ nullify object
 
 semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2164:14
+    --> tests/errors/continue_compilation_1.f90:2209:14
      |
-2164 |     allocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+2209 |     allocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
      |              ^ allocate object
 
 semantic error: pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2165:16
+    --> tests/errors/continue_compilation_1.f90:2210:16
      |
-2165 |     deallocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+2210 |     deallocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
      |                ^ deallocate object
 
 semantic error: pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2166:14
+    --> tests/errors/continue_compilation_1.f90:2211:14
      |
-2166 |     allocate(c)  ! {Error} pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
+2211 |     allocate(c)  ! {Error} pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
      |              ^ allocate object
 
 semantic error: pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
-    --> tests/errors/continue_compilation_1.f90:2167:14
+    --> tests/errors/continue_compilation_1.f90:2212:14
      |
-2167 |     allocate(a(3))  ! {Error} pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
+2212 |     allocate(a(3))  ! {Error} pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
      |              ^^^^ allocate object

@@ -1228,12 +1228,12 @@ public:
 
     /********************************** Stmt **********************************/
     void visit_Allocate(const ASR::Allocate_t &x) {
-        std::string r = indent;
-        r += "allocate(";
         bool has_source_expr = x.m_source != nullptr;
         bool prefer_mold_clause = false;
         bool has_object_type_spec = false;
+        std::vector<std::string> type_specs, objects;
         for (size_t i = 0; i < x.n_args; i ++) {
+            std::string type_spec;
             bool emit_type_spec = x.m_args[i].m_type != nullptr;
             if (emit_type_spec) {
                 ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(x.m_args[i].m_type);
@@ -1253,50 +1253,65 @@ public:
             }
             if (emit_type_spec) {
                 has_object_type_spec = true;
-                r += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
-                r += " :: ";
+                type_spec += get_type(x.m_args[i].m_type, x.m_args[i].m_sym_subclass);
+                type_spec += " :: ";
             }
             if (x.m_args[i].m_len_expr) {
                 has_object_type_spec = true;
                 if (!has_source_expr) {
-                    r += "character(len=";
+                    type_spec += "character(len=";
                     visit_expr(*x.m_args[i].m_len_expr);
-                    r += src;
-                    r += ") :: ";
+                    type_spec += src;
+                    type_spec += ") :: ";
                 }
             }
             visit_expr(*x.m_args[i].m_a);
-            r += src;
+            std::string object = src;
             if (x.m_args[i].n_dims > 0) {
-                r += "(";
+                object += "(";
                 for (size_t j = 0; j < x.m_args[i].n_dims; j ++) {
                     visit_expr(*x.m_args[i].m_dims[j].m_length);
-                    r += src;
-                    if (j < x.m_args[i].n_dims-1) r += ", ";
+                    object += src;
+                    if (j < x.m_args[i].n_dims-1) object += ", ";
                 }
-                r += ")";
+                object += ")";
             }
-            if (i < x.n_args-1) r += ", ";
+            type_specs.push_back(type_spec);
+            objects.push_back(object);
         }
+        std::string keywords;
         if (x.m_stat) {
-            r += ", stat=";
+            keywords += ", stat=";
             visit_expr(*x.m_stat);
-            r += src;
+            keywords += src;
         }
         if (x.m_errmsg) {
-            r += ", errmsg=";
+            keywords += ", errmsg=";
             visit_expr(*x.m_errmsg);
-            r += src;
+            keywords += src;
         }
         if (x.m_source) {
             bool emit_mold_clause = prefer_mold_clause || has_object_type_spec;
-            r += emit_mold_clause ? ", mold=" : ", source=";
+            keywords += emit_mold_clause ? ", mold=" : ", source=";
             visit_expr(*x.m_source);
-            r += src;
+            keywords += src;
         }
-        r += ")";
+        // A type-spec applies to every object of an allocate statement, so
+        // consecutive objects with the same type-spec share one statement
+        // and objects with a different type-spec start a new one.
+        std::string r;
+        size_t i = 0;
+        while (i < objects.size()) {
+            r += indent + "allocate(" + type_specs[i] + objects[i];
+            size_t j = i + 1;
+            while (j < objects.size() && type_specs[j] == type_specs[i]) {
+                r += ", " + objects[j];
+                j++;
+            }
+            r += keywords + ")\n";
+            i = j;
+        }
         handle_line_truncation(r, 2);
-        r += "\n";
         src = r;
     }
 
