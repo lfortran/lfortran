@@ -1,9 +1,10 @@
-! A type-bound GENERIC subroutine whose specific takes a borrowed trait
+! A type-bound GENERIC reference whose specific takes a borrowed trait
 ! view, selected by conformance, associates its actuals like a direct call:
 ! a variable, a structure constructor and a keyword function result are
-! borrowed for the call and evaluated once, for PASS and NOPASS specifics,
-! and for a generic inherited by an extended type that overrides the
-! specific, reached statically and through a polymorphic receiver.
+! borrowed for the call and evaluated once, for PASS, PASS(arg) and NOPASS
+! specifics of subroutine and function generics, and for a generic
+! inherited by an extended type that overrides the specific, reached
+! statically and through a polymorphic receiver.
 module traits_runtime_resolution_02_m
     implicit none
     private
@@ -29,8 +30,12 @@ module traits_runtime_resolution_02_m
     contains
         procedure :: visit_view
         procedure, nopass :: note_view
+        procedure, pass(self) :: after_view
+        procedure, pass(self) :: count_after
         generic :: visit => visit_view
         generic :: note => note_view
+        generic :: after => after_view
+        generic :: count => count_after
     end type Visitor
 
     type, extends(Visitor) :: Tally
@@ -62,6 +67,18 @@ contains
         integer, intent(out) :: n
         n = 100 + item%value()
     end subroutine note_view
+
+    subroutine after_view(item, self)
+        class(IValue), intent(in) :: item
+        class(Visitor), intent(inout) :: self
+        self%seen = self%seen + 10000 * item%value()
+    end subroutine after_view
+
+    integer function count_after(item, self)
+        class(IValue), intent(in) :: item
+        class(Visitor), intent(in) :: self
+        count_after = self%seen + item%value()
+    end function count_after
 
     function make_cell(n) result(c)
         integer, intent(in) :: n
@@ -101,5 +118,11 @@ program traits_runtime_resolution_02
     if (any%seen /= 4000 .or. made /= 4) error stop 8
     call any%note(Cell(6), n)
     if (n /= 106) error stop 9
-    print '(a)', 'traits_runtime_resolution_02: generic subroutine actuals borrowed'
+    call v%after(c)
+    if (v%seen /= 10321) error stop 10
+    call v%after(item=make_cell(2))
+    if (v%seen /= 30321 .or. made /= 5) error stop 11
+    if (v%count(make_cell(7)) /= 30328 .or. made /= 6) error stop 12
+    if (v%count(item=c) /= 30322) error stop 13
+    print '(a)', 'traits_runtime_resolution_02: generic binding actuals borrowed'
 end program traits_runtime_resolution_02

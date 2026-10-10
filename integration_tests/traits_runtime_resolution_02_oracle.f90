@@ -1,6 +1,6 @@
 ! Standard Fortran oracle for traits_runtime_resolution_02: the same
-! type-bound GENERIC subroutine calls with a polymorphic dummy in place of
-! the borrowed trait view.
+! type-bound GENERIC subroutine and function references with a polymorphic
+! dummy in place of the borrowed trait view.
 module traits_runtime_resolution_02_oracle_m
     implicit none
     private
@@ -31,8 +31,12 @@ module traits_runtime_resolution_02_oracle_m
     contains
         procedure :: visit_view
         procedure, nopass :: note_view
+        procedure, pass(self) :: after_view
+        procedure, pass(self) :: count_after
         generic :: visit => visit_view
         generic :: note => note_view
+        generic :: after => after_view
+        generic :: count => count_after
     end type Visitor
 
     type, extends(Visitor) :: Tally
@@ -64,6 +68,18 @@ contains
         integer, intent(out) :: n
         n = 100 + item%value()
     end subroutine note_view
+
+    subroutine after_view(item, self)
+        class(Measured), intent(in) :: item
+        class(Visitor), intent(inout) :: self
+        self%seen = self%seen + 10000 * item%value()
+    end subroutine after_view
+
+    integer function count_after(item, self)
+        class(Measured), intent(in) :: item
+        class(Visitor), intent(in) :: self
+        count_after = self%seen + item%value()
+    end function count_after
 
     function make_cell(n) result(c)
         integer, intent(in) :: n
@@ -103,5 +119,11 @@ program traits_runtime_resolution_02_oracle
     if (any%seen /= 4000 .or. made /= 4) error stop 8
     call any%note(Cell(6), n)
     if (n /= 106) error stop 9
-    print '(a)', 'traits_runtime_resolution_02_oracle: generic subroutine actuals passed'
+    call v%after(c)
+    if (v%seen /= 10321) error stop 10
+    call v%after(item=make_cell(2))
+    if (v%seen /= 30321 .or. made /= 5) error stop 11
+    if (v%count(make_cell(7)) /= 30328 .or. made /= 6) error stop 12
+    if (v%count(item=c) /= 30322) error stop 13
+    print '(a)', 'traits_runtime_resolution_02_oracle: generic binding actuals passed'
 end program traits_runtime_resolution_02_oracle

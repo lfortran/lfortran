@@ -8759,18 +8759,20 @@ public:
                     args_.from_pointer_n_copy(al, args.p, args.size());
                     visit_kwargs(args_, x.m_keywords, x.n_keywords,
                                  f->m_args, f->n_args, x.base.base.loc, f,
-                                 diags, x.n_member, is_nopass);
-                    if (is_class_procedure && !is_nopass) {
+                                 diags, x.n_member, is_nopass,
+                                 ASRUtils::get_pass_arg_index(f3->m_procs[i]));
+                    if (is_class_procedure) {
                         ASR::call_arg_t this_arg;
                         this_arg.loc = x.m_member[0].loc;
                         this_arg.m_value = v_expr;
                         args_.push_front(al, this_arg);
                     }
                     if (!diags.has_error()) {
-                        if (static_cast<size_t>(select_generic_specific(args_, *f3, x.base.base.loc, false)) == i) {
+                        if (static_cast<size_t>(select_generic_specific(args_, *f3, x.base.base.loc,
+                                false, is_class_procedure)) == i) {
                             function_found = true;
                             args.n = 0;
-                            if (is_class_procedure && !is_nopass) {
+                            if (is_class_procedure) {
                                 args.from_pointer_n_copy(al, args_.p + 1, args_.size() - 1);
                             } else {
                                 args.from_pointer_n_copy(al, args_.p, args_.size());
@@ -9238,19 +9240,13 @@ public:
                 ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
                 Vec<ASR::call_arg_t> args_with_mdt;
                 if( x.n_member >= 1 ) {
-                    // we append "this/self" (i.e. ClassObject) as first argument
-                    // only when nopass is not used in the associated subroutine
-                    if (!nopass) {
-                        // this assigns n_args + 1
-                        args_with_mdt.reserve(al, x.n_args + 1);
-                        ASR::call_arg_t v_expr_call_arg;
-                        v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
-                        args_with_mdt.push_back(al, v_expr_call_arg);
-                    } else {
-                        // we *don't* append "this/self", hence assign
-                        // size as `n_args`
-                        args_with_mdt.reserve(al, x.n_args);
-                    }
+                    // The passed object comes first; resolution gives it to
+                    // the passed-object dummy of each specific, or drops it
+                    // for a NOPASS specific.
+                    args_with_mdt.reserve(al, args.size() + 1);
+                    ASR::call_arg_t v_expr_call_arg;
+                    v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
+                    args_with_mdt.push_back(al, v_expr_call_arg);
                     for( size_t i = 0; i < args.size(); i++ ) {
                         args_with_mdt.push_back(al, args[i]);
                     }
@@ -9283,7 +9279,7 @@ public:
 
                 int idx;
                 if( x.n_member >= 1 ) {
-                    idx = select_generic_specific(args_with_mdt, *p, x.base.base.loc, true);
+                    idx = select_generic_specific(args_with_mdt, *p, x.base.base.loc, true, true);
                 } else {
                     idx = select_generic_specific(args, *p, x.base.base.loc, true);
                 }

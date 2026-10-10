@@ -6422,7 +6422,8 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
     // of a type-bound procedure call). A `nopass` specific procedure does not
     // receive the passed-object, so it must be matched against the arguments
-    // excluding `args[0]`.
+    // excluding `args[0]`; another specific receives it as the dummy that its
+    // PASS attribute names, which need not be the first.
     auto matches = [&](ASR::symbol_t* proc_sym, const TraitConformance &with) -> bool {
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             ASR::StructMethodDeclaration_t *clss_fn
@@ -6432,6 +6433,18 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
                 Vec<ASR::call_arg_t> args_no_dt;
                 args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
                 return select_func_subrout(proc, args_no_dt, loc, err, with);
+            }
+            size_t pass = is_dt_present && args.n >= 1 && ASR::is_a<ASR::Function_t>(*proc)
+                ? get_pass_arg_index(proc_sym) : 0;
+            if( pass > 0 ) {
+                std::vector<ASR::call_arg_t> passed(args.p + 1, args.p + args.n);
+                ASR::call_arg_t absent = args[0];
+                absent.m_value = nullptr;
+                if (passed.size() < pass) passed.resize(pass, absent);
+                passed.insert(passed.begin() + pass, args[0]);
+                Vec<ASR::call_arg_t> args_passed;
+                args_passed.from_pointer_n(passed.data(), passed.size());
+                return select_func_subrout(proc, args_passed, loc, err, with);
             }
             return select_func_subrout(proc, args, loc, err, with);
         } else {
