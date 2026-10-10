@@ -1,0 +1,5 @@
+runtime error: Array 'a' index out of bounds. Tried to access index 4 of dimension 1, but valid range is 1 to 3.
+ --> tests/errors/array_bounds_check_20.f90:6:14
+  |
+6 |     print *, a(1:4)
+  |              ^^^^^^
