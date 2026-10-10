@@ -4422,27 +4422,61 @@ static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
     return false;
 }
 
+// Whether the name `name`, looked up from `scope`, can stand for a symbol
+// other than `sym`. A symbol can be stored under a key other than its name,
+// for example a USE import under the lower-cased name; a pass that copies its
+// symbol table stores it under its name, so it counts as well.
+static inline bool name_stands_for_other(const std::string &name,
+        ASR::symbol_t* sym, SymbolTable* scope) {
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        ASR::symbol_t* found = s->get_symbol(name);
+        if (found != nullptr) {
+            return found != sym;
+        }
+        for (auto &item : s->get_scope()) {
+            if (item.second != sym && name == symbol_name(item.second)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Whether `sym` is what its name resolves to from `scope`, so that a
+// utility that looks it up by name from there finds it.
+static inline bool resolves_to(ASR::symbol_t* sym, SymbolTable* scope) {
+    return scope != nullptr && scope->resolve_symbol(symbol_name(sym)) == sym &&
+        !name_stands_for_other(symbol_name(sym), sym, scope);
+}
+
 // Returns a symbol that names `sym` from `scope`: `sym` itself when it is
 // visible there, otherwise an existing import of the same target, otherwise
 // a new ExternalSymbol in `scope`. Returns `sym` unchanged when it cannot be
-// imported, because its owner is not a module or a derived type.
+// imported, because its owner is not a module or a derived type. With
+// `by_name`, a symbol only counts as visible when its name resolves to it
+// from `scope`, and a new import gets a name that resolves to nothing there,
+// so that a symbol shadowed by another one of the same name is not used.
 static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
-        ASR::symbol_t* sym, SymbolTable* scope) {
+        ASR::symbol_t* sym, SymbolTable* scope, bool by_name=false) {
+    auto visible = [&](ASR::symbol_t* s) {
+        return by_name ? resolves_to(s, scope) : is_visible_from(s, scope);
+    };
     // Already visible as given: prefer the symbol the caller passed, which
     // may be an import that keeps a module boundary intact.
-    if (is_visible_from(sym, scope)) return sym;
+    if (visible(sym)) return sym;
     // Otherwise the definition itself may be visible, which happens when the
     // caller handed over an import made for some other scope.
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
         return sym;
     }
-    if (is_visible_from(definition, scope)) return definition;
+    if (visible(definition)) return definition;
     std::string name = symbol_name(definition);
     // Reuse a name already standing for this symbol in the scope chain.
     ASR::symbol_t* existing = scope->resolve_symbol(name);
     if (existing != nullptr &&
-            symbol_get_past_external(existing) == definition) {
+            symbol_get_past_external(existing) == definition &&
+            (!by_name || resolves_to(existing, scope))) {
         return existing;
     }
     // The name may stand for something else, so an earlier import can have
@@ -4453,7 +4487,9 @@ static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
             if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
                     ASR::down_cast<ASR::ExternalSymbol_t>(
                         item.second)->m_external == definition &&
-                    item.first == symbol_name(item.second)) {
+                    item.first == symbol_name(item.second) &&
+                    (!by_name || resolves_to(item.second, scope)) &&
+                    scope->resolve_symbol(item.first) == item.second) {
                 return item.second;
             }
         }
@@ -4468,8 +4504,18 @@ static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
         return sym;
     }
     std::string local_name = name;
-    if (scope->get_symbol(local_name) != nullptr) {
+    auto taken = [&](const std::string &n) {
+        return scope->get_symbol(n) != nullptr || (by_name &&
+            (scope->resolve_symbol(n) != nullptr ||
+             name_stands_for_other(n, nullptr, scope)));
+    };
+    if (taken(local_name)) {
         local_name = scope->get_unique_name(name);
+        int counter = 1;
+        while (taken(local_name)) {
+            local_name = scope->get_unique_name(name + "_" + std::to_string(counter));
+            counter++;
+        }
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
         ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
@@ -6690,14 +6736,16 @@ class ProcedureTypeSymbolImporter:
         bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
 
     ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
-        if (ASRUtils::is_visible_from(sym, scope)) {
+        // Passes look these symbols up by name, so a symbol of the same
+        // name in between must not shadow the one referenced.
+        if (ASRUtils::resolves_to(sym, scope)) {
             return sym;
         }
         found = true;
         if (only_check) {
             return sym;
         }
-        return ASRUtils::import_symbol_into_scope(al, sym, scope);
+        return ASRUtils::import_symbol_into_scope(al, sym, scope, true);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
