@@ -2932,6 +2932,25 @@ bool contains_finalizable_function_reference(ASR::expr_t* expr) {
     return check.found;
 }
 
+class ContainsFunctionReference:
+    public ASR::BaseWalkVisitor<ContainsFunctionReference> {
+public:
+    bool found = false;
+    void visit_FunctionCall(const ASR::FunctionCall_t & /*x*/) {
+        found = true;
+    }
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+bool contains_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    ContainsFunctionReference check;
+    check.visit_expr(*expr);
+    return check.found;
+}
+
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
     ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
