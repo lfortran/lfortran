@@ -39,7 +39,12 @@ set -x
 
 bash ci/create_source_tarball.sh "$lfortran_version"
 tar xzf dist/lfortran-$lfortran_version.tar.gz
-cd lfortran-$lfortran_version
+# Build from a fixed directory name: the version changes with every commit,
+# and a versioned path would make every compiler cache entry miss.
+source_dir=lfortran-src
+rm -rf "$source_dir"
+mv "lfortran-$lfortran_version" "$source_dir"
+cd "$source_dir"
 
 mkdir test-bld
 cd test-bld
@@ -73,10 +78,10 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
-    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe src/bin
-    cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
+    cp $source_dir/test-bld/src/bin/lfortran.exe src/bin
+    cp $source_dir/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else # Linux or macOS
-    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-    cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
+    cp $source_dir/test-bld/src/bin/lfortran src/bin
+    cp $source_dir/test-bld/src/runtime/liblfortran_runtime* src/runtime/
 fi
-cp lfortran-$lfortran_version/test-bld/src/runtime/*.mod src/runtime/
+cp $source_dir/test-bld/src/runtime/*.mod src/runtime/
