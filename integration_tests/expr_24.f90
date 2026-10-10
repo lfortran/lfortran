@@ -1,0 +1,18 @@
+program expr_24
+    ! A leading sign is printed without parentheses as the left operand
+    ! of + and -: gfortran honors the parentheses of (-a) - b and
+    ! compiles it differently from -a - b
+    implicit none
+    real :: a, b, c, x
+    a = 1.0
+    b = 2.0
+    c = 3.0
+    x = -a - b
+    if (x /= -3.0) error stop
+    x = -a + b*c
+    if (x /= 5.0) error stop
+    x = (-a)*b - c
+    if (x /= -5.0) error stop
+    x = (-a)**2 + c
+    if (x /= 4.0) error stop
+end program expr_24
