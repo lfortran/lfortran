@@ -571,8 +571,11 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
 // Returns false if the string is not terminated. In fixed-form, a string
 // can only continue on a continuation line; otherwise it is unterminated
 // and `pos` is left at the end of the current line.
+// If `lm` is given, a new location interval is started whenever the string
+// continues on the next continuation line, so that positions in `out` after
+// the jump map back to the right place in `s`.
 bool parse_string(std::string &out, const std::string &s, size_t &pos,
-    bool fixed_form, int &col)
+    bool fixed_form, int &col, LocationManager *lm)
 {
     char quote = s[pos];
     LCOMPILERS_ASSERT(quote == '"' || quote == '\'');
@@ -599,6 +602,10 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 		    return false;
 		}
 		col = 7;
+		if (lm) {
+		    lm->files.back().out_start.push_back(out.size());
+		    lm->files.back().in_start.push_back(pos);
+		}
 		continue;
 	    } else if (s[pos] == quote && (col == 72 || s[pos+1] != quote)) {
 		break;
@@ -676,7 +683,7 @@ bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             Location loc;
             loc.first = out.size();
             loc.last = out.size();
-            if (!parse_string(out, s, pos, true, col)) {
+            if (!parse_string(out, s, pos, true, col, &lm)) {
                 diagnostics.add(diag::Diagnostic(
                     "unterminated character literal",
                     diag::Level::Error, diag::Stage::Tokenizer, {
@@ -737,7 +744,7 @@ bool process_include(std::string& out, const std::string& s,
                      int &col, diag::Diagnostics &diagnostics)
 {
     std::string include_filename;
-    parse_string(include_filename, s, pos, fixed_form, col);
+    parse_string(include_filename, s, pos, fixed_form, col, nullptr);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
 
     bool file_found = false;
