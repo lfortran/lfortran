@@ -2203,3 +2203,28 @@ subroutine namelist_object_before_decl_no_implicit_typing_error
     namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
     real :: w
 end subroutine namelist_object_before_decl_no_implicit_typing_error
+module proc_ptr_bound_not_member_sizes
+contains
+    pure integer function nn(i)
+        integer, intent(in) :: i
+        nn = 2*i
+    end function
+end module
+
+module proc_ptr_bound_not_member_types
+    abstract interface
+        subroutine cb(a)
+            use proc_ptr_bound_not_member_sizes, only: nn
+            real :: a(nn(1))
+        end subroutine
+    end interface
+    type :: t
+        procedure(cb), pointer, nopass :: f => null()
+    end type
+end module
+
+subroutine proc_ptr_bound_not_member(y)
+    use proc_ptr_bound_not_member_types, only: t
+    type(t) :: y
+    print *, y%nn(1)  ! {Error} Variable 'y' doesn't have any member named, 'nn'.
+end subroutine proc_ptr_bound_not_member

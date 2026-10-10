@@ -4503,25 +4503,42 @@ static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
             !ASR::is_a<ASR::Struct_t>(*module_sym)) {
         return sym;
     }
-    std::string local_name = name;
+    // With `by_name` the import is made for the compiler, not by a USE of the
+    // program: it gets a reserved name, so that it can neither clash with a
+    // later declaration nor be found by the program's own names, it is
+    // private, so that a USE of the module does not export it, and it is not
+    // placed among the members of a derived type.
+    SymbolTable* host = scope;
+    std::string base_name = name;
+    if (by_name) {
+        while (host->parent != nullptr && host->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*host->asr_owner) &&
+                ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(
+                    host->asr_owner))) {
+            host = host->parent;
+        }
+        base_name = "1_" + std::string(symbol_name(module_sym)) + "_" + name;
+    }
+    std::string local_name = base_name;
     auto taken = [&](const std::string &n) {
-        return scope->get_symbol(n) != nullptr || (by_name &&
+        return host->get_symbol(n) != nullptr || (by_name &&
             (scope->resolve_symbol(n) != nullptr ||
              name_stands_for_other(n, nullptr, scope)));
     };
     if (taken(local_name)) {
-        local_name = scope->get_unique_name(name);
+        local_name = host->get_unique_name(base_name);
         int counter = 1;
         while (taken(local_name)) {
-            local_name = scope->get_unique_name(name + "_" + std::to_string(counter));
+            local_name = host->get_unique_name(base_name + "_" + std::to_string(counter));
             counter++;
         }
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, host,
             s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), ASR::accessType::Public));
-    scope->add_symbol(local_name, imported);
+            nullptr, 0, s2c(al, name),
+            by_name ? ASR::accessType::Private : ASR::accessType::Public));
+    host->add_symbol(local_name, imported);
     return imported;
 }
 

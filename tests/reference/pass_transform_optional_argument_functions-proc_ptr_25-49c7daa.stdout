@@ -7,6 +7,16 @@
                     (SymbolTable
                         14
                         {
+                            1_proc_ptr_25_ib___lcompilers_get_n:
+                                (ExternalSymbol
+                                    14
+                                    1_proc_ptr_25_ib___lcompilers_get_n
+                                    9 __lcompilers_get_n
+                                    proc_ptr_25_ib
+                                    []
+                                    __lcompilers_get_n
+                                    Private
+                                ),
                             __lcompilers_get_n:
                                 (ExternalSymbol
                                     14
@@ -25,16 +35,6 @@
                                     proc_ptr_25_ia
                                     []
                                     __lcompilers_get_n1
-                                    Public
-                                ),
-                            __lcompilers_get_n2:
-                                (ExternalSymbol
-                                    14
-                                    __lcompilers_get_n2
-                                    9 __lcompilers_get_n
-                                    proc_ptr_25_ib
-                                    []
-                                    __lcompilers_get_n
                                     Public
                                 ),
                             cba:
@@ -134,7 +134,7 @@
                                 (Variable
                                     14
                                     q
-                                    [__lcompilers_get_n2]
+                                    [1_proc_ptr_25_ib___lcompilers_get_n]
                                     Local
                                     ()
                                     ()
@@ -145,8 +145,8 @@
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (FunctionCall
-                                                    14 __lcompilers_get_n2
-                                                    14 __lcompilers_get_n2
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
                                                     []
                                                     (Integer 4)
                                                     ()
@@ -187,7 +187,7 @@
                                 (Variable
                                     14
                                     q2
-                                    [__lcompilers_get_n2]
+                                    [1_proc_ptr_25_ib___lcompilers_get_n]
                                     Local
                                     ()
                                     ()
@@ -198,8 +198,8 @@
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (FunctionCall
-                                                    14 __lcompilers_get_n2
-                                                    14 __lcompilers_get_n2
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
                                                     []
                                                     (Integer 4)
                                                     ()
@@ -240,7 +240,7 @@
                                 (Variable
                                     14
                                     q3
-                                    [__lcompilers_get_n2]
+                                    [1_proc_ptr_25_ib___lcompilers_get_n]
                                     Local
                                     ()
                                     ()
@@ -251,8 +251,8 @@
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (FunctionCall
-                                                    14 __lcompilers_get_n2
-                                                    14 __lcompilers_get_n2
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
+                                                    14 1_proc_ptr_25_ib___lcompilers_get_n
                                                     []
                                                     (Integer 4)
                                                     ()
@@ -492,8 +492,8 @@
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (FunctionCall
-                                    14 __lcompilers_get_n2
-                                    14 __lcompilers_get_n2
+                                    14 1_proc_ptr_25_ib___lcompilers_get_n
+                                    14 1_proc_ptr_25_ib___lcompilers_get_n
                                     []
                                     (Integer 4)
                                     ()
@@ -643,8 +643,8 @@
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (FunctionCall
-                                    14 __lcompilers_get_n2
-                                    14 __lcompilers_get_n2
+                                    14 1_proc_ptr_25_ib___lcompilers_get_n
+                                    14 1_proc_ptr_25_ib___lcompilers_get_n
                                     []
                                     (Integer 4)
                                     ()
