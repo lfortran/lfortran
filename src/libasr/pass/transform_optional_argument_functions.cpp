@@ -584,6 +584,20 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 // This is to prevent passing in unallocated arguments when non-allocatable arguments are expected by the procedure
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
                 ASR::ttype_t* dummy_variable_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
+                ASR::expr_t* dummy_decl_var = func->m_args[j];
+
+                // The pointer variable has the type of the actual argument, so
+                // for a derived type actual it must also take its declaration
+                // from the actual argument, not from the (possibly polymorphic
+                // or parent type) dummy argument
+                ASR::symbol_t* pointer_decl = arg_decl;
+                ASR::expr_t* pointer_decl_var = func->m_args[j];
+                bool is_struct_actual = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_expr_type));
+                if (is_struct_actual) {
+                    pointer_decl = nullptr;
+                    pointer_decl_var = arg_expr;
+                }
 
                 // We make dummy variable allocatable if class type because 
                 // local class variable should be llvm pointer
@@ -593,6 +607,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
                 if (arg_decl && ASRUtils::is_unlimited_polymorphic_type(arg_decl)) {
                     dummy_variable_type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
+                    if (is_struct_actual) {
+                        arg_decl = nullptr;
+                        dummy_decl_var = arg_expr;
+                    }
                 }
                 {
                     ASR::ttype_t* formal_t = func_arg_j->m_type;
@@ -627,8 +645,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dims.push_back(al, dim);
                     }
                     ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type)) ||
-                            ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
+                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
                         phy_type = ASR::array_physical_typeType::PointerArray;
                     }
                     dummy_variable_type = ASRUtils::TYPE(
@@ -668,8 +685,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             dims.push_back(al, dim);
                         }
                         ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                        if (ASRUtils::is_string_only(elem_type) ||
-                                ASRUtils::is_class_type(elem_type)) {
+                        if (ASRUtils::is_string_only(elem_type)) {
                             phy_type = ASR::array_physical_typeType::PointerArray;
                         }
                         dummy_variable_type = ASRUtils::TYPE(
@@ -680,20 +696,32 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dummy_variable_type = elem_type;
                     }
                 }
-                std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
-                ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
-
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
                 pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
+                    x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, pointer_decl, pointer_decl_var);
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
                 if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
-                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                if (ASRUtils::is_array(dummy_variable_type) &&
+                        ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
+                    // A local non-allocatable polymorphic array has no dynamic
+                    // type, so there is no dummy to point to. The argument is
+                    // passed as absent and never accessed, so pass a
+                    // disassociated pointer instead.
+                    Vec<ASR::expr_t*> nullify_vars;
+                    nullify_vars.reserve(al, 1);
+                    nullify_vars.push_back(al, pointer_variable);
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Nullify_t(al,
+                        dummy_variable_type->base.loc, nullify_vars.p, nullify_vars.size())));
+                } else {
+                    std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
+                    ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
+                        x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                }
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));
 
