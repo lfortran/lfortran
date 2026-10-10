@@ -3951,6 +3951,7 @@ RUN(NAME traits_runtime_owning_11 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all
 RUN(NAME traits_runtime_owning_11_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_owning_12 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_owning_13 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_14 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_slot_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 # This full ordinary CLASS oracle still fails a pre-existing FINAL assertion.
 RUN(NAME traits_runtime_slot_01_oracle LABELS gfortran)
