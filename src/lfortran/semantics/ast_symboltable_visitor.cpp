@@ -4523,9 +4523,6 @@ public:
                                 ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
                             var_s->m_symbolic_value = structc;
                             var_s->m_value = structc;
-
-                            // Mark the common block as declared
-                            common_block_dictionary[common_block_name].first = false;
                         }
                         // We processed the common attribute, no need to check any more attributes
                         break;
@@ -4533,6 +4530,10 @@ public:
                 }
             }
         }
+        // The layout of every COMMON block of this unit, the blank one
+        // included, is complete: another program unit declaring a block
+        // starts at its beginning instead of appending to it.
+        mark_common_blocks_as_declared();
     }
 
     void add_custom_operator(
