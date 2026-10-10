@@ -1,0 +1,5 @@
+tokenizer error: unterminated character literal
+ --> tests/errors/fixed_form_8.f:2:16
+  |
+2 |       print *, "abc
+  |                ^ not closed before the end of the line
