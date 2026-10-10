@@ -121,7 +121,16 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x->m_args[i]);
+            if( ASRUtils::is_array(arg_type) ) {
+                // An array intrinsic indexes its array arguments from 1 in
+                // every dimension, so the implementation takes them as
+                // assumed-shape dummies. An allocatable or pointer dummy would
+                // keep the lower bounds of the actual argument instead.
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_deferred(al,
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type));
+            }
+            arg_types.push_back(al, arg_type);
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             PassUtils::instantiation_scope(global_scope, caller_scope,
