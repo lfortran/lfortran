@@ -15344,6 +15344,29 @@ public:
                 }
                 args = args_no_dt;
             }
+            // A specific whose PASS attribute names a later dummy receives the
+            // passed object, `args[0]`, at that dummy. Order the actuals as the
+            // dummies, as a reference to the specific binding does, before
+            // the result type is formed from them.
+            size_t pass_index = cp_s != nullptr && !is_nopass_method && is_dt_present &&
+                args.size() >= 1 ? ASRUtils::get_pass_arg_index(cp_s) : 0;
+            if (pass_index > 0) {
+                passed_object = args[0].m_value;
+                Vec<ASR::call_arg_t> explicit_args;
+                explicit_args.reserve(al, args.size() - 1);
+                for (size_t i = 1; i < args.size(); i++) {
+                    explicit_args.push_back(al, args[i]);
+                }
+                validate_missing_required_arguments(loc, explicit_args, func,
+                    passed_object, false, pass_index);
+                ASRUtils::set_absent_optional_arguments_to_null(explicit_args, func, al,
+                    passed_object, false, pass_index);
+                adapt_runtime_trait_arguments(explicit_args, *func, pass_index);
+                ASR::call_arg_t* call_args = explicit_args.p;
+                size_t n_call_args = explicit_args.size();
+                ASRUtils::insert_self_arg(al, cp_s, call_args, n_call_args, passed_object);
+                args.from_pointer_n(call_args, n_call_args);
+            }
             ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
             if (first_array_arg) {
                 ASR::dimension_t* array_dims;
@@ -15370,6 +15393,13 @@ public:
                     validate_missing_required_arguments(loc, args, func);
                     ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                     adapt_runtime_trait_arguments(args, *func);
+                    return ASRUtils::make_FunctionCall_t_util(al, loc,
+                        cp_s, nullptr, args.p, args.size(), type,
+                        nullptr, passed_object, current_scope, current_function_dependencies,
+                        compiler_options.implicit_argument_casting);
+                }
+                if (pass_index > 0) {
+                    // `args` already has every actual at its dummy.
                     return ASRUtils::make_FunctionCall_t_util(al, loc,
                         cp_s, nullptr, args.p, args.size(), type,
                         nullptr, passed_object, current_scope, current_function_dependencies,
@@ -21879,15 +21909,18 @@ public:
                         diag::Diagnostics diags;
 
                         Vec<ASR::call_arg_t> args_copy;
-                        args_copy.reserve(al, args.size() + x.n_keywords + (is_class_procedure && !is_nopass ? 1 : 0));
+                        args_copy.reserve(al, args.size() + x.n_keywords + (is_class_procedure ? 1 : 0));
                         for( size_t j = 0; j < args.size(); j++ ) {
                             args_copy.push_back(al, args[j]);
                         }
                         visit_kwargs(args_copy, x.m_keywords, x.n_keywords,
                             f->m_args, f->n_args, x.base.base.loc, f,
-                            diags, x.n_member, is_nopass);
-                        // Add 'this' if type-bound and not nopass
-                        if (is_class_procedure && !is_nopass && x.n_member >= 1) {
+                            diags, x.n_member, is_nopass,
+                            ASRUtils::get_pass_arg_index(gp->m_procs[i]));
+                        // Add 'this' if type-bound; resolution gives it to the
+                        // passed-object dummy, or drops it for a NOPASS specific
+                        bool is_dt_present = is_class_procedure && x.n_member >= 1;
+                        if (is_dt_present) {
                             ASR::call_arg_t this_arg;
                             this_arg.loc = v_expr->base.loc;
                             this_arg.m_value = v_expr;
@@ -21896,7 +21929,8 @@ public:
                         if( diags.has_error() ) {
                             continue ;
                         }
-                        int idx = select_generic_specific(args_copy, *gp, x.base.base.loc, false);
+                        int idx = select_generic_specific(args_copy, *gp, x.base.base.loc, false,
+                            is_dt_present);
                         if( idx == i ) {
                             function_found = true;
                             args.n = 0;
