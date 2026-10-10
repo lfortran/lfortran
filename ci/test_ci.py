@@ -514,6 +514,7 @@ class QuickScriptTests(unittest.TestCase):
         for name in (
             "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
             "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s",
+            "separate_compilation_59",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
             "bin/make", "bin/ctest", "bin/pip", "bin/llvm-dwarfdump", "bin/dsymutil",
         ):
@@ -562,7 +563,8 @@ class QuickScriptTests(unittest.TestCase):
                 work.mkdir()
                 # ci/test.sh uses fixed relative paths and creates one build dir.
                 for entry in ("src", "integration_tests", "run_tests.py", "expr2",
-                              "modules_15", "intrinsics_04", "intrinsics_04s"):
+                              "modules_15", "intrinsics_04", "intrinsics_04s",
+                              "separate_compilation_59"):
                     if entry == "integration_tests":
                         (work / entry).mkdir()
                         (work / entry / "run_tests.py").symlink_to(
