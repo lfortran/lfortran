@@ -6283,5 +6283,4 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/proc_ptr_25.f90"
-asr = true
 pass = "transform_optional_argument_functions"
