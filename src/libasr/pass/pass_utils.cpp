@@ -1390,55 +1390,96 @@ namespace LCompilers {
             }
         }
 
+        Vec<ASR::stmt_t*> insert_if_stmts_in_loop_body(Allocator& al, ASR::If_t* if_stmt, ASR::stmt_t* decrement_stmt);
+        Vec<ASR::stmt_t*> insert_blockcall_stmts_in_loop_body(Allocator& al, ASR::BlockCall_t* block_call, ASR::stmt_t* decrement_stmt);
+        Vec<ASR::stmt_t*> insert_select_stmts_in_loop_body(Allocator& al, ASR::Select_t* select_stmt, ASR::stmt_t* decrement_stmt);
+
+        Vec<ASR::stmt_t*> process_stmts_for_exit(Allocator& al, ASR::stmt_t** orig_body, size_t n, ASR::stmt_t* decrement_stmt) {
+            Vec<ASR::stmt_t*> new_body;
+            new_body.reserve(al, 0);
+
+            for (size_t i = 0; i < n; i++) {
+                ASR::stmt_t* stmt = orig_body[i];
+                if (ASR::is_a<ASR::If_t>(*stmt)) {
+                    Vec<ASR::stmt_t*> nested = insert_if_stmts_in_loop_body(al, ASR::down_cast<ASR::If_t>(stmt), decrement_stmt);
+                    for (size_t j = 0; j < nested.size(); j++) {
+                        new_body.push_back(al, nested[j]);
+                    }
+                } else if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                    Vec<ASR::stmt_t*> nested = insert_blockcall_stmts_in_loop_body(al, ASR::down_cast<ASR::BlockCall_t>(stmt), decrement_stmt);
+                    for (size_t j = 0; j < nested.size(); j++) {
+                        new_body.push_back(al, nested[j]);
+                    }
+                } else if (ASR::is_a<ASR::Select_t>(*stmt)) {
+                    Vec<ASR::stmt_t*> nested = insert_select_stmts_in_loop_body(al, ASR::down_cast<ASR::Select_t>(stmt), decrement_stmt);
+                    for (size_t j = 0; j < nested.size(); j++) {
+                        new_body.push_back(al, nested[j]);
+                    }
+                } else if (ASR::is_a<ASR::Exit_t>(*stmt)) {
+                    new_body.push_back(al, decrement_stmt);
+                    new_body.push_back(al, stmt);
+                    break;  
+                } else {
+                    new_body.push_back(al, stmt);
+                }
+            }
+            return new_body;
+        }
+
         Vec<ASR::stmt_t*> insert_if_stmts_in_loop_body(Allocator& al,
                                                        ASR::If_t* if_stmt,
                                                        ASR::stmt_t* decrement_stmt)
         {
             Vec<ASR::stmt_t*> body; body.reserve(al, 0);
-            Vec<ASR::stmt_t*> if_stmt_body; if_stmt_body.reserve(al, 0);
-            Vec<ASR::stmt_t*> else_stmt_body; else_stmt_body.reserve(al, 0);
 
-            for (size_t i = 0; i < if_stmt->n_body; i++) {
-                if (ASR::is_a<ASR::If_t>(*if_stmt->m_body[i])) {
-                    Vec<ASR::stmt_t*> nested_if_stmt_body = insert_if_stmts_in_loop_body(al,
-                                                 ASR::down_cast<ASR::If_t>(if_stmt->m_body[i]),
-                                                 decrement_stmt);
-                    for (size_t j = 0; j < nested_if_stmt_body.size(); j++) {
-                        if_stmt_body.push_back(al, nested_if_stmt_body[j]);
-                    }
-                } else if (ASR::is_a<ASR::Exit_t>(*if_stmt->m_body[i])) {
-                    if_stmt_body.push_back(al, decrement_stmt);
-                    if_stmt_body.push_back(al, if_stmt->m_body[i]);
-                    break;  // dead code ahead, skip it
-                } else {
-                    if_stmt_body.push_back(al, if_stmt->m_body[i]);
-                }
-            }
-
+            Vec<ASR::stmt_t*> if_stmt_body = process_stmts_for_exit(al, if_stmt->m_body, if_stmt->n_body, decrement_stmt);
             if_stmt->m_body = if_stmt_body.p;
-            if_stmt->n_body = if_stmt_body.n;
+            if_stmt->n_body = if_stmt_body.size();
 
-            for (size_t i = 0; i < if_stmt->n_orelse; i++) {
-                if (ASR::is_a<ASR::If_t>(*if_stmt->m_orelse[i])) {
-                    Vec<ASR::stmt_t*> nested_if_stmt_body = insert_if_stmts_in_loop_body(al,
-                                                 ASR::down_cast<ASR::If_t>(if_stmt->m_orelse[i]),
-                                                 decrement_stmt);
-                    for (size_t j = 0; j < nested_if_stmt_body.size(); j++) {
-                        else_stmt_body.push_back(al, nested_if_stmt_body[j]);
-                    }
-                } else if (ASR::is_a<ASR::Exit_t>(*if_stmt->m_orelse[i])) {
-                    else_stmt_body.push_back(al, decrement_stmt);
-                    else_stmt_body.push_back(al, if_stmt->m_orelse[i]);
-                    break;  // dead code ahead, skip it
-                } else {
-                    else_stmt_body.push_back(al, if_stmt->m_orelse[i]);
-                }
-            }
-
+            Vec<ASR::stmt_t*> else_stmt_body = process_stmts_for_exit(al, if_stmt->m_orelse, if_stmt->n_orelse, decrement_stmt);
             if_stmt->m_orelse = else_stmt_body.p;
-            if_stmt->n_orelse = else_stmt_body.n;
+            if_stmt->n_orelse = else_stmt_body.size();
 
             body.push_back(al, ASRUtils::STMT(&if_stmt->base.base));
+            return body;
+        }
+
+        Vec<ASR::stmt_t*> insert_blockcall_stmts_in_loop_body(Allocator& al,
+                                                              ASR::BlockCall_t* block_call,
+                                                              ASR::stmt_t* decrement_stmt)
+        {
+            Vec<ASR::stmt_t*> body; body.reserve(al, 0);
+
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(block_call->m_m);
+            Vec<ASR::stmt_t*> block_body = process_stmts_for_exit(al, block->m_body, block->n_body, decrement_stmt);
+            block->m_body = block_body.p;
+            block->n_body = block_body.size();
+
+            body.push_back(al, ASRUtils::STMT(&block_call->base.base));
+            return body;
+        }
+
+        Vec<ASR::stmt_t*> insert_select_stmts_in_loop_body(Allocator& al,
+                                                           ASR::Select_t* select_stmt,
+                                                           ASR::stmt_t* decrement_stmt)
+        {
+            Vec<ASR::stmt_t*> body; body.reserve(al, 0);
+
+            for (size_t i = 0; i < select_stmt->n_body; i++) {
+                ASR::CaseStmt_t* case_stmt = ASR::down_cast<ASR::CaseStmt_t>(select_stmt->m_body[i]);
+                
+                Vec<ASR::stmt_t*> case_body = process_stmts_for_exit(al, case_stmt->m_body, case_stmt->n_body, decrement_stmt);
+                case_stmt->m_body = case_body.p;
+                case_stmt->n_body = case_body.size();
+            }
+
+            if (select_stmt->n_default > 0) {
+                Vec<ASR::stmt_t*> default_body = process_stmts_for_exit(al, select_stmt->m_default, select_stmt->n_default, decrement_stmt);
+                select_stmt->m_default = default_body.p;
+                select_stmt->n_default = default_body.size();
+            }
+
+            body.push_back(al, ASRUtils::STMT(&select_stmt->base.base));
             return body;
         }
 
@@ -1466,20 +1507,10 @@ namespace LCompilers {
                                                     increment, type, nullptr)),
                                                 nullptr, false, false));
 
-            for (size_t i = 0; i < loop.n_body; i++) {
-                if (ASR::is_a<ASR::Exit_t>(*loop.m_body[i])) {
-                    new_body.push_back(al, decrement_stmt);
-                    new_body.push_back(al, loop.m_body[i]);
-                    break;  // dead code ahead, skip it
-                } else if (ASR::is_a<ASR::If_t>(*loop.m_body[i])) {
-                    Vec<ASR::stmt_t*> if_body = insert_if_stmts_in_loop_body(
-                        al, ASR::down_cast<ASR::If_t>(loop.m_body[i]), decrement_stmt);
-                    for (size_t j = 0; j < if_body.size(); j++) {
-                        new_body.push_back(al, if_body[j]);
-                    }
-                } else {
-                    new_body.push_back(al, loop.m_body[i]);
-                }
+            Vec<ASR::stmt_t*> processed_loop_body = process_stmts_for_exit(al, loop.m_body, loop.n_body, decrement_stmt);
+
+            for (size_t i = 0; i < processed_loop_body.size(); i++) {
+                new_body.push_back(al, processed_loop_body[i]);
             }
 
             body = new_body;
