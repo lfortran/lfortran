@@ -280,11 +280,11 @@ class ASRToLLVMVisitor;
                 !is_cptr_dummy_passed_by_reference(v);
         }
 
-        // A VALUE type(c_ptr) dummy of a non-bind(c) procedure is copied
-        // into local storage on entry, so, like a local variable, it is held
-        // as a `void**`.
+        // A type(c_ptr) dummy of a non-bind(c) procedure that is passed by
+        // value (VALUE or intent(in)) is copied into local storage on entry,
+        // so, like a local variable, it is held as a `void**`.
         static inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t& v) {
-            return is_cptr_dummy_passed_by_value(v) && v.m_value_attr &&
+            return is_cptr_dummy_passed_by_value(v) &&
                 v.m_abi != ASR::abiType::BindC;
         }
 
