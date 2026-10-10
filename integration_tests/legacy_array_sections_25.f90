@@ -14,6 +14,7 @@ program legacy_array_sections_25
     integer :: a(3) = [1, 2, 3], indices(3) = [3, 1, 2]
     integer :: b(3, 2), s
     integer, allocatable :: c(:), c_indices(:)
+    character(len=2) :: ch(3) = ["ab", "cd", "ef"]
     b(:, 1) = [4, 5, 6]
     b(:, 2) = [7, 8, 9]
     allocate(c(3), c_indices(3))
@@ -26,6 +27,7 @@ program legacy_array_sections_25
     call consume(b(indices, 2))
     call consume(c(c_indices))
     call mod_sum(a(indices), s)
+    call consume_char(ch(indices))
     if (s /= 312) error stop
     if (first(a(indices)) /= 3) error stop
     if (any(a /= [1, 2, 3])) error stop
@@ -51,6 +53,12 @@ contains
     subroutine consume_assumed_size(values)
         integer, intent(in) :: values(*)
         if (values(1) /= 3 .or. values(2) /= 1 .or. values(3) /= 2) error stop
+    end subroutine
+
+    subroutine consume_char(values)
+        character(len=2), intent(in) :: values(:)
+        if (size(values) /= 3) error stop
+        if (values(1) /= "ef" .or. values(2) /= "ab" .or. values(3) /= "cd") error stop
     end subroutine
 
     integer function first(values)
