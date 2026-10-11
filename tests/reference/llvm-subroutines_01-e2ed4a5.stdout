@@ -283,9 +283,9 @@ FINALIZE_SYMTABLE_subroutines_01:                 ; preds = %return
 
 define void @f(i32* %a, i32* %b) {
 .entry:
-  %0 = load i32, i32* %a, align 4
+  %0 = load i32, i32* %a, align 1
   %1 = add i32 %0, 1
-  store i32 %1, i32* %b, align 4
+  store i32 %1, i32* %b, align 1
   br label %return
 
 return:                                           ; preds = %.entry

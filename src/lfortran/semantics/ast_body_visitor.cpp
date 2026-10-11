@@ -197,8 +197,6 @@ public:
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -209,7 +207,6 @@ public:
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
-            common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
@@ -5641,121 +5638,6 @@ public:
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         this->import_use_symbols(m, x);
     }
-    // Replace Var references to a COMMON variable inside dimension expressions
-    // with the corresponding COMMON block struct member access.
-    void replace_common_var_in_expr(ASR::expr_t** expr_ptr,
-            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
-        if (!*expr_ptr) return;
-        if (ASR::is_a<ASR::Var_t>(**expr_ptr)) {
-            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(*expr_ptr)->m_v;
-            if (common_syms.find(sym) != common_syms.end()) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::asr_t* replacement = create_StructInstanceMember(*expr_ptr, var, scope);
-                if (replacement) {
-                    *expr_ptr = ASRUtils::EXPR(replacement);
-                }
-            }
-        } else if (ASR::is_a<ASR::IntegerBinOp_t>(**expr_ptr)) {
-            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(*expr_ptr);
-            replace_common_var_in_expr(&binop->m_left, common_syms, scope);
-            replace_common_var_in_expr(&binop->m_right, common_syms, scope);
-        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(**expr_ptr)) {
-            ASR::IntegerUnaryMinus_t* unary = ASR::down_cast<ASR::IntegerUnaryMinus_t>(*expr_ptr);
-            replace_common_var_in_expr(&unary->m_arg, common_syms, scope);
-        } else if (ASR::is_a<ASR::Cast_t>(**expr_ptr)) {
-            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(*expr_ptr);
-            replace_common_var_in_expr(&cast->m_arg, common_syms, scope);
-        }
-    }
-
-    void replace_common_var_in_dims(ASR::dimension_t* dims, size_t n_dims,
-            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
-        for (size_t i = 0; i < n_dims; i++) {
-            ASR::expr_t** exprs[] = {&dims[i].m_start, &dims[i].m_length};
-            for (ASR::expr_t** expr_ptr : exprs) {
-                replace_common_var_in_expr(expr_ptr, common_syms, scope);
-            }
-        }
-    }
-
-    void replace_common_var_in_type(ASR::ttype_t* type,
-            std::set<ASR::symbol_t*>& common_syms, SymbolTable* scope) {
-        if (!type) return;
-        ASR::ttype_t* t = type;
-        // Unwrap Pointer/Allocatable to get to the Array
-        if (ASR::is_a<ASR::Pointer_t>(*t)) {
-            t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
-        } else if (ASR::is_a<ASR::Allocatable_t>(*t)) {
-            t = ASR::down_cast<ASR::Allocatable_t>(t)->m_type;
-        }
-        if (ASR::is_a<ASR::Array_t>(*t)) {
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
-            replace_common_var_in_dims(arr->m_dims, arr->n_dims, common_syms, scope);
-        }
-    }
-
-    void remove_common_variable_declarations(SymbolTable* current_scope) {
-        // iterate over all symbols in symbol table and check if any of them is present in common_variables_hash
-        // if yes, then remove it from scope
-        std::map<std::string, ASR::symbol_t*> syms = current_scope->get_scope();
-
-        // Collect COMMON variable symbols that will be removed
-        std::set<ASR::symbol_t*> common_syms;
-        for (auto it = syms.begin(); it != syms.end(); ++it) {
-            if (ASR::is_a<ASR::Variable_t>(*(it->second))) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it->second);
-                uint64_t hash = get_hash((ASR::asr_t*) var);
-                if (common_variables_hash.find(hash) != common_variables_hash.end()) {
-                    common_syms.insert(it->second);
-                }
-            }
-        }
-
-        if (!common_syms.empty()) {
-            // Replace references to COMMON variables in dimension expressions
-            // of other variables' types before removing them from scope
-            for (auto it = syms.begin(); it != syms.end(); ++it) {
-                if (ASR::is_a<ASR::Variable_t>(*(it->second))) {
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it->second);
-                    if (common_syms.find(it->second) == common_syms.end()) {
-                        replace_common_var_in_type(var->m_type, common_syms, current_scope);
-                        // Recalculate variable dependencies after replacing
-                        // COMMON variable references. Pass m_symbolic_value so
-                        // that PARAMETER initializers (e.g. `parameter :: kdmax
-                        // = nmax+(nmax+1)/4`) keep their dependency on `nmax`.
-                        SetChar deps_vec;
-                        deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(
-                            al, deps_vec, var->m_type, var->m_symbolic_value, var->m_value);
-                        var->m_dependencies = deps_vec.p;
-                        var->n_dependencies = deps_vec.n;
-                    }
-                }
-            }
-            // Also update FunctionType arg_types if this scope belongs to a Function
-            if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
-                ASR::is_a<ASR::Function_t>(*(ASR::symbol_t*)current_scope->asr_owner)) {
-                ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
-                ASR::FunctionType_t* ftype = ASR::down_cast<ASR::FunctionType_t>(
-                    func->m_function_signature);
-                for (size_t i = 0; i < ftype->n_arg_types; i++) {
-                    replace_common_var_in_type(ftype->m_arg_types[i], common_syms, current_scope);
-                }
-                if (ftype->m_return_var_type) {
-                    replace_common_var_in_type(ftype->m_return_var_type, common_syms, current_scope);
-                }
-            }
-        }
-
-        // Now remove the COMMON variables from scope
-        for (auto it = syms.begin(); it != syms.end(); ++it) {
-            if (common_syms.find(it->second) != common_syms.end()) {
-                current_scope->erase_symbol(it->first);
-            }
-        }
-    }
-
-
     void visit_Program(const AST::Program_t &x) {
         program_count++;
         if (program_count >= 2) {
@@ -5810,7 +5692,6 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body =  0;
-        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -6482,7 +6363,6 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body = 0;
-        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -6595,7 +6475,6 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body = 0;
-        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -6704,7 +6583,6 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body = 0;
-        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -7796,90 +7674,6 @@ public:
                 ASR::expr_t* if_test_expr = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, target->base.loc, allocated_expr, ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)), nullptr));
                 ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, target->base.loc, nullptr, if_test_expr, if_body.p, if_body.n, nullptr, 0));
                 current_body->push_back(al, if_stmt);
-            }
-            // F2003 allocate-on-assignment for unlimited polymorphic
-            // (class(*), allocatable) array targets. Insert an Allocate
-            // before the assignment that takes the dynamic type and shape
-            // from the RHS, so the LHS is properly allocated as the
-            // intrinsic/derived type of the RHS. Only handle non-polymorphic
-            // RHS here; polymorphic RHS would need its own runtime handling.
-            {
-                ASR::ttype_t* tgt_t = ASRUtils::expr_type(target);
-                ASR::ttype_t* val_t = ASRUtils::expr_type(value);
-                if (compiler_options.po.realloc_lhs_arrays &&
-                    current_body != nullptr &&
-                    ASRUtils::is_allocatable(tgt_t) &&
-                    ASRUtils::is_array(tgt_t) &&
-                    ASRUtils::is_unlimited_polymorphic_type(target) &&
-                    ASRUtils::is_array(val_t) &&
-                    !ASRUtils::is_unlimited_polymorphic_type(value) &&
-                    !ASRUtils::is_class_type(ASRUtils::extract_type(val_t))) {
-                    Location loc = x.base.base.loc;
-                    ASR::ttype_t* val_elem_type = ASRUtils::duplicate_type(
-                        al, ASRUtils::extract_type(val_t));
-                    size_t target_rank = ASRUtils::extract_n_dims_from_ttype(tgt_t);
-                    Vec<ASR::dimension_t> alloc_dims;
-                    alloc_dims.reserve(al, target_rank);
-                    ASR::ttype_t* idx_t = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                    for (size_t i = 0; i < target_rank; i++) {
-                        ASR::dimension_t d;
-                        d.loc = loc;
-                        ASR::expr_t* dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, i + 1, idx_t));
-                        d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                            al, loc, 1, idx_t));
-                        d.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                            al, loc, value, dim_idx, idx_t, nullptr));
-                        alloc_dims.push_back(al, d);
-                    }
-                    ASR::alloc_arg_t alloc_arg;
-                    alloc_arg.loc = loc;
-                    alloc_arg.m_a = target;
-                    alloc_arg.m_dims = alloc_dims.p;
-                    alloc_arg.n_dims = alloc_dims.n;
-                    alloc_arg.m_len_expr = nullptr;
-                    alloc_arg.m_sym_subclass = nullptr;
-                    if (ASR::is_a<ASR::StructType_t>(*val_elem_type)) {
-                        ASR::symbol_t* struct_sym =
-                            ASRUtils::get_struct_sym_from_struct_expr(value);
-                        if (struct_sym != nullptr && current_scope != nullptr) {
-                            ASR::symbol_t* in_scope_sym =
-                                current_scope->resolve_symbol(
-                                    ASRUtils::symbol_name(struct_sym));
-                            if (in_scope_sym != nullptr &&
-                                ASRUtils::symbol_get_past_external(in_scope_sym)
-                                    == struct_sym) {
-                                struct_sym = in_scope_sym;
-                            }
-                        }
-                        alloc_arg.m_sym_subclass = struct_sym;
-                    }
-                    alloc_arg.m_type = val_elem_type;
-                    alloc_arg.m_codims = nullptr;
-                    alloc_arg.n_codims = 0;
-                    Vec<ASR::alloc_arg_t> alloc_args;
-                    alloc_args.reserve(al, 1);
-                    alloc_args.push_back(al, alloc_arg);
-                    ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(
-                        al, loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr));
-                    Vec<ASR::stmt_t*> if_body;
-                    if_body.reserve(al, 1);
-                    if_body.push_back(al, alloc_stmt);
-                    Vec<ASR::expr_t*> allocated_args;
-                    allocated_args.reserve(al, 1);
-                    allocated_args.push_back(al, target);
-                    ASR::expr_t* allocated_expr = ASRUtils::EXPR(
-                        ASR::make_IntrinsicImpureFunction_t(al, loc,
-                            static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
-                            allocated_args.p, allocated_args.n, 0,
-                            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-                    ASR::expr_t* if_test = ASRUtils::EXPR(ASR::make_LogicalNot_t(
-                        al, loc, allocated_expr,
-                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-                    ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
-                        al, loc, nullptr, if_test, if_body.p, if_body.n, nullptr, 0));
-                    current_body->push_back(al, if_stmt);
-                }
             }
         }
 
@@ -9852,7 +9646,7 @@ public:
         var = start = end = nullptr;
         if (x.m_var) {
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
-            var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var))));
+            var = ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var)));
         }
         // A deferred type of a template has no conversion to or from the
         // integer type of the loop control, so reject it before the loop
@@ -11343,8 +11137,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -11355,7 +11147,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
-        common_variables_hash, common_variables_byte_offset,
         external_procedures_mapping,
         explicit_intrinsic_procedures_mapping,
         instantiate_types, instantiate_symbols, entry_functions,

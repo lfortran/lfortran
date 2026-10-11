@@ -32,8 +32,14 @@ To contribute, follow these steps:
 
 4. **Install Dependencies and Build the Project**
 
-    Follow the [installation guide](https://docs.lfortran.org/en/installation/#build-from-git) 
-    to set up the required dependencies and build the project.
+    Use Pixi to install the declared dependencies and build the project:
+    ```bash
+    pixi run -e llvm11 build > build.log 2>&1
+    pixi run -e llvm11 start --version
+    ```
+    Follow the [Pixi installation guide](doc/src/installation.md#pixi-recommended)
+    for prerequisites and test commands. Reference tests and updates require
+    the `llvm11` environment. AI contributors must also read [AGENTS.md](AGENTS.md).
 
 5. **Make Changes and Submit Your Contribution**
 

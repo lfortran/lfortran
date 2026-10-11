@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.abi]: CommonBlock 'common~blk' must have the Source or the BindC ABI
+  --> tests/asr/verify/common_block_abi.asr:57:27
+   |
+57 |             "common~blk" (CommonBlock
+   |                           ^^^^^^^^^^^ failed here

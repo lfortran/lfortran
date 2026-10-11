@@ -47,6 +47,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     interface_04
@@ -122,6 +123,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     a1

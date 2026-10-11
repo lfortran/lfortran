@@ -1507,6 +1507,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         aa.m_codims = nullptr;
         aa.n_codims = 0;
         set_dynamic_type_of_polymorphic_target(aa, target, value);
+        deallocate_polymorphic_target_of_other_shape_or_type(aa, loc);
         alloc_args.push_back(al, aa);
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(al,
             loc, alloc_args.p, alloc_args.size())));
@@ -1624,6 +1625,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_codims = nullptr;
         alloc_arg.n_codims = 0;
         set_dynamic_type_of_polymorphic_target(alloc_arg, underlying_target, value);
+        deallocate_polymorphic_target_of_other_shape_or_type(alloc_arg, loc);
         alloc_args.push_back(al, alloc_arg);
 
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
@@ -1633,7 +1635,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     // F2018 10.2.1.3: an allocatable polymorphic variable that is
     // (re)allocated by an intrinsic assignment takes the dynamic type of
     // the expression. When the expression is not polymorphic, that type is
-    // its declared type, so allocate the target with it.
+    // its declared type (an intrinsic type only for an unlimited
+    // polymorphic variable), so allocate the target with it.
     void set_dynamic_type_of_polymorphic_target(ASR::alloc_arg_t& alloc_arg,
             ASR::expr_t* target, ASR::expr_t* value) {
         ASR::ttype_t* target_el_type = ASRUtils::extract_type(
@@ -1641,8 +1644,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::ttype_t* value_el_type = ASRUtils::extract_type(
             ASRUtils::expr_type(value));
         if (!ASRUtils::is_class_type(target_el_type) ||
-                !ASR::is_a<ASR::StructType_t>(*value_el_type) ||
                 ASRUtils::is_class_type(value_el_type)) {
+            return;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+            if (ASRUtils::is_unlimited_polymorphic_type(target_el_type)) {
+                alloc_arg.m_type = ASRUtils::duplicate_type(al, value_el_type);
+            }
             return;
         }
         ASR::symbol_t* value_struct_sym =
@@ -1653,6 +1661,86 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_type = ASRUtils::make_StructType_t_util(al,
             alloc_arg.loc, value_struct_sym, true);
         alloc_arg.m_sym_subclass = value_struct_sym;
+    }
+
+    // F2018 10.2.1.3: an allocated polymorphic variable whose shape or
+    // dynamic type differs from the expression's is deallocated before the
+    // ReAlloc of `alloc_arg`, which then allocates it with the dynamic type
+    // set by set_dynamic_type_of_polymorphic_target. The ReAlloc itself
+    // only compares the size. The value is read after the deallocation:
+    // a function result is already in a temporary here, and a value that
+    // can refer to the variable is evaluated into one by
+    // array_struct_temporary.
+    void deallocate_polymorphic_target_of_other_shape_or_type(
+            const ASR::alloc_arg_t& alloc_arg, const Location& loc) {
+        if (alloc_arg.m_type == nullptr) {
+            return;
+        }
+        ASR::expr_t* target = alloc_arg.m_a;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        auto make_deallocate = [&]() {
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, 1);
+            vars.push_back(al, target);
+            return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                al, loc, vars.p, vars.size()));
+        };
+        ASR::expr_t* shape_differs = nullptr;
+        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
+            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
+                    != get_index_kind()) {
+                length = b.i2i_t(length, idx_type);
+            }
+            ASR::expr_t* dim_differs = b.NotEq(
+                b.ArraySize(target, b.i_t(i + 1, idx_type), idx_type), length);
+            shape_differs = shape_differs == nullptr ? dim_differs
+                : b.Or(shape_differs, dim_differs);
+        }
+        // The guard naming the type of the expression keeps a variable of
+        // that type. A character expression has no guard, as its length is
+        // part of its dynamic type but not of a guard.
+        ASR::type_stmt_t* same_type_guard = nullptr;
+        if (alloc_arg.m_sym_subclass != nullptr) {
+            same_type_guard = ASR::down_cast<ASR::type_stmt_t>(
+                ASR::make_TypeStmtName_t(al, loc,
+                    alloc_arg.m_sym_subclass, nullptr, 0));
+        } else if (!ASRUtils::is_character(*alloc_arg.m_type)) {
+            same_type_guard = ASR::down_cast<ASR::type_stmt_t>(
+                ASR::make_TypeStmtType_t(al, loc,
+                    ASRUtils::duplicate_type(al, alloc_arg.m_type), nullptr, 0));
+        }
+        ASR::stmt_t* deallocate_if_other_type = make_deallocate();
+        if (same_type_guard != nullptr) {
+            Vec<ASR::type_stmt_t*> type_guards;
+            type_guards.reserve(al, 1);
+            type_guards.push_back(al, same_type_guard);
+            Vec<ASR::stmt_t*> other_type_body;
+            other_type_body.reserve(al, 1);
+            other_type_body.push_back(al, deallocate_if_other_type);
+            deallocate_if_other_type = ASRUtils::STMT(ASR::make_SelectType_t(
+                al, loc, target, nullptr, type_guards.p, type_guards.size(),
+                other_type_body.p, other_type_body.size()));
+        }
+        Vec<ASR::expr_t*> allocated_args;
+        allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, target);
+        ASR::expr_t* is_allocated = ASRUtils::EXPR(
+            ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.size(), 0, logical_type,
+                nullptr));
+        ASR::stmt_t* deallocate_if_differs = deallocate_if_other_type;
+        if (shape_differs != nullptr) {
+            deallocate_if_differs = b.If(shape_differs, {make_deallocate()},
+                {deallocate_if_other_type});
+        }
+        pass_result.push_back(al, b.If(is_allocated, {deallocate_if_differs},
+            {}));
     }
 
     ASR::Variable_t* get_base_variable(ASR::expr_t* expr) {
