@@ -174,6 +174,16 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                     push_to_scopes_until_symbol_scope(sym);
                 }
             }
+            // Assigning a reshape whose shape is known only at run time gives
+            // an allocatable target the shape of the reshape, so the target
+            // cannot become an array of a fixed shape.
+            if( ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) &&
+                ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) &&
+                !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(x.m_value)) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                push_to_scopes_until_symbol_scope(sym);
+            }
         }
 
 };
