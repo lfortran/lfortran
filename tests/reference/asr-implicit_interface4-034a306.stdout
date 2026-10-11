@@ -18,7 +18,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -51,7 +51,7 @@
                                         [(FunctionType
                                             []
                                             ()
-                                            BindC
+                                            Source
                                             ImplicitInterface
                                             ()
                                             .false.
@@ -64,7 +64,7 @@
                                             Host
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -99,7 +99,7 @@
                                             [(FunctionType
                                                 []
                                                 ()
-                                                BindC
+                                                Source
                                                 ImplicitInterface
                                                 ()
                                                 .false.
@@ -112,7 +112,7 @@
                                                 Host
                                             )]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -150,7 +150,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -187,7 +187,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -211,7 +211,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -235,7 +235,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -255,7 +255,7 @@
                                         (Real 4)
                                         (Real 8)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -293,7 +293,7 @@
                                             (Real 4)
                                             (Real 8)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -398,7 +398,7 @@
                         [(FunctionType
                             []
                             ()
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -437,7 +437,7 @@
                                 (Real 4)
                                 (Real 8)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -470,7 +470,7 @@
                                 [(FunctionType
                                     []
                                     ()
-                                    BindC
+                                    Source
                                     ImplicitInterface
                                     ()
                                     .false.
@@ -483,7 +483,7 @@
                                     Host
                                 )]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

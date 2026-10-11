@@ -116,9 +116,14 @@ an independent language reference or a second compiler before encoding the
 behavior as supported. Prefer an established test declaration idiom over
 inventing a new one.
 
-Build, generation, and validation steps that can fail must execute on pull
-requests. Exclude only operations inherently restricted to the main branch,
-such as publishing with main-only credentials.
+Review build, generation and validation coverage against `AGENTS.md`'s CI
+policy. Internal regression modes and capability checks belong in Quick;
+Exhaustive adds configurations rather than replaying already-covered work.
+Third-party application validation intentionally runs only in Exhaustive
+(every main push or an explicit request) as a source of integration
+regressions and release evidence. Do not mistake that
+explicit trade-off, or credential-restricted publishing, for an accidental
+coverage omission.
 
 ## 6. Check kinds, layout, targets, and runtime behavior
 

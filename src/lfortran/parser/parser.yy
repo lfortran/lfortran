@@ -1949,7 +1949,7 @@ subroutine_call
     ;
 
 pragma_statement
-    : TK_OMP     { $$ = OMP_PRAGMA($1, @$); }
+    : TK_OMP     { $$ = OMP_PRAGMA2(p.m_a, @$, $1.c_str(p.m_a)); }
     | TK_OMP_END { $$ = OMP_PRAGMA($1, @$); }
     ;
 

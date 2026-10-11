@@ -11,7 +11,7 @@ __device__ inline void fixed_result_device_t_gpu_33(int n, float* r) {
     int __libasr_index_0_1;
     int __libasr_index_0_2;
     int __libasr_index_0_3;
-    __do_loop_end = ((2 + 1) - 1);
+    __do_loop_end = ((((int)2) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
     while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
@@ -24,7 +24,7 @@ __device__ inline void fixed_result_device_t_gpu_33(int n, float* r) {
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((float)n);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
         __libasr_index_0_2 = 1;
-        __do_loop_end1 = ((2 + 1) - 1);
+        __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __libasr_index_0_1 = (((int)1) - 1);
         while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -32,7 +32,7 @@ __device__ inline void fixed_result_device_t_gpu_33(int n, float* r) {
             __libasr_index_0_2 = (__libasr_index_0_2 + 1);
         }
     } else {
-        __do_loop_end2 = ((2 + 1) - 1);
+        __do_loop_end2 = ((((int)2) + ((int)1)) - 1);
         __libasr_index_0_3 = (((int)1) - 1);
         while (((__libasr_index_0_3 + 1) <= __do_loop_end2)) {
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);

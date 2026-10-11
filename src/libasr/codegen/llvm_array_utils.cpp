@@ -649,6 +649,34 @@ namespace LCompilers {
             }
         }
 
+        llvm::Value* SimpleCMODescriptor::get_array_section_base(
+            llvm::Type* value_el_type, ASR::ttype_t* value_type,
+            llvm::Value* data, llvm::Value* offset) {
+            if (!ASRUtils::is_class_type(ASRUtils::extract_type(value_type))) {
+                return llvm_utils->create_ptr_gep2(value_el_type, data, offset);
+            }
+            // ONE-wrapper layout (class(t) and class(*)): `data` addresses a
+            // single {vptr, data_ptr} wrapper whose data_ptr addresses
+            // contiguous elements of the dynamic type. The section gets its
+            // own wrapper with the same vptr and a data_ptr advanced by
+            // `offset` dynamic elements.
+            llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+                builder->CreateBitCast(data, llvm_utils->vptr_type->getPointerTo()));
+            llvm::Type* data_field_type = value_el_type->getStructElementType(1);
+            llvm::Value* elements = llvm_utils->CreateLoad2(data_field_type,
+                llvm_utils->create_gep2(value_el_type, data, 1));
+            llvm::Value* section_elements = builder->CreateBitCast(
+                llvm_utils->get_polymorphic_array_data_ptr(elements, offset, vptr),
+                data_field_type);
+            llvm::Value* section_wrapper = llvm_utils->CreateAlloca(value_el_type,
+                nullptr, "array_section_class_wrapper");
+            builder->CreateStore(vptr, builder->CreateBitCast(section_wrapper,
+                llvm_utils->vptr_type->getPointerTo()));
+            builder->CreateStore(section_elements,
+                llvm_utils->create_gep2(value_el_type, section_wrapper, 1));
+            return section_wrapper;
+        }
+
         void SimpleCMODescriptor::fill_descriptor_for_array_section(
             llvm::Value* value_desc, llvm::Type *value_el_type, ASR::ttype_t* value_type,
             llvm::Type* value_desc_type,
@@ -696,7 +724,8 @@ namespace LCompilers {
                 builder->CreateStore(value_str_length, target_str_len);
 
             } else {
-                value_desc_data = llvm_utils->create_ptr_gep2(value_el_type, value_desc_data, target_offset);
+                value_desc_data = get_array_section_base(value_el_type, value_type,
+                    value_desc_data, target_offset);
                 llvm::Type* target_type_llvm = target_desc_type;
                 builder->CreateStore(value_desc_data, get_pointer_to_data(target_type_llvm, target));
             }
@@ -789,7 +818,8 @@ namespace LCompilers {
                 builder->CreateStore(value_str_length, target_str_len);
 
             } else {
-                value_desc = llvm_utils->create_ptr_gep2(value_el_type, value_desc, target_offset);
+                value_desc = get_array_section_base(value_el_type, value_type,
+                    value_desc, target_offset);
                 llvm::Type* tgt_llvm_ty2 = target_desc_type;
                 builder->CreateStore(value_desc, get_pointer_to_data(tgt_llvm_ty2, target));
             }
