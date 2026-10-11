@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -73,6 +74,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             z:
                                                 (Variable
@@ -103,6 +105,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     associate_block
@@ -484,6 +487,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             theta:
                                 (Variable
@@ -514,6 +518,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -544,6 +549,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -574,6 +580,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     associate_05

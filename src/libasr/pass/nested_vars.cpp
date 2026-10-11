@@ -308,7 +308,9 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if(is_module_or_global_variable(v)) return;
+                // A variable in a common block lives in the block's static
+                // storage, which every procedure reaches directly.
+                if(is_module_or_global_variable(v) || v->m_common_block != nullptr) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope
                 // (or a child scope such as an associate block), it is a
@@ -404,7 +406,7 @@ public:
                 continue;
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-            if (is_module_or_global_variable(v)) {
+            if (is_module_or_global_variable(v) || v->m_common_block != nullptr) {
                 continue;
             }
             if (current_scope && par_func_sym &&

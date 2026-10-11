@@ -95,6 +95,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -119,6 +120,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s:
                                 (Function

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.storage]: CommonBlock 'common~blk' must have Default or Save storage
+  --> tests/asr/verify/common_block_threadprivate_storage.asr:57:27
+   |
+57 |             "common~blk" (CommonBlock
+   |                           ^^^^^^^^^^^ failed here

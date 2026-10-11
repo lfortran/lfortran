@@ -887,7 +887,8 @@ public:
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
         CompilerOptions &compiler_options_,
-        diag::Diagnostics &diagnostics, LocationManager &lm) :
+        diag::Diagnostics &diagnostics, LocationManager &lm,
+        const LLVMTargetConfig &target_config) :
     diag{diagnostics},
     context(context),
     builder(std::make_unique<llvm::IRBuilder<>>(context)),
@@ -943,7 +944,24 @@ public:
             fmf.setFast();
             builder->setFastMathFlags(fmf);
         }
+        // The storage of a common block is shared with the object files of
+        // other units and other compilers, so it is laid out for the target
+        // the code is generated for, while the rest of the visitor sizes
+        // what it generates with the host's layout (see
+        // visit_TranslationUnit).
+        common_block_data_layout = std::make_unique<llvm::DataLayout>(
+            target_config.data_layout);
+        common_block_storage_coalesces = !llvm::Triple(
+            target_config.triple).isOSBinFormatWasm();
     }
+
+    // The target data layout and object format the storage of common blocks
+    // is laid out and linked for, see the constructor.
+    std::unique_ptr<llvm::DataLayout> common_block_data_layout;
+    // Whether the target's object files have common symbols, which merge the
+    // zero storage every unit defines into one. A WebAssembly object file
+    // does not, so there the storage is an ordinary definition.
+    bool common_block_storage_coalesces = true;
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
@@ -2276,6 +2294,8 @@ public:
             cell_scopes.push_back(s);
         }
         std::reverse(cell_scopes.begin(), cell_scopes.end());
+
+        declare_common_block_storage(x.m_symtab);
 
         // Process Variables first:
         for (SymbolTable *scope : cell_scopes) {
@@ -5808,6 +5828,17 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_v)) &&
+                ASRUtils::is_fixed_size_array(x.m_type) &&
+                ASRUtils::get_fixed_size_of_array(x.m_type) == 0) {
+            // The member of each element of an array of derived type is an
+            // array that no storage holds as one: array_struct_temporary
+            // copies it into a temporary, unless it has no elements, as
+            // here. Then nothing reads its storage, and it has none.
+            tmp = llvm::ConstantPointerNull::get(llvm_utils->get_type_from_ttype_t_util(
+                const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get())->getPointerTo());
+            return;
+        }
         current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
 
@@ -6021,18 +6052,6 @@ public:
                 }
             }
         }
-
-        // COMMON block type aliasing: Fortran allows different program units to
-        // view the same COMMON block storage with different types (storage
-        // association). When the local variable type (x.m_type) differs from
-        // the struct member type (member->m_type), we must bitcast the pointer
-        // to match the local view. Details handled by the helper function.
-        tmp = llvm_utils->apply_common_block_alias_cast(
-            tmp,
-            const_cast<ASR::expr_t*>(reinterpret_cast<const ASR::expr_t*>(&x)),
-            x.m_type,
-            member->m_type
-        );
     }
 
     void visit_CoarrayRef(const ASR::CoarrayRef_t& x) {
@@ -6395,19 +6414,393 @@ public:
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
         // bind(C) variables without initializers should use CommonLinkage
         // to allow merging with C definitions of the same symbol
-        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value == nullptr) {
-            return true;
+        return x.m_abi == ASR::abiType::BindC && x.m_symbolic_value == nullptr;
+    }
+
+    // A BLOCK DATA program unit has no code: what it provides is the initial
+    // values its views of common blocks give their storage, which
+    // declare_common_block_storage lays out.
+    void visit_BlockData(const ASR::BlockData_t &/*x*/) {}
+
+    // The storage a view of a common block describes is laid out once for
+    // the whole translation unit by declare_common_block_storage.
+    void visit_CommonBlock(const ASR::CommonBlock_t &/*x*/) {}
+
+    // The views of every common block of `scope` and of the scopes nested in
+    // it, by the link name of their storage.
+    void collect_common_blocks(SymbolTable *scope,
+            std::map<std::string, std::vector<ASR::CommonBlock_t*>> &blocks) {
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::CommonBlock_t>(*item.second)) {
+                ASR::CommonBlock_t *block = ASR::down_cast<ASR::CommonBlock_t>(item.second);
+                blocks[block->m_link_name].push_back(block);
+            } else if (SymbolTable *nested = ASRUtils::symbol_symtab(item.second)) {
+                collect_common_blocks(nested, blocks);
+            }
         }
-        if (!compiler_options.separate_compilation
-                || x.m_abi == ASR::abiType::ExternalUndefined) {
-            return false;
+    }
+
+    // An array pointer of a common block is used, as one of a module is,
+    // through a reference to its descriptor, which the block stores.
+    static bool is_common_array_pointer(const ASR::Variable_t *v) {
+        return ASRUtils::is_pointer(v->m_type) && ASRUtils::is_array(v->m_type);
+    }
+
+    // The type in which a variable is stored in a common block: a character
+    // variable as its characters, in place, an array pointer as its
+    // descriptor, anything else as a variable of its type is stored.
+    llvm::Type* common_variable_storage_type(ASR::Variable_t *v) {
+        if (is_common_array_pointer(v)) {
+            return llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+                ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                ASRUtils::type_get_past_pointer(v->m_type), module.get(),
+                v->m_abi);
         }
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(
-            const_cast<ASR::symbol_t*>(&x.base));
-        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-            return startswith(ASRUtils::symbol_name(owner), "file_common_block_");
+        if (ASRUtils::is_character(*v->m_type) && !ASRUtils::is_pointer(v->m_type)) {
+            ASR::String_t *str = ASRUtils::get_string_type(v->m_type);
+            int64_t length = 0;
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), length)) {
+                throw CodeGenError("the length of character variable '"
+                    + std::string(v->m_name) + "' in a common block is not "
+                    "constant", v->base.base.loc);
+            }
+            int64_t n = ASRUtils::is_array(v->m_type)
+                ? ASRUtils::get_fixed_size_of_array(v->m_type) : 1;
+            return llvm::ArrayType::get(llvm::Type::getInt8Ty(context),
+                n * length * str->m_kind);
         }
-        return false;
+        return llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+            ASR::make_Var_t(al, v->base.base.loc, &v->base)), v->m_type,
+            module.get());
+    }
+
+    // The byte offset, within its variable, of the first storage unit of the
+    // designator of a common_association.
+    int64_t common_designator_offset(ASR::expr_t *designator) {
+        int64_t element, character;
+        ASR::Variable_t *v = ASRUtils::get_storage_designator_offset(
+            designator, element, character);
+        LCOMPILERS_ASSERT(v != nullptr);
+        ASR::ttype_t *t = ASRUtils::type_get_past_array(v->m_type);
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            ASR::String_t *str = ASR::down_cast<ASR::String_t>(t);
+            int64_t length = 0;
+            ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), length);
+            return (element * length + character) * str->m_kind;
+        }
+        llvm::Type *element_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+            t, module.get());
+        return element * static_cast<int64_t>(
+            common_block_data_layout->getTypeAllocSize(element_type));
+    }
+
+    // Where the variables of one view of a common block are in its storage:
+    // its members one after another with the target's natural alignment,
+    // and the variables of its associations where their anchors place them.
+    struct CommonViewLayout {
+        std::vector<std::pair<ASR::Variable_t*, int64_t>> offsets;
+        int64_t size = 0;
+        int64_t alignment = 1;
+    };
+
+    CommonViewLayout layout_common_view(ASR::CommonBlock_t *block) {
+        const llvm::DataLayout &data_layout = *common_block_data_layout;
+        CommonViewLayout layout;
+        std::map<ASR::Variable_t*, int64_t> offset_of;
+        // A member is at an offset its type's alignment divides; a variable
+        // EQUIVALENCE places need not be, and is then accessed only as
+        // aligned as its address is known to be (LLVMUtils::CreateLoad2,
+        // LLVM::CreateStore).
+        auto place = [&](ASR::Variable_t *v, int64_t offset) {
+            llvm::Type *t = common_variable_storage_type(v);
+            int64_t alignment = data_layout.getABITypeAlign(t).value();
+            offset_of[v] = offset;
+            layout.offsets.push_back({v, offset});
+            layout.alignment = std::max(layout.alignment, alignment);
+            layout.size = std::max(layout.size, offset
+                + static_cast<int64_t>(data_layout.getTypeAllocSize(t)));
+        };
+        int64_t end = 0;
+        for (size_t i = 0; i < block->n_members; i++) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(block->m_members[i]);
+            int64_t alignment = data_layout.getABITypeAlign(
+                common_variable_storage_type(v)).value();
+            end = (end + alignment - 1) / alignment * alignment;
+            place(v, end);
+            end = layout.size;
+        }
+        for (size_t i = 0; i < block->n_associations; i++) {
+            const ASR::common_association_t &a = block->m_associations[i];
+            int64_t element, character;
+            ASR::Variable_t *anchor = ASRUtils::get_storage_designator_offset(
+                a.m_anchor, element, character);
+            LCOMPILERS_ASSERT(offset_of.find(anchor) != offset_of.end());
+            int64_t offset = offset_of[anchor] + common_designator_offset(a.m_anchor)
+                - common_designator_offset(a.m_designator);
+            if (offset < 0) {
+                throw CodeGenError("EQUIVALENCE extends a common block before "
+                    "its first storage unit", a.loc);
+            }
+            place(ASR::down_cast<ASR::Variable_t>(a.m_variable), offset);
+        }
+        return layout;
+    }
+
+    // The initial value of a variable of a common block, as a constant of
+    // the type it is stored in, or nullptr when it has none.
+    llvm::Constant* common_variable_initializer(ASR::Variable_t *v,
+            llvm::Type *storage_type) {
+        ASR::expr_t *value = v->m_value ? v->m_value : v->m_symbolic_value;
+        if (value == nullptr || ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            // Zero storage is a disassociated pointer.
+            return nullptr;
+        }
+        if (ASRUtils::is_character(*v->m_type)) {
+            ASR::String_t *str = ASRUtils::get_string_type(v->m_type);
+            int64_t length = 0;
+            ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), length);
+            std::vector<ASR::expr_t*> elements;
+            if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
+                for (int64_t i = 0; i < n; i++) {
+                    elements.push_back(ASRUtils::fetch_ArrayConstant_value(al, a, static_cast<int>(i)));
+                }
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                ASR::ArrayConstructor_t *a = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                for (size_t i = 0; i < a->n_args; i++) {
+                    elements.push_back(ASRUtils::expr_value(a->m_args[i]));
+                }
+            } else {
+                elements.push_back(ASRUtils::expr_value(value));
+            }
+            // Each element is stored as declare_global_string stores a
+            // constant: blank padded, of default kind as the characters of
+            // the constant, which may include null characters, of another
+            // kind as its code points.
+            std::vector<uint8_t> bytes;
+            for (ASR::expr_t *e : elements) {
+                int64_t n = 0;
+                if (e == nullptr || !ASR::is_a<ASR::StringConstant_t>(*e)
+                        || !ASRUtils::extract_value(ASRUtils::expr_value(
+                            ASRUtils::get_string_type(ASRUtils::expr_type(e))->m_len), n)) {
+                    throw CodeGenError("the initial value of character variable '"
+                        + std::string(v->m_name) + "' in a common block is "
+                        "not constant", v->base.base.loc);
+                }
+                const char *characters = ASR::down_cast<ASR::StringConstant_t>(e)->m_s;
+                std::vector<uint8_t> element = str->m_kind == 1
+                    ? std::vector<uint8_t>(characters, characters + n)
+                    : LCompilers::utf8_to_unicode_bytes(characters, str->m_kind);
+                for (size_t i = element.size() / str->m_kind;
+                        i < static_cast<size_t>(length); i++) {
+                    element.push_back(' ');
+                    element.insert(element.end(), str->m_kind - 1, 0);
+                }
+                element.resize(length * str->m_kind);
+                bytes.insert(bytes.end(), element.begin(), element.end());
+            }
+            return llvm::ConstantDataArray::get(context, bytes);
+        }
+        llvm::Constant *init = nullptr;
+        if (ASRUtils::is_array(v->m_type)) {
+            init = get_const_array(value, storage_type->getArrayElementType());
+        } else {
+            this->visit_expr_wrapper(value, true);
+            init = llvm::dyn_cast<llvm::Constant>(tmp);
+        }
+        if (init == nullptr || init->getType() != storage_type) {
+            throw CodeGenError("the initial value of variable '"
+                + std::string(v->m_name) + "' in a common block is not a "
+                "constant of its type", v->base.base.loc);
+        }
+        return init;
+    }
+
+    // Each common block of the translation unit is one global, named by the
+    // link name of its views. A view that gives initial values defines it
+    // with them; otherwise a view of this translation unit defines it as zero
+    // storage, merged with other definitions where the linker merges common
+    // symbols; a view of a module read from a module file only refers to it.
+    // Its size and alignment are the largest of all its views. Every
+    // variable of every view is given its address in the storage, so that it
+    // is used as a global of its own type would be.
+    //
+    // In interactive evaluation the scopes of the earlier cells are the
+    // parents of the translation unit's: the storage of a block one of their
+    // views names was created by an earlier cell, so this one only refers to
+    // it, and cannot make it larger or give it initial values.
+    void declare_common_block_storage(SymbolTable *tu_scope) {
+        std::map<std::string, std::vector<ASR::CommonBlock_t*>> blocks;
+        collect_common_blocks(tu_scope, blocks);
+        std::map<std::string, std::vector<ASR::CommonBlock_t*>> earlier_blocks;
+        for (SymbolTable *s = tu_scope->parent; s != nullptr; s = s->parent) {
+            collect_common_blocks(s, earlier_blocks);
+        }
+        for (auto &item : earlier_blocks) {
+            blocks[item.first];
+        }
+        llvm::Type *i8 = llvm::Type::getInt8Ty(context);
+        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        for (auto &item : blocks) {
+            const std::string &link_name = item.first;
+            std::vector<CommonViewLayout> layouts;
+            int64_t size = 0, alignment = 1;
+            ASR::CommonBlock_t *initialized = nullptr;
+            bool defined = false;
+            auto earlier = earlier_blocks.find(link_name);
+            bool created_earlier = earlier != earlier_blocks.end();
+            if (created_earlier) {
+                int64_t earlier_size = 0;
+                for (ASR::CommonBlock_t *block : earlier->second) {
+                    earlier_size = std::max(earlier_size,
+                        layout_common_view(block).size);
+                }
+                for (ASR::CommonBlock_t *block : item.second) {
+                    if (layout_common_view(block).size > earlier_size) {
+                        throw CodeGenError("this view of a common block is larger "
+                            "than the storage an earlier cell created for the "
+                            "block", block->base.base.loc);
+                    }
+                    if (block->m_role == ASR::common_block_roleType::Initialized) {
+                        throw CodeGenError("an earlier cell created the storage "
+                            "of this common block, so its initial values cannot "
+                            "be given again", block->base.base.loc);
+                    }
+                }
+                item.second.insert(item.second.begin(), earlier->second.begin(),
+                    earlier->second.end());
+            }
+            for (size_t i = 0; i < item.second.size(); i++) {
+                ASR::CommonBlock_t *block = item.second[i];
+                layouts.push_back(layout_common_view(block));
+                size = std::max(size, layouts.back().size);
+                alignment = std::max(alignment, layouts.back().alignment);
+                if (created_earlier) {
+                    // The storage is only declared.
+                    continue;
+                }
+                if (block->m_role == ASR::common_block_roleType::Initialized) {
+                    if (initialized != nullptr) {
+                        throw CodeGenError("a common block is initialized by "
+                            "more than one program unit", block->base.base.loc);
+                    }
+                    initialized = block;
+                } else if (block->m_role == ASR::common_block_roleType::Tentative) {
+                    defined = true;
+                }
+            }
+            if (module->getNamedValue(link_name) != nullptr) {
+                throw CodeGenError("the storage of a common block has the name '"
+                    + link_name + "', which is already used",
+                    item.second[0]->base.base.loc);
+            }
+            llvm::GlobalVariable *storage = nullptr;
+            if (initialized != nullptr) {
+                const CommonViewLayout &layout = layouts[std::find(
+                    item.second.begin(), item.second.end(), initialized)
+                    - item.second.begin()];
+                std::vector<std::pair<int64_t, llvm::Constant*>> values;
+                for (auto &placed : layout.offsets) {
+                    llvm::Constant *value = common_variable_initializer(
+                        placed.first, common_variable_storage_type(placed.first));
+                    if (value != nullptr) {
+                        values.push_back({placed.second, value});
+                    }
+                }
+                std::sort(values.begin(), values.end(),
+                    [](const std::pair<int64_t, llvm::Constant*> &a,
+                       const std::pair<int64_t, llvm::Constant*> &b) {
+                        return a.first < b.first;
+                    });
+                std::vector<llvm::Constant*> fields;
+                int64_t position = 0;
+                for (auto &value : values) {
+                    if (value.first < position) {
+                        throw CodeGenError("variables of a common block that "
+                            "share storage have initial values both",
+                            initialized->base.base.loc);
+                    }
+                    if (value.first > position) {
+                        fields.push_back(llvm::ConstantAggregateZero::get(
+                            llvm::ArrayType::get(i8, value.first - position)));
+                    }
+                    fields.push_back(value.second);
+                    position = value.first + static_cast<int64_t>(
+                        common_block_data_layout->getTypeAllocSize(
+                            value.second->getType()));
+                }
+                if (position < size) {
+                    fields.push_back(llvm::ConstantAggregateZero::get(
+                        llvm::ArrayType::get(i8, size - position)));
+                }
+                llvm::Constant *image = llvm::ConstantStruct::getAnon(
+                    context, fields, true);
+                storage = new llvm::GlobalVariable(*module, image->getType(),
+                    false, llvm::GlobalValue::ExternalLinkage, image, link_name);
+            } else if (defined) {
+                // As a C tentative definition, the zero storage every unit
+                // defines is one: the linker merges the definitions of all
+                // object files into one of the largest size, or uses the one
+                // a unit gives initial values. WebAssembly object files have
+                // no common symbols, so there it is an ordinary definition:
+                // a common block is then supported within one translation
+                // unit, and the linker rejects a second definition of it in
+                // another object file.
+                llvm::Type *type = llvm::ArrayType::get(i8, size);
+                storage = new llvm::GlobalVariable(*module, type, false,
+                    common_block_storage_coalesces
+                        ? llvm::GlobalValue::CommonLinkage
+                        : llvm::GlobalValue::ExternalLinkage,
+                    llvm::ConstantAggregateZero::get(type), link_name);
+            } else {
+                storage = new llvm::GlobalVariable(*module,
+                    llvm::ArrayType::get(i8, size), false,
+                    llvm::GlobalValue::ExternalLinkage, nullptr, link_name);
+            }
+            storage->setAlignment(llvm::MaybeAlign(alignment));
+            llvm::Constant *base = llvm::ConstantExpr::getBitCast(storage,
+                i8->getPointerTo());
+            for (const CommonViewLayout &layout : layouts) {
+                for (auto &placed : layout.offsets) {
+                    ASR::Variable_t *v = placed.first;
+                    llvm::Constant *address = llvm::ConstantExpr::getGetElementPtr(
+                        i8, base, llvm::ConstantInt::get(i64, placed.second));
+                    uint32_t h = get_hash((ASR::asr_t*)v);
+                    if (ASRUtils::is_character(*v->m_type) &&
+                            !ASRUtils::is_pointer(v->m_type)) {
+                        // A character variable, scalar or array, is used
+                        // through a descriptor of its characters.
+                        ASR::String_t *str = ASRUtils::get_string_type(v->m_type);
+                        int64_t length = 0;
+                        ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), length);
+                        llvm::Constant *descriptor = llvm::ConstantStruct::get(
+                            llvm::cast<llvm::StructType>(string_descriptor),
+                            {address, llvm::ConstantInt::get(i64, length)});
+                        llvm_symtab[h] = new llvm::GlobalVariable(*module,
+                            string_descriptor, false,
+                            llvm::GlobalValue::PrivateLinkage, descriptor,
+                            link_name + "." + v->m_name);
+                    } else if (is_common_array_pointer(v)) {
+                        // The reference always points to the descriptor in
+                        // the block, so that associating the pointer, which
+                        // updates the descriptor it refers to, updates the
+                        // block's.
+                        llvm::Type *reference_type = llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                            v->m_type, module.get());
+                        llvm_symtab[h] = new llvm::GlobalVariable(*module,
+                            reference_type, false, llvm::GlobalValue::PrivateLinkage,
+                            llvm::ConstantExpr::getBitCast(address, reference_type),
+                            link_name + "." + v->m_name);
+                    } else {
+                        llvm_symtab[h] = llvm::ConstantExpr::getBitCast(address,
+                            common_variable_storage_type(v)->getPointerTo());
+                    }
+                }
+            }
+        }
     }
 
     void set_global_variable_linkage_as_common(llvm::Value* ptr,
@@ -6821,6 +7214,12 @@ public:
             return;
         }
         uint32_t h = get_hash((ASR::asr_t*)&x);
+        if (x.m_common_block != nullptr) {
+            // The storage of the common block, laid out by
+            // declare_common_block_storage, is the variable's.
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            return;
+        }
         // This happens at global scope, so the intent can only be either local
         // (global variable declared/initialized in this translation unit), or
         // external (global variable not declared/initialized in this
@@ -9573,7 +9972,10 @@ public:
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::Variable_t>(*var_sym)) {
+            // A variable in a common block lives in the block's storage,
+            // which declare_common_block_storage laid out.
+            if (is_a<ASR::Variable_t>(*var_sym) &&
+                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_common_block == nullptr) {
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
@@ -13185,7 +13587,7 @@ public:
                         elem_type, src_as_elem_ptr, zero_based);
                     llvm::Value* elem_val = llvm_utils->CreateLoad2(
                         elem_type, elem_ptr);
-                    builder->CreateStore(elem_val, dest_ptr);
+                    LLVM::CreateStore(*builder, elem_val, dest_ptr);
                     return;
                 }
             }
@@ -13393,7 +13795,7 @@ public:
                 llvm_utils->deepcopy(x.m_value, rhs_value, data_ptr,
                     target_type, target_type, module.get());
             } else {
-                builder->CreateStore(rhs_value, data_ptr);
+                LLVM::CreateStore(*builder, rhs_value, data_ptr);
             }
             return;
         }
@@ -14611,7 +15013,7 @@ public:
                         llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
                     builder->CreateMemCpy(target, llvm::MaybeAlign(), value, llvm::MaybeAlign(), llvm_size);
                 } else {
-                    builder->CreateStore(value, target);
+                    LLVM::CreateStore(*builder, value, target);
                 }
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
@@ -14713,9 +15115,9 @@ public:
                 llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::expr_type(x.m_target), module.get());
                 target = llvm_utils->CreateLoad2(target_ptr_type, target);
             }
-            builder->CreateStore(value, target);
+            LLVM::CreateStore(*builder, value, target);
         } else {
-            builder->CreateStore(value, target);
+            LLVM::CreateStore(*builder, value, target);
         }
     }
 
@@ -29559,7 +29961,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
         const std::string &infile, LocationManager &lm)
 {
-    ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm);
+    ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm, target_config);
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(

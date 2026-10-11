@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lsame:
                                 (Function
@@ -59,6 +60,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     lsame
@@ -114,6 +116,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             lsame~arg_1:
                                                 (Variable
@@ -138,6 +141,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             lsame~result:
                                                 (Variable
@@ -162,6 +166,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     lsame~fpcast
@@ -231,6 +236,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             uplo:
                                 (Variable
@@ -255,6 +261,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     ssyr2

@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             local_ctr:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -102,6 +105,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     increment_ctr
@@ -208,6 +212,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -232,6 +237,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     openmp1

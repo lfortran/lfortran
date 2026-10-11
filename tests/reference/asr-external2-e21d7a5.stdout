@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub2
@@ -90,6 +91,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub2~fpcast
@@ -156,6 +158,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -180,6 +183,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     f

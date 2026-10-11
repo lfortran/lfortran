@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.members]: CommonBlock 'common~blk' must have at least one member
+ --> tests/asr/verify/common_block_no_members.asr:9:27
+  |
+9 |             "common~blk" (CommonBlock
+  |                           ^^^^^^^^^^^ failed here

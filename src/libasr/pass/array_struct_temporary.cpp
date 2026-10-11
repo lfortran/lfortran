@@ -3666,6 +3666,12 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
+        if (x.m_common_block != nullptr) {
+            // The initial value of a variable in a common block is the
+            // initial value of the block's static storage, which the view
+            // of the block gives.
+            return;
+        }
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
@@ -4120,6 +4126,8 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
+            // A variable in a common block keeps its static initial value.
+            x.m_common_block == nullptr &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&

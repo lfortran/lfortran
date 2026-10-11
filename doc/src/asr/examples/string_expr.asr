@@ -30,6 +30,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "c" (Variable
               :parent_symtab 1
@@ -64,6 +65,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "n" (Variable
               :parent_symtab 1
@@ -89,6 +91,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "s" (Variable
               :parent_symtab 1
@@ -123,6 +126,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "t" (Variable
               :parent_symtab 1
@@ -153,6 +157,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )

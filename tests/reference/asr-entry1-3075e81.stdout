@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     entry1
@@ -94,6 +95,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     x
@@ -156,6 +158,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -180,6 +183,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     x_main__lcompilers
@@ -316,6 +320,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     y

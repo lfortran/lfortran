@@ -134,6 +134,12 @@ public:
 
     /******************************** Visitors ********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::BlockData_t>(*item.second)) {
+                throw CodeGenError("BLOCK DATA is not supported by the MLIR backend",
+                    item.second->base.loc);
+            }
+        }
         module = std::make_unique<mlir::ModuleOp>(builder->create<mlir::ModuleOp>(loc,
             llvm::StringRef("LFortran")));
 
@@ -277,6 +283,12 @@ public:
         mlir_symtab[h] = ptr;
     }
     void visit_Variable(const ASR::Variable_t &x) {
+        // A variable in a common block has no storage of its own, and this
+        // backend does not lay out the storage of common blocks.
+        if (ASR::CommonBlock_t *block = ASRUtils::get_common_block(&x)) {
+            throw CodeGenError("COMMON blocks are not supported by the MLIR backend",
+                block->base.base.loc);
+        }
         uint32_t h = get_hash((ASR::asr_t*) &x);
         if (ASRUtils::is_character(*x.m_type)) {
             handle_string_variable(h);

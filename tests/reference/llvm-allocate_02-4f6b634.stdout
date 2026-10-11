@@ -43,7 +43,7 @@ define i32 @main(i32 %0, i8** %1) {
 
 check_data:                                       ; preds = %.entry
   %14 = getelementptr %array.1, %array.1* %11, i32 0, i32 0
-  %15 = load i32*, i32** %14, align 8
+  %15 = load i32*, i32** %14, align 1
   %16 = ptrtoint i32* %15 to i64
   %17 = icmp ne i64 %16, 0
   br label %merge_allocated
@@ -122,7 +122,7 @@ loop.body:                                        ; preds = %loop.head
 
 check_data1:                                      ; preds = %loop.body
   %55 = getelementptr %array.1, %array.1* %52, i32 0, i32 0
-  %56 = load i32*, i32** %55, align 8
+  %56 = load i32*, i32** %55, align 1
   %57 = ptrtoint i32* %56 to i64
   %58 = icmp ne i64 %57, 0
   br label %merge_allocated2
@@ -133,7 +133,7 @@ merge_allocated2:                                 ; preds = %check_data1, %loop.
 
 then4:                                            ; preds = %merge_allocated2
   %59 = getelementptr %array.1, %array.1* %52, i32 0, i32 0
-  %60 = load i32*, i32** %59, align 8
+  %60 = load i32*, i32** %59, align 1
   %61 = bitcast i32* %60 to i8*
   call void @_lfortran_free_alloc(i8* %2, i8* %61)
   %62 = getelementptr %array.1, %array.1* %52, i32 0, i32 0
@@ -151,7 +151,7 @@ ifcont5:                                          ; preds = %else, %then4
 
 check_data6:                                      ; preds = %ifcont5
   %66 = getelementptr %array.1, %array.1* %63, i32 0, i32 0
-  %67 = load i32*, i32** %66, align 8
+  %67 = load i32*, i32** %66, align 1
   %68 = ptrtoint i32* %67 to i64
   %69 = icmp ne i64 %68, 0
   br label %merge_allocated7

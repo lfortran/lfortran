@@ -83,6 +83,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "t" (Struct
               :symtab (SymbolTable
@@ -124,6 +125,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )

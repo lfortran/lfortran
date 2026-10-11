@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             list_integer:
                                 (Variable
@@ -70,6 +71,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             list_logical:
                                 (Variable
@@ -102,6 +104,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     arrays_20

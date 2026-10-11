@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -62,6 +63,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -86,6 +88,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     implied_do_loop2

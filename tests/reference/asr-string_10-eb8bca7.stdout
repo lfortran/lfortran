@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             is_alpha:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             num:
                                 (Variable
@@ -84,6 +86,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     string_10

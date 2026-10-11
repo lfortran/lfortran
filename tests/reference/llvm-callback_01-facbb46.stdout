@@ -11,8 +11,8 @@ target datalayout = "..."
 define float @__module_callback_01_cb(float (float*)* %f, float* %a, float* %b) {
 .entry:
   %cb = alloca float, align 4
-  %0 = load float, float* %b, align 4
-  %1 = load float, float* %a, align 4
+  %0 = load float, float* %b, align 1
+  %1 = load float, float* %a, align 1
   %2 = fsub float %0, %1
   %3 = call float %f(float* %a)
   %4 = fadd float %2, %3
@@ -69,7 +69,7 @@ FINALIZE_SYMTABLE_foo:                            ; preds = %return
 define float @foo.__module_callback_01_f(float* %x) {
 .entry:
   %f = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %0 = load float, float* %x, align 1
   %1 = fmul float 2.000000e+00, %0
   store float %1, float* %f, align 4
   br label %return

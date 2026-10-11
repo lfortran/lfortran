@@ -177,7 +177,7 @@ loop.end:                                         ; preds = %loop.head1
 then8:                                            ; preds = %loop.end
   %85 = load i32, i32* %i, align 4
   store i32 %85, i32* %_lcompilers_index_str, align 4
-  %86 = load i32, i32* %back, align 4
+  %86 = load i32, i32* %back, align 1
   store i32 %86, i32* %found, align 4
   br label %ifcont10
 
@@ -361,7 +361,7 @@ loop.end:                                         ; preds = %loop.head1
 then8:                                            ; preds = %loop.end
   %85 = load i32, i32* %i, align 4
   store i32 %85, i32* %_lcompilers_index_str1, align 4
-  %86 = load i32, i32* %back, align 4
+  %86 = load i32, i32* %back, align 1
   store i32 %86, i32* %found, align 4
   br label %ifcont10
 

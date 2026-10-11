@@ -1,0 +1,222 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "blockdata" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "common~blk" (CommonBlock
+              :parent_symtab 1
+              :name "common~blk"
+              :block_name "blk"
+              :link_name "__module_file_common_block_blk_struct_instance_blk"
+              :members [
+                (SymbolRef 1 "j")
+              ]
+              :associations []
+              :abi :Source
+              :storage :Default
+              :role :Tentative
+            )
+            "common~zero" (CommonBlock
+              :parent_symtab 1
+              :name "common~zero"
+              :block_name "zero"
+              :link_name "__module_file_common_block_zero_struct_instance_zero"
+              :members [
+                (SymbolRef 1 "y")
+              ]
+              :associations []
+              :abi :Source
+              :storage :Default
+              :role :Tentative
+            )
+            "j" (Variable
+              :parent_symtab 1
+              :name "j"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 1 "common~blk")
+            )
+            "y" (Variable
+              :parent_symtab 1
+              :name "y"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 1 "common~zero")
+            )
+          }
+        )
+        :name "blockdata"
+        :dependencies []
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "j")
+            )
+            :value (Var
+              :v (SymbolRef 1 "y")
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+        :global_init nil
+      )
+      "init" (BlockData
+        :symtab (SymbolTable
+          :id 2
+          :symbols {
+            "common~blk" (CommonBlock
+              :parent_symtab 2
+              :name "common~blk"
+              :block_name "blk"
+              :link_name "__module_file_common_block_blk_struct_instance_blk"
+              :members [
+                (SymbolRef 2 "i")
+              ]
+              :associations []
+              :abi :Source
+              :storage :Default
+              :role :Initialized
+            )
+            "common~zero" (CommonBlock
+              :parent_symtab 2
+              :name "common~zero"
+              :block_name "zero"
+              :link_name "__module_file_common_block_zero_struct_instance_zero"
+              :members [
+                (SymbolRef 2 "z")
+              ]
+              :associations []
+              :abi :Source
+              :storage :Default
+              :role :Initialized
+            )
+            "i" (Variable
+              :parent_symtab 2
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (IntegerConstant
+                :n 3
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :value (IntegerConstant
+                :n 3
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 2 "common~blk")
+            )
+            "z" (Variable
+              :parent_symtab 2
+              :name "z"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :value (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 2 "common~zero")
+            )
+          }
+        )
+        :name "init"
+        :block_data_name "init"
+        :dependencies []
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)

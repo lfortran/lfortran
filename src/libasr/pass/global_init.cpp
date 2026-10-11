@@ -215,6 +215,9 @@ class GlobalInitVisitor {
         bool needs_runtime_init(const ASR::Variable_t &v) {
             if (v.m_symbolic_value == nullptr) return false;
             if (v.m_storage == ASR::storage_typeType::Parameter) return false;
+            // The initial value of a variable in a common block is the
+            // initial value of the block's static storage.
+            if (v.m_common_block != nullptr) return false;
             ASR::expr_t *init = v.m_symbolic_value;
             // A pointer association whose target has a link-time address is
             // laid out by the backend as the variable's own initializer, so

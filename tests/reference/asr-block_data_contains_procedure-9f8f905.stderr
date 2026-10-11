@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.block_data.no_procedure]: BlockData 'bdproc' cannot contain the procedure 'helper'
+ --> tests/asr/verify/block_data_contains_procedure.asr:5:17
+  |
+5 |       "bdproc" (BlockData
+  |                 ^^^^^^^^^ failed here

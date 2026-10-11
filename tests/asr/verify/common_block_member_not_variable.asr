@@ -1,0 +1,33 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "commonblock" (Program
+        (SymbolTable
+          1
+          {
+            "common~blk" (CommonBlock
+              1
+              "common~blk"
+              "blk"
+              "__module_file_common_block_blk_struct_instance_blk"
+              [
+                (SymbolRef 0 "commonblock")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+          }
+        )
+        "commonblock"
+        []
+        []
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

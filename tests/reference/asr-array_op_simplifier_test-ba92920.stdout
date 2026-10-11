@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -70,6 +71,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -94,6 +96,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             d:
                                 (Variable
@@ -128,6 +131,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     main

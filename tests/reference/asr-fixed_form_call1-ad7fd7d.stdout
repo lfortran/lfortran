@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             m:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             prinf:
                                 (Function
@@ -139,6 +142,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             prinf~arg_1:
                                                 (Variable
@@ -163,6 +167,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             prinf~arg_2:
                                                 (Variable
@@ -187,6 +192,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     prinf~fpcast
@@ -259,6 +265,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             w:
                                 (Variable
@@ -283,6 +290,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -307,6 +315,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -331,6 +340,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     idd_frm

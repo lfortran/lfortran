@@ -40,6 +40,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s:
                                 (Variable
@@ -70,6 +71,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -94,6 +96,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ~~dbl:
                                 (ExternalSymbol
@@ -640,6 +643,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -664,6 +668,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     dbl

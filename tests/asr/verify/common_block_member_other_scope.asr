@@ -1,0 +1,81 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "blockdata" (Program
+        (SymbolTable
+          1
+          {
+            "common~blk" (CommonBlock
+              1
+              "common~blk"
+              "blk"
+              "__module_file_common_block_blk_struct_instance_blk"
+              [
+                (SymbolRef 2 "i")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+          }
+        )
+        "blockdata"
+        []
+        []
+        nil
+      )
+      "init" (BlockData
+        (SymbolTable
+          2
+          {
+            "i" (Variable
+              0
+              "i"
+              []
+              :Local
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              :Default
+              (Integer
+                0
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 1 "common~blk")
+            )
+          }
+        )
+        "init"
+        "init"
+        []
+      )
+    }
+  )
+  []
+  nil
+)

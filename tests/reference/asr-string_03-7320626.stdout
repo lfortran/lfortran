@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -64,6 +65,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             posit:
                                 (Variable
@@ -88,6 +90,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             title:
                                 (Variable
@@ -112,6 +115,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             verb:
                                 (Variable
@@ -136,6 +140,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     string_03
@@ -264,6 +269,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     string_03_mod

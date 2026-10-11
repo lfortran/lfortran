@@ -59,6 +59,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -146,6 +147,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -176,6 +178,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sources:
                                                 (Variable
@@ -219,6 +222,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     add_sources_from_dir
@@ -452,6 +456,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -478,6 +483,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             file_name:
                                                 (Variable
@@ -504,6 +510,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     srcfile_t

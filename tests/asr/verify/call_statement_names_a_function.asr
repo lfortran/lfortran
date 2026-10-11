@@ -34,6 +34,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                   "helper" (Variable
                     7
@@ -59,6 +60,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )
@@ -158,6 +160,7 @@
               :NotMethod
               nil
               []
+              nil
             )
           }
         )

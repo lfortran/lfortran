@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.common_block_size]: Variable 's' is in a common block, so its length must be constant
+  --> tests/asr/verify/common_block_variable_nonconstant_length.asr:22:18
+   |
+22 |             "s" (Variable
+   |                  ^^^^^^^^ failed here

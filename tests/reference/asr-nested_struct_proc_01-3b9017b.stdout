@@ -130,6 +130,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             initial_team:
                                 (ExternalSymbol
@@ -248,6 +249,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     integer32complex32orderedmap
@@ -419,6 +421,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             rc:
                                                 (Variable
@@ -443,6 +446,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -469,6 +473,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -504,6 +509,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     omap_i_at_rc
@@ -648,6 +654,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             status:
                                                 (Variable
@@ -672,6 +679,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -712,6 +720,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -738,6 +747,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tol:
                                                 (Variable
@@ -768,6 +778,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -792,6 +803,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     omap_insert_key_value
@@ -1039,6 +1051,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tree:
                                                 (Variable
@@ -1068,6 +1081,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     omap_map
@@ -1140,6 +1154,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real128:
                                 (ExternalSymbol
@@ -1541,6 +1556,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             logical16:
                                 (ExternalSymbol
@@ -1631,6 +1647,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             numeric_storage_size:
                                 (ExternalSymbol
@@ -1855,6 +1872,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     nested_struct_proc_01

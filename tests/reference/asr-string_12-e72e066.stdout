@@ -43,6 +43,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             fullhex_digits:
                                 (Variable
@@ -73,6 +74,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             hex_digits:
                                 (Variable
@@ -110,6 +112,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             letters:
                                 (Variable
@@ -140,6 +143,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lowercase:
                                 (Variable
@@ -181,6 +185,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lowerhex_digits:
                                 (Variable
@@ -211,6 +216,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             octal_digits:
                                 (Variable
@@ -248,6 +254,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             string:
                                 (Variable
@@ -288,6 +295,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             uppercase:
                                 (Variable
@@ -325,6 +333,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     string_12

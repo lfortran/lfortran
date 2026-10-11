@@ -138,6 +138,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -162,6 +163,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     modules_11_module11

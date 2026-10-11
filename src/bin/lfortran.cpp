@@ -1350,7 +1350,8 @@ int compile_src_to_object_file(const std::string &infile,
 
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
-        && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        && !LCompilers::ASRUtils::global_function_present(*asr)
+        && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1372,8 +1373,12 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
-    // so that they are not compiled again
-    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.generate_code_for_global_procedures && !compiler_options.separate_compilation) {
+    // so that they are not compiled again; the same holds for the modules
+    // that a BLOCK DATA program unit uses
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
+            && (compiler_options.generate_code_for_global_procedures
+                || LCompilers::ASRUtils::block_data_present(*asr))
+            && !compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
@@ -1662,6 +1667,29 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 }
 
 
+// The C and C++ backends compile the program units of a file without a main
+// program, and the modules it uses, with the main program, which therefore
+// has to be compiled from source with them. A BLOCK DATA program unit is the
+// exception: it gives the initial values of common blocks to the program, so
+// a file of BLOCK DATA program units only is compiled to an object file of
+// its own.
+int check_block_data_object(const LCompilers::ASR::TranslationUnit_t &asr,
+        const std::string &backend, LCompilers::diag::Diagnostics &diagnostics)
+{
+    for (auto &item : asr.m_symtab->get_scope()) {
+        if (!LCompilers::ASR::is_a<LCompilers::ASR::BlockData_t>(*item.second)) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "the " + backend + " backend compiles a BLOCK DATA program "
+                "unit in a file without a main program only if the file has "
+                "no other program unit and uses no module",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::CodeGen, {}));
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
@@ -1699,7 +1727,8 @@ int compile_to_object_file_cpp(const std::string &infile,
         if (err) return err;
     }
 
-    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)
+            && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1737,7 +1766,13 @@ int compile_to_object_file_cpp(const std::string &infile,
         }
         return 0;
     }
-    if (found_main) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        int err = check_block_data_object(*asr, "C++", diagnostics);
+        if (err) {
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return err;
+        }
+    } else if (found_main) {
         *found_main = true;
     }
 
@@ -1825,7 +1860,8 @@ int compile_to_object_file_c(const std::string &infile,
         if (err) return err;
     }
 
-    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)
+            && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1863,7 +1899,13 @@ int compile_to_object_file_c(const std::string &infile,
         }
         return 0;
     }
-    if (found_main) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        int err = check_block_data_object(*asr, "C", diagnostics);
+        if (err) {
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return err;
+        }
+    } else if (found_main) {
         *found_main = true;
     }
 
