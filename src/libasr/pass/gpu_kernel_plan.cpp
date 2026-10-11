@@ -662,12 +662,6 @@ public:
                     }
                     call_args.push_back(al, arg);
                 }
-                // The host calls the function as well as the device.
-                ASR::FunctionType_t *signature =
-                    ASRUtils::get_FunctionType(callee);
-                if (signature->m_exec_space == ASR::exec_spaceType::Device) {
-                    signature->m_exec_space = ASR::exec_spaceType::HostDevice;
-                }
                 return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                     &callee->base, nullptr, call_args.p, call_args.n,
                     call->m_type, nullptr, nullptr));
@@ -712,6 +706,62 @@ public:
 };
 
 } // namespace
+
+// The host calls every function a workspace extent calls, as well as the
+// device.
+class HostCalledFunctions : public ASR::BaseWalkVisitor<HostCalledFunctions> {
+public:
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s != nullptr && ASR::is_a<ASR::Function_t>(*s)) {
+            ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(s));
+            if (signature->m_exec_space == ASR::exec_spaceType::Device) {
+                signature->m_exec_space = ASR::exec_spaceType::HostDevice;
+            }
+        }
+        ASR::BaseWalkVisitor<HostCalledFunctions>::visit_FunctionCall(x);
+    }
+};
+
+ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
+        ASR::Function_t &kernel, const GpuVlaDim &dim) {
+    const Location &loc = kernel.base.base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    // An extent the host can evaluate once, for every thread, is written
+    // as that; one that changes from thread to thread is written over the
+    // thread index, and the launch sizes every thread's slice by its
+    // largest value.
+    ASR::expr_t *extent = nullptr;
+    if (dim.is_constant) {
+        extent = b.i32(dim.constant_value);
+    } else if (dim.is_struct_member_size) {
+        if (dim.struct_member_elem_index >= 0) {
+            extent = dim.source_extent;
+        }
+    } else if (dim.derived.ok()) {
+        Vec<ASR::call_arg_t> identity;
+        identity.reserve(al, kernel.n_args);
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = kernel.m_args[i];
+            identity.push_back(al, arg);
+        }
+        extent = GpuExtentBuilder::build_host_extent(al, loc,
+            &kernel, identity.p, identity.n, dim.derived);
+    }
+    if (extent == nullptr) {
+        ASR::expr_t *source = dim.source_extent;
+        if (source == nullptr && dim.source_array != nullptr) {
+            source = b.ArraySize(dim.source_array,
+                dim.source_array_dim > 0
+                    ? b.i32(dim.source_array_dim) : nullptr, int32);
+        }
+        extent = gpu_kernel_per_thread_extent(al, kernel, source);
+    }
+    return extent;
+}
 
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         ASR::call_arg_t *args, size_t n_args, GpuDecline &decline) {
@@ -764,14 +814,6 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     }
     const Location &loc = kernel.base.base.loc;
     ASRUtils::ASRBuilder b(al, loc);
-    Vec<ASR::call_arg_t> identity;
-    identity.reserve(al, kernel.n_args);
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::call_arg_t arg;
-        arg.loc = loc;
-        arg.m_value = kernel.m_args[i];
-        identity.push_back(al, arg);
-    }
     Vec<ASR::gpu_workspace_t> planned;
     planned.reserve(al, workspaces.size());
     for (const auto &workspace : workspaces) {
@@ -783,36 +825,15 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         Vec<ASR::gpu_workspace_dimension_t> dims;
         dims.reserve(al, workspace.dims.size());
         for (const auto &dim : workspace.dims) {
-            // An extent the host can evaluate once, for every thread, is
-            // written as that; one that changes from thread to thread is
-            // written over the thread index, and the launch sizes every
-            // thread's slice by its largest value.
-            ASR::expr_t *extent = nullptr;
-            if (dim.is_constant) {
-                extent = b.i32(dim.constant_value);
-            } else if (dim.is_struct_member_size) {
-                if (dim.struct_member_elem_index >= 0) {
-                    extent = dim.source_extent;
-                }
-            } else if (dim.derived.ok()) {
-                extent = GpuExtentBuilder::build_host_extent(al, loc,
-                    &kernel, identity.p, identity.n, dim.derived);
-            }
-            if (extent == nullptr) {
-                ASR::expr_t *source = dim.source_extent;
-                if (source == nullptr && dim.source_array != nullptr) {
-                    source = b.ArraySize(dim.source_array,
-                        dim.source_array_dim > 0
-                            ? b.i32(dim.source_array_dim) : nullptr, int32);
-                }
-                extent = gpu_kernel_per_thread_extent(al, kernel, source);
-            }
+            ASR::expr_t *extent = gpu_workspace_host_extent(al, kernel, dim);
             if (!extent) {
                 decline = GpuDecline(
                     GpuDeclineReason::WorkspaceNotSizeableOnHost,
                     workspace.var_name);
                 return false;
             }
+            HostCalledFunctions host_calls;
+            host_calls.visit_expr(*extent);
             if (!gpu_bind_kernel_expression(al, kernel, args, n_args,
                     extent)) {
                 decline = GpuDecline(

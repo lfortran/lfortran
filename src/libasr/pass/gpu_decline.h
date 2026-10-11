@@ -142,6 +142,9 @@ enum class GpuDeclineReason {
     // code, which has no heap to allocate it from, whose shape cannot be
     // told on entry to the routine (see gpu_device_struct_storage.cpp).
     StructComponentNotSizeable,
+    // An array on the device heap (see gpu_device_heap.cpp) used in a way
+    // the heap does not lower yet; the name says which array and how.
+    HeapArrayUse,
 
     // --- what the device has no type for ---
     LocalTypeWidth,

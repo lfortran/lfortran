@@ -142,8 +142,10 @@ generates the device source. It never falls back to the CPU:
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or
   the copy an overlapping assignment needs -- lives in a buffer the host
-  allocates before the launch, since a kernel cannot allocate. Every
-  thread uses a slice of it. When the size changes from one iteration to
+  allocates before the launch, when the host can size it (the fast path),
+  and on the device heap otherwise (see
+  [Allocating on the device](#allocating-on-the-device)). Every
+  thread uses a slice of a host-sized buffer. When the size changes from one iteration to
   the next (`allocate(w(m(k)))`, or `x(k)%values()` whose result has the
   size of a component of the iteration's element), the host works it out
   for every iteration before the launch, from the loop limits and the
@@ -154,8 +156,9 @@ generates the device source. It never falls back to the CPU:
   such as the one an array intrinsic (`maxval(n)`, `sum(n)`) is lowered to,
   which the host calls before the launch as the device does. It may not
   read a value the loop writes, which the host does not know before the
-  launch: such a loop is an error ("workspace ... cannot be sized on the
-  host").
+  launch: such an array is allocated on the device heap instead when it is
+  allocatable, and is an error otherwise ("workspace ... cannot be sized on
+  the host").
 * A procedure the loop calls runs on the device as a procedure, wherever
   the call is: in an expression, an `associate` selector, a condition, or
   another procedure. A device without variable-length arrays or a heap
@@ -175,7 +178,8 @@ generates the device source. It never falls back to the CPU:
   `associate (n => self%nodes_)`). A procedure with such a local that
   calls itself, directly or not, would need one array per level of the
   recursion, and is an error, and so is an extent that reads anything else
-  ("workspace ... cannot be sized on the host"). A call that is the whole
+  ("workspace ... cannot be sized on the host"), except for an allocatable
+  local, which the procedure allocates on the device heap itself. A call that is the whole
   right-hand side of an assignment is spliced into the kernel instead: the
   body of the procedure replaces the call, with the actual arguments in
   place of the dummy arguments, which more often makes the extents
@@ -209,9 +213,12 @@ generates the device source. It never falls back to the CPU:
   the kernel and sized on the host; a procedure the value is passed to is
   handed the array as the component, as it is handed the device buffer of a
   component of a kernel argument. An assignment of the whole value copies
-  the component into that array. A component given several different
-  shapes, or a shape read from a value the procedure computes, is an error
-  ("the allocatable component ... cannot be sized on the host").
+  the component into that array. When a value of a type cannot be stored
+  this way -- a component given several different shapes, or a shape read
+  from a value the procedure computes, an array of values of the type, or
+  a value held in a component of another value -- every value of that type
+  device code creates is on the device heap instead (a *heap type*, see
+  [Allocating on the device](#allocating-on-the-device)).
 * An argument a procedure defines (`intent(out)` or `intent(inout)`), a
   scalar or a derived-type value, is passed by reference, to a value in the
   memory of the calling thread, as the procedure's locals are. An actual
@@ -254,9 +261,11 @@ generates the device source. It never falls back to the CPU:
   one, which would have to allocate it, is an error for now ("the
   allocatable scalar component `r` on the device, which has no buffer of
   its own").
-* A kernel cannot allocate. When a loop writes an allocatable array component
-  of an element of an array of derived type, the storage the kernel writes
-  into has to exist before the launch. The write may be `t(i) = f(...)`,
+* When a loop writes an allocatable array component of an element of an
+  array of derived type that the host passes to the kernel, and the value
+  written is not on the device heap, the storage the kernel writes into has
+  to exist before the launch: the kernel writes into the buffers of the
+  kernel argument, which cannot be reallocated during the launch. The write may be `t(i) = f(...)`,
   where `f` gives the component of its result a size, `t(i) = tt(...)`, or
   `t(i)%v = ...`. That follows the rule every assignment follows: an
   allocatable scalar is always allocated or reallocated automatically, but an
@@ -371,6 +380,129 @@ be formatted on the device or copied back. Run-time checks in the kernel
 (bounds checking) would use the same buffer once the device code checks
 them; it does not yet.
 
+### Allocating on the device
+
+Every allocation of device code -- an `allocate`, the reallocation of an
+assignment to an allocatable, a temporary the compiler introduces, a run-time
+sized local, the components of a derived-type value a procedure creates --
+goes to exactly one of two places, decided in ASR by the offload passes,
+never by a code generator:
+
+* **A buffer the host sizes before the launch** (the fast path): the
+  per-thread workspaces, the storage of a derived-type local's components,
+  and the host preallocation of a component of a kernel argument the loop
+  writes, as described above. It is used whenever the host can work out the
+  size before the launch by those rules.
+* **The device heap** otherwise: memory the kernel takes at run time from
+  arenas the host allocates for the launch.
+
+Which one is used is decided per array and per derived type:
+
+* An allocatable array of device code whose extents cannot be written
+  over the kernel's parameters and its thread index, as a workspace needs,
+  is a *heap array*: its `allocate` reads a value the device computes, such
+  as a count the iteration works out (`allocate(w(count(x(:, i) > 0.5)))`).
+  It is allocated where the `allocate` is. (An array of an explicit shape
+  is sized where its scope starts; one the host cannot size is an error.)
+* A derived type with an allocatable array component, directly or in a
+  component, is a *heap type* of the translation unit when device code
+  creates a value of it that host-sized storage cannot hold: an array of
+  such values (the result of an elemental constructor, `pair_t(a(:), b(:))`),
+  a value held in a component or in an element of an allocatable component
+  of another value, or a local whose component's shape cannot be told on
+  entry to its procedure. A type with a component of a heap type is a heap
+  type too. Every value of a heap type that device code creates -- a local,
+  a temporary, a function result, a dummy argument of a device procedure,
+  an element of such an array -- is then on the heap, also one the host
+  could have sized, so that a type has one representation in device code
+  (apart from the kernel arguments, see below).
+
+#### The arenas
+
+A launch whose kernel allocates on the heap gets one *arena* per element
+type the heap holds -- each intrinsic type, and each image type (below) --
+and a small `integer(4)` *heap state* buffer holding the next free element
+of every arena. They are arguments the offload passes add to the kernel in
+ASR, and a device procedure that allocates, or calls one that does, receives
+them as hidden dummy arguments, as it receives the hidden arguments of a
+`stop`. The host allocates them before the launch and frees them after it.
+
+* Allocating `n` elements of an arena is a relaxed atomic add of `n` to the
+  arena's next free element, which returns the old value (`GpuAtomicFetchAdd`
+  in ASR: `atomic_fetch_add_explicit` on Metal, `atomicAdd` on CUDA). The
+  elements are the `n` that follow it. That is the only atomic operation,
+  and the only operation a code generator has to lower for the heap:
+  everything else is ordinary ASR.
+* When the arena does not have `n` elements left, the allocation fails: the
+  procedure runs an `error stop` with the message "the device heap is
+  exhausted ...", which is lowered like every other `error stop` device code
+  reaches (see the previous section). The thread stops, and the host ends
+  the program after the launch with that message.
+* `deallocate` -- explicit, at the end of a scope, of an `intent(out)`
+  argument, or before a reallocation -- only marks the array unallocated.
+  The memory is reclaimed when the launch ends, so the heap has to hold
+  everything one launch allocates, over all its iterations.
+* The size of the heap, in bytes, is read from the environment variable
+  `LFORTRAN_GPU_HEAP_SIZE` at every launch that uses it (a number, with an
+  optional `K`, `M` or `G` suffix), and is 256 MiB when it is not set. It is
+  split evenly between the arenas of the kernel. Positions in an arena are
+  `integer(4)`, so an arena holds at most 2^31-1 elements.
+
+#### Heap arrays and heap values
+
+* A heap array is described by a *descriptor*: the position in its arena of
+  the element before its first (-1 when the array is not allocated), and a
+  lower bound and an extent per dimension. Its elements are in array element
+  order. The descriptor of a local array of device code is a set of
+  `integer(4)` locals.
+* For every heap type the offload passes declare an *image type*. Each
+  allocatable array component becomes its descriptor (members of the image
+  type), a component of a heap type becomes a component of its image type,
+  and every other component is kept. Every value of a heap type that device
+  code creates has the image type. The elements of an allocatable component
+  whose type is a heap type are images, in the arena of their image type.
+* A reference to a heap array is written over its descriptor: an element is
+  an element of the arena, at the position worked out from the subscripts,
+  the bounds and the extents; `size`, `lbound` and `ubound` read the
+  descriptor, `allocated` tests its position. An array passed whole to a
+  procedure is passed as the section of the arena that holds its elements,
+  which sequence association hands to the explicit-shape dummy the shared
+  passes give every array dummy of device code.
+* An assignment to an allocatable array on the heap (with
+  `--realloc-lhs-arrays`, or an `allocate`) allocates it again when its
+  shape changes. An assignment of a whole value of a heap type, which copies
+  its allocatable components in Fortran, allocates them again and copies
+  their elements, recursively. A new image -- a local, an `intent(out)`
+  dummy on entry, an element of a newly allocated array of images -- starts
+  with every allocatable component unallocated.
+* A value of an image type is passed to a procedure as any derived-type
+  value is: by reference to a dummy the procedure defines, by value
+  otherwise.
+
+#### Heap values and kernel arguments
+
+A kernel argument of a heap type, or an element of one, keeps the host's
+representation in the kernel: its components are in the device buffers the
+host hands over, and it is never on the heap. Where it meets heap values:
+
+* Used where a heap value is needed -- the actual argument of a dummy of a
+  device procedure, the value assigned to a heap value -- it is copied into a
+  new image on the heap first, its components read from those buffers.
+* Assigned a heap value -- by an assignment, or through the actual argument
+  of a dummy the procedure defines, which is then a local image of the
+  caller copied in before the call and out after it -- it is not written in
+  the kernel. The kernel stores the image in a *copy-out record*: an array
+  of images with one element per element of the kernel argument, which the
+  host allocates before the launch, and a flag per element. After the
+  launch, and after a recorded `stop` would have ended the program, the host
+  assigns every flagged element its image, as a Fortran assignment of the
+  whole value does whatever `--realloc-lhs-arrays` says: each allocatable
+  component of the element is deallocated, allocated again with the bounds
+  of the image's descriptor, and its elements copied from the arena,
+  recursively through components of heap types, by a host procedure the
+  offload passes generate for every heap type. A component that the image
+  does not have allocated is left deallocated.
+
 ## Testing
 
 * Every entry of the unsupported list has a test for the error, and a test that
@@ -427,3 +559,9 @@ them; it does not yet.
   `do l = 1, m`, a local of higher rank, or such a local of the kernel
   itself, cannot be sized yet, even when the host could work out the
   largest value before the launch by going over the loop.
+* The device heap holds heap arrays of intrinsic types only: heap types
+  (derived-type values on the heap) and copy-out records are not
+  implemented yet, so a derived-type value that host-sized storage cannot
+  hold is still an error. A heap array of rank greater than one cannot be
+  passed whole, and a section of a heap array whose elements are not
+  contiguous is not lowered yet.

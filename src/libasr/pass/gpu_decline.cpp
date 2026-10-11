@@ -214,6 +214,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::HeapArrayUse:
+            return "the array " + decline.name + " on the device heap is not "
+                "supported yet";
         case GpuDeclineReason::StructComponentNotSizeable:
             return "the allocatable component '" + decline.name +
                 "' of a derived-type value of device code cannot be sized "

@@ -25,6 +25,38 @@ static inline void lfortran_gpu_copy_kernel_name(char *dest, const char *name,
     dest[name_len] = '\0';
 }
 
+// The size in bytes of the device heap of a launch that allocates on the
+// device: the value of the environment variable LFORTRAN_GPU_HEAP_SIZE, a
+// number with an optional K, M or G suffix (powers of 1024), or 256 MiB when
+// it is not set. A value that is not such a number ends the program.
+enum { LFORTRAN_GPU_DEFAULT_HEAP_MIB = 256 };
+
+static inline long long lfortran_gpu_parse_heap_size(void)
+{
+    const char *value = getenv("LFORTRAN_GPU_HEAP_SIZE");
+    if (value == NULL || value[0] == '\0') {
+        return (long long)LFORTRAN_GPU_DEFAULT_HEAP_MIB * 1024 * 1024;
+    }
+    char *end = NULL;
+    long long size = strtoll(value, &end, 10);
+    long long unit = 1;
+    if (end != NULL && *end != '\0') {
+        switch (*end) {
+            case 'k': case 'K': unit = 1024LL; break;
+            case 'm': case 'M': unit = 1024LL * 1024; break;
+            case 'g': case 'G': unit = 1024LL * 1024 * 1024; break;
+            default: unit = 0; break;
+        }
+        if (unit != 0 && end[1] != '\0') unit = 0;
+    }
+    if (end == value || size <= 0 || unit == 0) {
+        fprintf(stderr, "LFORTRAN_GPU_HEAP_SIZE=%s is not a size in bytes "
+            "(a positive number, optionally followed by K, M or G)\n", value);
+        exit(1);
+    }
+    return size * unit;
+}
+
 typedef struct lfortran_gpu_ctx    lfortran_gpu_ctx;
 typedef struct lfortran_gpu_kernel lfortran_gpu_kernel;
 
@@ -46,6 +78,7 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3]);
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
+long long lfortran_gpu_heap_size(void);
 
 #ifdef __cplusplus
 }
