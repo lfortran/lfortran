@@ -5490,6 +5490,70 @@ public:
         return "";
     }
 
+    // Whether `name` is made accessible by use association in the current
+    // scoping unit: a USE statement makes it an ExternalSymbol of the scope
+    // of the unit. An enumerator of the unit is one as well, and so is, in
+    // a submodule, an entity of its parent, which the submodule accesses by
+    // host association.
+    bool is_use_associated(const std::string &name) {
+        ASR::symbol_t *sym = current_scope->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            return false;
+        }
+        ASR::symbol_t *entity = ASRUtils::symbol_get_past_external(sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(entity);
+        if (owner != nullptr && ASR::is_a<ASR::Enum_t>(*owner) &&
+                ASRUtils::symbol_parent_symtab(owner) == current_scope) {
+            return false;
+        }
+        ASR::asr_t *unit = current_scope->asr_owner;
+        if (unit != nullptr && ASR::is_a<ASR::symbol_t>(*unit) &&
+                ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(unit))) {
+            char *parent = ASR::down_cast2<ASR::Module_t>(unit)->m_parent_module;
+            if (parent != nullptr) {
+                ASR::symbol_t *inherited = ASR::down_cast<ASR::Module_t>(
+                    current_scope->get_tu_scope()->get_symbol(parent))
+                    ->m_symtab->get_symbol(name);
+                if (inherited != nullptr &&
+                        ASRUtils::symbol_get_past_external(inherited) == entity) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // The first object of the EQUIVALENCE set `set` whose name is made
+    // accessible by use association, or nullptr. Such a set is neither
+    // placed in a common block nor lowered: check_equivalence_objects
+    // rejects it.
+    const AST::expr_t* use_associated_equivalence_object(const AST::equi_t &set) {
+        for (size_t m = 0; m < set.n_set_list; m++) {
+            if (is_use_associated(equivalence_object_name(*set.m_set_list[m]))) {
+                return set.m_set_list[m];
+            }
+        }
+        return nullptr;
+    }
+
+    // Fortran 2023 8.10.1.1: the name of an equivalence object shall not be
+    // made accessible by use association, as the module of the entity
+    // provides its storage. Checked for each EQUIVALENCE statement before
+    // any of its sets is lowered.
+    void check_equivalence_objects(const AST::AttrEquivalence_t &eq) {
+        for (size_t i = 0; i < eq.n_args; i++) {
+            const AST::expr_t *object = use_associated_equivalence_object(
+                eq.m_args[i]);
+            if (object != nullptr) {
+                diag.semantic_error_label("'" + equivalence_object_name(*object)
+                    + "' is use-associated and cannot appear in an "
+                    "EQUIVALENCE statement", {object->base.loc},
+                    "not allowed in EQUIVALENCE");
+                throw SemanticAbort();
+            }
+        }
+    }
+
     // The size in bytes of an element of `type` when it is the same on every
     // target, or -1: integer, logical and real kinds 1 to 8 are their size
     // in bytes, a complex kind half of it, a character its length.
@@ -5563,7 +5627,9 @@ public:
                 AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(
                     d->m_attributes[j]);
                 for (size_t k = 0; k < eq->n_args; k++) {
-                    if (eq->m_args[k].n_set_list >= 2) {
+                    if (eq->m_args[k].n_set_list >= 2 &&
+                            use_associated_equivalence_object(
+                                eq->m_args[k]) == nullptr) {
                         sets.push_back(&eq->m_args[k]);
                     }
                 }
@@ -7376,6 +7442,7 @@ public:
                     check_no_storage_association_in_template("an equivalence",
                         x.m_attributes[i]->base.loc);
                     AST::AttrEquivalence_t *eq = AST::down_cast<AST::AttrEquivalence_t>(x.m_attributes[i]);
+                    check_equivalence_objects(*eq);
 
                     // --- Equivalence helper lambdas ---
 

@@ -2308,3 +2308,31 @@ function common_object_result_error() result(r)
     common /cc1_result_blk/ r  ! {Error} function result 'r' cannot be in a common block
     r = 1
 end function common_object_result_error
+
+! A name made accessible by use association cannot be an equivalence object,
+! renamed or subscripted, whether or not its set is connected to a common
+! block (Fortran 2023 8.10.1.1). Each such set is diagnosed once.
+module cc1_equivalence_use_mod
+    implicit none
+    integer :: cc1_eu_cnt
+    integer :: cc1_eu_arr(3)
+end module cc1_equivalence_use_mod
+
+subroutine equivalence_use_associated_error()
+    use cc1_equivalence_use_mod, only: cc1_eu_cnt, cc1_eu_arr, cc1_eu_c => cc1_eu_cnt
+    implicit none
+    integer :: i, j, k, l
+    common /cc1_equivalence_use_blk/ l
+    equivalence (cc1_eu_cnt, i)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (j, cc1_eu_c)  ! {Error} 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_arr(2), k)  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_cnt, l)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+end subroutine equivalence_use_associated_error
+
+block data equivalence_use_associated_block_data_error
+    use cc1_equivalence_use_mod, only: cc1_eu_arr
+    implicit none
+    integer :: m
+    common /cc1_equivalence_use_bd_blk/ m
+    equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+end block data equivalence_use_associated_block_data_error

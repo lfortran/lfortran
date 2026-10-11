@@ -4423,8 +4423,23 @@ public:
         }
         // Only the EQUIVALENCE sets connected to a common block affect what
         // a BLOCK DATA program unit provides, and those are placed in the
-        // views of the blocks.
+        // views of the blocks. Its EQUIVALENCE statements are not visited
+        // otherwise, so their objects are checked here.
         complete_common_blocks(x.m_items, x.n_items);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+            try {
+                for (size_t j = 0; j < d->n_attributes; j++) {
+                    if (AST::is_a<AST::AttrEquivalence_t>(*d->m_attributes[j])) {
+                        check_equivalence_objects(*AST::down_cast<
+                            AST::AttrEquivalence_t>(d->m_attributes[j]));
+                    }
+                }
+            } catch (SemanticAbort &e) {
+                if (!compiler_options.continue_compilation) throw e;
+            }
+        }
 
         // The DATA statements give the initial values of the variables of
         // this scope. A BLOCK DATA has no body to run, so the assignments
