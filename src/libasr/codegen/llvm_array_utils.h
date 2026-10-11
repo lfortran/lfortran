@@ -405,7 +405,8 @@ namespace LCompilers {
                 llvm::Value* cfi_to_internal(
                     llvm::Type* internal_type,
                     llvm::Type* el_type, llvm::Value* cfi_desc,
-                    int n_dims, uint64_t elem_size) = 0;
+                    int n_dims, uint64_t elem_size,
+                    llvm::Value* internal_desc = nullptr) = 0;
 
                 virtual
                 void push_data_array_args(
@@ -705,10 +706,13 @@ namespace LCompilers {
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.
                 // internal_type: the cached internal struct type to use for the alloca.
+                // internal_desc: an existing internal descriptor to write into;
+                // when null, a new one is allocated.
                 llvm::Value* cfi_to_internal(
                     llvm::Type* internal_type,
                     llvm::Type* el_type, llvm::Value* cfi_desc,
-                    int n_dims, uint64_t elem_size);
+                    int n_dims, uint64_t elem_size,
+                    llvm::Value* internal_desc = nullptr);
                 
                 void push_data_array_args(
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
