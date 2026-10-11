@@ -1,11 +1,10 @@
 program separate_compilation_59
-use separate_compilation_59b_module, only: next_value
+use separate_compilation_59a
 implicit none
-interface
-    integer function fixed_value()
-    end function
-end interface
-if (next_value() /= 41) error stop
-if (fixed_value() /= 3) error stop
-print *, next_value(), fixed_value()
+real :: a(2), z(2)
+a = make()
+call fill(z)
+print *, a, z
+if (any(a /= 3.0)) error stop
+if (any(z /= 42.0)) error stop
 end program

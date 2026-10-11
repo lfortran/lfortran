@@ -2027,6 +2027,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+        member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
 
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
             ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
@@ -5376,7 +5377,19 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            )
                 );
             }
-            member_types.push_back(al, var->m_type);
+            ASR::ttype_t* member_type = var->m_type;
+            // The signature is shared by every scope that uses the type, so
+            // a procedure component is recorded with the opaque procedure
+            // type: its interface can reference symbols of its own scope.
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(member_type))) {
+                member_type = ASRUtils::make_opaque_procedure_type(al,
+                    member_type->base.loc, nullptr);
+                if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                    member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                        member_type->base.loc, member_type));
+                }
+            }
+            member_types.push_back(al, member_type);
         }
     }
     return ASRUtils::TYPE(

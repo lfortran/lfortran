@@ -26,7 +26,7 @@ target datalayout = "..."
 @__module_coarrays_52_m_m__coarray_handle = global %prif_coarray_handle.8 zeroinitializer
 @__module___lcompilers_created__nested_context__coarrays_52__m = global i32* null
 @__module_coarrays_52_m_m = global i32* null
-@__lfortran_global_init_coarrays_52_m.__lfortran_global_init_done = internal global i32 0
+@__module_coarrays_52_m___lfortran_global_init_coarrays_52_m.__lfortran_global_init_done = internal global i32 0
 @global_array_0 = private constant [1 x i64] [i64 1]
 @global_array_1 = private constant [0 x i64] zeroinitializer
 @global_array_2 = private constant [1 x i64] [i64 1]
@@ -373,13 +373,13 @@ define void @__module_coarrays_52_m___lfortran_global_init_coarrays_52_m() {
   store i8* %8, i8** %6, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 8
   %stat = alloca i32, align 4
-  %9 = load i32, i32* @__lfortran_global_init_coarrays_52_m.__lfortran_global_init_done, align 4
+  %9 = load i32, i32* @__module_coarrays_52_m___lfortran_global_init_coarrays_52_m.__lfortran_global_init_done, align 4
   %10 = xor i32 %9, 1
   %11 = icmp ne i32 %10, 0
   br i1 %11, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 1, i32* @__lfortran_global_init_coarrays_52_m.__lfortran_global_init_done, align 4
+  store i32 1, i32* @__module_coarrays_52_m___lfortran_global_init_coarrays_52_m.__lfortran_global_init_done, align 4
   call void @__module_prif_prif_init(i32* %stat)
   %12 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 0
   store i64* getelementptr inbounds ([1 x i64], [1 x i64]* @global_array_0, i32 0, i32 0), i64** %12, align 8

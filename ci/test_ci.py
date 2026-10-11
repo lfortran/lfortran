@@ -576,7 +576,7 @@ class QuickScriptTests(unittest.TestCase):
         for name in (
             "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
             "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s",
-            "separate_compilation_59",
+            "separate_compilation_multiple_files_01",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
             "bin/make", "bin/ctest", "bin/pip", "bin/llvm-dwarfdump", "bin/dsymutil",
         ):
@@ -626,7 +626,7 @@ class QuickScriptTests(unittest.TestCase):
                 # ci/test.sh uses fixed relative paths and creates one build dir.
                 for entry in ("src", "integration_tests", "run_tests.py", "expr2",
                               "modules_15", "intrinsics_04", "intrinsics_04s",
-                              "separate_compilation_59"):
+                              "separate_compilation_multiple_files_01"):
                     if entry == "integration_tests":
                         (work / entry).mkdir()
                         (work / entry / "run_tests.py").symlink_to(
@@ -810,6 +810,13 @@ class QuickScriptTests(unittest.TestCase):
                 debug = scope == "quick" and llvm == "11"
                 self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
                 self.assertEqual("-DWITH_INTERNAL_ALLOC_CHECK=yes" in cmake[0], debug)
+                # Quick's LLVM 11 compiler is optimized but still a Debug build:
+                # assertions and per-pass ASR verification stay on, and no
+                # Debug flag defines NDEBUG.
+                self.assertEqual("-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
+                                 in cmake[0], debug)
+                self.assertEqual("-DCMAKE_C_FLAGS_DEBUG=-O2" in cmake[0], debug)
+                self.assertFalse([arg for arg in cmake[0] if "FLAGS_DEBUG" in arg and "NDEBUG" in arg])
                 flags = json.loads(environment_log.read_text().splitlines()[0])
                 expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                             "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")

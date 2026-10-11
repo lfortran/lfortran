@@ -2949,7 +2949,13 @@ public:
         ASRUtils::ASRBuilder b(al, loc);
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::string func_name = parent_scope->get_unique_name("__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym)));
+        // In lower case, like any Fortran name, so that a USE of the module
+        // imports the getter under its own name.
+        std::string base_name = "__lcompilers_get_" + std::string(ASRUtils::symbol_name(end_sym));
+        std::string func_name = to_lower(parent_scope->get_unique_name(base_name));
+        if (parent_scope->get_symbol(func_name) != nullptr) {
+            func_name = parent_scope->get_unique_name(base_name, false);
+        }
         if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
             ASRUtils::SymbolDuplicator sd(al);
             sd.duplicate_symbol(end_sym, current_scope);
@@ -3608,7 +3614,7 @@ public:
 	                    diag::Label("", {m_dim[i].loc})}));
 	            throw SemanticAbort();
 	        }
-	        ASR::dimension_t dim_dummy; dims.push_back(al, dim_dummy);
+	        ASR::dimension_t dim_dummy{}; dims.push_back(al, dim_dummy);
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
 	        dim.m_length = nullptr; dim.m_start = nullptr;
 	        dim.loc = m_dim[i].loc;
@@ -12300,7 +12306,9 @@ public:
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
-                type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+                type = ASRUtils::import_procedure_type(al,
+                    ASR::down_cast<ASR::Function_t>(v)->m_function_signature,
+                    current_scope);
             }
             } // else (named procedure interface)
             if (is_pointer) {
@@ -16135,7 +16143,9 @@ public:
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
-        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)));
+        ASR::ttype_t* proc_type = ASRUtils::import_procedure_type(al,
+            ASRUtils::symbol_type(v), current_scope);
+        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(proc_type));
         ASR::ttype_t *return_type = func->m_return_var_type;
         auto declared_result = implicit_call_result_types.find(v);
         if (declared_result != implicit_call_result_types.end()) {
@@ -16173,7 +16183,7 @@ public:
         // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         if( is_dt_present ) {
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
+                al, loc, args.p[0].m_value, v, proc_type, nullptr));
             ASR::call_arg_t* call_args = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
