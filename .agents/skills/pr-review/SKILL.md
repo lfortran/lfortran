@@ -23,6 +23,12 @@ Read `AGENTS.md` first. Read [references/review-rules.md](references/review-rule
 for the detailed principles. Consult [references/examples.md](references/examples.md)
 when a concrete comparison would help.
 
+When a review needs a local build or reproduction, default to the Pixi tasks
+in `AGENTS.md`: `pixi run -e llvm11 build`, then the selected configuration's
+test tasks with output saved to logs. Honor an explicitly supplied build and
+keep the review checkout isolated from active fixers. Do not install a compiler
+merely to read a diff or duplicate dependency/CMake recipes in review prompts.
+
 ## Gather the change
 
 For a GitHub PR, collect the description, commits, changed files, and diff:

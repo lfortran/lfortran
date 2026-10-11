@@ -145,13 +145,72 @@ class RunnerTests(unittest.TestCase):
         runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(runner)
         for smoke in (False, True):
-            with self.subTest(smoke=smoke), patch.object(runner, "run_cmd") as command:
+            with self.subTest(smoke=smoke), \
+                    tempfile.TemporaryDirectory() as build_dir, \
+                    patch.object(runner, "BUILD_DIR", Path(build_dir)), \
+                    patch.object(runner, "run_cmd") as command:
                 runner.run_test("llvm", "lf", smoke=smoke)
                 commands = [call.args[0] for call in command.call_args_list]
                 configure = next(cmd for cmd in commands if " cmake " in cmd)
                 self.assertEqual("-DLFORTRAN_SMOKE=ON" in configure, smoke)
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
+
+    def test_reference_build_dir_keeps_writes_out_of_source(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as build_dir, \
+                patch.object(tester, "OUTPUT_DIR", tester.OUTPUT_DIR):
+            try:
+                tester.use_build_dir(build_dir)
+                build = Path(build_dir).resolve()
+                self.assertEqual(Path(os.getcwd()).resolve(), build)
+                # The x86 tests write an executable named `output`.
+                self.assertEqual(tester.OUTPUT_DIR, "test_output")
+                for name in ("tests", "integration_tests"):
+                    self.assertEqual((build / name).resolve(), ROOT / name)
+                self.assertTrue((build / "tests/../integration_tests").is_dir())
+                out = tester.fixdir(f"{os.getcwd()}/a {ROOT}/tests/b".encode())
+                self.assertEqual(out, b"$DIR/a $DIR/tests/b")
+                # A rerun starts empty: an earlier run's module files must not
+                # be read by a different compiler.
+                (build / "stale.mod").write_text("")
+                tester.use_build_dir(build_dir)
+                self.assertFalse((build / "stale.mod").exists())
+                self.assertEqual((build / "tests").resolve(), ROOT / "tests")
+                # Any other non-empty directory is left alone.
+                other = build / "other"
+                other.mkdir()
+                (other / "keep").write_text("")
+                with self.assertRaises(SystemExit):
+                    tester.use_build_dir(other)
+                self.assertTrue((other / "keep").exists())
+            finally:
+                os.chdir(cwd)
+
+    def test_require_llvm_checks_the_selected_compiler(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        with tempfile.TemporaryDirectory() as bin_dir:
+            compiler = Path(bin_dir) / "lfortran"
+            for version, ok in (("11.1.0", True), ("22.1.0", False),
+                                ("none", False)):
+                with self.subTest(version=version):
+                    compiler.write_text(f"#!/bin/sh\necho 'LLVM: {version}'\n")
+                    compiler.chmod(0o755)
+                    with patch.dict(os.environ, {"PATH": bin_dir}):
+                        if ok:
+                            tester.check_llvm_version("lfortran", 11)
+                        else:
+                            with self.assertRaises(SystemExit):
+                                tester.check_llvm_version("lfortran", 11)
 
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
