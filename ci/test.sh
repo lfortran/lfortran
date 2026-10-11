@@ -35,6 +35,15 @@ src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
 src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 ./intrinsics_04
 
+# Link with an explicit non-default C compiler driver: any of clang, cc
+# or gcc can drive the final link, there is no clang-specific coupling.
+# Skipped on Windows, where the LLVM backend links with MSVC's `link`
+# and never reaches driver selection.
+if [[ $WIN != "1" ]]; then
+LFORTRAN_LINKER=gcc src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04_gcc
+./intrinsics_04_gcc
+fi
+
 
 # Run all tests (does not work on Windows yet):
 cmake --version

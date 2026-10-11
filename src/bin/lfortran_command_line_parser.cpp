@@ -338,7 +338,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
         app.add_flag("--static", opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
         app.add_flag("--shared", opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
-        app.add_flag("--linker", opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_flag("--linker", opts.linker, "Specify the linker (C compiler driver) to be used, e.g. clang, cc or gcc; defaults to the platform C compiler driver (clang on macOS, gcc on Windows MinGW targets, cc otherwise)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--march", compiler_options.march, "Generate code for the selected instruction-set architecture (`native` for the host)")->group(group_backend_codegen_options);

@@ -284,24 +284,19 @@ end module varray
 
 ## Selecting the C Compiler
 
-By default LFortran uses the `clang` compiler.  On some systems
-the compiler has a version number or spelling difference.  The compiler
-can be changed with the `LFORTRAN_CC` symbol:
+Producing an executable with the LLVM backend requires a C compiler
+driver to link against the LFortran runtime. Any standard driver works.
+If none is selected with `--linker` or `LFORTRAN_LINKER`, LFortran uses
+a per-platform default (`clang` on macOS, `gcc` on Windows MinGW, `cc`
+otherwise):
 
 ```
-unset LFORTRAN_CC
-lfortran hw.f90
-Hello World!
-
-export LFORTRAN_CC=gcc
-lfortran hw.f90
-Hello World!
-
-export LFORTRAN_CC=clang-14
-lfortran hw.f90
-sh: clang-14: not found
-...(further error messages)...
+lfortran hw.f90              # platform default driver
+lfortran hw.f90 --linker=gcc # use gcc
 ```
+
+The Metal GPU backend (`--gpu=metal`) requires clang for its
+Objective-C runtime. `--target` is passed through only with a clang driver.
 
 ## Differences from other compilers
 

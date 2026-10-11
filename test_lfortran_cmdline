@@ -115,4 +115,22 @@ cd $(mktemp -d)
 echo "Testing invalid command-line usage"
 ! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"
 
+if [[ $FC == "lfortran" ]]; then
+    cd $(mktemp -d)
+    echo "Testing explicit linker override via LFORTRAN_LINKER"
+    LFORTRAN_LINKER=cc $FC $f -o a.out
+    [ -x "a.out" ]
+    ./a.out
+
+    if [[ "$(uname)" == "Darwin" ]]; then
+        cd $(mktemp -d)
+        echo "Testing Metal backend requires clang driver"
+        if LFORTRAN_LINKER=gcc $FC $f -o a.out --gpu=metal 2> metal_err.txt; then
+            echo "Expected failure for Metal with non-clang driver"
+            exit 1
+        fi
+        grep "requires the clang driver" metal_err.txt
+    fi
+fi
+
 echo "All tests succeeded"
