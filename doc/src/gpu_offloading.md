@@ -391,9 +391,11 @@ them; it does not yet.
 * **What counts as using a type.** The check uses the rule above. The
   pipeline does not always follow it yet: a derived type whose components are
   read only through allocatable array components is handed to the kernel one
-  component at a time, but one with other components read is handed over
-  whole, so an unused `real(8)` component there is still an error on Metal
-  (reported by the pipeline, not the check). Likewise an unused component of
+  component at a time, but one with other components read, or used whole
+  (passed to a procedure), is handed over whole, its allocatable components
+  included, and the loop reads those through it, so an unused `real(8)`
+  component there is still an error on Metal (reported by the pipeline, not
+  the check). Likewise an unused component of
   a kind the device does not interpret -- a pointer, or a character that is
   not allocatable -- still keeps a value handed over whole off the device,
   while an unused allocatable scalar component no longer does: the device
