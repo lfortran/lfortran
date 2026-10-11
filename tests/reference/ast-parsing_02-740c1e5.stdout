@@ -377,6 +377,7 @@
             (If
                 0
                 endif
+                0
                 then
                 [(Assignment
                     0
@@ -387,6 +388,7 @@
                 [(If
                     0
                     ()
+                    0
                     else
                     [(Assignment
                         0

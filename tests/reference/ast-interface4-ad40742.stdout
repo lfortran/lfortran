@@ -150,6 +150,7 @@
             (If
                 0
                 ()
+                0
                 (/= (FuncCallOrArray
                     SIZE
                     []
@@ -267,6 +268,7 @@
             (If
                 0
                 ()
+                0
                 OVERFLOW
                 [(Assignment
                     0

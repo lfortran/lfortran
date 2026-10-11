@@ -617,6 +617,7 @@
         (If
             0
             ()
+            0
             (BoolOp
                 (BoolOp
                     (BoolOp
@@ -928,6 +929,7 @@
         (If
             0
             ()
+            0
             (> error2 error1)
             [(GoTo
                 0
@@ -1240,6 +1242,7 @@
         (If
             0
             ()
+            0
             (== limit 2)
             [(Assignment
                 0
@@ -1256,6 +1259,7 @@
         (If
             0
             ()
+            0
             (BoolOp
                 (<= abserr errbnd)
                 Or
@@ -1591,6 +1595,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (== a a1)
                     Or
@@ -1612,6 +1617,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (== resas1 error1)
                     Or
@@ -1633,6 +1639,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (< (FuncCallOrArray
                         dabs
@@ -1683,6 +1690,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (> last 10)
                     And
@@ -1765,6 +1773,7 @@
             (If
                 0
                 ()
+                0
                 (<= errsum errbnd)
                 [(GoTo
                     0
@@ -1782,6 +1791,7 @@
             (If
                 0
                 ()
+                0
                 (== last limit)
                 [(Assignment
                     0
@@ -1798,6 +1808,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (>= iroff1 6)
                     Or
@@ -1818,6 +1829,7 @@
             (If
                 0
                 ()
+                0
                 (<= (FuncCallOrArray
                     dmax1
                     []
@@ -1878,6 +1890,7 @@
             (If
                 35
                 ()
+                0
                 (> error2 error1)
                 [(GoTo
                     0
@@ -2130,6 +2143,7 @@
             (If
                 0
                 ()
+                0
                 (BoolOp
                     (/= ier 0)
                     Or

@@ -224,6 +224,7 @@
             (If
                 0
                 ()
+                0
                 first
                 [(DoLoop
                     0
@@ -270,6 +271,7 @@
                     (If
                         0
                         ()
+                        0
                         (BoolOp
                             (< r2 1)
                             And

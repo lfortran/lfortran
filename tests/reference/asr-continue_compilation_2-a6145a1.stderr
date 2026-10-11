@@ -1039,3 +1039,13 @@ semantic error: Procedure 'p' requires an argument list
     |
 600 |         print *, p
     |                  ^ 
+
+semantic error: duplicate statement label 86
+   --> tests/errors/continue_compilation_2.f90:609:5 - 611:10
+    |
+609 |        if (i < 3) then
+    |        ^^^^^^^^^^^^^^^...
+...
+    |
+611 |    86  end if  ! {Error} duplicate statement label 86
+    | ...^^^^^^^^^^ 
