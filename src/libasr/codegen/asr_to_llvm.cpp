@@ -25542,7 +25542,7 @@ public:
             if(ASRUtils::extract_kind_from_ttype_t(expr_type(stop_code)) != 4) throw LCompilersException("Kind in Stop code should be = 4");
             fmt += " %d";
             if (!stop_code_value) {
-                visit_expr(*stop_code);
+                visit_expr_wrapper(stop_code, true);
                 stop_code_value = tmp; tmp = nullptr;
             }
             args.push_back(stop_code_value);
@@ -25601,7 +25601,7 @@ public:
         }
         llvm::Value *stop_code_value = nullptr;
         if (x.m_code && is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_code))) {
-            this->visit_expr(*x.m_code);
+            this->visit_expr_wrapper(x.m_code, true);
             stop_code_value = tmp; tmp = nullptr;
         }
         if (compiler_options.emit_debug_info && stop_code_value) {
