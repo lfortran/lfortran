@@ -222,8 +222,12 @@ jobs:
             CHECK_FLAGS=()
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 BUILD_TYPE=Debug
+                # GCC's -Wmismatched-new-delete is a false positive at -O2
+                # for LLVM's `new llvm::GlobalVariable(...)`: GlobalVariable's
+                # operator new forwards to User::operator new(size_t, unsigned),
+                # which GCC cannot match with the cleanup delete.
                 CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes
-                    "-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2"
+                    "-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
                     "-DCMAKE_C_FLAGS_DEBUG=-O2")
                 export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
                 export CXXFLAGS="$CFLAGS"

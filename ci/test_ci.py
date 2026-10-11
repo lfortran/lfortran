@@ -811,7 +811,8 @@ class QuickScriptTests(unittest.TestCase):
                 # Quick's LLVM 11 compiler is optimized but still a Debug build:
                 # assertions and per-pass ASR verification stay on, and no
                 # Debug flag defines NDEBUG.
-                self.assertEqual("-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2" in cmake[0], debug)
+                self.assertEqual("-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
+                                 in cmake[0], debug)
                 self.assertEqual("-DCMAKE_C_FLAGS_DEBUG=-O2" in cmake[0], debug)
                 self.assertFalse([arg for arg in cmake[0] if "FLAGS_DEBUG" in arg and "NDEBUG" in arg])
                 flags = json.loads(environment_log.read_text().splitlines()[0])
