@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.common_block]: Variable 'a' is not placed by the common block view it names
+ --> tests/asr/verify/common_block_variable_not_placed.asr:9:18
+  |
+9 |             "a" (Variable
+  |                  ^^^^^^^^ failed here

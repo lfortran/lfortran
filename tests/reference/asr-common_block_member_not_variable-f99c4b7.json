@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_member_not_variable-f99c4b7",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_member_not_variable.asr",
+    "infile_hash": "0855229ced0ac239cb80fc22831428ed2ebbb3dd7f9877cae0a67d9b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_member_not_variable-f99c4b7.stderr",
+    "stderr_hash": "90a3ee0fb7f062831d756f7317b76ad5f6d7cc91f04c9dcc12332873",
+    "returncode": 2
+}

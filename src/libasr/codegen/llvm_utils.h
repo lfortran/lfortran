@@ -12,6 +12,7 @@
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
+#include <libasr/codegen/llvm_compat.h>
 #include <map>
 #include <set>
 #include <string>
@@ -204,6 +205,18 @@ class ASRToLLVMVisitor;
 
     namespace LLVM {
 
+        // The alignment that a load or store of `type` at `address` can
+        // claim when the address is not known to be as aligned as `type`:
+        // the alignment LLVM can prove for it. An address received from
+        // elsewhere, such as a dummy argument or a pointer, may be the
+        // address of a variable that EQUIVALENCE places at an offset the
+        // alignment of its type does not divide, so nothing more is claimed
+        // for it than what is known. Otherwise none, and the access claims
+        // the alignment of `type`.
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+            llvm::Value *address, const llvm::DataLayout &data_layout);
+        // A store that claims only the alignment its address is known to
+        // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         void set_memory_debug(bool state);
         bool use_memory_debug();
@@ -992,8 +1005,6 @@ class ASRToLLVMVisitor;
             // The `if_block` and `else_block` must generate one or more blocks. In
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
-
-            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
             llvm::Value* to_i1(llvm::Value* cond) {
                 if (cond->getType()->isIntegerTy(1)) {
@@ -2596,6 +2607,11 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            // The storage of a common block outlives every scope that
+            // declares the block.
+            if (v->m_common_block != nullptr) {
+                return true;
+            }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
                 return false;
             }

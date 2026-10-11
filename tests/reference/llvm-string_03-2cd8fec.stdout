@@ -57,8 +57,8 @@ define void @_lcompilers_stringconcat_1(i8* %s1, i8* %s2, i32* %s1_len, i32* %s2
   %5 = load i64, i64* %__libasr_len_s2_value, align 8
   %6 = getelementptr %string_descriptor, %string_descriptor* %s2_desc, i32 0, i32 1
   store i64 %5, i64* %6, align 8
-  %7 = load i32, i32* %s1_len, align 4
-  %8 = load i32, i32* %s2_len, align 4
+  %7 = load i32, i32* %s1_len, align 1
+  %8 = load i32, i32* %s2_len, align 1
   %9 = add i32 %7, %8
   %10 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 0
   %11 = load i8*, i8** %10, align 8
@@ -82,7 +82,7 @@ ifcont:                                           ; preds = %else, %then
   %17 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
   %18 = sext i32 %9 to i64
   store i64 %18, i64* %17, align 8
-  %19 = load i32, i32* %s1_len, align 4
+  %19 = load i32, i32* %s1_len, align 1
   %20 = sext i32 %19 to i64
   %21 = sub i64 %20, 1
   %22 = add i64 %21, 1
@@ -104,7 +104,7 @@ ifcont:                                           ; preds = %else, %then
   %35 = getelementptr %string_descriptor, %string_descriptor* %s1_desc, i32 0, i32 1
   %36 = load i64, i64* %35, align 8
   call void @_lfortran_strcpy_alloc(i8* %0, i8** %31, i64* %32, i8 0, i8 0, i8* %34, i64 %36, i32 1)
-  %37 = load i32, i32* %s1_len, align 4
+  %37 = load i32, i32* %s1_len, align 1
   %38 = add i32 %37, 1
   %39 = getelementptr %string_descriptor, %string_descriptor* %concat_result, i32 0, i32 1
   %40 = load i64, i64* %39, align 8

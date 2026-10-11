@@ -4,7 +4,9 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/Local.h>
 
 namespace LCompilers {
 
@@ -12,8 +14,34 @@ namespace LCompilers {
 
         static bool memory_debug_enabled = false;
 
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+                llvm::Value *address, const llvm::DataLayout &data_layout) {
+#if LLVM_VERSION_MAJOR >= 11
+            if (!type->isSized()) {
+                return llvm::MaybeAlign();
+            }
+            // Also for the address of a variable allocated here: it has the
+            // alignment of the variable's type, which need not be that of
+            // the type accessed through it.
+            llvm::Align known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlign(type)) {
+                return llvm::MaybeAlign();
+            }
+            return known;
+#else
+            (void)type;
+            (void)address;
+            (void)data_layout;
+            return llvm::MaybeAlign();
+#endif
+        }
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+            if (llvm::MaybeAlign alignment = known_underalignment(x->getType(), y,
+                    builder.GetInsertBlock()->getModule()->getDataLayout())) {
+                return builder.CreateAlignedStore(x, y, alignment);
+            }
             return builder.CreateStore(x, y);
         }
 
@@ -2041,6 +2069,10 @@ namespace LCompilers {
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
+        if (llvm::MaybeAlign alignment = LLVM::known_underalignment(t, x,
+                module->getDataLayout())) {
+            return builder->CreateAlignedLoad(t, x, alignment, is_volatile);
+        }
         return builder->CreateLoad(t, x, is_volatile);
 #else
         // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
@@ -4243,29 +4275,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return val->getType()->isIntegerTy() ?
                 builder->CreateSExt(val, target_type): builder->CreateFPExt(val, target_type);
         }
-    }
-
-    llvm::Value* LLVMUtils::apply_common_block_alias_cast(
-        llvm::Value* ptr,
-        ASR::expr_t* expr,
-        ASR::ttype_t* expected_type,
-        ASR::ttype_t* actual_type)
-    {
-    #if LLVM_VERSION_MAJOR < 15
-        llvm::Type* expected_llvm_type = get_type_from_ttype_t_util(
-            expr, expected_type, module);
-        llvm::Type* actual_llvm_type = get_type_from_ttype_t_util(
-            expr, actual_type, module);
-        
-        if (expected_llvm_type != actual_llvm_type) {
-            return builder->CreateBitCast(ptr, expected_llvm_type->getPointerTo());
-        }
-    #else
-        (void)expr;
-        (void)expected_type;
-        (void)actual_type;
-    #endif
-        return ptr;
     }
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,

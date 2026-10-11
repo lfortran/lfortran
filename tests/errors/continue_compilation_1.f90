@@ -939,14 +939,14 @@ program continue_compilation_1
         implicit none
         integer :: cs, arr(3)
         common /equivalence_common_scalar/ cs
-        equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
+        equivalence (cs, arr(2))  ! {Error} EQUIVALENCE cannot extend common block /equivalence_common_scalar/ before its first storage unit
     end subroutine equivalence_common_scalar_array_element
 
     subroutine equivalence_common_array_overrun()
         implicit none
         real :: first, second, alias(4)
         common /equivalence_common_overrun/ first, second
-        equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+        equivalence (first, alias(1))  ! extends the block past its end, which is allowed
     end subroutine equivalence_common_array_overrun
     subroutine set_caller(this)
         class(MyClass) :: this
@@ -2203,6 +2203,139 @@ subroutine namelist_object_before_decl_no_implicit_typing_error
     namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
     real :: w
 end subroutine namelist_object_before_decl_no_implicit_typing_error
+
+! A common-block-object is a local variable of fixed size that has no storage
+! of its own elsewhere (Fortran 2023 8.10.2).
+subroutine common_object_dummy_error(d)
+    implicit none
+    integer :: d
+    common /cc1_dummy_blk/ d  ! {Error} dummy argument 'd' cannot be in a common block
+end subroutine common_object_dummy_error
+
+subroutine common_object_parameter_error()
+    implicit none
+    integer, parameter :: k = 1
+    common /cc1_parameter_blk/ k  ! {Error} named constant 'k' cannot be in a common block
+end subroutine common_object_parameter_error
+
+subroutine common_object_allocatable_error()
+    implicit none
+    integer, allocatable :: a(:)
+    common /cc1_allocatable_blk/ a  ! {Error} allocatable variable 'a' cannot be in a common block
+end subroutine common_object_allocatable_error
+
+subroutine common_object_coarray_error()
+    implicit none
+    integer :: c[*]
+    common /cc1_coarray_blk/ c  ! {Error} coarray 'c' cannot be in a common block
+end subroutine common_object_coarray_error
+
+module common_object_bindc_error_mod
+    use iso_c_binding, only: c_int
+    implicit none
+    integer(c_int), bind(c, name="cc1_bound") :: b
+    common /cc1_bindc_blk/ b  ! {Error} variable 'b' with the BIND attribute cannot be in a common block
+end module common_object_bindc_error_mod
+
+subroutine common_object_twice_error()
+    implicit none
+    integer :: x, y
+    common /cc1_twice_blk/ x
+    common /cc1_twice_blk/ x  ! {Error} variable 'x' is already in a common block
+    common /cc1_other_blk/ y
+    common /cc1_another_blk/ y  ! {Error} variable 'y' is already in a common block
+end subroutine common_object_twice_error
+
+subroutine common_object_char_len_error(n)
+    implicit none
+    integer, intent(in) :: n
+    character(len=n) :: s
+    common /cc1_char_len_blk/ s  ! {Error} character length of 's' in a common block must be a constant expression
+end subroutine common_object_char_len_error
+
+subroutine common_object_nonsequence_error()
+    implicit none
+    type :: cc1_plain_t
+        integer :: i
+    end type
+    type(cc1_plain_t) :: v
+    common /cc1_nonsequence_blk/ v  ! {Error} derived type variable 'v' in a common block must have the SEQUENCE or the BIND(C) attribute
+end subroutine common_object_nonsequence_error
+
+! SAVE and BIND(C) can only name a common block that the scoping unit declares.
+subroutine common_save_undeclared_block_error()
+    implicit none
+    save /cc1_save_absent_blk/  ! {Error} common block /cc1_save_absent_blk/ is not declared by a COMMON statement of this scoping unit
+end subroutine common_save_undeclared_block_error
+
+module common_bind_undeclared_block_error_mod
+    implicit none
+    bind(c) :: /cc1_bind_absent_blk/  ! {Error} common block /cc1_bind_absent_blk/ is not declared by a COMMON statement of this scoping unit
+end module common_bind_undeclared_block_error_mod
+
+! EQUIVALENCE may extend a common block past its end, never before its first
+! storage unit (Fortran 2023 8.10.3).
+subroutine equivalence_before_common_origin_error()
+    implicit none
+    real :: x, a(2)
+    common /cc1_origin_blk/ x
+    equivalence (a(2), x)  ! {Error} EQUIVALENCE cannot extend common block /cc1_origin_blk/ before its first storage unit
+end subroutine equivalence_before_common_origin_error
+
+! A pointer or an allocatable variable cannot be an equivalence object, so
+! EQUIVALENCE cannot put one in a common block (Fortran 2023 8.10.1).
+subroutine equivalence_common_pointer_error()
+    implicit none
+    real :: x
+    real, pointer :: p
+    common /cc1_equivalence_pointer_blk/ x
+    equivalence (p, x)  ! {Error} a pointer or an allocatable variable cannot be an equivalence object
+end subroutine equivalence_common_pointer_error
+
+subroutine equivalence_common_allocatable_error()
+    implicit none
+    real :: x
+    real, allocatable :: a(:)
+    common /cc1_equivalence_allocatable_blk/ x
+    equivalence (a, x)  ! {Error} a pointer or an allocatable variable cannot be an equivalence object
+end subroutine equivalence_common_allocatable_error
+
+! A function result is not a variable of static storage that a common block
+! could hold (Fortran 2023 8.10.2).
+function common_object_result_error() result(r)
+    implicit none
+    integer :: r
+    common /cc1_result_blk/ r  ! {Error} function result 'r' cannot be in a common block
+    r = 1
+end function common_object_result_error
+
+! A name made accessible by use association cannot be an equivalence object,
+! renamed or subscripted, whether or not its set is connected to a common
+! block (Fortran 2023 8.10.1.1). Each such set is diagnosed once.
+module cc1_equivalence_use_mod
+    implicit none
+    integer :: cc1_eu_cnt
+    integer :: cc1_eu_arr(3)
+end module cc1_equivalence_use_mod
+
+subroutine equivalence_use_associated_error()
+    use cc1_equivalence_use_mod, only: cc1_eu_cnt, cc1_eu_arr, cc1_eu_c => cc1_eu_cnt
+    implicit none
+    integer :: i, j, k, l
+    common /cc1_equivalence_use_blk/ l
+    equivalence (cc1_eu_cnt, i)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (j, cc1_eu_c)  ! {Error} 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_arr(2), k)  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_cnt, l)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+end subroutine equivalence_use_associated_error
+
+block data equivalence_use_associated_block_data_error
+    use cc1_equivalence_use_mod, only: cc1_eu_arr
+    implicit none
+    integer :: m
+    common /cc1_equivalence_use_bd_blk/ m
+    equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+end block data equivalence_use_associated_block_data_error
 
 module pointer_dummy_actual_1_m
     implicit none

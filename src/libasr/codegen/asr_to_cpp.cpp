@@ -338,6 +338,14 @@ public:
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
+        // The storage of a common block is shared with the other objects that
+        // name it through a common symbol, which C++ cannot define.
+        std::vector<const ASR::CommonBlock_t*> common_blocks;
+        collect_common_blocks(x.m_symtab, common_blocks);
+        if (!common_blocks.empty()) {
+            throw CodeGenError("COMMON blocks are not supported by the C++ backend",
+                common_blocks.front()->base.base.loc);
+        }
         indentation_level = 0;
         indentation_spaces = 4;
 
