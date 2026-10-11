@@ -2957,10 +2957,16 @@ public:
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);
         body.push_back(al, b.Assignment( return_var_expr, b.Var(end_sym) ));
 
+        // A getter of an external procedure lives in the translation unit's
+        // scope, and every translation unit that needs one creates its own
+        // copy, so it must not be exported. A getter of a module procedure
+        // stays public, so that a USE of the module can import it.
+        ASR::accessType access = ASRUtils::is_tu_scope(parent_scope)
+            ? ASR::accessType::Private : ASR::accessType::Public;
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc,
                                 current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, body.p, body.n,
                                 return_var_expr, ASR::abiType::Source,
-                                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                                access, ASR::deftypeType::Implementation,
                                 nullptr, false, true, false, false, false, nullptr, 0, false, false, true, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
