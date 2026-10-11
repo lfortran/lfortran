@@ -7188,10 +7188,51 @@ class SymbolDuplicator {
 
     void duplicate_SymbolTable(SymbolTable* symbol_table,
         SymbolTable* destination_symtab) {
+        std::set<std::string> existing;
+        for( auto& item: destination_symtab->get_scope() ) {
+            existing.insert(item.first);
+        }
         for( auto& item: symbol_table->get_scope() ) {
             duplicate_symbol(item.second, destination_symtab);
         }
         fixup_local_type_declarations(destination_symtab, symbol_table);
+        fixup_local_symbol_references(destination_symtab, symbol_table,
+            existing);
+    }
+
+    // A declaration can read another variable of its own scope, such as the
+    // extent `n` of a dummy argument `a(n)`. When that variable is copied
+    // after the declaration, the copy of the declaration still reads the
+    // original, so point it at the copy once the whole scope is copied. A
+    // symbol the destination already had is not a copy, and is left alone.
+    void fixup_local_symbol_references(SymbolTable *new_scope,
+            SymbolTable *orig_scope, const std::set<std::string> &existing) {
+        class Retarget : public ASR::BaseWalkVisitor<Retarget> {
+        public:
+            SymbolTable *orig_scope, *new_scope;
+            const std::set<std::string> &existing;
+            Retarget(SymbolTable *orig, SymbolTable *copy,
+                    const std::set<std::string> &existing)
+                : orig_scope(orig), new_scope(copy), existing(existing) {}
+            void visit_Var(const ASR::Var_t &x) {
+                if (ASRUtils::symbol_parent_symtab(x.m_v) != orig_scope) {
+                    return;
+                }
+                std::string name = ASRUtils::symbol_name(x.m_v);
+                if (existing.count(name)) return;
+                ASR::symbol_t *copy = new_scope->get_symbol(name);
+                if (copy != nullptr) {
+                    const_cast<ASR::Var_t&>(x).m_v = copy;
+                }
+            }
+        };
+        Retarget retarget(orig_scope, new_scope, existing);
+        for (auto &item : new_scope->get_scope()) {
+            if (existing.count(item.first) == 0 &&
+                    ASR::is_a<ASR::Variable_t>(*item.second)) {
+                retarget.visit_symbol(*item.second);
+            }
+        }
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
