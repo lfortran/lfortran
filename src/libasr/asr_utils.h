@@ -7541,7 +7541,7 @@ class SymbolDuplicator {
 
         ASRUtils::ExprStmtWithScopeDuplicator scoped_node_duplicator(al, function_symtab);
         scoped_node_duplicator.allow_procedure_calls = true;
-        scoped_node_duplicator.allow_reshape = false;
+        scoped_node_duplicator.allow_reshape = true;
 
         for( size_t i = 0; i < function->n_body; i++ ) {
             scoped_node_duplicator.success = true;
