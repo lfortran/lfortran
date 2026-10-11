@@ -24055,16 +24055,21 @@ public:
         // Handle namelist write
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
+            bool is_string = false;
             bool is_string_array = false;
 
             if (x.m_unit == nullptr) {
                 unit_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 6, true));
             } else {
                 ASR::ttype_t* unit_type = expr_type(x.m_unit);
-                is_string_array = ASRUtils::is_character(*unit_type) && ASRUtils::is_array(unit_type);
+                is_string = ASRUtils::is_character(*unit_type);
+                is_string_array = is_string && ASRUtils::is_array(unit_type);
 
                 if (is_string_array) {
                     this->visit_expr_wrapper(x.m_unit, false);
+                    unit_val = tmp;
+                } else if (is_string) {
+                    this->visit_expr_load_wrapper(x.m_unit, 0, true);
                     unit_val = tmp;
                 } else {
                     this->visit_expr_wrapper(x.m_unit, true);
@@ -24088,6 +24093,8 @@ public:
             std::string func_name;
             if (is_string_array) {
                 func_name = "_lfortran_namelist_write_str_array";
+            } else if (is_string) {
+                func_name = "_lfortran_namelist_write_str";
             } else {
                 func_name = "_lfortran_namelist_write";
             }
@@ -24115,6 +24122,13 @@ public:
                     args = {
                         llvm::Type::getInt8Ty(context)->getPointerTo(),
                         llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        group_type->getPointerTo()
+                    };
+                } else if (is_string) {
+                    args = {
+                        character_type,
                         llvm::Type::getInt64Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         group_type->getPointerTo()
@@ -24165,6 +24179,11 @@ public:
                 );
 
                 builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+            } else if (is_string) {
+                llvm::Value *data_ptr, *data_len;
+                std::tie(data_ptr, data_len) = llvm_utils->get_string_length_data(
+                    ASRUtils::get_string_type(x.m_unit), unit_val);
+                builder->CreateCall(fn, {data_ptr, data_len, iostat, nml_group});
             } else {
                 builder->CreateCall(fn, {unit_val, iostat, nml_group});
             }
