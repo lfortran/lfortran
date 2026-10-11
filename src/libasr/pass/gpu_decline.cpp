@@ -214,6 +214,10 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::StructComponentNotSizeable:
+            return "the allocatable component '" + decline.name +
+                "' of a derived-type value of device code cannot be sized "
+                "on the host";
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +

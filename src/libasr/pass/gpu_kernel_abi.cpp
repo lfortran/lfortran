@@ -1,5 +1,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -446,6 +447,11 @@ GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
     size_t n = 0;
     for (; n < kernel.n_body; n++) {
         ASR::stmt_t *stmt = kernel.m_body[n];
+        // Where a component of a derived-type local is stored says nothing
+        // about the iteration (see gpu_device_struct_storage.h).
+        ASR::StructInstanceMember_t *component = nullptr;
+        ASR::expr_t *storage = nullptr;
+        if (gpu_struct_component_storage(stmt, component, storage)) continue;
         if (ASR::is_a<ASR::If_t>(*stmt)) {
             ASR::If_t *test = ASR::down_cast<ASR::If_t>(stmt);
             if (test->n_body != 1 || test->n_orelse != 0 ||

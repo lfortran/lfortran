@@ -174,6 +174,32 @@ generates the device source. It never falls back to the CPU:
   constants. Inside device code an allocatable local is given the shape of
   the `allocate`, reallocation or move that gives it one, also when that
   shape is read from another such local.
+* A derived-type value that device code creates -- a local of a
+  procedure, or the result of a function such as a structure constructor,
+  `associate (t => tensor_t(x))` -- has no storage for an allocatable array
+  component on the device either. Each such component is stored in an
+  array of its own, of the shape the procedure gives the component: the
+  extents of its `allocate`, of the array an assignment reallocates it to,
+  of the same component of a value assigned to the whole variable, or the
+  shape a procedure gives the component of its `intent(out)` or
+  `intent(inout)` argument when the value is passed for it, in terms of the
+  actual arguments of that call. The shape is written as it is on entry to
+  the procedure, over its arguments: a name the procedure binds once (an
+  associate name, a scalar assigned once) stands for what it is bound to,
+  and the extent of a section for the extents of its ranges. The array is
+  then a run-time sized local like those above, given to the callers up to
+  the kernel and sized on the host; a procedure the value is passed to is
+  handed the array as the component, as it is handed the device buffer of a
+  component of a kernel argument. An assignment of the whole value copies
+  the component into that array. A component given several different
+  shapes, or a shape read from a value the procedure computes, is an error
+  ("the allocatable component ... cannot be sized on the host").
+* A derived-type argument a procedure defines (`intent(out)` or
+  `intent(inout)`) is passed by reference, to a value in the memory of the
+  calling thread, as the procedure's locals are. An element of a kernel
+  argument passed for one lives in device memory instead, so the kernel
+  copies it into a local of its own around the call; its allocatable
+  components are not copied, the procedure is handed their device buffers.
 * A derived-type value reaches the kernel as a copy of the host's bytes,
   laid out by the device exactly as the host lays it out. An allocatable
   array component is handed over in device buffers of its own. An
@@ -355,7 +381,3 @@ them; it does not yet.
   of an array intrinsic (`maxval(n)`), or reads the index of a `do` loop
   inside the iteration (`n(l)` in `do l = 1, m`), even when the host could
   work out the largest value before the launch.
-* A derived-type value with an allocatable array component that device code
-  creates -- a local, or the result of a function such as a constructor --
-  has no storage for the component on the device yet. Only the components of
-  the loop's own arguments are handed over in device buffers.

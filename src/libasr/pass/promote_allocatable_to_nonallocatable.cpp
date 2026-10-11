@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/containers.h>
 #include <map>
 #include <set>
@@ -1035,9 +1036,11 @@ void pass_promote_device_allocatable(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &/*pass_options*/) {
     // An allocation can be sized from another allocatable of the routine,
-    // which only has a shape on entry once it is promoted itself, so the
-    // promotion is repeated until it promotes nothing more.
+    // or from a component of a derived-type local, which only has a shape
+    // on entry once it is promoted or stored itself, so the promotion is
+    // repeated until it promotes and stores nothing more.
     while( true ) {
+        bool stored = gpu_give_struct_component_storage(al, unit);
         DeviceImplicitAllocInserter implicit_alloc(al);
         implicit_alloc.visit_TranslationUnit(unit);
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>> scope2var;
@@ -1045,7 +1048,7 @@ void pass_promote_device_allocatable(
         is_allocated_called.visit_TranslationUnit(unit);
         PromoteAllocatableToNonAllocatable promoter(al, scope2var, true);
         promoter.visit_TranslationUnit(unit);
-        if( promoter.promoted_symbols.empty() ) {
+        if( promoter.promoted_symbols.empty() && !stored ) {
             return;
         }
         rebuild_promoted_signatures(al, promoter.promoted_result_functions);
