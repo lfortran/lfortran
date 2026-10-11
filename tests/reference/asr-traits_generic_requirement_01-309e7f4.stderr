@@ -1,0 +1,19 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/../integration_tests/traits_generic_requirement_01.f90:14:5 - 17:1
+   |
+14 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |    
+   | ...^ LFortran extension
+
+warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
+  --> tests/../integration_tests/traits_generic_requirement_01.f90:42:9 - 44:14
+   |
+42 |            do i := 1, size(x)
+   |            ^^^^^^^^^^^^^^^^^^...
+...
+   |
+44 |            end do
+   | ...^^^^^^^^^^^^^^ LFortran extension

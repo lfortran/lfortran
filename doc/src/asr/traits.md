@@ -334,6 +334,55 @@ passed-object argument are supported; the latter need not be the first dummy.
 See `integration_tests/traits_generic_method_01.f90` for alpha-renamed,
 inherited/coalesced generic messages and static calls to the same implementation.
 
+The receiver may also be a component, a nested component or an array element,
+for example `holder%adder%sum(x)` or `holders(i)%adder%sum{real(real64)}(x)`.
+The designator is resolved once, so a subscript with side effects is evaluated
+once for a passed-object binding, and the call is specialized statically
+through the conformance of the designated value's declared type. A conformance
+declared in an `implements` block, without a type-bound procedure, is reached in
+the same way. An ordinary type-bound procedure that is not bound to a generic
+procedure keeps its ordinary dispatch, including dynamic dispatch through a
+polymorphic component. See `integration_tests/traits_generic_binding_04.f90`.
+
+### Generic messages through a constrained type parameter
+
+A type parameter can be constrained by a trait with generic messages:
+
+```fortran
+function twice_sum{ISum :: Adder, INumeric :: Elem}(a, x) result(s)
+    type(Adder), intent(in) :: a
+    type(Elem),  intent(in) :: x(:)
+    type(Elem)              :: s
+    s = a%sum(x) + a%sum{Elem}(x)
+end function twice_sum
+```
+
+The method's own type parameters are inferred from the actual arguments or
+given explicitly, by position or by the message's binder names (`a%sum{T=Elem}`).
+They may be the generic procedure's own type parameters, as here, or concrete
+types (`a%sum{integer}(n)`). Each use is checked at the definition against the
+message's own constraints, whether or not the generic procedure is ever
+instantiated: a concrete argument must belong to a type set or have a visible
+nominal implementation, and a forwarded type parameter's declared constraints
+must imply the message's. The type parameter's name may coincide with the
+message's binder names. Calls through an array element of the type parameter
+are supported; a non-elemental message still requires a scalar receiver.
+
+Instantiation is static. `twice_sum(SimpleSum(), xi)` specializes the selected
+conformance's generic implementation for `integer` and calls it through a
+static adapter with the binding's `nopass` or passed-object convention; no
+runtime view is formed. A generic procedure can forward its constrained type
+parameters to another one, recursively or mutually recursively, and separately
+compiled generic procedures, conformances and clients work together. See
+`integration_tests/traits_generic_requirement_01.f90` (with its standard-Fortran
+oracle), `traits_generic_requirement_02.f90` and the separately compiled
+`traits_generic_requirement_03.f90`.
+
+A generic message whose own type parameter is constrained by a trait that has
+generic messages, such a call in a specification expression, and a call whose
+type arguments mix concrete types and forwarded type parameters are not
+implemented yet.
+
 ### Open-world runtime generic methods
 
 The LLVM backend supports a bounded, genuinely open-world generic-method ABI:
@@ -1460,6 +1509,24 @@ witness list. Only selected concrete witnesses enter executable scopes, through
 the existing symbol/body instantiator. Complete proofs and bound forwarding
 bodies survive module serialization; clients do not depend on private proof
 functions being exported by producer objects.
+
+A constraint's requirement for a generic message is a generic requirement: a
+`Template` owned by the constrained generic, whose fresh binders carry the
+message's nominally equivalent constraints and whose function is the message
+with the constrained receiver prepended. Fresh compiler names cannot capture a
+binder of the enclosing generic. Each tuple of method type arguments the body
+uses is published, like a numeric restriction, as one more requirement of the
+same member: a bodyless specialization of that function whose copies of the
+binder declarations record the type arguments. Calls in the body name that
+specialization. Specialization binds the generic requirement's evidence once;
+each published specialization then selects either a static adapter to the
+bound generic implementation specialized for the substituted type arguments,
+or, when forwarding, the same specialization of the caller's generic
+requirement, published there in the binding worklist. Because the
+specializations are part of the serialized constraint, a separately compiled
+generic is instantiated without its body being reanalyzed. Verification checks
+that a generic requirement copies its message, that each specialization matches
+the type arguments it records, and that none is repeated.
 
 Forwarded signatures and their canonical recursive edges are bound before any
 pending bodies are copied. Composing an instantiation uses the original generic

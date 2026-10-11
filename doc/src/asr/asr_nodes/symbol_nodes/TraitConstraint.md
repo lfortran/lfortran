@@ -20,7 +20,7 @@ TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter,
 | `name` | Internal name of the constraint symbol. |
 | `parameter` | Variable representing the deferred type parameter. |
 | `trait` | Required nominal trait, using a visible import when necessary. |
-| `requirements` | Mappings to normalized abstract procedures used by the generic body. |
+| `requirements` | Mappings to normalized abstract procedures used by the generic body; for a generic message, a generic requirement `Template` followed by its published specializations. |
 | `intrinsic_requirements` | Complete all-member capability proofs for a finite type set; empty for universal traits. |
 
 ### Return values
@@ -37,6 +37,16 @@ contracts may share a normalized procedure, but their originating nominal
 requirements are retained and all selected witnesses must agree.
 References to signatures in a trait's nested scope use canonical
 `ExternalSymbol` imports so serialization does not depend on symbol order.
+
+A generic message instead maps to a generic requirement: a `Template` in the
+same scope whose fresh binders keep the message's nominally equivalent
+constraints and whose function prepends the receiver. Each tuple of type
+arguments the body uses adds one more requirement for the same member: a
+bodyless specialization of that function, recording its type arguments in its
+copies of the binder declarations. Specialization binds the generic
+requirement once and maps each published specialization to a static adapter of
+the selected generic implementation, or to the forwarding caller's same
+specialization.
 
 Finite type sets instead use `intrinsic_requirements`, with no nominal member or
 receiver. Each restriction has one concrete, one-operation witness for every

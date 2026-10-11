@@ -10842,6 +10842,33 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
 bool trait_member_signature_matches(const ASR::Function_t &generic,
     const ASR::Function_t &instance, ASR::ttype_t **members, size_t n_members,
     size_t offset = 0);
+// The requirement of a constraint on a generic message: a Template whose own
+// binders copy the message's and whose function takes the constrained
+// receiver first. nullptr for an ordinary normalized requirement.
+ASR::Template_t *trait_generic_requirement(ASR::symbol_t *procedure);
+// Whether requirement `index` of `constraint` is a specialization of the
+// generic requirement for the same message, published for one tuple of type
+// arguments used by the generic body. Returns that generic requirement.
+ASR::Template_t *trait_requirement_specialization(
+    const ASR::TraitConstraint_t &constraint, size_t index);
+// The type arguments of a specialization of `requirement`: the type and
+// declaration of the specialization's copy of each binder declaration, in
+// binder order. False when a binder declaration is missing.
+bool trait_requirement_type_arguments(const ASR::Template_t &requirement,
+    const ASR::Function_t &specialization,
+    std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments);
+// Whether `specialization` is the function of `requirement` with each binder
+// replaced by its recorded type argument.
+bool trait_requirement_specialization_matches(const ASR::Template_t &requirement,
+    const ASR::Function_t &specialization);
+// Whether two recorded type arguments select the same type: one binder of the
+// enclosing generic, one derived type declaration, or equal intrinsic types.
+bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &left,
+    const std::pair<ASR::ttype_t*, ASR::symbol_t*> &right);
+// Why `requirement` is not `message` with fresh binders, nominally equivalent
+// constraints and a leading receiver; empty when it is.
+std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
+    const ASR::Template_t &requirement);
 // Slots of one member family share their callable's exact origins.
 bool trait_slots_same_family(const ASR::trait_slot_t &left, const ASR::trait_slot_t &right);
 // The slot of `family` whose type arguments are `members`, or contract.n_slots.

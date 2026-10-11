@@ -4064,6 +4064,20 @@ RUN(NAME traits_generic_binding_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_binding_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_binding_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_binding_04_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_generic_requirement_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_generic_requirement_01_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME traits_generic_requirement_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_requirement_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_generic_requirement_03_contracts.f90
+        traits_generic_requirement_03_provider.f90
+        traits_generic_requirement_03_generic.f90)
 RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)

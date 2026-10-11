@@ -9072,12 +9072,12 @@ public:
             }
         }
         ASR::expr_t *prepared_receiver = nullptr;
-        if (x.n_member > 1 && x.n_temp_args > 0) {
+        if ((x.n_member > 1 || (x.n_member == 1 && x.m_member[0].n_args > 0))
+                && x.n_temp_args > 0) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             prepared_receiver = ASRUtils::EXPR(tmp);
-            if (ASR::is_a<ASR::TraitObjectType_t>(
-                    *ASRUtils::extract_type(ASRUtils::expr_type(prepared_receiver))) &&
+            if (resolved_trait_receiver(prepared_receiver, sub_name) &&
                     handle_trait_call(sub_name, x.m_member, x.n_member,
                         x.m_args, x.n_args, x.m_keywords, x.n_keywords,
                         x.m_temp_args, x.n_temp_args, false, x.base.base.loc, prepared_receiver)) {
@@ -9117,8 +9117,7 @@ public:
                     x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
             }
             v_expr = ASRUtils::EXPR(tmp);
-            if (ASR::is_a<ASR::TraitObjectType_t>(
-                    *ASRUtils::extract_type(ASRUtils::expr_type(v_expr))) &&
+            if (resolved_trait_receiver(v_expr, sub_name) &&
                     handle_trait_call(sub_name, x.m_member, x.n_member,
                         x.m_args, x.n_args, x.m_keywords, x.n_keywords,
                         x.m_temp_args, x.n_temp_args, false, x.base.base.loc, v_expr)) {

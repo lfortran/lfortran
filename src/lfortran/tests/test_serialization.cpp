@@ -8163,6 +8163,235 @@ end interface
     }
 }
 
+TEST_CASE("Generic trait requirements copy messages and publish checked specializations") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module generic_requirement_contracts
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+abstract interface :: ISum
+    function sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+    end function
+end interface
+end module
+module generic_requirement_library
+use generic_requirement_contracts
+implicit none
+type, sealed, implements(ISum) :: Adder
+    integer :: bias = 0
+contains
+    procedure, pass(self) :: sum => adder_sum
+end type
+type :: Holder
+    type(Adder) :: a(2)
+end type
+contains
+function adder_sum{INumeric :: T}(x, self) result(s)
+    type(T), intent(in) :: x(:)
+    type(Adder), intent(in) :: self
+    type(T) :: s
+    integer :: i
+    s = T(self%bias)
+    do i = 1, size(x)
+        s = s + x(i)
+    end do
+end function
+function twice{ISum :: T, INumeric :: E}(a, x) result(s)
+    type(T), intent(in) :: a
+    type(E), intent(in) :: x(:)
+    type(E) :: s
+    s = a%sum(x) + a%sum{E}(x)
+end function
+function forward{ISum :: U, INumeric :: F}(a, x) result(s)
+    type(U), intent(in) :: a
+    type(F), intent(in) :: x(:)
+    type(F) :: s
+    integer :: k
+    k = a%sum{integer}([1, 2])
+    s = twice(a, x)
+end function
+end module
+program generic_requirement_client
+use generic_requirement_library
+implicit none
+type(Holder) :: h
+print *, forward(h%a(1), [1, 2, 3]), twice(h%a(2), [1.d0, 2.d0]), h%a(2)%sum([4, 5])
+end program
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "generic_requirement_library");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("a%sum{E}(x)") != std::string::npos);
+    CHECK(printed.find("h%a(2)%sum([4, 5])") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    LCompilers::LocationManager rebuilt_lm;
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, rebuilt_lm);
+    REQUIRE(rebuilt.ok);
+    CHECK(LCompilers::asr_to_text(*result.result) ==
+        LCompilers::asr_to_text(*rebuilt.result));
+    auto *contracts = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("generic_requirement_contracts"));
+    auto *library = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("generic_requirement_library"));
+    auto *trait = ASR::down_cast<ASR::Trait_t>(contracts->m_symtab->get_symbol("isum"));
+    auto *message = ASR::down_cast<ASR::Template_t>(trait->m_symtab->get_symbol("sum"));
+    auto constraint_of = [&](const char *generic, const char *binder) {
+        auto *scope = ASR::down_cast<ASR::Template_t>(
+            library->m_symtab->get_symbol(generic))->m_symtab;
+        ASR::TraitConstraint_t *found = nullptr;
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            if (std::string(ASRUtils::symbol_name(constraint->m_parameter)) == binder) {
+                found = constraint;
+            }
+        }
+        REQUIRE(found != nullptr);
+        return found;
+    };
+    auto type_arguments = [&](ASR::TraitConstraint_t *constraint, size_t index) {
+        auto *generic = ASRUtils::trait_requirement_specialization(*constraint, index);
+        REQUIRE(generic != nullptr);
+        auto *specialization = ASR::down_cast<ASR::Function_t>(
+            constraint->m_requirements[index].m_procedure);
+        CHECK(ASRUtils::trait_requirement_specialization_matches(*generic, *specialization));
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        REQUIRE(ASRUtils::trait_requirement_type_arguments(*generic, *specialization, types));
+        REQUIRE(types.size() == 1);
+        return types[0].first;
+    };
+    auto *twice = constraint_of("twice", "t");
+    // a%sum(x) and a%sum{E}(x) share one specialization.
+    REQUIRE(twice->n_requirements == 2);
+    auto *requirement = ASRUtils::trait_generic_requirement(twice->m_requirements[0].m_procedure);
+    REQUIRE(requirement != nullptr);
+    CHECK(ASRUtils::trait_generic_requirement_mismatch(*message, *requirement).empty());
+    // The message's binder is also spelled T; the requirement's own is fresh.
+    REQUIRE(requirement->n_args == 1);
+    CHECK(std::string(requirement->m_args[0]) != "t");
+    auto *function = ASRUtils::trait_method_function(&requirement->base);
+    REQUIRE(function->n_args == 2);
+    CHECK(std::string(ASR::down_cast<ASR::TypeParameter_t>(
+        ASRUtils::expr_type(function->m_args[0]))->m_param) == "t");
+    CHECK(std::string(ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::extract_type(
+        ASRUtils::expr_type(function->m_args[1])))->m_param) == requirement->m_args[0]);
+    auto *recorded = type_arguments(twice, 1);
+    REQUIRE(ASR::is_a<ASR::TypeParameter_t>(*recorded));
+    CHECK(std::string(ASR::down_cast<ASR::TypeParameter_t>(recorded)->m_param) == "e");
+    // forward's own concrete use and the one its forwarding call needs.
+    auto *forward = constraint_of("forward", "u");
+    REQUIRE(forward->n_requirements == 3);
+    size_t concrete = 0, deferred = 0;
+    for (size_t i = 1; i < forward->n_requirements; i++) {
+        auto *type = type_arguments(forward, i);
+        if (ASR::is_a<ASR::Integer_t>(*type) &&
+                ASRUtils::extract_kind_from_ttype_t(type) == 4) concrete++;
+        if (ASR::is_a<ASR::TypeParameter_t>(*type) &&
+                std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) == "f") {
+            deferred++;
+        }
+    }
+    CHECK(concrete == 1);
+    CHECK(deferred == 1);
+    // Concrete receivers, including an element of a component, call static
+    // specializations; nothing is boxed for runtime dispatch.
+    struct Dynamic : ASR::BaseWalkVisitor<Dynamic> {
+        size_t count = 0;
+        void visit_TraitPack(const ASR::TraitPack_t &x) {
+            count++;
+            ASR::BaseWalkVisitor<Dynamic>::visit_TraitPack(x);
+        }
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+            count++;
+            ASR::BaseWalkVisitor<Dynamic>::visit_TraitFunctionCall(x);
+        }
+        void visit_TraitDeferredCall(const ASR::TraitDeferredCall_t &x) {
+            count++;
+            ASR::BaseWalkVisitor<Dynamic>::visit_TraitDeferredCall(x);
+        }
+    } dynamic;
+    dynamic.visit_symbol(*result.result->m_symtab->get_symbol("generic_requirement_client"));
+    CHECK(dynamic.count == 0);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "generic_requirement_client.asr", loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    auto *specialization = ASR::down_cast<ASR::Function_t>(twice->m_requirements[1].m_procedure);
+    SUBCASE("a generic requirement declares its own binders") {
+        requirement->m_args[0] = ASR::down_cast<ASR::TypeParameter_t>(
+            ASRUtils::expr_type(function->m_args[0]))->m_param;
+        rejects("asr.verify.trait_constraint.generic_requirement");
+    }
+    SUBCASE("a generic requirement is a restriction") {
+        ASRUtils::get_FunctionType(function)->m_is_restriction = false;
+        rejects("asr.verify.trait_constraint.generic_requirement");
+    }
+    SUBCASE("a generic requirement takes the constrained receiver first") {
+        function->m_args++;
+        function->n_args--;
+        rejects("asr.verify.trait_constraint.generic_requirement");
+    }
+    SUBCASE("a specialization records the types of its signature") {
+        auto *declaration = ASR::down_cast<ASR::Variable_t>(
+            specialization->m_symtab->get_symbol(requirement->m_args[0]));
+        declaration->m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, declaration->base.base.loc, 4));
+        rejects("asr.verify.trait_constraint.generic_specialization");
+    }
+    SUBCASE("a specialization records every type argument") {
+        specialization->m_symtab->erase_symbol(requirement->m_args[0]);
+        rejects("asr.verify.trait_constraint.generic_specialization");
+    }
+    SUBCASE("a specialization is published once") {
+        LCompilers::Vec<ASR::trait_requirement_t> requirements;
+        requirements.from_pointer_n_copy(al, twice->m_requirements, twice->n_requirements);
+        requirements.push_back(al, twice->m_requirements[1]);
+        twice->m_requirements = requirements.p;
+        twice->n_requirements = requirements.size();
+        rejects("asr.verify.trait_constraint.generic_specialization");
+    }
+    SUBCASE("a specialization belongs to the constraint's generic requirement") {
+        twice->m_requirements++;
+        twice->n_requirements--;
+        rejects("asr.verify.trait_constraint.generic_specialization");
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

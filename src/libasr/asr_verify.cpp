@@ -942,11 +942,17 @@ public:
             ? ASRUtils::symbol_get_past_external(x.m_member) : x.m_member;
         ASR::symbol_t *procedure = check_external
             ? ASRUtils::symbol_get_past_external(x.m_procedure) : x.m_procedure;
-        check(member != nullptr && ASR::is_a<ASR::Function_t>(*member),
+        // A generic message is the Template of its Function.
+        ASR::Function_t *message_fn = member ? ASRUtils::trait_method_function(member) : nullptr;
+        ASR::Template_t *message = message_fn ? ASRUtils::trait_method_template(*message_fn)
+            : nullptr;
+        check(member != nullptr && (ASR::is_a<ASR::Function_t>(*member) ||
+                (message && member == &message->base)),
             "asr.verify.trait_requirement.member_is_function",
             "A trait requirement member must be a Function, not " +
                 std::string(x.m_member ? ASRUtils::symbol_type_name(*x.m_member) : "<null>"));
-        if (member) {
+        if (member && message) member = &message_fn->base;
+        if (member && ASR::is_a<ASR::Function_t>(*member)) {
             ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
             check(member_fn->m_function_signature != nullptr &&
                     ASR::is_a<ASR::FunctionType_t>(*member_fn->m_function_signature),
@@ -958,6 +964,18 @@ public:
             check(ASRUtils::get_FunctionType(*member_fn)->m_deftype == ASR::deftypeType::Interface,
                 "asr.verify.trait_requirement.member_is_interface",
                 "A trait requirement member must be an interface procedure");
+        }
+        if (message) {
+            // A generic requirement and its specializations are checked
+            // against each other by their constraint.
+            check(procedure != nullptr && (ASR::is_a<ASR::Template_t>(*procedure) ||
+                    ASR::is_a<ASR::Function_t>(*procedure)),
+                "asr.verify.trait_requirement.procedure_is_function",
+                "A generic trait method requirement must be a generic requirement "
+                    "or one of its specializations, not " +
+                    std::string(x.m_procedure ? ASRUtils::symbol_type_name(*x.m_procedure)
+                        : "<null>"));
+            return;
         }
         check(procedure != nullptr && ASR::is_a<ASR::Function_t>(*procedure),
             "asr.verify.trait_requirement.procedure_is_function",
@@ -1538,23 +1556,91 @@ public:
             ASR::symbol_t *member = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_requirements[i].m_member)
                 : x.m_requirements[i].m_member;
-            require_id(member != nullptr &&
-                    ASR::is_a<ASR::Function_t>(*member),
+            // A generic message is the Template of its Function.
+            ASR::Function_t *method = member ? ASRUtils::trait_method_function(member) : nullptr;
+            ASR::Template_t *message = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            require_id(member != nullptr && (ASR::is_a<ASR::Function_t>(*member) ||
+                    (message && member == &message->base)),
                 "asr.verify.trait_constraint.member_is_function",
                 "TraitConstraint requirement member must be a Function");
             require_id(trait_members.count(member) != 0,
                 "asr.verify.trait_constraint.member_belongs_to_trait",
                 "TraitConstraint requirement member must belong to the trait");
-            require_id(required_members.insert(member).second,
-                "asr.verify.trait_constraint.member_is_unique",
-                "TraitConstraint must not repeat an original member");
             ASR::symbol_t *procedure = ASRUtils::symbol_get_past_external(
                 x.m_requirements[i].m_procedure);
-            require_id(ASRUtils::symbol_parent_symtab(procedure) == x.m_parent_symtab,
+            require_id(procedure && ASRUtils::symbol_parent_symtab(procedure) == x.m_parent_symtab,
                 "asr.verify.trait_constraint.procedure_scope",
                 "A normalized requirement must belong to its generic parameter's scope");
-            auto *function = ASR::down_cast<ASR::Function_t>(procedure);
-            ASR::expr_t *receiver = function->m_args[0];
+            bool specialization = message && ASR::is_a<ASR::Function_t>(*procedure);
+            ASR::Function_t *function = nullptr;
+            if (specialization) {
+                // One tuple of type arguments used by the generic body.
+                auto *generic = ASRUtils::trait_requirement_specialization(x, i);
+                function = ASR::down_cast<ASR::Function_t>(procedure);
+                require_id(generic &&
+                        ASRUtils::trait_requirement_specialization_matches(*generic, *function) &&
+                        ASRUtils::get_FunctionType(function)->m_is_restriction &&
+                        ASRUtils::get_FunctionType(function)->m_deftype ==
+                            ASR::deftypeType::Interface &&
+                        function->n_body == 0,
+                    "asr.verify.trait_constraint.generic_specialization",
+                    "A specialization of a generic requirement must be its bodyless "
+                    "function with the type arguments it records");
+                std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+                ASRUtils::trait_requirement_type_arguments(*generic, *function, types);
+                for (size_t j = 0; j < i; j++) {
+                    if (ASRUtils::trait_requirement_specialization(x, j) != generic) continue;
+                    auto *other = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(x.m_requirements[j].m_procedure));
+                    std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> recorded;
+                    bool same = ASRUtils::trait_requirement_type_arguments(
+                        *generic, *other, recorded) && recorded.size() == types.size();
+                    for (size_t k = 0; same && k < types.size(); k++) {
+                        same = ASRUtils::trait_type_argument_equal(recorded[k], types[k]);
+                    }
+                    require_id(!same,
+                        "asr.verify.trait_constraint.generic_specialization",
+                        "A generic requirement must not repeat a specialization");
+                }
+            } else {
+                require_id(required_members.insert(member).second,
+                    "asr.verify.trait_constraint.member_is_unique",
+                    "TraitConstraint must not repeat an original member");
+            }
+            if (message && !specialization) {
+                require_id(ASR::is_a<ASR::Template_t>(*procedure),
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "The requirement of a generic trait method must be a generic requirement");
+                auto *generic = ASR::down_cast<ASR::Template_t>(procedure);
+                auto mismatch = ASRUtils::trait_generic_requirement_mismatch(*message, *generic);
+                require_id(mismatch.empty(),
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "A generic requirement must copy its generic trait method: " + mismatch);
+                // Fresh binders cannot capture a binder of an enclosing generic.
+                for (size_t j = 0; j < generic->n_args; j++) {
+                    for (SymbolTable *scope = x.m_parent_symtab; scope; scope = scope->parent) {
+                        for (const auto &entry : scope->get_scope()) {
+                            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                            auto *binder = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::TraitConstraint_t>(entry.second)->m_parameter);
+                            require_id(!binder || std::string(ASRUtils::symbol_name(binder))
+                                    != generic->m_args[j],
+                                "asr.verify.trait_constraint.generic_requirement",
+                                "A generic requirement's type parameters must be fresh");
+                        }
+                    }
+                }
+                function = ASRUtils::trait_method_function(procedure);
+                require_id(function && ASRUtils::get_FunctionType(function)->m_is_restriction &&
+                        ASRUtils::get_FunctionType(function)->m_deftype ==
+                            ASR::deftypeType::Interface &&
+                        function->n_body == 0,
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "A generic requirement's function must be a bodyless restriction");
+            } else if (!message) {
+                function = ASR::down_cast<ASR::Function_t>(procedure);
+            }
+            ASR::expr_t *receiver = function->n_args ? function->m_args[0] : nullptr;
             require_id(receiver && ASR::is_a<ASR::Var_t>(*receiver) &&
                     ASR::down_cast<ASR::Var_t>(receiver)->m_v &&
                     ASR::is_a<ASR::Variable_t>(
@@ -1572,6 +1658,7 @@ public:
                             ASRUtils::symbol_type(parameter))->m_param,
                 "asr.verify.trait_constraint.receiver_matches_parameter",
                 "A normalized receiver must be the constraint's read-only type parameter");
+            if (specialization) continue;
             auto callable = trait_callables.emplace(
                 std::make_pair(parameter, std::string(ASRUtils::symbol_name(member))),
                 procedure);
@@ -3215,6 +3302,23 @@ public:
                 }
                 for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
                     recorded |= constraint->m_intrinsic_requirements[i].m_procedure == &x.base;
+                }
+            }
+            // The function of a generic requirement is recorded, through its
+            // Template, by the enclosing generic's constraint.
+            auto *owner = parent_symtab->asr_owner;
+            if (!recorded && owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(owner)) &&
+                    ASRUtils::trait_method_function(ASR::down_cast<ASR::symbol_t>(owner)) == &x &&
+                    parent_symtab->parent) {
+                for (const auto &entry : parent_symtab->parent->get_scope()) {
+                    if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                    auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                    for (size_t i = 0; i < constraint->n_requirements; i++) {
+                        recorded |= ASRUtils::symbol_get_past_external(
+                            constraint->m_requirements[i].m_procedure) ==
+                            ASR::down_cast<ASR::symbol_t>(owner);
+                    }
                 }
             }
             require_id(!numeric || recorded, "asr.verify.type_set.restriction_record",

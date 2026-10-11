@@ -4900,47 +4900,176 @@ public:
                 generic->m_symtab->add_symbol(name, trait);
                 parameter_traits[i].push_back(trait);
             }
-            std::map<std::string, std::pair<ASR::Function_t*, ASR::symbol_t*>> methods;
-            for (auto *trait_symbol : parameter_traits[i]) {
-                auto *trait = ASR::down_cast<ASR::Trait_t>(
-                    ASRUtils::symbol_get_past_external(trait_symbol));
-                auto hierarchy = checked_trait_hierarchy(*trait, parameter.loc);
-                Vec<ASR::trait_requirement_t> requirements;
-                requirements.reserve(al, hierarchy.members.size());
-                for (ASR::symbol_t *member : hierarchy.members) {
-                    auto *method = ASRUtils::trait_method_function(member);
-                    if (ASRUtils::trait_method_template(*method)) {
-                        trait_error("generic methods in generic type parameter constraints "
-                            "are not implemented yet", parameter.loc);
-                    }
-                    auto found = methods.find(method->m_name);
-                    ASR::symbol_t *procedure;
-                    if (found == methods.end()) {
-                        procedure = normalize_trait_requirement(method, type_symbol,
-                            generic->m_symtab, parameter.loc);
-                        methods.emplace(method->m_name, std::make_pair(method, procedure));
-                    } else {
-                        check_trait_method_compatibility(*found->second.first,
-                            *method, parameter.loc);
-                        procedure = found->second.second;
-                    }
-                    ASR::trait_requirement_t requirement;
-                    requirement.loc = parameter.loc;
-                    requirement.m_member = reference_trait_member(
-                        member, generic->m_symtab, parameter.loc);
-                    requirement.m_procedure = procedure;
-                    requirements.push_back(al, requirement);
-                }
-                std::string constraint_name = generic->m_symtab->get_unique_name(
-                    "__constraint_" + to_lower(parameter.m_name));
-                ASR::symbol_t *constraint = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_TraitConstraint_t(al, parameter.loc, generic->m_symtab,
-                        s2c(al, constraint_name), type_symbol, trait_symbol,
-                        requirements.p, requirements.size(), nullptr, 0));
-                generic->m_symtab->add_symbol(constraint_name, constraint);
-            }
+            // A generic message of a trait message's own binder would need a
+            // requirement nested in a requirement.
+            bool generic_messages = !current_scope->asr_owner ||
+                !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
+                !ASR::is_a<ASR::Trait_t>(*ASR::down_cast<ASR::symbol_t>(
+                    current_scope->asr_owner));
+            add_trait_parameter_constraints(generic->m_symtab, type_symbol,
+                parameter_traits[i], parameter.loc, generic_messages);
         }
         tmp = &generic->base.base;
+    }
+
+    // The constraints of one generic type parameter, one per trait. Same-name
+    // methods of its traits share one normalized requirement.
+    void add_trait_parameter_constraints(SymbolTable *scope, ASR::symbol_t *type_symbol,
+            const std::vector<ASR::symbol_t*> &traits, const Location &loc,
+            bool generic_messages) {
+        std::string parameter = ASRUtils::symbol_name(type_symbol);
+        std::map<std::string, std::pair<ASR::Function_t*, ASR::symbol_t*>> methods;
+        for (auto *trait_symbol : traits) {
+            auto *trait = ASR::down_cast<ASR::Trait_t>(
+                ASRUtils::symbol_get_past_external(trait_symbol));
+            auto hierarchy = checked_trait_hierarchy(*trait, loc);
+            Vec<ASR::trait_requirement_t> requirements;
+            requirements.reserve(al, hierarchy.members.size());
+            for (ASR::symbol_t *member : hierarchy.members) {
+                auto *method = ASRUtils::trait_method_function(member);
+                auto *message = ASRUtils::trait_method_template(*method);
+                if (message && !generic_messages) {
+                    trait_error("generic methods in generic type parameter constraints "
+                        "are not implemented yet", loc);
+                }
+                auto found = methods.find(method->m_name);
+                ASR::symbol_t *procedure;
+                if (found == methods.end()) {
+                    procedure = message
+                        ? create_generic_trait_requirement(*method, *message,
+                            type_symbol, scope, loc)
+                        : normalize_trait_requirement(method, type_symbol, scope, loc);
+                    methods.emplace(method->m_name, std::make_pair(method, procedure));
+                } else {
+                    check_trait_method_compatibility(*found->second.first, *method, loc);
+                    procedure = found->second.second;
+                }
+                ASR::trait_requirement_t requirement;
+                requirement.loc = loc;
+                requirement.m_member = reference_trait_member(member, scope, loc);
+                requirement.m_procedure = procedure;
+                requirements.push_back(al, requirement);
+            }
+            std::string constraint_name = scope->get_unique_name("__constraint_" + parameter);
+            ASR::symbol_t *constraint = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_TraitConstraint_t(al, loc, scope,
+                    s2c(al, constraint_name), type_symbol, trait_symbol,
+                    requirements.p, requirements.size(), nullptr, 0));
+            scope->add_symbol(constraint_name, constraint);
+        }
+    }
+
+    // The requirement for a generic message: a Template nested in the generic
+    // procedure. Its fresh binders keep the message's nominal constraints, and
+    // its function takes the constrained receiver first. The generic body
+    // publishes one specialization of it per tuple of type arguments it uses.
+    ASR::symbol_t *create_generic_trait_requirement(ASR::Function_t &method,
+            ASR::Template_t &message, ASR::symbol_t *type_symbol, SymbolTable *scope,
+            const Location &loc) {
+        std::string receiver = ASRUtils::symbol_name(type_symbol);
+        std::string name = scope->get_unique_name(
+            "__trait_" + receiver + "_" + std::string(method.m_name));
+        auto *requirement_scope = al.make_new<SymbolTable>(scope);
+        auto *generic = ASR::down_cast2<ASR::Template_t>(ASR::make_Template_t(al, loc,
+            requirement_scope, s2c(al, name), nullptr, 0, nullptr, 0));
+        scope->add_symbol(name, &generic->base);
+        Vec<char*> binders;
+        binders.reserve(al, message.n_args);
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        for (size_t i = 0; i < message.n_args; i++) {
+            auto *original = ASR::down_cast<ASR::Variable_t>(
+                message.m_symtab->get_symbol(message.m_args[i]));
+            auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(original->m_type);
+            // Compiler names cannot capture a binder of the enclosing generic.
+            std::string binder = requirement_scope->get_unique_name(
+                name + "_" + std::string(message.m_args[i]));
+            auto *type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
+                s2c(al, binder), parameter->m_deferred_attr, parameter->m_is_class));
+            auto *declaration = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, requirement_scope,
+                    s2c(al, binder), nullptr, 0, original->m_intent, nullptr, nullptr,
+                    original->m_storage, type, nullptr, original->m_abi,
+                    original->m_access, original->m_presence, original->m_value_attr));
+            requirement_scope->add_symbol(binder, declaration);
+            binders.push_back(al, s2c(al, binder));
+            types[message.m_args[i]] = {type, declaration};
+        }
+        generic->m_args = binders.p;
+        generic->n_args = binders.size();
+        for (size_t i = 0; i < message.n_args; i++) {
+            auto *original = message.m_symtab->get_symbol(message.m_args[i]);
+            std::vector<ASR::symbol_t*> traits;
+            for (const auto &entry : message.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != original) {
+                    continue;
+                }
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(constraint->m_trait));
+                if (ASRUtils::get_asr_owner(&trait->base) == &message.base) {
+                    // An inline type set belongs to its generic.
+                    std::string set_name = requirement_scope->get_unique_name(
+                        "__type_set_" + std::string(generic->m_args[i]));
+                    Vec<ASR::ttype_t*> members;
+                    members.reserve(al, trait->n_member_types);
+                    for (size_t j = 0; j < trait->n_member_types; j++) {
+                        members.push_back(al, ASRUtils::duplicate_type(al,
+                            trait->m_member_types[j]));
+                    }
+                    auto *copy = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(al, loc,
+                        al.make_new<SymbolTable>(requirement_scope), s2c(al, set_name),
+                        nullptr, 0, ASR::accessType::Private, trait->m_kind,
+                        members.p, members.size()));
+                    requirement_scope->add_symbol(set_name, copy);
+                    traits.push_back(copy);
+                } else {
+                    auto *reference = make_operator_proc_visible(
+                        constraint->m_trait, "trait", requirement_scope);
+                    ASRUtils::insert_module_dependency(reference, al,
+                        current_module_dependencies);
+                    traits.push_back(reference);
+                }
+            }
+            add_trait_parameter_constraints(requirement_scope,
+                requirement_scope->get_symbol(generic->m_args[i]), traits, loc, false);
+        }
+        std::map<std::string, ASR::symbol_t*> symbols;
+        std::string copy_name = requirement_scope->get_unique_name("__message");
+        size_t n_diagnostics = diag.diagnostics.size();
+        auto *copy = ASRUtils::trait_method_function(instantiate_symbol(al,
+            requirement_scope, types, symbols, copy_name, &method.base, diag));
+        if (!copy || diag.diagnostics.size() > n_diagnostics) {
+            trait_error("cannot construct the generic interface for '" +
+                std::string(method.m_name) + "'", loc);
+        }
+        // The copied binder declarations record each specialization's type
+        // arguments under the requirement's own binder names.
+        for (size_t i = 0; i < message.n_args; i++) {
+            std::string binder = generic->m_args[i];
+            ASR::symbol_t *declaration = copy->m_symtab->get_symbol(message.m_args[i]);
+            if (declaration) {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*declaration));
+                copy->m_symtab->erase_symbol(message.m_args[i]);
+                ASR::down_cast<ASR::Variable_t>(declaration)->m_name = s2c(al, binder);
+            } else {
+                declaration = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, copy->m_symtab,
+                        s2c(al, binder), nullptr, 0, ASR::intentType::In, nullptr,
+                        nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, types[message.m_args[i]].first),
+                        nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+            }
+            copy->m_symtab->add_symbol(binder, declaration);
+        }
+        auto *procedure = ASR::down_cast<ASR::Function_t>(normalize_trait_requirement(
+            copy, ASRUtils::symbol_type(type_symbol), receiver, requirement_scope, loc, true));
+        requirement_scope->erase_symbol(copy_name);
+        requirement_scope->erase_symbol(procedure->m_name);
+        procedure->m_name = generic->m_name;
+        requirement_scope->add_symbol(name, &procedure->base);
+        return &generic->base;
     }
 
     void visit_Implements(const AST::Implements_t &x) {

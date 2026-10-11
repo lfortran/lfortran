@@ -6820,6 +6820,274 @@ bool trait_member_signature_matches(const ASR::Function_t &generic,
             instance.m_return_var, substitution, arguments));
 }
 
+ASR::Template_t *trait_generic_requirement(ASR::symbol_t *procedure)
+{
+    procedure = symbol_get_past_external(procedure);
+    return procedure && ASR::is_a<ASR::Template_t>(*procedure)
+        ? ASR::down_cast<ASR::Template_t>(procedure) : nullptr;
+}
+
+ASR::Template_t *trait_requirement_specialization(
+        const ASR::TraitConstraint_t &constraint, size_t index)
+{
+    if (index >= constraint.n_requirements || !constraint.m_requirements) return nullptr;
+    const auto &entry = constraint.m_requirements[index];
+    auto *member = symbol_get_past_external(entry.m_member);
+    auto *procedure = symbol_get_past_external(entry.m_procedure);
+    auto *method = member ? trait_method_function(member) : nullptr;
+    if (!method || !trait_method_template(*method) || !procedure ||
+            !ASR::is_a<ASR::Function_t>(*procedure)) return nullptr;
+    for (size_t i = 0; i < constraint.n_requirements; i++) {
+        const auto &other = constraint.m_requirements[i];
+        if (symbol_get_past_external(other.m_member) != member) continue;
+        if (auto *generic = trait_generic_requirement(other.m_procedure)) return generic;
+    }
+    return nullptr;
+}
+
+bool trait_requirement_type_arguments(const ASR::Template_t &requirement,
+        const ASR::Function_t &specialization,
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments)
+{
+    arguments.clear();
+    if ((requirement.n_args && !requirement.m_args) || !specialization.m_symtab) return false;
+    for (size_t i = 0; i < requirement.n_args; i++) {
+        if (!requirement.m_args[i]) return false;
+        auto *symbol = specialization.m_symtab->get_symbol(requirement.m_args[i]);
+        if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol)) return false;
+        auto *declaration = ASR::down_cast<ASR::Variable_t>(symbol);
+        if (!declaration->m_type || is_array(declaration->m_type)) return false;
+        arguments.push_back({declaration->m_type, declaration->m_type_declaration});
+    }
+    return true;
+}
+
+// Whether instance's declaration is generic's with each binder of a generic
+// requirement replaced by its recorded type argument. A deferred argument
+// names a binder of the enclosing generic, visible from both declarations.
+static bool trait_requirement_type_matches(ASR::expr_t *generic, ASR::expr_t *instance,
+    const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &arguments)
+{
+    ASR::ttype_t *a = typed_expr_type(generic), *b = typed_expr_type(instance);
+    if (!a || !b) return false;
+    auto *element = extract_type(a);
+    auto found = ASR::is_a<ASR::TypeParameter_t>(*element)
+        ? types.find(ASR::down_cast<ASR::TypeParameter_t>(element)->m_param) : types.end();
+    if (found == types.end()) return trait_types_equal(generic, instance, arguments);
+    if (is_pointer(a) != is_pointer(b) || is_allocatable(a) != is_allocatable(b) ||
+            !trait_shapes_equal(a, b, arguments)) return false;
+    auto *expected = extract_type(found->second.first), *actual = extract_type(b);
+    if (!expected || expected->type != actual->type) return false;
+    if (ASR::is_a<ASR::TypeParameter_t>(*expected)) {
+        auto *left = ASR::down_cast<ASR::TypeParameter_t>(expected);
+        auto *right = ASR::down_cast<ASR::TypeParameter_t>(actual);
+        return left->m_param && right->m_param &&
+            std::string(left->m_param) == right->m_param &&
+            left->m_is_class == right->m_is_class &&
+            left->m_deferred_attr == right->m_deferred_attr;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*expected)) {
+        auto *left = ASR::down_cast<ASR::StructType_t>(expected);
+        auto *right = ASR::down_cast<ASR::StructType_t>(actual);
+        auto *declaration = symbol_get_past_external(found->second.second);
+        return declaration && left->m_is_cstruct == right->m_is_cstruct &&
+            left->m_is_unlimited_polymorphic == right->m_is_unlimited_polymorphic &&
+            declaration == symbol_get_past_external(get_struct_sym_from_struct_expr(instance));
+    }
+    return types_equal(expected, actual, nullptr, nullptr);
+}
+
+bool trait_requirement_specialization_matches(const ASR::Template_t &requirement,
+        const ASR::Function_t &specialization)
+{
+    auto *generic = trait_method_function(const_cast<ASR::symbol_t*>(&requirement.base));
+    std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> recorded;
+    if (!generic || !trait_requirement_type_arguments(requirement, specialization, recorded) ||
+            generic->n_args != specialization.n_args || !generic->n_args ||
+            !generic->m_args || !specialization.m_args ||
+            bool(generic->m_return_var) != bool(specialization.m_return_var) ||
+            !generic->m_function_signature || !specialization.m_function_signature ||
+            !ASR::is_a<ASR::FunctionType_t>(*generic->m_function_signature) ||
+            !ASR::is_a<ASR::FunctionType_t>(*specialization.m_function_signature)) return false;
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+    for (size_t i = 0; i < requirement.n_args; i++) {
+        auto *type = extract_type(recorded[i].first);
+        // A type argument names the caller's types, never a binder of the
+        // requirement itself, which is not visible to the caller.
+        for (size_t j = 0; ASR::is_a<ASR::TypeParameter_t>(*type) && j < requirement.n_args; j++) {
+            if (std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ==
+                    requirement.m_args[j]) return false;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*type) && !recorded[i].second) return false;
+        types[requirement.m_args[i]] = recorded[i];
+    }
+    std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
+    for (size_t i = 0; i < generic->n_args; i++) {
+        if (!generic->m_args[i] || !specialization.m_args[i] ||
+                !ASR::is_a<ASR::Var_t>(*generic->m_args[i]) ||
+                !ASR::is_a<ASR::Var_t>(*specialization.m_args[i])) return false;
+        auto *a = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(generic->m_args[i])->m_v));
+        auto *b = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(specialization.m_args[i])->m_v));
+        if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) return false;
+        arguments.emplace(&a->base, &b->base);
+    }
+    for (size_t i = 0; i < generic->n_args; i++) {
+        auto *a = EXPR2VAR(generic->m_args[i]), *b = EXPR2VAR(specialization.m_args[i]);
+        if (std::string(a->m_name) != b->m_name || a->m_intent != b->m_intent ||
+                a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr ||
+                a->m_target_attr != b->m_target_attr ||
+                a->m_contiguous_attr != b->m_contiguous_attr ||
+                a->m_is_volatile != b->m_is_volatile ||
+                !trait_requirement_type_matches(generic->m_args[i],
+                    specialization.m_args[i], types, arguments)) return false;
+    }
+    auto *a = get_FunctionType(generic), *b = get_FunctionType(specialization);
+    return a->m_pure == b->m_pure && a->m_elemental == b->m_elemental &&
+        a->m_deftype == b->m_deftype && a->m_abi == b->m_abi &&
+        (!generic->m_return_var || trait_requirement_type_matches(generic->m_return_var,
+            specialization.m_return_var, types, arguments));
+}
+
+bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &left,
+        const std::pair<ASR::ttype_t*, ASR::symbol_t*> &right)
+{
+    if (!left.first || !right.first) return false;
+    auto *a = extract_type(left.first), *b = extract_type(right.first);
+    if (!a || !b || a->type != b->type) return false;
+    if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
+        auto *x = ASR::down_cast<ASR::TypeParameter_t>(a);
+        auto *y = ASR::down_cast<ASR::TypeParameter_t>(b);
+        return x->m_param && y->m_param && std::string(x->m_param) == y->m_param;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*a)) {
+        return left.second && right.second &&
+            symbol_get_past_external(left.second) == symbol_get_past_external(right.second);
+    }
+    return types_equal(a, b, nullptr, nullptr);
+}
+
+// The traits constraining a binder in its own scope.
+static std::vector<ASR::Trait_t*> trait_binder_constraints(ASR::symbol_t *binder)
+{
+    std::vector<ASR::Trait_t*> traits;
+    auto *scope = symbol_parent_symtab(binder);
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        if (symbol_get_past_external(constraint->m_parameter) != binder) continue;
+        auto *trait = symbol_get_past_external(constraint->m_trait);
+        if (trait && ASR::is_a<ASR::Trait_t>(*trait)) {
+            traits.push_back(ASR::down_cast<ASR::Trait_t>(trait));
+        }
+    }
+    return traits;
+}
+
+std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
+        const ASR::Template_t &requirement)
+{
+    auto *method = trait_method_function(const_cast<ASR::symbol_t*>(&message.base));
+    auto *generic = trait_method_function(const_cast<ASR::symbol_t*>(&requirement.base));
+    if (!method || !generic) return "its function is missing";
+    if (message.n_args != requirement.n_args || !message.n_args ||
+            !message.m_args || !requirement.m_args) {
+        return "its generic type parameters do not correspond to the message's";
+    }
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+    for (size_t i = 0; i < message.n_args; i++) {
+        auto *a = message.m_args[i] ? message.m_symtab->get_symbol(message.m_args[i]) : nullptr;
+        auto *b = requirement.m_args[i]
+            ? requirement.m_symtab->get_symbol(requirement.m_args[i]) : nullptr;
+        if (!a || !b || !ASR::is_a<ASR::Variable_t>(*a) || !ASR::is_a<ASR::Variable_t>(*b) ||
+                !ASR::down_cast<ASR::Variable_t>(a)->m_type ||
+                !ASR::down_cast<ASR::Variable_t>(b)->m_type ||
+                !ASR::is_a<ASR::TypeParameter_t>(*ASR::down_cast<ASR::Variable_t>(a)->m_type) ||
+                !ASR::is_a<ASR::TypeParameter_t>(*ASR::down_cast<ASR::Variable_t>(b)->m_type)) {
+            return "its generic type parameter declarations are missing";
+        }
+        auto *x = ASR::down_cast<ASR::TypeParameter_t>(ASR::down_cast<ASR::Variable_t>(a)->m_type);
+        auto *y = ASR::down_cast<ASR::TypeParameter_t>(ASR::down_cast<ASR::Variable_t>(b)->m_type);
+        if (!y->m_param || std::string(y->m_param) != requirement.m_args[i] ||
+                x->m_deferred_attr != y->m_deferred_attr || x->m_is_class != y->m_is_class) {
+            return "its generic type parameter declarations do not correspond to the message's";
+        }
+        // Named traits by identity; an inline type set by its exact members.
+        auto left = trait_binder_constraints(a), right = trait_binder_constraints(b);
+        bool equivalent = !left.empty() && left.size() == right.size();
+        for (size_t j = 0; equivalent && j < left.size(); j++) {
+            bool found = false;
+            for (auto *trait : right) {
+                if (trait == left[j]) found = true;
+                auto *left_owner = get_asr_owner(&left[j]->base);
+                auto *right_owner = get_asr_owner(&trait->base);
+                if (found || left[j]->m_kind != ASR::trait_kindType::IntrinsicTypeSet ||
+                        trait->m_kind != ASR::trait_kindType::IntrinsicTypeSet ||
+                        left_owner != &message.base || right_owner != &requirement.base ||
+                        left[j]->n_member_types != trait->n_member_types) continue;
+                bool same = true;
+                for (size_t k = 0; same && k < trait->n_member_types; k++) {
+                    same = left[j]->m_member_types[k] && trait->m_member_types[k] &&
+                        types_equal(left[j]->m_member_types[k], trait->m_member_types[k],
+                            nullptr, nullptr);
+                }
+                found = same;
+            }
+            equivalent = found;
+        }
+        if (!equivalent) {
+            return "the constraints of generic type parameter '" +
+                std::string(message.m_args[i]) + "' are not nominally equivalent";
+        }
+        types[message.m_args[i]] = {&y->base, b};
+    }
+    if (generic->n_args != method->n_args + 1 || !generic->m_args ||
+            (method->n_args && !method->m_args) ||
+            bool(generic->m_return_var) != bool(method->m_return_var) ||
+            !generic->m_function_signature || !method->m_function_signature ||
+            !ASR::is_a<ASR::FunctionType_t>(*generic->m_function_signature) ||
+            !ASR::is_a<ASR::FunctionType_t>(*method->m_function_signature)) {
+        return "its function is not the message's with a leading receiver";
+    }
+    std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
+    for (size_t i = 0; i < method->n_args; i++) {
+        if (!method->m_args[i] || !generic->m_args[i + 1] ||
+                !ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
+                !ASR::is_a<ASR::Var_t>(*generic->m_args[i + 1])) {
+            return "its arguments must be variables";
+        }
+        auto *a = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(method->m_args[i])->m_v));
+        auto *b = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(generic->m_args[i + 1])->m_v));
+        if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) {
+            return "its arguments must have explicit data types";
+        }
+        arguments.emplace(&a->base, &b->base);
+    }
+    for (size_t i = 0; i < method->n_args; i++) {
+        auto *a = EXPR2VAR(method->m_args[i]), *b = EXPR2VAR(generic->m_args[i + 1]);
+        if (std::string(a->m_name) != b->m_name || a->m_intent != b->m_intent ||
+                a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr ||
+                a->m_target_attr != b->m_target_attr ||
+                a->m_contiguous_attr != b->m_contiguous_attr ||
+                a->m_is_volatile != b->m_is_volatile ||
+                !trait_requirement_type_matches(method->m_args[i],
+                    generic->m_args[i + 1], types, arguments)) {
+            return "argument '" + std::string(a->m_name) + "' differs from the message's";
+        }
+    }
+    auto *a = get_FunctionType(method), *b = get_FunctionType(generic);
+    if (a->m_pure != b->m_pure || a->m_elemental != b->m_elemental ||
+            (method->m_return_var && !trait_requirement_type_matches(method->m_return_var,
+                generic->m_return_var, types, arguments))) {
+        return "its result or procedure attributes differ from the message's";
+    }
+    return "";
+}
+
 bool trait_slots_same_family(const ASR::trait_slot_t &left, const ASR::trait_slot_t &right)
 {
     if (left.n_origins != right.n_origins || !left.n_origins ||

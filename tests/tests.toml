@@ -5914,6 +5914,17 @@ filename = "errors/continue_compilation_traits_03.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_traits_generic_requirement_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/traits_generic_requirement_01.f90"
+ast = true
+ast_f90 = true
+asr = true
+options = "--verify-all-passes"
+
+[[test]]
 filename = "errors/traits_component_loaded_pure_01.f90"
 asr = true
 extrafiles = "errors/traits_component_loaded_pure_mod.f90"
