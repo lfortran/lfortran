@@ -1,8 +1,8 @@
 program gpu_metal_206
 ! A do concurrent loop that reads a derived type with an allocatable scalar
-! component. A deferred length character component is a host heap address,
-! which no device layout can reproduce, so the loop is not offloaded: it runs
-! on the CPU and the compiler warns instead of failing.
+! component inside a component. The loop reads only the other components;
+! the device copy keeps the host's bytes of the deferred length character
+! component, so the components after it are read where the host put them.
 implicit none
 
 type :: label_t

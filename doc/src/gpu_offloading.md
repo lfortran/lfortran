@@ -149,6 +149,19 @@ generates the device source. It never falls back to the CPU:
   arrays, but not a value the loop writes, which the host does not know
   before the launch: such a loop is an error ("workspace ... cannot be
   sized on the host").
+* A derived-type value reaches the kernel as a copy of the host's bytes,
+  laid out by the device exactly as the host lays it out. An allocatable
+  array component is handed over in device buffers of its own. An
+  allocatable scalar component, a `character(len=:), allocatable` one
+  included, is carried as the host's bytes (the address of the value, and
+  its length for a character), which the device keeps in place and copies
+  back unchanged, but never reads: a loop that reads only the other
+  components of the value, also when it passes the whole value to a
+  procedure, runs on the device. A loop that names such a component
+  (`s%name`, `allocated(s%r)`), or assigns a whole value of a type holding
+  one, which would have to allocate it, is an error for now ("the
+  allocatable scalar component `r` on the device, which has no buffer of
+  its own").
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,
@@ -246,7 +259,11 @@ generates the device source. It never falls back to the CPU:
   read only through allocatable array components is handed to the kernel one
   component at a time, but one with other components read is handed over
   whole, so an unused `real(8)` component there is still an error on Metal
-  (reported by the pipeline, not the check).
+  (reported by the pipeline, not the check). Likewise an unused component of
+  a kind the device does not interpret -- a pointer, or a character that is
+  not allocatable -- still keeps a value handed over whole off the device,
+  while an unused allocatable scalar component no longer does: the device
+  keeps the host's bytes for it.
 * **Procedures without a visible body.** A `bind(c)` interface is how a kernel
   calls a function the device provides (for example `sqrt`), but a host-only C
   routine looks the same. Either keep an allowlist of device-provided
