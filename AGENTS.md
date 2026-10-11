@@ -85,7 +85,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
-| `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, review locally, publish dependency-aware PRs from a fork, and iterate on review and CI |
+| `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work.
@@ -143,13 +143,20 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
 - Use Pixi and LLVM 11 for fresh fixing worktrees, as described below. Pass
   each subagent the exact worktree, build directory, compiler path, environment
   invocation, and resource budget; shell activation is not inherited.
-- Review each fixed branch locally with `pr-review` until it is clean, then
-  publish a draft from the user's fork and iterate on CI failures, review
-  findings, and human feedback until Quick checks is green before marking
-  ready. Every push reruns the full Quick checks, so batch pushes: push CI
-  fixes as soon as they pass locally; hold other changes until the current
-  run finishes rather than cancelling a healthy run. Follow the
-  commit-authorship policy below in every subagent, including CI fixers.
+- `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
+  and each new test run directly in normal, `--fast`, and `--std=f23` modes
+  and with GFortran); after the last fix, the job runs the unit, integration,
+  and reference suites once, in the default mode. Then publish a draft from
+  the user's fork so Quick starts early, and review it locally with
+  `pr-review` while CI runs; the review reruns the suites only if compiler
+  source changed since they passed. Never push compiler-source changes that
+  have not passed the local suites once. In a batch, at most four PRs run
+  Quick at once. Iterate on CI failures, review findings, and human feedback
+  until Quick is green and the review is clean before marking ready. Every
+  push reruns Quick, so batch pushes: push CI fixes as soon as they pass
+  locally; hold other changes until the current run finishes rather than
+  cancelling a healthy run. Follow the commit-authorship policy below in every
+  subagent, including CI fixers.
 - Record every additional compiler bug discovered in any phase. Fix regressions
   introduced by the current changes in the same PR. For unrelated pre-existing
   bugs, verify against upstream `main`, search open and closed GitHub issues,
@@ -232,19 +239,24 @@ In a fresh worktree, create its ignored state directory and set
 worktree's root (substitute the assigned `<id>`):
 
 ```bash
-pixi run -e llvm11 build > .fix-issue/<id>/build.log 2>&1
+pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2' > .fix-issue/<id>/build.log 2>&1
 pixi run -e llvm11 llvm-config --version
 pixi run -e llvm11 start --version
 ```
 
-Use the same tasks for rebuilds and tests, and inspect their saved logs.
-Budget `<jobs>` across active workers instead of giving each worker all cores:
+The extra flags build a Debug compiler (assertions on) with `-O2`, like
+Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the
+CMake cache, so later `pixi run -e llvm11 build` rebuilds keep them. While
+iterating, rerun reproducers and new tests directly (`fix-mre` targeted
+checks). Run the full suites below once, after the last fix, in the default
+mode only, and inspect their saved logs. Budget `<jobs>` across active
+workers instead of giving each worker all cores:
 
 ```bash
+pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
 pixi run -e llvm11 ctest -j<jobs> > .fix-issue/<id>/unit.log 2>&1
 pixi run -e llvm11 tests -j<jobs> > .fix-issue/<id>/reference.log 2>&1
 pixi run -e llvm11 integration_tests -j<jobs> > .fix-issue/<id>/integration.log 2>&1
-pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
 ```
 
 Pixi sets `LFORTRAN_BUILD_DIR` to the absolute `build/<environment>` path and
@@ -314,8 +326,10 @@ only once, redirect to a log file and then examine the log file.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
-  before your change and pass after. Do not merge without a full local pass of
-  unit and integration suites.
+  before your change and pass after. Before pushing a compiler change, run
+  the unit, integration (default mode), and reference suites locally once.
+  Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
+  and is the merge gate.
 
 ### CI policy
 
@@ -410,7 +424,8 @@ and the distinction between capability tests and application validation.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure integration tests pass locally: `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
+- Ensure the new test passes locally, then run the full suite once:
+  `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).
 - When fixing a bug, add an integration test that reproduces the failure and now compiles/runs successfully.
@@ -499,4 +514,4 @@ and the distinction between capability tests and application validation.
 - Do not commit generated artifacts, large binaries, or local configs.
 - Use Draft PRs while iterating; click “Ready for review” only when satisfied.
 - Use plain Markdown in PR descriptions (no escaped `\n`). Keep it clean, minimal, and follow simple headings (Summary, Scope, Verification, Rationale).
-- Before marking ready: ensure all local tests pass (unit + integration) and include evidence.
+- Before marking ready: ensure Quick checks is green and include local test evidence.

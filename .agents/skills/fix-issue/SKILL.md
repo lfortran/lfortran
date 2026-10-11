@@ -7,11 +7,13 @@ description: >
   failures; the user need not name this skill. Expand
   the complete selection, use fresh per-issue subagents and isolated Git
   worktrees, and build with Pixi/LLVM 11. Run repro-issue, then create-mre and
-  fix-mre until every original reproducer passes, then review each branch
-  locally with pr-review until clean. Publish independent fixes as separate
+  fix-mre (targeted checks) until every original reproducer passes, run the
+  local suites once, then publish a draft at once and review locally with
+  pr-review while Quick checks CI runs. Publish independent fixes as separate
   fork PRs; consolidate shared or dependent fixes into one PR with focused
-  commits. Batch pushes and iterate on Quick checks CI, review, and human
-  feedback until green and clean, then mark ready. Extended Exhaustive checks
+  commits.
+  Batch pushes and iterate on CI, review, and human feedback until green and
+  clean, then mark ready. Extended Exhaustive checks
   are opt-in only when the user requests them.
   Deduplicate and file additional pre-existing compiler bugs, including
   discoveries from blocked jobs. Do not execute fixes for triage, plan-only
@@ -40,12 +42,23 @@ per-job procedure below. Pass it its assigned issue IDs, not the original
 batch query, so it does not recursively redispatch the batch.
 
 Per job: setup → reproduce → (reduce → fix → original-issue check) until fixed
-→ local pr-review/fix loop until clean → draft PR → CI/review/fix loop with
-batched pushes → ready. Track additional bugs throughout, including jobs that
-stop without a PR.
+→ suites once → draft PR → CI watch concurrent with the local pr-review/fix
+loop, with batched pushes → ready. Track additional bugs throughout,
+including jobs that stop without a PR.
 
-Every push reruns the full Quick checks and cancels the run in progress, so
-review happens locally before publishing and pushes are batched.
+Quick checks (about 30–90 minutes) is the long pole: publish the draft as
+soon as the fix is verified, and review locally while CI runs. Every push
+reruns Quick and cancels the run in progress, so pushes are batched.
+
+**Push invariant:** never push compiler-source changes that have not passed
+the local suites once (`fix-mre` Phase 5b: unit, integration, and reference,
+in the default mode only). Record the passing commit as `suites_green_sha` in
+`state.md`. The suites are current when
+`git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; otherwise
+whoever pushes next runs them once first. Changes outside `src/` and
+`grammar/` (tests, docs, commit messages, PR text) need only the changed tests
+run directly. Never rerun the suites locally with `--fast`, `--std=f23`, or
+other backends; Quick does.
 
 ## You are the orchestrator: delegate everything
 
@@ -88,12 +101,13 @@ Keep each job's handoffs in `.fix-issue/<id>/` inside its **assigned worktree**
 (gitignored). `<id>` is an issue number or a job slug. Maintain `state.md`:
 input/all included issues, absolute worktree, branch/base SHA, fork remote,
 build directory, compiler/Pixi invocation, resource budget, PR URL, round,
-last pushed SHA, and status. Update it after every phase; reread it on resume.
+last pushed SHA, `suites_green_sha`, and status. Update it after every phase;
+reread it on resume.
 
 Subagents write their artifacts there: `repro.md`; for each MRE iteration `j`,
-`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`; for each local review round `r`,
-`local_review_<r>.md`, `local_round_<r>.md`; then `pr_body.md`, and for each
-review round `k`, `review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. You maintain
+`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`, the test and fail-before logs;
+then `suites.md`, `pr_body.md`, and for each review round `k`,
+`review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. You maintain
 `followups.md`: one line per unrelated bug, with its status (`unfiled`,
 `filed #M`, `duplicate of #M`, or `regression, sent to fix loop`) and the
 path to its details. The reproducers themselves (`run_re.sh`, `re_*.f90`,
@@ -155,8 +169,12 @@ Quick on `main` catches integration breakage after merging. Update it only when
 the PR has base conflicts, needs a change that landed on `main`, or CI
 failures look caused by a stale base.
 
-To update, run `git rebase <upstream-remote>/main`, resolve any conflicts,
-rebuild and retest, then update the fork with `git push --force-with-lease`.
+To update, run `git rebase <upstream-remote>/main` and resolve any conflicts.
+Set `suites_green_sha` to the rebased head only if the suites were current
+before the rebase and no conflicts in `src/` or `grammar/` were resolved;
+otherwise rebuild and rerun the targeted checks and the suites once before
+pushing (see **Push invariant**). Then update the fork with
+`git push --force-with-lease`.
 This applies in every PR state, including after review. Rebasing only moves
 the existing commits; address review feedback with new commits and do not
 squash or reword commits reviewers have already seen.
@@ -226,9 +244,12 @@ It should:
    operations; if the coordinator already created the worktree, verify and
    use it. Never reset or reuse unrelated existing branches.
 2. In that worktree, create `.fix-issue/<id>/` and follow the **Pixi setup in
-   `AGENTS.md`**: `pixi run -e llvm11 build`, saving the log. This provisions
-   dependencies and builds into `build/llvm11`, not the source root. Set
-   `CMAKE_BUILD_PARALLEL_LEVEL` to the worker's allocated budget.
+   `AGENTS.md`**:
+   `pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2'`,
+   saving the log. This provisions dependencies and builds into
+   `build/llvm11`, not the source root. Set `CMAKE_BUILD_PARALLEL_LEVEL` to
+   the worker's allocated budget. This first build, at the base SHA, also
+   supplies the fail-before evidence for the first fix.
 3. Record absolute paths and the exact environment invocation. In that
    environment, verify `command -v lfortran`, its reported LLVM version,
    `llvm-config --version`, and `gfortran --version`. Every later subagent
@@ -298,21 +319,20 @@ Run the `fix-mre` skill on the MRE, with these additions to its instructions:
   (from `fix_<1..j-1>.md`). It must not undo them, and must not duplicate
   their integration tests.
 - It must verify that the new integration test **fails without this
-  iteration's fix and passes with it**. For `j > 1`, "without" means the
-  branch before this iteration's change, not `main`.
-- It must run the unit, full integration, and LLVM 11 reference suites with output
-  redirected to log files. For every failure, it must determine whether this
-  change caused it or whether it also fails on `main`.
+  iteration's fix and passes with it**, capturing the fail-before log with the
+  build that predates this iteration's change (the first build at the base SHA
+  for `j = 1`), not a separate baseline worktree unless that was missed.
+- It must pass `fix-mre` Phase 5a (the targeted checks) and skip 5b and 5c:
+  the suites run once per job, in 3d, after the last iteration.
 - **Commit is authorized.** Make one focused commit for this bug, with an
   imperative `fix: ...` message. Do not stage scratch reproducers, logs, or
   `.fix-issue/`. Follow **Commit authorship**, including no co-author lines.
 - Do not push.
 
 Report, also written to `fix_<j>.md`: the commit SHA, the changed files, the
-test name, fail-before/pass-after verified, integration and reference
-results, any failures that already exist on `main`, and one paragraph of
-rationale (the bug, the compiler phase at fault, and why the fix belongs
-there).
+test name, fail-before/pass-after verified (log paths), targeted results,
+any failures that already exist on `main`, and one paragraph of rationale
+(the bug, the compiler phase at fault, and why the fix belongs there).
 
 #### 3c. Issue check subagent (fresh)
 
@@ -335,44 +355,22 @@ involved) and whether it is the same failure as in `check_<j-1>.md`.
 
 For a group, perform this check for **every included issue**, using its archived
 original RE, and report per-issue results. If all are fixed, request the batch
-coordinator's grouping/publication decision, then go to Phase 3.5. Otherwise
+coordinator's grouping/publication decision, then go to 3d. Otherwise
 start iteration `j+1` on the next failure.
 
-### Phase 3.5: Local review loop (before publishing)
+#### 3d. Suites subagent (fresh)
 
-Review the branch locally before it is pushed, so CI normally runs once, on a
-branch that is already clean under `pr-review`. Each finding fixed after
-publishing would cost another push and another full Quick run.
-
-Repeat rounds `r = 1, 2, ...` up to **5 rounds**:
-
-1. **Review subagent (fresh, read-only):** run the `pr-review` skill on the
-   local branch: all commits since the merge base with
-   `<upstream-remote>/main`, not just the latest commit. It must not edit,
-   commit, or push. It may build and run tests in the checkout to confirm a
-   finding, as long as it leaves the tree unchanged. It writes the full review
-   to `local_review_<r>.md` and reports the number of findings in each class
-   (blocker / rework / follow-up), with a one-line title and file:line for
-   each blocker and rework item. Tell it to review the change on its merits
-   and report only real findings it has checked. It must not invent findings
-   to fill a quota, and must not soften findings because an automated agent
-   wrote the change.
-2. If there is **no blocker and no rework** finding, go to Phase 4.
-3. Otherwise spawn a **fresh fix subagent.** For each blocker and rework
-   finding, it first confirms the finding is real by reproducing it. Then it
-   fixes it, or records in `local_round_<r>.md` exactly why it is not valid.
-   It leaves **follow-up** items unfixed and lists them for the final report.
-   It rebuilds and reruns the MRE, the new integration tests, and the full
-   integration and reference suites whenever compiler source changed. It
-   commits focused commits under **Commit authorship**. **Do not push.**
-
-If the same finding survives two rounds, or the round cap is reached, stop
-and report to the user with the outstanding items. Never publish a branch
-with an open blocker or rework finding.
+Unless the suites are already current (**Push invariant**), run `fix-mre`
+Phase 5b once on the head, handling failures as 5b describes: a regression
+caused by this branch starts iteration `j+1` on it; a pre-existing failure
+goes to `followups.md`. Record `suites_green_sha` in `state.md` and the
+results in `suites.md`, then go to Phase 4.
 
 ### Phase 4: Publish subagent
 
-It should:
+Publish as soon as every included issue is fixed and the suites are current;
+local review follows in Phase 5, concurrently with CI. In a batch, wait for
+the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
 
 1. Write `.fix-issue/<id>/pr_body.md` from `repro.md` and all the
    `fix_<j>.md` files. Use plain Markdown with the headings Summary, Scope,
@@ -382,14 +380,14 @@ It should:
    - Scope: what is and is not covered, including unrelated bugs found along
      the way (linked once filed, see below) and non-bug follow-ups such as
      refactoring ideas or missing tests for existing behaviour, including
-     follow-up findings from `local_review_<r>.md`.
+     review follow-up findings once known.
    - Verification: the integration tests added, each failing before its fix
-     and passing after; the original reproducer now passing; the suite
-     results.
+     and passing after; the original reproducer now passing; the targeted
+     checks and default-mode local suites; other modes run by Quick CI.
    - Rationale: for each bug, why the fix belongs in the chosen compiler
      phase.
-2. Inspect all new commits for the authorship policy, then
-   `git push -u <fork-remote> <branch>`
+2. Inspect all new commits for the authorship policy, confirm the **Push
+   invariant**, then `git push -u <fork-remote> <branch>`
 3. `gh pr create --repo lfortran/lfortran --base main --head <login>:<branch> --draft --title "<title>" --body-file .fix-issue/<id>/pr_body.md`.
    The title is the commit subject when there is a single commit. Otherwise
    it is a `fix: ...` summary of the issue.
@@ -456,15 +454,20 @@ current head SHA.
       --jq 'group_by(.bucket)[] | "\(.[0].bucket): \(length) \([.[].name] | join(", "))"'
   ```
   If checks sit in `action_required` or never start, tell the user. If the
-  watch returned on a failure, go to 5d right away; do not cancel the run.
+  watch returned on a failure, go to 5d as soon as no review subagent is
+  running in the worktree; do not cancel the run.
   After the fix is committed, check whether other jobs failed meanwhile, and
   restart the watch for the remaining checks while no push is pending.
-- **Review subagent (fresh, read-only):** only when the current head contains
-  commits that no clean review has covered. Phase 3.5 already reviewed the
-  first published head, so round 1 normally needs only the CI watch. Run the
-  `pr-review` skill on
-  PR `<PR>` in `lfortran/lfortran`. It must not edit, commit, or push. It may
-  build and run tests in the checkout to confirm a finding, as long as it
+- **Review subagent (fresh, read-only):** whenever the local head contains
+  commits that no clean review has covered, always including round 1. Run
+  the `pr-review` skill on the local branch: all commits since the merge base
+  with `<upstream-remote>/main`, including unpushed ones, not just the latest
+  commit. It must not edit tracked files, commit, or push. If the suites are
+  current (**Push invariant**), it assumes they passed. Otherwise (a review
+  or CI fix changed `src/`), it rebuilds and runs them once in the background,
+  with logs redirected, while it reviews; it records `suites_green_sha` if they
+  pass and reports each regression as a blocker. It may build and run targeted
+  tests to confirm a finding, one build/test process at a time, as long as it
   leaves the tree unchanged. It writes the full review to `review_<k>.md` and
   reports the number of findings in each class (blocker / rework /
   follow-up), with a one-line title and file:line for each blocker and rework
@@ -489,10 +492,13 @@ head SHA:
 - every applicable CI check passed, or each failing check was shown by a subagent to
   also fail on `main` (it is pre-existing, so report it but do not fix it
   here);
-- the latest fresh review of the current head (Phase 3.5 or 5a) has **no
-  blocker and no rework** findings;
+- the latest fresh review of the current head has **no blocker and no
+  rework** findings;
 - no human review comment or requested change is unaddressed;
 - `mergeable` is not `CONFLICTING`.
+
+Drafts are published before review, but never mark a PR ready with an open
+blocker or rework finding.
 
 The PR is **done** when it is clean and `Quick checks` ran for the current
 PR revision, with every applicable job passed or shown to also fail on `main`.
@@ -537,10 +543,14 @@ comments are new. It should:
 
 - For CI failures: read the logs
   (`gh run view <run-id> --repo lfortran/lfortran --log-failed`, saved to a
-  file), reproduce locally where possible, and fix the root cause. If a
-  failure also happens on `main` or is plainly infrastructure flakiness, do
-  not fix it in this PR. Re-run it once with `gh run rerun <run-id> --failed`
-  and report it; a pre-existing LFortran bug goes on its Unrelated bugs list.
+  file), reproduce each failing test locally by running `lfortran` directly
+  with that CI mode's flags, and fix the root cause. For a reference diff that
+  is an intended output change, update only that test with
+  `pixi run -e llvm11 tests -t <test> -u -s > reference-update.log 2>&1` and
+  review the diff. If a failure also happens on `main` or is plainly
+  infrastructure flakiness, do not fix it in this PR. Re-run it once with
+  `gh run rerun <run-id> --failed` and report it; a pre-existing LFortran bug
+  goes on its Unrelated bugs list.
 - For each review **blocker** and **rework** finding: first confirm the
   finding is real by reproducing it. Then fix it, or record in
   `round_<k>.md` exactly why it is not valid. Leave **follow-up** items
@@ -548,13 +558,16 @@ comments are new. It should:
 - For human review comments: address each one in code, or draft a reply in
   `round_<k>.md`. Do not post replies automatically; the user decides.
 - For base conflicts, or when the PR needs a change from `main`: follow
-  **Keeping the PR branch current**. Rebase onto `<upstream-remote>/main`,
-  resolve conflicts, rebuild, and retest; push it with `--force-with-lease`
-  under the push rules below.
-- Rebuild, rerun the MRE, the new integration test, and the affected suites
-  (the full integration and reference suites whenever compiler source
-  changed). Update `pr_body.md` and the PR description
-  (`gh pr edit <PR> --body-file ...`) if scope or rationale changed.
+  **Keeping the PR branch current** and push with `--force-with-lease` under
+  the push rules below.
+- Verify only what changed. After a compiler-source change, rebuild and run
+  the targeted checks for it; the next review round runs the suites. After
+  test-only edits, run just those tests directly. After commit-message or
+  PR-description edits, rerun nothing. Before any push, satisfy the **Push
+  invariant**: a CI fix that touches `src/` runs the suites once before
+  pushing, which is cheaper than a wasted Quick run. Update
+  `pr_body.md` and the PR description (`gh pr edit <PR> --body-file ...`) if
+  scope or rationale changed.
 - Commit focused follow-ups under **Commit authorship** (no co-author lines)
   and inspect the new commits. Fixing always starts immediately; these
   **push rules** decide only when to push to the fork remote (a normal push):
@@ -599,7 +612,7 @@ Bugs fixed (<count> MRE iterations, one commit each):
 
 CI:      green  (pre-existing failures on main: <none | names>)
 Extended compiler CI: <not requested | green, run URL and tested SHA>
-Review:  <local rounds> local + <PR rounds> PR round(s); pushes: <n>; blockers/rework fixed: <n>; rejected with reason: <n>
+Review:  <n> round(s); pushes: <n>; blockers/rework fixed: <n>; rejected with reason: <n>
 Follow-up issues filed: <#M, #M (duplicate of existing), ... or none>
 Other follow-ups (not bugs, not filed): <list or none>
 Human comments needing your reply: <list or none>
