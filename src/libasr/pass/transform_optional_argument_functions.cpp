@@ -645,8 +645,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dims.push_back(al, dim);
                     }
                     ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type)) ||
-                            ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
+                    if (ASRUtils::is_string_only(ASRUtils::extract_type(dummy_variable_type))) {
                         phy_type = ASR::array_physical_typeType::PointerArray;
                     }
                     dummy_variable_type = ASRUtils::TYPE(
@@ -686,8 +685,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             dims.push_back(al, dim);
                         }
                         ASR::array_physical_typeType phy_type = ASR::array_physical_typeType::FixedSizeArray;
-                        if (ASRUtils::is_string_only(elem_type) ||
-                                ASRUtils::is_class_type(elem_type)) {
+                        if (ASRUtils::is_string_only(elem_type)) {
                             phy_type = ASR::array_physical_typeType::PointerArray;
                         }
                         dummy_variable_type = ASRUtils::TYPE(
@@ -698,10 +696,6 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dummy_variable_type = elem_type;
                     }
                 }
-                std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
-                ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
-                    x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
-
                 std::string pointer_name = scope->get_unique_name("__libasr_created_variable_pointer_");
                 pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
@@ -711,7 +705,23 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
                 if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
-                else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                if (ASRUtils::is_array(dummy_variable_type) &&
+                        ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
+                    // A local non-allocatable polymorphic array has no dynamic
+                    // type, so there is no dummy to point to. The argument is
+                    // passed as absent and never accessed, so pass a
+                    // disassociated pointer instead.
+                    Vec<ASR::expr_t*> nullify_vars;
+                    nullify_vars.reserve(al, 1);
+                    nullify_vars.push_back(al, pointer_variable);
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Nullify_t(al,
+                        dummy_variable_type->base.loc, nullify_vars.p, nullify_vars.size())));
+                } else {
+                    std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
+                    ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
+                        x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                }
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));
 

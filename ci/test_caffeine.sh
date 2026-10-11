@@ -101,8 +101,8 @@ fi # reference
 git clone -b main https://github.com/BerkeleyLab/caffeine.git
 cd caffeine
 
-# Release 0.8.2
-git checkout 6cdf2eafb139ccb40a9a0f2a1b74750b34a9a1ac
+# Release 0.8.4
+git checkout 0f9ca691cbe6782838266a9bb5005ae187f253a2
 
 # Toolchain setup
 
