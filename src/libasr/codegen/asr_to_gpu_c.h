@@ -5197,6 +5197,10 @@ public:
                                 bool first_dim = true;
                                 src << "(";
                                 for (size_t d = 0; d < arr->n_dims; d++) {
+                                    if (dim_value > 0
+                                            && (int64_t)d + 1 != dim_value) {
+                                        continue;
+                                    }
                                     if (arr->m_dims[d].m_length) {
                                         if (!first_dim) src << " * ";
                                         first_dim = false;

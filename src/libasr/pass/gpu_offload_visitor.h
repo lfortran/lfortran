@@ -83,14 +83,8 @@ public:
             SymbolTable *orig_scope, SymbolTable *kernel_scope,
             const Location &loc);
 
-    void find_array_section_bounds(ASR::expr_t *e,
-            ASR::expr_t *&loop_start, ASR::expr_t *&loop_end);
-
     void find_array_section_all_bounds(ASR::expr_t *e,
             std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds);
-
-    ASR::expr_t* elementize_mask(ASR::expr_t *e, ASR::expr_t *loop_var,
-            ASR::ttype_t *logical_type, const Location &loc);
 
     ASR::expr_t* elementize_mask_multi(ASR::expr_t *e,
             std::vector<ASR::expr_t*> &loop_vars,

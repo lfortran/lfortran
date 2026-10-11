@@ -59,7 +59,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             }
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end = (1 + n - 1);
+        __do_loop_end = __workspace_extent;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end)) {
             __gpu_sum_k = (__gpu_sum_k + 1);
