@@ -4659,6 +4659,8 @@ RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
 RUN(NAME dtio_write_01 LABELS gfortran llvm)
 RUN(NAME dtio_write_01_sc LABELS gfortran llvm llvm_single_invocation EXTRAFILES dtio_write_01_sc_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME dtio_write_03 LABELS gfortran llvm)
+RUN(NAME dtio_write_04 LABELS gfortran llvm)
+RUN(NAME dtio_write_04_fixed LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
