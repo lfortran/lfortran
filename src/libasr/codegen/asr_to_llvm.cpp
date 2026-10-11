@@ -25865,7 +25865,10 @@ public:
                                         || ASR::is_a<ASR::StructType_t>(
                                             *ASRUtils::extract_type(arg_type)))))
                             && value->getType()->isPointerTy()
-                            && !ASRUtils::is_character(*arg_type)) {
+                            && !(ASRUtils::is_character(*arg_type)
+                                && !(ASRUtils::is_array(arg_type)
+                                    && (ASRUtils::is_allocatable(arg_type)
+                                        || ASRUtils::is_pointer(arg_type))))) {
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::extract_type(arg_type))
                                     && !ASRUtils::is_class_type(
@@ -26869,8 +26872,14 @@ public:
             }
             if (ASRUtils::is_unlimited_polymorphic_type(s_m_args0)) {
                 if (ASRUtils::is_unlimited_polymorphic_type(arg_expr)) {
+                    // convert_call_args has already loaded a pointer or
+                    // allocatable array member down to its descriptor.
+                    bool loaded_array_member =
+                        ASR::is_a<ASR::StructInstanceMember_t>(*arg_expr) &&
+                        ASRUtils::is_array(ASRUtils::expr_type(arg_expr));
                     if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
-                            !LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0))) {
+                            !LLVM::is_llvm_pointer(*ASRUtils::expr_type(s_m_args0)) &&
+                            !loaded_array_member) {
                         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, ASRUtils::expr_type(arg_expr), module.get());
                         dt = llvm_utils->CreateLoad2(_type, dt);
