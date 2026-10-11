@@ -6355,6 +6355,118 @@ TEST_CASE("Type adoption preserves AST, binary, module and text metadata") {
     }
 }
 
+TEST_CASE("Main-program conformances of generic messages stay static-only") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module local_generic_contracts
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface
+abstract interface :: ISum
+    function sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+    end function
+end interface
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+abstract interface :: IApply
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+    end function
+end interface
+end module
+program local_generic_adopters
+use local_generic_contracts
+implicit none
+type, sealed, implements(ISum + IValue) :: Adder
+contains
+    procedure, nopass :: sum => adder_sum
+    procedure, nopass :: value => adder_value
+end type
+type :: Applier
+end type
+implements IApply :: Applier
+    procedure, nopass :: apply
+end implements
+type(Adder) :: a
+type(Applier) :: p
+integer :: xi(3) = [1, 2, 3]
+print *, a%sum(xi), p%apply(a)
+contains
+function adder_sum{INumeric :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    s = x(1)
+end function
+integer function adder_value()
+    adder_value = 1
+end function
+function apply{IValue :: T}(object) result(r)
+    type(T), intent(in) :: object
+    integer :: r
+    r = object%value()
+end function
+end program
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("local_generic_contracts"));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("local_generic_adopters"));
+    std::set<std::string> implemented, witnessed;
+    size_t entries = 0;
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) {
+            implemented.insert(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::TraitImplementation_t>(entry.second)->m_trait)));
+        } else if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            auto *contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::TraitWitness_t>(entry.second)->m_contract));
+            witnessed.insert(ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(contract->m_trait)));
+        } else if (ASR::is_a<ASR::TraitErasure_t>(*entry.second)) {
+            entries++;
+        }
+    }
+    // Every conformance is complete for static calls. The generic messages
+    // have runtime contracts, but a program cannot own their provider entries,
+    // so only the concrete contract has a witness.
+    CHECK(implemented == std::set<std::string>{"iapply", "isum", "ivalue"});
+    CHECK(ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("isum")));
+    CHECK(ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("iapply")));
+    CHECK(witnessed == std::set<std::string>{"ivalue"});
+    CHECK(entries == 0);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "local_generic_adopters.asr", loaded_lm, loaded_diagnostics);
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+}
+
 TEST_CASE("Sealed is nonreserved in free and fixed source forms") {
     for (bool fixed : {false, true}) {
         Allocator al(64 * 1024);

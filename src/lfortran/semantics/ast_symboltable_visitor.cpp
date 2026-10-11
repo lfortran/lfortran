@@ -4760,6 +4760,7 @@ public:
         if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
             return existing;
         }
+        if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
         for (size_t i = 0; i < contract->n_slots; i++) {
             auto *binding = ASRUtils::find_trait_binding(
                 *implementation, contract->m_slots[i].m_origins[0]);

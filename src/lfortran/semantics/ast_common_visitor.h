@@ -23677,6 +23677,26 @@ public:
         check_trait_erased_storage(*function.m_symtab);
     }
 
+    // Only a module owns the provider entries (member or erased) that a runtime
+    // witness of a generic binding calls. A conformance in any other scope stays
+    // static-only, and a runtime view of it is diagnosed where it is formed.
+    bool runtime_trait_entries_ownable(const ASR::TraitImplementation_t &implementation,
+            const ASR::TraitRuntimeContract_t &contract) {
+        auto *owner = implementation.m_parent_symtab->asr_owner;
+        if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return true;
+        }
+        for (size_t i = 0; i < contract.n_slots; i++) {
+            auto *binding = ASRUtils::find_trait_binding(
+                implementation, contract.m_slots[i].m_origins[0]);
+            auto *procedure = binding
+                ? ASRUtils::trait_method_function(binding->m_procedure) : nullptr;
+            if (procedure && ASRUtils::trait_method_template(*procedure)) return false;
+        }
+        return true;
+    }
+
     // The provider-owned member entry: the same checked template body,
     // instantiated by the shared engine with each closed binder := its member.
     ASR::TraitErasure_t *create_trait_member_entry(ASR::Template_t &generic,
@@ -24342,6 +24362,10 @@ public:
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
         if (!witness) {
+            if (!runtime_trait_entries_ownable(*selected, *contract)) {
+                trait_call_error("runtime generic trait implementations outside module "
+                    "scope are not implemented yet", loc);
+            }
             trait_call_error("runtime dispatch for this trait implementation ABI "
                 "is not implemented yet", loc);
         }

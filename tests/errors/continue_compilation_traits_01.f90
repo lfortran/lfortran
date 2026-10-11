@@ -3506,7 +3506,7 @@ contains
     end function
 end module
 
-! The first erased provider ABI is module-owned, not a local closure ABI.
+! A local erased provider without runtime views stays static-only.
 program traits_generic_runtime_local_provider
     use traits_generic_nominal_left, only: IValue, IAlgorithm
     implicit none

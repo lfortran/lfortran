@@ -173,3 +173,15 @@ semantic error: ambiguous reference to generic procedure 'level': specific proce
     |
 277 |         print *, level(y)
     |                  ^^^^^^^^ 
+
+semantic error: runtime generic trait implementations outside module scope are not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:327:28
+    |
+327 |     allocate(total, source=a)
+    |                            ^ 
+
+semantic error: runtime generic trait implementations outside module scope are not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:328:18
+    |
+328 |     call consume(p)
+    |                  ^ 

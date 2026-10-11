@@ -390,7 +390,10 @@ fake common concrete type, LTO/JIT specialization, or provider rebuild.
 The current erased subset deliberately excludes:
 
 - Provider conformances outside module scope: a local closure ABI is not
-  implemented by this separate-provider prototype.
+  implemented by this separate-provider prototype. Such a conformance, for
+  example of a main-program type, has no runtime witness and no entries; its
+  static calls are unaffected, and a runtime view of it is diagnosed where the
+  view is formed.
 - Generic arrays, pointer/allocatable generic dummies, optional/VALUE/TARGET/volatile generic
   arguments, mutable generic dummies, local `T` storage and `T`-valued results.
   Borrowing an existing scalar actual does not supply those ownership semantics.
@@ -479,6 +482,10 @@ self-recursion; they are concrete code, so local `T` storage and arrays are
 ordinary values. Clients never instantiate a provider body: they select the
 member slot from the concrete argument types, or from an explicit
 `obj%sum{real(real64)}(x)` argument, and dispatch dynamically through the view.
+As for erased entries, only a module provider owns member entries. A
+conformance outside module scope, such as a main-program type adopting `ISum`,
+keeps its static calls but has no runtime witness, so a `class(ISum)` view of it
+is diagnosed as not implemented where the view is formed.
 
 Inside a generic definition whose own binder has the same type-set trait, a
 runtime call keeps the member open as `TraitDeferredCall`. The same template

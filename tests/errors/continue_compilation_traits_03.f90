@@ -277,3 +277,70 @@ contains
         print *, level(y)
     end subroutine
 end module
+
+! A conformance outside module scope owns no entries for its generic messages,
+! so it has no runtime witness for them: static calls and views of its other
+! contracts work, and each runtime view of a generic contract is diagnosed.
+module traits_local_generic_contracts
+    implicit none
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface
+    abstract interface :: ISum
+        function sum{INumeric :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T) :: s
+        end function
+    end interface
+    abstract interface :: IValue
+        integer function value()
+        end function
+    end interface
+    abstract interface :: IApply
+        function apply{IValue :: T}(object) result(r)
+            type(T), intent(in) :: object
+            integer :: r
+        end function
+    end interface
+end module
+
+program traits_local_generic_views
+    use traits_local_generic_contracts
+    implicit none
+    type, sealed, implements(ISum + IValue) :: Adder
+    contains
+        procedure, nopass :: sum => adder_sum
+        procedure, nopass :: value => adder_value
+    end type
+    type :: Applier
+    end type
+    implements IApply :: Applier
+        procedure, nopass :: apply
+    end implements
+    type(Adder) :: a
+    type(Applier) :: p
+    class(IValue), allocatable :: item
+    class(ISum), allocatable :: total
+    integer :: xi(3) = [1, 2, 3]
+    print *, a%sum(xi), p%apply(a)
+    allocate(item, source=a)
+    allocate(total, source=a)
+    call consume(p)
+contains
+    function adder_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function
+    integer function adder_value()
+        adder_value = 1
+    end function
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+        r = object%value()
+    end function
+    subroutine consume(action)
+        class(IApply), intent(in) :: action
+    end subroutine
+end program

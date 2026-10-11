@@ -684,12 +684,6 @@ semantic error: generic contract does not match trait method 'apply': generic ty
 3500 |        end implements
      | ...^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime generic trait implementations outside module scope are not implemented yet
-    --> tests/errors/continue_compilation_traits_01.f90:3516:9
-     |
-3516 |         procedure, nopass :: apply
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: runtime trait arrays and coarrays are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3630:26
      |
