@@ -28054,11 +28054,14 @@ public:
                 }
             }
             builder->CreateCall(fn, args);
-            fixup_descriptor_after_cchar_bind_c_call(x, s, args);
-            fixup_scalar_alloc_after_bind_c_call(x, s, args);
-            for (auto& fc : pending_flat_copybacks) {
+
+        fixup_descriptor_after_cchar_bind_c_call(x, s, args);
+        fixup_scalar_alloc_after_bind_c_call(x, s, args);
+        fixup_array_alloc_after_bind_c_call(x, s, args);
+
+        for (auto& fc : pending_flat_copybacks) {
                 copy_flat_back_to_struct(fc.flat_buf, fc.orig_struct_ptr,
-                    fc.struct_llvm_type, fc.layout);
+                fc.struct_llvm_type, fc.layout);
             }
             pending_flat_copybacks.clear();
         }
@@ -28188,6 +28191,104 @@ public:
             builder->CreateStore(new_base, var_ptr);
         }
     }
+
+void fixup_array_alloc_after_bind_c_call(
+        const ASR::SubroutineCall_t &x,
+        ASR::Function_t* s,
+        const std::vector<llvm::Value*>& call_args) {
+
+    ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(s);
+    if (fn_type->m_abi != ASR::abiType::BindC) return;
+
+    for (size_t i = 0; i < x.n_args; i++) {
+        ASR::expr_t* actual = x.m_args[i].m_value;
+
+        if (!actual || i >= s->n_args || i >= call_args.size())
+            continue;
+
+        if (!ASR::is_a<ASR::Var_t>(*actual) ||
+            !ASR::is_a<ASR::Var_t>(*s->m_args[i]))
+            continue;
+
+        ASR::symbol_t* formal_sym =
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(s->m_args[i])->m_v);
+
+        if (!ASR::is_a<ASR::Variable_t>(*formal_sym))
+            continue;
+
+        ASR::Variable_t* formal =
+            ASR::down_cast<ASR::Variable_t>(formal_sym);
+
+        if (!ASRUtils::is_allocatable(formal->m_type) ||
+            !ASRUtils::is_array(formal->m_type))
+            continue;
+
+        if (formal->m_intent != ASR::intentType::Out &&
+            formal->m_intent != ASR::intentType::InOut)
+            continue;
+
+        ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
+
+        if (!ASRUtils::is_allocatable(actual_type) ||
+            !ASRUtils::is_array(actual_type))
+            continue;
+
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(actual_type);
+
+
+        // Handle integer and real allocatable arrays
+        if (!ASR::is_a<ASR::Integer_t>(*elem_type) &&
+            !ASR::is_a<ASR::Real_t>(*elem_type))
+            continue;
+
+        llvm::Type* elem_llvm_type =
+            llvm_utils->get_el_type(actual, elem_type, module.get());
+
+        ASR::ttype_t* array_type =
+            ASRUtils::type_get_past_allocatable_pointer(actual_type);
+
+        llvm::Type* desc_type =
+            llvm_utils->get_type_from_ttype_t_util(
+                actual, array_type, module.get());
+
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
+
+        llvm::DataLayout dl(module->getDataLayout());
+        uint64_t elem_size = dl.getTypeAllocSize(elem_llvm_type);
+
+        llvm::Value* internal_desc = arr_descr->cfi_to_internal(
+            desc_type, elem_llvm_type, call_args[i],
+            n_dims, elem_size);
+
+        ASR::Variable_t* actual_var = EXPR2VAR(actual);
+        uint32_t h = get_hash((ASR::asr_t*)actual_var);
+
+
+        auto it = llvm_symtab.find(h);
+        if (it == llvm_symtab.end()) continue;
+
+        llvm::Value* original_desc = llvm_utils->CreateLoad2(
+            desc_type->getPointerTo(), it->second);
+
+        uint64_t desc_size = dl.getTypeAllocSize(desc_type);
+
+        builder->CreateMemCpy(
+            builder->CreateBitCast(
+                original_desc,
+                llvm::Type::getInt8Ty(context)->getPointerTo()),
+            llvm::MaybeAlign(1),
+            builder->CreateBitCast(
+                internal_desc,
+                llvm::Type::getInt8Ty(context)->getPointerTo()),
+            llvm::MaybeAlign(1),
+            llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(context), desc_size)
+        );
+
+    }
+}
+
 
     void handle_allocated(ASR::expr_t* arg) {
         ASR::ttype_t* asr_type = ASRUtils::expr_type(arg);
