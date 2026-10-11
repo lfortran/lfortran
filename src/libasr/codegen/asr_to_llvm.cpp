@@ -24157,7 +24157,8 @@ public:
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if( x.m_overloaded ) {
-            // DTIO: set child I/O mode to suppress record terminators in
+            // Unformatted DTIO (formatted output goes through the runtime
+            // formatter): set child I/O mode to suppress record terminators in
             // child writes, call the user-defined I/O subroutine, then
             // clear child mode and write the parent record terminator.
             llvm::Value *unit_val;

@@ -3424,6 +3424,15 @@ public:
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
     }
 
+    void visit_FileWrite(const FileWrite_t &x) {
+        // Formatted output writes derived-type items with defined output
+        // through StringFormat::m_dtio_bindings; m_overloaded is only for
+        // unformatted output.
+        require(!x.m_is_formatted || x.m_overloaded == nullptr,
+            "FileWrite::m_overloaded must be nil for formatted output");
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_m),
             "AssociateBlockCall::m_name '" + std::string(symbol_name(x.m_m)) +
