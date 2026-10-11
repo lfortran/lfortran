@@ -711,16 +711,6 @@
                                                     ()
                                                     []
                                                 ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    9
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
-                                                ),
                                             string:
                                                 (Variable
                                                     9
@@ -784,7 +774,7 @@
                                             6 char
                                             [((Var 9 string))]
                                             (String 1 (FunctionCall
-                                                9 len_string
+                                                6 len_string
                                                 6 len
                                                 [((Var 9 string))]
                                                 (Integer 4)
@@ -1176,16 +1166,6 @@
                                                     char_string
                                                     Private
                                                 ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    10
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
-                                                ),
                                             output_length:
                                                 (Variable
                                                     10
@@ -1319,7 +1299,7 @@
                                                     6 char
                                                     [((Var 10 string))]
                                                     (String 1 (FunctionCall
-                                                        10 len_string
+                                                        6 len_string
                                                         6 len
                                                         [((Var 10 string))]
                                                         (Integer 4)
@@ -1342,7 +1322,7 @@
                                                             6 char
                                                             [((Var 10 string))]
                                                             (String 1 (FunctionCall
-                                                                10 len_string
+                                                                6 len_string
                                                                 6 len
                                                                 [((Var 10 string))]
                                                                 (Integer 4)
@@ -1396,16 +1376,6 @@
                                                     string_19_stdlib_string_type
                                                     []
                                                     char_string
-                                                    Private
-                                                ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    11
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
                                                     Private
                                                 ),
                                             output_length:
@@ -1567,7 +1537,7 @@
                                                     6 char
                                                     [((Var 11 string))]
                                                     (String 1 (FunctionCall
-                                                        11 len_string
+                                                        6 len_string
                                                         6 len
                                                         [((Var 11 string))]
                                                         (Integer 4)
@@ -1587,7 +1557,7 @@
                                                             6 char
                                                             [((Var 11 string))]
                                                             (String 1 (FunctionCall
-                                                                11 len_string
+                                                                6 len_string
                                                                 6 len
                                                                 [((Var 11 string))]
                                                                 (Integer 4)
