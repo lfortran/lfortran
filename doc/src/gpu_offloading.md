@@ -218,6 +218,27 @@ generates the device source. It never falls back to the CPU:
   argument passed for one lives in device memory instead, so the kernel
   copies it into a local of its own around the call; its allocatable
   components are not copied, the procedure is handed their device buffers.
+* An array of device code is an address and, for each dimension, a lower
+  bound, an extent and a stride, as a Fortran descriptor is, and every one
+  of them reaches the code that indexes the array. An array that does not
+  start at one -- an array argument of the kernel, an allocatable component
+  of a derived-type argument, the component of an element of an array of a
+  derived type, an allocatable dummy array -- is counted from its lower
+  bounds: the host passes those of the component of an argument, and of
+  each element's component in the buffer of its sizes, a routine gets those
+  of an allocatable dummy as dummies of their own, `a(lb:)`, and a name
+  bound to any of these has them too. A name bound to a section --
+  `associate (z => w(1:n, 1:m, l))`, or the temporary shared lowering binds
+  to a section it hands to a routine -- is the address of the section's
+  first element, its extents, and the strides of the dimensions of the
+  array it ranges over, times its steps; so is a descriptor dummy of a
+  routine, such as those of the routines intrinsics are lowered to
+  (`matmul(w(1:n, 1:m, l), x)`), which every call hands the strides of its
+  actual argument. An assumed-shape dummy the shared passes turn into an
+  explicit-shape one is contiguous, so a section that is not contiguous is
+  gathered into a contiguous temporary before such a call and scattered
+  back after it, by the kernel and by a routine the kernel calls alike;
+  the temporary is a run-time sized local as above.
 * A derived-type value reaches the kernel as a copy of the host's bytes,
   laid out by the device exactly as the host lays it out. An allocatable
   array component is handed over in device buffers of its own. An

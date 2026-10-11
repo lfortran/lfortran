@@ -752,6 +752,12 @@ inline std::string dim_size(const std::string &array, size_t d) {
     return "__size_" + array + "_dim" + std::to_string(d + 1);
 }
 
+// The scalar parameter carrying how many elements apart consecutive
+// elements of dimension `d` (0-based) of the descriptor dummy `array` are.
+inline std::string dim_stride(const std::string &array, size_t d) {
+    return "__stride_" + array + "_dim" + std::to_string(d + 1);
+}
+
 // The scalar parameter carrying the whole element count of the array dummy
 // `array`, for a dummy whose extents are not passed one by one.
 inline std::string array_size(const std::string &array) {

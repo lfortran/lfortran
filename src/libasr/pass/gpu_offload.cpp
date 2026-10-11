@@ -1868,6 +1868,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
             plain_allocatable_dummies(func);
+            gather_strided_sections_in_routine(*func);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
             for (size_t bi = 0; bi < func->n_body; bi++) {
