@@ -3019,19 +3019,33 @@ public:
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                         llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
                     }
+                    // A polymorphic array allocated with SOURCE= or MOLD= of a
+                    // polymorphic array takes the dynamic type of the mold, which
+                    // its class wrapper gives at run time.
+                    bool is_polymorphic_array_mold = m_source
+                        && ASRUtils::is_class_type(
+                            ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
+                        && is_polymorphic_descriptor_array(m_source);
                     // Check if this is a mold-based allocation for an unlimited
                     // polymorphic array (the target is class(*); the mold itself need
                     // not be). We allocate a zeroed wrapper first, then patch it with
                     // type info from the mold below.
-                    bool is_mold_unlimited_poly = m_source
+                    bool is_mold_unlimited_poly = !is_polymorphic_array_mold
+                        && m_source
                         && ASRUtils::is_unlimited_polymorphic_type(
                             ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
                         && curr_arg.m_type
                         && ASR::is_a<ASR::StructType_t>(*curr_arg.m_type);
                     // For the mold case, pass nullptr as alloc_type so
-                    // fill_malloc_array_details creates a zeroed wrapper.
-                    ASR::ttype_t* effective_alloc_type = is_mold_unlimited_poly
-                        ? nullptr : curr_arg.m_type;
+                    // fill_malloc_array_details creates a zeroed wrapper, and so
+                    // does the polymorphic type of a polymorphic array mold.
+                    ASR::ttype_t* effective_alloc_type = curr_arg.m_type;
+                    if (is_polymorphic_array_mold) {
+                        effective_alloc_type = ASRUtils::extract_type(
+                            ASRUtils::expr_type(m_source));
+                    } else if (is_mold_unlimited_poly) {
+                        effective_alloc_type = nullptr;
+                    }
                     ASR::expr_t* string_len_to_allocate = curr_arg.m_len_expr;
                     if (!string_len_to_allocate && ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
                         ASR::String_t* str_type = ASRUtils::get_string_type(ASRUtils::type_get_past_array(array_type));
@@ -3043,7 +3057,7 @@ public:
                                             ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a),
                                             curr_arg.m_dims, curr_arg.n_dims, string_len_to_allocate,
                                             curr_arg.m_sym_subclass, realloc, effective_alloc_type);
-                    if (is_mold_unlimited_poly) {
+                    if (is_mold_unlimited_poly || is_polymorphic_array_mold) {
                         ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(
                             ASRUtils::get_struct_sym_from_struct_expr(x.m_args[i].m_a));
                         llvm::Type* class_type = llvm_utils->getClassType(
@@ -3074,7 +3088,13 @@ public:
                         // time, instead of dereferencing a possibly-null wrapper.
                         ASR::ttype_t* mold_ttype = ASRUtils::extract_type(
                             ASRUtils::expr_type(m_source));
-                        if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)
+                        if (is_polymorphic_array_mold) {
+                            llvm::Value* mold_wrapper = builder->CreateBitCast(
+                                get_class_array_wrapper(m_source),
+                                class_type->getPointerTo());
+                            llvm_utils->init_mold_upoly_array_data(
+                                wrapper, mold_wrapper, class_type, num_elements, false);
+                        } else if (!ASRUtils::is_unlimited_polymorphic_type(mold_ttype)
                                 && ASR::is_a<ASR::StructType_t>(*mold_ttype)) {
                             ASR::symbol_t* mold_struct_sym = ASRUtils::symbol_get_past_external(
                                 ASRUtils::get_struct_sym_from_struct_expr(m_source));
@@ -3134,6 +3154,52 @@ public:
                 }
             }
         }
+    }
+
+    // The type identifier of the dynamic type of `arg`, whose value is
+    // `arg_val`. A polymorphic array has it in the class wrapper of its
+    // elements.
+    llvm::Value* get_type_identifier(ASR::expr_t* arg, llvm::Value* arg_val,
+            ASR::symbol_t* struct_sym) {
+        if (is_polymorphic_descriptor_array(arg)) {
+            llvm::StructType* class_type = llvm::cast<llvm::StructType>(
+                llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
+                    struct_sym), false));
+            llvm::Value* wrapper = builder->CreateBitCast(
+                get_class_array_wrapper(arg), class_type->getPointerTo());
+            return llvm_utils->CreateLoad2(class_type->getElementType(0),
+                llvm_utils->create_gep2(class_type, wrapper, 0));
+        }
+        return llvm_utils->get_type_identifier_for_polymorphic_type(arg,
+            arg_val, struct_sym, module.get(), get_class_hash(struct_sym));
+    }
+
+    bool is_polymorphic_descriptor_array(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(expr);
+        return ASRUtils::is_array(type)
+            && ASRUtils::is_class_type(ASRUtils::extract_type(type))
+            && ASRUtils::extract_physical_type(type)
+                == ASR::array_physical_typeType::DescriptorArray;
+    }
+
+    // The class wrapper {vptr, data} that the elements of a polymorphic
+    // array share.
+    llvm::Value* get_class_array_wrapper(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(expr);
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*expr);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* desc = tmp;
+        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(expr,
+            ASRUtils::type_get_past_allocatable_pointer(type), module.get());
+        if (LLVM::is_llvm_pointer(*type)) {
+            desc = llvm_utils->CreateLoad2(desc_type->getPointerTo(), desc);
+        }
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(expr,
+            ASRUtils::extract_type(type), module.get());
+        return llvm_utils->CreateLoad2(el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(desc_type, desc));
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
@@ -4546,10 +4612,8 @@ public:
                 ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
 
-                llvm::Value* id0 = llvm_utils->get_type_identifier_for_polymorphic_type(
-                    x.m_args[0], arg0, struct_sym0, module.get(), get_class_hash(struct_sym0));
-                llvm::Value* id1 = llvm_utils->get_type_identifier_for_polymorphic_type(
-                    x.m_args[1], arg1, struct_sym1, module.get(), get_class_hash(struct_sym1));
+                llvm::Value* id0 = get_type_identifier(x.m_args[0], arg0, struct_sym0);
+                llvm::Value* id1 = get_type_identifier(x.m_args[1], arg1, struct_sym1);
                 if (compiler_options.new_classes) {
                     // new_classes: compare vtable pointers
                     tmp = builder->CreateICmpEQ(
