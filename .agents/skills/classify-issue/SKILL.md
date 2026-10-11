@@ -10,7 +10,7 @@ description: >
   identify issues outside the usual categories. Supports additive labeling and
   recommendation-only reports; asks about uncertain cases. This is issue
   triage, not a request to reproduce, fix, review a PR, or close an issue.
-compatibility: Requires authenticated gh for live GitHub issues; no compiler build is required.
+compatibility: Requires GitHub access for live issues (authenticated gh or GitHub MCP tools); no compiler build is required.
 ---
 
 # Classify an LFortran Issue
@@ -23,8 +23,9 @@ Every classification also recommends exactly one priority, High, Medium, or
 Low, even when the request never mentions priority (section 5). The tier is
 separate from the category and area labels and from your confidence in it.
 
-Read `AGENTS.md` and use `gh` for GitHub operations. Keep triage separate from
-compiler fixes, reproducer generation, and PR review. Do not build or modify
+Read `AGENTS.md` and use `gh` for GitHub operations, or the equivalent GitHub
+MCP tools where `AGENTS.md` ("Git Remotes & Issues") calls for them. Keep
+triage separate from compiler fixes, reproducer generation, and PR review. Do not build or modify
 the compiler just to label an issue.
 
 If the task changes to reproduction or fixing, hand off to the corresponding

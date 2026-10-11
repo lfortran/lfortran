@@ -17,7 +17,7 @@ description: >
   discoveries from blocked jobs. Do not execute fixes for triage, plan-only
   requests, or discussions of this workflow.
 compatibility: >
-  Requires git, authenticated gh, Pixi, the platform prerequisites in AGENTS.md,
+  Requires git, GitHub access (authenticated gh or GitHub MCP tools), Pixi, the platform prerequisites in AGENTS.md,
   and a runtime that can spawn subagents. Provision the compiler build and
   reference Fortran compiler using the repository's Pixi tasks.
 ---
@@ -63,7 +63,8 @@ last hours:
 - Every subagent prompt must be **self-contained**: a fresh subagent does not
   see this conversation. Include the issue IDs, absolute worktree and state
   paths, branch/base SHA, PR number, build directory, compiler path, exact Pixi
-  invocation, job budget, skill, authorized actions, and report format.
+  invocation, job budget, skill, authorized actions, GitHub access method
+  (`gh` or MCP tools, see **GitHub access**), and report format.
   Explicitly pass the no-co-author commit policy below to every committer.
   Tell it to load skills by name or read `.agents/skills/<name>/SKILL.md`.
 - Ask every subagent to end with a **report of at most ~20 lines** and to put
@@ -99,6 +100,16 @@ path to its details. The reproducers themselves (`run_re.sh`, `re_*.f90`,
 `run.sh`, `mre_*.f90`) live in the repository root, following the conventions
 of the `repro-issue` and `create-mre` skills. Before iteration `j+1` overwrites `run.sh`, the current
 MRE files are archived to `.fix-issue/<id>/mre_<j>/`.
+
+## GitHub access
+
+The `gh` commands in this skill name the required GitHub operation. Use `gh`
+where it works. In a cloud session, or whenever the session instructions
+recommend GitHub MCP tools over `gh`, perform the same operations with those
+tools; push with plain `git push` to the fork either way. Pass the access
+method to every subagent. If no available tool can perform a required
+operation, stop that step and report it to the user; do not continue as if it
+succeeded.
 
 ## Authorization
 
@@ -171,9 +182,11 @@ Run a few quick checks yourself. Each prints only a few lines:
 Reuse shared preflight results supplied by a batch coordinator; do not repeat
 fetches or mutate shared Git state concurrently.
 
-1. `gh auth status`. If gh is not logged in, stop and ask the user to run
-   `! gh auth login`.
-2. `gh api user --jq .login` gives `<login>`.
+1. Choose the GitHub access method (see **GitHub access** above). With `gh`:
+   `gh auth status`; if gh is not logged in, stop and ask the user to run
+   `! gh auth login`. With MCP tools, confirm access to both
+   `lfortran/lfortran` and the fork; otherwise ask the user to grant it.
+2. `gh api user --jq .login` (or the MCP equivalent) gives `<login>`.
 3. Inspect `git status --porcelain` and `git worktree list`. Preserve the
    caller's branch and dirty files: create a separate worktree instead of
    stashing, resetting, or asking the user to clean an unrelated checkout.
@@ -412,6 +425,10 @@ distinct bug it:
    `gh pr edit <PR> --repo lfortran/lfortran --body-file .fix-issue/<id>/pr_body.md`.
 
 Only bugs are filed. Non-bug follow-ups go in the PR body and the final report.
+If a search or filing call fails (no access, permission or API error), do not
+leave the entry silently `unfiled`: mark it `blocked: <error>` in
+`followups.md`, keep the ready-to-file title and body, and report it to the
+user immediately and again at the top of the final report.
 
 Report: issues filed, duplicates linked, regressions sent back.
 
