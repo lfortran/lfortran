@@ -23,11 +23,14 @@ Read `AGENTS.md` first. Read [references/review-rules.md](references/review-rule
 for the detailed principles. Consult [references/examples.md](references/examples.md)
 when a concrete comparison would help.
 
-When a review needs a local build or reproduction, default to the Pixi tasks
+When a review needs a local build or reproduction, use only the Pixi tasks
 in `AGENTS.md`: `pixi run -e llvm11 build`, then the selected configuration's
-test tasks with output saved to logs. Honor an explicitly supplied build and
+test tasks with output saved to logs. Reference tests and updates require
+`llvm11`. Honor an explicitly supplied Pixi environment and
 keep the review checkout isolated from active fixers. Do not install a compiler
 merely to read a diff or duplicate dependency/CMake recipes in review prompts.
+Follow [AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi); never
+install dependencies outside Pixi.
 
 ## Gather the change
 

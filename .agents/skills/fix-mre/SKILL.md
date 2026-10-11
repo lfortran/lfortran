@@ -18,22 +18,23 @@ verify the full suites still pass.
 
 - The **assigned LFortran worktree** is the current working directory. Do not
   switch branches or modify another worker's checkout.
-- A configured build. **Default to `pixi run -e llvm11 build`**, which installs
+- A configured build. **Use `pixi run -e llvm11 build`**, which installs
   dependencies and builds `build/llvm11/src/bin/lfortran`. Reuse the exact
-  environment/build supplied by `fix-issue` or the user, including supported
-  manual builds. `AGENTS.md` owns setup details; do not duplicate dependency
+  Pixi environment/build supplied by `fix-issue` or the user.
+  `AGENTS.md` owns setup details; do not duplicate dependency
   lists or CMake configuration recipes here.
 - Put the assigned build's absolute `src/bin` directory first on `PATH` inside
   the selected environment. Verify `command -v lfortran`, `lfortran --version`,
   and `llvm-config --version` there; reference updates require LLVM 11.
-- A **reference Fortran compiler** on `PATH` (`gfortran` preferred; it is what
+- Pixi's **reference Fortran compiler** on `PATH` (`gfortran`; it is what
   the `gfortran` integration-test label uses).
 
 Run commands in that worktree and selected environment; parent shell activation
 does not carry into fresh tools or subagents. The examples use the default
-`llvm11` tasks and allocated `<jobs>`. For an explicitly supplied non-Pixi
-build, use the equivalent commands in `AGENTS.md`, selecting the compiler and
-test-output directories explicitly.
+`llvm11` tasks and allocated `<jobs>`. Follow
+[AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi): use only Pixi
+for dependencies, builds, compilers, and tests. Reference tests and updates
+always use `llvm11`, even when the fix also needs another Pixi configuration.
 
 ## Inputs to Gather
 
@@ -58,8 +59,7 @@ Note especially the architecture rules — they determine where a fix belongs:
   frontend-specific names there.
 - No new C/C++ macros; use `constexpr`, templates, or inline functions.
 
-Follow all instructions therein, but the instructions in this SKILL.md file
-take precedence where they conflict.
+Follow all instructions therein, including the required Pixi toolchain policy.
 
 ### Phase 1: Reproduce the Bug
 
@@ -135,7 +135,7 @@ files stay untracked; the test is what gets committed.
 5. Verify the test compiles with the reference compiler — this confirms the
    test is valid Fortran and does not depend on LFortran-specific behavior:
    ```bash
-   pixi run -e llvm11 gfortran -o test_ref integration_tests/<test_name>.f90 && ./test_ref
+   pixi run -e llvm11 gfortran -o test_ref integration_tests/<test_name>.f90 && pixi run -e llvm11 ./test_ref
    rm -f test_ref
    ```
    Run this in the assigned worktree; a shared `/tmp/test_ref` races with other

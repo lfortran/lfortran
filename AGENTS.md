@@ -3,6 +3,56 @@
 This file is for LLM agents and new contributors to have a single point of
 detailed reference how to contribute to the project.
 
+## Required Agent Toolchain: Pixi
+
+Use **Pixi exclusively** to provision project dependencies, build LFortran,
+and run compilers and tests. Use the `llvm11` environment for native development
+unless the task explicitly requires another Pixi environment. **All reference
+tests and reference updates require LLVM 11** (`llvmdev ==11.1.0`).
+
+Run from the assigned worktree's root, saving and inspecting logs:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=8 pixi run -e llvm11 build > build.log 2>&1
+pixi run -e llvm11 start --version
+pixi run -e llvm11 ctest -j8 > unit.log 2>&1
+pixi run -e llvm11 tests -j8 > reference.log 2>&1
+pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
+```
+
+Use the allocated job budget instead of `8` when sharing resources. `pixi run`
+installs the selected environment automatically. The compiler is
+`build/llvm11/src/bin/lfortran` (`lfortran.exe` on Windows). For ad hoc commands
+or reproducers, use `pixi run -e llvm11 start <arguments>` or
+`pixi run -e llvm11 bash run.sh`; shell activation is not inherited by later
+tool calls or subagents.
+
+Do not install dependencies with `apt`, `apt-get`, Homebrew, Conda, mamba,
+micromamba, pip, or other system/global installers. Do not substitute a host
+compiler or invoke standalone CMake, Ninja, build scripts, or test runners as
+an alternative to the Pixi tasks. Resolve missing project dependencies in
+`pixi.toml` and the selected Pixi environment. If Pixi or a required platform
+SDK is unavailable, report it rather than attempting another installation
+method. Git, Pixi, and the platform SDKs listed below are prerequisites.
+
+This policy also applies when consulting older installation or CI recipes:
+`pixi.toml` and its tasks own agent setup. Read-only review and issue triage do
+not require provisioning a compiler.
+
+## Automatic Issue-Fixing Workflow
+
+When the user asks to fix LFortran GitHub issues, automatically load and follow
+[fix-issue](.agents/skills/fix-issue/SKILL.md), whether the input is one issue,
+a list, a search URL, or filters. The user does not need to name the skill or
+repeat the workflow. A prompt such as "Fix all these high-priority derived
+type issues: <GitHub search URL>" selects the full end-to-end workflow below.
+
+Apply its defaults for subagents, isolated worktrees, Pixi/LLVM 11, fork PRs,
+dependency grouping, additional bug reports, and commit authorship. Explicit
+task limits such as "local only" or "do not push" take precedence. Requests to
+triage, reproduce, review, plan, or discuss an example prompt select their
+corresponding skills rather than starting issue fixes.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -68,8 +118,8 @@ to `fix-mre`. The committed deliverable is always the integration test.
 
 ### Defaults for end-to-end issue fixing
 
-A request such as "Fix all these issues using the fix-issue skill: <GitHub
-search URL>" is sufficient. Do not require the user to repeat these defaults:
+A request such as "Fix all these issues: <GitHub search URL>" is sufficient;
+select `fix-issue` automatically. Do not require the user to repeat these defaults:
 
 - Resolve the complete issue selection, preserving all query filters and
   fetching every page. Record the selected issue numbers once; do not silently
@@ -116,37 +166,32 @@ in `.agents/skills/fix-issue/references/batch.md`. These defaults apply to actua
 fix requests, not to triage, plan-only requests, or quoted example prompts.
 
 The reproduction and fix skills use the compiler from the assigned build:
-`build/<pixi-environment>/src/bin/lfortran` by default. Pixi activation selects
-that directory on `PATH`. Existing manual builds may instead use
-`src/bin/lfortran` or `build/src/bin/lfortran`; honor an explicitly supplied
-build rather than silently substituting one. Use `gfortran`, matching the
+`build/<pixi-environment>/src/bin/lfortran`. Pixi activation selects
+that directory on `PATH`. Use the assigned Pixi environment and its build
+consistently. Use Pixi's `gfortran`, matching the
 integration-test label, for differential testing.
 Issue classification requires authenticated `gh`, not a compiler build.
 
 ## Prerequisites
-- **Recommended:** Git and [Pixi](https://pixi.sh/). The repository manifest
+- **Required:** Git and [Pixi](https://pixi.sh/). The repository manifest
   supplies build/test dependencies and Linux C/C++ compilers. On macOS, install
   Xcode Command Line Tools; on Windows, use an initialized MSVC developer shell
-  with Git Bash available. The existing WSL and manual installation paths remain
-  supported.
-- For manual builds, the dependencies include:
-- Tools: CMake (>=3.10), Ninja, Git, Python (>=3.8), GCC/Clang/MSVC.
-- Generators: re2c, bison (needed for build0/codegen).
-- Libraries: zlib; optional: LLVM dev, libunwind, RapidJSON, fmt, xeus/xeus-zmq, Pandoc.
+  with Git Bash available. Use Pixi inside WSL for Unix-only test runners.
+  If a prerequisite is missing, report it; do not provision an alternate toolchain.
 
 ## Build, Test, and Development Commands
 
-**Start with Pixi** for installation, building, and testing. Keep dependency
+**Use only Pixi** for installation, building, and testing. Keep dependency
 versions and build details in `pixi.toml` and the scripts it invokes, rather
 than duplicating setup recipes in prompts or skills. These entry points stay
 the same when the build system or dependencies change:
 
 ```bash
-pixi run build
-pixi run start --version
-pixi run ctest -j8 > unit.log 2>&1
-pixi run tests -j8 > reference.log 2>&1
-pixi run integration_tests -j8 > integration.log 2>&1
+pixi run -e llvm11 build
+pixi run -e llvm11 start --version
+pixi run -e llvm11 ctest -j8 > unit.log 2>&1
+pixi run -e llvm11 tests -j8 > reference.log 2>&1
+pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
 ```
 
 `pixi run` installs the selected environment automatically. Native tasks default
@@ -216,41 +261,22 @@ through Pixi, not global package installs. Do not silently substitute another
 LLVM version, disable failing checks, or commit machine-specific workarounds.
 Report unavailable toolchains or SDKs explicitly.
 
-Honor an explicitly supplied environment or existing build for standalone work;
-inspect its `CMakeCache.txt` and reuse its actual build directory rather than
-creating a second one by assumption. Reference updates still require LLVM 11.
+Honor an explicitly supplied Pixi environment and reuse its build directory.
+Reference tests and updates still require the `llvm11` environment.
 Do not copy CMake caches, generated sources, `.mod` files, or `.pixi` environments
 between worktrees. Do not use `git clean -dfx` as automatic setup or recovery.
 
-### Other supported build methods
-
-Conda/micromamba, source tarballs, and direct CMake builds remain supported;
-see `doc/src/installation.md`. For manual Git builds:
-
-- `./build0.sh` generates sources. `./build1.sh` without arguments preserves
-  the existing in-source workflow, with `CMakeCache.txt` at the root and
-  `src/bin/lfortran` as the executable.
-- `./build1.sh build/manual` configures an out-of-source Debug build. Additional
-  arguments are passed to CMake, for example
-  `./build1.sh build/release -DCMAKE_BUILD_TYPE=Release`.
-- Direct CMake remains available:
-  `cmake -S . -B build/manual -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_STACKTRACE=yes`,
-  followed by `cmake --build build/manual -j`.
-- Legacy test entry points remain available: `./run_tests.py` and
-  `integration_tests/run_tests.py`. Both accept `--compiler-dir` for an explicit
-  compiler; integration tests also accept `--build-dir` for isolated outputs.
-
 **IMPORTANT**: always redirect test output to a log file and then examine the
-log file. Do NOT run tests using the style like `./run_tests.py | tail` because
+log file. Do NOT run tests using the style like `pixi run -e llvm11 tests | tail` because
 if you need more output than the `tail` provides, you have to rerun them and
 that is very expensive, the tests can run several minutes. Instead, run tests
 only once, redirect to a log file and then examine the log file.
 
 ## Quick Smoke Test
-- Default build: `pixi run build` (LLVM enabled).
-- AST/ASR: `pixi run start --show-ast examples/expr2.f90`
-- Compile and run: `pixi run start examples/expr2.f90`.
-- Keep an executable: `pixi run start examples/expr2.f90 -o expr2`.
+- Default build: `pixi run -e llvm11 build` (LLVM enabled).
+- AST/ASR: `pixi run -e llvm11 start --show-ast examples/expr2.f90`
+- Compile and run: `pixi run -e llvm11 start examples/expr2.f90`.
+- Keep an executable: `pixi run -e llvm11 start examples/expr2.f90 -o expr2`.
 
 ## Architecture & Scope
 - AST (syntax) ↔ ASR (semantic, valid-only). See `doc/src/design.md`.
@@ -375,44 +401,35 @@ and the distinction between capability tests and application validation.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure integration tests pass locally: `pixi run integration_tests -j16 > integration.log 2>&1`.
+- Ensure integration tests pass locally: `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).
 - When fixing a bug, add an integration test that reproduces the failure and now compiles/runs successfully.
-- CI‑parity (recommended): run with the same env and scripts CI uses
-  - Use micromamba with `ci/environment.yml` to match toolchain (LLVM, etc.).
-  - Set env like CI and call the same helper scripts:
-    - `export LFORTRAN_CMAKE_GENERATOR=Ninja`
-    - `export ENABLE_RUNTIME_STACKTRACE=yes` (Linux/macOS)
-    - Build: `bash ci/build.sh`
-    - Quick integration run (LLVM):
-      - `bash ci/test.sh` (runs a CMake+CTest LLVM pass and runner passes)
-      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f &> log`
-  - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran &> log`
-  - Other backends as in CI:
-    - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma &> log && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f &> log`
-    - `./run_tests.py -b cpp c c_nopragma &> log` and `-f`
-    - `./run_tests.py -b wasm &> log` and `-f`
-    - `./run_tests.py -b llvm_omp &> log` / `target_offload` / `fortran -j1`
+- Use the Pixi integration task for additional CI modes and backends. Run
+  from the assigned worktree's root; each command writes its own log:
 
-- Minimal local (without micromamba):
-  - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
-  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f &> log`
-- If builds fail with messages about missing debug info:
-  - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
-    `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
-  - Rebuild with runtime stacktraces if needed:
-    `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes -DWITH_UNWIND=ON`
-  - More details: `integration_tests/run_tests.py &> log` (CLI flags and supported backends).
+  ```bash
+  pixi run -e llvm11 integration_tests -b llvm -f -j8 > integration-fast.log 2>&1
+  pixi run -e llvm11 integration_tests -b gfortran -j8 > gfortran.log 2>&1
+  pixi run -e llvm11 integration_tests -b c cpp -j8 > c-cpp.log 2>&1
+  pixi run -e llvm11 integration_tests -b llvm_omp -j8 > openmp.log 2>&1
+  ```
+
+  Other registered backends and modes use the same task with the corresponding
+  runner arguments. If a backend needs additional dependencies, declare them
+  in a Pixi environment; do not install them globally. Read CI scripts to
+  identify coverage, then reproduce it through the Pixi tasks.
+- For missing debug-info tools, inspect the selected Pixi environment and
+  resolve its dependencies in `pixi.toml`, then rebuild using the Pixi task.
 
 ### Unit/Reference Tests (`tests/`)
 - Use only when an integration test is not yet feasible (e.g., feature doesn’t compile end‑to‑end). Prefer integration tests for all new work.
 - If possible, still add a test under `integration_tests/`, but only register `gfortran` (not `llvm`), then register this test in `tests/tests.toml` with the needed outputs (`ast`, `asr`, `llvm`, `run`, etc.). Use `.f90` or `.f` (fixed-form auto-handled). Only if that cannot be done, add a new test into `tests/`.
   - See `tests/tests.toml` for examples; reference outputs live under `tests/reference/`.
 - Multi-file modules: set `extrafiles = "mod1.f90,mod2.f90"`.
-- Run locally: `pixi run tests -j16 > reference.log 2>&1` (use `-s` to debug).
+- Run locally: `pixi run -e llvm11 tests -j16 > reference.log 2>&1` (use `-s` to debug).
 - Update references only when outputs intentionally change, with LLVM 11:
-  `pixi run tests -t path/to/test -u -s > reference-update.log 2>&1`.
+  `pixi run -e llvm11 tests -t path/to/test -u -s > reference-update.log 2>&1`.
 - Error messages: add to `tests/errors/continue_compilation_1.f90` and update references.
 - If your integration test does not compile yet, temporarily validate the change by adding a reference test that checks AST/ASR construction (enable `asr = true` and/or `ast = true` in `tests/tests.toml`). Promote it to an integration test once end‑to‑end compilation succeeds.
 
@@ -424,11 +441,11 @@ and the distinction between capability tests and application validation.
   is first on `PATH` when running tests.
 
 ### Common Commands
-- Run unit/reference/integration suites: `pixi run ctest`, `pixi run tests`,
-  and `pixi run integration_tests`, each redirected to its own log.
-- Run a specific reference test: `pixi run tests -t pattern -s > reference.log 2>&1`.
+- Run unit/reference/integration suites: `pixi run -e llvm11 ctest`, `pixi run -e llvm11 tests`,
+  and `pixi run -e llvm11 integration_tests`, each redirected to its own log.
+- Run a specific reference test: `pixi run -e llvm11 tests -t pattern -s > reference.log 2>&1`.
 - Run a specific integration test:
-  `pixi run integration_tests -t pattern > integration.log 2>&1`.
+  `pixi run -e llvm11 integration_tests -t pattern > integration.log 2>&1`.
 
 ## References
 - Developer docs: `doc/src/installation.md` (Tests) and `doc/src/progress.md` (workflow).
@@ -442,6 +459,8 @@ and the distinction between capability tests and application validation.
   `Generated-By:`, `Assisted-By:`, other AI-credit trailers, or free-form AI
   attribution. Preserve the user's configured human Git identity; never
   invent an identity or set an AI as author or committer.
+  `.claude/settings.json` also disables Claude Code's automatic commit/PR
+  attribution and session-link trailers; retain that configuration.
 - **Why:** AI tools may help write code, but every commit and PR must be
   submitted by a human who has read, understood, and guarantees the change.
   An AI co-author stamp misrepresents that responsibility; automated review

@@ -28,7 +28,9 @@ compiler fixes, reproducer generation, and PR review. Do not build or modify
 the compiler just to label an issue.
 
 If the task changes to reproduction or fixing, hand off to the corresponding
-skill; its default installation/build path is the Pixi workflow in `AGENTS.md`.
+skill; its required installation/build/test path is the Pixi workflow in
+[AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi), with `llvm11`
+for reference tests and updates. Never install dependencies outside Pixi.
 Do not provision that toolchain for classification itself.
 
 ## 1. Establish scope and permission

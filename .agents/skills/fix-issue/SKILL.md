@@ -2,8 +2,9 @@
 name: fix-issue
 description: >
   Fix LFortran issues end-to-end, singly or as a batch selected by a list,
-  GitHub search URL, or filters. Use for requests to fix all matching issues,
-  resolve an issue, or send issue-fix PRs, including pasted failures. Expand
+  GitHub search URL, or filters. Use automatically for requests to fix all
+  matching issues, resolve an issue, or send issue-fix PRs, including pasted
+  failures; the user need not name this skill. Expand
   the complete selection, use fresh per-issue subagents and isolated Git
   worktrees, and build with Pixi/LLVM 11. Run repro-issue, then create-mre and
   fix-mre until every original reproducer passes, then review each branch
@@ -24,6 +25,14 @@ compatibility: >
 # Fix Issue — From Issue to Review-Ready PR
 
 Drive each independent issue or connected group to a review-ready fork PR.
+An actual request to fix issues selects this skill through AGENTS.md's routing
+rule even when the user gives only the issues/search URL. The per-job and
+batch defaults apply without an additional workflow paragraph. Honor explicit
+task limits and do not start fixes for quoted examples or workflow discussions.
+Follow [AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi): use only
+Pixi for dependencies, builds, compilers, and tests, with `llvm11` for all
+reference tests and updates. Pass this policy to every subagent; never install
+dependencies outside Pixi.
 For **a list, search URL, or filtered batch**, first read
 [references/batch.md](references/batch.md): resolve all matches and coordinate
 fresh issue-worker subagents in separate worktrees. Each worker follows the
@@ -93,12 +102,15 @@ MRE files are archived to `.fix-issue/<id>/mre_<j>/`.
 
 ## Authorization
 
-For an actual fixing request, invoking this skill authorizes isolated worktrees,
+For an actual fixing request, using this skill through explicit invocation or
+automatic routing authorizes isolated worktrees,
 branches, Pixi dependency installation/builds, commits and follow-up pushes to
 **the user's fork**, draft PRs against `lfortran/lfortran`, an explicitly
 requested Exhaustive dispatch in the fork, filing new unrelated pre-existing
 bugs, and marking verified PRs ready. This overrides the "do not commit" default in
 `fix-mre`. Pass the authorized subset explicitly to each subagent.
+Explicit user constraints (for example, no commits, no pushes, or no issue
+filing) narrow this workflow's authorization and must be passed to subagents.
 
 Never, under any circumstances:
 
@@ -111,7 +123,7 @@ Never, under any circumstances:
   other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - bulk-update references blindly; use targeted LLVM 11 updates and review every
-  change, including when invoking `pixi run tests -u`.
+  change, including when invoking `pixi run -e llvm11 tests -u`.
 
 ### Commit authorship
 
@@ -178,6 +190,12 @@ fetches or mutate shared Git state concurrently.
    `gh issue view <N> --repo lfortran/lfortran --json state,title` (closed?)
    and
    `gh pr list --repo lfortran/lfortran --state open --search "<N> in:body,title" --json number,title,author`.
+6. Verify the configured human commit identity with `git var GIT_AUTHOR_IDENT`
+   and `git var GIT_COMMITTER_IDENT`, and pass it to all committing workers.
+   If it is missing or violates the authorship policy, report the required
+   environment setup; do not infer a name/email from the GitHub login or invent
+   an identity. Personal identity belongs in the user's Git configuration,
+   including the cloud environment's setup, rather than shared project files.
 
 Do not take over someone else's PR or reopen a closed issue automatically.
 For overlapping work, ask or report that job as blocked; continue other jobs.
@@ -248,13 +266,13 @@ If `j > 1`, first move the previous `run.sh` and `mre_*.f90` to
 
 - for `j = 1`, the RE from Phase 2, or the third-party failure;
 - for `j > 1`, the failure recorded in `check_<j-1>.md`, which is produced by
-  the in-tree `lfortran` that already includes the earlier fixes.
+  the assigned Pixi build of `lfortran` that already includes the earlier fixes.
 
 Output: `run.sh` plus `mre_*.f90`.
 
 Report, also written to `mre_<j>.md`: the MRE files, a one-line bug
 description, the error, and confirmation that `run.sh` fails with the current
-in-tree LFortran and succeeds with the reference compiler.
+Pixi build of LFortran and succeeds with Pixi's reference compiler.
 
 If the current failure contains several distinct bugs, reduce only **one**
 per iteration. The loop picks up the rest.
@@ -285,17 +303,18 @@ there).
 
 #### 3c. Issue check subagent (fresh)
 
-It verifies the **original** issue, not the MRE, against the rebuilt in-tree
+It verifies the **original** issue, not the MRE, against the rebuilt Pixi
 `lfortran`:
 
 - **GitHub issue or pasted snippet:** reread the issue text, including
-  comments, and run `run_re.sh`. The program must now compile and run, and its
-  output must match the reference compiler's output and any expected output
-  stated in the issue. Also check every other program, flag combination, or
+  comments, and run `pixi run -e llvm11 bash run_re.sh`. The program must now
+  compile and run, and its output must match the reference compiler's output
+  and any expected output stated in the issue. Also check every other program, flag combination, or
   scenario the issue mentions that `run_re.sh` does not cover. If one is
   missing, add it to `run_re.sh`.
 - **Third-party failure:** re-run the original failing build or test
-  command, and continue past the point that used to fail.
+  command through the assigned Pixi environment, and continue past the point
+  that used to fail.
 
 Report, also written to `check_<j>.md`: fully fixed yes/no. If no, report the
 exact new failure (the command, the error or the output diff, and the file
