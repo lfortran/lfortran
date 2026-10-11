@@ -12,6 +12,7 @@
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
+#include <libasr/codegen/llvm_compat.h>
 #include <map>
 #include <set>
 #include <string>

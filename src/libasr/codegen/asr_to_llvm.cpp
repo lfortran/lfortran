@@ -6508,13 +6508,20 @@ public:
         const llvm::DataLayout &data_layout = *common_block_data_layout;
         CommonViewLayout layout;
         std::map<ASR::Variable_t*, int64_t> offset_of;
+        auto abi_alignment = [&](llvm::Type *t) -> int64_t {
+#if LLVM_VERSION_MAJOR >= 11
+            return data_layout.getABITypeAlign(t).value();
+#else
+            return data_layout.getABITypeAlignment(t);
+#endif
+        };
         // A member is at an offset its type's alignment divides; a variable
         // EQUIVALENCE places need not be, and is then accessed only as
         // aligned as its address is known to be (LLVMUtils::CreateLoad2,
         // LLVM::CreateStore).
         auto place = [&](ASR::Variable_t *v, int64_t offset) {
             llvm::Type *t = common_variable_storage_type(v);
-            int64_t alignment = data_layout.getABITypeAlign(t).value();
+            int64_t alignment = abi_alignment(t);
             offset_of[v] = offset;
             layout.offsets.push_back({v, offset});
             layout.alignment = std::max(layout.alignment, alignment);
@@ -6524,8 +6531,7 @@ public:
         int64_t end = 0;
         for (size_t i = 0; i < block->n_members; i++) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(block->m_members[i]);
-            int64_t alignment = data_layout.getABITypeAlign(
-                common_variable_storage_type(v)).value();
+            int64_t alignment = abi_alignment(common_variable_storage_type(v));
             end = (end + alignment - 1) / alignment * alignment;
             place(v, end);
             end = layout.size;
