@@ -214,11 +214,17 @@ jobs:
             ./build0.sh
             # Quick's full normal/fast compiler needs the same diagnostic,
             # allocation and assertion checks as the platform Debug builds.
+            # It stays a Debug build (WITH_LFORTRAN_ASSERT, per-pass ASR
+            # verification, no NDEBUG anywhere) but is compiled with -O2:
+            # this compiler runs four full integration passes, and an
+            # optimized compiler makes each pass ~1.6x faster.
             BUILD_TYPE=Release
             CHECK_FLAGS=()
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 BUILD_TYPE=Debug
-                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes)
+                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes
+                    "-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2"
+                    "-DCMAKE_C_FLAGS_DEBUG=-O2")
                 export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
                 export CXXFLAGS="$CFLAGS"
             fi
