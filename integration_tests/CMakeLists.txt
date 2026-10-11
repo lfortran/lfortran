@@ -6164,6 +6164,7 @@ RUN(NAME gpu_metal_408 LABELS gfortran llvm) # the GPU backends report an error,
 RUN(NAME gpu_metal_392 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_393 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_394 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_409 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
