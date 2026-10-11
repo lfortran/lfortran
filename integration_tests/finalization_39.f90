@@ -1,92 +1,98 @@
-! Intrinsic assignment of a structure finalizes the old value of its array
-! components as arrays: by the final subroutine of matching rank, or an
-! elemental one element by element. A nonelemental scalar final subroutine
-! does not apply, and the new value is not finalized.
+! An allocated allocatable scalar component is finalized when the structure
+! that it is a component of is finalized or deallocated: at the end of the
+! procedure for a local, or by DEALLOCATE of an allocatable structure.
 module finalization_39_mod
     implicit none
-    integer :: n1 = 0, s1 = 0, n2 = 0, s2 = 0, ns = 0, ne = 0, se = 0
+    integer :: nfin = 0, total = 0
+    integer :: order(4) = 0
     type :: t
         integer :: v = 0
     contains
-        final :: fin_t1
-        final :: fin_t2
+        final :: fin_t
     end type
-    type :: ts
-        integer :: v = 0
+    type, extends(t) :: d
     contains
-        final :: fin_ts
-    end type
-    type :: te
-        integer :: v = 0
-    contains
-        final :: fin_te
+        final :: fin_d
     end type
     type :: holder
-        type(t), allocatable :: arr(:)
-        type(t), allocatable :: mat(:,:)
-        type(ts), allocatable :: sarr(:)
-        type(te), allocatable :: earr(:)
-        type(t) :: fixed(2)
+        type(t), allocatable :: c
+    end type
+    type :: dholder
+        type(d), allocatable :: c
+    end type
+    type :: outer
+        type(holder) :: h
     end type
 contains
-    subroutine fin_t1(x)
-        type(t), intent(inout) :: x(:)
-        n1 = n1 + 1
-        s1 = s1 + sum(x%v)
+    subroutine fin_t(x)
+        type(t), intent(inout) :: x
+        nfin = nfin + 1
+        total = total + x%v
+        order(nfin) = 1
     end subroutine
 
-    subroutine fin_t2(x)
-        type(t), intent(inout) :: x(:,:)
-        n2 = n2 + 1
-        s2 = s2 + sum(x%v)
+    subroutine fin_d(x)
+        type(d), intent(inout) :: x
+        nfin = nfin + 1
+        total = total + 10*x%v
+        order(nfin) = 2
     end subroutine
 
-    subroutine fin_ts(x)
-        type(ts), intent(inout) :: x
-        ns = ns + 1
+    subroutine local_component()
+        type(holder) :: h
+        allocate(h%c)
+        h%c%v = 4
     end subroutine
 
-    impure elemental subroutine fin_te(x)
-        type(te), intent(inout) :: x
-        ne = ne + 1
-        se = se + x%v
+    subroutine unallocated_component()
+        type(holder) :: h
     end subroutine
 
-    subroutine run()
-        type(holder) :: h, h2
-        allocate(h%arr(2), h%mat(1, 2), h%sarr(2), h%earr(2))
-        h%arr%v = [2, 3]
-        h%mat%v = reshape([7, 8], [1, 2])
-        h%sarr%v = [1, 1]
-        h%earr%v = [4, 5]
-        h%fixed%v = [10, 20]
-        allocate(h2%arr(1), h2%sarr(1), h2%earr(3))
-        h2%arr%v = [5]
-        h2%sarr%v = [6]
-        h2%earr%v = [1, 2, 3]
-        h2%fixed%v = [30, 40]
-        n1 = 0; s1 = 0; n2 = 0; s2 = 0; ns = 0; ne = 0; se = 0
-        h = h2
-        ! h%arr and h%fixed by fin_t1, h%mat (h2%mat is unallocated) by fin_t2
-        if (n1 /= 2) error stop 1
-        if (s1 /= 2 + 3 + 10 + 20) error stop 2
-        if (n2 /= 1) error stop 3
-        if (s2 /= 7 + 8) error stop 4
-        if (ns /= 0) error stop 5
-        if (ne /= 2) error stop 6
-        if (se /= 4 + 5) error stop 7
-        if (allocated(h%mat)) error stop 8
-        if (size(h%arr) /= 1) error stop 9
-        if (h%arr(1)%v /= 5) error stop 10
-        if (size(h%earr) /= 3) error stop 11
-        if (any(h%earr%v /= [1, 2, 3])) error stop 12
-        if (any(h%fixed%v /= [30, 40])) error stop 13
+    subroutine deallocated_component()
+        type(holder) :: h
+        allocate(h%c)
+        h%c%v = 5
+        deallocate(h%c)
+    end subroutine
+
+    subroutine deallocate_structure()
+        type(holder), allocatable :: h
+        allocate(h)
+        allocate(h%c)
+        h%c%v = 6
+        deallocate(h)
+    end subroutine
+
+    subroutine extended_component()
+        type(dholder) :: h
+        allocate(h%c)
+        h%c%v = 7
+    end subroutine
+
+    subroutine nested_component()
+        type(outer) :: o
+        allocate(o%h%c)
+        o%h%c%v = 8
     end subroutine
 end module
 
 program finalization_39
     use finalization_39_mod
     implicit none
-    call run()
+    call local_component()
+    if (nfin /= 1 .or. total /= 4) error stop 1
+    call unallocated_component()
+    if (nfin /= 1) error stop 2
+    call deallocated_component()
+    if (nfin /= 2 .or. total /= 9) error stop 3
+    call deallocate_structure()
+    if (nfin /= 3 .or. total /= 15) error stop 4
+    nfin = 0
+    total = 0
+    call extended_component()
+    if (nfin /= 2 .or. total /= 77) error stop 5
+    if (order(1) /= 2 .or. order(2) /= 1) error stop 6
+    call nested_component()
+    if (nfin /= 3 .or. total /= 85) error stop 7
     print *, "ok"
 end program
