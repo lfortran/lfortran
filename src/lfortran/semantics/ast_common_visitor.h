@@ -24219,7 +24219,8 @@ public:
     }
 
     // `value_payload` borrows a constructor or concrete function result for
-    // the duration of the call it is an argument of.
+    // the duration of the call it is an argument of. A designator that stands
+    // for a compile-time value, such as a named constant, is a value as well.
     void make_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target,
             bool value_payload = false) {
         auto *source = ASRUtils::expr_type(actual);
@@ -24243,8 +24244,19 @@ public:
             trait_call_error("runtime trait packing currently requires an exact "
                 "nonpolymorphic scalar derived type", actual->base.loc);
         }
+        if (ASRUtils::is_constant_designator(actual) ||
+                ASR::is_a<ASR::StructConstant_t>(*actual)) {
+            // Without a value payload a constant gets here only as an open
+            // nominal generic method argument, which is erased to a view; a
+            // closed type-set argument selects a member slot and is passed as
+            // it is, so literal and named numeric scalars never get here.
+            if (!value_payload) {
+                trait_call_error("borrowing a runtime trait from this expression "
+                    "is not implemented yet", actual->base.loc);
+            }
+            actual = runtime_trait_constant_payload(actual);
+        }
         bool value = value_payload && (ASR::is_a<ASR::StructConstructor_t>(*actual) ||
-            ASR::is_a<ASR::StructConstant_t>(*actual) ||
             (ASR::is_a<ASR::FunctionCall_t>(*actual) &&
              !ASRUtils::is_allocatable(source) && !ASRUtils::is_pointer(source)));
         if (!value && !ASR::is_a<ASR::Var_t>(*actual) &&
@@ -24261,6 +24273,85 @@ public:
             make_operator_proc_visible(&contract->base, "trait", current_scope)));
         actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
             al, actual->base.loc, actual, reference, view_type));
+    }
+
+    // The value of a named constant, or of a component of one, derived from
+    // the named constant's own value one component selection at a time, or
+    // nullptr. The value folded into the designator itself is not trusted: a
+    // component of an element selected by a run-time subscript can carry the
+    // component's default initialization there. An element of a named
+    // constant array is not derived either.
+    ASR::expr_t *runtime_trait_constant_value(ASR::expr_t *expr) {
+        ASR::expr_t *value = nullptr;
+        if (ASR::is_a<ASR::StructConstant_t>(*expr)) {
+            value = expr;
+        } else if (ASR::is_a<ASR::Var_t>(*expr)) {
+            auto *symbol = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol) ||
+                    ASR::down_cast<ASR::Variable_t>(symbol)->m_storage !=
+                        ASR::storage_typeType::Parameter) return nullptr;
+            value = ASR::down_cast<ASR::Variable_t>(symbol)->m_value;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            auto *component = ASRUtils::symbol_get_past_external(member->m_m);
+            auto *base = runtime_trait_constant_value(member->m_v);
+            if (!component || !ASR::is_a<ASR::Variable_t>(*component) ||
+                    ASRUtils::is_pointer(member->m_type) || !base ||
+                    !ASR::is_a<ASR::StructConstant_t>(*base) ||
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructConstant_t>(base)->m_dt_sym) !=
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(member->m_v))) {
+                return nullptr;
+            }
+            value = ASRUtils::get_struct_member_value_from_constant(base, component);
+        }
+        if (value) {
+            if (auto *folded = ASRUtils::expr_value(value)) value = folded;
+        }
+        return value;
+    }
+
+    // A constant has no storage that a view could borrow (see
+    // ASRUtils::is_constant_designator). It is borrowed as the structure
+    // constructor of its value instead, which the passes materialize for the
+    // call like any other constructor. That copy must not be observable, and
+    // a named constant is never finalized (none of the events of F2018
+    // 7.5.6.3 can happen to a constant), so a constant whose copy would be
+    // finalized, or have components assigned by a defined assignment, is not
+    // implemented.
+    ASR::expr_t *runtime_trait_constant_payload(ASR::expr_t *actual) {
+        auto *declaration = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(actual));
+        auto *constant = runtime_trait_constant_value(actual);
+        if (!declaration || !constant || !ASR::is_a<ASR::StructConstant_t>(*constant) ||
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructConstant_t>(
+                    constant)->m_dt_sym) != declaration) {
+            bool element = false;
+            for (auto *part = actual; part && !element;) {
+                element = ASR::is_a<ASR::ArrayItem_t>(*part);
+                part = ASR::is_a<ASR::StructInstanceMember_t>(*part)
+                    ? ASR::down_cast<ASR::StructInstanceMember_t>(part)->m_v : nullptr;
+            }
+            trait_call_error(element
+                ? "borrowing a runtime trait from an element of a named constant "
+                  "array, or from a component of one, is not implemented yet"
+                : "borrowing a runtime trait from this constant is not implemented yet",
+                actual->base.loc);
+        }
+        if (ASRUtils::struct_assignment_is_more_than_a_copy(declaration)) {
+            trait_call_error("borrowing a runtime trait from a constant of a finalizable "
+                "type, or of a type whose components have defined assignment, "
+                "is not implemented yet", actual->base.loc);
+        }
+        ImportedValueDuplicator duplicator(al, current_scope);
+        auto *copy = duplicator.duplicate_expr(constant);
+        LCOMPILERS_ASSERT(copy && ASR::is_a<ASR::StructConstant_t>(*copy));
+        auto *value = ASR::down_cast<ASR::StructConstant_t>(copy);
+        ASRUtils::insert_module_dependency(value->m_dt_sym, al, current_module_dependencies);
+        return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, actual->base.loc,
+            value->m_dt_sym, value->m_args, value->n_args, value->m_type, nullptr));
     }
 
     std::vector<int64_t> checked_runtime_trait_projection(

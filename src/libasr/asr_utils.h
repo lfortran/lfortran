@@ -10913,6 +10913,15 @@ bool association_has_target(ASR::expr_t *value);
 ASR::Variable_t *trait_owner_variable(ASR::expr_t *value);
 bool trait_owner_is_definable(ASR::expr_t *value);
 bool trait_owner_same_slot(ASR::expr_t *left, ASR::expr_t *right);
+// Whether the designator `expr` stands for a compile-time value rather than
+// for storage: a named constant (F2018 8.5.13), or a component or element
+// that carries a value folded from one. Passes may replace such a designator
+// by that value and code generation lowers it to the value, so it has no
+// address that a borrowed runtime trait view could keep. The folded value is
+// not proof of the designated value (a component selected through a run-time
+// subscript can carry its default initialization); a consumer that needs the
+// value derives it from the named constant.
+bool is_constant_designator(ASR::expr_t *expr);
 void order_select_type_guards(ASR::type_stmt_t **guards, size_t n);
 
 // Walk parents in declaration order and retain each original member once.

@@ -2074,6 +2074,36 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
             module->m_symtab->get_symbol("other");
         rejects("asr.verify.trait_pack.nominal_type");
     }
+    SUBCASE("a named constant is not storage that a pack can borrow") {
+        auto *construct = function("construct");
+        auto *object = ASRUtils::EXPR2VAR(pack->m_payload);
+        const auto &loc = pack->base.base.loc;
+        ASR::call_arg_t *component = al.allocate<ASR::call_arg_t>(1);
+        component->loc = loc;
+        component->m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            5, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        auto *value = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc,
+            module->m_symtab->get_symbol("payload"), component, 1, object->m_type));
+        auto *constant = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, construct->m_symtab, LCompilers::s2c(al, "fixed"), nullptr, 0,
+            ASR::intentType::Local, value, value, ASR::storage_typeType::Parameter,
+            object->m_type, object->m_type_declaration, ASR::abiType::Source,
+            ASR::accessType::Private, ASR::presenceType::Required, false));
+        construct->m_symtab->add_symbol("fixed", constant);
+        pack->m_payload = ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
+        rejects("asr.verify.trait_pack.constant_designator");
+    }
+    SUBCASE("a structure constant is not a value that the passes materialize") {
+        const auto &loc = pack->base.base.loc;
+        ASR::call_arg_t *component = al.allocate<ASR::call_arg_t>(1);
+        component->loc = loc;
+        component->m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            5, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        pack->m_payload = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc,
+            module->m_symtab->get_symbol("payload"), component, 1,
+            ASRUtils::expr_type(pack->m_payload)));
+        rejects("asr.verify.trait_pack.borrowed_designator");
+    }
     SUBCASE("borrowed dummy is not an owner") {
         auto *var = ASRUtils::EXPR2VAR(observe->m_args[0]);
         var->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var->base.base.loc, var->m_type));
@@ -2143,6 +2173,341 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
         LCompilers::PassUtils::UpdateDependenciesVisitor dependencies(al);
         dependencies.visit_TranslationUnit(*result.result);
         rejects("asr.verify.trait_receiver.authorized_adapter");
+    }
+}
+
+TEST_CASE("Named constants are borrowed as the constructors of their values") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module constant_view_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+type, sealed, implements(IValue) :: Cell
+    integer :: n = 0
+    integer :: m = 0
+contains
+    procedure, pass(self) :: value => cell_value
+end type
+type :: Pair
+    type(Cell) :: first
+    type(Cell) :: second
+end type
+type(Cell), parameter :: K = Cell(5, 2)
+type(Pair), parameter :: KP = Pair(Cell(7, 3), Cell(11, 4))
+interface observe
+    module procedure observe_value
+end interface
+contains
+integer function cell_value(self)
+    type(Cell), intent(in) :: self
+    cell_value = 10 * self%n + self%m
+end function
+integer function observe_value(item)
+    class(IValue), intent(in) :: item
+    observe_value = item%value()
+end function
+end module
+module constant_view_client
+use constant_view_m, only: Cell, KP, observe, observe_value, KR => K
+implicit none
+contains
+subroutine run(total)
+    integer, intent(out) :: total
+    type(Cell), parameter :: LOCAL = Cell(3, 1)
+    total = observe_value(KR)
+    total = total + observe(KR)
+    total = total + observe((KR))
+    total = total + observe(KP%second)
+    total = total + observe(LOCAL)
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "constant_view_client");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK_FALSE(diagnostics.has_error());
+    LCompilers::diag::Diagnostics verified;
+    CHECK(LCompilers::asr_verify(*result.result, true, verified));
+    INFO(verified.render2());
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        std::string text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(al, text, "constant_views.asr",
+            loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto *provider = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("constant_view_m"));
+    auto *cell = provider->m_symtab->get_symbol("cell");
+    auto *client = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("constant_view_client"));
+    auto *run = ASR::down_cast<ASR::Function_t>(client->m_symtab->get_symbol("run"));
+    struct Packs : ASR::BaseWalkVisitor<Packs> {
+        std::vector<const ASR::TraitPack_t*> packs;
+        void visit_TraitPack(const ASR::TraitPack_t &x) {
+            packs.push_back(&x);
+            ASR::BaseWalkVisitor<Packs>::visit_TraitPack(x);
+        }
+    };
+    Packs walk;
+    for (size_t i = 0; i < run->n_body; i++) walk.visit_stmt(*run->m_body[i]);
+    // The direct and generic KR, (KR), KP%second and the local LOCAL.
+    const int64_t expected[][2] = {{5, 2}, {5, 2}, {5, 2}, {11, 4}, {3, 1}};
+    REQUIRE(walk.packs.size() == 5);
+    for (size_t i = 0; i < walk.packs.size(); i++) {
+        CAPTURE(i);
+        REQUIRE(ASR::is_a<ASR::StructConstructor_t>(*walk.packs[i]->m_payload));
+        auto *value = ASR::down_cast<ASR::StructConstructor_t>(walk.packs[i]->m_payload);
+        CHECK(value->m_value == nullptr);
+        CHECK(ASRUtils::symbol_get_past_external(value->m_dt_sym) == cell);
+        CHECK(ASRUtils::is_visible_from(value->m_dt_sym, run->m_symtab));
+        REQUIRE(value->n_args == 2);
+        for (size_t j = 0; j < 2; j++) {
+            REQUIRE(ASR::is_a<ASR::IntegerConstant_t>(*value->m_args[j].m_value));
+            CHECK(ASR::down_cast<ASR::IntegerConstant_t>(
+                value->m_args[j].m_value)->m_n == expected[i][j]);
+        }
+    }
+}
+
+TEST_CASE("Constants that cannot be borrowed by value are diagnosed") {
+    struct Case {
+        const char *name;
+        const char *source;
+        const char *error;
+    };
+    const Case cases[] = {
+        {"a named constant of a finalizable type", R"(
+module constant_final_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+type :: Tracked
+    integer :: n = 0
+contains
+    final :: tracked_final
+end type
+implements IValue :: Tracked
+    procedure, pass :: value => tracked_value
+end implements
+type(Tracked), parameter :: KT = Tracked(4)
+contains
+integer function tracked_value(self)
+    class(Tracked), intent(in) :: self
+    tracked_value = self%n
+end function
+subroutine tracked_final(self)
+    type(Tracked), intent(inout) :: self
+end subroutine
+integer function observe(item)
+    class(IValue), intent(in) :: item
+    observe = item%value()
+end function
+integer function use_constant()
+    use_constant = observe(KT)
+end function
+end module
+)", "borrowing a runtime trait from a constant of a finalizable type"},
+        {"a named constant as a runtime generic method argument", R"(
+module constant_generic_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+abstract interface :: IAlgorithm
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+    end function
+end interface
+type, sealed, implements(IValue) :: Cell
+    integer :: n = 0
+contains
+    procedure, pass(self) :: value => cell_value
+end type
+type(Cell), parameter :: K = Cell(5)
+contains
+integer function cell_value(self)
+    type(Cell), intent(in) :: self
+    cell_value = self%n
+end function
+integer function use_constant(algorithm)
+    class(IAlgorithm), intent(in) :: algorithm
+    use_constant = algorithm%apply(K)
+end function
+end module
+)", "borrowing a runtime trait from this expression is not implemented yet"}
+    };
+    for (const auto &test : cases) {
+        CAPTURE(test.name);
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, test.source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        CHECK(diagnostics.has_error());
+        CHECK(diagnostics.render2().find(test.error) != std::string::npos);
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+}
+
+TEST_CASE("Constant borrowing keeps subscripted elements and closed numeric arguments") {
+    namespace ASR = LCompilers::ASR;
+    struct Walk : ASR::BaseWalkVisitor<Walk> {
+        std::vector<const ASR::TraitPack_t*> packs;
+        size_t calls = 0, deferred = 0;
+        void visit_TraitPack(const ASR::TraitPack_t &x) {
+            packs.push_back(&x);
+            ASR::BaseWalkVisitor<Walk>::visit_TraitPack(x);
+        }
+        void visit_TraitDeferredPack(const ASR::TraitDeferredPack_t &x) {
+            deferred++;
+            ASR::BaseWalkVisitor<Walk>::visit_TraitDeferredPack(x);
+        }
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+            calls++;
+            ASR::BaseWalkVisitor<Walk>::visit_TraitFunctionCall(x);
+        }
+    };
+    auto compile = [](Allocator &al, const std::string &source,
+            LCompilers::diag::Diagnostics &diagnostics) {
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        return LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    };
+    auto walk = [](ASR::TranslationUnit_t &unit, const std::string &module_name,
+            const std::string &procedure) {
+        auto *module = ASR::down_cast<ASR::Module_t>(unit.m_symtab->get_symbol(module_name));
+        auto *function = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(procedure));
+        Walk result;
+        for (size_t i = 0; i < function->n_body; i++) result.visit_stmt(*function->m_body[i]);
+        return result;
+    };
+    SUBCASE("an element of a named constant array is never frozen to a folded value") {
+        // `inner` has a default initialization, which a component of an
+        // element selected by a run-time subscript can carry as its value.
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        auto result = compile(al, R"(
+module constant_element_m
+implicit none
+abstract interface :: IValue
+    integer function value()
+    end function
+end interface
+type, sealed, implements(IValue) :: Cell
+    integer :: n = 0
+contains
+    procedure, pass(self) :: value => cell_value
+end type
+type :: Wrap
+    type(Cell) :: inner = Cell(9)
+end type
+type(Wrap), parameter :: KW(3) = [Wrap(Cell(1)), Wrap(Cell(20)), Wrap(Cell(300))]
+contains
+integer function cell_value(self)
+    type(Cell), intent(in) :: self
+    cell_value = self%n
+end function
+integer function observe(item)
+    class(IValue), intent(in) :: item
+    observe = item%value()
+end function
+integer function pick(i)
+    integer, intent(in) :: i
+    pick = observe(KW(i)%inner)
+end function
+integer function pick_second()
+    pick_second = observe(KW(2)%inner)
+end function
+end module
+)", diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        for (const auto &diagnostic : diagnostics.diagnostics) {
+            if (diagnostic.level != LCompilers::diag::Level::Error) continue;
+            CHECK(diagnostic.message.find(
+                "from an element of a named constant array") != std::string::npos);
+        }
+        for (const std::string procedure : {"pick", "pick_second"}) {
+            CAPTURE(procedure);
+            for (auto *pack : walk(*result.result, "constant_element_m", procedure).packs) {
+                CHECK_FALSE(ASR::is_a<ASR::StructConstructor_t>(*pack->m_payload));
+            }
+        }
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+    }
+    SUBCASE("closed numeric arguments select member slots without packing") {
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        auto result = compile(al, R"(
+module closed_constant_arguments_m
+implicit none
+abstract interface :: INumeric
+    integer | real(8)
+end interface INumeric
+abstract interface :: IPair
+    function weigh{INumeric :: T, INumeric :: U}(x, w) result(s)
+        type(T), intent(in) :: x(:)
+        type(U), intent(in) :: w
+        type(T)             :: s
+    end function weigh
+end interface IPair
+integer, parameter :: KW = 2
+real(8), parameter :: KH = 0.5_8
+contains
+integer function weigh_constants(pair, x) result(r)
+    class(IPair), intent(in) :: pair
+    integer, intent(in) :: x(:)
+    r = pair%weigh(x, KW) + pair%weigh(x, 3) + pair%weigh(x, KH) + &
+        pair%weigh(x, 0.25_8)
+end function
+end module
+)", diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        CHECK_FALSE(diagnostics.has_error());
+        LCompilers::diag::Diagnostics verification;
+        CHECK(LCompilers::asr_verify(*result.result, true, verification));
+        auto found = walk(*result.result, "closed_constant_arguments_m", "weigh_constants");
+        CHECK(found.calls == 4);
+        CHECK(found.packs.empty());
+        CHECK(found.deferred == 0);
     }
 }
 
