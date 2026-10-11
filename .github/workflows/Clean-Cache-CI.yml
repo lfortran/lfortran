@@ -14,6 +14,7 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Delete the PR's caches
         env:
