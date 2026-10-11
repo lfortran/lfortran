@@ -13,7 +13,7 @@ SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'llvm_wasm', 'llvm_wasm_emcc', 'llvm_omp', 'llvm_submodule',
                       'mlir', 'llvm_goc',
                       'llvm_single_invocation', 'metal', 'cuda',
-                      'cuda_cpu']
+                      'cuda_cpu', 'liric']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin"
