@@ -421,7 +421,34 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             xx.n_args = subrout_call->n_args;
         }
 
+        // Casts `arg` to a descriptor if it refers to a promoted variable,
+        // which is now a fixed-size array, while the expression containing it
+        // still yields a descriptor (an array section or a reshape that a
+        // pointer is associated with).
+        void cast_promoted_to_descriptor(ASR::expr_t*& arg,
+                ASR::ttype_t* containing_type) {
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+            if( ASR::is_a<ASR::Var_t>(*arg) &&
+                promoted_symbols.count(ASR::down_cast<ASR::Var_t>(arg)->m_v) > 0 &&
+                ASRUtils::is_fixed_size_array(arg_type) &&
+                ASRUtils::extract_physical_type(containing_type) ==
+                    ASR::array_physical_typeType::DescriptorArray ) {
+                arg = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, arg->base.loc, arg,
+                    ASRUtils::extract_physical_type(arg_type),
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, arg_type,
+                        nullptr, ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr));
+            }
+        }
+
         void visit_Associate(const ASR::Associate_t& x) {
+            if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+                ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(
+                    x.m_value);
+                cast_promoted_to_descriptor(reshape->m_array, reshape->m_type);
+            }
             if( ASRUtils::is_fixed_size_array(
                     ASRUtils::expr_type(x.m_value)) &&
                 !ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
@@ -435,22 +462,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
                 ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(
                     const_cast<ASR::expr_t*>(x.m_value));
-                ASR::ttype_t* base_type = ASRUtils::expr_type(as->m_v);
-                ASR::ttype_t* section_type = ASRUtils::expr_type(x.m_value);
-                bool base_was_promoted = ASR::is_a<ASR::Var_t>(*as->m_v) &&
-                    promoted_symbols.count(ASR::down_cast<ASR::Var_t>(as->m_v)->m_v) > 0;
-                if (base_was_promoted &&
-                    ASRUtils::is_fixed_size_array(base_type) &&
-                    ASRUtils::extract_physical_type(section_type) ==
-                        ASR::array_physical_typeType::DescriptorArray) {
-                    as->m_v = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, as->m_v->base.loc, as->m_v,
-                        ASRUtils::extract_physical_type(base_type),
-                        ASR::array_physical_typeType::DescriptorArray,
-                        ASRUtils::duplicate_type(al, base_type,
-                            nullptr, ASR::array_physical_typeType::DescriptorArray, true),
-                        nullptr));
-                }
+                cast_promoted_to_descriptor(as->m_v, as->m_type);
             } else if( ASRUtils::is_fixed_size_array(
                         ASRUtils::expr_type(x.m_target)) ) {
                 remove_original_stmt = true;
