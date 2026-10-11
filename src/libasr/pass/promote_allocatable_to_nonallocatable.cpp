@@ -351,7 +351,37 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                     const std::vector<ASR::dimension_t>& first = alloc_shape[sym];
                     same_shape = first.size() == alloc_arg.n_dims;
                     // An allocation that states no lower bound starts at 1.
-                    auto same_start = [](ASR::expr_t* a, ASR::expr_t* b) {
+                    // The lower bound of an array that is neither
+                    // allocatable nor a pointer is the one it is declared
+                    // with, 1 when it states none, as shared lowering
+                    // reallocates to `lbound(a, 1)` of an assumed-shape
+                    // dummy what it allocated starting at 1.
+                    auto declared_lbound = [](ASR::expr_t* e) {
+                        if( e == nullptr || !ASR::is_a<ASR::ArrayBound_t>(*e) ) {
+                            return e;
+                        }
+                        ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(e);
+                        int64_t dim = 0;
+                        if( bound->m_bound != ASR::arrayboundType::LBound ||
+                                !ASR::is_a<ASR::Var_t>(*bound->m_v) ||
+                                !ASRUtils::extract_value(
+                                    ASRUtils::expr_value(bound->m_dim), dim) ) {
+                            return e;
+                        }
+                        ASR::ttype_t* type = ASRUtils::expr_type(bound->m_v);
+                        if( ASRUtils::is_allocatable(type) ||
+                                ASRUtils::is_pointer(type) ) {
+                            return e;
+                        }
+                        ASR::dimension_t* array_dims = nullptr;
+                        size_t rank = ASRUtils::extract_dimensions_from_ttype(
+                            type, array_dims);
+                        if( dim < 1 || (size_t) dim > rank ) return e;
+                        return array_dims[dim - 1].m_start;
+                    };
+                    auto same_start = [&](ASR::expr_t* a, ASR::expr_t* b) {
+                        a = declared_lbound(a);
+                        b = declared_lbound(b);
                         int64_t value = 0;
                         if( a == nullptr || b == nullptr ) {
                             ASR::expr_t* given = a ? a : b;
