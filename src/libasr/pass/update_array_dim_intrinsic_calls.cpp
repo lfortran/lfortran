@@ -118,9 +118,15 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
             *current_expr = dims[dim - 1].m_start;
             *current_expr = b.t2t(*current_expr, ASRUtils::expr_type(*current_expr), x->m_type);
         } else {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            ASR::expr_t* length = dims[dim - 1].m_length;
+            ASR::expr_t* start = dims[dim - 1].m_start;
+            length = b.t2t(length, ASRUtils::expr_type(length), x->m_type);
+            start = b.t2t(start, ASRUtils::expr_type(start), x->m_type);
+
             ASR::expr_t* ub = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
-                                x->base.base.loc, dims[dim - 1].m_length,
-                                ASR::binopType::Add, dims[dim - 1].m_start,
+                                x->base.base.loc, length,
+                                ASR::binopType::Add, start,
                                 x->m_type, nullptr));
             ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                         x->base.base.loc, 1, x->m_type));

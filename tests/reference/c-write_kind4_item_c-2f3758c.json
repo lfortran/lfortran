@@ -1,0 +1,13 @@
+{
+    "basename": "c-write_kind4_item_c-2f3758c",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/errors/write_kind4_item_c.f90",
+    "infile_hash": "e189ba7b5ce05c3c60db52eaacce39d0889749a9c622ea95203fdd68",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "c-write_kind4_item_c-2f3758c.stderr",
+    "stderr_hash": "8b1dca32d8040f353c004670752531ac8dfee145534643975be02099",
+    "returncode": 1
+}

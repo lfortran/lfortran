@@ -6,6 +6,10 @@
 
 namespace LCompilers {
 
+    // Select step 1 of finalization (F2018 7.5.6.2): an exact-rank FINAL,
+    // otherwise an elemental FINAL. A nonelemental scalar never handles arrays.
+    ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank);
+
     void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
 

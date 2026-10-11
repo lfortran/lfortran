@@ -1,4 +1,4 @@
-module mymod
+module equivalence_39_mod
     implicit none
 
     ! 1. Array-to-array at module scope
@@ -28,10 +28,10 @@ contains
         if (local_b /= 5) error stop
     end subroutine test_sub
 
-end module mymod
+end module equivalence_39_mod
 
 program main
-    use mymod
+    use equivalence_39_mod
     implicit none
 
     ! Test array equivalence

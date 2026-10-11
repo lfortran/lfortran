@@ -149,6 +149,8 @@ Ask whether the patch:
   shared helper;
 - mixes a bug fix with refactoring, formatting, generated-output churn, or an
   unrelated cleanup;
+- contains a merge of `main` in its commits (PR history must be linear; ask
+  for a rebase onto `main`);
 - adds comments that repeat the code or describe behavior not implemented; or
 - introduces unused, dead, or unreachable code.
 
@@ -181,8 +183,11 @@ Require a test that fails without the fix and passes with it.
   cause before accepting a skip or an upstream patch that disables coverage.
 - Build changes must track real inputs, quote paths, fail early when required
   artifacts are absent, and avoid committed binary or large generated blobs.
-- Any CI build or generation step that can fail must run on pull requests unless
-  it inherently requires main-only publishing credentials.
+- Apply `AGENTS.md`'s CI policy when reviewing coverage. Quick must retain the
+  internal regression modes and capability checks; Exhaustive should add
+  missing configurations without duplicating Quick. Application validation
+  runs only in Exhaustive (main or an explicit request), and publishing
+  requires main-only credentials.
 
 ## Account for pragmatic follow-ups
 

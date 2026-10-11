@@ -1,0 +1,13 @@
+{
+    "basename": "c-write_internal_file_save_c-8cfc7df",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/errors/write_internal_file_save_c.f90",
+    "infile_hash": "c80d922babc451fd9e04335147a7e8556002a51426196d59ecc7e0ee",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "c-write_internal_file_save_c-8cfc7df.stderr",
+    "stderr_hash": "29cf19bebec32223bd053e6b36dec9a627252c03909845a6acdd59fb",
+    "returncode": 1
+}

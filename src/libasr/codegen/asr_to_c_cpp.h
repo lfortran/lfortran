@@ -2419,6 +2419,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         handle_UnaryMinus(x);
     }
 
+    void visit_RealCopySign(const ASR::RealCopySign_t &x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        headers.insert("math.h");
+        self().visit_expr(*x.m_target);
+        std::string target = std::move(src);
+        self().visit_expr(*x.m_source);
+        std::string source = std::move(src);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        std::string func_name = kind == 4 ? "copysignf" : "copysign";
+        src = func_name + "(" + target + ", " + source + ")";
+        last_expr_precedence = 2;
+    }
+
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
         handle_UnaryMinus(x);
     }

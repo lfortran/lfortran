@@ -26,22 +26,22 @@ FINALIZE_SYMTABLE_double_:                        ; preds = %return
   ret i32 %2
 }
 
-define void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char) {
+define void @__module_string_54_mod_foo_sub(i32* %x, i8* %char, i64 %__libasr_len_char) {
 .entry:
-  %str_desc_local = alloca %string_descriptor, align 8
-  %0 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
-  %1 = load i8*, i8** %0, align 8
-  %2 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 0
-  store i8* %1, i8** %2, align 8
-  %3 = call i32 @__module_string_54_mod_double_(i32* %x)
-  %4 = sext i32 %3 to i64
-  %5 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
-  store i64 %4, i64* %5, align 8
-  %6 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
-  %7 = load i64, i64* %6, align 8
-  %8 = trunc i64 %7 to i32
-  %9 = icmp ne i32 %8, 20
-  br i1 %9, label %then, label %else
+  %char_desc = alloca %string_descriptor, align 8
+  %__libasr_len_char_value = alloca i64, align 8
+  store i64 %__libasr_len_char, i64* %__libasr_len_char_value, align 8
+  %0 = getelementptr %string_descriptor, %string_descriptor* %char_desc, i32 0, i32 0
+  store i8* %char, i8** %0, align 8
+  %1 = call i32 @__module_string_54_mod_double_(i32* %x)
+  %2 = sext i32 %1 to i64
+  %3 = getelementptr %string_descriptor, %string_descriptor* %char_desc, i32 0, i32 1
+  store i64 %2, i64* %3, align 8
+  %4 = getelementptr %string_descriptor, %string_descriptor* %char_desc, i32 0, i32 1
+  %5 = load i64, i64* %4, align 8
+  %6 = trunc i64 %5 to i32
+  %7 = icmp ne i32 %6, 20
+  br i1 %7, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
@@ -71,6 +71,7 @@ declare void @exit(i32)
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %2 = call i8* @_lfortran_get_default_allocator()
+  %call_arg_value = alloca i64, align 8
   %char = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store %string_descriptor zeroinitializer, %string_descriptor* %char, align 8
@@ -82,7 +83,11 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* %6, i8** %4, align 8
   %x = alloca i32, align 4
   store i32 10, i32* %x, align 4
-  call void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char)
+  %7 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  store i64 10, i64* %call_arg_value, align 8
+  %9 = load i64, i64* %call_arg_value, align 8
+  call void @__module_string_54_mod_foo_sub(i32* %x, i8* %8, i64 %9)
   br i1 false, label %then, label %else
 
 then:                                             ; preds = %.entry
@@ -104,9 +109,9 @@ FINALIZE_SYMTABLE_string_54:                      ; preds = %return
   br label %Finalize_Variable_char
 
 Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
-  %7 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  call void @_lfortran_free_alloc(i8* %2, i8* %8)
+  %10 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
+  %11 = load i8*, i8** %10, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %11)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
