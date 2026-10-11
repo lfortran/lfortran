@@ -34,6 +34,8 @@ if "lpython" in SRC_DIR:
     SRC_DIR = os.path.join(os.path.dirname(os.path.dirname(SRC_DIR)), "src")
 ROOT_DIR = os.path.dirname(SRC_DIR)
 REFERENCE_DIR = os.path.join(ROOT_DIR, "tests", "reference")
+# Relative to the working directory, which is the source root by default.
+OUTPUT_DIR = os.path.join("tests", "output")
 
 no_color = False
 
@@ -142,8 +144,38 @@ def test_for_duplicates(test_data):
         sys.exit(1)
 
 def fixdir(s: bytes) -> bytes:
-    local_dir = os.getcwd()
-    return s.replace(local_dir.encode(), "$DIR".encode())
+    for local_dir in dict.fromkeys([os.getcwd(), ROOT_DIR]):
+        s = s.replace(local_dir.encode(), "$DIR".encode())
+    return s
+
+
+def use_build_dir(build_dir):
+    """
+    Runs the tests from `build_dir` instead of the source root.
+
+    `build_dir` gets symlinks to the test inputs in the source tree, so the
+    compiler sees the same relative paths (and prints the same diagnostics) as
+    when run from the source root, while every file the tests write (outputs,
+    module files, objects, executables and files written by the programs)
+    stays in `build_dir`. Several build directories can run concurrently.
+    """
+    global OUTPUT_DIR
+    build_dir = os.path.abspath(build_dir)
+    os.makedirs(build_dir, exist_ok=True)
+    for name in ("tests", "integration_tests"):
+        target = os.path.join(ROOT_DIR, name)
+        link = os.path.join(build_dir, name)
+        if not os.path.isdir(target):
+            continue
+        if not os.path.lexists(link):
+            try:
+                os.symlink(target, link, target_is_directory=True)
+            except OSError as e:
+                raise SystemExit(f"Cannot create the symlink {link}: {e}")
+        elif os.path.realpath(link) != os.path.realpath(target):
+            raise SystemExit(f"{link} exists and does not link to {target}")
+    os.chdir(build_dir)
+    OUTPUT_DIR = "output"
 
 def fix_datalayout(s: bytes) -> bytes:
     return re.sub(
@@ -424,7 +456,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     s = f"{testname} * {basename}"
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
-    jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
+    jo = run(basename, cmd, OUTPUT_DIR, infile=infile,
              extra_args=extra_args)
     jr = os.path.join(REFERENCE_DIR, os.path.basename(jo))
     if not os.path.exists(jo):
@@ -482,13 +514,13 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
                             full_err_str += f"(could not read reference file: {e})\n"
                     else:
                         # For stderr and outfile, use get_error_diff which will handle diff
-                        output_file = os.path.join("tests", "output", do[field] if do[field] else "missing")
+                        output_file = os.path.join(OUTPUT_DIR, do[field] if do[field] else "missing")
                         full_err_str = get_error_diff(
                             reference_file, output_file, full_err_str, field)
             elif not dr[hash_field] and do[hash_field]:
                 full_err_str += f"\n=== UNEXPECTED OUTPUT {field.upper()} ===\n"
                 full_err_str += f"Did not expect {field} to be generated but it was.\n"
-                output_file = os.path.join("tests", "output", do[field])
+                output_file = os.path.join(OUTPUT_DIR, do[field])
                 if os.path.exists(output_file):
                     if field == "stdout":
                         # For stdout, show only first 10 lines
@@ -508,7 +540,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
                         full_err_str = get_error_diff(
                             reference_file, output_file, full_err_str, field)
             elif do[hash_field] != dr[hash_field]:
-                output_file = os.path.join("tests", "output", do[field])
+                output_file = os.path.join(OUTPUT_DIR, do[field])
                 reference_file = os.path.join(REFERENCE_DIR, dr[field])
                 full_err_str = get_error_diff(
                     reference_file, output_file, full_err_str, field)
@@ -557,6 +589,9 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                     help="Run every test and report all failures")
     parser.add_argument("--compiler-dir",
                         help="Use the compiler in this directory instead of src/bin")
+    parser.add_argument("--build-dir",
+                        help="Run the tests in this directory and write all "
+                        "their files there instead of the source tree")
     args = parser.parse_args()
     if args.jobs is not None and args.jobs < 1:
         parser.error("--jobs must be positive")
@@ -605,6 +640,9 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     elif not is_lcompilers_executable_installed:
         os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
             + os.pathsep + os.environ["PATH"]
+
+    if args.build_dir:
+        use_build_dir(args.build_dir)
 
     # While updating references, only wipe the whole reference directory if the
     # user is updating the entire suite (no -t filters). For a targeted update

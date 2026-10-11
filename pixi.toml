@@ -8,7 +8,7 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [feature.test.tasks]
 ctest = {cmd = 'ctest --test-dir "$LFORTRAN_BUILD_DIR" --output-on-failure', default-environment = "llvm11"}
-tests = {cmd = 'python run_tests.py --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin"', default-environment = "llvm11"}
+tests = {cmd = 'python run_tests.py --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin" --build-dir "$LFORTRAN_BUILD_DIR/reference_tests"', default-environment = "llvm11"}
 integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR/integration_tests" --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin"', cwd = "integration_tests", default-environment = "llvm11"}
 
 [feature.llvm7]

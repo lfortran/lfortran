@@ -156,6 +156,30 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
 
+    def test_reference_build_dir_keeps_writes_out_of_source(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as build_dir, \
+                patch.object(tester, "OUTPUT_DIR", tester.OUTPUT_DIR):
+            try:
+                tester.use_build_dir(build_dir)
+                build = Path(build_dir).resolve()
+                self.assertEqual(Path(os.getcwd()).resolve(), build)
+                self.assertEqual(tester.OUTPUT_DIR, "output")
+                for name in ("tests", "integration_tests"):
+                    self.assertEqual((build / name).resolve(), ROOT / name)
+                self.assertTrue((build / "tests/../integration_tests").is_dir())
+                # Reusing the build directory keeps the existing links.
+                tester.use_build_dir(build_dir)
+                out = tester.fixdir(f"{os.getcwd()}/a {ROOT}/tests/b".encode())
+                self.assertEqual(out, b"$DIR/a $DIR/tests/b")
+            finally:
+                os.chdir(cwd)
+
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
         self.assertNotIn("--quick", source)

@@ -63,9 +63,12 @@ The integration task uses Make from the selected environment. The runner is
 currently intended for Unix-like shells; use WSL
 for that suite on Windows. CTest uses the selected native build. Append `-t
 <pattern>` to `tests` or `integration_tests` for a focused run. Reference tests
-require a compiler built with LLVM 11; they run in an isolated scratch directory
-but update the original `tests/reference` only when explicitly given `-u`.
-Review every reference update.
+require a compiler built with LLVM 11. They run in
+`build/<environment>/reference_tests`, which links to the test inputs in the
+source tree, so outputs, module files and executables stay in that build
+directory and several builds can be tested at once. They update the source
+`tests/reference` only when explicitly given `-u`. Review every reference
+update.
 
 Use `pixi run -e <environment> clean` to clean that configuration's CMake build
 targets without deleting other builds, local changes, or installed dependencies.
