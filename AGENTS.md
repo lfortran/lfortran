@@ -369,7 +369,9 @@ only once, redirect to a log file and then examine the log file.
 - Every CI job sets `timeout-minutes` (about twice its slowest normal run) so a
   hang fails fast instead of holding a runner for 6 hours.
 - Compiler caches are saved only on `main` and restored everywhere; keep
-  `save: ${{ github.ref == 'refs/heads/main' }}` on every cache step.
+  `save: ${{ github.ref == 'refs/heads/main' }}` on every cache step. Save
+  each cache from one job only: Exhaustive restores Quick's platform caches
+  but does not save them (`save-cache: 'false'`).
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
