@@ -174,10 +174,21 @@ class RunnerTests(unittest.TestCase):
                 for name in ("tests", "integration_tests"):
                     self.assertEqual((build / name).resolve(), ROOT / name)
                 self.assertTrue((build / "tests/../integration_tests").is_dir())
-                # Reusing the build directory keeps the existing links.
-                tester.use_build_dir(build_dir)
                 out = tester.fixdir(f"{os.getcwd()}/a {ROOT}/tests/b".encode())
                 self.assertEqual(out, b"$DIR/a $DIR/tests/b")
+                # A rerun starts empty: an earlier run's module files must not
+                # be read by a different compiler.
+                (build / "stale.mod").write_text("")
+                tester.use_build_dir(build_dir)
+                self.assertFalse((build / "stale.mod").exists())
+                self.assertEqual((build / "tests").resolve(), ROOT / "tests")
+                # Any other non-empty directory is left alone.
+                other = build / "other"
+                other.mkdir()
+                (other / "keep").write_text("")
+                with self.assertRaises(SystemExit):
+                    tester.use_build_dir(other)
+                self.assertTrue((other / "keep").exists())
             finally:
                 os.chdir(cwd)
 

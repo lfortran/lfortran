@@ -158,22 +158,32 @@ def use_build_dir(build_dir):
     when run from the source root, while every file the tests write (outputs,
     module files, objects, executables and files written by the programs)
     stays in `build_dir`. Several build directories can run concurrently.
+
+    `build_dir` is emptied first, so that files from an earlier run, such as
+    module files from another compiler version, cannot affect this run. To
+    never delete anything else, a non-empty `build_dir` must have been created
+    by this function, which is recognized by its `tests` link.
     """
     global OUTPUT_DIR
     build_dir = os.path.abspath(build_dir)
+    tests_dir = os.path.join(ROOT_DIR, "tests")
+    tests_link = os.path.join(build_dir, "tests")
+    if os.path.isdir(build_dir) and os.listdir(build_dir):
+        if not (os.path.islink(tests_link) and
+                os.path.realpath(tests_link) == os.path.realpath(tests_dir)):
+            raise SystemExit(f"{build_dir} is not empty and is not a test "
+                             "build directory; not deleting it")
+        shutil.rmtree(build_dir)
     os.makedirs(build_dir, exist_ok=True)
     for name in ("tests", "integration_tests"):
         target = os.path.join(ROOT_DIR, name)
-        link = os.path.join(build_dir, name)
         if not os.path.isdir(target):
             continue
-        if not os.path.lexists(link):
-            try:
-                os.symlink(target, link, target_is_directory=True)
-            except OSError as e:
-                raise SystemExit(f"Cannot create the symlink {link}: {e}")
-        elif os.path.realpath(link) != os.path.realpath(target):
-            raise SystemExit(f"{link} exists and does not link to {target}")
+        link = os.path.join(build_dir, name)
+        try:
+            os.symlink(target, link, target_is_directory=True)
+        except OSError as e:
+            raise SystemExit(f"Cannot create the symlink {link}: {e}")
     os.chdir(build_dir)
     # Not `output`: the x86 tests write an executable of that name.
     OUTPUT_DIR = "test_output"

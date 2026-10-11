@@ -67,7 +67,8 @@ require a compiler built with LLVM 11, which the task checks before running or
 updating any test. They run in
 `build/<environment>/reference_tests`, which links to the test inputs in the
 source tree, so outputs, module files and executables stay in that build
-directory and several builds can be tested at once. They update the source
+directory and several builds can be tested at once. The directory is emptied at
+the start of every run. They update the source
 `tests/reference` only when explicitly given `-u`. Review every reference
 update.
 
