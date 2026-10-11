@@ -437,6 +437,16 @@ Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
 are no duplicate or skipped Exhaustive copies of these jobs.
 
+The full LLVM-WASM suite runs in two parallel jobs that build the same
+compiler: `Test LLVM 19 WASM` runs the WASI backend (`llvm_wasm`, wasmtime)
+and the unit tests, and `Test LLVM 19 WASM Emscripten` runs the Emscripten
+backend (`llvm_wasm_emcc`, Node). The Emscripten pass alone takes about as
+long as building the compiler plus the WASI pass, because every `emcc` link
+runs Emscripten's JavaScript compiler (about 0.3 s per test). Only the WASI
+job saves the shared compiler cache. Like Quick's LLVM 11 compiler, this
+compiler is a Debug build compiled with `-O2`, which halves the time each
+test spends in LFortran.
+
 Quick distributes the full CPU modes over two existing builds rather than
 serializing them in one long job:
 
@@ -539,7 +549,7 @@ one Debug build, so ccache evicted objects it still needed.
 
 ##### Required checks
 
-The `main` ruleset requires these eleven Quick checks directly, bound to the
+The `main` ruleset requires these twelve Quick checks directly, bound to the
 GitHub Actions app (app ID `15368`). There is no aggregate status job.
 
 ```text
@@ -552,6 +562,7 @@ Compiler compatibility / Test LLVM 7 (ubuntu-latest)
 Compiler compatibility / Test LLVM 11 (ubuntu-latest)
 Compiler compatibility / Test LLVM 23 (ubuntu-latest)
 Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)
+Compiler compatibility / Test LLVM 19 WASM Emscripten (ubuntu-latest)
 Compiler compatibility / Test without LLVM Backend
 Compiler compatibility / Test MLIR backend
 ```
