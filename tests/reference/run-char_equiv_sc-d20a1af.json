@@ -1,0 +1,13 @@
+{
+    "basename": "run-char_equiv_sc-d20a1af",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/char_equiv_sc.f90",
+    "infile_hash": "c29b3727100374cffab712571fcfdca5f0abf01ab0dc8d11e0730e37",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-char_equiv_sc-d20a1af.stderr",
+    "stderr_hash": "e00d7e91d3a8b18f928ac1083581e788ac5f16debd5ce7335de4dc7f",
+    "returncode": 1
+}
