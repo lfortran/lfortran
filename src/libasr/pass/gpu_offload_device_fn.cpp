@@ -371,8 +371,8 @@ bool GpuOffloadVisitor::device_function_needs_inlining(ASR::Function_t *fn,
 // Walk the statements that will become the kernel body and work out
 // which callees have to be spliced in. Purely analytical: nothing is
 // rewritten here, so the offload decision stays ahead of any
-// destructive change. A callee that cannot be spliced or whose out-of-line
-// result allocation is unsupported keeps the loop on the host.
+// destructive change. A callee that cannot be spliced stays a call; one
+// whose out-of-line result allocation is unsupported is an error.
 bool GpuOffloadVisitor::plan_device_function_inlining(
         ASR::stmt_t **stmts, size_t n_stmts,
         std::map<ASR::Function_t*, bool> &memo,
@@ -423,14 +423,21 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
             // Only a call that *is* the assignment's value can be
             // spliced; one nested inside a larger expression would
             // need a temporary the caller does not have. ASSOCIATE
-            // is the same: splice cannot rewrite that scope.
-            if (!spliceable || call != top) {
-                return false;
+            // is the same: splice cannot rewrite that scope. Such a
+            // call stays a call, and its callee's run-time sized
+            // locals become arguments the kernel gives it (see
+            // gpu_device_workspace.cpp), as does a recursive one's,
+            // which that pass reports.
+            if (!spliceable || call != top || on_stack.count(callee) ||
+                    !can_inline_device_function(callee, call)) {
+                if (!gpu_function_result_allocation_is_supported(*callee)) {
+                    decline = GpuDecline(
+                        GpuDeclineReason::FunctionResultAllocation,
+                        callee->m_name);
+                    return false;
+                }
+                continue;
             }
-            if (on_stack.count(callee)) {
-                return false;
-            }
-            if (!can_inline_device_function(callee, call)) return false;
             functions_to_inline.insert(callee);
             on_stack.insert(callee);
             bool ok = plan_device_function_inlining(callee->m_body,
