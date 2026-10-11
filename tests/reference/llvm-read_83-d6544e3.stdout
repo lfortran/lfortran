@@ -39,7 +39,7 @@ target datalayout = "..."
 @string_const.14 = private global %string_descriptor { i8* getelementptr inbounds ([77 x i8], [77 x i8]* @string_const_data.13, i32 0, i32 0), i64 77 }
 @16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__libasr_len_value) {
+define internal void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__libasr_len_value) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %command_argument_holder = alloca %string_descriptor, align 8
