@@ -19,7 +19,7 @@
  * dynamic type of a polymorphic item), and its dtv dummy may be polymorphic.
  * So this pass gives each binding a `callback` with a fixed interface,
  *
- *     subroutine __lfortran_dtio_write_wf(dtv, unit, iotype, n_v, v_list, iostat, iomsg)
+ *     subroutine __lfortran_dtio_write_wf_t(dtv, unit, iotype, n_v, v_list, iostat, iomsg)
  *         type(t), intent(in) :: dtv            ! class(t) for a polymorphic item
  *         integer(4), intent(in) :: unit, n_v
  *         character(len=*), intent(in) :: iotype
@@ -135,10 +135,13 @@ public:
         std::string proc_name = type_bound
             ? ASR::down_cast<ASR::StructMethodDeclaration_t>(target)->m_name
             : ASRUtils::symbol_name(target);
-        // A callback in the translation unit, for a statement in an external
-        // procedure, is a global symbol, so its name also includes the name
-        // of that procedure.
-        std::string base_name = "__lfortran_dtio_write_" + proc_name;
+        // The name includes the type and polymorphism, so that the callbacks
+        // of a scope have distinct names (an overriding binding has the name
+        // of the binding it overrides). A callback in the translation unit,
+        // for a statement in an external procedure, is a global symbol, so its
+        // name also includes the name of that procedure.
+        std::string base_name = "__lfortran_dtio_write_" + proc_name + "_"
+            + ASRUtils::symbol_name(struct_sym) + (polymorphic ? "_class" : "");
         if (ASRUtils::is_tu_scope(parent) && !unit_name.empty()) {
             base_name += "_" + unit_name;
         }

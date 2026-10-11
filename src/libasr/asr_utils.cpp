@@ -3317,16 +3317,33 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     return found;
 }
 
+// The type-bound procedure `binding_name` of `s`: declared by `s` or, when
+// `s` does not override it, inherited from the nearest ancestor of `s`.
+static ASR::symbol_t* find_type_bound_procedure(ASR::Struct_t* s,
+        const std::string &binding_name) {
+    while (s != nullptr) {
+        ASR::symbol_t* sym = s->m_symtab->get_symbol(binding_name);
+        if (sym != nullptr) {
+            return sym;
+        }
+        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr;
+    }
+    return nullptr;
+}
+
 // If `proc`, a specific procedure of the defined input/output generic
 // `read_write`, accepts `item` as its dtv dummy, imports it into `curr_scope`
 // (recording the dependencies a call needs) and returns the symbol a call
-// names. `a_original_name` receives the call's original name.
+// names. `a_original_name` receives the call's original name. For a
+// type-bound procedure, `binding_name` is the name of its binding, and the
+// call names the binding of the item's type, which may override it.
 static ASR::symbol_t* import_defined_io_procedure(const std::string &read_write,
     ASR::symbol_t* proc, ASR::expr_t* item, ASR::ttype_t* arg_type, Allocator& al,
     SymbolTable* curr_scope, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::symbol_t* sym, const Location& loc,
     ASR::expr_t* expr_dt, const std::function<void (const std::string &, const Location &)> err,
-    char* pass_arg, ASR::symbol_t*& a_original_name) {
+    char* pass_arg, const char* binding_name, ASR::symbol_t*& a_original_name) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
@@ -3355,7 +3372,8 @@ static ASR::symbol_t* import_defined_io_procedure(const std::string &read_write,
         ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
         a_name = ASRUtils::import_class_procedure(al, loc,
-            temp_struct->m_symtab->get_symbol(subrout_name), curr_scope);
+            find_type_bound_procedure(temp_struct,
+                binding_name ? to_lower(binding_name) : subrout_name), curr_scope);
     }
     if( a_name == nullptr ) {
         a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
@@ -3397,7 +3415,7 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
                         a_name = import_defined_io_procedure(read_write, proc, item, arg_type,
                             al, curr_scope, current_function_dependencies,
                             current_module_dependencies, sym, loc, expr_dt, err, nullptr,
-                            a_original_name);
+                            nullptr, a_original_name);
                         break;
                     }
                     case ASR::symbolType::StructMethodDeclaration: {
@@ -3406,7 +3424,8 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
                         a_name = import_defined_io_procedure(read_write, proc_func, item, arg_type,
                             al, curr_scope, current_function_dependencies,
                             current_module_dependencies, proc_func, loc, expr_dt, err,
-                            class_proc->m_self_argument, a_original_name);
+                            class_proc->m_self_argument, class_proc->m_name,
+                            a_original_name);
                         break;
                     }
                     default: {
@@ -3433,13 +3452,26 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
     }
     if (a_name == nullptr && ASR::is_a<ASR::StructType_t>(*arg_type)) {
         ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
-        sym = arg_struct->m_symtab->resolve_symbol(read_write);
-        if (sym) {
-            expr_dt = item;
-            resolve_generic(sym);
-            if (a_name == nullptr) {
-                expr_dt = nullptr;
+        // The type-bound generic of the item's type, or else the one it
+        // inherits from an ancestor, then the scopes around the type.
+        for (ASR::Struct_t* s = arg_struct; s != nullptr && a_name == nullptr;
+                s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+            sym = s->m_symtab->get_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
             }
+        }
+        if (a_name == nullptr) {
+            sym = arg_struct->m_symtab->parent->resolve_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
+            }
+        }
+        if (a_name == nullptr) {
+            expr_dt = nullptr;
         }
     }
     return a_name;
