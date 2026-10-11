@@ -3198,6 +3198,58 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
+    // The procedure whose code `scope` belongs to, past the BLOCK and
+    // ASSOCIATE constructs in it, or nullptr.
+    static const ASR::Function_t* enclosing_function(SymbolTable *scope) {
+        while (scope != nullptr && scope->asr_owner != nullptr &&
+                scope->asr_owner->type == ASR::asrType::symbol) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                return ASR::down_cast<ASR::Function_t>(owner);
+            }
+            if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                return nullptr;
+            }
+            scope = scope->parent;
+        }
+        return nullptr;
+    }
+
+    // A device heap allocation takes its elements with an atomic add to
+    // the next free element of an arena, an element of the integer(4)
+    // heap state, and gets the old value back. Only device code has one.
+    void visit_GpuAtomicFetchAdd(const GpuAtomicFetchAdd_t &x) {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::is_device_only_function(*fn),
+            "asr.verify.gpu_atomic_fetch_add.device_code",
+            "GpuAtomicFetchAdd is only allowed in device code");
+        ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(
+            x.m_target);
+        require_id(ASR::is_a<ASR::ArrayItem_t>(*target),
+            "asr.verify.gpu_atomic_fetch_add.target_array_element",
+            "GpuAtomicFetchAdd::m_target must be an element of an array");
+        auto is_int4 = [](ASR::ttype_t *t) {
+            return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+                ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4;
+        };
+        require_id(is_int4(ASRUtils::expr_type(x.m_target)),
+            "asr.verify.gpu_atomic_fetch_add.target_type",
+            "GpuAtomicFetchAdd::m_target must be an integer(4) scalar");
+        require_id(is_int4(ASRUtils::expr_type(x.m_increment)),
+            "asr.verify.gpu_atomic_fetch_add.increment_type",
+            "GpuAtomicFetchAdd::m_increment must be an integer(4) scalar");
+        require_id(is_int4(x.m_type),
+            "asr.verify.gpu_atomic_fetch_add.result_type",
+            "GpuAtomicFetchAdd::m_type must be integer(4), the type of "
+            "its target");
+        require_id(x.m_value == nullptr,
+            "asr.verify.gpu_atomic_fetch_add.value",
+            "GpuAtomicFetchAdd has no compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
+    }
+
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");

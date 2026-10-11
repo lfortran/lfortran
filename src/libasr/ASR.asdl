@@ -237,6 +237,7 @@ expr
     | GpuThreadIndex(int dim, ttype type, expr? value)
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
+    | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
 
 ttype
     = Integer(int kind)

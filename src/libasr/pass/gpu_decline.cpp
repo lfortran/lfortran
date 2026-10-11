@@ -227,6 +227,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::HeapArrayUse:
+            return "the array " + decline.name + " on the device heap is not "
+                "supported yet";
         case GpuDeclineReason::StructComponentNotSizeable: {
             // `value%component`: a temporary value is not named.
             std::string component = decline.name;

@@ -25441,6 +25441,10 @@ public:
         throw CodeGenError("GpuBlockSize should not appear in LLVM backend");
     }
 
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t & /* x */) {
+        throw CodeGenError("GpuAtomicFetchAdd should not appear in LLVM backend");
+    }
+
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint32_t& m_h, ASR::Variable_t*& orig_arg,

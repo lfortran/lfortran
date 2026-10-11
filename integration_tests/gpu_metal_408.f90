@@ -1,11 +1,11 @@
 module gpu_metal_408_m
-  ! A device has no heap, so an allocatable of a device routine is given the
-  ! shape its allocations state, written as its value on entry to the
-  ! routine. `a` is allocated twice with the shape `m`, but `m` is changed
-  ! in between through the associate name `q`, so the two allocations do
-  ! not have one shape and `m` is not a value known on entry: the GPU
-  ! backends report an error (see tests/tests.toml) rather than give every
-  ! thread room for only the first.
+  ! An allocatable of a device routine is given storage the host sizes
+  ! before the launch when its allocations state one shape, written as its
+  ! value on entry to the routine. `a` is allocated twice with the shape
+  ! `m`, but `m` is changed in between through the associate name `q`, so
+  ! the two allocations do not have one shape and `m` is not a value known
+  ! on entry: `a` is allocated on the device heap, with the shape of each
+  ! allocation, rather than given room for only the first.
   implicit none
 contains
   pure real function f(n, x) result(r)

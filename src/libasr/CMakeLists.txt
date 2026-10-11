@@ -120,6 +120,7 @@ set(SRC
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
     pass/gpu_device_workspace.cpp
+    pass/gpu_device_heap.cpp
     pass/gpu_device_struct_storage.cpp
     pass/coarray.cpp
 

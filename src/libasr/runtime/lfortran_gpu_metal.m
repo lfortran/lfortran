@@ -245,3 +245,7 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
 
     ctx->last_command_buffer = nil;
 }
+
+long long lfortran_gpu_heap_size(void) {
+    return lfortran_gpu_parse_heap_size();
+}

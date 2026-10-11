@@ -220,3 +220,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     (void)ctx;
 }
+
+long long lfortran_gpu_heap_size(void) {
+    return lfortran_gpu_parse_heap_size();
+}

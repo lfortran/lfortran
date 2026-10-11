@@ -90,6 +90,13 @@ struct CudaDialect {
         return "unsigned int";
     }
 
+    // A relaxed atomic add to an `int` in device memory, giving the old
+    // value. The CPU emulation defines atomicAdd in cuda_cpu_device.h.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomicAdd(" + address + ", " + increment + ")";
+    }
+
     // Every scalar arrives in one struct, passed by value, which is what the
     // runtime's argument array holds a pointer to.
     void emit_scalar_args_param(std::stringstream &src,

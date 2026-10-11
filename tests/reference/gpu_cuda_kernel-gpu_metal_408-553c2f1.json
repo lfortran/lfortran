@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_metal_408-553c2f1",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_metal_408.f90",
+    "infile_hash": "368d48247501b9e89bb6c1a0790b440320f3c5403619ed667ce85bca",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_metal_408-553c2f1.stdout",
+    "stdout_hash": "a765c56da6e20c301950b503fdcc86401053943fc121ab4e60a9ae56",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

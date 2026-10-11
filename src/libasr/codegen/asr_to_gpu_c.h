@@ -5031,6 +5031,15 @@ public:
                 src << dialect.block_size();
                 break;
             }
+            case ASR::exprType::GpuAtomicFetchAdd: {
+                ASR::GpuAtomicFetchAdd_t *a =
+                    ASR::down_cast<ASR::GpuAtomicFetchAdd_t>(expr);
+                std::string address = "&(" + expr_str(a->m_target)
+                    + ")";
+                src << dialect.atomic_fetch_add(address,
+                    expr_str(a->m_increment));
+                break;
+            }
             case ASR::exprType::RealSqrt: {
                 ASR::RealSqrt_t *rs = ASR::down_cast<ASR::RealSqrt_t>(expr);
                 src << "sqrt(";
