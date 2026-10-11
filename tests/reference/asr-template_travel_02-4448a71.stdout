@@ -882,7 +882,7 @@
                                     template_travel_02_math
                                     []
                                     add_real
-                                    Public
+                                    Private
                                 ),
                             operations:
                                 (Requirement
@@ -1508,7 +1508,7 @@
                                     template_travel_02_math
                                     []
                                     slash_real
-                                    Public
+                                    Private
                                 ),
                             travel_tmpl:
                                 (Template

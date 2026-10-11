@@ -7,26 +7,6 @@
                     (SymbolTable
                         21
                         {
-                            add_integer:
-                                (ExternalSymbol
-                                    21
-                                    add_integer
-                                    2 add_integer
-                                    template_array_03_math
-                                    []
-                                    add_integer
-                                    Public
-                                ),
-                            add_real:
-                                (ExternalSymbol
-                                    21
-                                    add_real
-                                    2 add_real
-                                    template_array_03_math
-                                    []
-                                    add_real
-                                    Public
-                                ),
                             array_tmpl:
                                 (ExternalSymbol
                                     21
@@ -35,26 +15,6 @@
                                     template_array_03_m
                                     []
                                     array_tmpl
-                                    Public
-                                ),
-                            mult_integer:
-                                (ExternalSymbol
-                                    21
-                                    mult_integer
-                                    2 mult_integer
-                                    template_array_03_math
-                                    []
-                                    mult_integer
-                                    Public
-                                ),
-                            mult_real:
-                                (ExternalSymbol
-                                    21
-                                    mult_real
-                                    2 mult_real
-                                    template_array_03_math
-                                    []
-                                    mult_real
                                     Public
                                 ),
                             operations:
@@ -76,31 +36,10 @@
                                     []
                                     test_template
                                     Public
-                                ),
-                            zero_integer:
-                                (ExternalSymbol
-                                    21
-                                    zero_integer
-                                    2 zero_integer
-                                    template_array_03_math
-                                    []
-                                    zero_integer
-                                    Public
-                                ),
-                            zero_real:
-                                (ExternalSymbol
-                                    21
-                                    zero_real
-                                    2 zero_real
-                                    template_array_03_math
-                                    []
-                                    zero_real
-                                    Public
                                 )
                         })
                     template_array_03
-                    [template_array_03_m
-                    template_array_03_math]
+                    [template_array_03_m]
                     [(SubroutineCall
                         21 test_template
                         ()
@@ -123,7 +62,7 @@
                                     template_array_03_math
                                     []
                                     add_integer
-                                    Public
+                                    Private
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -133,7 +72,7 @@
                                     template_array_03_math
                                     []
                                     add_real
-                                    Public
+                                    Private
                                 ),
                             array_tmpl:
                                 (Template
@@ -1068,7 +1007,7 @@
                                     template_array_03_math
                                     []
                                     mult_integer
-                                    Public
+                                    Private
                                 ),
                             mult_real:
                                 (ExternalSymbol
@@ -1078,7 +1017,7 @@
                                     template_array_03_math
                                     []
                                     mult_real
-                                    Public
+                                    Private
                                 ),
                             operations:
                                 (Requirement
@@ -2257,7 +2196,7 @@
                                     template_array_03_math
                                     []
                                     zero_integer
-                                    Public
+                                    Private
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -2267,7 +2206,7 @@
                                     template_array_03_math
                                     []
                                     zero_real
-                                    Public
+                                    Private
                                 )
                         })
                     template_array_03_m

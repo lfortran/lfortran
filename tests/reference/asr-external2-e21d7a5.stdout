@@ -23,7 +23,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -41,7 +41,7 @@
                                     (FunctionType
                                         []
                                         (Real 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -78,7 +78,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -96,7 +96,7 @@
                                     (FunctionType
                                         [(Real 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -130,7 +130,7 @@
                                         (FunctionType
                                             [(Real 4)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -187,7 +187,7 @@
                         [(FunctionType
                             []
                             (Real 4)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -222,7 +222,7 @@
                             (FunctionType
                                 [(Real 4)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

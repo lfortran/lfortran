@@ -620,6 +620,11 @@ filename = "preprocessor23.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "preprocessor24.F90"
+asr_preprocess = true
+cpp_infer = true
+
+[[test]]
 filename = "expr1.f90"
 interactive = true
 ast = true
@@ -864,6 +869,18 @@ filename = "../integration_tests/expr_13.f90"
 asr = true
 pass = "flip_sign"
 cumulative = true
+
+[[test]]
+filename = "../integration_tests/func_call_in_decl_02.f90"
+asr = true
+pass = "function_call_in_declaration"
+
+[[test]]
+filename = "../integration_tests/external_string_arg_02.f90"
+asr = true
+llvm = true
+pass = "string_length_arguments"
+options = "--implicit-interface"
 
 [[test]]
 filename = "array_op_simplifier_test.f90"
@@ -1850,6 +1867,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/parameter_04.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/parameter_22.f90"
+semantics_only_cc = true
 
 # IntegerToReal
 [[test]]
@@ -2969,6 +2990,11 @@ filename = "print5.f90"
 run = true
 
 [[test]]
+filename = "print6.f90"
+options = "--std=f23"
+run = true
+
+[[test]]
 filename = "print_intrinsics.f90"
 asr = true
 run = true
@@ -3353,6 +3379,26 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/write_internal_file_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_dummy_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_init_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_internal_file_save_c.f90"
+c = true
+
+[[test]]
+filename = "errors/write_kind4_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -3409,6 +3455,11 @@ fixed_form_cc_asr = true
 [[test]]
 filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/namelist_implicit_type_01.f90"
+semantics_only_cc = true
+options = "--implicit-typing"
 
 [[test]]
 filename = "errors/mre_segfault.f90"
@@ -3606,6 +3657,30 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_6.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_7.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_8.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_9.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_10.f"
+asr = true
+
+[[test]]
+filename = "errors/fixed_form_11.f"
+asr = true
+
+[[test]]
+filename = "errors/fixed_form_12.f"
 ast = true
 
 [[test]]

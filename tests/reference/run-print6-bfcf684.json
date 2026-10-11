@@ -1,0 +1,13 @@
+{
+    "basename": "run-print6-bfcf684",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/print6.f90",
+    "infile_hash": "53ac44a5975d1a00e45f89392a63269b328117a9be8f7eaf814abbb5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print6-bfcf684.stdout",
+    "stdout_hash": "ea1cec7fcaf585b3f9015672acb7c47ff0685f29ab2a8f1c0ef6d471",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
