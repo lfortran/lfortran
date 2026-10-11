@@ -212,12 +212,14 @@ generates the device source. It never falls back to the CPU:
   the component into that array. A component given several different
   shapes, or a shape read from a value the procedure computes, is an error
   ("the allocatable component ... cannot be sized on the host").
-* A derived-type argument a procedure defines (`intent(out)` or
-  `intent(inout)`) is passed by reference, to a value in the memory of the
-  calling thread, as the procedure's locals are. An element of a kernel
-  argument passed for one lives in device memory instead, so the kernel
-  copies it into a local of its own around the call; its allocatable
-  components are not copied, the procedure is handed their device buffers.
+* An argument a procedure defines (`intent(out)` or `intent(inout)`), a
+  scalar or a derived-type value, is passed by reference, to a value in the
+  memory of the calling thread, as the procedure's locals are. An actual
+  argument that lives in device memory instead -- an element of a kernel
+  argument (`call total(i, s1(i))`), of an array dummy in device memory, or
+  a derived-type kernel argument -- is copied into a local of the caller
+  around the call; the allocatable components of a derived-type value are
+  not copied, the procedure is handed their device buffers.
 * An array of device code is an address and, for each dimension, a lower
   bound, an extent and a stride, as a Fortran descriptor is, and every one
   of them reaches the code that indexes the array. An array that does not
