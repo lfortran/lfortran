@@ -1773,9 +1773,12 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         }
         ASR::IntrinsicArrayFunction_t *iaf =
             ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
+        // Only `sum(array)` is lowered here. A `dim` or a `mask` is left
+        // to the shared lowering, which the device runs as it is.
         if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
                 iaf->m_arr_intrinsic_id)
-                    != ASRUtils::IntrinsicArrayFunctions::Sum) {
+                    != ASRUtils::IntrinsicArrayFunctions::Sum ||
+                iaf->n_args != 1) {
             new_body.push_back(al, stmt);
             continue;
         }
