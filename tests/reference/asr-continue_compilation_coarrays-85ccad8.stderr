@@ -88,6 +88,24 @@ semantic error: A coarray with the `allocatable` attribute must have a deferred 
 66 |     integer, codimension[2,10,*], allocatable :: c827d
    |                          ^ 
 
+semantic error: A coarray must not be of type `c_ptr`, `c_funptr` or `team_type`
+  --> tests/errors/continue_compilation_coarrays.f90:68:20
+   |
+68 |     type(c_ptr) :: cptr_coarr[*]
+   |                    ^^^^^^^^^^^^^ `cptr_coarr` is a coarray of type `c_ptr`
+
+semantic error: A coarray must not be of type `c_ptr`, `c_funptr` or `team_type`
+  --> tests/errors/continue_compilation_coarrays.f90:69:23
+   |
+69 |     type(c_funptr) :: cfunptr_coarr[*]
+   |                       ^^^^^^^^^^^^^^^^ `cfunptr_coarr` is a coarray of type `c_funptr`
+
+semantic error: A coarray must not be of type `c_ptr`, `c_funptr` or `team_type`
+  --> tests/errors/continue_compilation_coarrays.f90:70:24
+   |
+70 |     type(team_type) :: cteam_coarr[*]
+   |                        ^^^^^^^^^^^^^^ `cteam_coarr` is a coarray of type `team_type`
+
 semantic error: Variable 'x' is not a coarray; coindex notation [..] requires a codimension attribute
  --> tests/errors/continue_compilation_coarrays.f90:5:9
   |
