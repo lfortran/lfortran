@@ -46,6 +46,21 @@ trait_erased_parameter
 trait_lifecycle
     = (symbol type_declaration)
 
+-- A generic derived type is a Template package that owns its binders, their
+-- constraints, its definition Struct and the procedures that depend on its
+-- parameters. The definition records the binders (the Template's arguments,
+-- in order). An instance is an ordinary Struct of the Module or Program that
+-- instantiated it; it records the definition and its type arguments.
+struct_generic
+    = GenericTypeDefinition(symbol* parameters)
+    | GenericTypeInstance(symbol definition, generic_type_argument* arguments)
+
+-- A concrete type argument of an instance. type_declaration is present iff
+-- type is a derived type. evidence holds the conformance selected for each
+-- universal-trait constraint of the parameter, in constraint order.
+generic_type_argument
+    = (ttype type, symbol? type_declaration, symbol* evidence)
+
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
@@ -56,7 +71,9 @@ symbol
     -- trait_obligations are nominal adoptions, including the parent's obligations.
     -- Concrete types require complete TraitImplementation evidence for each;
     -- abstract types may defer missing methods without a deferred ordinary TBP.
-    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params, bool is_sealed, symbol* trait_obligations)
+    -- generic is present only for the definition of a generic derived type
+    -- and for each of its instances.
+    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params, bool is_sealed, symbol* trait_obligations, struct_generic? generic)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     -- A Local integer Variable of Default storage whose symbolic_value is not

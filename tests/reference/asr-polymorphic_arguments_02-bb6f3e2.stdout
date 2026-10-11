@@ -257,6 +257,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     polymorphic_argument_02

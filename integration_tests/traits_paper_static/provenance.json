@@ -1,0 +1,26 @@
+{
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21",
+    "listing": "lst:staticFortran (sect:Fortran_static_dispatch), lines 57-128 of the companion file; the complete file is cited by traits.tex footnote 'See the file Code/Fortran/static.f90'"
+  },
+  "fixtures": [
+    {
+      "corpus_id": "static",
+      "source_path": "Code/Fortran/static.f90",
+      "file": "static.f90",
+      "sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf"
+    }
+  ],
+  "preservation": "Byte-for-byte copy, including the original module names, whitespace, the generic PairwiseSum{ISum :: U} and Averager{ISum :: U} definitions, type(U) allocatable fields, initial :: constructors that use U without redeclaring it, methods with independent T binders, inferred constructor chaining and the program's READ/SELECT CASE driver with the runtime class(IAverager) variable. No edits are needed or applied.",
+  "acceptance": {
+    "driver": "traits_paper_functional.py",
+    "stdin_choices": [1, 2],
+    "expected": ["integer 3", "real 3.0"],
+    "modes": ["normal", "fast"],
+    "flags": ["--no-color", "--verify-all-passes"]
+  },
+  "status": "registered: integration test traits_paper_static and CTests test_paper_functional_{normal,fast} for both inputs, and CTests test_paper_separate_static_{normal,fast} for frozen separate compilation along static_split.json; the standard-Fortran model static_oracle.f90 is traits_paper_static_oracle"
+}

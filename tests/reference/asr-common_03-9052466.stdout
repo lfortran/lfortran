@@ -251,6 +251,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             struct_instance_b:
                                 (Variable
@@ -371,6 +372,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             struct_instance_blank#block:
                                 (Variable
@@ -541,6 +543,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             struct_instance_c:
                                 (Variable
@@ -698,6 +701,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             struct_instance_sample:
                                 (Variable

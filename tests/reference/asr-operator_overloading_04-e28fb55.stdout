@@ -180,6 +180,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             trim_string:
                                 (Function

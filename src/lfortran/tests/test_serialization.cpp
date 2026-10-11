@@ -8763,6 +8763,213 @@ end program
     }
 }
 
+TEST_CASE("Generic derived types serialize and verify their packages and instances") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module gt_contracts
+    implicit none
+    private
+    public :: INumeric, ISum, IAverager
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface INumeric
+    abstract interface :: ISum
+        function sum{INumeric :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T) :: s
+        end function sum
+    end interface ISum
+    abstract interface :: IAverager
+        function average{INumeric :: T}(x) result(a)
+            type(T), intent(in) :: x(:)
+            type(T) :: a
+        end function average
+    end interface IAverager
+end module gt_contracts
+
+module gt_simple
+    use gt_contracts, only: ISum, INumeric
+    implicit none
+    private
+    public :: SimpleSum
+    type, sealed, implements(ISum) :: SimpleSum
+    contains
+        procedure, nopass :: sum
+    end type SimpleSum
+contains
+    function sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        integer :: i
+        s = T(0)
+        do i = 1, size(x)
+            s = s + x(i)
+        end do
+    end function sum
+end module gt_simple
+
+module gt_averager
+    use gt_contracts, only: IAverager, ISum, INumeric
+    implicit none
+    private
+    public :: Averager
+    type, sealed, implements(IAverager) :: Averager{ISum :: U}
+        type(U), allocatable :: drv
+    contains
+        initial :: init
+        procedure, pass :: average
+    end type Averager
+contains
+    function init(drv) result(res)
+        type(U), intent(in) :: drv
+        type(Averager{U}) :: res
+        res%drv = drv
+    end function init
+    function average{INumeric :: T}(self, x) result(a)
+        type(Averager{U}), intent(in) :: self
+        type(T), intent(in) :: x(:)
+        type(T) :: a
+        a = self%drv%sum(x) / T(size(x))
+    end function average
+end module gt_averager
+
+program gt_main
+    use gt_contracts, only: IAverager
+    use gt_simple, only: SimpleSum
+    use gt_averager, only: Averager
+    implicit none
+    class(IAverager), allocatable :: av
+    integer :: key
+    key = 1
+    av = Averager(drv = SimpleSum())
+    print *, av%average([1, 2, 3]), key
+end program gt_main
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "gt_averager");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("Averager{ISum :: U}") != std::string::npos);
+    CHECK(printed.find("type(Averager{U})") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *library = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("gt_averager"));
+    auto *simple = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("gt_simple"));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("gt_main"));
+    // The module owns the package; the program owns the instance and its
+    // conformance, runtime witness and generic entries.
+    auto *package = ASRUtils::generic_type_package(library->m_symtab->get_symbol("averager"));
+    REQUIRE(package != nullptr);
+    auto *definition = ASRUtils::generic_type_definition(*package);
+    REQUIRE(definition != nullptr);
+    auto *parameters = ASRUtils::generic_type_definition_metadata(*definition);
+    REQUIRE(parameters->n_parameters == 1);
+    CHECK(parameters->m_parameters[0] == package->m_symtab->get_symbol("u"));
+    ASR::Struct_t *instance = nullptr;
+    ASR::TraitImplementation_t *conformance = nullptr;
+    size_t witnesses = 0, entries = 0;
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Struct_t>(*entry.second) &&
+                ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second))) {
+            CHECK(instance == nullptr);
+            instance = ASR::down_cast<ASR::Struct_t>(entry.second);
+        } else if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) {
+            conformance = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        } else if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            witnesses++;
+            CHECK(ASR::down_cast<ASR::TraitWitness_t>(entry.second)->m_implementation ==
+                &conformance->base);
+        } else if (ASR::is_a<ASR::TraitErasure_t>(*entry.second)) {
+            entries++;
+        }
+    }
+    REQUIRE(instance != nullptr);
+    REQUIRE(conformance != nullptr);
+    CHECK(ASRUtils::generic_type_spelling(*instance) == "averager{simplesum}");
+    CHECK(conformance->m_type_declaration == &instance->base);
+    CHECK(ASRUtils::program_generic_instance_conformance(*conformance, nullptr));
+    CHECK(witnesses == 1);
+    CHECK(entries == 2);
+    auto *metadata = ASRUtils::generic_type_instance(*instance);
+    CHECK(ASRUtils::generic_instance_definition(*metadata) == definition);
+    REQUIRE(metadata->n_arguments == 1);
+    REQUIRE(metadata->m_arguments[0].n_evidence == 1);
+    CHECK(ASRUtils::symbol_get_past_external(metadata->m_arguments[0].m_evidence[0]) ==
+        simple->m_symtab->get_symbol("__implements_simplesum_isum"));
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "generic_types.asr", loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("a definition records its package's binders") {
+        parameters->n_parameters = 0;
+        rejects("asr.verify.generic_type.definition_owner");
+    }
+    SUBCASE("an instance has one type argument per parameter") {
+        metadata->n_arguments = 0;
+        rejects("asr.verify.generic_type.instance_definition");
+    }
+    SUBCASE("a derived type argument names its declaration") {
+        metadata->m_arguments[0].m_type_declaration = nullptr;
+        rejects("asr.verify.generic_type.instance_arguments");
+    }
+    SUBCASE("a type argument records its conformance") {
+        metadata->m_arguments[0].n_evidence = 0;
+        rejects("asr.verify.generic_type.instance_evidence");
+    }
+    SUBCASE("an instance has its definition's components") {
+        instance->n_members = 0;
+        rejects("asr.verify.generic_type.instance_layout");
+    }
+    SUBCASE("a program's generic entries capture no program variable") {
+        auto *method = ASRUtils::trait_method_function(
+            ASRUtils::find_trait_binding(*conformance,
+                conformance->m_bindings[0].m_member)->m_procedure);
+        REQUIRE(method != nullptr);
+        auto *key = ASRUtils::EXPR(ASR::make_Var_t(al, method->base.base.loc,
+            program->m_symtab->get_symbol("key")));
+        LCompilers::Vec<ASR::stmt_t*> body;
+        body.reserve(al, method->n_body + 1);
+        for (size_t i = 0; i < method->n_body; i++) body.push_back(al, method->m_body[i]);
+        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, method->base.base.loc,
+            key, key, nullptr, false, false)));
+        method->m_body = body.p;
+        method->n_body = body.size();
+        rejects("asr.verify.trait_witness.program_owner");
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

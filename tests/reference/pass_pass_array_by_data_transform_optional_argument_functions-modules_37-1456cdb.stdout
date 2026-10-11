@@ -600,6 +600,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             build_target_t:
                                 (Struct
@@ -656,6 +657,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             cmd_build:
                                 (Function
@@ -878,6 +880,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             fpm_cmd_settings:
                                 (Struct
@@ -936,6 +939,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             fpm_model_t:
                                 (Struct
@@ -965,6 +969,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             string_t:
                                 (Struct
@@ -1021,6 +1026,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     modules_37_fpm_backend

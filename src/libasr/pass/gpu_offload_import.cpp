@@ -335,7 +335,7 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
         orig_struct->m_is_packed, orig_struct->m_is_abstract,
         orig_struct->m_is_sequence,
         nullptr, 0, nullptr, new_parent, nullptr, 0, orig_struct->m_is_sealed,
-        orig_struct->m_trait_obligations, orig_struct->n_trait_obligations);
+        orig_struct->m_trait_obligations, orig_struct->n_trait_obligations, nullptr);
     ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
     kernel_scope->add_symbol(struct_name, kernel_struct);
 

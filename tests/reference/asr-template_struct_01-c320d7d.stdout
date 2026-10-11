@@ -498,6 +498,7 @@
                                                     []
                                                     .false.
                                                     []
+                                                    ()
                                                 )
                                         })
                                     struct_t
@@ -1068,6 +1069,7 @@
                                                     []
                                                     .false.
                                                     []
+                                                    ()
                                                 ),
                                             real_tuple:
                                                 (Struct
@@ -1145,6 +1147,7 @@
                                                     []
                                                     .false.
                                                     []
+                                                    ()
                                                 ),
                                             ti:
                                                 (Variable

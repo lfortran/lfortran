@@ -1169,6 +1169,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             ivalue:
                                 (Trait
@@ -1557,6 +1558,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     traits_runtime_01_m

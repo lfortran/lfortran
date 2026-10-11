@@ -114,6 +114,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             struct_instance_block_1:
                                 (Variable

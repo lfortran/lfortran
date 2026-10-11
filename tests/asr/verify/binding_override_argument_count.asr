@@ -40,7 +40,7 @@
               []
               nil
               nil
-              [] false []
+              [] false [] nil
             )
             "base_meth" (Function
               (SymbolTable
@@ -177,7 +177,7 @@
               []
               nil
               (SymbolRef 1 "base")
-              [] false []
+              [] false [] nil
             )
             "derived_meth" (Function
               (SymbolTable

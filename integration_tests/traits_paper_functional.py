@@ -1,4 +1,8 @@
-"""Compile the unchanged paper programs and check both interactive choices."""
+"""Compile the paper programs and check both interactive choices.
+
+Standard-Fortran oracles of the paper programs are checked like the
+programs they model.
+"""
 
 import argparse
 from decimal import Decimal
@@ -15,8 +19,15 @@ SOURCE_HASHES = {
     "functional1": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25",
     "functional2": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1",
     "mixed": "6f9515b4230468ee7f179395713a2b90ed1759e91ce26dd69c884c9115c0516a",
+    "static": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
 }
-SOURCE_DIRECTORIES = {"mixed": "traits_paper_dynamic"}
+SOURCE_DIRECTORIES = {
+    "mixed": "traits_paper_dynamic",
+    "static": "traits_paper_static",
+}
+ORACLE_HASHES = {
+    "static_oracle": "8dd669518a6849e7d2c72cea4e2ce55be053f24b3f035a0ed119053b751d994b",
+}
 INLINE_HASHES = {
     "inline_25.f90": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
     "inline_28.f90": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
@@ -72,7 +83,9 @@ def main():
         parser.error("--executable requires --source")
     for source in sources:
         name = source.stem
-        if hashlib.sha256(source.read_bytes()).hexdigest() != SOURCE_HASHES[name]:
+        content = source.read_bytes()
+        expected_hash = ORACLE_HASHES[name] if name in ORACLE_HASHES else SOURCE_HASHES[name]
+        if hashlib.sha256(content).hexdigest() != expected_hash:
             raise RuntimeError(f"the authoritative {source.name} fixture was changed")
         private = work / name
         private.mkdir()

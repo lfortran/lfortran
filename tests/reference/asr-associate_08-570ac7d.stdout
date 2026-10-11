@@ -928,6 +928,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             t_2:
                                 (Struct
@@ -1006,6 +1007,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     associate_08_module_1

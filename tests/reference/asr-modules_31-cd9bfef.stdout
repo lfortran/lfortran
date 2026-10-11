@@ -424,6 +424,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             fpm_update_settings:
                                 (Struct
@@ -544,6 +545,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     fpm_cmd_update_modules_31
@@ -644,6 +646,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -794,6 +797,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (Struct
@@ -1043,6 +1047,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             error_t:
                                 (Struct
@@ -1099,6 +1104,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             update_dependency:
                                 (Function

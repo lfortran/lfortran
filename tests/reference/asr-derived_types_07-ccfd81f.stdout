@@ -301,6 +301,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     derived_types_07_stdlib_logger

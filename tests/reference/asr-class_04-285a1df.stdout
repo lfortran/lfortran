@@ -118,6 +118,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             bar_b:
                                 (Struct
@@ -170,6 +171,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             bar_c:
                                 (Struct
@@ -222,6 +224,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             foo:
                                 (Variable
@@ -318,6 +321,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             foo_b:
                                 (Struct
@@ -380,6 +384,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             foo_c:
                                 (Struct
@@ -442,6 +447,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     main

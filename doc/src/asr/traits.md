@@ -216,8 +216,8 @@ each call, also through `CLASS(Base)` storage, is a static specialization of
 the procedure it names. Overriding such a binding in an extension, or
 overriding an ordinary binding with a generic procedure, is therefore
 diagnosed as not implemented yet; extensions inherit it unchanged, and their
-ordinary overrides keep dynamic dispatch. Generic derived types are not
-supported.
+ordinary overrides keep dynamic dispatch. Generic derived types are
+described in their own section.
 
 The byte-exact, module-only paper examples `extends_parent.f90` and
 `abstract_new.f90` are registered through `traits_type_adoption.py` in normal
@@ -605,6 +605,89 @@ witnesses while reaching both members in both selection orders.
 Standard-Fortran oracles with matching check counts accompany the first two
 tests and the gate.
 
+## Generic derived types
+
+A derived type in a module can declare generic type parameters, each
+constrained by universal traits:
+
+```fortran
+type, sealed, implements(ISum) :: PairwiseSum{ISum :: U}
+   private
+   type(U), allocatable :: other
+contains
+   initial :: init
+   procedure, pass :: sum
+end type PairwiseSum
+```
+
+Inside the module, `type(U)` names the parameter and `type(PairwiseSum{U})`
+the type itself. A procedure bound to the type whose declarations use its
+parameters, and every initializer, belongs to the type: an initializer
+inherits the parameters without declaring them, and a method can add its own
+independent parameters, as `function sum{INumeric :: T}(self, x)`. Calls
+through a value of a parameter type, such as `self%other%sum(x)`, use the
+parameter's constraints, including their generic messages, and are checked
+when the module is compiled. An `implements` statement for the type repeats
+its parameter list: `implements ISum :: Box{ISum :: T}`.
+
+A client names an instance with concrete type arguments,
+`type(PairwiseSum{SimpleSum})`, or lets a constructor infer them:
+`PairwiseSum(SimpleSum())` tries the type's initializers before its structure
+constructor and binds each parameter from the actual arguments, nested
+constructors first. Explicit arguments, `PairwiseSum{SimpleSum}(...)`, must
+agree with those of the actual arguments; a parameter no actual argument
+determines is never guessed. Every type argument needs a visible nominal
+conformance to each trait of its parameter, and the conformance selected
+where the instance is created becomes its evidence: generic methods of the
+argument are then called through that conformance, also in separately
+compiled clients.
+
+An instance is an ordinary sealed derived type of the module or main program
+that creates it; equal instances of one module or program are one type. It
+owns copies of the type's procedures, specialized for its arguments, and its
+own bindings, initializers and conformances. The module that defines the
+generic type keeps only its definition, so compiling a client never changes
+that module's file or object. A program owns the runtime witnesses and
+generic entries of its instances too:
+
+```fortran
+class(IAverager), allocatable :: av
+av = Averager(drv = PairwiseSum(other = SimpleSum()))
+print '(i1)', av%average(xi)
+```
+
+dispatches `average` at runtime through the conformance of
+`Averager{PairwiseSum{SimpleSum}}` that the program owns, while every call
+inside the instance's methods is a static specialization. A conformance that
+another module owns, like `SimpleSum`'s, keeps its runtime evidence there; a
+client only specializes its generic bodies for static calls.
+
+The paper's `static.f90` is registered byte-exact through
+`traits_paper_functional.py` for both inputs, and as the native
+`test_paper_separate_static_{normal,fast}` CTests through
+`traits_paper_separate.py`, which compiles each module separately into frozen,
+archived objects with hidden sources and checks which unit owns each
+instance, witness and entry. `traits_generic_type_01` covers explicit and
+inferred instances, initializers and structure constructors, nesting,
+renamed imports, independent method parameters, a CLASS receiver and runtime
+averaging over several instances, with a standard-Fortran oracle.
+`continue_compilation_traits_04` covers the diagnostics.
+
+These are boundaries of the current prototype, diagnosed where they apply:
+generic types are declared in modules and instantiated in other modules or
+in main programs; an `implements` statement repeats the type's parameter list
+exactly; initializers have no generic parameters of their own, and a method's
+parameters do not reuse the type's parameter names; a procedure that uses the
+type's parameters is bound to that type only and is reached only through its
+bindings and constructors, not by name; parameters are constrained by
+universal traits; type arguments are concrete, not parameters of an
+enclosing generic; and generic types and their instances cannot be extended.
+A generic type binds only procedures that use its parameters, and has no
+FINAL procedures and no GENERIC or DEFERRED bindings. Instances are not shared
+between program units yet: equal instances created by different units are
+different types, and the conformances of an instance are visible only in the
+unit that created it.
+
 ## Inheritance and composed constraints
 
 A trait can inherit the requirements of other traits and add its own:
@@ -791,8 +874,9 @@ oracle checks the concrete computations through the default compilation pipeline
 
 The broader proposal is not yet implemented. In particular, pointer trait
 results, mutable receivers, associated types, unrestricted intrinsic capabilities,
-generic derived types, trait initializers, and unrestricted generic-method signatures
-are separate implementation stages. Existing `:=` inferred assignment is a
+generic derived types beyond the boundaries described in their section, trait
+initializers, and unrestricted generic-method signatures are separate
+implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
 Forwarding that mixes concrete and deferred type arguments, or crosses nested
 or shadowed generic-binder scopes, is not implemented yet.
@@ -1579,6 +1663,29 @@ pending bodies are copied. Composing an instantiation uses the original generic
 definition and its type/witness substitutions, not a copy of an in-progress
 body. Body materialization distinguishes an active dependency from a completed
 source; a legitimate empty subroutine is still allowed.
+
+A generic derived type is a `Template` package of its module whose symbol
+of the type's name is the definition `Struct`, with `Struct::generic` =
+`GenericTypeDefinition` recording the package's binders in order. The package
+also owns the binders' constraints, the procedures that depend on the
+parameters (a method with its own binders is a nested `Template`), the
+initializer generic and the definition's conformances; no code is generated
+for it. An instance is an ordinary `Struct` of the module or program that
+creates it, with `GenericTypeInstance`: an import of the definition and, for
+each parameter, the concrete type, its declaration and the conformance
+selected for each universal constraint. The shared symbol and body
+instantiators copy the package into the instance's owner. A generic
+requirement that a method's body publishes for the method's own binders is
+bound, in each copy, to a static adapter of the evidence's generic
+implementation forwarded with the copy's binders. Verification checks that a
+definition belongs to its package, that an instance names a definition with
+one concrete, visible argument per parameter and its evidence, layout and
+uniqueness, that no generic type or instance is extended, and that a program
+owns the runtime evidence of generic bindings only for its own instances,
+through procedure copies that capture none of its variables
+(`asr.verify.trait_witness.program_owner`). Inside a program, its symbols
+nested in generic or trait scopes are imported through `ExternalSymbol`s that
+name the program, like those of a module.
 
 Conformance metadata belongs to the implementation's module. Adding a
 retroactive implementation does not mutate the original imported derived type.

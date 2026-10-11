@@ -59,6 +59,23 @@ elseif (NOT LFORTRAN_BACKEND AND APPLE)
     endif()
 endif()
 
+# Registers the test of a RUN executable, through its TEST_DRIVER if one is
+# given; the driver receives the executable and the test's source file.
+macro(RUN_ADD_TEST name file_name)
+    if (RUN_TEST_DRIVER)
+        find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
+        if (NOT LFORTRAN_TEST_PYTHON)
+            message(FATAL_ERROR "TEST_DRIVER requires Python")
+        endif()
+        add_test(NAME ${name} COMMAND ${LFORTRAN_TEST_PYTHON}
+            ${CMAKE_CURRENT_SOURCE_DIR}/${RUN_TEST_DRIVER}
+            --executable $<TARGET_FILE:${name}>
+            --source ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90)
+    else()
+        add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+    endif()
+endmacro(RUN_ADD_TEST)
+
 macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
@@ -195,18 +212,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
-            if (RUN_TEST_DRIVER)
-                find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
-                if (NOT LFORTRAN_TEST_PYTHON)
-                    message(FATAL_ERROR "TEST_DRIVER requires Python")
-                endif()
-                add_test(NAME ${name} COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/${RUN_TEST_DRIVER}
-                    --executable $<TARGET_FILE:${name}>
-                    --source ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90)
-            else()
-                add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-            endif()
+            RUN_ADD_TEST(${name} ${file_name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
@@ -268,7 +274,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            RUN_ADD_TEST(${name} ${file_name})
         endif()
 
         if (labels)
@@ -4121,6 +4127,10 @@ RUN(NAME traits_generic_requirement_08 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODU
         traits_generic_requirement_04_provider_b.f90
         traits_generic_requirement_07_frozen.f90
         traits_generic_requirement_07_blocks.f90)
+RUN(NAME traits_generic_type_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_generic_type_01_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
@@ -4164,6 +4174,12 @@ RUN(NAME traits_paper_functional2 FILE traits_paper_functional/functional2
 RUN(NAME traits_paper_mixed FILE traits_paper_dynamic/mixed
     LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_static FILE traits_paper_static/static
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_static_oracle FILE traits_paper_static/static_oracle
+    LABELS gfortran llvm ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
     INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

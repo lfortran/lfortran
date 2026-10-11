@@ -206,6 +206,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     test_module

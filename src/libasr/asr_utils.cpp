@@ -5656,6 +5656,9 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
     if (ASR::is_a<ASR::ArraySection_t>(*value)) {
         return trait_type_parameter(ASR::down_cast<ASR::ArraySection_t>(value)->m_v);
     }
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
+        return trait_type_parameter(ASR::down_cast<ASR::ArrayPhysicalCast_t>(value)->m_arg);
+    }
     if (ASR::is_a<ASR::TraitDeferredCall_t>(*value)) {
         // Its binder-typed result was inferred from an argument of that binder.
         auto *call = ASR::down_cast<ASR::TraitDeferredCall_t>(value);
@@ -5686,6 +5689,18 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
             auto *binder = symbol_get_past_external(constraint->m_parameter);
             if (binder && parameter->m_param &&
                     std::string(symbol_name(binder)) == parameter->m_param) return binder;
+        }
+    }
+    if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+        // A requirement specialization published for the binders of a
+        // generic type's method is declared in the type's package, outside
+        // their scope. Its binder-typed result was inferred from an argument
+        // of that binder.
+        auto *call = ASR::down_cast<ASR::FunctionCall_t>(value);
+        for (size_t i = 0; i < call->n_args; i++) {
+            auto *binder = trait_type_parameter(call->m_args[i].m_value);
+            if (binder && parameter->m_param && parameter->m_param == std::string(
+                    symbol_name(binder))) return binder;
         }
     }
     return nullptr;
@@ -7405,6 +7420,277 @@ bool trait_implementation_matches_type(const ASR::TraitImplementation_t &impleme
     if (provided || declaration) return provided && provided == declaration;
     return type && implementation.m_implementing_type->type == type->type &&
         types_equal(implementation.m_implementing_type, type, nullptr, nullptr);
+}
+
+ASR::symbol_t *nested_symbol_unit(ASR::symbol_t *symbol, std::vector<char*> &scopes)
+{
+    scopes.clear();
+    ASR::symbol_t *owner = get_asr_owner(symbol);
+    while (owner && (ASR::is_a<ASR::Template_t>(*owner) || ASR::is_a<ASR::Trait_t>(*owner) ||
+            ASR::is_a<ASR::TraitRuntimeContract_t>(*owner) ||
+            ASR::is_a<ASR::TraitWitness_t>(*owner) || ASR::is_a<ASR::TraitErasure_t>(*owner))) {
+        scopes.push_back(symbol_name(owner));
+        owner = get_asr_owner(owner);
+    }
+    std::reverse(scopes.begin(), scopes.end());
+    return owner && (ASR::is_a<ASR::Module_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner))
+        ? owner : nullptr;
+}
+
+bool nested_symbol_importable(const ASR::symbol_t &unit, const SymbolTable *scope)
+{
+    if (!ASR::is_a<ASR::Program_t>(unit)) return ASR::is_a<ASR::Module_t>(unit);
+    const SymbolTable *program = ASR::down_cast<ASR::Program_t>(&unit)->m_symtab;
+    for (const SymbolTable *s = scope; s; s = s->parent) {
+        if (s == program) return true;
+    }
+    return false;
+}
+
+ASR::symbol_t *import_nested_symbol(Allocator &al, ASR::symbol_t *symbol,
+    SymbolTable *scope)
+{
+    ASR::symbol_t *definition = symbol ? symbol_get_past_external(symbol) : nullptr;
+    if (!definition) return symbol;
+    SymbolTable *given = symbol_parent_symtab(symbol);
+    SymbolTable *owner_scope = symbol_parent_symtab(definition);
+    for (SymbolTable *s = scope; s; s = s->parent) {
+        if (s == given) return symbol;
+    }
+    for (SymbolTable *s = scope; s; s = s->parent) {
+        if (s == owner_scope) return definition;
+    }
+    std::string name = symbol_name(definition);
+    for (const std::string &candidate : {name, name + "@trait"}) {
+        ASR::symbol_t *existing = scope->resolve_symbol(candidate);
+        if (existing && symbol_get_past_external(existing) == definition) return existing;
+    }
+    std::vector<char*> nested;
+    ASR::symbol_t *owner = nested_symbol_unit(definition, nested);
+    if (!owner || (ASR::is_a<ASR::Program_t>(*owner) &&
+            !nested_symbol_importable(*owner, scope))) return symbol;
+    Vec<char*> scopes;
+    scopes.reserve(al, nested.size());
+    for (char *nested_scope : nested) scopes.push_back(al, nested_scope);
+    std::string local_name = scope->get_unique_name(name + "@trait", false);
+    ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+        al, definition->base.loc, scope, s2c(al, local_name), definition,
+        symbol_name(owner), scopes.p, scopes.size(), s2c(al, name),
+        ASR::accessType::Private));
+    scope->add_symbol(local_name, imported);
+    return imported;
+}
+
+ASR::GenericTypeDefinition_t *generic_type_definition_metadata(const ASR::Struct_t &x)
+{
+    if (!x.m_generic || !ASR::is_a<ASR::GenericTypeDefinition_t>(*x.m_generic)) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::GenericTypeDefinition_t>(x.m_generic);
+}
+
+ASR::GenericTypeInstance_t *generic_type_instance(const ASR::Struct_t &x)
+{
+    if (!x.m_generic || !ASR::is_a<ASR::GenericTypeInstance_t>(*x.m_generic)) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::GenericTypeInstance_t>(x.m_generic);
+}
+
+ASR::Struct_t *generic_type_definition(const ASR::Template_t &x)
+{
+    ASR::symbol_t *definition = x.m_symtab->get_symbol(x.m_name);
+    if (!definition || !ASR::is_a<ASR::Struct_t>(*definition)) return nullptr;
+    auto *structure = ASR::down_cast<ASR::Struct_t>(definition);
+    return generic_type_definition_metadata(*structure) ? structure : nullptr;
+}
+
+ASR::Template_t *generic_type_package(ASR::symbol_t *symbol)
+{
+    symbol = symbol ? symbol_get_past_external(symbol) : nullptr;
+    if (!symbol || !ASR::is_a<ASR::Template_t>(*symbol)) return nullptr;
+    auto *package = ASR::down_cast<ASR::Template_t>(symbol);
+    return generic_type_definition(*package) ? package : nullptr;
+}
+
+ASR::Struct_t *generic_instance_definition(const ASR::GenericTypeInstance_t &x)
+{
+    ASR::symbol_t *definition = symbol_get_past_external(x.m_definition);
+    LCOMPILERS_ASSERT(definition && ASR::is_a<ASR::Struct_t>(*definition));
+    return ASR::down_cast<ASR::Struct_t>(definition);
+}
+
+bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
+    const ASR::generic_type_argument_t &right)
+{
+    auto *left_declaration = left.m_type_declaration
+        ? symbol_get_past_external(left.m_type_declaration) : nullptr;
+    auto *right_declaration = right.m_type_declaration
+        ? symbol_get_past_external(right.m_type_declaration) : nullptr;
+    if (left_declaration || right_declaration) {
+        if (!left_declaration || !right_declaration) return false;
+        if (left_declaration != right_declaration) {
+            if (!ASR::is_a<ASR::Struct_t>(*left_declaration) ||
+                    !ASR::is_a<ASR::Struct_t>(*right_declaration) ||
+                    !same_generic_instance(*ASR::down_cast<ASR::Struct_t>(left_declaration),
+                        *ASR::down_cast<ASR::Struct_t>(right_declaration))) {
+                return false;
+            }
+        }
+    } else if (!types_equal(left.m_type, right.m_type, nullptr, nullptr)) {
+        return false;
+    }
+    if (left.n_evidence != right.n_evidence) return false;
+    for (size_t i = 0; i < left.n_evidence; i++) {
+        auto *a = symbol_get_past_external(left.m_evidence[i]);
+        auto *b = symbol_get_past_external(right.m_evidence[i]);
+        if (a == b) continue;
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*a) ||
+                !ASR::is_a<ASR::TraitImplementation_t>(*b)) return false;
+        auto *x = ASR::down_cast<ASR::TraitImplementation_t>(a);
+        auto *y = ASR::down_cast<ASR::TraitImplementation_t>(b);
+        if (symbol_get_past_external(x->m_trait) != symbol_get_past_external(y->m_trait) ||
+                conflicting_trait_binding(*x, *y)) return false;
+    }
+    return true;
+}
+
+bool same_generic_instance(const ASR::Struct_t &left, const ASR::Struct_t &right)
+{
+    if (&left == &right) return true;
+    auto *a = generic_type_instance(left);
+    auto *b = generic_type_instance(right);
+    if (!a || !b || generic_instance_definition(*a) != generic_instance_definition(*b) ||
+            a->n_arguments != b->n_arguments) return false;
+    for (size_t i = 0; i < a->n_arguments; i++) {
+        if (!generic_type_arguments_equal(a->m_arguments[i], b->m_arguments[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Whether a procedure references a variable of the program `program`.
+static bool captures_program_variable(ASR::symbol_t *procedure, SymbolTable *program)
+{
+    class Capture : public ASR::BaseWalkVisitor<Capture> {
+    public:
+        SymbolTable *program;
+        bool found = false;
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t *symbol = x.m_v;
+            if (ASR::is_a<ASR::Variable_t>(*symbol) &&
+                    symbol_parent_symtab(symbol) == program) found = true;
+        }
+    } capture;
+    capture.program = program;
+    capture.visit_symbol(*procedure);
+    return capture.found;
+}
+
+static bool program_instance_procedure(ASR::symbol_t *procedure, SymbolTable *program)
+{
+    procedure = procedure ? symbol_get_past_external(procedure) : nullptr;
+    if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure)) return false;
+    SymbolTable *scope = symbol_parent_symtab(procedure);
+    // A copy is owned by the program or by a method Template the program owns.
+    if (scope != program) {
+        if (!scope || scope->parent != program || !scope->asr_owner ||
+                !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ||
+                !ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+            return false;
+        }
+    }
+    auto *generic = trait_method_template(*ASR::down_cast<ASR::Function_t>(procedure));
+    return !captures_program_variable(generic ? &generic->base : procedure, program);
+}
+
+// Whether `implementation` is a conformance a program owns for an instance
+// of a module's generic type that the program also owns.
+static bool program_generic_instance_implementation(
+    const ASR::TraitImplementation_t &implementation)
+{
+    SymbolTable *program = implementation.m_parent_symtab;
+    if (!program || !program->asr_owner || !ASR::is_a<ASR::symbol_t>(*program->asr_owner) ||
+            !ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(program->asr_owner))) {
+        return false;
+    }
+    ASR::symbol_t *declaration = implementation.m_type_declaration;
+    if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
+    auto *instance = ASR::down_cast<ASR::Struct_t>(declaration);
+    auto *metadata = generic_type_instance(*instance);
+    if (!metadata || instance->m_symtab->parent != program || !metadata->m_definition) {
+        return false;
+    }
+    ASR::symbol_t *definition = symbol_get_past_external(metadata->m_definition);
+    if (!definition || !ASR::is_a<ASR::Struct_t>(*definition)) return false;
+    ASR::symbol_t *package = get_asr_owner(definition);
+    if (!package || !ASR::is_a<ASR::Template_t>(*package) ||
+            &generic_type_definition(*ASR::down_cast<ASR::Template_t>(package))->base !=
+                definition) {
+        return false;
+    }
+    ASR::symbol_t *module = get_asr_owner(package);
+    return module && ASR::is_a<ASR::Module_t>(*module);
+}
+
+bool program_generic_instance_conformance(const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract)
+{
+    if (!program_generic_instance_implementation(implementation)) return false;
+    SymbolTable *program = implementation.m_parent_symtab;
+    for (size_t i = 0; i < implementation.n_bindings; i++) {
+        const auto &binding = implementation.m_bindings[i];
+        if (contract) {
+            bool needed = false;
+            for (size_t j = 0; j < contract->n_slots && !needed; j++) {
+                for (size_t k = 0; k < contract->m_slots[j].n_origins; k++) {
+                    if (symbol_get_past_external(contract->m_slots[j].m_origins[k]) ==
+                            symbol_get_past_external(binding.m_member)) needed = true;
+                }
+            }
+            if (!needed) continue;
+        }
+        if (!program_instance_procedure(binding.m_procedure, program)) return false;
+    }
+    return true;
+}
+
+bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable *scope)
+{
+    if (!scope || generic.m_symtab->parent != scope) return false;
+    ASR::Function_t *function = trait_method_function(const_cast<ASR::symbol_t*>(&generic.base));
+    if (!function || !program_instance_procedure(&function->base, scope)) return false;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        if (!program_generic_instance_implementation(*implementation)) continue;
+        for (size_t i = 0; i < implementation->n_bindings; i++) {
+            if (symbol_get_past_external(implementation->m_bindings[i].m_procedure) ==
+                    &function->base) return true;
+        }
+    }
+    return false;
+}
+
+std::string generic_type_spelling(const ASR::Struct_t &x)
+{
+    auto *instance = generic_type_instance(x);
+    if (!instance) return x.m_name;
+    std::string result = generic_instance_definition(*instance)->m_name;
+    result += "{";
+    for (size_t i = 0; i < instance->n_arguments; i++) {
+        if (i) result += ", ";
+        auto &argument = instance->m_arguments[i];
+        auto *declaration = argument.m_type_declaration
+            ? symbol_get_past_external(argument.m_type_declaration) : nullptr;
+        if (declaration && ASR::is_a<ASR::Struct_t>(*declaration)) {
+            result += generic_type_spelling(*ASR::down_cast<ASR::Struct_t>(declaration));
+        } else {
+            result += type_to_str_fortran_symbol(argument.m_type, nullptr, true);
+        }
+    }
+    return result + "}";
 }
 
 const ASR::trait_binding_t *find_trait_binding(

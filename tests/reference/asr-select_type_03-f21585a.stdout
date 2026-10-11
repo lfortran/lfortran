@@ -88,6 +88,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             toml_stat:
                                 (Variable
@@ -636,6 +637,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             toml_value:
                                 (Struct
@@ -714,6 +716,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     class_default_select_type_user

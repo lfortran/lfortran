@@ -844,6 +844,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -976,6 +977,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     tomlf_structure_vector
@@ -1202,6 +1204,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             toml_value:
                                 (ExternalSymbol
@@ -1550,6 +1553,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_value

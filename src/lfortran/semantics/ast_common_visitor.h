@@ -2146,6 +2146,8 @@ public:
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
+    bool in_submodule = false;
+    bool in_program = false;
     std::map<SymbolTable*, std::map<AST::decl_attribute_t*, AST::simple_attributeType>> overloaded_ops;
     std::map<SymbolTable*, ASR::accessType> assgn;
     std::map<std::string, ASR::accessType> assgnd_access;
@@ -5443,7 +5445,7 @@ public:
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, true,
-                nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0));
+                nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -10822,6 +10824,10 @@ public:
 
     }
 
+    void visit_TraitDerivedType(const AST::TraitDerivedType_t &/*x*/) {
+
+    }
+
     // A `deferred procedure (iface) :: p` statement (F2028 R1622) declares a
     // deferred argument, which the symbol table visitor does in full; there is
     // nothing left for the body visitor to do.
@@ -11237,7 +11243,7 @@ public:
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
             nullptr, 0, nullptr, new_parent, nullptr, 0, pdt_struct->m_is_sealed,
-            pdt_struct->m_trait_obligations, pdt_struct->n_trait_obligations);
+            pdt_struct->m_trait_obligations, pdt_struct->n_trait_obligations, nullptr);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -11494,6 +11500,35 @@ public:
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type = nullptr;
         type_declaration = nullptr;
+
+        if ((sym_type->m_type == AST::decl_typeType::TypeType ||
+                sym_type->m_type == AST::decl_typeType::TypeClass) && sym_type->m_attr &&
+                AST::is_a<AST::AttrGenericTypeArgs_t>(*sym_type->m_attr)) {
+            auto *application = AST::down_cast<AST::AttrGenericTypeArgs_t>(sym_type->m_attr);
+            ASR::symbol_t *v = resolve_generic_type_application(application->m_name,
+                application->m_args, application->n_args, application->base.base.loc);
+            type_declaration = v;
+            type = ASRUtils::make_StructType_t_util(al, loc, v,
+                sym_type->m_type == AST::decl_typeType::TypeType);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0,
+                    ASR::array_physical_typeType::AssumedRankArray,
+                    ASR::memory_spaceType::Global));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+            }
+            if (is_pointer) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    ASRUtils::type_get_past_allocatable(type)));
+            }
+            if (is_allocatable) {
+                type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::type_get_past_allocatable(type)));
+            }
+            ensure_deferred_shape_for_allocatable_or_pointer_array(type, sym);
+            return ASRUtils::import_trait_type(al, type, current_scope);
+        }
 
         int a_kind = 4;
         if (sym_type->m_type == AST::decl_typeType::TypeInteger ||
@@ -11780,7 +11815,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -11922,6 +11957,7 @@ public:
                 trait_call_error("a trait cannot be used as a concrete type; "
                     "use a trait-constrained type parameter", loc);
             }
+            check_generic_type_reference(v, derived_type_name, loc);
             if (v && ASR::is_a<ASR::Variable_t>(*v) && (ASR::is_a<ASR::Integer_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type) || 
                 ASR::is_a<ASR::Real_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
                 // v is implicitly-declared variable which is of no use when referring Struct
@@ -12065,6 +12101,7 @@ public:
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
+            check_generic_type_reference(v, derived_type_name, loc);
             if (v && ASRUtils::symbol_get_past_external(v)
                     && ASR::is_a<ASR::Trait_t>(*ASRUtils::symbol_get_past_external(v))) {
                 if (ASR::down_cast<ASR::Trait_t>(
@@ -12166,7 +12203,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -15287,7 +15324,11 @@ public:
             ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
             int idx = select_generic_specific(args, *p, loc, false, is_dt_present);
             if( idx == -1 ) {
-                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
+                // The initializers of a type are the generic '~' + its name;
+                // a generic type's instance is constructed under its own name.
+                std::string type_name = p->m_name[0] == '~'
+                    ? std::string(p->m_name + 1) : to_lower(x.m_func);
+                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(type_name);
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
                     return create_DerivedTypeConstructor(x, tmp_v);
                 }
@@ -21561,7 +21602,10 @@ public:
                 return;
             }
         }
-        if (x.n_temp_args > 0) {
+        std::string generic_type = generic_type_constructor(x);
+        if (!generic_type.empty()) {
+            var_name = generic_type;
+        } else if (x.n_temp_args > 0) {
             var_name = handle_templated(x.m_func,
                 ASRUtils::is_owned_by_template(current_scope),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
@@ -22286,6 +22330,15 @@ public:
                 return nullptr;
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
+                for (SymbolTable *s = current_scope; s; s = s->parent) {
+                    if (s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner) &&
+                            ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                                s->asr_owner))) {
+                        check_generic_type_procedure_reference(
+                            *ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(
+                                s->asr_owner)), remote_sym, loc);
+                    }
+                }
                 diag.add(Diagnostic("Function '" + remote_sym + "' not found"
                     " (not user defined nor intrinsic)",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -23693,11 +23746,16 @@ public:
     // Only a module owns the provider entries (member or erased) that a runtime
     // witness of a generic binding calls. A conformance in any other scope stays
     // static-only, and a runtime view of it is diagnosed where it is formed.
+    // The one exception is a program's conformance of a generic derived type's
+    // instance it owns, through the instance's own procedure copies.
     bool runtime_trait_entries_ownable(const ASR::TraitImplementation_t &implementation,
             const ASR::TraitRuntimeContract_t &contract) {
         auto *owner = implementation.m_parent_symtab->asr_owner;
         if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
                 ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return true;
+        }
+        if (ASRUtils::program_generic_instance_conformance(implementation, &contract)) {
             return true;
         }
         for (size_t i = 0; i < contract.n_slots; i++) {
@@ -23717,12 +23775,15 @@ public:
         if (auto *existing = ASRUtils::trait_erasure(generic, provider_scope,
                 slot.m_type_arguments, slot.n_type_arguments)) return existing;
         auto *owner = provider_scope->asr_owner;
-        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
-                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        bool module_owner = owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+            ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+        if (!module_owner && !ASRUtils::program_generic_instance_method(generic,
+                provider_scope)) {
             trait_call_error("runtime generic trait implementations outside module "
                 "scope are not implemented yet", loc);
         }
-        if (ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(owner))->m_loaded_from_mod) {
+        if (module_owner && ASR::down_cast<ASR::Module_t>(
+                ASR::down_cast<ASR::symbol_t>(owner))->m_loaded_from_mod) {
             // Clients never instantiate a provider's body; a missing entry
             // means the provider was compiled against a different contract.
             trait_call_error("the separately compiled provider of generic '" +
@@ -23779,8 +23840,9 @@ public:
             SymbolTable *provider_scope, const Location &loc) {
         if (auto *existing = ASRUtils::trait_erasure(generic, provider_scope)) return existing;
         auto *owner = provider_scope->asr_owner;
-        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
-                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        if ((!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) &&
+                !ASRUtils::program_generic_instance_method(generic, provider_scope)) {
             trait_call_error("runtime generic trait implementations outside module "
                 "scope are not implemented yet", loc);
         }
@@ -24459,9 +24521,11 @@ public:
             }
         }
         if (!selected) {
+            ASR::symbol_t *type = ASRUtils::symbol_get_past_external(declaration);
             trait_call_error("no visible nominal implementation of trait '"
                 + std::string(ASRUtils::symbol_name(trait)) + "' for type '"
-                + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(declaration))
+                + (ASR::is_a<ASR::Struct_t>(*type) ? ASRUtils::generic_type_spelling(
+                    *ASR::down_cast<ASR::Struct_t>(type)) : ASRUtils::symbol_name(type))
                 + "'", loc);
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
@@ -25318,6 +25382,23 @@ public:
         return specialization;
     }
 
+    // Whether `binder` belongs to a method of the generic derived type whose
+    // package scope is `package`: a generic requirement of the type's
+    // parameter may then be published for the method's own binders, and each
+    // instance binds it in its copy of the method.
+    bool generic_type_method_binder(ASR::symbol_t *binder, SymbolTable *package) {
+        if (!package->asr_owner || !ASR::is_a<ASR::symbol_t>(*package->asr_owner) ||
+                !ASRUtils::generic_type_package(
+                    ASR::down_cast<ASR::symbol_t>(package->asr_owner))) {
+            return false;
+        }
+        SymbolTable *scope = ASRUtils::symbol_parent_symtab(
+            ASRUtils::symbol_get_past_external(binder));
+        if (!scope || scope->parent != package || !scope->asr_owner ||
+                !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) return false;
+        return ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+    }
+
     // A call of a generic trait method through a constrained type parameter:
     // the generic body is checked against the requirement's own constraints,
     // and calls the specialization for its type arguments.
@@ -25376,7 +25457,8 @@ public:
                 trait_call_error("forwarding a shadowed generic type parameter "
                     "is not implemented yet", loc);
             }
-            if (ASRUtils::symbol_parent_symtab(entry.second) != owner) {
+            if (ASRUtils::symbol_parent_symtab(entry.second) != owner &&
+                    !generic_type_method_binder(entry.second, owner)) {
                 trait_call_error("forwarding across nested generic parameter scopes "
                     "is not implemented yet", loc);
             }
@@ -25506,6 +25588,8 @@ public:
             }
             if (!symbol || !ASR::is_a<ASR::Template_t>(*symbol)) return false;
             generic = ASR::down_cast<ASR::Template_t>(symbol);
+            // A generic derived type's constructor is resolved by its caller.
+            if (ASRUtils::generic_type_definition(*generic)) return false;
             if (trait_constraints(generic).empty()) return false;
             signature = ASR::down_cast<ASR::Function_t>(
                 generic->m_symtab->get_symbol(generic->m_name));
@@ -26778,6 +26862,1106 @@ public:
             instantiate_pending_bodies_from(i, states);
         }
         pending_body_instantiations.clear();
+    }
+
+    ASR::TraitWitness_t *create_runtime_trait_witness(
+            ASR::TraitImplementation_t *implementation,
+            ASR::TraitRuntimeContract_t *contract) {
+        if (!contract) return nullptr;
+        if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
+            return existing;
+        }
+        if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *binding = ASRUtils::find_trait_binding(
+                *implementation, contract->m_slots[i].m_origins[0]);
+            LCOMPILERS_ASSERT(binding);
+            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
+            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
+            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return nullptr;
+            auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
+            if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
+            if (auto *generic = ASRUtils::trait_method_template(*procedure)) {
+                if (contract->m_slots[i].n_type_arguments) {
+                    create_trait_member_entry(*generic, implementation->m_parent_symtab,
+                        contract->m_slots[i], binding->loc);
+                } else {
+                    create_trait_erasure(*generic, implementation->m_parent_symtab,
+                        binding->loc);
+                }
+            }
+        }
+        const Location &loc = implementation->base.base.loc;
+        std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==
+                ASRUtils::symbol_get_past_external(contract->m_trait)
+            ? "" : "_" + std::string(ASRUtils::symbol_name(contract->m_trait));
+        std::string name = current_scope->get_unique_name(
+            std::string(implementation->m_name) + suffix + "_witness");
+        auto *witness_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::trait_lifecycle_t lifecycle;
+        lifecycle.loc = loc;
+        lifecycle.m_type_declaration = implementation->m_type_declaration;
+        auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
+            al, loc, witness_scope, s2c(al, name),
+            make_operator_proc_visible(&contract->base, "trait", current_scope),
+            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
+            lifecycle, nullptr, 0, nullptr, 0));
+        current_scope->add_symbol(name, &witness->base);
+        Vec<ASR::symbol_t*> procedures;
+        Vec<char*> dependencies;
+        procedures.reserve(al, contract->n_slots);
+        dependencies.reserve(al, contract->n_slots);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto &slot = contract->m_slots[i];
+            auto *binding = ASRUtils::find_trait_binding(*implementation, slot.m_origins[0]);
+            LCOMPILERS_ASSERT(binding);
+            auto *procedure = trait_adapter(
+                ASR::down_cast<ASR::Function_t>(slot.m_procedure),
+                implementation->m_implementing_type, implementation->m_type_declaration,
+                *binding, witness_scope, loc, witness, i);
+            procedures.push_back(al, procedure);
+            dependencies.push_back(al, ASRUtils::symbol_name(procedure));
+        }
+        witness->m_procedures = procedures.p;
+        witness->n_procedures = procedures.size();
+        witness->m_dependencies = dependencies.p;
+        witness->n_dependencies = dependencies.size();
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(contract->m_trait));
+        Vec<ASR::symbol_t*> projections;
+        projections.reserve(al, trait->n_parents);
+        for (size_t i = 0; i < trait->n_parents; i++) {
+            auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
+            LCOMPILERS_ASSERT(parent_contract);
+            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract);
+            LCOMPILERS_ASSERT(parent_witness);
+            projections.push_back(al, &parent_witness->base);
+        }
+        witness->m_projections = projections.p;
+        witness->n_projections = projections.size();
+        return witness;
+    }
+
+    // ------------------------------------------------------------------
+    // Generic derived types
+    //
+    // A generic type is a Template package owned by a module (see
+    // generic_types.h). Its instances are ordinary Structs owned by the
+    // module or program that uses the type with concrete type arguments.
+    // The symbol table visitor creates an instance's components; the body
+    // visitor completes it once the package's bodies exist: it copies the
+    // package's procedures with the type arguments substituted, binds the
+    // generic requirements of their methods to the arguments' conformances,
+    // and adds the instance's bindings, initializers, conformances and
+    // runtime evidence.
+    // ------------------------------------------------------------------
+
+    std::set<ASR::Struct_t*> completed_generic_instances;
+
+    // A procedure that depends on the parameters of a generic type of
+    // `module` belongs to the type's package and, in this prototype, is
+    // reached only through the type's bindings and constructors.
+    void check_generic_type_procedure_reference(const ASR::Module_t &module,
+            const std::string &name, const Location &loc) {
+        for (const auto &entry : module.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*entry.second)) continue;
+            ASR::Template_t *package = ASRUtils::generic_type_package(entry.second);
+            if (!package) continue;
+            ASR::symbol_t *procedure = package->m_symtab->get_symbol(name);
+            if (!procedure || ASR::is_a<ASR::Struct_t>(*procedure) ||
+                    !ASRUtils::trait_method_function(procedure)) continue;
+            trait_call_error("procedure '" + name + "' depends on the generic parameters "
+                "of '" + std::string(package->m_name) + "'; this prototype makes it "
+                "accessible only through its type", loc);
+        }
+    }
+
+    // A generic derived type is named with its type arguments, also inside
+    // its own definition.
+    void check_generic_type_reference(ASR::symbol_t *v, const std::string &name,
+            const Location &loc) {
+        ASR::symbol_t *definition = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        if (ASRUtils::generic_type_package(v) || (definition &&
+                ASR::is_a<ASR::Struct_t>(*definition) &&
+                ASRUtils::generic_type_definition_metadata(
+                    *ASR::down_cast<ASR::Struct_t>(definition)))) {
+            trait_call_error("generic type '" + name + "' requires its generic type "
+                "arguments", loc);
+        }
+    }
+
+    static SymbolTable *generic_instance_unit_scope(SymbolTable *scope) {
+        while (scope->parent && scope->parent->parent) scope = scope->parent;
+        return scope;
+    }
+
+    std::pair<ASR::ttype_t*, ASR::symbol_t*> generic_type_argument(
+            AST::decl_attribute_t *argument, const std::string &parameter,
+            const Location &loc) {
+        if (AST::is_a<AST::AttrName_t>(*argument)) {
+            std::string name = to_lower(AST::down_cast<AST::AttrName_t>(argument)->m_name);
+            ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+            ASR::symbol_t *definition = symbol ? ASRUtils::symbol_get_past_external(symbol)
+                : nullptr;
+            if (ASRUtils::generic_type_package(symbol) || (definition &&
+                    ASR::is_a<ASR::Struct_t>(*definition) &&
+                    ASRUtils::generic_type_definition_metadata(
+                        *ASR::down_cast<ASR::Struct_t>(definition)))) {
+                trait_call_error("generic type '" + name + "' requires its generic type "
+                    "arguments", loc);
+            }
+            if (definition && ASR::is_a<ASR::Struct_t>(*definition)) {
+                return {ASRUtils::make_StructType_t_util(al, loc, symbol, true), symbol};
+            }
+            if (definition && ASR::is_a<ASR::Variable_t>(*definition) &&
+                    ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(
+                        ASR::down_cast<ASR::Variable_t>(definition)->m_type))) {
+                trait_call_error("generic type arguments that are generic type parameters "
+                    "are not implemented yet", loc);
+            }
+            trait_call_error("a generic type argument must name a type", loc);
+        }
+        if (AST::is_a<AST::AttrType_t>(*argument)) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t *declaration = nullptr;
+            std::string name = parameter;
+            ASR::ttype_t *type = determine_type(loc, name, argument, false, false, dims,
+                nullptr, declaration, current_procedure_abi_type);
+            ASR::ttype_t *element = ASRUtils::extract_type(type);
+            if (ASR::is_a<ASR::TypeParameter_t>(*element)) {
+                trait_call_error("generic type arguments that are generic type parameters "
+                    "are not implemented yet", loc);
+            }
+            if (ASR::is_a<ASR::StructType_t>(*element)) {
+                if (!declaration || ASRUtils::is_class_type(type)) {
+                    trait_call_error("a generic type argument must name a type", loc);
+                }
+                return {type, declaration};
+            }
+            if (!ASR::is_a<ASR::Integer_t>(*element) && !ASR::is_a<ASR::Real_t>(*element) &&
+                    !ASR::is_a<ASR::Complex_t>(*element) && !ASR::is_a<ASR::Logical_t>(*element)) {
+                trait_call_error("this generic type argument is not implemented yet", loc);
+            }
+            return {type, nullptr};
+        }
+        if (AST::is_a<AST::AttrExpr_t>(*argument)) {
+            auto *value = AST::down_cast<AST::AttrExpr_t>(argument)->m_value;
+            if (AST::is_a<AST::GenericProcedureValue_t>(*value)) {
+                auto *application = AST::down_cast<AST::GenericProcedureValue_t>(value);
+                ASR::symbol_t *instance = resolve_generic_type_application(
+                    application->m_name, application->m_args, application->n_args, loc);
+                return {ASRUtils::make_StructType_t_util(al, loc, instance, true), instance};
+            }
+        }
+        trait_call_error("a generic type argument must name a type", loc);
+    }
+
+    // The derived type `name{args}` denotes here: inside the package of a
+    // generic type, applied to its own parameters, the definition; with
+    // concrete type arguments, the canonical instance of the unit.
+    ASR::symbol_t *resolve_generic_type_application(const char *name_,
+            AST::decl_attribute_t **args, size_t n_args, const Location &loc) {
+        std::string name = to_lower(name_);
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+        if (!symbol) {
+            trait_call_error("Derived type '" + name + "' is not defined", loc);
+        }
+        ASR::symbol_t *definition = ASRUtils::symbol_get_past_external(symbol);
+        if (definition && ASR::is_a<ASR::Struct_t>(*definition)) {
+            auto *structure = ASR::down_cast<ASR::Struct_t>(definition);
+            auto *metadata = ASRUtils::generic_type_definition_metadata(*structure);
+            if (!metadata) {
+                trait_call_error("'" + name + "' is not a generic derived type", loc);
+            }
+            bool identity = n_args == metadata->n_parameters;
+            for (size_t i = 0; identity && i < n_args; i++) {
+                ASR::symbol_t *argument = AST::is_a<AST::AttrName_t>(*args[i])
+                    ? current_scope->resolve_symbol(to_lower(
+                        AST::down_cast<AST::AttrName_t>(args[i])->m_name)) : nullptr;
+                identity = argument && ASRUtils::symbol_get_past_external(argument) ==
+                    ASRUtils::symbol_get_past_external(metadata->m_parameters[i]);
+            }
+            if (!identity) {
+                trait_call_error("inside its definition, generic type '" + name +
+                    "' can only be applied to its own parameters in this prototype", loc);
+            }
+            return symbol;
+        }
+        ASR::Template_t *package = ASRUtils::generic_type_package(symbol);
+        if (!package) {
+            trait_call_error("'" + name + "' is not a generic derived type", loc);
+        }
+        Vec<AST::decl_attribute_t*> ordered = match_instantiation_args(args, n_args,
+            package->m_args, package->n_args, "incorrect number of generic type arguments",
+            loc);
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> arguments;
+        for (size_t i = 0; i < ordered.size(); i++) {
+            arguments.push_back(generic_type_argument(ordered[i], package->m_args[i],
+                ordered[i]->base.loc));
+        }
+        return instantiate_generic_type(*package, arguments, loc);
+    }
+
+    // The conformance of each argument that satisfies each universal trait
+    // constraint of its parameter, visible where the type is instantiated.
+    std::vector<std::vector<ASR::TraitImplementation_t*>> generic_type_evidence(
+            ASR::Template_t &package,
+            const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments,
+            const Location &loc) {
+        ASR::Struct_t *definition = ASRUtils::generic_type_definition(package);
+        std::vector<std::vector<ASR::TraitImplementation_t*>> evidence(package.n_args);
+        for (size_t i = 0; i < package.n_args; i++) {
+            ASR::symbol_t *binder = package.m_symtab->get_symbol(package.m_args[i]);
+            for (auto *constraint : trait_constraints(&package)) {
+                if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) {
+                    continue;
+                }
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(constraint->m_trait));
+                ASR::TraitImplementation_t *selected = nullptr;
+                // An instance this unit has not completed yet gets the
+                // conformances of its definition when it is completed.
+                ASR::Struct_t *pending = pending_generic_instance(arguments[i].second);
+                for (auto *implementation : pending
+                        ? generic_definition_conformances(*pending)
+                        : trait_implementations_for_type(
+                            arguments[i].second, loc, arguments[i].first)) {
+                    auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                        ASRUtils::symbol_get_past_external(implementation->m_trait)), loc);
+                    if (std::find(hierarchy.traits.begin(), hierarchy.traits.end(), trait)
+                            != hierarchy.traits.end()) {
+                        selected = implementation;
+                        break;
+                    }
+                }
+                if (!selected) {
+                    if (arguments[i].second) {
+                        trait_call_error("no visible nominal implementation of trait '" +
+                            std::string(trait->m_name) + "' for generic type parameter '" +
+                            std::string(package.m_args[i]) + "' of '" + definition->m_name +
+                            "' (argument '" + ASRUtils::type_to_str_fortran_symbol(
+                                arguments[i].first, arguments[i].second) + "')", loc);
+                    }
+                    trait_call_error("no visible nominal implementation of trait '" +
+                        std::string(trait->m_name) + "' for " +
+                        ASRUtils::type_to_str_fortran_symbol(arguments[i].first, nullptr, true) +
+                        ", required by generic type parameter '" +
+                        std::string(package.m_args[i]) + "' of '" + definition->m_name + "'",
+                        loc);
+                }
+                if (!pending) evidence[i].push_back(selected);
+            }
+        }
+        return evidence;
+    }
+
+    // The instance `declaration` resolves to when its unit created it but has
+    // not completed it yet: its conformances do not exist yet.
+    ASR::Struct_t *pending_generic_instance(ASR::symbol_t *declaration) {
+        ASR::symbol_t *symbol = declaration
+            ? ASRUtils::symbol_get_past_external(declaration) : nullptr;
+        if (!symbol || !ASR::is_a<ASR::Struct_t>(*symbol)) return nullptr;
+        auto *instance = ASR::down_cast<ASR::Struct_t>(symbol);
+        if (!ASRUtils::generic_type_instance(*instance) ||
+                completed_generic_instances.count(instance) ||
+                instance->m_symtab->parent != generic_instance_unit_scope(current_scope)) {
+            return nullptr;
+        }
+        return instance;
+    }
+
+    // The conformances the definition of the instance `x` adopts in its
+    // package; the completed instance has a copy of each.
+    std::vector<ASR::TraitImplementation_t*> generic_definition_conformances(
+            const ASR::Struct_t &x) {
+        ASR::Struct_t *definition = ASRUtils::generic_instance_definition(
+            *ASRUtils::generic_type_instance(x));
+        auto *package = ASR::down_cast<ASR::Template_t>(
+            ASRUtils::get_asr_owner(&definition->base));
+        std::vector<ASR::TraitImplementation_t*> conformances;
+        for (const auto &entry : package->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+            auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+                    &definition->base) conformances.push_back(implementation);
+        }
+        return conformances;
+    }
+
+    // The references from `owner` to the conformances selected for one type
+    // argument; the units that own them become dependencies of `owner`.
+    Vec<ASR::symbol_t*> generic_type_evidence_records(
+            const std::vector<ASR::TraitImplementation_t*> &evidence, SymbolTable *owner) {
+        Vec<ASR::symbol_t*> records;
+        records.reserve(al, evidence.size());
+        for (auto *implementation : evidence) {
+            records.push_back(al, ASRUtils::import_nested_symbol(al,
+                &implementation->base, owner));
+            if (auto *provider = ASRUtils::get_sym_module0(&implementation->base)) {
+                add_unit_dependency(owner, provider->m_name);
+                current_module_dependencies.push_back(al, provider->m_name);
+            }
+        }
+        return records;
+    }
+
+    // The canonical instance of `package` for `arguments` in the module or
+    // program that uses it: an equal instance it already has, else a new one.
+    // The evidence of an argument that is an instance this unit has not
+    // completed yet is recorded when this instance is completed.
+    ASR::symbol_t *instantiate_generic_type(ASR::Template_t &package,
+            const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments,
+            const Location &loc) {
+        ASR::Struct_t *definition = ASRUtils::generic_type_definition(package);
+        SymbolTable *owner = generic_instance_unit_scope(current_scope);
+        if (owner == generic_instance_unit_scope(package.m_symtab)) {
+            trait_call_error("instantiating generic type '" + std::string(definition->m_name) +
+                "' in the module that defines it is not implemented yet", loc);
+        }
+        // The symbol table visitor creates the symbol of a unit after its
+        // declarations.
+        bool unit = owner->asr_owner && ASR::is_a<ASR::symbol_t>(*owner->asr_owner)
+            ? ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner->asr_owner)) ||
+                ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner->asr_owner))
+            : in_module || in_submodule || in_program;
+        if (!unit) {
+            trait_call_error("instantiating generic type '" + std::string(definition->m_name) +
+                "' outside a module or program is not implemented yet", loc);
+        }
+        auto evidence = generic_type_evidence(package, arguments, loc);
+        Vec<ASR::generic_type_argument_t> instance_arguments;
+        instance_arguments.reserve(al, arguments.size());
+        for (size_t i = 0; i < arguments.size(); i++) {
+            ASR::generic_type_argument_t argument;
+            argument.loc = loc;
+            argument.m_type_declaration = arguments[i].second
+                ? ASRUtils::import_type_declaration(al, arguments[i].second, owner) : nullptr;
+            argument.m_type = argument.m_type_declaration
+                ? ASRUtils::make_StructType_t_util(al, loc, argument.m_type_declaration, true)
+                : ASRUtils::duplicate_type(al, arguments[i].first);
+            Vec<ASR::symbol_t*> records = generic_type_evidence_records(evidence[i], owner);
+            argument.m_evidence = records.p;
+            argument.n_evidence = records.size();
+            instance_arguments.push_back(al, argument);
+        }
+        for (const auto &entry : owner->get_scope()) {
+            if (!ASR::is_a<ASR::Struct_t>(*entry.second)) continue;
+            auto *candidate = ASR::down_cast<ASR::Struct_t>(entry.second);
+            auto *instance = ASRUtils::generic_type_instance(*candidate);
+            if (!instance || ASRUtils::generic_instance_definition(*instance) != definition ||
+                    instance->n_arguments != instance_arguments.size()) continue;
+            bool same = true;
+            for (size_t i = 0; same && i < instance_arguments.size(); i++) {
+                same = ASRUtils::generic_type_arguments_equal(instance->m_arguments[i],
+                    instance_arguments[i]);
+            }
+            if (!same) continue;
+            if (is_body_visitor) complete_generic_instance(*candidate);
+            return entry.second;
+        }
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
+        std::string name = definition->m_name;
+        for (size_t i = 0; i < instance_arguments.size(); i++) {
+            const auto &argument = instance_arguments[i];
+            type_subs[package.m_args[i]] = {argument.m_type, argument.m_type_declaration};
+            name += "__" + (argument.m_type_declaration
+                ? std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(argument.m_type_declaration)))
+                : ASRUtils::get_type_code(argument.m_type));
+        }
+        name = owner->get_unique_name(name, false);
+        SymbolTable *scope = al.make_new<SymbolTable>(owner);
+        Vec<char*> members;
+        members.from_pointer_n_copy(al, definition->m_members, definition->n_members);
+        ASR::symbol_t *definition_reference = ASRUtils::import_nested_symbol(al,
+            &definition->base, owner);
+        if (auto *module = ASRUtils::get_sym_module0(&definition->base)) {
+            add_unit_dependency(owner, module->m_name);
+            current_module_dependencies.push_back(al, module->m_name);
+        }
+        ASR::struct_generic_t *metadata = ASR::down_cast<ASR::struct_generic_t>(
+            ASR::make_GenericTypeInstance_t(al, loc, definition_reference,
+                instance_arguments.p, instance_arguments.size()));
+        auto *instance = ASR::down_cast2<ASR::Struct_t>(ASR::make_Struct_t(al, loc, scope,
+            s2c(al, name), nullptr, nullptr, 0, members.p, members.size(), nullptr, 0,
+            definition->m_abi, definition->m_access, definition->m_is_packed,
+            definition->m_is_abstract, definition->m_is_sequence, nullptr, 0, nullptr,
+            nullptr, nullptr, 0, definition->m_is_sealed, nullptr, 0, metadata));
+        owner->add_symbol(name, &instance->base);
+        std::map<std::string, ASR::symbol_t*> symbol_subs;
+        symbol_subs[definition->m_name] = &instance->base;
+        size_t n_diagnostics = diag.diagnostics.size();
+        SetChar dependencies;
+        dependencies.reserve(al, 1);
+        for (size_t i = 0; i < definition->n_members; i++) {
+            ASR::symbol_t *component = definition->m_symtab->get_symbol(definition->m_members[i]);
+            ASR::symbol_t *copy = instantiate_symbol(al, scope, type_subs, symbol_subs,
+                definition->m_members[i], component, diag);
+            if (copy && ASR::is_a<ASR::Variable_t>(*copy)) {
+                auto *variable = ASR::down_cast<ASR::Variable_t>(copy);
+                if (variable->m_type_declaration &&
+                        !ASR::is_a<ASR::ExternalSymbol_t>(*variable->m_type_declaration) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(variable->m_type))) {
+                    dependencies.push_back(al, ASRUtils::symbol_name(
+                        variable->m_type_declaration));
+                }
+            }
+        }
+        if (diag.diagnostics.size() > n_diagnostics) throw SemanticAbort();
+        instance->m_dependencies = dependencies.p;
+        instance->n_dependencies = dependencies.size();
+        instance->m_struct_signature = ASRUtils::make_StructType_t_util(al, loc,
+            &instance->base, true);
+        if (is_body_visitor) complete_generic_instance(*instance);
+        return &instance->base;
+    }
+
+    // The name, visible here, of the type a constructor call `x` of a generic
+    // derived type constructs, or "" when `x` is not one. Explicit type
+    // arguments instantiate the type; otherwise they are inferred from the
+    // actual arguments, trying the type's initializers before its structure
+    // constructor. The call itself is then resolved as for the instance.
+    std::string generic_type_constructor(const AST::FuncCallOrArray_t &x) {
+        if (x.n_member != 0) return "";
+        std::string name = to_lower(x.m_func);
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+        ASR::symbol_t *definition = symbol ? ASRUtils::symbol_get_past_external(symbol)
+            : nullptr;
+        if (definition && ASR::is_a<ASR::Struct_t>(*definition) &&
+                ASRUtils::generic_type_definition_metadata(
+                    *ASR::down_cast<ASR::Struct_t>(definition))) {
+            // Inside the package: the definition's own constructor.
+            if (x.n_temp_args) {
+                resolve_generic_type_application(x.m_func, x.m_temp_args, x.n_temp_args,
+                    x.base.base.loc);
+            }
+            return name;
+        }
+        ASR::Template_t *package = ASRUtils::generic_type_package(symbol);
+        if (!package) return "";
+        ASR::symbol_t *instance = nullptr;
+        if (x.n_temp_args) {
+            instance = resolve_generic_type_application(x.m_func, x.m_temp_args,
+                x.n_temp_args, x.base.base.loc);
+            check_explicit_generic_constructor(*package, instance, x);
+        } else {
+            instance = infer_generic_type_constructor(*package, x);
+        }
+        return ASRUtils::symbol_name(instance);
+    }
+
+    // Binds the parameters of a generic type from the actual arguments of a
+    // call of `procedure` (an initializer or, with `components`, the
+    // structure constructor). False when the call does not match it.
+    bool bind_generic_constructor(const std::vector<std::string> &dummies,
+            const std::vector<ASR::ttype_t*> &formals, const std::vector<bool> &optional,
+            const std::vector<ASR::expr_t*> &positional,
+            const std::vector<std::pair<std::string, ASR::expr_t*>> &keywords,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types) {
+        if (positional.size() > dummies.size()) return false;
+        std::vector<ASR::expr_t*> actuals(dummies.size(), nullptr);
+        for (size_t i = 0; i < positional.size(); i++) actuals[i] = positional[i];
+        for (const auto &keyword : keywords) {
+            auto found = std::find(dummies.begin(), dummies.end(), keyword.first);
+            if (found == dummies.end()) return false;
+            size_t i = found - dummies.begin();
+            if (actuals[i]) return false;
+            actuals[i] = keyword.second;
+        }
+        for (size_t i = 0; i < dummies.size(); i++) {
+            if (!actuals[i]) {
+                if (!optional[i]) return false;
+                continue;
+            }
+            if (!bind_type_parameter_from_actual(formals[i], actuals[i], types)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    typedef std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+        GenericTypeBindings;
+
+    // The bindings of the parameters of a generic type that the actual
+    // arguments of `x` give through its initializers, or else through its
+    // structure constructor: those binding every parameter are viable, the
+    // others partial.
+    void generic_constructor_candidates(ASR::Template_t &package,
+            const AST::FuncCallOrArray_t &x, std::vector<GenericTypeBindings> &viable,
+            std::vector<GenericTypeBindings> &partial) {
+        const Location &loc = x.base.base.loc;
+        ASR::Struct_t *definition = ASRUtils::generic_type_definition(package);
+        std::vector<ASR::expr_t*> positional;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!x.m_args[i].m_end || x.m_args[i].m_start || x.m_args[i].m_step) {
+                trait_call_error("invalid argument of a generic type constructor", loc);
+            }
+            this->visit_expr(*x.m_args[i].m_end);
+            positional.push_back(ASRUtils::EXPR(tmp));
+        }
+        std::vector<std::pair<std::string, ASR::expr_t*>> keywords;
+        for (size_t i = 0; i < x.n_keywords; i++) {
+            this->visit_expr(*x.m_keywords[i].m_value);
+            keywords.push_back({to_lower(x.m_keywords[i].m_arg), ASRUtils::EXPR(tmp)});
+        }
+        auto add = [&](const std::vector<std::string> &dummies,
+                const std::vector<ASR::ttype_t*> &formals, const std::vector<bool> &optional) {
+            GenericTypeBindings types;
+            if (!bind_generic_constructor(dummies, formals, optional, positional,
+                    keywords, types)) return;
+            for (size_t i = 0; i < package.n_args; i++) {
+                auto found = types.find(package.m_args[i]);
+                if (found == types.end() || !found->second.first) {
+                    partial.push_back(types);
+                    return;
+                }
+            }
+            viable.push_back(types);
+        };
+        ASR::symbol_t *initializers = package.m_symtab->get_symbol(
+            "~" + std::string(definition->m_name));
+        if (initializers && ASR::is_a<ASR::GenericProcedure_t>(*initializers)) {
+            auto *generic = ASR::down_cast<ASR::GenericProcedure_t>(initializers);
+            for (size_t i = 0; i < generic->n_procs; i++) {
+                auto *initializer = ASRUtils::trait_method_function(generic->m_procs[i]);
+                if (!initializer) continue;
+                std::vector<std::string> dummies;
+                std::vector<ASR::ttype_t*> formals;
+                std::vector<bool> optional;
+                for (size_t j = 0; j < initializer->n_args; j++) {
+                    auto *dummy = ASRUtils::EXPR2VAR(initializer->m_args[j]);
+                    dummies.push_back(dummy->m_name);
+                    formals.push_back(dummy->m_type);
+                    optional.push_back(dummy->m_presence == ASR::presenceType::Optional);
+                }
+                add(dummies, formals, optional);
+            }
+        }
+        if (viable.empty()) {
+            std::vector<std::string> dummies;
+            std::vector<ASR::ttype_t*> formals;
+            std::vector<bool> optional;
+            for (size_t i = 0; i < definition->n_members; i++) {
+                auto *component = ASR::down_cast<ASR::Variable_t>(
+                    definition->m_symtab->get_symbol(definition->m_members[i]));
+                dummies.push_back(component->m_name);
+                formals.push_back(component->m_type);
+                optional.push_back(component->m_symbolic_value != nullptr ||
+                    ASRUtils::is_allocatable(component->m_type) ||
+                    ASRUtils::is_pointer(component->m_type));
+            }
+            add(dummies, formals, optional);
+        }
+    }
+
+    ASR::symbol_t *infer_generic_type_constructor(ASR::Template_t &package,
+            const AST::FuncCallOrArray_t &x) {
+        const Location &loc = x.base.base.loc;
+        ASR::Struct_t *definition = ASRUtils::generic_type_definition(package);
+        std::vector<GenericTypeBindings> viable, partial;
+        generic_constructor_candidates(package, x, viable, partial);
+        if (viable.empty()) {
+            for (const auto &types : partial) {
+                for (size_t i = 0; i < package.n_args; i++) {
+                    auto found = types.find(package.m_args[i]);
+                    if (found != types.end() && found->second.first) continue;
+                    trait_call_error("cannot infer generic type parameter '" +
+                        std::string(package.m_args[i]) + "' of '" + definition->m_name +
+                        "'; provide it explicitly", loc);
+                }
+            }
+            trait_call_error("no initializer or structure constructor of generic type '" +
+                std::string(definition->m_name) + "' matches these arguments", loc);
+        }
+        for (size_t i = 1; i < viable.size(); i++) {
+            for (size_t j = 0; j < package.n_args; j++) {
+                if (!ASRUtils::trait_type_argument_equal(viable[0].at(package.m_args[j]),
+                        viable[i].at(package.m_args[j]))) {
+                    trait_call_error("ambiguous generic type parameters of '" +
+                        std::string(definition->m_name) + "' for these initializer "
+                        "arguments", loc);
+                }
+            }
+        }
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> arguments;
+        for (size_t i = 0; i < package.n_args; i++) {
+            auto argument = viable[0].at(package.m_args[i]);
+            if (ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(argument.first))) {
+                trait_call_error("generic type arguments that are generic type parameters "
+                    "are not implemented yet", loc);
+            }
+            if (ASRUtils::is_class_type(argument.first)) {
+                argument.first = ASRUtils::make_StructType_t_util(al, loc, argument.second, true);
+            }
+            arguments.push_back(argument);
+        }
+        return instantiate_generic_type(package, arguments, loc);
+    }
+
+    // Explicit type arguments of a constructor call must agree with the types
+    // its actual arguments give the parameters through an initializer or the
+    // structure constructor.
+    void check_explicit_generic_constructor(ASR::Template_t &package,
+            ASR::symbol_t *instance, const AST::FuncCallOrArray_t &x) {
+        auto *metadata = ASRUtils::generic_type_instance(
+            *ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(instance)));
+        std::vector<GenericTypeBindings> viable, partial;
+        generic_constructor_candidates(package, x, viable, partial);
+        viable.insert(viable.end(), partial.begin(), partial.end());
+        const GenericTypeBindings *conflict = nullptr;
+        size_t parameter = 0;
+        for (const auto &types : viable) {
+            bool agrees = true;
+            for (size_t i = 0; agrees && i < package.n_args; i++) {
+                auto found = types.find(package.m_args[i]);
+                if (found == types.end() || !found->second.first) continue;
+                const auto &argument = metadata->m_arguments[i];
+                auto actual = found->second;
+                if (ASRUtils::is_class_type(actual.first) && actual.second) {
+                    actual.first = ASRUtils::make_StructType_t_util(al, x.base.base.loc,
+                        actual.second, true);
+                }
+                if (!ASRUtils::trait_type_argument_equal(actual,
+                        {argument.m_type, argument.m_type_declaration})) {
+                    agrees = false;
+                    if (!conflict) {
+                        conflict = &types;
+                        parameter = i;
+                    }
+                }
+            }
+            if (agrees) return;
+        }
+        if (!conflict) return;
+        const auto &actual = conflict->at(package.m_args[parameter]);
+        const auto &argument = metadata->m_arguments[parameter];
+        trait_call_error("the actual argument of type '" +
+            ASRUtils::type_to_str_fortran_symbol(actual.first, actual.second) +
+            "' conflicts with the explicit generic type argument '" +
+            ASRUtils::type_to_str_fortran_symbol(argument.m_type, argument.m_type_declaration) +
+            "' for parameter '" + std::string(package.m_args[parameter]) + "' of '" +
+            ASRUtils::generic_type_definition(package)->m_name + "'", x.base.base.loc);
+    }
+
+    // Completes every instance of the unit `scope` that the symbol table
+    // visitor created; the package bodies exist now.
+    void complete_generic_instances(SymbolTable *scope) {
+        std::vector<ASR::Struct_t*> instances;
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Struct_t>(*entry.second)) continue;
+            auto *structure = ASR::down_cast<ASR::Struct_t>(entry.second);
+            if (ASRUtils::generic_type_instance(*structure)) instances.push_back(structure);
+        }
+        for (auto *instance : instances) complete_generic_instance(*instance);
+    }
+
+    // The source symbol a procedure of a package binding names: a method's
+    // generic Template for its function, else the procedure itself.
+    static ASR::symbol_t *generic_package_procedure(ASR::symbol_t *procedure) {
+        procedure = ASRUtils::symbol_get_past_external(procedure);
+        if (procedure && ASR::is_a<ASR::Function_t>(*procedure)) {
+            if (auto *method = ASRUtils::trait_method_template(
+                    *ASR::down_cast<ASR::Function_t>(procedure))) {
+                return &method->base;
+            }
+        }
+        return procedure;
+    }
+
+    // The instance's copy of a procedure a binding of its definition names,
+    // or an import of a procedure outside the package.
+    ASR::symbol_t *generic_instance_procedure(ASR::symbol_t *procedure,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &copies, SymbolTable *owner,
+            bool function) {
+        ASR::symbol_t *source = generic_package_procedure(procedure);
+        auto found = copies.find(source);
+        if (found == copies.end()) {
+            return make_operator_proc_visible(procedure, "trait", owner);
+        }
+        ASR::symbol_t *copy = found->second;
+        if (function && ASR::is_a<ASR::Template_t>(*copy)) {
+            copy = &ASRUtils::trait_method_function(copy)->base;
+        }
+        return make_operator_proc_visible(copy, "trait", owner);
+    }
+
+    // Binds each published specialization of a generic requirement of the
+    // package's parameters that the method `source` calls to a static
+    // adapter in the method's copy: the type argument's conformance gives the
+    // generic implementation, forwarded the copy's own binders.
+    // The evidence of the type argument of `instance` that the constraint
+    // `constraint` of its generic type's parameter selects: the argument of
+    // the constrained parameter, at the constraint's position among that
+    // parameter's constraints.
+    std::pair<ASR::generic_type_argument_t*, ASR::TraitImplementation_t*>
+            generic_type_constraint_evidence(ASR::Template_t &package,
+            ASR::GenericTypeInstance_t &instance, ASR::TraitConstraint_t &constraint) {
+        ASR::symbol_t *binder = ASRUtils::symbol_get_past_external(constraint.m_parameter);
+        size_t argument = 0, position = 0;
+        for (size_t i = 0; i < package.n_args; i++) {
+            if (package.m_symtab->get_symbol(package.m_args[i]) == binder) argument = i;
+        }
+        for (auto *other : trait_constraints(&package)) {
+            if (other == &constraint) break;
+            if (ASRUtils::symbol_get_past_external(other->m_parameter) == binder) position++;
+        }
+        auto &record = instance.m_arguments[argument];
+        LCOMPILERS_ASSERT(position < record.n_evidence);
+        return {&record, ASR::down_cast<ASR::TraitImplementation_t>(
+            ASRUtils::symbol_get_past_external(record.m_evidence[position]))};
+    }
+
+    void bind_generic_instance_requirements(ASR::Template_t &package,
+            ASR::Template_t &source, ASR::Template_t &copy,
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            ASR::GenericTypeInstance_t &metadata,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs) {
+        // Each published specialization: its constraint and requirement.
+        std::map<ASR::symbol_t*, std::pair<ASR::TraitConstraint_t*, size_t>> published;
+        for (auto *constraint : trait_constraints(&package)) {
+            for (size_t i = 0; i < constraint->n_requirements; i++) {
+                if (!ASRUtils::trait_requirement_specialization(*constraint, i)) continue;
+                published[ASRUtils::symbol_get_past_external(
+                    constraint->m_requirements[i].m_procedure)] = {constraint, i};
+            }
+        }
+        if (published.empty()) return;
+        class Calls : public ASR::BaseWalkVisitor<Calls> {
+        public:
+            std::set<ASR::symbol_t*> callees;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                callees.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                ASR::BaseWalkVisitor<Calls>::visit_FunctionCall(x);
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                callees.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                ASR::BaseWalkVisitor<Calls>::visit_SubroutineCall(x);
+            }
+        } calls;
+        for (const auto &entry : source.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                calls.visit_symbol(*entry.second);
+            }
+        }
+        auto *saved_scope = current_scope;
+        current_scope = copy.m_symtab;
+        try {
+            for (auto *callee : calls.callees) {
+                auto found = published.find(callee);
+                if (found == published.end()) continue;
+                auto *constraint = found->second.first;
+                size_t index = found->second.second;
+                auto *specialization = ASR::down_cast<ASR::Function_t>(callee);
+                auto *requirement = ASRUtils::trait_requirement_specialization(*constraint, index);
+                std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> recorded;
+                [[maybe_unused]] bool complete = ASRUtils::trait_requirement_type_arguments(
+                    *requirement, *specialization, recorded);
+                LCOMPILERS_ASSERT(complete);
+                const Location &loc = specialization->base.base.loc;
+                // The requirement's type arguments are the method's own binders.
+                std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+                for (const auto &entry : recorded) {
+                    auto *type = ASRUtils::extract_type(entry.first);
+                    if (!ASR::is_a<ASR::TypeParameter_t>(*type)) {
+                        trait_call_error("calling a generic method of a generic type "
+                            "parameter with concrete type arguments inside a generic derived "
+                            "type is not implemented yet", loc);
+                    }
+                    std::string binder = ASR::down_cast<ASR::TypeParameter_t>(type)->m_param;
+                    ASR::symbol_t *declaration = copy.m_symtab->get_symbol(binder);
+                    LCOMPILERS_ASSERT(declaration);
+                    types.push_back({ASRUtils::duplicate_type(al, ASRUtils::symbol_type(
+                        declaration)), declaration});
+                }
+                auto selected = generic_type_constraint_evidence(package, metadata, *constraint);
+                auto &argument_record = *selected.first;
+                auto *evidence = selected.second;
+                const auto *binding = ASRUtils::find_trait_binding(*evidence,
+                    constraint->m_requirements[index].m_member);
+                LCOMPILERS_ASSERT(binding);
+                auto *implementation = ASRUtils::trait_method_function(binding->m_procedure);
+                auto *generic = implementation
+                    ? ASRUtils::trait_method_template(*implementation) : nullptr;
+                LCOMPILERS_ASSERT(generic && generic->n_args == types.size());
+                std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+                    implementation_types;
+                for (size_t i = 0; i < types.size(); i++) {
+                    implementation_types[generic->m_args[i]] = types[i];
+                }
+                std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                    conformances;
+                auto requirements = resolve_trait_requirements(generic, implementation_types,
+                    true, loc, &conformances);
+                ASR::symbol_t *forwarded = specialize_trait_generic(copy.m_symtab, generic,
+                    implementation_types, requirements, conformances, loc);
+                std::map<std::string, ASR::symbol_t*> symbols;
+                std::string name = copy.m_symtab->get_unique_name(
+                    "__trait_requirement_signature");
+                size_t n_diagnostics = diag.diagnostics.size();
+                ASR::symbol_t *signature = instantiate_symbol(al, copy.m_symtab, type_subs,
+                    symbols, name, callee, diag);
+                if (diag.diagnostics.size() > n_diagnostics) throw SemanticAbort();
+                ASR::trait_binding_t adapted = *binding;
+                adapted.m_procedure = forwarded;
+                ASR::symbol_t *adapter = trait_adapter(
+                    ASR::down_cast<ASR::Function_t>(signature),
+                    argument_record.m_type, argument_record.m_type_declaration, adapted,
+                    copy.m_symtab, loc);
+                copy.m_symtab->erase_symbol(name);
+                symbol_subs[specialization->m_name] = adapter;
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
+    }
+
+    // The forwarding specializations a method's body created in its own
+    // scope are forwarding specializations of the same generics in the copy.
+    void copy_generic_method_forwarding(ASR::Template_t &source, ASR::Template_t &copy) {
+        size_t n = trait_specializations.size();
+        for (size_t i = 0; i < n; i++) {
+            const auto cached = trait_specializations[i];
+            if (cached.scope != source.m_symtab) continue;
+            ASR::symbol_t *procedure = copy.m_symtab->get_symbol(
+                ASRUtils::symbol_name(cached.procedure));
+            if (!procedure) continue;
+            auto types = cached.types;
+            for (auto &entry : types) {
+                if (!ASR::is_a<ASR::TypeParameter_t>(*entry.second.first)) continue;
+                std::string binder = ASR::down_cast<ASR::TypeParameter_t>(
+                    entry.second.first)->m_param;
+                ASR::symbol_t *declaration = copy.m_symtab->get_symbol(binder);
+                LCOMPILERS_ASSERT(declaration);
+                entry.second = {ASRUtils::duplicate_type(al, entry.second.first), declaration};
+            }
+            trait_specializations.push_back({copy.m_symtab, cached.generic, types,
+                cached.evidence, procedure});
+        }
+    }
+
+    void complete_generic_instance(ASR::Struct_t &instance) {
+        if (completed_generic_instances.count(&instance)) return;
+        auto *metadata = ASRUtils::generic_type_instance(instance);
+        LCOMPILERS_ASSERT(metadata);
+        ASR::Struct_t *definition = ASRUtils::generic_instance_definition(*metadata);
+        auto *package = ASR::down_cast<ASR::Template_t>(
+            ASRUtils::get_asr_owner(&definition->base));
+        SymbolTable *owner = instance.m_symtab->parent;
+        const Location &loc = instance.base.base.loc;
+        // An argument this unit has not completed yet has its conformances,
+        // and so this instance its evidence, once it is completed.
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> arguments;
+        bool pending = false;
+        for (size_t i = 0; i < metadata->n_arguments; i++) {
+            const auto &argument = metadata->m_arguments[i];
+            arguments.push_back({argument.m_type, argument.m_type_declaration});
+            if (ASR::Struct_t *inner = pending_generic_instance(argument.m_type_declaration)) {
+                complete_generic_instance(*inner);
+                pending = true;
+            }
+        }
+        if (pending) {
+            auto *saved_scope = current_scope;
+            current_scope = owner;
+            auto evidence = generic_type_evidence(*package, arguments, loc);
+            current_scope = saved_scope;
+            for (size_t i = 0; i < metadata->n_arguments; i++) {
+                Vec<ASR::symbol_t*> records = generic_type_evidence_records(evidence[i], owner);
+                metadata->m_arguments[i].m_evidence = records.p;
+                metadata->m_arguments[i].n_evidence = records.size();
+            }
+        }
+        completed_generic_instances.insert(&instance);
+        // A declaration creates the instance with its components; its
+        // obligations, bindings and conformances are completed together.
+        Vec<ASR::symbol_t*> obligations;
+        obligations.reserve(al, definition->n_trait_obligations);
+        for (size_t i = 0; i < definition->n_trait_obligations; i++) {
+            obligations.push_back(al, ASRUtils::import_nested_symbol(al,
+                definition->m_trait_obligations[i], owner));
+        }
+        instance.m_trait_obligations = obligations.p;
+        instance.n_trait_obligations = obligations.size();
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
+        for (size_t i = 0; i < package->n_args; i++) {
+            type_subs[package->m_args[i]] = {metadata->m_arguments[i].m_type,
+                metadata->m_arguments[i].m_type_declaration};
+        }
+        std::map<std::string, ASR::symbol_t*> symbol_subs;
+        symbol_subs[definition->m_name] = &instance.base;
+        // The constraints of the parameters and their requirements are bound
+        // by substitution; they are not copied.
+        std::set<ASR::symbol_t*> requirements;
+        auto constraints = trait_constraints(package);
+        for (auto *constraint : constraints) {
+            requirements.insert(&constraint->base);
+            for (size_t i = 0; i < constraint->n_requirements; i++) {
+                requirements.insert(ASRUtils::symbol_get_past_external(
+                    constraint->m_requirements[i].m_procedure));
+            }
+        }
+        auto *saved_scope = current_scope;
+        current_scope = owner;
+        try {
+            // Static adapters of the nongeneric requirements.
+            for (auto *constraint : constraints) {
+                auto selected = generic_type_constraint_evidence(*package, *metadata,
+                    *constraint);
+                auto &record = *selected.first;
+                auto *evidence = selected.second;
+                for (size_t i = 0; i < constraint->n_requirements; i++) {
+                    auto *procedure = ASRUtils::symbol_get_past_external(
+                        constraint->m_requirements[i].m_procedure);
+                    if (!ASR::is_a<ASR::Function_t>(*procedure) ||
+                            ASRUtils::trait_requirement_specialization(*constraint, i)) continue;
+                    const auto *binding = ASRUtils::find_trait_binding(*evidence,
+                        constraint->m_requirements[i].m_member);
+                    LCOMPILERS_ASSERT(binding);
+                    symbol_subs[ASRUtils::symbol_name(procedure)] = trait_adapter(
+                        ASR::down_cast<ASR::Function_t>(procedure), record.m_type,
+                        record.m_type_declaration, *binding, owner, loc);
+                }
+            }
+            std::map<ASR::symbol_t*, ASR::symbol_t*> copies;
+            std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> functions, methods;
+            size_t n_diagnostics = diag.diagnostics.size();
+            for (const auto &entry : package->m_symtab->get_scope()) {
+                ASR::symbol_t *member = entry.second;
+                if (member == &definition->base || requirements.count(member)) continue;
+                if (!ASR::is_a<ASR::Function_t>(*member) && !ASR::is_a<ASR::Template_t>(*member)) {
+                    continue;
+                }
+                std::string name = owner->get_unique_name(
+                    std::string(instance.m_name) + "_" + entry.first, false);
+                if (ASR::is_a<ASR::Function_t>(*member)) {
+                    ASR::symbol_t *copy = instantiate_symbol(al, owner, type_subs, symbol_subs,
+                        name, member, diag);
+                    copies[member] = copy;
+                    functions.push_back({copy, member});
+                } else {
+                    methods.push_back({nullptr, member});
+                }
+            }
+            if (diag.diagnostics.size() > n_diagnostics) throw SemanticAbort();
+            for (auto &method : methods) {
+                auto *source = ASR::down_cast<ASR::Template_t>(method.second);
+                std::map<std::string, ASR::symbol_t*> method_subs = symbol_subs;
+                std::string name = owner->get_unique_name(
+                    std::string(instance.m_name) + "_" + source->m_name, false);
+                ASR::symbol_t *copy = instantiate_symbol(al, owner, type_subs, method_subs,
+                    name, method.second, diag);
+                if (diag.diagnostics.size() > n_diagnostics) throw SemanticAbort();
+                method.first = copy;
+                copies[method.second] = copy;
+                auto *copied = ASR::down_cast<ASR::Template_t>(copy);
+                copy_generic_method_forwarding(*source, *copied);
+                bind_generic_instance_requirements(*package, *source, *copied, type_subs,
+                    *metadata, method_subs);
+                std::set<ASR::symbol_t*> instantiated_bodies;
+                instantiate_body(al, type_subs, method_subs, copy, method.second,
+                    instantiated_bodies);
+            }
+            for (auto &function : functions) {
+                std::set<ASR::symbol_t*> instantiated_bodies;
+                std::map<std::string, ASR::symbol_t*> function_subs = symbol_subs;
+                for (const auto &copy : copies) {
+                    if (ASR::is_a<ASR::Template_t>(*copy.second)) {
+                        auto *method = ASRUtils::trait_method_function(copy.first);
+                        if (method) {
+                            function_subs[method->m_name] =
+                                &ASRUtils::trait_method_function(copy.second)->base;
+                        }
+                    }
+                }
+                instantiate_body(al, type_subs, function_subs, function.first,
+                    function.second, instantiated_bodies);
+            }
+            // Bindings.
+            for (const auto &entry : definition->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*entry.second)) continue;
+                auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(entry.second);
+                ASR::symbol_t *procedure = generic_instance_procedure(binding->m_proc, copies,
+                    owner, true);
+                ASR::symbol_t *dispatch = binding->m_dispatch_proc
+                    ? generic_instance_procedure(binding->m_dispatch_proc, copies, owner, true)
+                    : nullptr;
+                ASR::symbol_t *copy = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_StructMethodDeclaration_t(al, binding->base.base.loc,
+                        instance.m_symtab, binding->m_name, binding->m_self_argument,
+                        ASRUtils::symbol_name(procedure), procedure, binding->m_abi,
+                        binding->m_is_deferred, binding->m_is_nopass, dispatch));
+                instance.m_symtab->add_symbol(entry.first, copy);
+            }
+            // Initializers.
+            ASR::symbol_t *initializers = package->m_symtab->get_symbol(
+                "~" + std::string(definition->m_name));
+            if (initializers && ASR::is_a<ASR::GenericProcedure_t>(*initializers)) {
+                auto *generic = ASR::down_cast<ASR::GenericProcedure_t>(initializers);
+                Vec<ASR::symbol_t*> procedures;
+                procedures.reserve(al, generic->n_procs);
+                for (size_t i = 0; i < generic->n_procs; i++) {
+                    procedures.push_back(al, generic_instance_procedure(generic->m_procs[i],
+                        copies, owner, true));
+                }
+                std::string name = "~" + std::string(instance.m_name);
+                owner->add_symbol(name, ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_GenericProcedure_t(al, generic->base.base.loc, owner,
+                        s2c(al, name), procedures.p, procedures.size(), generic->m_access)));
+            }
+            // Conformances and their runtime evidence.
+            std::vector<ASR::TraitImplementation_t*> implementations;
+            for (const auto &entry : package->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+                auto *source = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(source->m_type_declaration) !=
+                        &definition->base) continue;
+                Vec<ASR::trait_binding_t> bindings;
+                bindings.reserve(al, source->n_bindings);
+                for (size_t i = 0; i < source->n_bindings; i++) {
+                    ASR::trait_binding_t binding = source->m_bindings[i];
+                    binding.m_member = reference_trait_member(binding.m_member, owner,
+                        binding.loc);
+                    binding.m_procedure = generic_instance_procedure(binding.m_procedure,
+                        copies, owner, true);
+                    bindings.push_back(al, binding);
+                }
+                ASR::symbol_t *trait = ASRUtils::import_nested_symbol(al, source->m_trait,
+                    owner);
+                if (auto *module = ASRUtils::get_sym_module0(
+                        ASRUtils::symbol_get_past_external(source->m_trait))) {
+                    add_unit_dependency(owner, module->m_name);
+                    current_module_dependencies.push_back(al, module->m_name);
+                }
+                std::string name = owner->get_unique_name("__implements_" +
+                    std::string(instance.m_name) + "_" +
+                    ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(source->m_trait)),
+                    false);
+                auto *implementation = ASR::down_cast2<ASR::TraitImplementation_t>(
+                    ASR::make_TraitImplementation_t(al, source->base.base.loc, owner,
+                        s2c(al, name), ASRUtils::make_StructType_t_util(al, loc,
+                            &instance.base, true), &instance.base, trait,
+                        bindings.p, bindings.size(), ASR::accessType::Public));
+                owner->add_symbol(name, &implementation->base);
+                implementations.push_back(implementation);
+            }
+            for (auto *implementation : implementations) {
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(implementation->m_trait));
+                for (auto *provided : checked_trait_hierarchy(*trait, loc).traits) {
+                    create_runtime_trait_witness(implementation,
+                        ASRUtils::trait_runtime_contract(
+                            const_cast<ASR::symbol_t*>(&provided->base)));
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {
@@ -30246,6 +31430,12 @@ public:
                 current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
             } else if (ASR::is_a<ASR::Template_t>(*item.second)) {
                 ASR::Template_t *temp = ASR::down_cast<ASR::Template_t>(item.second);
+                // A generic type's accessibility is its definition's.
+                if (!to_submodule && ASRUtils::generic_type_definition(*temp) &&
+                        ASRUtils::generic_type_definition(*temp)->m_access ==
+                            ASR::accessType::Private) {
+                    continue;
+                }
                 Str name;
                 name.from_str(al, item.first);
                 char *cname = name.c_str(al);
@@ -30463,6 +31653,7 @@ public:
         remote_sym = to_lower(remote_sym);
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
+            check_generic_type_procedure_reference(*m, remote_sym, loc);
             diag.add(diag::Diagnostic(
                 "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 diag::Level::Error, diag::Stage::Semantic, {
@@ -31142,17 +32333,10 @@ public:
         if (existing && ASRUtils::symbol_get_past_external(existing) == proc_def) {
             return existing;
         }
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(proc_def);
         std::vector<char*> nested;
-        while (owner && (ASR::is_a<ASR::Template_t>(*owner) ||
-                ASR::is_a<ASR::Trait_t>(*owner) ||
-                ASR::is_a<ASR::TraitRuntimeContract_t>(*owner) ||
-                ASR::is_a<ASR::TraitWitness_t>(*owner) ||
-                ASR::is_a<ASR::TraitErasure_t>(*owner))) {
-            nested.push_back(ASRUtils::symbol_name(owner));
-            owner = ASRUtils::get_asr_owner(owner);
-        }
-        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+        ASR::symbol_t *owner = ASRUtils::nested_symbol_unit(proc_def, nested);
+        if (owner == nullptr || !ASRUtils::nested_symbol_importable(*owner, scope) ||
+                (ASR::is_a<ASR::Program_t>(*owner) && nested.empty())) {
             return proc;
         }
         if (scope->get_symbol(local_name) != nullptr) {
@@ -31160,8 +32344,8 @@ public:
         }
         Vec<char*> scopes;
         scopes.reserve(al, nested.size());
-        for (auto name = nested.rbegin(); name != nested.rend(); ++name) {
-            scopes.push_back(al, *name);
+        for (char *nested_scope : nested) {
+            scopes.push_back(al, nested_scope);
         }
         ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(
             ASR::make_ExternalSymbol_t(al, proc_def->base.loc, scope,

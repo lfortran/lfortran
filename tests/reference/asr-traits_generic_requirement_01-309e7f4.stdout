@@ -10581,6 +10581,7 @@
                                     []
                                     .true.
                                     [2 isum]
+                                    ()
                                 ),
                             simple_sum:
                                 (Template
@@ -11544,6 +11545,7 @@
                                     []
                                     .true.
                                     [2 isum]
+                                    ()
                                 ),
                             twice_sum:
                                 (Template

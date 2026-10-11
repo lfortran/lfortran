@@ -904,6 +904,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     global_init_01_a

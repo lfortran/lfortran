@@ -264,6 +264,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     fpm_git
@@ -414,6 +415,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             error_t:
                                 (Struct
@@ -470,6 +472,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             git_target_branch:
                                 (ExternalSymbol
@@ -1035,6 +1038,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     fpm_manifest_dependency

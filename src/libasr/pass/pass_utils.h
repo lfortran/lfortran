@@ -481,6 +481,12 @@ namespace LCompilers {
                             ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
                             self().visit_Block(*s);
                         }
+                        // Runtime witnesses and generic entries a program
+                        // owns hold executable procedures.
+                        if (ASR::is_a<ASR::TraitWitness_t>(*item.second) ||
+                                ASR::is_a<ASR::TraitErasure_t>(*item.second)) {
+                            self().visit_symbol(*item.second);
+                        }
                     }
                     this->current_scope = current_scope_copy;
                 }

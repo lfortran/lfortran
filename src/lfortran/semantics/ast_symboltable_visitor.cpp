@@ -15,6 +15,7 @@
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/semantics/trait_procedures.h>
+#include <lfortran/semantics/generic_types.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -222,9 +223,7 @@ public:
     };
     std::vector<TypeInitializer> pending_type_initializers;
     std::map<SymbolTable*, std::map<std::string, ASR::accessType>> initializer_access;
-    bool in_submodule = false;
     bool is_interface = false;
-    bool in_program = false;
     int program_count = 0; // To track number of program units in a single file
     Location first_program_loc; // Location of the first program unit
     std::string interface_name = "";
@@ -788,6 +787,9 @@ public:
         for (auto &item : current_scope->get_scope()) {
             if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                // An import of a symbol nested in a generic or trait scope is
+                // the compiler's own and stays private; no USE creates one.
+                if (es->n_scope_names > 0) continue;
                 if (assgnd_access.count(item.first)) {
                     es->m_access = assgnd_access[item.first];
                 } else if (item.first.size() > 1 && item.first[0] == '~'
@@ -822,6 +824,10 @@ public:
                 } else {
                     st->m_access = dflt_access;
                 }
+            } else if (ASR::Template_t *package = ASRUtils::generic_type_package(item.second)) {
+                // A generic type's accessibility is its definition's.
+                ASRUtils::generic_type_definition(*package)->m_access =
+                    assgnd_access.count(item.first) ? assgnd_access[item.first] : dflt_access;
             }
         }
         for (auto &name : module_instantiated_symbols) {
@@ -886,6 +892,11 @@ public:
     }
 
     void visit_Module(const AST::Module_t &x) {
+        if (AST::Module_t *lowered = lower_generic_type_module(al, x,
+                generic_type_packages)) {
+            visit_Module(*lowered);
+            return;
+        }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -3825,6 +3836,11 @@ public:
                 throw SemanticAbort();
             }
             auto *parent = ASRUtils::symbol_get_past_external(parent_sym);
+            if (ASRUtils::generic_type_package(parent) || (ASR::is_a<ASR::Struct_t>(*parent) &&
+                    ASR::down_cast<ASR::Struct_t>(parent)->m_generic)) {
+                trait_error("extending a generic derived type is not implemented yet",
+                    attr_extend->base.base.loc);
+            }
             if (!ASR::is_a<ASR::Struct_t>(*parent)) {
                 trait_error("extends requires a derived type", attr_extend->base.base.loc);
             }
@@ -3971,7 +3987,7 @@ public:
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
                 kind_params.p, kind_params.size(), is_sealed,
-                obligations.p, obligations.size());
+                obligations.p, obligations.size(), nullptr);
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
@@ -4088,7 +4104,7 @@ public:
             is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
-            nullptr, 0, is_sealed, obligations.p, obligations.size());
+            nullptr, 0, is_sealed, obligations.p, obligations.size(), nullptr);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -4753,84 +4769,6 @@ public:
         tmp = &trait->base;
     }
 
-    ASR::TraitWitness_t *create_runtime_trait_witness(
-            ASR::TraitImplementation_t *implementation,
-            ASR::TraitRuntimeContract_t *contract) {
-        if (!contract) return nullptr;
-        if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
-            return existing;
-        }
-        if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
-        for (size_t i = 0; i < contract->n_slots; i++) {
-            auto *binding = ASRUtils::find_trait_binding(
-                *implementation, contract->m_slots[i].m_origins[0]);
-            LCOMPILERS_ASSERT(binding);
-            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
-            auto abi = ASRUtils::get_FunctionType(procedure)->m_abi;
-            if (abi != ASR::abiType::Source && abi != ASR::abiType::ExternalUndefined) return nullptr;
-            auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
-            if (!ASRUtils::runtime_trait_method_supported(*member)) return nullptr;
-            if (auto *generic = ASRUtils::trait_method_template(*procedure)) {
-                if (contract->m_slots[i].n_type_arguments) {
-                    create_trait_member_entry(*generic, implementation->m_parent_symtab,
-                        contract->m_slots[i], binding->loc);
-                } else {
-                    create_trait_erasure(*generic, implementation->m_parent_symtab,
-                        binding->loc);
-                }
-            }
-        }
-        const Location &loc = implementation->base.base.loc;
-        std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==
-                ASRUtils::symbol_get_past_external(contract->m_trait)
-            ? "" : "_" + std::string(ASRUtils::symbol_name(contract->m_trait));
-        std::string name = current_scope->get_unique_name(
-            std::string(implementation->m_name) + suffix + "_witness");
-        auto *witness_scope = al.make_new<SymbolTable>(current_scope);
-        ASR::trait_lifecycle_t lifecycle;
-        lifecycle.loc = loc;
-        lifecycle.m_type_declaration = implementation->m_type_declaration;
-        auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
-            al, loc, witness_scope, s2c(al, name),
-            make_operator_proc_visible(&contract->base, "trait", current_scope),
-            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source,
-            lifecycle, nullptr, 0, nullptr, 0));
-        current_scope->add_symbol(name, &witness->base);
-        Vec<ASR::symbol_t*> procedures;
-        Vec<char*> dependencies;
-        procedures.reserve(al, contract->n_slots);
-        dependencies.reserve(al, contract->n_slots);
-        for (size_t i = 0; i < contract->n_slots; i++) {
-            auto &slot = contract->m_slots[i];
-            auto *binding = ASRUtils::find_trait_binding(*implementation, slot.m_origins[0]);
-            LCOMPILERS_ASSERT(binding);
-            auto *procedure = trait_adapter(
-                ASR::down_cast<ASR::Function_t>(slot.m_procedure),
-                implementation->m_implementing_type, implementation->m_type_declaration,
-                *binding, witness_scope, loc, witness, i);
-            procedures.push_back(al, procedure);
-            dependencies.push_back(al, ASRUtils::symbol_name(procedure));
-        }
-        witness->m_procedures = procedures.p;
-        witness->n_procedures = procedures.size();
-        witness->m_dependencies = dependencies.p;
-        witness->n_dependencies = dependencies.size();
-        auto *trait = ASR::down_cast<ASR::Trait_t>(
-            ASRUtils::symbol_get_past_external(contract->m_trait));
-        Vec<ASR::symbol_t*> projections;
-        projections.reserve(al, trait->n_parents);
-        for (size_t i = 0; i < trait->n_parents; i++) {
-            auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
-            LCOMPILERS_ASSERT(parent_contract);
-            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract);
-            LCOMPILERS_ASSERT(parent_witness);
-            projections.push_back(al, &parent_witness->base);
-        }
-        witness->m_projections = projections.p;
-        witness->n_projections = projections.size();
-        return witness;
-    }
-
     void visit_TraitProcedure(const AST::TraitProcedure_t &x) {
         warn_traits_extension(x.base.base.loc);
         std::set<std::string> parameters;
@@ -5206,6 +5144,20 @@ public:
             ASR::symbol_t *&type_symbol, const Location &loc) {
         type_symbol = nullptr;
         std::string type_name;
+        if (AST::is_a<AST::AttrGenericTypeParams_t>(*attribute)) {
+            // Checked against the definition when the package was visited.
+            type_name = to_lower(AST::down_cast<AST::AttrGenericTypeParams_t>(
+                attribute)->m_name);
+            auto *symbol = current_scope->get_symbol(type_name);
+            if (!symbol || !ASR::is_a<ASR::Struct_t>(*symbol) ||
+                    !ASRUtils::generic_type_definition_metadata(
+                        *ASR::down_cast<ASR::Struct_t>(symbol))) {
+                trait_error("an implements statement for generic type '" + type_name +
+                    "' must be in the module that defines it", loc);
+            }
+            type_symbol = symbol;
+            return ASRUtils::make_StructType_t_util(al, loc, symbol, true);
+        }
         if (AST::is_a<AST::AttrName_t>(*attribute)) {
             auto *name = AST::down_cast<AST::AttrName_t>(attribute);
             type_name = to_lower(name->m_name);
@@ -5269,7 +5221,13 @@ public:
                 x.base.base.loc);
         }
         std::map<std::string, ASR::trait_binding_t> declared;
+        bool generic_definition = structure &&
+            ASRUtils::generic_type_definition_metadata(*structure);
         for (size_t i = 0; i < x.n_procedures; i++) {
+            // The initializers of a generic type's implements statement were
+            // bound to the type with its package.
+            if (generic_definition &&
+                    AST::is_a<AST::InitialProcedure_t>(*x.m_procedures[i])) continue;
             if (!AST::is_a<AST::DerivedTypeProc_t>(*x.m_procedures[i])) {
                 trait_error("this trait binding form is not implemented yet",
                     x.m_procedures[i]->base.loc);
@@ -5452,7 +5410,9 @@ public:
                 }
             }
             current_scope->add_symbol(name, implementation);
-            if (!structure || structure->m_is_abstract) continue;
+            // A generic definition has no runtime evidence; its instances do.
+            if (!structure || structure->m_is_abstract ||
+                    ASRUtils::generic_type_definition_metadata(*structure)) continue;
             // A static-only child can still supply a runtime-eligible parent.
             for (auto *provided : hierarchies[i].traits) {
                 create_runtime_trait_witness(
@@ -6751,6 +6711,11 @@ public:
                 std::string new_dt_name = proc.first;
                 // Use module-qualified name
                 ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
+                // The definition of a generic type belongs to its package.
+                while (owner_sym && ASR::is_a<ASR::Template_t>(*owner_sym) &&
+                        ASRUtils::generic_type_definition_metadata(*clss)) {
+                    owner_sym = ASRUtils::get_asr_owner(owner_sym);
+                }
                 if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
                     ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
                     new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
@@ -7681,7 +7646,316 @@ public:
         }
     }
 
+    std::map<const AST::Template_t*, GenericTypePackageAST> generic_type_packages;
+
+    // A generic derived type outside a module is not lowered to a package.
+    void visit_TraitDerivedType(const AST::TraitDerivedType_t &x) {
+        trait_error("generic derived types outside modules are not implemented yet",
+            x.base.base.loc);
+    }
+
+    // The implementing type of an implements statement for the generic type
+    // `name` repeats the type's parameter list: the same names, order and
+    // constraints (a current prototype boundary).
+    void check_generic_type_implements(const AST::Implements_t &x,
+            const AST::TraitDerivedType_t &generic, const std::string &name) {
+        if (!AST::is_a<AST::AttrGenericTypeParams_t>(*x.m_implementing_type)) {
+            trait_error("this prototype requires the implements statement for generic "
+                "type '" + name + "' to repeat its generic parameter list",
+                x.m_implementing_type->base.loc);
+        }
+        auto *target = AST::down_cast<AST::AttrGenericTypeParams_t>(x.m_implementing_type);
+        bool same = target->n_parameters == generic.n_parameters;
+        auto resolved = [&](const AST::trait_parameter_t &parameter) {
+            std::set<ASR::symbol_t*> traits;
+            for (size_t i = 0; i < parameter.n_traits; i++) {
+                ASR::symbol_t *symbol = current_scope->resolve_symbol(
+                    to_lower(parameter.m_traits[i]));
+                traits.insert(symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr);
+            }
+            return traits;
+        };
+        for (size_t i = 0; same && i < target->n_parameters; i++) {
+            const auto &left = target->m_parameters[i];
+            const auto &right = generic.m_parameters[i];
+            same = to_lower(left.m_name) == to_lower(right.m_name) &&
+                left.n_member_types == 0 && right.n_member_types == 0 &&
+                resolved(left) == resolved(right);
+        }
+        if (!same) {
+            trait_error("this prototype requires the implements statement to repeat "
+                "the generic parameters of '" + name + "' exactly",
+                x.m_implementing_type->base.loc);
+        }
+    }
+
+    // An initializer inherits the parameters of its generic type and declares
+    // no generic parameters of its own; a method's own binders do not reuse
+    // the names of its type's parameters (current prototype boundaries).
+    void check_generic_type_procedure(const AST::program_unit_t &procedure,
+            const AST::TraitDerivedType_t &generic, const std::string &name,
+            const std::set<std::string> &initializers,
+            const std::set<std::string> &binder_names) {
+        if (!AST::is_a<AST::TraitProcedure_t>(procedure)) return;
+        auto *method = AST::down_cast<AST::TraitProcedure_t>(&procedure);
+        std::string procedure_name = to_lower(program_unit_name(procedure));
+        if (initializers.count(procedure_name)) {
+            bool inherited = method->n_parameters == generic.n_parameters;
+            for (size_t j = 0; inherited && j < method->n_parameters; j++) {
+                inherited = to_lower(method->m_parameters[j].m_name) ==
+                    to_lower(generic.m_parameters[j].m_name);
+            }
+            trait_error(inherited
+                ? "initializer '" + procedure_name + "' cannot declare the "
+                    "generic parameters of its type '" + name +
+                    "'; initializers inherit them"
+                : "initializer '" + procedure_name + "' of generic type '" +
+                    name + "' declares its own generic parameters; this "
+                    "prototype does not support them",
+                method->base.base.loc);
+        }
+        for (size_t j = 0; j < method->n_parameters; j++) {
+            std::string binder = to_lower(method->m_parameters[j].m_name);
+            if (binder_names.count(binder)) {
+                trait_error("generic parameter '" + binder + "' of method '" +
+                    procedure_name + "' reuses the name of a parameter of its "
+                    "type '" + name + "'; this prototype does not support "
+                    "shadowing a containing type's parameters",
+                    method->m_parameters[j].loc);
+            }
+        }
+    }
+
+    // A generic derived type and the procedures that depend on its parameters
+    // form a package: a Template whose binders are the type's parameters and
+    // whose symbol of the type's name is the definition. Instances are created
+    // where the type is used with concrete type arguments.
+    void visit_generic_type_package(const AST::Template_t &x,
+            const GenericTypePackageAST &package) {
+        const AST::TraitDerivedType_t &generic = *package.definition;
+        const AST::DerivedType_t &type = generic_type_definition(generic);
+        std::string name = to_lower(type.m_name);
+        warn_traits_extension(generic.base.base.loc);
+        if (type.n_namelist) {
+            trait_error("a generic derived type cannot have kind or length type "
+                "parameters", generic.base.base.loc);
+        }
+        SymbolTable *parent_scope = current_scope;
+        if (parent_scope->get_symbol(name)) {
+            trait_error("DerivedType already defined", generic.base.base.loc);
+        }
+        SymbolTable *scope = al.make_new<SymbolTable>(parent_scope);
+        Vec<char*> args;
+        args.reserve(al, generic.n_parameters);
+        std::set<std::string> binder_names;
+        Vec<ASR::symbol_t*> binders;
+        binders.reserve(al, generic.n_parameters);
+        for (size_t i = 0; i < generic.n_parameters; i++) {
+            const auto &parameter = generic.m_parameters[i];
+            std::string binder = to_lower(parameter.m_name);
+            if (scope->get_symbol(binder) || binder == name) {
+                trait_error("duplicate generic type parameter '" + binder + "'",
+                    parameter.loc);
+            }
+            ASR::ttype_t *binder_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                parameter.loc, s2c(al, binder),
+                ASR::deferred_type_attrType::NonExtensible, false));
+            ASR::symbol_t *declaration = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, parameter.loc, scope,
+                    s2c(al, binder), nullptr, 0, ASRUtils::intent_in, nullptr, nullptr,
+                    ASR::storage_typeType::Default, binder_type, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            scope->add_symbol(binder, declaration);
+            args.push_back(al, s2c(al, binder));
+            binder_names.insert(binder);
+            binders.push_back(al, declaration);
+        }
+        ASR::Template_t *generic_package = ASR::down_cast2<ASR::Template_t>(
+            ASR::make_Template_t(al, x.base.base.loc, scope, s2c(al, name),
+                args.p, args.size(), nullptr, 0));
+        parent_scope->add_symbol(name, &generic_package->base);
+        current_scope = scope;
+        bool storage_save = default_storage_save;
+        default_storage_save = false;
+        auto errors = [&]() {
+            return std::count_if(diag.diagnostics.begin(), diag.diagnostics.end(),
+                [](const diag::Diagnostic &d) { return d.level == diag::Level::Error; });
+        };
+        auto initial_errors = errors();
+        // A package with an error is diagnosed completely and then discarded,
+        // so that no partial definition reaches later phases.
+        auto discard = [&]() {
+            current_scope = parent_scope;
+            default_storage_save = storage_save;
+            parent_scope->erase_symbol(name);
+            invalid_type_adoption_scopes.erase(scope);
+            pending_type_initializers.erase(std::remove_if(
+                pending_type_initializers.begin(), pending_type_initializers.end(),
+                [&](const TypeInitializer &binding) { return binding.scope == scope; }),
+                pending_type_initializers.end());
+            for (auto &entry : generic_procedures) {
+                entry.second.erase(std::remove_if(entry.second.begin(), entry.second.end(),
+                    [&](const GenericSpecific &specific) { return specific.scope == scope; }),
+                    entry.second.end());
+            }
+        };
+        try {
+            for (size_t i = 0; i < generic.n_parameters; i++) {
+                const auto &parameter = generic.m_parameters[i];
+                if (parameter.n_member_types) {
+                    trait_error("type-set constrained generic type parameters are not "
+                        "implemented yet", parameter.loc);
+                }
+                if (parameter.n_traits == 0) {
+                    trait_error("unconstrained generic parameters are not implemented yet",
+                        parameter.loc);
+                }
+                std::vector<ASR::symbol_t*> traits;
+                for (size_t j = 0; j < parameter.n_traits; j++) {
+                    auto *trait = resolve_trait(parameter.m_traits[j], parameter.loc);
+                    if (trait->m_kind != ASR::trait_kindType::UniversalTrait) {
+                        trait_error("type-set constrained generic type parameters are not "
+                            "implemented yet", parameter.loc);
+                    }
+                    traits.push_back(current_scope->resolve_symbol(
+                        to_lower(parameter.m_traits[j])));
+                }
+                add_trait_parameter_constraints(scope, binders[i], traits,
+                    parameter.loc, true);
+            }
+            for (const auto &foreign : package.foreign) {
+                trait_error("procedure '" + std::get<0>(foreign) + "' depends on the generic "
+                    "parameters of '" + std::get<1>(foreign) + "'; this prototype binds such "
+                    "a procedure to exactly one generic type", std::get<2>(foreign));
+            }
+            // A procedure bound to the type that does not use its parameters
+            // stays outside the package; binding one is not implemented.
+            auto independent_binding = [&](const std::string &procedure,
+                    const Location &binding_loc) {
+                trait_error("binding procedure '" + procedure + "', which does not "
+                    "depend on the generic parameters of '" + name + "', to the generic "
+                    "type is not implemented yet", binding_loc);
+            };
+            for (const auto &independent : package.independent) {
+                independent_binding(independent.first, independent.second);
+            }
+            for (size_t i = 0; i < type.n_contains; i++) {
+                const AST::procedure_decl_t &binding = *type.m_contains[i];
+                std::string kind;
+                if (AST::is_a<AST::FinalName_t>(binding)) {
+                    kind = "FINAL procedures";
+                } else if (AST::is_a<AST::GenericOperator_t>(binding) ||
+                        AST::is_a<AST::GenericDefinedOperator_t>(binding) ||
+                        AST::is_a<AST::GenericAssignment_t>(binding) ||
+                        AST::is_a<AST::GenericName_t>(binding) ||
+                        AST::is_a<AST::GenericWrite_t>(binding) ||
+                        AST::is_a<AST::GenericRead_t>(binding)) {
+                    kind = "GENERIC bindings";
+                } else if (AST::is_a<AST::DerivedTypeProc_t>(binding)) {
+                    auto *procedure = AST::down_cast<AST::DerivedTypeProc_t>(&binding);
+                    for (size_t j = 0; j < procedure->n_attr; j++) {
+                        if (AST::is_a<AST::SimpleAttribute_t>(*procedure->m_attr[j]) &&
+                                AST::down_cast<AST::SimpleAttribute_t>(
+                                    procedure->m_attr[j])->m_attr ==
+                                    AST::simple_attributeType::AttrDeferred) {
+                            kind = "DEFERRED bindings";
+                        }
+                    }
+                }
+                if (!kind.empty()) {
+                    trait_error(kind + " of a generic derived type are not implemented yet",
+                        binding.base.loc);
+                }
+            }
+            std::map<std::string, bool> bound;
+            generic_type_bound_procedures(type.m_contains, type.n_contains, bound);
+            for (auto *implements : package.implements) {
+                generic_type_bound_procedures(implements->m_procedures,
+                    implements->n_procedures, bound);
+            }
+            std::set<std::string> initializers;
+            for (const auto &entry : bound) {
+                if (entry.second) initializers.insert(entry.first);
+            }
+            for (size_t i = 0; i < x.n_contains; i++) {
+                check_generic_type_procedure(*x.m_contains[i], generic, name,
+                    initializers, binder_names);
+            }
+            ClassProcedureScope class_procedure_scope(*this);
+            ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+            visit_DerivedType(type);
+            ASR::symbol_t *definition_symbol = scope->get_symbol(name);
+            LCOMPILERS_ASSERT(definition_symbol &&
+                ASR::is_a<ASR::Struct_t>(*definition_symbol));
+            ASR::Struct_t *definition = ASR::down_cast<ASR::Struct_t>(definition_symbol);
+            definition->m_generic = ASR::down_cast<ASR::struct_generic_t>(
+                ASR::make_GenericTypeDefinition_t(al, generic.base.base.loc,
+                    binders.p, binders.size()));
+            if (definition->m_parent) {
+                trait_error("extending a type by a generic derived type is not "
+                    "implemented yet", generic.base.base.loc);
+            }
+            for (auto *implements : package.implements) {
+                check_generic_type_implements(*implements, generic, name);
+                for (size_t i = 0; i < implements->n_procedures; i++) {
+                    if (!AST::is_a<AST::InitialProcedure_t>(*implements->m_procedures[i])) {
+                        continue;
+                    }
+                    auto *initial = AST::down_cast<AST::InitialProcedure_t>(
+                        implements->m_procedures[i]);
+                    for (size_t j = 0; j < initial->n_names; j++) {
+                        std::string procedure = to_lower(initial->m_names[j]);
+                        pending_type_initializers.push_back({scope, definition->m_symtab,
+                            name, procedure, initial->base.base.loc});
+                        generic_procedures[name].push_back(
+                            {procedure, initial->base.base.loc, scope});
+                    }
+                }
+                visit_Implements(*implements);
+            }
+            for (size_t i = 0; i < x.n_contains; i++) {
+                try {
+                    visit_program_unit(*x.m_contains[i]);
+                } catch (SemanticAbort &e) {
+                    current_scope = scope;
+                    if (!compiler_options.continue_compilation) throw e;
+                }
+            }
+            auto bindings = class_procedures.find(name);
+            if (bindings != class_procedures.end()) {
+                for (auto &binding : bindings->second) {
+                    auto procedure = binding.second.find("procedure");
+                    if (procedure == binding.second.end()) continue;
+                    ASR::symbol_t *target = scope->resolve_symbol(
+                        to_lower(procedure->second.name));
+                    if (target && ASRUtils::symbol_parent_symtab(target) != scope) {
+                        independent_binding(to_lower(procedure->second.name),
+                            procedure->second.loc);
+                    }
+                }
+            }
+            add_class_procedures();
+            complete_trait_implementations();
+        } catch (const SemanticAbort &) {
+            discard();
+            throw;
+        }
+        if (errors() > initial_errors || invalid_type_adoption_scopes.count(scope)) {
+            discard();
+            throw SemanticAbort();
+        }
+        current_scope = parent_scope;
+        default_storage_save = storage_save;
+        tmp = nullptr;
+    }
+
     void visit_Template(const AST::Template_t &x){
+        auto package = generic_type_packages.find(&x);
+        if (package != generic_type_packages.end()) {
+            visit_generic_type_package(x, package->second);
+            return;
+        }
         // C1601 (J3/26-007r1, 16.1.1): a template construct shall only appear
         // in the specification part of a main program, a module or a template
         // construct. A submodule is deliberately not in that list.

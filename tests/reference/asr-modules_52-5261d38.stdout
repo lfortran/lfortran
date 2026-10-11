@@ -619,6 +619,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     module_52_tomlf_error
@@ -723,6 +724,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     module_52_tomlf_type

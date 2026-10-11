@@ -354,7 +354,7 @@ public:
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             x->m_is_sequence,
             nullptr, 0, m_alignment, nullptr, nullptr, 0, x->m_is_sealed,
-            x->m_trait_obligations, x->n_trait_obligations);
+            x->m_trait_obligations, x->n_trait_obligations, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -1249,12 +1249,102 @@ public:
             case (ASR::symbolType::Block) : {
                 return instantiate_Block(ASR::down_cast<ASR::Block_t>(sym));
             }
+            case (ASR::symbolType::TraitConstraint) : {
+                return instantiate_TraitConstraint(ASR::down_cast<ASR::TraitConstraint_t>(sym));
+            }
+            case (ASR::symbolType::Trait) : {
+                return instantiate_Trait(ASR::down_cast<ASR::Trait_t>(sym));
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation of " + sym_name
                     + " symbol is not supported");
             };
         }
+    }
+
+    // A symbol referenced by a symbol of the instantiated scope `source`: a
+    // symbol of `source` itself is instantiated into target_scope, any other
+    // is referenced from target_scope, through an import when it is not
+    // visible there.
+    ASR::symbol_t* instantiate_reference(ASR::symbol_t* s, SymbolTable* source) {
+        if (s == nullptr) return nullptr;
+        if (ASRUtils::symbol_parent_symtab(s) == source) {
+            SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(s), s, diagnostics);
+            return t.instantiate();
+        }
+        return ASRUtils::import_nested_symbol(al, s, target_scope);
+    }
+
+    // The constraint of a binder of a nested generic: its procedures belong
+    // to the same scope and are instantiated there, the trait is referenced.
+    ASR::symbol_t* instantiate_TraitConstraint(ASR::TraitConstraint_t* x) {
+        SymbolTable* source = x->m_parent_symtab;
+        Vec<ASR::trait_requirement_t> requirements;
+        requirements.reserve(al, x->n_requirements);
+        for (size_t i = 0; i < x->n_requirements; i++) {
+            ASR::trait_requirement_t requirement = x->m_requirements[i];
+            requirement.m_member = instantiate_reference(requirement.m_member, source);
+            requirement.m_procedure = instantiate_reference(requirement.m_procedure, source);
+            Vec<ASR::trait_evidence_t> evidence;
+            evidence.reserve(al, requirement.n_evidence);
+            for (size_t j = 0; j < requirement.n_evidence; j++) {
+                ASR::trait_evidence_t record = requirement.m_evidence[j];
+                record.m_constraint = instantiate_reference(record.m_constraint, source);
+                record.m_implementation = instantiate_reference(record.m_implementation, source);
+                evidence.push_back(al, record);
+            }
+            requirement.m_evidence = evidence.p;
+            requirement.n_evidence = evidence.size();
+            requirements.push_back(al, requirement);
+        }
+        Vec<ASR::type_set_requirement_t> intrinsic_requirements;
+        intrinsic_requirements.reserve(al, x->n_intrinsic_requirements);
+        for (size_t i = 0; i < x->n_intrinsic_requirements; i++) {
+            ASR::type_set_requirement_t requirement = x->m_intrinsic_requirements[i];
+            requirement.m_procedure = instantiate_reference(requirement.m_procedure, source);
+            Vec<ASR::type_set_witness_t> witnesses;
+            witnesses.reserve(al, requirement.n_witnesses);
+            for (size_t j = 0; j < requirement.n_witnesses; j++) {
+                ASR::type_set_witness_t witness = requirement.m_witnesses[j];
+                witness.m_member_type = ASRUtils::duplicate_type(al, witness.m_member_type);
+                witness.m_procedure = instantiate_reference(witness.m_procedure, source);
+                witnesses.push_back(al, witness);
+            }
+            requirement.m_witnesses = witnesses.p;
+            requirement.n_witnesses = witnesses.size();
+            intrinsic_requirements.push_back(al, requirement);
+        }
+        ASR::symbol_t* parameter = instantiate_reference(x->m_parameter, source);
+        ASR::symbol_t* trait = instantiate_reference(x->m_trait, source);
+        if (target_scope->get_symbol(new_sym_name) != nullptr) {
+            return target_scope->get_symbol(new_sym_name);
+        }
+        ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitConstraint_t(
+            al, x->base.base.loc, target_scope, s2c(al, new_sym_name), parameter, trait,
+            requirements.p, requirements.size(), intrinsic_requirements.p,
+            intrinsic_requirements.size()));
+        target_scope->add_symbol(new_sym_name, result);
+        return result;
+    }
+
+    // An inline type set owned by a generic.
+    ASR::symbol_t* instantiate_Trait(ASR::Trait_t* x) {
+        if (x->n_parents != 0 || x->m_kind != ASR::trait_kindType::IntrinsicTypeSet) {
+            throw LCompilersException("Instantiation of trait " + std::string(x->m_name)
+                + " is not supported");
+        }
+        Vec<ASR::ttype_t*> members;
+        members.reserve(al, x->n_member_types);
+        for (size_t i = 0; i < x->n_member_types; i++) {
+            members.push_back(al, ASRUtils::duplicate_type(al, x->m_member_types[i]));
+        }
+        ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(al,
+            x->base.base.loc, al.make_new<SymbolTable>(target_scope), s2c(al, new_sym_name),
+            nullptr, 0, x->m_access, x->m_kind, members.p, members.size()));
+        target_scope->add_symbol(new_sym_name, result);
+        return result;
     }
 
     // Instantiates the symbols of `symtab` into `new_scope`.
@@ -1317,7 +1407,8 @@ public:
             ASRUtils::get_FunctionType(x)->m_elemental, ASRUtils::get_FunctionType(x)->m_pure,
             ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
-            ASRUtils::get_FunctionType(x)->n_restrictions, false,
+            ASRUtils::get_FunctionType(x)->n_restrictions,
+            ASRUtils::get_FunctionType(x)->m_is_restriction,
             x->m_deterministic, x->m_side_effect_free);
 
         ASR::symbol_t *f = ASR::down_cast<ASR::symbol_t>(result);
@@ -1853,9 +1944,14 @@ public:
 
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            // The function of a generic procedure is named like its
+            // Template, also when the copy is renamed.
+            std::string name = ASRUtils::symbol_name(sym_pair.second);
+            if (name == x->m_name && ASR::is_a<ASR::Function_t>(*sym_pair.second)) {
+                name = new_sym_name;
+            }
             SymbolInstantiator t(al, new_scope, nested_type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
-                diagnostics);
+                name, sym_pair.second, diagnostics);
             t.instantiate();
         }
 
@@ -1897,7 +1993,7 @@ public:
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
             x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0,
-            x->m_is_sealed, x->m_trait_obligations, x->n_trait_obligations);
+            x->m_is_sealed, x->m_trait_obligations, x->n_trait_obligations, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -2288,6 +2384,10 @@ public:
             case (ASR::symbolType::GenericProcedure) : {
                 break;
             }
+            case (ASR::symbolType::TraitConstraint) :
+            case (ASR::symbolType::Trait) : {
+                break;
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation body of " + sym_name
@@ -2429,7 +2529,13 @@ public:
 
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
-            ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
+            ASR::symbol_t* sym_i = x->m_symtab->get_symbol(
+                sym_pair.first == new_t->m_name &&
+                    ASR::is_a<ASR::Function_t>(*new_sym_i) ? x->m_name : sym_pair.first);
+            // A symbol added to the copy itself, such as the static adapter
+            // a generic type's instance binds a requirement of its method
+            // to, has its own body already.
+            if (sym_i == nullptr) continue;
 
             BodyInstantiator t(al, nested_type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);

@@ -198,6 +198,9 @@ decl_stmt
     | InferDoLoop(int label, identifier? stmt_name, int do_label, identifier var,
             expr start, expr end, expr? increment, decl_stmt* body,
             trivia? t_inside, trivia? trivia, location var_loc)
+-- A derived type with generic type parameters, e.g. `type :: Box{ISum :: T}`.
+-- `derived_type` is the DerivedType without the parameter list.
+    | TraitDerivedType(decl_stmt derived_type, trait_parameter* parameters)
 
 expr
     = BoolOp(expr left, boolop op, expr right)
@@ -313,6 +316,12 @@ decl_attribute
     | AttrRank(expr* rank)
     | AttrTraitClass(identifier* traits)
     | AttrImplements(identifier* traits)
+-- `Name{args}` in `type(Name{args})` and `class(Name{args})`: an application
+-- of a generic derived type. The arguments use the instantiation-argument forms.
+    | AttrGenericTypeArgs(identifier name, decl_attribute* args)
+-- `Name{params}` as the implementing type of an implements statement for a
+-- generic derived type.
+    | AttrGenericTypeParams(identifier name, trait_parameter* parameters)
 
 simple_attribute
     = AttrAbstract

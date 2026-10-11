@@ -18,9 +18,11 @@ coarray_index
 codimension
 dimension
 do_loop_head
+generic_type_argument
 rank_stmt
 reduction_expr
 require_instantiation
+struct_generic
 tbind
 trait_binding
 trait_erased_operation

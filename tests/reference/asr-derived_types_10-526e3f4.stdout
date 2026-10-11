@@ -135,6 +135,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             my_type:
                                 (Struct
@@ -275,6 +276,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             plus:
                                 (Function

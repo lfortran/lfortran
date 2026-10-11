@@ -736,6 +736,10 @@ implements_decl
         end_implements id_opt sep {
             $$ = IMPLEMENTS(p.m_a, $2, $4, $6, $8, TRIVIA($5, $9, @$), @$,
                 p.diag); }
+    | KW_IMPLEMENTS trait_name_spec "::" id "{" trait_parameter_list "}" sep
+        procedure_list_opt end_implements id_opt sep {
+            $$ = IMPLEMENTS_GENERIC(p.m_a, $2, $4, $6, $9, $11,
+                TRIVIA($8, $12, @$), @$, p.diag); }
     | KW_IMPLEMENTS trait_name_spec "::" implements_intrinsic_type sep procedure_list_opt
         end_implements implements_intrinsic_end sep {
             $$ = make_Implements_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $2), $2.size(),
@@ -879,6 +883,10 @@ derived_type_decl
     | KW_TYPE derived_type_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    | KW_TYPE derived_type_modifiers id "{" trait_parameter_list "}" sep
+        var_decl_star derived_type_contains_opt end_type sep {
+            $$ = TRAIT_DERIVED_TYPE(p.m_a, DERIVED_TYPE($2, $3,
+                TRIVIA($7, $11, @$), $8, $9, @$), $5, @$); }
     ;
 
 derived_type_modifiers
@@ -1797,6 +1805,8 @@ declaration_type_spec
         Type, $3, @$); }
     | KW_TYPE "(" id ")" %dprec 1 { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
     | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
+    | KW_TYPE "(" id "{" instantiate_symbol_list "}" ")" {
+        $$ = ATTR_TYPE_ATTR(Type, GENERIC_TYPE_ARGS(p.m_a, $3, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" trait_name_list "+" id ")" {
@@ -1805,6 +1815,8 @@ declaration_type_spec
         $$ = make_AttrTraitClass_t(p.m_a, @$, REDUCE_ARGS(p.m_a, names), names.size());
       }
     | KW_CLASS "(" id "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_NAME_KIND(Class, $3, $5, @$); }
+    | KW_CLASS "(" id "{" instantiate_symbol_list "}" ")" {
+        $$ = ATTR_TYPE_ATTR(Class, GENERIC_TYPE_ARGS(p.m_a, $3, $5, @$), @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
 

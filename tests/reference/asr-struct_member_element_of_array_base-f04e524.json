@@ -2,7 +2,7 @@
     "basename": "asr-struct_member_element_of_array_base-f04e524",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_member_element_of_array_base.asr",
-    "infile_hash": "2e79b0865c70214db21ca770398e1207cb0e8327883b8d589c31e4b1",
+    "infile_hash": "8b0b7da393bb6a724064a8d5ecd69e76ec27412edf4f64683f9c0400",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

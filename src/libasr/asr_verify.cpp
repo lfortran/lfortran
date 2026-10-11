@@ -1710,11 +1710,18 @@ public:
                 ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
             impl_scope_owner = ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner);
         }
+        // A generic derived type's package owns the conformances its
+        // definition adopts.
+        ASR::Template_t *package = impl_scope_owner
+            ? ASRUtils::generic_type_package(impl_scope_owner) : nullptr;
         require_id(impl_scope_owner != nullptr &&
                 (ASR::is_a<ASR::Module_t>(*impl_scope_owner) ||
-                 ASR::is_a<ASR::Program_t>(*impl_scope_owner)),
+                 ASR::is_a<ASR::Program_t>(*impl_scope_owner) ||
+                 (package && x.m_type_declaration == &ASRUtils::generic_type_definition(
+                    *package)->base)),
             "asr.verify.trait_implementation.scope_is_module",
-            "TraitImplementation must be declared in a module or program scope");
+            "TraitImplementation must be declared in a module or program scope, or in "
+            "the package of the generic type it implements");
         symbol_t *symtab_sym = x.m_parent_symtab->get_symbol(std::string(x.m_name));
         const symbol_t *current_sym = &x.base;
         require(symtab_sym == current_sym,
@@ -2170,6 +2177,12 @@ public:
                 "asr.verify.trait_erasure.generic",
                 "An erased entry must originate in a checked template");
             auto *generic = ASR::down_cast<Template_t>(definition);
+            require_id(!parent->asr_owner || !ASR::is_a<ASR::symbol_t>(*parent->asr_owner) ||
+                    !ASR::is_a<Program_t>(*ASR::down_cast<ASR::symbol_t>(parent->asr_owner)) ||
+                    ASRUtils::program_generic_instance_method(*generic, parent),
+                "asr.verify.trait_witness.program_owner",
+                "A program's generic entry must instantiate a method copy of a generic "
+                "type instance the program owns and binds at runtime");
             auto *original = verify_runtime_trait_procedure(definition, x.base.base.loc,
                 "asr.verify.trait_erasure.original");
             auto *entry = verify_runtime_trait_procedure(x.m_procedure, x.base.base.loc,
@@ -2338,6 +2351,24 @@ public:
         auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
             ASRUtils::symbol_get_past_external(x.m_contract));
+        // A program owns the generic entries of a conformance only for a
+        // generic type instance it owns, through the procedure copies it owns.
+        bool generic_bindings = false;
+        for (size_t i = 0; x.m_implementation && implementation && i < contract->n_slots; i++) {
+            auto *binding = contract->m_slots[i].n_origins ? ASRUtils::find_trait_binding(
+                *implementation, contract->m_slots[i].m_origins[0]) : nullptr;
+            auto *procedure = binding
+                ? ASRUtils::trait_method_function(binding->m_procedure) : nullptr;
+            generic_bindings |= procedure && ASRUtils::trait_method_template(*procedure);
+        }
+        require_id(!generic_bindings || !current_symtab->asr_owner ||
+                !ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ||
+                !ASR::is_a<Program_t>(*ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner)) ||
+                ASRUtils::program_generic_instance_conformance(*implementation, contract),
+            "asr.verify.trait_witness.program_owner",
+            "A program's runtime witness of generic bindings must belong to the "
+            "conformance of a generic type instance the program owns, through "
+            "procedure copies it owns");
         for (size_t i = 0; i < x.n_components; i++) {
             require_id(symtab_in_scope(current_symtab, x.m_components[i]),
                 "asr.verify.trait_witness.component_in_scope",
@@ -3752,6 +3783,202 @@ public:
         }
     }
 
+    // The definition of a generic derived type is the symbol of its
+    // package's name and records the package's binders in order; the
+    // package belongs to a module.
+    void verify_generic_type_definition(const Struct_t &x,
+            const GenericTypeDefinition_t &definition) {
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(&x.base);
+        auto *package = owner && ASR::is_a<Template_t>(*owner)
+            ? ASR::down_cast<Template_t>(owner) : nullptr;
+        ASR::symbol_t *unit = package ? ASRUtils::get_asr_owner(owner) : nullptr;
+        require_id(package && std::string(package->m_name) == x.m_name &&
+                package->m_symtab->get_symbol(package->m_name) == &x.base &&
+                unit && ASR::is_a<Module_t>(*unit),
+            "asr.verify.generic_type.definition_owner",
+            "A generic type's definition must be the symbol of its package's name "
+            "in a module");
+        if (!package) return;
+        bool binders = definition.n_parameters == package->n_args;
+        for (size_t i = 0; binders && i < definition.n_parameters; i++) {
+            ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
+            binders = binder && definition.m_parameters[i] == binder &&
+                ASR::is_a<Variable_t>(*binder) &&
+                ASR::is_a<TypeParameter_t>(*ASR::down_cast<Variable_t>(binder)->m_type);
+        }
+        require_id(binders, "asr.verify.generic_type.definition_owner",
+            "A generic type's definition must record its package's binders in order");
+    }
+
+    // The universal-trait constraints of the binder `binder` of a package,
+    // in constraint order.
+    static std::vector<TraitConstraint_t*> universal_constraints(const Template_t &package,
+            ASR::symbol_t *binder) {
+        std::vector<TraitConstraint_t*> constraints;
+        for (const auto &entry : package.m_symtab->get_scope()) {
+            if (!ASR::is_a<TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<TraitConstraint_t>(entry.second);
+            auto *trait = ASRUtils::symbol_get_past_external(constraint->m_trait);
+            if (ASRUtils::symbol_get_past_external(constraint->m_parameter) == binder &&
+                    trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind ==
+                        trait_kindType::UniversalTrait) {
+                constraints.push_back(constraint);
+            }
+        }
+        return constraints;
+    }
+
+    // An instance of a generic derived type is an ordinary type of a module
+    // or program. It records the definition it instantiates and, for each
+    // parameter, a concrete type argument with the conformance selected for
+    // each universal-trait constraint of the parameter. Its components,
+    // obligations and bindings are the definition's.
+    void verify_generic_type_instance(const Struct_t &x,
+            const GenericTypeInstance_t &instance) {
+        ASR::symbol_t *unit = x.m_symtab->parent && x.m_symtab->parent->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*x.m_symtab->parent->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(x.m_symtab->parent->asr_owner) : nullptr;
+        require_id(unit && (ASR::is_a<Module_t>(*unit) || ASR::is_a<Program_t>(*unit)),
+            "asr.verify.generic_type.instance_owner",
+            "A generic type's instance must be declared in a module or program");
+        require_id(instance.m_definition &&
+                symtab_in_scope(current_symtab, instance.m_definition),
+            "asr.verify.generic_type.instance_definition",
+            "A generic type's instance must reference a visible definition");
+        if (!check_external || !instance.m_definition) return;
+        ASR::symbol_t *definition_symbol =
+            ASRUtils::symbol_get_past_external(instance.m_definition);
+        auto *definition = definition_symbol && ASR::is_a<Struct_t>(*definition_symbol)
+            ? ASR::down_cast<Struct_t>(definition_symbol) : nullptr;
+        ASR::symbol_t *owner = definition ? ASRUtils::get_asr_owner(definition_symbol) : nullptr;
+        auto *package = owner ? ASRUtils::generic_type_package(owner) : nullptr;
+        require_id(definition && package &&
+                ASRUtils::generic_type_definition(*package) == definition &&
+                instance.n_arguments == package->n_args,
+            "asr.verify.generic_type.instance_definition",
+            "A generic type's instance must instantiate a generic type's definition "
+            "with one type argument per parameter");
+        if (!definition || !package || instance.n_arguments != package->n_args) return;
+        for (size_t i = 0; i < instance.n_arguments; i++) {
+            const auto &argument = instance.m_arguments[i];
+            ASR::ttype_t *type = argument.m_type;
+            bool structure = type && ASR::is_a<StructType_t>(*type);
+            ASR::symbol_t *declaration = argument.m_type_declaration
+                ? ASRUtils::symbol_get_past_external(argument.m_type_declaration) : nullptr;
+            require_id(type && !ASRUtils::is_array(type) && !ASRUtils::is_pointer(type) &&
+                    !ASRUtils::is_allocatable(type) &&
+                    !ASR::is_a<TypeParameter_t>(*type) &&
+                    (structure ? argument.m_type_declaration &&
+                        symtab_in_scope(current_symtab, argument.m_type_declaration) &&
+                        declaration && ASR::is_a<Struct_t>(*declaration) &&
+                        !ASRUtils::is_class_type(type)
+                    : !argument.m_type_declaration && type_set_concrete_kind(type)),
+                "asr.verify.generic_type.instance_arguments",
+                "A generic type argument must be a concrete scalar intrinsic type or a "
+                "visible nonpolymorphic derived type");
+            ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
+            auto constraints = universal_constraints(*package, binder);
+            if (argument.n_evidence == 0 && !constraints.empty()) {
+                // Only an instance its owner has not completed yet has no
+                // conformances to select.
+                auto *pending = declaration && ASR::is_a<Struct_t>(*declaration)
+                    ? ASR::down_cast<Struct_t>(declaration) : nullptr;
+                require_id(pending && ASRUtils::generic_type_instance(*pending) &&
+                        pending->m_symtab->parent == x.m_symtab->parent &&
+                        pending->n_trait_obligations == 0,
+                    "asr.verify.generic_type.instance_evidence",
+                    "A generic type argument must record the conformance selected for "
+                    "each universal-trait constraint of its parameter");
+                continue;
+            }
+            require_id(argument.n_evidence == constraints.size(),
+                "asr.verify.generic_type.instance_evidence",
+                "A generic type argument must record one conformance per universal-trait "
+                "constraint of its parameter");
+            for (size_t j = 0; j < argument.n_evidence && j < constraints.size(); j++) {
+                ASR::symbol_t *evidence = argument.m_evidence[j]
+                    ? ASRUtils::symbol_get_past_external(argument.m_evidence[j]) : nullptr;
+                auto *implementation = evidence && ASR::is_a<TraitImplementation_t>(*evidence)
+                    ? ASR::down_cast<TraitImplementation_t>(evidence) : nullptr;
+                bool provides = false;
+                auto *trait = implementation
+                    ? ASRUtils::symbol_get_past_external(implementation->m_trait) : nullptr;
+                if (trait && ASR::is_a<Trait_t>(*trait)) {
+                    auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(trait),
+                        x.base.base.loc);
+                    for (auto *provided : hierarchy.traits) {
+                        provides |= &provided->base == ASRUtils::symbol_get_past_external(
+                            constraints[j]->m_trait);
+                    }
+                }
+                require_id(implementation && provides &&
+                        symtab_in_scope(current_symtab, argument.m_evidence[j]) &&
+                        ASRUtils::trait_implementation_matches_type(*implementation,
+                            declaration, type),
+                    "asr.verify.generic_type.instance_evidence",
+                    "A generic type argument's evidence must be a visible conformance of "
+                    "the argument to its constraint's trait");
+            }
+        }
+        bool members = x.n_members == definition->n_members;
+        for (size_t i = 0; members && i < x.n_members; i++) {
+            members = std::string(x.m_members[i]) == definition->m_members[i] &&
+                x.m_symtab->get_symbol(x.m_members[i]) &&
+                ASR::is_a<Variable_t>(*x.m_symtab->get_symbol(x.m_members[i]));
+        }
+        bool obligations = x.n_trait_obligations == 0 ||
+            x.n_trait_obligations == definition->n_trait_obligations;
+        for (size_t i = 0; obligations && x.n_trait_obligations && i < x.n_trait_obligations; i++) {
+            obligations = ASRUtils::symbol_get_past_external(x.m_trait_obligations[i]) ==
+                ASRUtils::symbol_get_past_external(definition->m_trait_obligations[i]);
+        }
+        // An instance its owner has not completed yet has no bindings.
+        size_t bindings = 0, definition_bindings = 0;
+        bool corresponding = true;
+        for (const auto &entry : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<StructMethodDeclaration_t>(*entry.second)) continue;
+            bindings++;
+            ASR::symbol_t *original = definition->m_symtab->get_symbol(entry.first);
+            corresponding &= original && ASR::is_a<StructMethodDeclaration_t>(*original);
+        }
+        for (const auto &entry : definition->m_symtab->get_scope()) {
+            if (ASR::is_a<StructMethodDeclaration_t>(*entry.second)) definition_bindings++;
+        }
+        bool complete = bindings || x.n_trait_obligations;
+        require_id(members && obligations && corresponding &&
+                (!complete || (bindings == definition_bindings &&
+                    x.n_trait_obligations == definition->n_trait_obligations)),
+            "asr.verify.generic_type.instance_layout",
+            "A generic type's instance must have its definition's components, "
+            "obligations and bindings");
+        for (const auto &entry : x.m_symtab->parent->get_scope()) {
+            if (entry.second == &x.base || !ASR::is_a<Struct_t>(*entry.second)) continue;
+            auto *other = ASR::down_cast<Struct_t>(entry.second);
+            auto *metadata = ASRUtils::generic_type_instance(*other);
+            if (!metadata || !metadata->m_definition ||
+                    ASRUtils::symbol_get_past_external(metadata->m_definition) !=
+                        definition_symbol ||
+                    metadata->n_arguments != instance.n_arguments) continue;
+            require_id(!ASRUtils::same_generic_instance(x, *other),
+                "asr.verify.generic_type.instance_unique",
+                "A scope must not declare two equal instances of a generic type");
+        }
+    }
+
+    void verify_generic_type(const Struct_t &x) {
+        if (!x.m_generic) return;
+        require_id(x.m_parent == nullptr, "asr.verify.generic_type.not_extended",
+            "A generic type's definition or instance cannot extend another type");
+        if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
+            verify_generic_type_definition(x,
+                *ASR::down_cast<GenericTypeDefinition_t>(x.m_generic));
+        } else {
+            verify_generic_type_instance(x,
+                *ASR::down_cast<GenericTypeInstance_t>(x.m_generic));
+        }
+    }
+
     // A derived type extends another derived type and nothing else. Every
     // member lookup, every dispatch and every layout decision walks this
     // chain, so a parent that is not a type is followed straight into the
@@ -3793,7 +4020,13 @@ public:
                 "asr.verify.struct.parent_in_scope",
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
+            if (check_external && parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_generic,
+                    "asr.verify.generic_type.not_extended",
+                    "A generic type's definition or instance cannot be extended");
+            }
         }
+        verify_generic_type(x);
         verify_type_trait_obligations(x);
         verify_deferred_bindings(x);
         verify_final_procedures(x);
@@ -4308,6 +4541,15 @@ public:
             require(std::string(x.m_original_name) == std::string(orig_name),
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
+            // A symbol nested in generic or trait scopes of a program can be
+            // imported inside that program.
+            std::vector<char*> nested_scopes;
+            ASR::symbol_t *nested_unit = ASRUtils::nested_symbol_unit(
+                x.m_external, nested_scopes);
+            ASR::Program_t *program = nested_unit && ASR::is_a<ASR::Program_t>(*nested_unit) &&
+                    !nested_scopes.empty() &&
+                    ASRUtils::nested_symbol_importable(*nested_unit, x.m_parent_symtab)
+                ? ASR::down_cast<ASR::Program_t>(nested_unit) : nullptr;
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
@@ -4335,7 +4577,7 @@ public:
                                   ((ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
                                     ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
                                     ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym)) &&
-                                    m && x.n_scope_names > 0) ||
+                                    (m || program) && x.n_scope_names > 0) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
@@ -4378,6 +4620,9 @@ public:
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
             }
+            if (!name_matches && program != nullptr && x.n_scope_names > 0) {
+                name_matches = (x_m_module_name == std::string(program->m_name));
+            }
             // When the direct owner is a Struct, m_module_name refers
             // to the enclosing Module, not the Struct itself. Walk up
             // to the parent Module to verify the match.
@@ -4402,6 +4647,10 @@ public:
                 // m_module_name refers to the top-level module and
                 // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+            } else if( program != nullptr && x.n_scope_names > 0
+                       && x_m_module_name == std::string(program->m_name) ) {
+                s = program->m_symtab->find_scoped_symbol(x.m_original_name,
+                    x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( em ) {

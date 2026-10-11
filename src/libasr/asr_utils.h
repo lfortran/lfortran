@@ -903,6 +903,7 @@ static std::string intent_to_str(ASR::intentType intent) {
 
 static inline std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 
+std::string generic_type_spelling(const ASR::Struct_t &x);
 static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym, bool show_kind = false);
 std::string trait_contract_name(const ASR::TraitRuntimeContract_t &contract);
 
@@ -1452,6 +1453,11 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         case ASR::ttypeType::StructType: {
             if (struct_sym == nullptr) {
                 return "derived_type";
+            }
+            ASR::symbol_t *structure = symbol_get_past_external(struct_sym);
+            if (structure && ASR::is_a<ASR::Struct_t>(*structure) &&
+                    ASR::down_cast<ASR::Struct_t>(structure)->m_generic) {
+                return generic_type_spelling(*ASR::down_cast<ASR::Struct_t>(structure));
             }
             return ASRUtils::symbol_name(struct_sym);
         }
@@ -6732,7 +6738,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0, false, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -7815,7 +7821,8 @@ class SymbolDuplicator {
             struct_type_t->m_parent,
             struct_type_t->m_kind_params, struct_type_t->n_kind_params,
             struct_type_t->m_is_sealed,
-            struct_type_t->m_trait_obligations, struct_type_t->n_trait_obligations));
+            struct_type_t->m_trait_obligations, struct_type_t->n_trait_obligations,
+            struct_type_t->m_generic));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
@@ -10996,6 +11003,52 @@ bool trait_receiver_type_matches(const ASR::Variable_t &receiver,
 
 bool trait_implementation_matches_type(const ASR::TraitImplementation_t &implementation,
     ASR::symbol_t *declaration, ASR::ttype_t *type = nullptr);
+
+// The Module or Program whose scope contains `symbol`, directly or through
+// scopes of generic procedures, traits, runtime contracts, witnesses and
+// erasures only; `scopes` receives the names of those scopes, outermost
+// first. Null for a symbol of any other scope.
+ASR::symbol_t *nested_symbol_unit(ASR::symbol_t *symbol, std::vector<char*> &scopes);
+// Whether a symbol nested in `unit` may be imported into `scope`: from any
+// scope for a module, only from inside a program for a program.
+bool nested_symbol_importable(const ASR::symbol_t &unit, const SymbolTable *scope);
+// A reference from `scope` to `symbol`: the symbol itself or an import of it
+// that is visible there, or else a new private import through the module or
+// program that owns it, naming the generic and trait scopes nested in
+// between. A program's symbol can be imported only inside that program; a
+// symbol of a procedure, or of a program elsewhere, is returned unchanged.
+ASR::symbol_t *import_nested_symbol(Allocator &al, ASR::symbol_t *symbol,
+    SymbolTable *scope);
+
+// Generic derived types. A package is a Template whose symbol of its own name
+// is the definition Struct; instances are ordinary Structs that record the
+// definition and their type arguments.
+ASR::GenericTypeDefinition_t *generic_type_definition_metadata(const ASR::Struct_t &x);
+ASR::GenericTypeInstance_t *generic_type_instance(const ASR::Struct_t &x);
+// The definition Struct of the package `x`, or nullptr when `x` is not one.
+ASR::Struct_t *generic_type_definition(const ASR::Template_t &x);
+// The package `symbol` resolves to past imports, or nullptr.
+ASR::Template_t *generic_type_package(ASR::symbol_t *symbol);
+// The definition Struct an instance instantiates, past imports.
+ASR::Struct_t *generic_instance_definition(const ASR::GenericTypeInstance_t &x);
+bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
+    const ASR::generic_type_argument_t &right);
+// Two instances of the same definition with equal type arguments and
+// agreeing evidence denote one type.
+bool same_generic_instance(const ASR::Struct_t &left, const ASR::Struct_t &right);
+// `Name{args}` for diagnostics; the plain name for any other Struct.
+std::string generic_type_spelling(const ASR::Struct_t &x);
+// Whether `implementation` is a main program's conformance of a generic type
+// instance that program owns, whose bindings (those `contract` needs, or all)
+// are the instance's own procedure copies in the program, capturing no
+// program variable, and whose definition belongs to a module's package. Only
+// such a conformance of a program may have runtime evidence.
+bool program_generic_instance_conformance(const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract);
+// Whether the generic procedure `generic` is a method copy, capturing no
+// program variable, that the program `scope` owns and binds in its
+// conformance of a generic type instance it owns.
+bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable *scope);
 
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);

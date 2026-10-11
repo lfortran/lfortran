@@ -107,6 +107,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             build_target_t:
                                 (Struct
@@ -193,6 +194,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             func:
                                 (Function

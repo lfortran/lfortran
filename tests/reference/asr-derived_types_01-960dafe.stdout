@@ -761,6 +761,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             y:
                                 (Struct
@@ -851,6 +852,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     derived_types_01_m_01
@@ -977,6 +979,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 )
                         })
                     derived_types_01_m_02

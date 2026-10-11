@@ -590,7 +590,18 @@ public:
                 == simple_attributeType::AttrDeferred;
     }
 
+    void visit_TraitDerivedType(const TraitDerivedType_t &x) {
+        LCOMPILERS_ASSERT(is_a<DerivedType_t>(*x.m_derived_type));
+        print_derived_type(*down_cast<DerivedType_t>(x.m_derived_type),
+            x.m_parameters, x.n_parameters);
+    }
+
     void visit_DerivedType(const DerivedType_t &x) {
+        print_derived_type(x, nullptr, 0);
+    }
+
+    void print_derived_type(const DerivedType_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         if (is_deferred_type(x)) {
             std::string r = indent;
             r += syn(gr::UnitHeader);
@@ -623,6 +634,9 @@ public:
         }
         r.append(" :: ");
         r.append(x.m_name);
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        }
         for (size_t i=0; i<x.n_namelist; i++) {
             if (i == 0) r += "(";
             r.append(x.m_namelist[i]);
@@ -1205,6 +1219,9 @@ public:
                 this->visit_decl_attribute(*x.m_implementing_type);
                 r.append(s);
             }
+        } else if (x.m_implementing_type->type ==
+                decl_attributeType::AttrGenericTypeParams) {
+            r.append(down_cast<AttrGenericTypeParams_t>(x.m_implementing_type)->m_name);
         } else {
             this->visit_decl_attribute(*x.m_implementing_type);
             r.append(s);
@@ -1858,6 +1875,15 @@ public:
             r += x.m_traits[i];
         }
         s = r + ")";
+    }
+
+    void visit_AttrGenericTypeArgs(const AttrGenericTypeArgs_t &x) {
+        s = std::string(x.m_name) + format_generic_args(x.m_args, x.n_args);
+    }
+
+    void visit_AttrGenericTypeParams(const AttrGenericTypeParams_t &x) {
+        s = std::string(x.m_name) + format_trait_parameters(x.m_parameters,
+            x.n_parameters);
     }
 
     void visit_AttrImplements(const AttrImplements_t &x) {

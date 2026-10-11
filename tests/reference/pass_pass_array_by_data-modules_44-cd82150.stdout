@@ -304,6 +304,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             fpm_new_settings:
                                 (Struct
@@ -360,6 +361,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             warnwrite_string____1:
                                 (ExternalSymbol

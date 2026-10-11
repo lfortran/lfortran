@@ -14,6 +14,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/trait_procedures.h>
+#include <lfortran/semantics/generic_types.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
@@ -5221,7 +5222,7 @@ public:
                     s2c(al, current_scope->get_unique_name("~inspection_type")), poly_type,
                     nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source,
                     ASR::accessType::Private, false, true, false, nullptr, 0,
-                    nullptr, nullptr, nullptr, 0, false, nullptr, 0));
+                    nullptr, nullptr, nullptr, 0, false, nullptr, 0, nullptr));
                 current_scope->add_symbol(ASRUtils::symbol_name(poly_symbol), poly_symbol);
                 auto *inspection = ASRUtils::EXPR(ASR::make_TraitInspect_t(al,
                     x.base.base.loc, view, poly_symbol, poly_type));
@@ -6069,6 +6070,7 @@ public:
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
         current_module = v;
+        complete_generic_instances(current_scope);
 
         // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
@@ -6122,8 +6124,35 @@ public:
         visit_SubmoduleModuleCommon(x);
     }
 
+    std::map<const AST::Template_t*, GenericTypePackageAST> generic_type_packages;
+
     void visit_Module(const AST::Module_t &x) {
+        if (AST::Module_t *lowered = lower_generic_type_module(al, x,
+                generic_type_packages)) {
+            visit_SubmoduleModuleCommon(*lowered);
+            return;
+        }
         visit_SubmoduleModuleCommon(x);
+    }
+
+    // The bodies of the procedures of a generic derived type's package.
+    void visit_generic_type_package(const AST::Template_t &x) {
+        ASR::symbol_t *package = current_scope->get_symbol(to_lower(x.m_name));
+        if (!ASRUtils::generic_type_package(package)) return;
+        SymbolTable *old_scope = current_scope;
+        current_scope = ASR::down_cast<ASR::Template_t>(package)->m_symtab;
+        for (size_t i = 0; i < x.n_contains; i++) {
+            try {
+                this->visit_program_unit(*x.m_contains[i]);
+            } catch (const SemanticAbort &a) {
+                current_scope = ASR::down_cast<ASR::Template_t>(package)->m_symtab;
+                if (!compiler_options.continue_compilation) {
+                    current_scope = old_scope;
+                    throw a;
+                }
+            }
+        }
+        current_scope = old_scope;
     }
 
     void visit_Use(const AST::Use_t &x) {
@@ -6287,6 +6316,7 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
+        complete_generic_instances(current_scope);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -11781,6 +11811,10 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        if (generic_type_packages.count(&x)) {
+            visit_generic_type_package(x);
+            return;
+        }
         // A template whose specification failed has no symbol: the symbol table
         // visitor adds it only once the whole template is built, and with
         // --continue-compilation an error inside it is reported and the abort

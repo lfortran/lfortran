@@ -17,6 +17,9 @@
 "symbol.TraitErasure" = "helper:erased provider procedure emission"
 "symbol.Namelist" = "helper:formatted I/O"
 
+"struct_generic.GenericTypeDefinition" = "non-executable"
+"struct_generic.GenericTypeInstance" = "metadata"
+
 "type_set_operation.TypeSetBinary" = "metadata"
 "type_set_operation.TypeSetComparison" = "metadata"
 

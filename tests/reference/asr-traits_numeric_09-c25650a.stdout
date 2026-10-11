@@ -7587,6 +7587,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             box_value:
                                 (Function

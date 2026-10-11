@@ -64,6 +64,7 @@
               :kind_params []
               :is_sealed false
               :trait_obligations []
+              :generic nil
             )
             "shape" (Struct
               :symtab (SymbolTable
@@ -91,6 +92,7 @@
               :kind_params []
               :is_sealed false
               :trait_obligations []
+              :generic nil
             )
           }
         )

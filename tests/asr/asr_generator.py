@@ -470,7 +470,7 @@ def struct(symtab_id, name, methods, parent=None, abstract=False):
         f":is_packed false :is_abstract {'true' if abstract else 'false'} "
         f":is_sequence false :initializers [] :alignment nil "
         f":parent {parent or 'nil'} :kind_params [] "
-        f":is_sealed false :trait_obligations [])"
+        f":is_sealed false :trait_obligations [] :generic nil)"
     )
 
 

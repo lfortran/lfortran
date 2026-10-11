@@ -1179,6 +1179,25 @@ static inline ast_t *TRAIT_PROCEDURE(Allocator &al, ast_t *procedure,
         parameters.p, parameters.size());
 }
 
+static inline ast_t *TRAIT_DERIVED_TYPE(Allocator &al, ast_t *derived_type,
+        const Vec<trait_parameter_t> &parameters, Location &loc)
+{
+    return make_TraitDerivedType_t(al, loc, down_cast<decl_stmt_t>(derived_type),
+        parameters.p, parameters.size());
+}
+
+static inline ast_t *GENERIC_TYPE_ARGS(Allocator &al, const ast_t *name,
+        const Vec<ast_t*> &args, Location &loc)
+{
+    Vec<decl_attribute_t*> attributes;
+    attributes.reserve(al, args.size());
+    for (auto *arg : args) {
+        attributes.push_back(al, down_cast<decl_attribute_t>(arg));
+    }
+    return make_AttrGenericTypeArgs_t(al, loc, name2char(name),
+        attributes.p, attributes.size());
+}
+
 static inline ast_t *INTERFACE_TYPE_SET(Allocator &al,
         const Vec<ast_t*> &types, const Location &loc)
 {
@@ -1218,6 +1237,21 @@ static inline ast_t *IMPLEMENTS(Allocator &al, const Vec<ast_t*> &traits,
         VEC_CAST(procedures, procedure_decl), procedures.size(), nullptr);
 }
 
+static inline ast_t *IMPLEMENTS_GENERIC(Allocator &al, const Vec<ast_t*> &traits,
+        const ast_t *type_name, const Vec<trait_parameter_t> &parameters,
+        const Vec<ast_t*> &procedures, ast_t *end, ast_t *trivia, Location &loc,
+        LCompilers::diag::Diagnostics &diag)
+{
+    (void) trivia;
+    char *implementing_name = name2char_with_check(type_name, end, loc,
+        "implements", diag);
+    ast_t *implementing_type = make_AttrGenericTypeParams_t(al, loc,
+        implementing_name, parameters.p, parameters.size());
+    return make_Implements_t(al, loc,
+        REDUCE_ARGS(al, traits), traits.size(),
+        down_cast<decl_attribute_t>(implementing_type),
+        VEC_CAST(procedures, procedure_decl), procedures.size(), nullptr);
+}
 
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)

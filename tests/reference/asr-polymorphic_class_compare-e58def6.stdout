@@ -372,6 +372,7 @@
                                     []
                                     .false.
                                     []
+                                    ()
                                 ),
                             ~eq:
                                 (CustomOperator
