@@ -1,0 +1,45 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:9:5 - 11:27
+   |
+ 9 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: complex(8) is not a member of type-set trait 'inumeric'
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:43:13
+   |
+43 |         r = p%total(c)
+   |             ^^^^^^^^^^ 
+
+semantic error: complex(8) is not a member of type-set trait 'inumeric'
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:55:13
+   |
+55 |         r = p%total{complex(8)}(c)
+   |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: function or subroutine category does not match trait procedure
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:66:9
+   |
+66 |         call p%total(x)
+   |         ^^^^^^^^^^^^^^^ 
+
+semantic error: too many arguments to trait procedure 'first_n'
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:77:18
+   |
+77 |         print *, cnt%first_n(x, cnt)
+   |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Missing actual argument for argument 'x'
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:87:18
+   |
+87 |         print *, cnt%first_n()
+   |                  ^^^^^^^^^^^^^ 
+
+semantic error: Keyword argument not found y
+  --> tests/errors/continue_compilation_traits_generic_binding_01.f90:98:18
+   |
+98 |         print *, cnt%first_n(y=x)
+   |                  ^^^^^^^^^^^^^^^^ y is not a valid keyword argument.

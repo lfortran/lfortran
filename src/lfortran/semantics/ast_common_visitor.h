@@ -24619,24 +24619,29 @@ public:
     void trait_call_arguments(ASR::Function_t *signature,
             AST::fnarg_t *actuals, size_t n_actuals,
             AST::keyword_t *keywords, size_t n_keywords,
-            Vec<ASR::call_arg_t> &args, const Location &loc) {
-        visit_expr_list(actuals, n_actuals, args, &signature->base);
+            Vec<ASR::call_arg_t> &args, const Location &loc,
+            ASR::expr_t *passed_object = nullptr, size_t pass_index = 0) {
+        size_t method = passed_object ? 1 : 0;
+        visit_expr_list(actuals, n_actuals, args, &signature->base,
+            method && pass_index == 0 ? 1 : 0);
         if (n_keywords) {
             diag::Diagnostics diagnostics;
             visit_kwargs(args, keywords, n_keywords, signature->m_args,
-                signature->n_args, loc, signature, diagnostics);
+                signature->n_args, loc, signature, diagnostics, method, false, pass_index);
             if (diagnostics.has_error()) {
                 diag.diagnostics.insert(diag.diagnostics.end(),
                     diagnostics.diagnostics.begin(), diagnostics.diagnostics.end());
                 throw SemanticAbort();
             }
         }
-        validate_missing_required_arguments(loc, args, signature);
-        if (args.size() > signature->n_args) {
+        validate_missing_required_arguments(loc, args, signature, passed_object, false,
+            pass_index);
+        if (args.size() + method > signature->n_args) {
             trait_call_error("too many arguments to trait procedure '"
                 + std::string(signature->m_name) + "'", loc);
         }
-        ASRUtils::set_absent_optional_arguments_to_null(args, signature, al);
+        ASRUtils::set_absent_optional_arguments_to_null(args, signature, al, passed_object,
+            false, pass_index);
     }
 
     ASR::symbol_t *find_trait_specialization(SymbolTable *target,
@@ -25285,6 +25290,29 @@ public:
             type_arguments.size(), args.p, args.size(), ASRUtils::duplicate_type(al, type));
     }
 
+    // The type-bound procedure binding `name` of the derived type
+    // `declaration`, or of its nearest ancestor with a member of that name,
+    // when it is bound to a generic procedure. `member` reports whether there
+    // is such a member at all.
+    ASR::StructMethodDeclaration_t *generic_procedure_binding(ASR::symbol_t *declaration,
+            const std::string &name, bool &member) {
+        member = false;
+        for (ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(declaration);
+                symbol && ASR::is_a<ASR::Struct_t>(*symbol);
+                symbol = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Struct_t>(symbol)->m_parent)) {
+            auto *method = ASR::down_cast<ASR::Struct_t>(symbol)->m_symtab->get_symbol(name);
+            if (!method) continue;
+            member = true;
+            if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*method)) return nullptr;
+            auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(method);
+            auto *procedure = ASRUtils::trait_method_function(
+                ASRUtils::symbol_get_past_external(binding->m_proc));
+            return procedure && ASRUtils::trait_method_template(*procedure) ? binding : nullptr;
+        }
+        return nullptr;
+    }
+
     // Whether `name` called through the resolved designator `receiver` is a
     // trait method call: through a runtime view or a constrained type
     // parameter, or through a value whose declared type binds that name to a
@@ -25302,17 +25330,9 @@ public:
         ASR::symbol_t *declaration = structure
             ? ASRUtils::get_struct_sym_from_struct_expr(receiver) : nullptr;
         if (structure && !declaration) return false;
-        for (ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(declaration);
-                symbol && ASR::is_a<ASR::Struct_t>(*symbol);
-                symbol = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Struct_t>(symbol)->m_parent)) {
-            auto *method = ASR::down_cast<ASR::Struct_t>(symbol)->m_symtab->get_symbol(name);
-            if (!method) continue;
-            if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*method)) return false;
-            auto *procedure = ASRUtils::trait_method_function(ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructMethodDeclaration_t>(method)->m_proc));
-            return procedure && ASRUtils::trait_method_template(*procedure);
-        }
+        bool member = false;
+        if (generic_procedure_binding(declaration, name, member)) return true;
+        if (member) return false;
         for (auto *implementation : visible_trait_implementations()) {
             if (!ASRUtils::trait_implementation_matches_type(*implementation, declaration, type)) {
                 continue;
@@ -25338,6 +25358,7 @@ public:
         bool abstract_method = false;
         int64_t runtime_slot = -1;
         const ASR::trait_binding_t *concrete_binding = nullptr;
+        ASR::StructMethodDeclaration_t *generic_binding = nullptr;
         ASR::TraitConstraint_t *requirement_constraint = nullptr;
         size_t requirement_index = 0;
         if (n_members == 0) {
@@ -25457,7 +25478,13 @@ public:
                             "' for " + ASRUtils::type_to_str_fortran_symbol(type, nullptr, true) +
                             "; use its implementation module", loc);
                     }
-                    return false;
+                    // A binding of a generic procedure that implements no
+                    // trait message is specialized statically in the same way.
+                    bool member = false;
+                    generic_binding = generic_procedure_binding(declaration, name, member);
+                    if (!generic_binding) return false;
+                    callee = generic_binding->m_proc;
+                    signature = ASRUtils::trait_method_function(callee);
                 }
                 if (!declaration && ASRUtils::is_array(receiver_type)) {
                     trait_call_error("intrinsic trait method calls currently require a scalar receiver", loc);
@@ -25481,7 +25508,12 @@ public:
             trait_call_error("function or subroutine category does not match trait procedure", loc);
         }
         Vec<ASR::call_arg_t> args;
-        trait_call_arguments(signature, actuals, n_actuals, keywords, n_keywords, args, loc);
+        // The passed-object dummy argument of a generic binding is not among
+        // the actual arguments.
+        size_t pass_index = generic_binding
+            ? ASRUtils::passed_object_index(*generic_binding, signature) : signature->n_args;
+        trait_call_arguments(signature, actuals, n_actuals, keywords, n_keywords, args, loc,
+            pass_index < signature->n_args ? receiver : nullptr, pass_index);
         tmp = nullptr;
         if (runtime_slot >= 0) {
             auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
@@ -25553,15 +25585,18 @@ public:
                     requirement_index, args, explicit_args, n_explicit_args, loc);
             }
             args = prepend_call_arg(receiver, args);
-        } else if (!concrete_binding->m_is_nopass) {
+        } else if (concrete_binding ? !concrete_binding->m_is_nopass
+                : pass_index < signature->n_args) {
             auto *implementation = ASRUtils::trait_method_function(callee);
             Vec<ASR::call_arg_t> adapted;
             adapted.reserve(al, args.size() + 1);
             for (size_t i = 0, j = 0; i < implementation->n_args; i++) {
                 ASR::call_arg_t arg;
                 arg.loc = loc;
-                if (std::string(ASRUtils::EXPR2VAR(implementation->m_args[i])->m_name)
-                        == concrete_binding->m_self_argument) {
+                if (concrete_binding
+                        ? std::string(ASRUtils::EXPR2VAR(implementation->m_args[i])->m_name)
+                            == concrete_binding->m_self_argument
+                        : i == pass_index) {
                     arg.m_value = receiver;
                 } else {
                     arg = args[j++];
@@ -25570,7 +25605,7 @@ public:
             }
             args = adapted;
         }
-        if (concrete_binding) {
+        if (concrete_binding || generic_binding) {
             auto *implementation = ASRUtils::trait_method_function(callee);
             if (auto *method = ASRUtils::trait_method_template(*implementation)) {
                 callee = prepare_trait_procedure_call(method, implementation, args,

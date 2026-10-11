@@ -344,6 +344,14 @@ the same way. An ordinary type-bound procedure that is not bound to a generic
 procedure keeps its ordinary dispatch, including dynamic dispatch through a
 polymorphic component. See `integration_tests/traits_generic_binding_04.f90`.
 
+A type-bound procedure bound to a generic procedure is called in the same way
+when it implements no trait message, also in a type that adopts no trait: the
+call is a static specialization of the bound procedure, checked against that
+procedure's own constraints, through any of these receivers, including
+`CLASS(...)` ones. Its argument list omits the passed-object dummy argument.
+See `integration_tests/traits_generic_binding_05.f90`. A Fortran `GENERIC`
+binding whose specific procedure is generic is not supported.
+
 ### Generic messages through a constrained type parameter
 
 A type parameter can be constrained by a trait with generic messages:
