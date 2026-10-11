@@ -8,6 +8,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <set>
 #include <vector>
 
 
@@ -433,8 +434,23 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
                             const LCompilers::PassOptions& pass_options) {
     int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
+    std::set<std::string> existing_symbols;
+    for (auto &item: unit.m_symtab->get_scope()) {
+        existing_symbols.insert(item.first);
+    }
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind);
     v.visit_TranslationUnit(unit);
+    // Every procedure added to the translation unit's own scope above is a
+    // helper instantiated for a call in this translation unit only. Another
+    // translation unit instantiates its own under the same name, so the
+    // helpers are private to it and must not clash at link time.
+    for (auto &item: unit.m_symtab->get_scope()) {
+        if (existing_symbols.find(item.first) == existing_symbols.end()
+                && ASR::is_a<ASR::Function_t>(*item.second)) {
+            ASR::down_cast<ASR::Function_t>(item.second)->m_access =
+                ASR::accessType::Private;
+        }
+    }
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

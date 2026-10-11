@@ -112,7 +112,7 @@ declare i32 @_lfortran_get_command_argument_length(i32)
 
 declare void @_lfortran_get_command_argument_value(i32, i8*)
 
-define i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
+define internal i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
 .entry:
   %StringItem = alloca %string_descriptor, align 8
   %str_desc = alloca %string_descriptor, align 8
@@ -193,7 +193,7 @@ FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   ret i32 %28
 }
 
-define void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
+define internal void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8
