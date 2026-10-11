@@ -20,12 +20,13 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
         # Quick owns the full regression modes on LLVM 11/21. Exhaustive is
-        # identical on main, labeled PRs and manual runs.
+        # identical on main and manual runs.
         # An unknown scope has no matrix, rather than silently selecting one.
         llvm-version: ${{ fromJSON('{"quick":["7","11","23"],"exhaustive":["7","8","10","11","15","17","18","19","21","22","23"]}')[inputs.scope] }}
         python-version: ["3.10"]
@@ -193,11 +194,15 @@ jobs:
             make=4.3
             ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
 
+      # Quick's LLVM 11 compiler is a Debug build with extra checks, while
+      # Exhaustive builds LLVM 11 in Release; separate keys keep them from
+      # overwriting each other's cache.
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
-          save: ${{ github.event_name != 'merge_group' }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}
+          max-size: 1500M
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version > 11 || (inputs.scope == 'quick' && matrix.llvm-version == '11'))
