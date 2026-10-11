@@ -150,6 +150,9 @@ public:
     void mark_regions_device_code_runs();
 
     void plain_allocatable_dummies(ASR::Function_t *fn);
+    // The routines plain_allocatable_dummies has looked at, or is looking
+    // at: a routine is looked at once, after the routines it calls.
+    std::set<ASR::Function_t*> plain_dummies_decided;
 
     // The allocatable dummy arrays plain_allocatable_dummies declared as
     // plain arrays, per routine, until pass_plain_dummy_lower_bounds

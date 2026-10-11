@@ -1869,7 +1869,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // left naming the original. Point every such extent at the
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
-            plain_allocatable_dummies(func);
             gather_strided_sections_in_routine(*func);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
@@ -1894,6 +1893,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                 }
             }
+        }
+    }
+
+    // Which allocatable dummies a routine hands on to another routine is
+    // read from the calls, so they have to name the kernel's copies first.
+    for (auto &item : kernel_scope->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            plain_allocatable_dummies(
+                ASR::down_cast<ASR::Function_t>(item.second));
         }
     }
 
