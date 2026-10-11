@@ -155,13 +155,13 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
             return false;
         }
         // An array assignment whose two sides overlap the same array
-        // needs a temporary (see materialize_aliased_assignments).
-        // If that temporary cannot be fixed-size, it is an error.
+        // needs a temporary (see materialize_aliased_assignments). One
+        // that cannot be fixed-size is a per-thread workspace, and it
+        // is an error when the host could not size it.
         std::vector<std::string> alias_arg_names;
         collect_kernel_arg_names(work, enclosing_block_scopes,
             alias_arg_names);
-        if (body_needs_unsupported_alias_temp(work.body, work.n_body,
-                true, alias_arg_names)) {
+        if (body_needs_unsupported_alias_temp(work, alias_arg_names)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
             return false;

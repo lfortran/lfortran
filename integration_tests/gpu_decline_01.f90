@@ -1,30 +1,25 @@
 ! gpu decline reason: AliasTemporaryRuntimeSized
-! an array assignment whose two sides overlap needs a temporary, and here the
-! target is a section of an assumed-shape dummy, so that temporary cannot be
-! given compile-time extents.
+! an array assignment whose two sides overlap needs a temporary. Its extent
+! `m(k)` changes with the iteration, so the per-thread temporary would be
+! sized as the whole component `x(k)%v` instead, but that is an element of
+! an array of derived type whose size may differ from one iteration to the
+! next, so the host cannot size it before the launch either.
 program gpu_decline_01
     implicit none
-    real :: w(3,4)
-    integer :: i, j
-    do j = 1, 4
-        do i = 1, 3
-            w(i,j) = real(i + j)
-        end do
+    type :: t_t
+        real, allocatable :: v(:)
+    end type
+    type(t_t) :: x(3)
+    integer :: m(3), k, i
+    m = [2, 3, 1]
+    do k = 1, 3
+        allocate(x(k)%v(m(k)))
+        x(k)%v = [(real(i), i = 1, m(k))]
     end do
-    call go(w)
-    do j = 1, 4
-        do i = 1, 3
-            if (abs(w(i,j) - real(2*j + i + 1)) > 1.0e-6) error stop "bad w"
-        end do
+    do concurrent (k = 1:3)
+        x(k)%v(1:m(k)) = x(k)%v(m(k):1:-1)
     end do
-contains
-    subroutine go(w)
-        real, intent(inout) :: w(:,:)
-        integer :: i, k
-        do concurrent (i = 1:4)
-            do k = 1, 1
-                w(:,i) = w(:,i) + w(1,i)
-            end do
-        end do
-    end subroutine
+    if (any(x(1)%v /= [2., 1.])) error stop "bad x(1)"
+    if (any(x(2)%v /= [3., 2., 1.])) error stop "bad x(2)"
+    if (any(x(3)%v /= [1.])) error stop "bad x(3)"
 end program
