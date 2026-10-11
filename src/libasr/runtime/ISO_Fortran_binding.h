@@ -187,7 +187,7 @@ static inline int CFI_allocate(CFI_cdesc_t *desc,
         desc->attribute != CFI_attribute_pointer)
         return CFI_INVALID_ATTRIBUTE;
 
-    if (elem_len > 0) desc->elem_len = (int64_t)elem_len;
+    if (elem_len > 0 && desc->type == CFI_type_char) desc->elem_len = (int64_t)elem_len;
 
     size_t total = (size_t)desc->elem_len;
     for (int i = 0; i < desc->rank; i++) {
@@ -403,13 +403,16 @@ static inline int CFI_section(CFI_cdesc_t *result,
     for (int i = 0; i < source->rank; i++) {
         CFI_index_t lb = lower ? lower[i] : source->dim[i].lower_bound;
         CFI_index_t ub = upper ? upper[i] : source->dim[i].lower_bound +
-                                              source->dim[i].extent - 1;
+                                            source->dim[i].extent - 1;
         CFI_index_t st = strides ? strides[i] : 1;
 
         byte_offset += (lb - source->dim[i].lower_bound) *
                        source->dim[i].sm;
 
         if (rd < res_rank) {
+            if (st == 0) {
+                continue;
+            }
             CFI_index_t ext;
             if (st > 0) {
                 ext = (ub - lb + st) / st;
@@ -439,7 +442,7 @@ static inline int CFI_is_contiguous(const CFI_cdesc_t *desc) {
 
     CFI_index_t expected_sm = desc->elem_len;
     for (int i = 0; i < desc->rank; i++) {
-        if (desc->dim[i].sm != expected_sm) return 0;
+        if (desc->dim[i].extent > 1 && desc->dim[i].sm != expected_sm) return 0;
         expected_sm *= desc->dim[i].extent;
     }
     return 1;
