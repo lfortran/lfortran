@@ -32,6 +32,7 @@ jobs:
   platform:
     name: Full platform coverage (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ contains(matrix.os, 'macos') && 130 || 60 }}
     env:
       MACOSX_DEPLOYMENT_TARGET: 26.0
     strategy:
@@ -71,6 +72,7 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v7
         with:
@@ -151,6 +153,7 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -267,6 +270,7 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -298,6 +302,7 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -350,6 +355,7 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     permissions:
       contents: read
       packages: write
@@ -390,6 +396,7 @@ jobs:
   build_xlfortran_jupyterlite:
     name: Build xlfortran JupyterLite kernel and run tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 50
     defaults:
       run:
         shell: bash -l {0}
@@ -462,6 +469,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
