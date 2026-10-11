@@ -1120,7 +1120,12 @@ void pass_promote_device_allocatable(
         is_allocated_called.visit_TranslationUnit(unit);
         PromoteAllocatableToNonAllocatable promoter(al, scope2var, true);
         promoter.visit_TranslationUnit(unit);
-        if( promoter.promoted_symbols.empty() && !stored ) {
+        // What cannot be promoted because its shape is only known where
+        // it is allocated -- inside a loop -- is given a buffer sized by an
+        // upper bound known on entry instead.
+        bool buffered = promoter.promoted_symbols.empty() &&
+            gpu_bind_allocations_to_buffers(al, unit);
+        if( promoter.promoted_symbols.empty() && !stored && !buffered ) {
             return;
         }
         rebuild_promoted_signatures(al, promoter.promoted_result_functions);

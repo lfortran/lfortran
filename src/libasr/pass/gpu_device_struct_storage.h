@@ -18,6 +18,15 @@ void gpu_routine_scopes(SymbolTable *scope, std::vector<SymbolTable*> &out);
 bool gpu_give_struct_component_storage(Allocator &al,
     ASR::TranslationUnit_t &unit);
 
+// Gives an allocatable rank-one local of a device routine that the
+// routine allocates with an extent it only knows where it allocates it --
+// one that reads the index of a loop -- a buffer whose extent is an upper
+// bound of every such extent known on entry to the routine, and makes the
+// local a pointer to the leading part of the buffer each allocation asks
+// for. Returns whether it gave any.
+bool gpu_bind_allocations_to_buffers(Allocator &al,
+    ASR::TranslationUnit_t &unit);
+
 // Whether `stmt` binds the allocatable array component of a derived-type
 // local of device code to the array that stores it: `s%v => storage`, as
 // gpu_give_struct_component_storage writes it. `component` is `s%v`.
