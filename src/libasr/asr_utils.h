@@ -3740,13 +3740,15 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
 // `curr_scope` with the dependencies a call needs: the symbol a
 // SubroutineCall names, or nullptr if there is none. `a_original_name`
 // receives the call's original name, and `expr_dt` the item for a type-bound
-// procedure (the call's `m_dt`), or nullptr.
+// procedure (the call's `m_dt`), or nullptr. With `elementwise`, `item` may be
+// an array whose elements are transferred one by one.
 ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
                                SymbolTable* curr_scope, Allocator &al, const Location& loc,
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err,
-                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt);
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt,
+                               bool elementwise=false);
 
 void set_intrinsic(ASR::symbol_t* sym);
 

@@ -1916,24 +1916,49 @@ public:
         return true;
     }
 
-    // Whether `item` is transferred by the defined output procedure of one of
-    // `bindings`. Only scalar items are, so far: an array or an implied-do
-    // item of derived type is still transferred by its components.
+    // The derived type of the effective items of the output item `item` (the
+    // item itself, or each element of an array item), or nullptr if they are
+    // not of a derived type that can have a defined output procedure.
+    ASR::ttype_t* dtio_effective_item_type(ASR::expr_t* item) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            return nullptr;
+        }
+        ASR::ttype_t* type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(item)));
+        if (!ASR::is_a<ASR::StructType_t>(*type) ||
+                ASRUtils::is_unlimited_polymorphic_type(type) ||
+                ASRUtils::get_struct_sym_from_struct_expr(item) == nullptr) {
+            return nullptr;
+        }
+        return type;
+    }
+
+    // Whether the effective items of `item` are transferred by the defined
+    // output procedure of one of `bindings`. An implied-do loop is, when every
+    // derived-type item in it is.
     bool has_dtio_binding(ASR::expr_t* item, const Vec<ASR::dtio_binding_t> &bindings) {
         if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+            bool bound = false;
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* value = idl->m_values[i];
+                if (has_dtio_binding(value, bindings)) {
+                    bound = true;
+                } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value) ||
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(value))))) {
+                    return false;
+                }
+            }
+            return bound;
+        }
+        ASR::ttype_t* type = dtio_effective_item_type(item);
+        if (type == nullptr) {
             return false;
         }
-        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(item));
-        if (!ASR::is_a<ASR::StructType_t>(*type) ||
-                ASRUtils::is_unlimited_polymorphic_type(type)) {
-            return false;
-        }
-        ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(item);
-        if (struct_sym == nullptr) {
-            return false;
-        }
-        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(item));
         bool polymorphic = ASRUtils::is_class_type(type);
         for (size_t i = 0; i < bindings.size(); i++) {
             if (ASRUtils::symbol_get_past_external(bindings[i].m_type_declaration) == struct_sym &&
@@ -1945,53 +1970,66 @@ public:
     }
 
     // Resolves the defined output procedure (`write(formatted)`) of each
-    // derived-type item of a formatted WRITE or PRINT with a format, once per
-    // pair of type and polymorphism. The runtime formatter calls it when the
-    // item meets a DT edit descriptor.
+    // derived-type effective item of a formatted WRITE or PRINT with a
+    // format, once per pair of type and polymorphism. The effective items
+    // are the items, the elements of array items and the items of implied-do
+    // loops. The runtime formatter calls the procedure when such an item
+    // meets a DT edit descriptor.
     void build_dtio_write_bindings(const Vec<ASR::expr_t*> &items,
             Vec<ASR::dtio_binding_t> &bindings, const Location &loc) {
         for (size_t i = 0; i < items.size(); i++) {
-            ASR::expr_t* item = items[i];
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
-                continue;
-            }
-            ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
-                ASRUtils::expr_type(item));
-            if (!ASR::is_a<ASR::StructType_t>(*type) ||
-                    ASRUtils::is_unlimited_polymorphic_type(type) ||
-                    ASRUtils::get_struct_sym_from_struct_expr(item) == nullptr ||
-                    has_dtio_binding(item, bindings)) {
-                continue;
-            }
-            std::string read_write = "~write_formatted";
-            ASR::symbol_t* a_original_name = nullptr;
-            ASR::expr_t* expr_dt = nullptr;
-            ASR::symbol_t* procedure = ASRUtils::resolve_defined_io_procedure(
-                read_write, item, current_scope, al, item->base.loc,
-                current_function_dependencies, current_module_dependencies,
-                [&](const std::string &msg, const Location &loc) {
-                    diag.add(Diagnostic(msg, Level::Error, Stage::Semantic,
-                        {Label("", {loc})}));
-                    throw SemanticAbort();
-                }, a_original_name, expr_dt);
-            if (procedure == nullptr) {
-                continue;
-            }
-            // The type, as a symbol of this scope, which a module file can
-            // refer to.
-            ASR::symbol_t* type_declaration = ASRUtils::get_struct_sym_from_struct_expr(item);
-            if (!ASRUtils::is_visible_from(type_declaration, current_scope)) {
-                type_declaration = ASRUtils::import_symbol(al, type_declaration,
-                    current_scope, ASR::accessType::Private, "1_");
-            }
-            ASR::dtio_binding_t binding;
-            binding.loc = loc;
-            binding.m_type_declaration = type_declaration;
-            binding.m_polymorphic = ASRUtils::is_class_type(type);
-            binding.m_procedure = procedure;
-            binding.m_callback = nullptr;
-            bindings.push_back(al, binding);
+            add_dtio_write_binding(items[i], false, bindings, loc);
         }
+    }
+
+    void add_dtio_write_binding(ASR::expr_t* item, bool in_implied_do,
+            Vec<ASR::dtio_binding_t> &bindings, const Location &loc) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                add_dtio_write_binding(idl->m_values[i], true, bindings, loc);
+            }
+            return;
+        }
+        ASR::ttype_t* type = dtio_effective_item_type(item);
+        if (type == nullptr || has_dtio_binding(item, bindings)) {
+            return;
+        }
+        std::string read_write = "~write_formatted";
+        ASR::symbol_t* a_original_name = nullptr;
+        ASR::expr_t* expr_dt = nullptr;
+        ASR::symbol_t* procedure = ASRUtils::resolve_defined_io_procedure(
+            read_write, item, current_scope, al, item->base.loc,
+            current_function_dependencies, current_module_dependencies,
+            [&](const std::string &msg, const Location &loc) {
+                diag.add(Diagnostic(msg, Level::Error, Stage::Semantic,
+                    {Label("", {loc})}));
+                throw SemanticAbort();
+            }, a_original_name, expr_dt, true);
+        if (procedure == nullptr) {
+            return;
+        }
+        if (ASRUtils::is_class_type(type) &&
+                (in_implied_do || ASRUtils::is_array(ASRUtils::expr_type(item)))) {
+            diag.add(Diagnostic("defined output of the elements of a polymorphic "
+                "array is not supported yet", Level::Error, Stage::Semantic,
+                {Label("", {item->base.loc})}));
+            throw SemanticAbort();
+        }
+        // The type, as a symbol of this scope, which a module file can
+        // refer to.
+        ASR::symbol_t* type_declaration = ASRUtils::get_struct_sym_from_struct_expr(item);
+        if (!ASRUtils::is_visible_from(type_declaration, current_scope)) {
+            type_declaration = ASRUtils::import_symbol(al, type_declaration,
+                current_scope, ASR::accessType::Private, "1_");
+        }
+        ASR::dtio_binding_t binding;
+        binding.loc = loc;
+        binding.m_type_declaration = type_declaration;
+        binding.m_polymorphic = ASRUtils::is_class_type(type);
+        binding.m_procedure = procedure;
+        binding.m_callback = nullptr;
+        bindings.push_back(al, binding);
     }
 
     void create_read_write_ASR_node(const AST::decl_stmt_t& read_write_stmt, AST::decl_stmtType _type) {
@@ -3005,14 +3043,42 @@ public:
                             // Before: ImpliedDoLoop(values=[recs(i)], ...)
                             // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
                             ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                            // A value written by its defined output procedure
+                            // is kept as is.
                             Vec<ASR::expr_t*> idl_new_values;
                             idl_new_values.reserve(al, idl->n_values * 4);
+                            bool kept_dtio_value = false;
                             for (size_t iv = 0; iv < idl->n_values; iv++) {
-                                expand_struct_expr(idl->m_values[iv], idl_new_values);
+                                if (has_dtio_binding(idl->m_values[iv], dtio_bindings)) {
+                                    idl_new_values.push_back(al, idl->m_values[iv]);
+                                    kept_dtio_value = true;
+                                } else {
+                                    expand_struct_expr(idl->m_values[iv], idl_new_values);
+                                }
                             }
                             ASR::ttype_t* new_type = idl->m_type;
                             if (idl_new_values.size() > 0) {
                                 new_type = ASRUtils::expr_type(idl_new_values[0]);
+                            }
+                            if (kept_dtio_value) {
+                                // The values of different types form a tuple.
+                                Vec<ASR::ttype_t*> value_types;
+                                value_types.reserve(al, idl_new_values.size());
+                                bool unique_type = true;
+                                for (size_t iv = 0; iv < idl_new_values.size(); iv++) {
+                                    ASR::ttype_t* value_type = ASRUtils::type_get_past_allocatable(
+                                        ASRUtils::expr_type(idl_new_values[iv]));
+                                    value_types.push_back(al, value_type);
+                                    if (!ASRUtils::types_equal(value_type,
+                                            ASRUtils::expr_type(idl_new_values[0]),
+                                            idl_new_values[iv], idl_new_values[0])) {
+                                        unique_type = false;
+                                    }
+                                }
+                                if (!unique_type) {
+                                    new_type = ASRUtils::TYPE(ASR::make_Tuple_t(al,
+                                        idl->base.base.loc, value_types.p, value_types.size()));
+                                }
                             }
                             ASR::expr_t* new_idl = ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
                                 al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
