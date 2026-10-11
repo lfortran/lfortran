@@ -68,9 +68,11 @@ Every worker handoff includes:
 - Absolute worktree and state paths, branch, pinned base SHA, fork remote,
   and any existing PR/head SHA.
 - The Pixi environment and exact invocation, build directory, compiler path,
-  and job budget. Default to `pixi run -e llvm11 build` from the assigned
-  worktree; the build is `build/llvm11`, with dependencies in that worktree's
-  `.pixi`. Do not share or copy build caches, runtime modules, or environments.
+  and job budget. Use only Pixi, starting with `pixi run -e llvm11 build`
+  from the assigned worktree; the build is `build/llvm11`, with dependencies
+  in that worktree's `.pixi`. All reference tests and updates use `llvm11`.
+  Never install dependencies outside Pixi. Do not share or copy build caches, runtime
+  modules, or environments.
 - Skills to load, authorized actions, and the no-co-author commit policy.
   Commits are allowed; publication waits for the coordinator's grouping decision.
 - A short report with verified root cause, required/shared fixes, commit/MRE/
