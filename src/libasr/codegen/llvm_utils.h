@@ -264,14 +264,20 @@ class ASRToLLVMVisitor;
 
         // A type(c_ptr) dummy argument that is intent(out), intent(inout),
         // or of unspecified intent without VALUE is passed by reference
-        // (`void**`); any other type(c_ptr) dummy is passed by value
-        // (`void*`). The function signature, the callee and every call site
-        // must agree on this.
+        // (`void**`). So is an intent(in) TARGET dummy without VALUE of a
+        // non-bind(c) procedure, so that it is associated with the actual
+        // argument (F2018 15.5.2.4): c_loc of it is the address of the
+        // actual, and a pointer associated with it stays associated with the
+        // actual after the call. Any other type(c_ptr) dummy is passed by
+        // value (`void*`). The function signature, the callee and every call
+        // site must agree on this.
         static inline bool is_cptr_dummy_passed_by_reference(const ASR::Variable_t& v) {
             return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
                 (v.m_intent == ASR::intentType::Out ||
                  v.m_intent == ASR::intentType::InOut ||
-                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr));
+                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr) ||
+                 (v.m_intent == ASR::intentType::In && !v.m_value_attr &&
+                  v.m_target_attr && v.m_abi != ASR::abiType::BindC));
         }
 
         static inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t& v) {
@@ -280,11 +286,12 @@ class ASRToLLVMVisitor;
                 !is_cptr_dummy_passed_by_reference(v);
         }
 
-        // A VALUE type(c_ptr) dummy of a non-bind(c) procedure is copied
-        // into local storage on entry, so, like a local variable, it is held
-        // as a `void**`.
+        // A type(c_ptr) dummy of a non-bind(c) procedure that is passed by
+        // value (VALUE, or intent(in) without TARGET) is copied into local
+        // storage on entry, so, like a local variable, it is held as a
+        // `void**`.
         static inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t& v) {
-            return is_cptr_dummy_passed_by_value(v) && v.m_value_attr &&
+            return is_cptr_dummy_passed_by_value(v) &&
                 v.m_abi != ASR::abiType::BindC;
         }
 
@@ -1267,8 +1274,8 @@ class ASRToLLVMVisitor;
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path, except
-            // for an allocatable array component, which is deallocated (and
-            // so finalized) with the structure that it is a component of.
+            // for an allocatable component, which is deallocated (and so
+            // finalized) with the structure that it is a component of.
             if (call_final_subroutines_ && struct_sym != nullptr && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
                 ASR::ttype_t* v_type_past =
@@ -1282,6 +1289,12 @@ class ASRToLLVMVisitor;
                     if (!ASRUtils::is_allocatable(type)) {
                         call_final_procedure(select_final_procedure(struct_sym, 0),
                             ptr, v_type_past, struct_sym);
+                    } else if (in_struct
+                            && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
+                        check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                            call_final_procedure(select_final_procedure(struct_sym, 0),
+                                ptr, v_type_past, struct_sym);
+                        });
                     }
                 } else if (!ASRUtils::is_allocatable(type)) {
                     call_array_final_procedures(ptr, v_type_past, struct_sym,
