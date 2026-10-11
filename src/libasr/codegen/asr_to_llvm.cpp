@@ -25975,7 +25975,10 @@ public:
                                         || ASR::is_a<ASR::StructType_t>(
                                             *ASRUtils::extract_type(arg_type)))))
                             && value->getType()->isPointerTy()
-                            && !ASRUtils::is_character(*arg_type)) {
+                            && !(ASRUtils::is_character(*arg_type)
+                                && !(ASRUtils::is_array(arg_type)
+                                    && (ASRUtils::is_allocatable(arg_type)
+                                        || ASRUtils::is_pointer(arg_type))))) {
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::extract_type(arg_type))
                                     && !ASRUtils::is_class_type(

@@ -1697,6 +1697,11 @@ namespace OutOfRange
 
 namespace CompilerVersion {
 
+    // Defined in intrinsic_function.cpp: the version changes with every
+    // commit, and expanding it in this widely included header would change
+    // every including file and defeat compiler caches.
+    std::string version_string();
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_version() takes no argument",
@@ -1706,7 +1711,7 @@ namespace CompilerVersion {
     static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        std::string version = std::string("LFortran version ") + LFORTRAN_VERSION;
+        std::string version = version_string();
         return b.StringConstant(version, character(version.length()));
     }
 
