@@ -1944,6 +1944,24 @@ int compile_to_binary_fortran(const std::string &infile,
     return 0;
 }
 
+// Default C compiler driver for the final link when none was selected
+// with --linker/LFORTRAN_LINKER (clang on macOS, gcc on Windows MinGW,
+// cc otherwise).
+const char *default_c_driver()
+{
+#if defined(__APPLE__)
+    // Provided by the Xcode command line tools
+    return "clang";
+#elif defined(_WIN32)
+    // Used only for non-MSVC (MinGW) targets; the MSVC target is linked
+    // directly with `link`
+    return "gcc";
+#else
+    // Provided by the system gcc (e.g. the build-essential package)
+    return "cc";
+#endif
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -2094,7 +2112,8 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (!linker_path.empty()) {
                 CC = linker_path;
-            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH")) {
+            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH");
+                    env_path != nullptr && env_path[0] != '\0') {
                 CC = env_path;
             }
 
@@ -2103,20 +2122,57 @@ int link_executable(const std::vector<std::string> &infiles,
                 CC += "/";
             }
 
+            // TODO: Add support for msvc linker for Windows
+            // TODO: Add support for lld linker
+            std::string driver;
             if (!linker.empty()) {
-                CC += linker;
-            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
-                CC += env_linker;
+                driver = linker;
+            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER");
+                    env_linker != nullptr && env_linker[0] != '\0') {
+                driver = env_linker;
+            } else if (compiler_options.gpu_backend == "metal") {
+                driver = "clang";
             } else {
-                // TODO: Add support for msvc linker for Windows
-                // TODO: Add support for lld linker
-                // Default linker to be used
-                CC += "clang";
+                driver = default_c_driver();
+            }
+            CC += driver;
+
+            // True when any whitespace-separated token of the driver is a
+            // clang program (covers wrappers like "ccache clang"); only the
+            // basename is checked so a "clang" inside a --linker-path
+            // directory does not count. On macOS `cc` is the clang driver.
+            bool driver_is_clang = false;
+            std::istringstream driver_tokens(driver);
+            for (std::string token; driver_tokens >> token;) {
+                size_t slash = token.find_last_of("/\\");
+                if (slash != std::string::npos) {
+                    token = token.substr(slash + 1);
+                }
+                if (LCompilers::startswith(token, "clang")
+#ifdef __APPLE__
+                    || token == "cc"
+#endif
+                    ) {
+                    driver_is_clang = true;
+                    break;
+                }
             }
 
-            if (compiler_options.target != "" &&
-                    CC.find("clang" ) != std::string::npos) {
-                options = " -target " + compiler_options.target;
+            if (compiler_options.gpu_backend == "metal" && !driver_is_clang) {
+                std::cerr << "The Metal backend requires the clang driver, "
+                    "but the selected driver is '" << CC << "'. Use "
+                    "--linker=clang or LFORTRAN_LINKER=clang." << std::endl;
+                return 10;
+            }
+
+            if (compiler_options.target != "") {
+                if (driver_is_clang) {
+                    options = " -target " + compiler_options.target;
+                } else {
+                    std::cerr << "warning: --target is only supported with "
+                        "the clang driver and will be ignored for '" << CC
+                        << "'." << std::endl;
+                }
             }
 
             if (static_executable) {
@@ -2143,7 +2199,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
-            if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
+            // -lomp comes from --openmp-lib-dir and works with any driver.
+            if (compiler_options.openmp) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
                 if (!openmp_shared_library.empty()) {
@@ -2156,7 +2213,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
+                std::string metal_compile_cmd = CC + " -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
@@ -2286,10 +2343,13 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cerr << "Tip: If there is a linker issue, switch the linker "
                 "using --linker=<CC> option or create an environment "
                 "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
-                "clang or gcc" << std::endl;
-            std::cerr << "Also, if required use --linker-path=<PATH>, "
-                "where PATH has location to look for the linker "
-                "executable" << std::endl;
+                "clang, cc or gcc" << std::endl;
+            std::cerr << "Also, if required use --linker-path=<PATH> or "
+                "`export LFORTRAN_LINKER_PATH=<PATH>`, where PATH has "
+                "location to look for the linker executable. By default "
+                "LFortran uses the platform C compiler driver ('"
+                << default_c_driver() << "' on this platform)."
+                << std::endl;
             return 10;
         }
 
