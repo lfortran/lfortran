@@ -64,7 +64,12 @@ module traits_runtime_numeric_02_oracle_simple_m
 
    integer :: leaf_calls = 0
 
+   ! GFortran reallocates a polymorphic allocatable to the size of its new
+   ! dynamic type, and glibc's realloc(ptr, 0) frees ptr and returns NULL, so
+   ! assigning a zero-sized SimpleSum over another type would leave the
+   ! variable deallocated. The unused component keeps SimpleSum nonempty.
    type, extends(ISum) :: SimpleSum
+      integer :: unused = 0
    contains
       procedure :: sum_integer => simple_integer
       procedure :: sum_real64 => simple_real64
