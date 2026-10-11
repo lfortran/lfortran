@@ -9655,7 +9655,8 @@
                                                     24 t
                                                     16 integer
                                                     [(24 __trait_member_integer_value
-                                                    24 __trait_t_value)]
+                                                    24 __trait_t_value
+                                                    [])]
                                                     []
                                                 ),
                                             __trait_member_integer_value:

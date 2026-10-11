@@ -4948,6 +4948,8 @@ public:
                 requirement.loc = loc;
                 requirement.m_member = reference_trait_member(member, scope, loc);
                 requirement.m_procedure = procedure;
+                requirement.m_evidence = nullptr;
+                requirement.n_evidence = 0;
                 requirements.push_back(al, requirement);
             }
             std::string constraint_name = scope->get_unique_name("__constraint_" + parameter);

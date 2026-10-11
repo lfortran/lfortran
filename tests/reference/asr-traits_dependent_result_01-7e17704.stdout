@@ -280,9 +280,11 @@
                                                     6 t
                                                     2 itext
                                                     [(6 __trait_member_itext_copy_text
-                                                    6 __trait_t_copy_text)
+                                                    6 __trait_t_copy_text
+                                                    [])
                                                     (6 __trait_member_itext_text
-                                                    6 __trait_t_text)]
+                                                    6 __trait_t_text
+                                                    [])]
                                                     []
                                                 ),
                                             __trait_member_itext_copy_text:

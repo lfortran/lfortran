@@ -10869,6 +10869,20 @@ bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &l
 // constraints and a leading receiver; empty when it is.
 std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
     const ASR::Template_t &requirement);
+// The position of `binder` among the type parameters of `generic`, or n_args.
+size_t trait_binder_position(const ASR::Template_t &generic, ASR::symbol_t *binder);
+// Why `evidence` is not the nominal evidence of a specialization of the generic
+// requirement `requirement` for `types`: each nominal constraint of a type
+// parameter whose argument is concrete needs exactly one conformance of that
+// type to that trait, binding all of its methods, and a deferred argument none.
+// Empty when it is.
+std::string trait_requirement_evidence_mismatch(const ASR::Template_t &requirement,
+    const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+    const ASR::trait_evidence_t *evidence, size_t n_evidence);
+// Whether two evidence lists select the same conformances for the same
+// constraints.
+bool trait_evidence_equal(const ASR::trait_evidence_t *left, size_t n_left,
+    const ASR::trait_evidence_t *right, size_t n_right);
 // Slots of one member family share their callable's exact origins.
 bool trait_slots_same_family(const ASR::trait_slot_t &left, const ASR::trait_slot_t &right);
 // The slot of `family` whose type arguments are `members`, or contract.n_slots.

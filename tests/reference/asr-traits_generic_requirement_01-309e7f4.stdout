@@ -11557,9 +11557,11 @@
                                                     24 adder
                                                     2 isum
                                                     [(24 __trait_member_isum_sum
-                                                    24 __trait_adder_sum)
+                                                    24 __trait_adder_sum
+                                                    [])
                                                     (24 __trait_member_isum_sum
-                                                    24 __trait_adder_sum_elem)]
+                                                    24 __trait_adder_sum_elem
+                                                    [])]
                                                     []
                                                 ),
                                             __constraint_elem:

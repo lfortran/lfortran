@@ -937,6 +937,14 @@ public:
         check(x.m_member && x.m_procedure,
             "asr.verify.trait_requirement.symbols_required",
             "trait requirement member and procedure must be present");
+        check(x.n_evidence == 0 || x.m_evidence != nullptr,
+            "asr.verify.trait_requirement.symbols_required",
+            "trait requirement evidence must be present");
+        for (size_t i = 0; x.m_evidence && i < x.n_evidence; i++) {
+            check(x.m_evidence[i].m_constraint && x.m_evidence[i].m_implementation,
+                "asr.verify.trait_requirement.symbols_required",
+                "trait requirement evidence constraint and implementation must be present");
+        }
         if (!check_external) return;
         ASR::symbol_t *member = check_external
             ? ASRUtils::symbol_get_past_external(x.m_member) : x.m_member;
@@ -1587,8 +1595,18 @@ public:
                     "A specialization of a generic requirement must be its bodyless "
                     "function with the type arguments it records");
                 std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
-                ASRUtils::trait_requirement_type_arguments(*generic, *function, types);
-                for (size_t j = 0; j < i; j++) {
+                bool recorded_types = generic &&
+                    ASRUtils::trait_requirement_type_arguments(*generic, *function, types);
+                if (recorded_types) {
+                    std::string evidence = ASRUtils::trait_requirement_evidence_mismatch(
+                        *generic, types, x.m_requirements[i].m_evidence,
+                        x.m_requirements[i].n_evidence);
+                    require_id(evidence.empty(),
+                        "asr.verify.trait_constraint.generic_evidence",
+                        "A specialization of a generic requirement must record the "
+                        "nominal evidence of its concrete type arguments: " + evidence);
+                }
+                for (size_t j = 0; recorded_types && j < i; j++) {
                     if (ASRUtils::trait_requirement_specialization(x, j) != generic) continue;
                     auto *other = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(x.m_requirements[j].m_procedure));
@@ -1598,11 +1616,19 @@ public:
                     for (size_t k = 0; same && k < types.size(); k++) {
                         same = ASRUtils::trait_type_argument_equal(recorded[k], types[k]);
                     }
+                    // The same type arguments checked with other conformances
+                    // are a distinct specialization.
+                    same = same && ASRUtils::trait_evidence_equal(
+                        x.m_requirements[i].m_evidence, x.m_requirements[i].n_evidence,
+                        x.m_requirements[j].m_evidence, x.m_requirements[j].n_evidence);
                     require_id(!same,
                         "asr.verify.trait_constraint.generic_specialization",
                         "A generic requirement must not repeat a specialization");
                 }
             } else {
+                require_id(x.m_requirements[i].n_evidence == 0,
+                    "asr.verify.trait_constraint.generic_evidence",
+                    "Only a specialization of a generic requirement records evidence");
                 require_id(required_members.insert(member).second,
                     "asr.verify.trait_constraint.member_is_unique",
                     "TraitConstraint must not repeat an original member");

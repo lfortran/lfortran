@@ -1382,7 +1382,8 @@
                                                     11 t
                                                     2 ivalue
                                                     [(11 __trait_member_ivalue_get_value
-                                                    11 __trait_t_get_value)]
+                                                    11 __trait_t_get_value
+                                                    [])]
                                                     []
                                                 ),
                                             __trait_member_ivalue_get_value:

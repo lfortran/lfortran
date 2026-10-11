@@ -46,7 +46,13 @@ bodyless specialization of that function, recording its type arguments in its
 copies of the binder declarations. Specialization binds the generic
 requirement once and maps each published specialization to a static adapter of
 the selected generic implementation, or to the forwarding caller's same
-specialization.
+specialization. A specialization with concrete type arguments also records the
+[evidence](../helper_nodes/trait_evidence.md) selected where the body made the
+call, one conformance per nominal constraint of the generic requirement, and
+its adapters bind the implementation's constraints from it. Equal type
+arguments with different evidence are distinct specializations. A constraint
+is serialized after the other symbols of its scope, since its evidence refers
+into their symbol tables.
 
 Finite type sets instead use `intrinsic_requirements`, with no nominal member or
 receiver. Each restriction has one concrete, one-operation witness for every

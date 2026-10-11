@@ -24828,10 +24828,17 @@ public:
     // The evidence of each requirement of `generic` for `types`: a nominal
     // binding of a concrete type, or the caller's requirement for a forwarded
     // binder. Published specializations of a generic requirement are not
-    // evidence; they follow from their generic requirement's.
+    // evidence; they follow from their generic requirement's. The conformance
+    // that satisfies each nominal constraint of a concrete type is reported in
+    // `selected`. With `recorded`, the conformances of each binder are those
+    // recorded for it instead of those visible here.
     std::vector<ResolvedRequirement> resolve_trait_requirements(ASR::Template_t *generic,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
-            bool forwarding, const Location &loc) {
+            bool forwarding, const Location &loc,
+            std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                *selected = nullptr,
+            const std::map<std::string, std::vector<ASR::TraitImplementation_t*>>
+                *recorded = nullptr) {
         std::vector<ResolvedRequirement> requirements;
         std::map<ASR::symbol_t*, size_t> requirement_indices;
         std::map<std::string, std::vector<ASR::TraitImplementation_t*>> available;
@@ -24912,9 +24919,15 @@ public:
                 continue;
             }
             if (!forwarding && !available.count(parameter)) {
-                available.emplace(parameter,
-                    trait_implementations_for_type(types.at(parameter).second, loc,
-                        types.at(parameter).first));
+                if (recorded) {
+                    auto evidence = recorded->find(parameter);
+                    available.emplace(parameter, evidence == recorded->end()
+                        ? std::vector<ASR::TraitImplementation_t*>() : evidence->second);
+                } else {
+                    available.emplace(parameter,
+                        trait_implementations_for_type(types.at(parameter).second, loc,
+                            types.at(parameter).first));
+                }
             }
             bool matched = false;
             if (forwarding) {
@@ -24963,6 +24976,7 @@ public:
                     ASRUtils::symbol_get_past_external(implementation->m_trait)), loc);
                 if (std::find(hierarchy.traits.begin(), hierarchy.traits.end(), trait)
                         == hierarchy.traits.end()) continue;
+                if (selected && !matched) selected->push_back({constraint, implementation});
                 matched = true;
                 for (size_t i = 0; i < constraint->n_requirements; i++) {
                     if (ASRUtils::trait_requirement_specialization(*constraint, i)) continue;
@@ -25131,16 +25145,82 @@ public:
 
     bool trait_requirement_specializations_changed = false;
 
+    // Records that the module or program owning `scope` depends on module
+    // `name`. Generic bodies are instantiated after the units' own
+    // dependencies are collected, so this updates the unit itself.
+    void add_unit_dependency(SymbolTable *scope, const char *name) {
+        SymbolTable *unit = scope;
+        while (unit->parent && unit->parent->parent) unit = unit->parent;
+        ASR::symbol_t *owner = unit->asr_owner && ASR::is_a<ASR::symbol_t>(*unit->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(unit->asr_owner) : nullptr;
+        char **dependencies = nullptr;
+        size_t n_dependencies = 0;
+        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+            auto *module = ASR::down_cast<ASR::Module_t>(owner);
+            if (std::string(module->m_name) == name) return;
+            dependencies = module->m_dependencies;
+            n_dependencies = module->n_dependencies;
+        } else if (owner && ASR::is_a<ASR::Program_t>(*owner)) {
+            auto *program = ASR::down_cast<ASR::Program_t>(owner);
+            dependencies = program->m_dependencies;
+            n_dependencies = program->n_dependencies;
+        } else {
+            return;
+        }
+        for (size_t i = 0; i < n_dependencies; i++) {
+            if (std::string(dependencies[i]) == name) return;
+        }
+        SetChar updated;
+        updated.from_pointer_n_copy(al, dependencies, n_dependencies);
+        updated.push_back(al, s2c(al, name));
+        if (ASR::is_a<ASR::Module_t>(*owner)) {
+            ASR::down_cast<ASR::Module_t>(owner)->m_dependencies = updated.p;
+            ASR::down_cast<ASR::Module_t>(owner)->n_dependencies = updated.size();
+        } else {
+            ASR::down_cast<ASR::Program_t>(owner)->m_dependencies = updated.p;
+            ASR::down_cast<ASR::Program_t>(owner)->n_dependencies = updated.size();
+        }
+    }
+
+    // A reference to `implementation` from `scope`, which belongs to the unit
+    // of `member`: the conformance itself in its own module or program, else a
+    // private import of it into `scope`.
+    ASR::symbol_t *trait_evidence_reference(ASR::TraitImplementation_t &implementation,
+            SymbolTable *scope, ASR::symbol_t *member, const Location &loc) {
+        ASR::symbol_t *record = &implementation.base;
+        ASR::Module_t *provider = ASRUtils::get_sym_module0(record);
+        if (!provider || provider == ASRUtils::get_sym_module0(member)) return record;
+        std::string name = scope->get_unique_name(ASRUtils::symbol_name(record), false);
+        ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, loc, scope, s2c(al, name), record, provider->m_name, nullptr, 0,
+            ASRUtils::symbol_name(record), ASR::accessType::Private));
+        scope->add_symbol(name, imported);
+        current_module_dependencies.push_back(al, provider->m_name);
+        add_unit_dependency(scope, provider->m_name);
+        return imported;
+    }
+
     // The specialization of generic requirement `index` of `constraint` for
-    // `types`, published in the constraint when the generic body first uses
+    // `types` and the conformances `evidence` selected for its concrete type
+    // arguments, published in the constraint when the generic body first uses
     // it: the generic's callers must bind it.
     ASR::symbol_t *publish_trait_requirement_specialization(ASR::TraitConstraint_t &constraint,
             size_t index,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+            const std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                &evidence,
             const Location &loc) {
         auto *generic = ASRUtils::trait_generic_requirement(
             constraint.m_requirements[index].m_procedure);
         LCOMPILERS_ASSERT(generic);
+        std::vector<ASR::trait_evidence_t> selected;
+        for (const auto &entry : evidence) {
+            ASR::trait_evidence_t record;
+            record.loc = loc;
+            record.m_constraint = &entry.first->base;
+            record.m_implementation = &entry.second->base;
+            selected.push_back(record);
+        }
         for (size_t i = 0; i < constraint.n_requirements; i++) {
             if (ASRUtils::trait_requirement_specialization(constraint, i) != generic) continue;
             auto *existing = ASR::down_cast<ASR::Function_t>(
@@ -25153,7 +25233,12 @@ public:
             for (size_t j = 0; same && j < generic->n_args; j++) {
                 same = ASRUtils::trait_type_argument_equal(recorded[j], types.at(generic->m_args[j]));
             }
-            if (same) return &existing->base;
+            // The same type arguments checked with other conformances are a
+            // distinct specialization.
+            if (same && ASRUtils::trait_evidence_equal(constraint.m_requirements[i].m_evidence,
+                    constraint.m_requirements[i].n_evidence, selected.data(), selected.size())) {
+                return &existing->base;
+            }
         }
         auto *owner = constraint.m_parent_symtab;
         for (ASR::symbol_t *scope_owner = ASRUtils::get_asr_owner(
@@ -25186,6 +25271,15 @@ public:
         auto *signature = ASRUtils::get_FunctionType(specialization);
         signature->m_is_restriction = true;
         signature->m_deftype = ASR::deftypeType::Interface;
+        Vec<ASR::trait_evidence_t> records;
+        records.reserve(al, selected.size());
+        auto *function = ASR::down_cast<ASR::Function_t>(specialization);
+        for (size_t i = 0; i < selected.size(); i++) {
+            ASR::trait_evidence_t record = selected[i];
+            record.m_implementation = trait_evidence_reference(*evidence[i].second,
+                function->m_symtab, specialization, loc);
+            records.push_back(al, record);
+        }
         Vec<ASR::trait_requirement_t> requirements;
         requirements.from_pointer_n_copy(al, constraint.m_requirements,
             constraint.n_requirements);
@@ -25193,6 +25287,8 @@ public:
         requirement.loc = constraint.m_requirements[index].loc;
         requirement.m_member = constraint.m_requirements[index].m_member;
         requirement.m_procedure = specialization;
+        requirement.m_evidence = records.p;
+        requirement.n_evidence = records.size();
         requirements.push_back(al, requirement);
         constraint.m_requirements = requirements.p;
         constraint.n_requirements = requirements.size();
@@ -25264,9 +25360,11 @@ public:
             }
         }
         // The type arguments must satisfy the message's constraints here,
-        // whether or not this generic is ever instantiated.
-        resolve_trait_requirements(generic, types, forwarding, loc);
-        return publish_trait_requirement_specialization(constraint, index, types, loc);
+        // whether or not this generic is ever instantiated. The conformances
+        // selected here for concrete type arguments are their evidence.
+        std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>> evidence;
+        resolve_trait_requirements(generic, types, forwarding, loc, &evidence);
+        return publish_trait_requirement_specialization(constraint, index, types, evidence, loc);
     }
 
     // A runtime call inside a generic definition whose closed type arguments
@@ -26170,6 +26268,8 @@ public:
         bool is_nopass;
         std::pair<ASR::ttype_t*, ASR::symbol_t*> receiver;
         std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        // The recorded conformances of the type arguments, by binder position.
+        std::vector<std::pair<size_t, ASR::symbol_t*>> witnesses;
         ASR::symbol_t *adapter;
     };
     std::vector<GenericRequirementAdapter> generic_requirement_adapters;
@@ -26177,17 +26277,31 @@ public:
     // The static adapter for one specialization of a generic requirement: the
     // receiver convention of the selected binding, calling its generic
     // implementation specialized for `types` with that implementation's own
-    // constraints checked and bound.
+    // constraints checked and bound. Recorded `witnesses` of `requirement`
+    // bind the implementation's constraints of the same binders; without them
+    // the type arguments were forwarded and are bound by the caller's scope.
     ASR::symbol_t *generic_requirement_adapter(const ASR::Function_t &specialization,
             const TraitEvidence &evidence,
             const std::pair<ASR::ttype_t*, ASR::symbol_t*> &receiver,
             const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+            const ASR::Template_t &requirement,
+            const std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                &witnesses,
             PendingBodyInstantiation &p, SymbolTable *target) {
         const Location &loc = specialization.base.base.loc;
+        std::vector<std::pair<size_t, ASR::symbol_t*>> recorded_witnesses;
+        for (const auto &witness : witnesses) {
+            recorded_witnesses.push_back({ASRUtils::trait_binder_position(requirement,
+                witness.first->m_parameter), &witness.second->base});
+        }
+        std::sort(recorded_witnesses.begin(), recorded_witnesses.end());
+        recorded_witnesses.erase(std::unique(recorded_witnesses.begin(),
+            recorded_witnesses.end()), recorded_witnesses.end());
         for (const auto &cached : generic_requirement_adapters) {
             if (cached.scope != target || cached.implementation != evidence.procedure ||
                     cached.self_argument != evidence.self_argument ||
                     cached.is_nopass != evidence.is_nopass ||
+                    cached.witnesses != recorded_witnesses ||
                     !ASRUtils::trait_type_argument_equal(cached.receiver, receiver) ||
                     cached.types.size() != types.size()) continue;
             bool same = true;
@@ -26204,12 +26318,36 @@ public:
         for (size_t i = 0; i < types.size(); i++) {
             implementation_types[generic->m_args[i]] = types[i];
         }
+        // Corresponding binders of a generic implementation have nominally
+        // equivalent constraints, so the recorded conformance of a binder of
+        // the requirement satisfies the implementation's binder in its place.
+        std::map<std::string, std::vector<ASR::TraitImplementation_t*>> recorded;
+        for (const auto &witness : recorded_witnesses) {
+            LCOMPILERS_ASSERT(witness.first < generic->n_args);
+            recorded[generic->m_args[witness.first]].push_back(
+                ASR::down_cast<ASR::TraitImplementation_t>(witness.second));
+        }
         auto *saved_scope = current_scope;
         current_scope = target;
         ASR::symbol_t *callee = nullptr;
         try {
+            auto requirements = resolve_trait_requirements(generic, implementation_types,
+                false, loc, nullptr, recorded_witnesses.empty() ? nullptr : &recorded);
+            // A recorded conformance can belong to a module this unit does not use.
+            for (const auto &resolved : requirements) {
+                if (!resolved.binding) continue;
+                if (auto *provider = ASRUtils::get_sym_module0(
+                        ASRUtils::symbol_get_past_external(resolved.binding->m_procedure))) {
+                    add_unit_dependency(target, provider->m_name);
+                }
+            }
+            for (const auto &witness : recorded_witnesses) {
+                if (auto *provider = ASRUtils::get_sym_module0(witness.second)) {
+                    add_unit_dependency(target, provider->m_name);
+                }
+            }
             callee = specialize_trait_generic(target, generic, implementation_types,
-                resolve_trait_requirements(generic, implementation_types, false, loc), loc);
+                requirements, loc);
         } catch (const SemanticAbort &) {
             current_scope = saved_scope;
             throw;
@@ -26225,6 +26363,20 @@ public:
             erase_failed_instantiation(target, previous);
             throw SemanticAbort();
         }
+        // The specialization declares the concrete types of the generic's own
+        // unit; its copy names them from where it is used.
+        auto *copy = ASR::down_cast<ASR::Function_t>(signature);
+        for (const auto &entry : copy->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
+            variable->m_type_declaration = ASRUtils::import_type_declaration(al,
+                variable->m_type_declaration, copy->m_symtab);
+            if (variable->m_type_declaration &&
+                    ASR::is_a<ASR::ExternalSymbol_t>(*variable->m_type_declaration)) {
+                add_unit_dependency(target, ASR::down_cast<ASR::ExternalSymbol_t>(
+                    variable->m_type_declaration)->m_module_name);
+            }
+        }
         ASR::trait_binding_t binding;
         binding.loc = loc;
         binding.m_member = nullptr;
@@ -26236,7 +26388,8 @@ public:
             receiver.first, receiver.second, binding, target, loc);
         target->erase_symbol(name);
         generic_requirement_adapters.push_back({target, evidence.procedure,
-            evidence.self_argument, evidence.is_nopass, receiver, types, adapter});
+            evidence.self_argument, evidence.is_nopass, receiver, types,
+            recorded_witnesses, adapter});
         return adapter;
     }
 
@@ -26257,6 +26410,17 @@ public:
                 if (p.symbol_subs.count(specialization->m_name)) continue;
                 auto evidence = bound_evidence.find(&requirement->base);
                 LCOMPILERS_ASSERT(evidence != bound_evidence.end());
+                // The conformances selected where the generic body made the call.
+                std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                    witnesses;
+                const auto &entry = constraint->m_requirements[i];
+                for (size_t j = 0; j < entry.n_evidence; j++) {
+                    witnesses.push_back({ASR::down_cast<ASR::TraitConstraint_t>(
+                            ASRUtils::symbol_get_past_external(entry.m_evidence[j].m_constraint)),
+                        ASR::down_cast<ASR::TraitImplementation_t>(
+                            ASRUtils::symbol_get_past_external(
+                                entry.m_evidence[j].m_implementation))});
+                }
                 std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> recorded;
                 [[maybe_unused]] bool complete = ASRUtils::trait_requirement_type_arguments(
                     *requirement, *specialization, recorded);
@@ -26297,14 +26461,35 @@ public:
                     for (size_t j = 0; j < types.size(); j++) {
                         arguments[forwarded->m_args[j]] = types[j];
                     }
+                    // The caller's generic requirement copies the same message,
+                    // so its constraint of the same binder and trait takes the
+                    // recorded conformance.
+                    std::vector<std::pair<ASR::TraitConstraint_t*,
+                        ASR::TraitImplementation_t*>> republished;
+                    for (const auto &witness : witnesses) {
+                        size_t position = ASRUtils::trait_binder_position(*requirement,
+                            witness.first->m_parameter);
+                        auto *trait = ASRUtils::symbol_get_past_external(witness.first->m_trait);
+                        ASR::TraitConstraint_t *same = nullptr;
+                        for (auto *candidate : trait_constraints(forwarded)) {
+                            if (ASRUtils::trait_binder_position(*forwarded,
+                                        candidate->m_parameter) == position &&
+                                    ASRUtils::symbol_get_past_external(candidate->m_trait)
+                                        == trait) {
+                                same = candidate;
+                            }
+                        }
+                        LCOMPILERS_ASSERT(same);
+                        republished.push_back({same, witness.second});
+                    }
                     selected = publish_trait_requirement_specialization(*source, index,
-                        arguments, specialization->base.base.loc);
+                        arguments, republished, specialization->base.base.loc);
                 } else {
                     auto receiver = p.type_subs.find(
                         ASRUtils::symbol_name(constraint->m_parameter));
                     LCOMPILERS_ASSERT(receiver != p.type_subs.end());
                     selected = generic_requirement_adapter(*specialization, evidence->second,
-                        receiver->second, types, p, target);
+                        receiver->second, types, *requirement, witnesses, p, target);
                 }
                 p.symbol_subs[specialization->m_name] = selected;
             }

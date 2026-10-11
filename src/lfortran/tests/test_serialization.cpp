@@ -8392,6 +8392,377 @@ end program
     }
 }
 
+TEST_CASE("Generic requirement specializations keep the conformances checked at their call") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module evidence_contracts
+implicit none
+abstract interface :: IValue
+    function value() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface :: ILabel
+    function label() result(r)
+        integer :: r
+    end function
+end interface
+abstract interface :: IApply
+    function apply{IValue :: T}(object) result(r)
+        type(T), intent(in) :: object
+        integer :: r
+    end function
+end interface
+abstract interface :: IPair
+    function pair{IValue :: T, IValue :: U}(x, y) result(r)
+        type(T), intent(in) :: x
+        type(U), intent(in) :: y
+        integer :: r
+    end function
+end interface
+end module
+module evidence_types
+implicit none
+type :: Item
+    integer :: n = 5
+end type
+type :: Other
+    integer :: n = 3
+end type
+end module
+module evidence_provider_a
+use evidence_contracts, only: IValue, ILabel
+use evidence_types, only: Item, Other
+implicit none
+implements IValue :: Item
+    procedure, pass :: value => item_a
+end implements
+implements IValue :: Other
+    procedure, pass :: value => other_a
+end implements
+implements ILabel :: Item
+    procedure, pass :: label => item_label
+end implements
+contains
+integer function item_a(self)
+    class(Item), intent(in) :: self
+    item_a = self%n
+end function
+integer function other_a(self)
+    class(Other), intent(in) :: self
+    other_a = self%n
+end function
+integer function item_label(self)
+    class(Item), intent(in) :: self
+    item_label = 1
+end function
+end module
+module evidence_provider_b
+use evidence_contracts, only: IValue
+use evidence_types, only: Item
+implicit none
+implements IValue :: Item
+    procedure, pass :: value => item_b
+end implements
+contains
+integer function item_b(self)
+    class(Item), intent(in) :: self
+    item_b = 100 + self%n
+end function
+end module
+module evidence_library
+use evidence_contracts, only: IValue, IApply, IPair
+use evidence_types, only: Item, Other
+implicit none
+type, implements(IApply) :: Offset
+    integer :: n = 7
+contains
+    procedure, pass(self) :: apply => offset_apply
+end type
+type, implements(IPair) :: Combiner
+contains
+    procedure, nopass :: pair => combine
+end type
+contains
+function make_item() result(x)
+    type(Item) :: x
+    x%n = 5
+end function
+function make_other() result(x)
+    type(Other) :: x
+    x%n = 3
+end function
+function offset_apply{IValue :: Element}(self, object) result(r)
+    class(Offset), intent(in) :: self
+    type(Element), intent(in) :: object
+    integer :: r
+    r = self%n + object%value()
+end function
+function combine{IValue :: L, IValue :: R}(x, y) result(s)
+    type(L), intent(in) :: x
+    type(R), intent(in) :: y
+    integer :: s
+    s = 10 * x%value() + y%value()
+end function
+function both_scopes{IApply :: A}(alg) result(r)
+    type(A), intent(in) :: alg
+    integer :: r, first, second
+    block
+        use evidence_provider_a
+        first = alg%apply(make_item())
+    end block
+    block
+        use evidence_provider_b
+        second = alg%apply(make_item())
+    end block
+    r = first + second
+end function
+function pair_items{IPair :: P}(c) result(r)
+    type(P), intent(in) :: c
+    integer :: r
+    block
+        use evidence_provider_a
+        r = c%pair(make_item(), make_other())
+    end block
+end function
+function forwarded{IApply :: A, IValue :: V}(alg, w) result(r)
+    type(A), intent(in) :: alg
+    type(V), intent(in) :: w
+    integer :: r
+    r = alg%apply(w)
+end function
+end module
+program evidence_client
+use evidence_types, only: Item
+use evidence_provider_b
+use evidence_library, only: both_scopes, pair_items, forwarded, Offset, Combiner
+implicit none
+type(Item) :: v
+print *, both_scopes(Offset()), pair_items(Combiner()), forwarded(Offset(), v)
+end program
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "evidence_library");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    LCompilers::LocationManager rebuilt_lm;
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, rebuilt_lm);
+    REQUIRE(rebuilt.ok);
+    CHECK(LCompilers::asr_to_text(*result.result) ==
+        LCompilers::asr_to_text(*rebuilt.result));
+    auto module = [&](const char *name) {
+        auto *symbol = result.result->m_symtab->get_symbol(name);
+        REQUIRE(symbol != nullptr);
+        return ASR::down_cast<ASR::Module_t>(symbol);
+    };
+    auto *library = module("evidence_library");
+    auto record = [&](const char *provider, const char *trait, const char *type) {
+        ASR::TraitImplementation_t *found = nullptr;
+        for (const auto &entry : module(provider)->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+            auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            if (std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                        implementation->m_trait))) == trait &&
+                    std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                        implementation->m_type_declaration))) == type) {
+                found = implementation;
+            }
+        }
+        REQUIRE(found != nullptr);
+        return &found->base;
+    };
+    auto *item_a = record("evidence_provider_a", "ivalue", "item");
+    auto *other_a = record("evidence_provider_a", "ivalue", "other");
+    auto *item_label = record("evidence_provider_a", "ilabel", "item");
+    auto *item_b = record("evidence_provider_b", "ivalue", "item");
+    auto constraint_of = [&](const char *generic, const char *binder) {
+        auto *scope = ASR::down_cast<ASR::Template_t>(
+            library->m_symtab->get_symbol(generic))->m_symtab;
+        ASR::TraitConstraint_t *found = nullptr;
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            if (std::string(ASRUtils::symbol_name(constraint->m_parameter)) == binder) {
+                found = constraint;
+            }
+        }
+        REQUIRE(found != nullptr);
+        return found;
+    };
+    auto selected = [](const ASR::trait_evidence_t &evidence) {
+        return ASRUtils::symbol_get_past_external(evidence.m_implementation);
+    };
+    auto *both = constraint_of("both_scopes", "a");
+    // Each BLOCK checks the same type argument with its own conformance: two
+    // specializations of one generic requirement.
+    REQUIRE(both->n_requirements == 3);
+    auto *requirement = ASRUtils::trait_generic_requirement(both->m_requirements[0].m_procedure);
+    REQUIRE(requirement != nullptr);
+    CHECK(both->m_requirements[0].n_evidence == 0);
+    for (size_t i = 1; i < 3; i++) {
+        const auto &entry = both->m_requirements[i];
+        REQUIRE(ASRUtils::trait_requirement_specialization(*both, i) == requirement);
+        REQUIRE(entry.n_evidence == 1);
+        auto *constraint = ASRUtils::symbol_get_past_external(entry.m_evidence[0].m_constraint);
+        REQUIRE(ASR::is_a<ASR::TraitConstraint_t>(*constraint));
+        CHECK(ASRUtils::symbol_parent_symtab(constraint) == requirement->m_symtab);
+        CHECK(ASRUtils::trait_binder_position(*requirement,
+            ASR::down_cast<ASR::TraitConstraint_t>(constraint)->m_parameter) == 0);
+        // A conformance of another module is a private import of the specialization.
+        auto *specialization = ASR::down_cast<ASR::Function_t>(entry.m_procedure);
+        CHECK(ASR::is_a<ASR::ExternalSymbol_t>(*entry.m_evidence[0].m_implementation));
+        CHECK(ASRUtils::symbol_parent_symtab(entry.m_evidence[0].m_implementation) ==
+            specialization->m_symtab);
+    }
+    CHECK(selected(both->m_requirements[1].m_evidence[0]) == item_a);
+    CHECK(selected(both->m_requirements[2].m_evidence[0]) == item_b);
+    auto *pair = constraint_of("pair_items", "p");
+    REQUIRE(pair->n_requirements == 2);
+    REQUIRE(pair->m_requirements[1].n_evidence == 2);
+    std::set<ASR::symbol_t*> pair_constraints, pair_records;
+    for (size_t i = 0; i < 2; i++) {
+        pair_constraints.insert(ASRUtils::symbol_get_past_external(
+            pair->m_requirements[1].m_evidence[i].m_constraint));
+        pair_records.insert(selected(pair->m_requirements[1].m_evidence[i]));
+    }
+    CHECK(pair_constraints.size() == 2);
+    CHECK(pair_records == std::set<ASR::symbol_t*>{item_a, other_a});
+    // A forwarded type argument takes its caller's conformance.
+    auto *forward = constraint_of("forwarded", "a");
+    REQUIRE(forward->n_requirements == 2);
+    CHECK(forward->m_requirements[1].n_evidence == 0);
+    // The client binds both conformances of both_scopes, though it sees only
+    // provider B.
+    struct Called : ASR::BaseWalkVisitor<Called> {
+        std::set<std::string> names;
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            names.insert(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name)));
+            ASR::BaseWalkVisitor<Called>::visit_FunctionCall(x);
+        }
+    } called;
+    called.visit_symbol(*result.result->m_symtab->get_symbol("evidence_client"));
+    CHECK(called.names.count("item_a") == 1);
+    CHECK(called.names.count("item_b") == 1);
+    CHECK(called.names.count("other_a") == 1);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "evidence_client.asr", loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    auto evidence = [&](ASR::trait_requirement_t &entry,
+            std::vector<ASR::trait_evidence_t> records) {
+        LCompilers::Vec<ASR::trait_evidence_t> copy;
+        copy.reserve(al, records.size());
+        for (auto &item : records) copy.push_back(al, item);
+        entry.m_evidence = copy.p;
+        entry.n_evidence = copy.size();
+    };
+    auto &first = both->m_requirements[1];
+    SUBCASE("a concrete type argument records its conformance") {
+        evidence(first, {});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("a constraint has one conformance") {
+        evidence(first, {first.m_evidence[0], first.m_evidence[0]});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("evidence names a constraint of the generic requirement") {
+        auto record = first.m_evidence[0];
+        record.m_constraint = &both->base;
+        evidence(first, {record});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("evidence belongs to its own type parameter") {
+        auto &entry = pair->m_requirements[1];
+        auto swapped = entry.m_evidence[0];
+        auto other = entry.m_evidence[1];
+        std::swap(swapped.m_constraint, other.m_constraint);
+        evidence(entry, {swapped, other});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("evidence is a conformance to the constraint's trait") {
+        auto record = first.m_evidence[0];
+        record.m_implementation = item_label;
+        evidence(first, {record});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("evidence is a conformance of the type argument") {
+        auto record = first.m_evidence[0];
+        record.m_implementation = other_a;
+        evidence(first, {record});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("evidence names a trait implementation") {
+        auto record = first.m_evidence[0];
+        record.m_implementation = module("evidence_provider_a")->m_symtab->get_symbol("item_a");
+        evidence(first, {record});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("every constraint of a concrete type argument has evidence") {
+        auto &entry = pair->m_requirements[1];
+        evidence(entry, {entry.m_evidence[0]});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("a forwarded type argument has no evidence") {
+        auto *forwarded = ASRUtils::trait_generic_requirement(
+            forward->m_requirements[0].m_procedure);
+        REQUIRE(forwarded != nullptr);
+        ASR::TraitConstraint_t *constraint = nullptr;
+        for (const auto &entry : forwarded->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+                constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            }
+        }
+        REQUIRE(constraint != nullptr);
+        auto record = first.m_evidence[0];
+        record.m_constraint = &constraint->base;
+        record.m_implementation = item_a;
+        evidence(forward->m_requirements[1], {record});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("only a specialization records evidence") {
+        evidence(both->m_requirements[0], {first.m_evidence[0]});
+        rejects("asr.verify.trait_constraint.generic_evidence");
+    }
+    SUBCASE("equal type arguments and conformances are one specialization") {
+        auto record = both->m_requirements[2].m_evidence[0];
+        record.m_implementation = item_a;
+        evidence(both->m_requirements[2], {record});
+        rejects("asr.verify.trait_constraint.generic_specialization");
+    }
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

@@ -4085,6 +4085,25 @@ RUN(NAME traits_generic_requirement_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODU
     EXTRAFILES traits_generic_requirement_03_contracts.f90
         traits_generic_requirement_03_provider.f90
         traits_generic_requirement_03_generic.f90)
+RUN(NAME traits_generic_requirement_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_generic_requirement_04_contracts.f90
+        traits_generic_requirement_04_types.f90
+        traits_generic_requirement_04_provider_a.f90
+        traits_generic_requirement_04_provider_b.f90
+        traits_generic_requirement_04_frozen.f90
+        traits_generic_requirement_04_blocks.f90)
+RUN(NAME traits_generic_requirement_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_generic_requirement_04_contracts.f90
+        traits_generic_requirement_04_types.f90
+        traits_generic_requirement_04_provider_a.f90
+        traits_generic_requirement_04_provider_b.f90
+        traits_generic_requirement_04_frozen.f90
+        traits_generic_requirement_04_blocks.f90
+        traits_generic_requirement_05_user.f90)
+RUN(NAME traits_generic_requirement_06 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)

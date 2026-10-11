@@ -3231,7 +3231,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('self().write_int64(x.m_%s->counter);' % field.name, level)
                     self.emit('self().write_int64(x.m_%s->get_scope().size());' % field.name, level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second) ||', level)
+                    self.emit('            ASR::is_a<ASR::TraitConstraint_t>(*a.second)) {', level)
                     self.emit('        continue;', level)
                     self.emit('    }', level)
                     self.emit('    self().write_string(a.first);', level)
@@ -3239,6 +3240,16 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('}', level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('        self().write_string(a.first);', level)
+                    self.emit('        this->visit_symbol(*a.second);', level)
+                    self.emit('    }', level)
+                    self.emit('}', level)
+                    # A constraint's requirement evidence refers into the
+                    # symbol tables of the generic requirements and
+                    # specializations declared beside it, so it is written
+                    # after them.
+                    self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
+                    self.emit('    if (ASR::is_a<ASR::TraitConstraint_t>(*a.second)) {', level)
                     self.emit('        self().write_string(a.first);', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
                     self.emit('    }', level)

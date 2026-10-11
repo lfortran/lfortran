@@ -372,7 +372,13 @@ types (`a%sum{integer}(n)`). Each use is checked at the definition against the
 message's own constraints, whether or not the generic procedure is ever
 instantiated: a concrete argument must belong to a type set or have a visible
 nominal implementation, and a forwarded type parameter's declared constraints
-must imply the message's. The type parameter's name may coincide with the
+must imply the message's. The nominal implementation visible where a concrete
+argument is checked, also through a procedure- or `BLOCK`-local `USE`, is the
+one every instantiation uses: a client needs no conformance of that type and
+cannot replace it with its own. The same concrete argument checked in two
+scopes with different implementations uses each where it was checked. A
+forwarded type parameter instead uses the implementation its caller selects.
+The type parameter's name may coincide with the
 message's binder names. Calls through an array element of the type parameter
 are supported; a non-elemental message still requires a scalar receiver.
 
@@ -383,8 +389,10 @@ runtime view is formed. A generic procedure can forward its constrained type
 parameters to another one, recursively or mutually recursively, and separately
 compiled generic procedures, conformances and clients work together. See
 `integration_tests/traits_generic_requirement_01.f90` (with its standard-Fortran
-oracle), `traits_generic_requirement_02.f90` and the separately compiled
-`traits_generic_requirement_03.f90`.
+oracle), `traits_generic_requirement_02.f90`, the separately compiled
+`traits_generic_requirement_03.f90`, and `traits_generic_requirement_04.f90`
+to `traits_generic_requirement_06.f90` for implementations selected at the
+definition.
 
 A generic message whose own type parameter is constrained by a trait that has
 generic messages, such a call in a specification expression, and a call whose
@@ -1535,6 +1543,25 @@ specializations are part of the serialized constraint, a separately compiled
 generic is instantiated without its body being reanalyzed. Verification checks
 that a generic requirement copies its message, that each specialization matches
 the type arguments it records, and that none is repeated.
+
+A specialization whose type arguments are concrete also records, in its
+requirement's `evidence`, the conformance selected for each nominal constraint
+of the generic requirement where the body made the call, including a
+conformance visible only through a procedure- or `BLOCK`-local `USE`. A
+conformance of another module is referenced through a private import in the
+specialization itself, so it reaches every client through the module file. The
+adapter of each instantiation binds the generic implementation's corresponding
+constraints from that record instead of looking up conformances where the
+generic is instantiated, and forwarding republishes the record in the caller's
+generic requirement. The same type arguments checked with different
+conformances are distinct specializations and adapters. A forwarded type
+argument records nothing and takes the conformance its caller selected.
+Verification checks that each record names a nominal constraint of the generic
+requirement and a conformance of its binder's concrete type argument to that
+trait binding all of its methods, that every such constraint has exactly one
+record, and that a specialization is not repeated with equal records. A
+constraint is serialized after the other symbols of its scope, whose symbol
+tables its records refer into.
 
 Forwarded signatures and their canonical recursive edges are bound before any
 pending bodies are copied. Composing an instantiation uses the original generic

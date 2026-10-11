@@ -8,8 +8,16 @@ module ASR {
 unit
     = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
+-- evidence is empty except for a specialization of a generic requirement
+-- whose type arguments are concrete: one entry per nominal constraint of the
+-- generic requirement, selected where the generic body made the call.
 trait_requirement
-    = (symbol member, symbol procedure)
+    = (symbol member, symbol procedure, trait_evidence* evidence)
+
+-- A constraint of a generic requirement and the conformance of its binder's
+-- concrete type argument that satisfies it.
+trait_evidence
+    = (symbol constraint, symbol implementation)
 
 trait_binding
     = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)

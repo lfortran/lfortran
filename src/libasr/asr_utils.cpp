@@ -7088,6 +7088,120 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
     return "";
 }
 
+size_t trait_binder_position(const ASR::Template_t &generic, ASR::symbol_t *binder)
+{
+    binder = symbol_get_past_external(binder);
+    for (size_t i = 0; binder && generic.m_symtab && generic.m_args && i < generic.n_args; i++) {
+        if (generic.m_args[i] && generic.m_symtab->get_symbol(generic.m_args[i]) == binder) {
+            return i;
+        }
+    }
+    return generic.n_args;
+}
+
+// Whether a recorded type argument is concrete, not a deferred binder of the
+// enclosing generic.
+static bool trait_concrete_type_argument(
+    const std::pair<ASR::ttype_t*, ASR::symbol_t*> &argument)
+{
+    ASR::ttype_t *type = argument.first ? extract_type(argument.first) : nullptr;
+    return type && !ASR::is_a<ASR::TypeParameter_t>(*type);
+}
+
+// `symbol` as a nominal constraint of `requirement` on one of its own type
+// parameters, at `position`; nullptr otherwise.
+static ASR::TraitConstraint_t *trait_nominal_requirement_constraint(
+    const ASR::Template_t &requirement, ASR::symbol_t *symbol, size_t &position)
+{
+    symbol = symbol_get_past_external(symbol);
+    if (!symbol || !ASR::is_a<ASR::TraitConstraint_t>(*symbol) ||
+            symbol_parent_symtab(symbol) != requirement.m_symtab) return nullptr;
+    auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(symbol);
+    position = trait_binder_position(requirement, constraint->m_parameter);
+    auto *trait = symbol_get_past_external(constraint->m_trait);
+    if (position >= requirement.n_args || !trait || !ASR::is_a<ASR::Trait_t>(*trait) ||
+            ASR::down_cast<ASR::Trait_t>(trait)->m_kind !=
+                ASR::trait_kindType::UniversalTrait) return nullptr;
+    return constraint;
+}
+
+std::string trait_requirement_evidence_mismatch(const ASR::Template_t &requirement,
+    const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+    const ASR::trait_evidence_t *evidence, size_t n_evidence)
+{
+    if (types.size() != requirement.n_args || !requirement.m_symtab) {
+        return "its type arguments are incomplete";
+    }
+    if (n_evidence && !evidence) return "its evidence is missing";
+    std::set<ASR::symbol_t*> covered;
+    for (size_t i = 0; i < n_evidence; i++) {
+        size_t position = 0;
+        auto *constraint = trait_nominal_requirement_constraint(requirement,
+            evidence[i].m_constraint, position);
+        if (!constraint) {
+            return "evidence must name a nominal constraint of the generic requirement";
+        }
+        if (!trait_concrete_type_argument(types[position])) {
+            return "a deferred type argument takes its caller's evidence";
+        }
+        if (!covered.insert(&constraint->base).second) {
+            return "evidence must not repeat a constraint";
+        }
+        auto *selected = symbol_get_past_external(evidence[i].m_implementation);
+        if (!selected || !ASR::is_a<ASR::TraitImplementation_t>(*selected)) {
+            return "evidence must name a trait implementation";
+        }
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(selected);
+        if (!trait_implementation_matches_type(*implementation,
+                types[position].second, types[position].first)) {
+            return "evidence must be a conformance of its constraint's type argument";
+        }
+        auto *provided = symbol_get_past_external(implementation->m_trait);
+        auto *required = symbol_get_past_external(constraint->m_trait);
+        bool implied = false;
+        if (provided && ASR::is_a<ASR::Trait_t>(*provided)) {
+            auto hierarchy = trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(provided));
+            for (auto *trait : hierarchy.traits) {
+                if (&trait->base == required) implied = true;
+            }
+            if (hierarchy.error != TraitHierarchyError::None) implied = false;
+        }
+        if (!implied) return "evidence must be a conformance to its constraint's trait";
+        for (size_t j = 0; j < constraint->n_requirements; j++) {
+            if (!find_trait_binding(*implementation, constraint->m_requirements[j].m_member)) {
+                return "evidence must bind every method of its constraint";
+            }
+        }
+    }
+    for (const auto &entry : requirement.m_symtab->get_scope()) {
+        size_t position = 0;
+        auto *constraint = trait_nominal_requirement_constraint(requirement,
+            entry.second, position);
+        if (!constraint || !trait_concrete_type_argument(types[position])) continue;
+        if (!covered.count(&constraint->base)) {
+            return "evidence must cover every nominal constraint of a concrete type argument";
+        }
+    }
+    return "";
+}
+
+bool trait_evidence_equal(const ASR::trait_evidence_t *left, size_t n_left,
+    const ASR::trait_evidence_t *right, size_t n_right)
+{
+    if (n_left != n_right) return false;
+    for (size_t i = 0; i < n_left; i++) {
+        bool found = false;
+        for (size_t j = 0; !found && j < n_right; j++) {
+            found = symbol_get_past_external(left[i].m_constraint) ==
+                    symbol_get_past_external(right[j].m_constraint) &&
+                symbol_get_past_external(left[i].m_implementation) ==
+                    symbol_get_past_external(right[j].m_implementation);
+        }
+        if (!found) return false;
+    }
+    return true;
+}
+
 bool trait_slots_same_family(const ASR::trait_slot_t &left, const ASR::trait_slot_t &right)
 {
     if (left.n_origins != right.n_origins || !left.n_origins ||

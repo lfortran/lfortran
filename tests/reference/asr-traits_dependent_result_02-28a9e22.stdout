@@ -320,9 +320,11 @@
                                                     6 t
                                                     2 ivalues
                                                     [(6 __trait_member_ivalues_shifted_values
-                                                    6 __trait_t_shifted_values)
+                                                    6 __trait_t_shifted_values
+                                                    [])
                                                     (6 __trait_member_ivalues_values
-                                                    6 __trait_t_values)]
+                                                    6 __trait_t_values
+                                                    [])]
                                                     []
                                                 ),
                                             __trait_member_ivalues_shifted_values:
