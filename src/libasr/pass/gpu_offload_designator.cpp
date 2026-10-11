@@ -91,6 +91,24 @@ static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
                     || gpu_same_subscript(x->m_dim, y->m_dim))
                 && gpu_same_designator(x->m_v, y->m_v);
         }
+        // A subscript read from an array or a component, `b(1:n(l),l)`.
+        // Both sides of an assignment evaluate their subscripts before
+        // any element is written, so the same designator gives the same
+        // value on both. A subscript that reads the assigned array
+        // itself is caught separately: GpuSelfAliasChecker walks the
+        // subscripts too and reports it as a read of the target.
+        case ASR::exprType::ArrayItem:
+        case ASR::exprType::StructInstanceMember: {
+            return gpu_same_designator(a, b);
+        }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t *x = ASR::down_cast<ASR::Cast_t>(a);
+            ASR::Cast_t *y = ASR::down_cast<ASR::Cast_t>(b);
+            return x->m_kind == y->m_kind
+                && ASRUtils::types_equal(x->m_type, y->m_type,
+                    nullptr, nullptr)
+                && gpu_same_subscript(x->m_arg, y->m_arg);
+        }
         default: {
             return false;
         }
