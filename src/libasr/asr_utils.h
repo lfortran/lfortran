@@ -3332,9 +3332,80 @@ static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
 static inline ASR::ttype_t* make_opaque_procedure_type(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type) {
     return ASRUtils::TYPE(ASR::make_FunctionType_t(al, loc, nullptr, 0,
-        return_type, ASR::abiType::BindC, ASR::deftypeType::ImplicitInterface,
+        return_type, ASR::abiType::Source, ASR::deftypeType::ImplicitInterface,
         nullptr, false, false, false, false, false, nullptr, 0, false,
         ASR::exec_spaceType::Host));
+}
+
+// Character dummy arguments passed as a data pointer plus a hidden length.
+//
+// A procedure of type `ft` passes each of its nonallocatable, nonpointer
+// character dummies (scalars, and explicit-shape or assumed-size arrays) as a
+// pointer to the character data, and the length of the actual (the element
+// length for an array) by value in a hidden `integer(8), value, intent(in)`
+// dummy. The hidden dummies follow all the other dummies, in the order of the
+// character dummies they belong to. This is the convention of gfortran and the
+// other Unix Fortran compilers. The `string_length_arguments` pass adds the
+// hidden dummies to every such procedure and the lengths to every call, and a
+// code generator passes such a dummy as its data pointer alone.
+//
+// It applies to every procedure without BIND(C), whatever kind (external,
+// module, internal, procedure dummy or pointer, interface, implicit
+// interface), except for intrinsic procedures, whose arguments are lowered by
+// the compiler, and device code.
+static inline bool has_hidden_string_lengths(const ASR::FunctionType_t &ft) {
+    switch (ft.m_abi) {
+        case ASR::abiType::Source:
+        case ASR::abiType::LFortranModule:
+        case ASR::abiType::GFortranModule:
+        case ASR::abiType::ExternalUndefined:
+            break;
+        default:
+            return false;
+    }
+    return ft.m_exec_space == ASR::exec_spaceType::Host;
+}
+
+// True if dummy `v` of a procedure of type `ft` is passed as a data pointer
+// with a hidden length (see has_hidden_string_lengths). Deferred-length
+// (allocatable, pointer) dummies, assumed-shape arrays and VALUE dummies are
+// passed differently and are not.
+static inline bool is_string_dummy_with_hidden_length(
+        const ASR::FunctionType_t &ft, const ASR::Variable_t &v) {
+    if (!has_hidden_string_lengths(ft) || !is_arg_dummy(v.m_intent) ||
+            v.m_value_attr || v.n_codims > 0) {
+        return false;
+    }
+    ASR::ttype_t *t = v.m_type;
+    if (ASR::is_a<ASR::Array_t>(*t)) {
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(t);
+        if (array->m_physical_type != ASR::array_physical_typeType::PointerArray &&
+                array->m_physical_type !=
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
+            return false;
+        }
+        t = array->m_type;
+    }
+    if (!ASR::is_a<ASR::String_t>(*t)) {
+        return false;
+    }
+    ASR::String_t *str = ASR::down_cast<ASR::String_t>(t);
+    return str->m_physical_type == ASR::string_physical_typeType::DescriptorString &&
+        str->m_len_kind != ASR::string_length_kindType::DeferredLength;
+}
+
+// True if `x` is a dummy of procedure `fn` passed as a data pointer with a
+// hidden length.
+static inline bool is_string_dummy_with_hidden_length(
+        const ASR::Function_t &fn, ASR::expr_t *x) {
+    if (!ASR::is_a<ASR::Var_t>(*x)) {
+        return false;
+    }
+    ASR::symbol_t *sym = symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(x)->m_v);
+    return ASR::is_a<ASR::Variable_t>(*sym) && is_string_dummy_with_hidden_length(
+        *ASR::down_cast<ASR::FunctionType_t>(fn.m_function_signature),
+        *ASR::down_cast<ASR::Variable_t>(sym));
 }
 
 // True if a procedure of type `a` can be used where type `b` is expected
@@ -10258,13 +10329,20 @@ static inline bool is_argument_of_type_CPtr(ASR::expr_t *var) {
     return is_argument;
 }
 
+// Converts integer or real arguments of different kinds to a common kind
+// (used for MIN and MAX, where mixed kinds are a non-standard extension, and
+// for FINDLOC, whose VALUE may have a different kind than ARRAY). By default
+// that is the largest kind among the arguments; with `use_first_array_kind`
+// it is the kind of the first array argument. Array arguments are converted
+// element-wise, keeping their shape.
 static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
-        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag) {
+        Vec<ASR::expr_t*> &args, diag::Diagnostics &diag,
+        bool use_first_array_kind=false) {
     int target_kind = -1;
     for (size_t i = 0; i < args.size(); i++) {
         ASR::ttype_t *arg_type = ASRUtils::expr_type(args[i]);
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-        if (is_array(arg_type)){
+        if (use_first_array_kind && is_array(arg_type)){
             target_kind = kind;
             break;
         }
@@ -10279,29 +10357,37 @@ static inline void promote_arguments_kinds(Allocator &al, const Location &loc,
         if (kind==target_kind) {
             continue;
         }
-        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_RealConstant_t(
-                    al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args.p[i], ASR::cast_kindType::RealToReal,
-                    ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind)), nullptr, nullptr));
-            }
-        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
-            if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
-                args.p[i] = EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind))));
-            } else {
-                args.p[i] = EXPR(ASR::make_Cast_t(
-                    al, loc, args[i], ASR::cast_kindType::IntegerToInteger,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind)), nullptr, nullptr));
-            }
+        ASR::ttype_t *arg_elem_type = ASRUtils::extract_type(arg_type);
+        ASR::ttype_t *target_type = nullptr;
+        ASR::cast_kindType cast_kind;
+        if (ASR::is_a<ASR::Real_t>(*arg_elem_type)) {
+            target_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, target_kind));
+            cast_kind = ASR::cast_kindType::RealToReal;
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_elem_type)) {
+            target_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, target_kind));
+            cast_kind = ASR::cast_kindType::IntegerToInteger;
         } else {
             diag.semantic_error_label("Unsupported argument type for kind adjustment", {loc},
                 "help: ensure all arguments are of a convertible type");
+            continue;
+        }
+        if (is_array(arg_type)) {
+            ASR::dimension_t *m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arg_type, m_dims);
+            target_type = ASRUtils::make_Array_t_util(al, loc, target_type, m_dims, n_dims);
+            args.p[i] = EXPR(ASRUtils::make_Cast_t_value(
+                al, loc, args[i], cast_kind, target_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+            args.p[i] = EXPR(ASR::make_RealConstant_t(
+                al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
+                target_type));
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
+            args.p[i] = EXPR(ASR::make_IntegerConstant_t(
+                al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
+                target_type));
+        } else {
+            args.p[i] = EXPR(ASR::make_Cast_t(
+                al, loc, args.p[i], cast_kind, target_type, nullptr, nullptr));
         }
     }
 }

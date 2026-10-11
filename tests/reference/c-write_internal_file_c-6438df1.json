@@ -2,12 +2,12 @@
     "basename": "c-write_internal_file_c-6438df1",
     "cmd": "lfortran --no-color --show-c {infile}",
     "infile": "tests/errors/write_internal_file_c.f90",
-    "infile_hash": "b9c1ae58bae090f393320876ac38911a31632fce1af220e15e017923",
+    "infile_hash": "f4d665e19ac4b4eaabf78845bed5cf858d56231a61039bef25403e77",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "c-write_internal_file_c-6438df1.stderr",
-    "stderr_hash": "e703c50eb1fd618718eaf5ab428e460a5989aae98362536138b160a0",
+    "stderr_hash": "2be9179e3659c955883ca70a430888f153f9a84167e349ad7483c336",
     "returncode": 1
 }

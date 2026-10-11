@@ -6564,22 +6564,22 @@ void remove_from_unit_to_file(int32_t unit_num) {
 static void _lfortran_close_all_units(void) {
     const size_t scratch_prefix_len = strlen(scratch_prefix);
     for (int i = 0; i <= last_index_used; i++) {
-        if (unit_to_file[i].filename != NULL) {
-            // Delete scratch files at normal program termination
-            if (strncmp(unit_to_file[i].filename, scratch_prefix,
-                        scratch_prefix_len) == 0) {
-                remove(unit_to_file[i].filename);
-            }
-            internal_free(unit_to_file[i].filename);
-            unit_to_file[i].filename = NULL;
-        }
-        // Close non-standard file pointers
+        // Close first. remove() of a file that is still open fails on Windows.
         if (unit_to_file[i].filep != NULL &&
             unit_to_file[i].filep != stdin &&
             unit_to_file[i].filep != stdout &&
             unit_to_file[i].filep != stderr) {
             fclose(unit_to_file[i].filep);
             unit_to_file[i].filep = NULL;
+        }
+        if (unit_to_file[i].filename != NULL) {
+            // Delete scratch files at program termination
+            if (strncmp(unit_to_file[i].filename, scratch_prefix,
+                        scratch_prefix_len) == 0) {
+                remove(unit_to_file[i].filename);
+            }
+            internal_free(unit_to_file[i].filename);
+            unit_to_file[i].filename = NULL;
         }
     }
 }
@@ -6710,6 +6710,16 @@ _lfortran_open(int32_t unit_num,
 {
     if (iostat != NULL) {
         *iostat = 0;
+    }
+    // exit() from a runtime error skips the finalizer emitted at the end of
+    // main. Register the closer so scratch files are still deleted. Do not
+    // register _lfortran_internal_alloc_finalize(): its leak check calls
+    // exit(), which is undefined from an atexit handler.
+    static int exit_cleanup_registered = 0;
+    if (!exit_cleanup_registered) {
+        if (atexit(_lfortran_close_all_units) == 0) {
+            exit_cleanup_registered = 1;
+        }
     }
     bool ini_encoding = true;
     if (encoding == NULL) {
@@ -13880,16 +13890,28 @@ void lfortran_error(const char *message) {
     exit(EXIT_FAILURE);
 }
 
-// TODO: add support for reading comma separated string, into `_arr` functions
-// by accepting array size as an argument as well
-LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int32_t *iostat) {
-    (void)format; // currently unused
-    const char *pos = str;
-    const char *end = str + len;
+// List-directed internal reads into an array. The values are stored into
+// `arr[0]`, `arr[stride]`, ..., `arr[(array_size - 1) * stride]`. When `offset`
+// is not NULL, reading starts at `*offset` in the record and `*offset` is set
+// to the position just after the last value read, so that the following items
+// of the same READ statement continue from there.
+static int64_t string_read_array_start(int64_t len, int64_t *offset) {
+    int64_t off = offset ? *offset : 0;
+    if (off < 0) off = 0;
+    if (off > len) off = len;
+    return off;
+}
+
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format,
+        int32_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    const char *pos = buf;
+    const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
     while (pos < end && count < array_size) {
-        // Skip whitespace and common separators
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -13897,17 +13919,22 @@ LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *
         errno = 0;
         long value = strtol(pos, &next, 10);
         if (next == pos) break;
-        if ((const char *)next > end) break;
-        arr[count++] = (int32_t)value;
+        arr[count * stride] = (int32_t)value;
+        count++;
         pos = next;
     }
+    if (offset) *offset = off + (pos - buf);
+    internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr, int64_t array_size, int32_t *iostat) {
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format,
+        int64_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
     (void)format;
-    const char *pos = str;
-    const char *end = str + len;
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    const char *pos = buf;
+    const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
     while (pos < end && count < array_size) {
@@ -13918,22 +13945,26 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
         errno = 0;
         long long value = strtoll(pos, &next, 10);
         if (next == pos) break;
-        if ((const char *)next > end) break;
-        arr[count++] = (int64_t)value;
+        arr[count * stride] = (int64_t)value;
+        count++;
         pos = next;
     }
+    if (offset) *offset = off + (pos - buf);
+    internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr, int64_t array_size, int32_t *iostat) {
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format,
+        float *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
     (void)format;
-    char *buf = to_c_string((const fchar*)str, len);
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
     // statement can select the COMMA decimal edit mode here.
     normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
     convert_fortran_d_exponent(buf);
     const char *pos = buf;
-    const char *end = buf + len;
+    const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
     while (pos < end && count < array_size) {
@@ -13944,23 +13975,26 @@ LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *
         errno = 0;
         float value = strtof(pos, &next);
         if (next == pos) break;
-        if ((const char *)next > end) break;
-        arr[count++] = value;
+        arr[count * stride] = value;
+        count++;
         pos = next;
     }
+    if (offset) *offset = off + (pos - buf);
     internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr, int64_t array_size, int32_t *iostat) {
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format,
+        double *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
     (void)format;
-    char *buf = to_c_string((const fchar*)str, len);
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
     // statement can select the COMMA decimal edit mode here.
     normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
     convert_fortran_d_exponent(buf);
     const char *pos = buf;
-    const char *end = buf + len;
+    const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
     while (pos < end && count < array_size) {
@@ -13971,20 +14005,23 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
         errno = 0;
         double value = strtod(pos, &next);
         if (next == pos) break;
-        if ((const char *)next > end) break;
-        arr[count++] = value;
+        arr[count * stride] = value;
+        count++;
         pos = next;
     }
+    if (offset) *offset = off + (pos - buf);
     internal_free(buf);
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int32_t *iostat) {
+LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char *format,
+        int32_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
     (void)format;
-    const char *pos = str;
+    const char *pos = str + string_read_array_start(len, offset);
     const char *end = str + len;
     int64_t count = 0;
     while (pos < end && count < array_size) {
+        const char *item_start = pos;
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -14018,19 +14055,23 @@ LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char 
             }
         }
         if (!ok) {
+            pos = item_start;
             break;
         }
-        arr[count++] = value;
+        arr[count * stride] = value;
+        count++;
     }
+    if (offset) *offset = pos - str;
     if (iostat) {
         *iostat = (count < array_size) ? -1 : 0;
     }
 }
 
 LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *format,
-        struct _lfortran_complex_32 *arr, int64_t array_size, int32_t *iostat) {
+        struct _lfortran_complex_32 *arr, int64_t array_size, int64_t stride,
+        int32_t *iostat, int64_t *offset) {
     (void)format;
-    int64_t off = 0;
+    int64_t off = string_read_array_start(len, offset);
     int64_t count = 0;
     const char *end = str + len;
     while (count < array_size && off < len) {
@@ -14049,8 +14090,8 @@ LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *
             skip++;
         }
         int n = 0;
-        int rc = sscanf(buf + skip, " (%f,%f)%n",
-                &arr[count].re, &arr[count].im, &n);
+        struct _lfortran_complex_32 *elem = &arr[count * stride];
+        int rc = sscanf(buf + skip, " (%f,%f)%n", &elem->re, &elem->im, &n);
         internal_free(buf);
         if (rc != 2) {
             break;
@@ -14058,15 +14099,17 @@ LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *
         off += skip + n;
         count++;
     }
+    if (offset) *offset = off;
     if (iostat) {
         *iostat = (count < array_size) ? -1 : 0;
     }
 }
 
 LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *format,
-        struct _lfortran_complex_64 *arr, int64_t array_size, int32_t *iostat) {
+        struct _lfortran_complex_64 *arr, int64_t array_size, int64_t stride,
+        int32_t *iostat, int64_t *offset) {
     (void)format;
-    int64_t off = 0;
+    int64_t off = string_read_array_start(len, offset);
     int64_t count = 0;
     const char *end = str + len;
     while (count < array_size && off < len) {
@@ -14085,8 +14128,8 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
             skip++;
         }
         int n = 0;
-        int rc = sscanf(buf + skip, " (%lf,%lf)%n",
-                &arr[count].re, &arr[count].im, &n);
+        struct _lfortran_complex_64 *elem = &arr[count * stride];
+        int rc = sscanf(buf + skip, " (%lf,%lf)%n", &elem->re, &elem->im, &n);
         internal_free(buf);
         if (rc != 2) {
             break;
@@ -14094,24 +14137,26 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
         off += skip + n;
         count++;
     }
+    if (offset) *offset = off;
     if (iostat) {
         *iostat = (count < array_size) ? -1 : 0;
     }
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char *arr, int64_t elem_len) {
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format,
+        char *arr, int64_t elem_len, int64_t array_size, int64_t stride, int64_t *offset) {
     (void)format;
-    const char *pos = str;
+    const char *pos = str + string_read_array_start(len, offset);
     const char *end = str + len;
     int64_t count = 0;
-    while (pos < end) {
+    while (pos < end && count < array_size) {
         // Skip whitespace and common separators
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
         if (pos >= end) break;
 
-        char *dest = arr + count * elem_len;
+        char *dest = arr + count * stride * elem_len;
         int64_t dest_pos = 0;
 
         if (*pos == '\'' || *pos == '"') {
@@ -14150,6 +14195,7 @@ LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *
         pad_with_spaces(dest, dest_pos, elem_len);
         count++;
     }
+    if (offset) *offset = pos - str;
 }
 
 LFORTRAN_API void _lpython_close(int64_t fd)

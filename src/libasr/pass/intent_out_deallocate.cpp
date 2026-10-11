@@ -824,6 +824,17 @@ public:
         Location loc = result_var->base.base.loc;
         ASR::ttype_t* logical_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
+        if (ASRUtils::is_array(result_var->m_type)) {
+            emit_per_element_stmts(result, "_result_init_idx_", fn.m_symtab,
+                loc, out_stmts,
+                [&](ASR::expr_t* elem_ref, Vec<ASR::stmt_t*>& body) {
+                    emit_struct_cleanup_stmts(elem_ref, struct_type,
+                        fn.m_symtab, loc, logical_type, body);
+                    emit_struct_default_init_stmts(elem_ref, struct_type,
+                        fn.m_symtab, loc, body);
+                });
+            return;
+        }
         emit_struct_default_init_stmts(result, struct_type, fn.m_symtab, loc,
             out_stmts);
         emit_struct_cleanup_stmts(result, struct_type, fn.m_symtab, loc,

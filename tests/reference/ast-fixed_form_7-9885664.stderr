@@ -1,0 +1,5 @@
+tokenizer error: unterminated character literal
+ --> tests/errors/fixed_form_7.f:2:16
+  |
+2 |       print *, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  |                ^ not closed by column 72 (text after column 72 is ignored in fixed-form)
