@@ -4,7 +4,7 @@
     "infile": "tests/../integration_tests/gpu_metal_310.f90",
     "infile_hash": "f5331448302c6a456a1e998c187356333e3149b4141ef41b180f8836",
     "outfile": "gpu_offload_cuda-gpu_metal_310-da06035.out",
-    "outfile_hash": "780a7ecaf79897a51a4ba3feb817cf61c9f8a717e999746d4460ff4f",
+    "outfile_hash": "e727ea83cf0d340222f84f2878247fc8cf7ebcf288364764f3f5761a",
     "stdout": null,
     "stdout_hash": null,
     "stderr": null,
