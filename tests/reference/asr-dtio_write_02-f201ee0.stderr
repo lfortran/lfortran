@@ -1,0 +1,5 @@
+semantic error: defined output of the elements of a polymorphic array is not supported yet
+  --> tests/errors/dtio_write_02.f90:28:22
+   |
+28 | print '(2(dt,1x))', (c(i), i = 1, 2)
+   |                      ^^^^ 
