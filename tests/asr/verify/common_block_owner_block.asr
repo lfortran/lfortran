@@ -1,0 +1,40 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "cbblock" (Program
+        (SymbolTable
+          1
+          {
+            "block" (Block
+              (SymbolTable
+                2
+                {
+                  "common~blk" (CommonBlock
+                    2
+                    "common~blk"
+                    "blk"
+                    "blk_"
+                    []
+                    []
+                    :Source
+                    :Default
+                    :Tentative
+                  )
+                }
+              )
+              "block"
+              []
+            )
+          }
+        )
+        "cbblock"
+        []
+        []
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

@@ -52,6 +52,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -76,6 +77,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     sizeof_01

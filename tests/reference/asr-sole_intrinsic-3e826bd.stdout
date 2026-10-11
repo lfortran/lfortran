@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -80,6 +81,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -104,6 +106,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     main

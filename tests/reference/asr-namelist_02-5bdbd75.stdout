@@ -41,6 +41,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             factor:
                                 (Variable
@@ -71,6 +72,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             max_iter:
                                 (Variable
@@ -95,6 +97,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             method:
                                 (Variable
@@ -125,6 +128,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             tolerance:
                                 (Variable
@@ -155,6 +159,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             verbose:
                                 (Variable
@@ -185,6 +190,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     namelist_01

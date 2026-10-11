@@ -42,7 +42,7 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
 define i32 @b.__module_many_returns_d(i32* %i) {
 .entry:
   %d = alloca i32, align 4
-  %0 = load i32, i32* %i, align 4
+  %0 = load i32, i32* %i, align 1
   %1 = icmp eq i32 %0, 1
   br i1 %1, label %then, label %else
 
@@ -57,7 +57,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %unreachable_after_return
-  %2 = load i32, i32* %i, align 4
+  %2 = load i32, i32* %i, align 1
   %3 = icmp eq i32 %2, 2
   br i1 %3, label %then1, label %else3
 
@@ -72,7 +72,7 @@ else3:                                            ; preds = %ifcont
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else3, %unreachable_after_return2
-  %4 = load i32, i32* %i, align 4
+  %4 = load i32, i32* %i, align 1
   %5 = icmp eq i32 %4, 3
   br i1 %5, label %then5, label %else7
 

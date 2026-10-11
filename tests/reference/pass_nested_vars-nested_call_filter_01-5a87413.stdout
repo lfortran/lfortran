@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     __lcompilers_created__nested_context__nested_call_filter_01__outer_
@@ -83,6 +84,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a1:
                                                 (ExternalSymbol
@@ -272,6 +274,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     modproc

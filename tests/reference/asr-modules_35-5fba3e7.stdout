@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             strings:
                                                 (Variable
@@ -67,6 +68,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             strings_a:
                                                 (Variable
@@ -99,6 +101,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     get_args_fixed_length_a_array
@@ -349,6 +352,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     modules_35

@@ -2,133 +2,22 @@
     (SymbolTable
         1
         {
-            file_common_block_block_1:
-                (Module
+            main:
+                (Program
                     (SymbolTable
-                        3
+                        2
                         {
-                            block_1:
-                                (Struct
-                                    (SymbolTable
-                                        4
-                                        {
-                                            a:
-                                                (Variable
-                                                    4
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            b:
-                                                (Variable
-                                                    4
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            c:
-                                                (Variable
-                                                    4
-                                                    c
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                                        FixedSizeArray
-                                                        Global
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    block_1
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    []
-                                    [a
-                                    b
-                                    c]
-                                    []
-                                    Source
-                                    Public
-                                    .false.
-                                    .false.
-                                    .true.
-                                    []
-                                    ()
-                                    ()
-                                    []
-                                ),
-                            struct_instance_block_1:
+                            a:
                                 (Variable
-                                    3
-                                    struct_instance_block_1
+                                    2
+                                    a
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    3 block_1
+                                    (Integer 4)
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -141,60 +30,77 @@
                                     NotMethod
                                     ()
                                     []
-                                )
-                        })
-                    file_common_block_block_1
-                    ()
-                    []
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                ),
-            main:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            1_block_1_a:
-                                (ExternalSymbol
-                                    2
-                                    1_block_1_a
-                                    4 a
-                                    block_1
-                                    []
-                                    a
-                                    Public
+                                    2 common~block_1
                                 ),
-                            1_block_1_b:
-                                (ExternalSymbol
+                            b:
+                                (Variable
                                     2
-                                    1_block_1_b
-                                    4 b
-                                    block_1
-                                    []
                                     b
-                                    Public
-                                ),
-                            1_block_1_c:
-                                (ExternalSymbol
-                                    2
-                                    1_block_1_c
-                                    4 c
-                                    block_1
                                     []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~block_1
+                                ),
+                            c:
+                                (Variable
+                                    2
                                     c
-                                    Public
-                                ),
-                            block_1:
-                                (ExternalSymbol
-                                    2
-                                    block_1
-                                    3 block_1
-                                    file_common_block_block_1
                                     []
-                                    block_1
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
                                     Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~block_1
+                                ),
+                            common~block_1:
+                                (CommonBlock
+                                    2
+                                    common~block_1
+                                    block_1
+                                    __module_file_common_block_block_1_struct_instance_block_1
+                                    [2 a
+                                    2 b
+                                    2 c]
+                                    []
+                                    Source
+                                    Default
+                                    Tentative
                                 ),
                             d:
                                 (Variable
@@ -219,57 +125,27 @@
                                     NotMethod
                                     ()
                                     []
-                                ),
-                            struct_instance_block_1:
-                                (ExternalSymbol
-                                    2
-                                    struct_instance_block_1
-                                    3 struct_instance_block_1
-                                    file_common_block_block_1
-                                    []
-                                    struct_instance_block_1
-                                    Public
+                                    ()
                                 )
                         })
                     main
                     []
                     [(Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 b)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_c
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 5 (Integer 4) Decimal))]
-                                FixedSizeArray
-                                Global
-                            )
-                            ()
-                        )
+                        (Var 2 c)
                         (ArrayBroadcast
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (ArrayConstant
@@ -316,25 +192,9 @@
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 b)
                         (ArrayItem
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            (Var 2 c)
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
@@ -349,19 +209,9 @@
                     (Assignment
                         (Var 2 d)
                         (IntegerBinOp
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             Add
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             (Integer 4)
                             ()
                         )
@@ -370,21 +220,11 @@
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 a)
                         (IntegerBinOp
                             (IntegerConstant 5 (Integer 4) Decimal)
                             Mul
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             (Integer 4)
                             ()
                         )
@@ -395,39 +235,19 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             Gt
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             (Logical 4)
                             ()
                         )
                         [(Assignment
                             (Var 2 d)
                             (IntegerBinOp
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_a
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 a)
                                 Add
                                 (IntegerBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_b
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 b)
                                     Div
                                     (Var 2 d)
                                     (Integer 4)
@@ -444,18 +264,7 @@
                             ()
                             (IntegerCompare
                                 (ArrayItem
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_c
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 5 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                            Global
-                                        )
-                                        ()
-                                    )
+                                    (Var 2 c)
                                     [(()
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
@@ -471,19 +280,9 @@
                             [(Assignment
                                 (Var 2 d)
                                 (IntegerBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_a
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 a)
                                     Sub
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_b
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 b)
                                     (Integer 4)
                                     ()
                                 )
@@ -496,30 +295,15 @@
                     )
                     (Select
                         ()
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 a)
                         [(CaseStmt
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             [(Assignment
                                 (Var 2 d)
                                 (IntegerBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_a
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 a)
                                     Add
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_b
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 b)
                                     (Integer 4)
                                     ()
                                 )
@@ -534,19 +318,9 @@
                             [(Assignment
                                 (Var 2 d)
                                 (IntegerBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_a
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 a)
                                     Sub
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_b
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 b)
                                     (Integer 4)
                                     ()
                                 )
@@ -559,19 +333,9 @@
                         [(Assignment
                             (Var 2 d)
                             (IntegerBinOp
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_a
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 a)
                                 Mul
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_b
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 b)
                                 (Integer 4)
                                 ()
                             )
@@ -584,38 +348,18 @@
                     (WhileLoop
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             Gt
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             (Logical 4)
                             ()
                         )
                         [(Assignment
                             (Var 2 d)
                             (IntegerBinOp
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_a
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 a)
                                 Add
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_b
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 b)
                                 (Integer 4)
                                 ()
                             )
@@ -624,19 +368,9 @@
                             .false.
                         )
                         (Assignment
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             (IntegerBinOp
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_a
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 a)
                                 Sub
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
@@ -650,26 +384,10 @@
                     )
                     (DoLoop
                         ()
-                        ((StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        ((Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (ArrayItem
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            (Var 2 c)
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
@@ -681,19 +399,9 @@
                         [(Assignment
                             (Var 2 d)
                             (IntegerBinOp
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_a
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 a)
                                 Add
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_b
-                                    (Integer 4)
-                                    ()
-                                )
+                                (Var 2 b)
                                 (Integer 4)
                                 ()
                             )
@@ -706,30 +414,9 @@
                     (Print
                         (StringFormat
                             ()
-                            [(StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            [(Var 2 a)
+                            (Var 2 b)
+                            (Var 2 c)
                             (Var 2 d)]
                             FormatFortran
                             (Allocatable
@@ -741,12 +428,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             NotEq
                             (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
@@ -760,12 +442,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             NotEq
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (Logical 4)
@@ -778,12 +455,7 @@
                     )
                     (DoLoop
                         ()
-                        ((StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        ((Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ())
@@ -791,25 +463,9 @@
                             ()
                             (IntegerCompare
                                 (ArrayItem
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_c
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 5 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                            Global
-                                        )
-                                        ()
-                                    )
+                                    (Var 2 c)
                                     [(()
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_block_1)
-                                        2 1_block_1_a
-                                        (Integer 4)
-                                        ()
-                                    )
+                                    (Var 2 a)
                                     ())]
                                     (Integer 4)
                                     ColMajor

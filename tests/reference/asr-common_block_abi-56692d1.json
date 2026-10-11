@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_abi-56692d1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_abi.asr",
+    "infile_hash": "f7bcf26d4569774edea782283d8d60a2591d6a567f66c8e915f63c9e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_abi-56692d1.stderr",
+    "stderr_hash": "07206660f1df8bc88d05c3139432742bde883674a6c1580783213744",
+    "returncode": 2
+}

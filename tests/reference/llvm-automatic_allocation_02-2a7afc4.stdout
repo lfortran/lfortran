@@ -111,7 +111,7 @@ else:                                             ; preds = %.entry
 
 ifcont2:                                          ; preds = %else, %ifcont
   %27 = load i32*, i32** %i, align 8
-  store i32 10, i32* %27, align 4
+  store i32 10, i32* %27, align 1
   %28 = load float*, float** %r, align 8
   %29 = icmp eq float* %28, null
   br i1 %29, label %then3, label %else6
@@ -165,7 +165,7 @@ else6:                                            ; preds = %ifcont2
 
 ifcont7:                                          ; preds = %else6, %ifcont5
   %52 = load float*, float** %r, align 8
-  store float 0x40119999A0000000, float* %52, align 4
+  store float 0x40119999A0000000, float* %52, align 1
   %53 = load %complex_4*, %complex_4** %c, align 8
   %54 = icmp eq %complex_4* %53, null
   br i1 %54, label %then8, label %else11
@@ -273,7 +273,7 @@ else16:                                           ; preds = %ifcont12
 
 ifcont17:                                         ; preds = %else16, %ifcont15
   %102 = load i32*, i32** %l, align 8
-  store i32 1, i32* %102, align 4
+  store i32 1, i32* %102, align 1
   %103 = load i32*, i32** %i, align 8
   %104 = ptrtoint i32* %103 to i64
   %105 = icmp eq i64 %104, 0
@@ -311,7 +311,7 @@ then18:                                           ; preds = %ifcont17
 
 ifcont19:                                         ; preds = %ifcont17
   %122 = load i32*, i32** %i, align 8
-  %123 = load i32, i32* %122, align 4
+  %123 = load i32, i32* %122, align 1
   %124 = icmp ne i32 %123, 10
   br i1 %124, label %then20, label %else21
 
@@ -362,7 +362,7 @@ then23:                                           ; preds = %ifcont22
 
 ifcont24:                                         ; preds = %ifcont22
   %144 = load float*, float** %r, align 8
-  %145 = load float, float* %144, align 4
+  %145 = load float, float* %144, align 1
   %146 = fcmp une float %145, 0x40119999A0000000
   br i1 %146, label %then25, label %else26
 
@@ -468,7 +468,7 @@ then33:                                           ; preds = %ifcont32
 
 ifcont34:                                         ; preds = %ifcont32
   %192 = load i32*, i32** %l, align 8
-  %193 = load i32, i32* %192, align 4
+  %193 = load i32, i32* %192, align 1
   %194 = xor i32 %193, 1
   %195 = icmp ne i32 %194, 0
   br i1 %195, label %then35, label %else36

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.member_is_variable]: CommonBlock 'common~blk' member must be a variable of the same scope, not Program
+ --> tests/asr/verify/common_block_member_not_variable.asr:9:27
+  |
+9 |             "common~blk" (CommonBlock
+  |                           ^^^^^^^^^^^ failed here

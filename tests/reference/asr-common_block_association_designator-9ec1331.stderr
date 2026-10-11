@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.association_designator]: CommonBlock 'common~blk' association designator must designate its variable, with constant subscripts
+ --> tests/asr/verify/common_block_association_designator.asr:1:1
+  |
+1 | (TranslationUnit
+  | ^ failed here

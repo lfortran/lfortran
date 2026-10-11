@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             klvna:
                                 (Function
@@ -91,6 +92,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     klvna~fpcast
@@ -157,6 +159,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             nt:
                                 (Variable
@@ -181,6 +184,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rt:
                                 (Variable
@@ -205,6 +209,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rt0:
                                 (Variable
@@ -235,6 +240,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zo:
                                 (Variable
@@ -265,6 +271,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     klvnzo_

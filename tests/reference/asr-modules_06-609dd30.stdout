@@ -40,6 +40,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     modules_06
@@ -104,6 +105,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     b

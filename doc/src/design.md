@@ -91,6 +91,43 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## COMMON Blocks
+
+A COMMON block is storage that every scoping unit declaring it shares, while
+each unit gives it a layout of its own. The ASR keeps that layout with the
+unit: a scoping unit that declares a block owns a `CommonBlock` symbol, its
+view of the block, which lists the unit's own variables in order (`members`)
+and places the variables that EQUIVALENCE connects to the block
+(`associations`). In interactive use, a block declared at the top level has
+its view in the global scope. Each of those variables points back to the view through
+`Variable.common_block`, and a `Var` refers to it like to any other variable.
+A module variable in a COMMON block is an ordinary module variable for the
+units that use the module: it is imported through an `ExternalSymbol`, and its
+view is stored in the module file together with it.
+
+Views are connected only through `link_name`, the global symbol of the
+storage, which is the same in every view of a block. Nothing matches the
+variables of two views by name. The views in the ASR are the only persistent
+record of a block: the frontend makes up no module, derived type or module file
+for it, and keeps no side table of layouts across scoping units. A backend
+derives the layout of each `link_name` locally while it emits a translation
+unit: it combines the views of one `link_name` into a single definition and
+addresses every variable at the position its own view gives it. On targets with
+common symbols, the linker combines the definitions of different object files.
+The LLVM WebAssembly target has no common symbols and no way to size a block
+at run time, so it supports a program lowered as one translation unit:
+definitions of one block in separate objects conflict at link time.
+
+The `role` of a view says what its definition is. A view whose variables have
+initializers is `Initialized`, even if every value is zero. These are the views
+of a `BlockData` unit: the unit has no statements, and its DATA values are the
+initializers of its own variables, so its object file defines the storage with
+those values, in both compilation modes. A view without initial values is
+`Tentative`, or `External` when the storage is defined elsewhere: by the
+object file of a module read from its module file, or by an earlier
+interactive cell, after which the block cannot grow or be given initial
+values. See [CommonBlock](asr/asr_nodes/symbol_nodes/CommonBlock.md).
+
 ## Notes:
 
 Information that is lost when parsing source to AST:

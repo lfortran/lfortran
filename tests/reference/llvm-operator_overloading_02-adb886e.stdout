@@ -17,10 +17,10 @@ target datalayout = "..."
 
 define void @__module_overload_assignment_m_logical_gets_integer(i32* %tf, i32* %i) {
 .entry:
-  %0 = load i32, i32* %i, align 4
+  %0 = load i32, i32* %i, align 1
   %1 = icmp eq i32 %0, 0
   %2 = zext i1 %1 to i32
-  store i32 %2, i32* %tf, align 4
+  store i32 %2, i32* %tf, align 1
   br label %return
 
 return:                                           ; preds = %.entry

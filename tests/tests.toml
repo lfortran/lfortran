@@ -21,6 +21,12 @@ llvm = true
 filename = "asr/compile/enum_constructor_external_symbol.asr"
 asr_clojure = true
 
+# COMMON views of one block in a BLOCK DATA unit, a procedure and the
+# program, including a block whose only initial value is zero.
+[[test]]
+filename = "asr/compile/common_block_views.asr"
+asr_clojure = true
+
 [[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
@@ -5308,6 +5314,10 @@ filename = "errors/openmp_default_01.f90"
 asr_openmp = true
 
 [[test]]
+filename = "errors/openmp_threadprivate_common_01.f90"
+asr_openmp = true
+
+[[test]]
 filename = "errors/openmp_default_02.f90"
 asr_openmp = true
 
@@ -5698,6 +5708,12 @@ options = "-c --separate-compilation"
 filename = "common_linkage_separate_compilation_01.f90"
 llvm = true
 options = "--separate-compilation"
+
+# The overlay at byte 4 of the block is accessed with align 4, and the
+# procedures it is passed to claim no alignment for their dummies.
+[[test]]
+filename = "../integration_tests/common_60.f90"
+llvm = true
 
 [[test]]
 filename = "module_struct_global_separate_compilation_01.f90"
@@ -6194,6 +6210,86 @@ asr = true
 
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_role_tentative_initializer.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_role_initialized_no_initializer.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_view_of_other_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_not_placed.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_names_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_back_link.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_placed_twice.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_not_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_other_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_no_members.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_association_anchor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_association_designator.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_link_name.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_abi.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_threadprivate_storage.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_owner_block.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_bindc_name.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_nonconstant_length.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_not_sequence.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/block_data_contains_procedure.asr"
 asr = true
 
 [[test]]

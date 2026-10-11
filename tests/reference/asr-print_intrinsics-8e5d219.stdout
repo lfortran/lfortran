@@ -39,6 +39,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sp:
                                 (Variable
@@ -72,6 +73,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     print_intrinsics

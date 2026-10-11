@@ -74,7 +74,7 @@ FINALIZE_SYMTABLE_closuretest:                    ; preds = %return
 define i32 @add_z(i32* %x) {
 .entry:
   %y = alloca i32, align 4
-  %0 = load i32, i32* %x, align 4
+  %0 = load i32, i32* %x, align 1
   %1 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest__z, align 4
   %2 = add i32 %0, %1
   store i32 %2, i32* %y, align 4

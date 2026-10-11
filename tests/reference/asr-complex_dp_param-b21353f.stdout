@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             prec2:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             u:
                                 (Variable
@@ -97,6 +99,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             v:
                                 (Variable
@@ -140,6 +143,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zero:
                                 (Variable
@@ -181,6 +185,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     complex_dp_param

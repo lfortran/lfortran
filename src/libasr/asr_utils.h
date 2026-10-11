@@ -845,6 +845,8 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
         case ASR::symbolType::Namelist: return "Namelist";
+        case ASR::symbolType::BlockData: return "BlockData";
+        case ASR::symbolType::CommonBlock: return "CommonBlock";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -866,6 +868,9 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Function: {
             return ASRUtils::get_FunctionType(*ASR::down_cast<ASR::Function_t>(f))->m_abi;
+        }
+        case ASR::symbolType::CommonBlock: {
+            return ASR::down_cast<ASR::CommonBlock_t>(f)->m_abi;
         }
         default: {
             throw LCompilersException("Cannot return ABI of, " +
@@ -1223,6 +1228,12 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
+        }
+        case ASR::symbolType::BlockData: {
+            return ASR::down_cast<ASR::BlockData_t>(f)->m_name;
+        }
+        case ASR::symbolType::CommonBlock: {
+            return ASR::down_cast<ASR::CommonBlock_t>(f)->m_name;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -1662,6 +1673,10 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             ASR::Union_t* sym = ASR::down_cast<ASR::Union_t>(f);
             return std::make_pair(sym->m_dependencies, sym->n_dependencies);
         }
+        case ASR::symbolType::BlockData: {
+            ASR::BlockData_t* sym = ASR::down_cast<ASR::BlockData_t>(f);
+            return std::make_pair(sym->m_dependencies, sym->n_dependencies);
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -1728,6 +1743,12 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
         }
+        case ASR::symbolType::BlockData: {
+            return ASR::down_cast<ASR::BlockData_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::CommonBlock: {
+            return ASR::down_cast<ASR::CommonBlock_t>(f)->m_parent_symtab;
+        }
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
@@ -1749,6 +1770,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::GenericProcedure: {
             return nullptr;
             //throw LCompilersException("GenericProcedure does not have a symtab");
+        }
+        case ASR::symbolType::CustomOperator: {
+            return nullptr;
+        }
+        case ASR::symbolType::Namelist: {
+            return nullptr;
         }
         case ASR::symbolType::Struct: {
             return ASR::down_cast<ASR::Struct_t>(f)->m_symtab;
@@ -1782,6 +1809,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::BlockData: {
+            return ASR::down_cast<ASR::BlockData_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::CommonBlock: {
+            return nullptr;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -2282,6 +2315,37 @@ static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
         v.m_symbolic_value != nullptr && v.m_value == nullptr &&
         ASR::is_a<ASR::Integer_t>(*v.m_type) &&
         !is_value_constant(v.m_symbolic_value);
+}
+
+// The common block in whose storage `v` lives, or nullptr when `v` has
+// storage of its own.
+static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {
+    if (v->m_common_block == nullptr) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::CommonBlock_t>(v->m_common_block);
+}
+
+// A view of a common block that a translation unit defines gives its
+// storage initial values exactly when one of its variables has one.
+static inline void update_common_block_role(ASR::CommonBlock_t *block) {
+    if (block->m_role == ASR::common_block_roleType::External) {
+        return;
+    }
+    bool initialized = false;
+    auto check = [&](ASR::symbol_t *s) {
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        initialized = initialized || v->m_symbolic_value != nullptr
+            || v->m_value != nullptr;
+    };
+    for (size_t i = 0; i < block->n_members; i++) {
+        check(block->m_members[i]);
+    }
+    for (size_t i = 0; i < block->n_associations; i++) {
+        check(block->m_associations[i].m_variable);
+    }
+    block->m_role = initialized ? ASR::common_block_roleType::Initialized
+        : ASR::common_block_roleType::Tentative;
 }
 
 static inline bool is_value_constant(ASR::expr_t *a_value, int64_t& const_value) {
@@ -3258,6 +3322,16 @@ static inline bool global_function_present(const ASR::TranslationUnit_t &unit)
     return contains_global_function;
 }
 
+// A BLOCK DATA program unit is compiled into an object file of its own: it
+// gives the initial values of the common blocks it declares.
+static inline bool block_data_present(const ASR::TranslationUnit_t &unit)
+{
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::BlockData_t>(*a.second)) return true;
+    }
+    return false;
+}
+
 // Accepts dependencies in the form A -> [B, D, ...], B -> [C, D]
 // Returns a list of dependencies in the order that they should be built:
 // [D, C, B, A]
@@ -3470,6 +3544,18 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
                                                             LCompilers::LocationManager &lm);
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
+
+// The variable a designator of a common_association is based on, and where
+// the first storage unit it designates lies within that variable,
+// independently of the target: `element_index` counts array elements from
+// zero in array element order and `character_index` counts characters from
+// zero within that element. A designator is the variable itself, an element
+// of it with constant subscripts, or a nonempty substring of either with
+// constant bounds and stride 1 (an absent start is 1, an absent end the
+// length). Returns nullptr for anything else, and for a position outside the
+// constant bounds of the variable.
+ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
+    int64_t &element_index, int64_t &character_index);
 
 static inline bool is_const(ASR::expr_t *x) {
     if (ASR::is_a<ASR::Var_t>(*x)) {
@@ -4590,7 +4676,8 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
     char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
-    ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0
+    ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0,
+    ASR::symbol_t* a_common_block = nullptr
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
@@ -4600,7 +4687,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
         a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument, a_codims, n_codims
+        a_pass_attr, a_self_argument, a_codims, n_codims, a_common_block
     );
 }
 
@@ -7194,6 +7281,12 @@ class SymbolDuplicator {
                 new_symbol_name = template_sym->m_name;
                 break;
             }
+            case ASR::symbolType::CommonBlock: {
+                ASR::CommonBlock_t* common_block = ASR::down_cast<ASR::CommonBlock_t>(symbol);
+                new_symbol = duplicate_CommonBlock(common_block, destination_symtab);
+                new_symbol_name = common_block->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -7204,6 +7297,9 @@ class SymbolDuplicator {
         }
     }
 
+    // A copied Variable has storage of its own: when it was in a common
+    // block, the copy of that block puts it back in, see
+    // duplicate_CommonBlock.
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t* variable,
         SymbolTable* destination_symtab) {
         ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
@@ -7575,6 +7671,54 @@ class SymbolDuplicator {
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Namelist_t(
             al, namelist->base.base.loc, destination_symtab,
             namelist->m_group_name, var_list.p, var_list.size()));
+    }
+
+    // The copy of a common block view is the view of the copies of its
+    // variables, which are copied first where they are not yet, and which
+    // the copy puts into the block.
+    ASR::symbol_t* duplicate_CommonBlock(ASR::CommonBlock_t* common_block,
+        SymbolTable* destination_symtab) {
+        std::vector<ASR::Variable_t*> placed;
+        auto copy_of = [&](ASR::symbol_t* variable) {
+            std::string name = ASRUtils::symbol_name(variable);
+            if (destination_symtab->get_symbol(name) == nullptr) {
+                duplicate_symbol(variable, destination_symtab);
+            }
+            ASR::symbol_t* copy = destination_symtab->get_symbol(name);
+            LCOMPILERS_ASSERT(copy != nullptr && ASR::is_a<ASR::Variable_t>(*copy));
+            placed.push_back(ASR::down_cast<ASR::Variable_t>(copy));
+            return copy;
+        };
+        Vec<ASR::symbol_t*> members;
+        members.reserve(al, common_block->n_members);
+        for (size_t i = 0; i < common_block->n_members; i++) {
+            members.push_back(al, copy_of(common_block->m_members[i]));
+        }
+        Vec<ASR::common_association_t> associations;
+        associations.reserve(al, common_block->n_associations);
+        ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
+        for (size_t i = 0; i < common_block->n_associations; i++) {
+            ASR::common_association_t association = common_block->m_associations[i];
+            association.m_variable = copy_of(association.m_variable);
+            node_duplicator.success = true;
+            association.m_designator = node_duplicator.duplicate_expr(
+                association.m_designator);
+            association.m_anchor = node_duplicator.duplicate_expr(
+                association.m_anchor);
+            LCOMPILERS_ASSERT(node_duplicator.success);
+            associations.push_back(al, association);
+        }
+        ASR::symbol_t* copy = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_CommonBlock_t(al, common_block->base.base.loc,
+                destination_symtab, common_block->m_name,
+                common_block->m_block_name, common_block->m_link_name,
+                members.p, members.size(), associations.p, associations.size(),
+                common_block->m_abi, common_block->m_storage,
+                common_block->m_role));
+        for (ASR::Variable_t* variable : placed) {
+            variable->m_common_block = copy;
+        }
+        return copy;
     }
 
 };

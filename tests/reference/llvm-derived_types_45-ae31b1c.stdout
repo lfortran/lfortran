@@ -47,7 +47,7 @@ ifcont:                                           ; preds = %else, %then
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  store i32 %14, i32* %15, align 4
+  store i32 %14, i32* %15, align 1
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
@@ -91,7 +91,7 @@ then4:                                            ; preds = %ifcont3
 
 ifcont5:                                          ; preds = %ifcont3
   %35 = getelementptr %derived_types_45_mod.myint.3, %derived_types_45_mod.myint.3* %16, i32 0, i32 0
-  %36 = load i32, i32* %35, align 4
+  %36 = load i32, i32* %35, align 1
   %37 = icmp ne i32 %36, 44
   br i1 %37, label %then6, label %else7
 

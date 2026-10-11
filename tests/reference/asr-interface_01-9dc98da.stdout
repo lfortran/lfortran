@@ -80,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -104,6 +105,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     interface_01
@@ -253,6 +255,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     a1
@@ -320,6 +323,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     a2

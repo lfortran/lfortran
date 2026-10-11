@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     __lcompilers_created__nested_context__nested_external_dedup_01__outer_
@@ -73,6 +74,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a1:
                                                 (ExternalSymbol

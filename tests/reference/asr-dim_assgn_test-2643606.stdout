@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -70,6 +71,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dim_assgn_test

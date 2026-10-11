@@ -1,0 +1,92 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "cbchar" (Program
+        (SymbolTable
+          1
+          {
+            "common~chblk" (CommonBlock
+              1
+              "common~chblk"
+              "chblk"
+              "__module_file_common_block_chblk_struct_instance_chblk"
+              [
+                (SymbolRef 1 "s")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+            "s" (Variable
+              1
+              "s"
+              [
+                "n"
+              ]
+              :Local
+              nil
+              nil
+              :Default
+              (String
+                1
+                (Var
+                  (SymbolRef 1 "n")
+                )
+                :ExpressionLength
+                :DescriptorString
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 1 "common~chblk")
+            )
+            "n" (Variable
+              1
+              "n"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer
+                1
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              nil
+            )
+          }
+        )
+        "cbchar"
+        []
+        []
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

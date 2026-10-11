@@ -58,6 +58,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p_trim:
                                 (Variable
@@ -110,6 +111,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x_pad:
                                 (Variable
@@ -140,6 +142,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x_trim:
                                 (Variable
@@ -170,6 +173,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y_pad:
                                 (Variable
@@ -200,6 +204,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y_trim:
                                 (Variable
@@ -230,6 +235,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             z_pad:
                                 (Variable
@@ -278,6 +284,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             z_trim:
                                 (Variable
@@ -326,6 +333,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     character_parameter_padding_trimming

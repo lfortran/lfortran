@@ -85,6 +85,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             d2:
                                 (Variable
@@ -114,6 +115,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             d3:
                                 (Variable
@@ -143,6 +145,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             der2_t:
                                 (Struct
@@ -172,6 +175,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     der2_t
@@ -398,6 +402,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     base_t
@@ -462,6 +467,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     der_t
@@ -536,6 +542,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     der3_t

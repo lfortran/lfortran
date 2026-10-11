@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_owner_block-bd1bbbd",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_owner_block.asr",
+    "infile_hash": "5bb3fe6c8459e72c94409a80af6be01e10cb9842500b19741f40246d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_owner_block-bd1bbbd.stderr",
+    "stderr_hash": "1fd2f77f4c3c922b3030289049a4bdfba08c76754a6f109b873cd3ac",
+    "returncode": 2
+}

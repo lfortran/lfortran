@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -56,6 +57,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -92,6 +94,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     optional_02
@@ -192,6 +195,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -218,6 +222,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -242,6 +247,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f1

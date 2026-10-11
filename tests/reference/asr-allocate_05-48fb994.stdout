@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             string:
                                 (Variable
@@ -56,6 +57,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     allocate_05

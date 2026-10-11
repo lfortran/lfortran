@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             str:
                                 (Variable
@@ -64,6 +65,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             user_data:
                                 (Variable
@@ -96,6 +98,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     string_04

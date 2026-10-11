@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             internal_sub:
                                 (Function
@@ -77,6 +78,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             bl:
                                                 (Block
@@ -114,6 +116,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     bl
@@ -147,6 +150,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     internal_sub
@@ -221,6 +225,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             test_01:
                                 (ExternalSymbol
@@ -304,6 +309,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     ss
@@ -379,6 +385,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             str:
                                                 (Variable
@@ -405,6 +412,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_01

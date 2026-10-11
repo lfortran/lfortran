@@ -44,6 +44,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             mess~fpcast:
                                 (Function
@@ -73,6 +74,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             mess~result:
                                                 (Variable
@@ -97,6 +99,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     mess~fpcast
@@ -163,6 +166,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ~implicit_interface_mess_3:
                                 (Function

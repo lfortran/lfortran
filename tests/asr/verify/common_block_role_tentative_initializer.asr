@@ -1,0 +1,121 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "init" (BlockData
+        (SymbolTable
+          2
+          {
+            "common~blk" (CommonBlock
+              2
+              "common~blk"
+              "blk"
+              "__module_file_common_block_blk_struct_instance_blk"
+              [
+                (SymbolRef 2 "i")
+              ]
+              []
+              :Source
+              :Default
+              :Initialized
+            )
+            "common~zero" (CommonBlock
+              2
+              "common~zero"
+              "zero"
+              "__module_file_common_block_zero_struct_instance_zero"
+              [
+                (SymbolRef 2 "z")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+            "i" (Variable
+              2
+              "i"
+              []
+              :Local
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              :Default
+              (Integer
+                0
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 2 "common~blk")
+            )
+            "z" (Variable
+              2
+              "z"
+              []
+              :Local
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              (IntegerConstant
+                0
+                (Integer
+                  0
+                )
+                :Decimal
+              )
+              :Default
+              (Integer
+                0
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 2 "common~zero")
+            )
+          }
+        )
+        "init"
+        "init"
+        []
+      )
+    }
+  )
+  []
+  nil
+)

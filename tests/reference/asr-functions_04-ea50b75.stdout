@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -167,6 +168,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -191,6 +193,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     to_negative~genericprocedure
