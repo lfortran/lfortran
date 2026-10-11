@@ -1,9 +1,9 @@
 ! A per-thread workspace sized from size(c(i)%m_) of a rank-2 component
 ! whose allocated shapes differ across elements. The launch used to
 ! stride every thread by the first element's product, so a larger
-! element walked into the next slice. Those loops stay on the host.
-! size(c(1)%m_) is a compile-time element and still offloads, using
-! that element's product rather than extent 1.
+! element walked into the next slice. The host now strides every thread
+! by the largest product over the iterations. size(c(1)%m_) is a
+! compile-time element, whose product sizes every thread's slice.
 program gpu_metal_305
 implicit none
 type :: leaf_t

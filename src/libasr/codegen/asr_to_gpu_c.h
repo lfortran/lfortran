@@ -190,14 +190,29 @@ public:
         in_workspace_extent = outer;
     }
 
-    // The element count of one thread's slice of a workspace: the product
-    // of its extents, as the shader spells them. Empty when the shader
-    // cannot spell one of them.
+    // The element count of an array backed by a workspace: the product of
+    // its extents, as the shader spells them. Empty when the shader cannot
+    // spell one of them.
     std::string workspace_extent_str(const GpuVlaWorkspace &ws) {
         std::string out;
         for (size_t d = 0; d < ws.dims.size(); d++) {
             std::string one = workspace_dim_str(ws.var, d);
             if (one.empty()) return "";
+            out = out.empty() ? one : out + " * " + one;
+        }
+        return out;
+    }
+
+    // The element count of one thread's slice of a workspace, which the
+    // host sized the buffer by. It is the array's own element count unless
+    // an extent changes from thread to thread: every slice then has room
+    // for the largest one, and the thread uses the leading part of it.
+    std::string workspace_slice_str(const GpuVlaWorkspace &ws) {
+        std::string out;
+        for (const GpuVlaDim &dim : ws.dims) {
+            std::string one = dim.is_constant
+                ? std::to_string(dim.constant_value)
+                : ASRUtils::symbol_name(dim.extent_parameter);
             out = out.empty() ? one : out + " * " + one;
         }
         return out;
@@ -212,6 +227,11 @@ public:
             const GpuVlaDim &dim = ws.dims[d];
             if (dim.is_constant) return std::to_string(dim.constant_value);
             LCOMPILERS_ASSERT(dim.extent_parameter != nullptr);
+            // Written over the kernel's parameters and the thread index
+            // alone, so it means the same wherever the kernel reads it.
+            if (dim.per_thread) {
+                return "(" + expr_str(dim.source_extent) + ")";
+            }
             return ASRUtils::symbol_name(dim.extent_parameter);
         }
         return "";
@@ -816,7 +836,7 @@ public:
                         << "* " << vname << " = "
                         << gpu_workspace_buffer_name(vla_it->buffer_index)
                         << " + " << dialect.global_thread_id() << " * ("
-                        << extent << ");\n";
+                        << workspace_slice_str(*vla_it) << ");\n";
                     local_alloc_arrays.insert(&var->base);
                     int64_t total_const_size = 1;
                     bool all_const = true;
@@ -4023,6 +4043,7 @@ public:
                         // Emit a device pointer into the per-thread slice
                         std::string extent =
                             workspace_extent_str(*vla_it);
+                        std::string slice = workspace_slice_str(*vla_it);
                         src << get_indent() << global_prefix()
                             << elem_type_str << "* " << vname
                             << " = " << gpu_workspace_buffer_name(
@@ -4030,9 +4051,9 @@ public:
                             << " + " << dialect.global_thread_id()
                             << " * ";
                         if (vla_it->dims.size() == 1) {
-                            src << extent;
+                            src << slice;
                         } else {
-                            src << "(" << extent << ")";
+                            src << "(" << slice << ")";
                         }
                         src << ";\n";
                         local_alloc_arrays.insert(&v->base);

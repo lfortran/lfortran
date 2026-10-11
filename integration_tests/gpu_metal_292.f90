@@ -1,9 +1,9 @@
 ! A BLOCK-local workspace whose extent is size() of a section that
 ! contains the concurrent index. The host used to guess the extent from
-! any kernel argument in the tree (`nn`) and launch anyway. The device
-! still used the original extent, so the buffer was short. The loop must
-! stay on the host. `run_resolvable` still offloads: a workspace sized by
-! `nn` alone is something the host can measure.
+! any kernel argument in the tree (`nn`) and launch anyway, while the
+! device still used the original extent, so the buffer was short. The host
+! now evaluates the extent for every iteration and sizes each thread's
+! slice by the largest. `run_resolvable` sizes the workspace by `nn` alone.
 program gpu_metal_292
 implicit none
 integer, parameter :: n = 3
