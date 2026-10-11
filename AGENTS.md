@@ -145,17 +145,18 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
   invocation, and resource budget; shell activation is not inherited.
 - `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
   and each new test run directly in normal, `--fast`, and `--std=f23` modes
-  and with GFortran), then runs the unit, integration, and reference suites
-  once, in the default mode. Then publish a draft from the user's fork so
-  Quick starts early, and review it locally with `pr-review` while CI runs;
-  the review reruns the suites only if compiler source changed since they
-  passed. Never push compiler-source changes that have not passed the local
-  suites once. In a batch, at most four PRs run Quick at once. Iterate on CI
-  failures, review findings, and human feedback until Quick is green and the
-  review is clean before marking ready. Every push reruns Quick, so batch
-  pushes: push CI fixes as soon as they pass locally; hold other changes until
-  the current run finishes rather than cancelling a healthy run. Follow the
-  commit-authorship policy below in every subagent, including CI fixers.
+  and with GFortran); after the last fix, the job runs the unit, integration,
+  and reference suites once, in the default mode. Then publish a draft from
+  the user's fork so Quick starts early, and review it locally with
+  `pr-review` while CI runs; the review reruns the suites only if compiler
+  source changed since they passed. Never push compiler-source changes that
+  have not passed the local suites once. In a batch, at most four PRs run
+  Quick at once. Iterate on CI failures, review findings, and human feedback
+  until Quick is green and the review is clean before marking ready. Every
+  push reruns Quick, so batch pushes: push CI fixes as soon as they pass
+  locally; hold other changes until the current run finishes rather than
+  cancelling a healthy run. Follow the commit-authorship policy below in every
+  subagent, including CI fixers.
 - Record every additional compiler bug discovered in any phase. Fix regressions
   introduced by the current changes in the same PR. For unrelated pre-existing
   bugs, verify against upstream `main`, search open and closed GitHub issues,
@@ -247,7 +248,7 @@ The extra flags build a Debug compiler (assertions on) with `-O2`, like
 Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the
 CMake cache, so later `pixi run -e llvm11 build` rebuilds keep them. While
 iterating, rerun reproducers and new tests directly (`fix-mre` targeted
-checks). Run the full suites below once per compiler change, in the default
+checks). Run the full suites below once, after the last fix, in the default
 mode only, and inspect their saved logs. Budget `<jobs>` across active
 workers instead of giving each worker all cores:
 

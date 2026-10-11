@@ -195,7 +195,8 @@ call reconfigures the whole CMake suite.
 
 #### 5b. Full suites, once, in the default mode
 
-When the fix and its tests are final, run each suite once:
+When the fix and its tests are final, run each suite once. Under `fix-issue`,
+the orchestrator runs this step once per job, after the last iteration.
 
 ```bash
 pixi run -e llvm11 ctest -j<jobs> > unit.log 2>&1
@@ -225,9 +226,9 @@ regression into the expected output.
 
 #### 5c. Record the result
 
-Record the commit whose compiler source passed the suites: the fix commit, if
-`src/` and `grammar/` did not change after the run (under `fix-issue`, as
-`suites_green_sha`). The suites stay current while
+Record the HEAD SHA the suites ran on and whether the working tree held the
+uncommitted fix; under `fix-issue`, the recorded commit is `suites_green_sha`.
+The suites stay current while
 `git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; later
 test-only or documentation changes need only their targeted checks.
 

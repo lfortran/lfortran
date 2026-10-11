@@ -114,9 +114,9 @@ order. Preserve the other workers' branches, REs, and evidence. Do not cherry-pi
 the same shared fix twice or discard uncommitted work. Archive each original
 RE separately under the group state directory. Rebuild and rerun every included
 issue's original scenarios and new tests on the combined head, not only the
-final worker's MRE, then run the suites once unless they are already current
-for that head (**Push invariant** in `../SKILL.md`). For each dependent
-commit, fail-before evidence uses the build of the preceding commit.
+final worker's MRE, then run the suites once (Phase 3d) unless they are
+already current for that head (**Push invariant** in `../SKILL.md`). For each
+dependent commit, fail-before evidence uses the build of the preceding commit.
 
 Reassess grouping if later work exposes another dependency. Do not silently
 close or supersede already-published PRs; ask before changing that publication

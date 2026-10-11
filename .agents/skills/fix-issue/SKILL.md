@@ -7,8 +7,8 @@ description: >
   failures; the user need not name this skill. Expand
   the complete selection, use fresh per-issue subagents and isolated Git
   worktrees, and build with Pixi/LLVM 11. Run repro-issue, then create-mre and
-  fix-mre (targeted checks, then the local suites once) until every original
-  reproducer passes, then publish a draft at once and review locally with
+  fix-mre (targeted checks) until every original reproducer passes, run the
+  local suites once, then publish a draft at once and review locally with
   pr-review while Quick checks CI runs. Publish independent fixes as separate
   fork PRs; consolidate shared or dependent fixes into one PR with focused
   commits.
@@ -42,9 +42,9 @@ per-job procedure below. Pass it its assigned issue IDs, not the original
 batch query, so it does not recursively redispatch the batch.
 
 Per job: setup → reproduce → (reduce → fix → original-issue check) until fixed
-→ draft PR → CI watch concurrent with the local pr-review/fix loop, with
-batched pushes → ready. Track additional bugs throughout, including jobs that
-stop without a PR.
+→ suites once → draft PR → CI watch concurrent with the local pr-review/fix
+loop, with batched pushes → ready. Track additional bugs throughout,
+including jobs that stop without a PR.
 
 Quick checks (about 30–90 minutes) is the long pole: publish the draft as
 soon as the fix is verified, and review locally while CI runs. Every push
@@ -106,8 +106,8 @@ reread it on resume.
 
 Subagents write their artifacts there: `repro.md`; for each MRE iteration `j`,
 `mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`, the test and fail-before logs;
-then `pr_body.md`, and for each review round `k`, `review_<k>.md`,
-`round_<k>.md`, `ci_<k>.log`. You maintain
+then `suites.md`, `pr_body.md`, and for each review round `k`,
+`review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. You maintain
 `followups.md`: one line per unrelated bug, with its status (`unfiled`,
 `filed #M`, `duplicate of #M`, or `regression, sent to fix loop`) and the
 path to its details. The reproducers themselves (`run_re.sh`, `re_*.f90`,
@@ -170,10 +170,11 @@ the PR has base conflicts, needs a change that landed on `main`, or CI
 failures look caused by a stale base.
 
 To update, run `git rebase <upstream-remote>/main` and resolve any conflicts.
-If conflicts in `src/` or `grammar/` were resolved, rebuild and rerun the
-targeted checks and the suites once (see **Push invariant**); otherwise set
-`suites_green_sha` to the rebased head and let CI check. Then update the fork
-with `git push --force-with-lease`.
+Set `suites_green_sha` to the rebased head only if the suites were current
+before the rebase and no conflicts in `src/` or `grammar/` were resolved;
+otherwise rebuild and rerun the targeted checks and the suites once before
+pushing (see **Push invariant**). Then update the fork with
+`git push --force-with-lease`.
 This applies in every PR state, including after review. Rebasing only moves
 the existing commits; address review feedback with new commits and do not
 squash or reword commits reviewers have already seen.
@@ -321,20 +322,17 @@ Run the `fix-mre` skill on the MRE, with these additions to its instructions:
   iteration's fix and passes with it**, capturing the fail-before log with the
   build that predates this iteration's change (the first build at the base SHA
   for `j = 1`), not a separate baseline worktree unless that was missed.
-- It must pass `fix-mre` Phase 5: the targeted checks, then the unit,
-  integration, and reference suites once, in the default mode only. For every
-  failure, it must determine whether this change caused it or whether it also
-  fails on `main`. It records `suites_green_sha` in `state.md`.
+- It must pass `fix-mre` Phase 5a (the targeted checks) and skip 5b and 5c:
+  the suites run once per job, in 3d, after the last iteration.
 - **Commit is authorized.** Make one focused commit for this bug, with an
   imperative `fix: ...` message. Do not stage scratch reproducers, logs, or
   `.fix-issue/`. Follow **Commit authorship**, including no co-author lines.
 - Do not push.
 
 Report, also written to `fix_<j>.md`: the commit SHA, the changed files, the
-test name, fail-before/pass-after verified (log paths), targeted and suite
-results, `suites_green_sha`, any failures that already exist on `main`, and
-one paragraph of rationale (the bug, the compiler phase at fault, and why the
-fix belongs there).
+test name, fail-before/pass-after verified (log paths), targeted results,
+any failures that already exist on `main`, and one paragraph of rationale
+(the bug, the compiler phase at fault, and why the fix belongs there).
 
 #### 3c. Issue check subagent (fresh)
 
@@ -357,8 +355,16 @@ involved) and whether it is the same failure as in `check_<j-1>.md`.
 
 For a group, perform this check for **every included issue**, using its archived
 original RE, and report per-issue results. If all are fixed, request the batch
-coordinator's grouping/publication decision, then go to Phase 4. Otherwise
+coordinator's grouping/publication decision, then go to 3d. Otherwise
 start iteration `j+1` on the next failure.
+
+#### 3d. Suites subagent (fresh)
+
+Unless the suites are already current (**Push invariant**), run `fix-mre`
+Phase 5b once on the head, handling failures as 5b describes: a regression
+caused by this branch starts iteration `j+1` on it; a pre-existing failure
+goes to `followups.md`. Record `suites_green_sha` in `state.md` and the
+results in `suites.md`, then go to Phase 4.
 
 ### Phase 4: Publish subagent
 
