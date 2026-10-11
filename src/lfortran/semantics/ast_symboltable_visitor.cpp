@@ -755,7 +755,9 @@ public:
                     // "~merge_config" public so that constructor
                     // overloads remain accessible.
                     es->m_access = assgnd_access[item.first.substr(1)];
-                } else {
+                } else if (es->m_access != ASR::accessType::Private) {
+                    // A private import is made by the compiler, not by a
+                    // USE statement, and is not exported.
                     es->m_access = dflt_access;
                 }
             } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {

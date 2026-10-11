@@ -4431,10 +4431,11 @@ static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
 // Returns a symbol that names the definition of `sym` from `scope`: `sym` or
 // its definition when named from there, an existing import of the definition,
 // or a new ExternalSymbol added to `scope` under a name that is free at this
-// point. Returns `sym` unchanged when it cannot be imported because no module
-// or derived type owns its definition.
+// point and starts with `name_prefix`. Returns `sym` unchanged when it cannot
+// be imported because no module or derived type owns its definition.
 static inline ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
-        SymbolTable* scope, ASR::accessType access=ASR::accessType::Private) {
+        SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
+        const std::string &name_prefix="") {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -4459,9 +4460,9 @@ static inline ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
             !ASR::is_a<ASR::Struct_t>(*module_sym))) {
         return sym;
     }
-    std::string local_name = name;
+    std::string local_name = name_prefix + name;
     for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
-        local_name = name + std::to_string(i);
+        local_name = name_prefix + name + std::to_string(i);
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
         ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
@@ -4469,6 +4470,61 @@ static inline ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
             nullptr, 0, s2c(al, name), access));
     scope->add_symbol(local_name, imported);
     return imported;
+}
+
+// The argument and result types of a procedure type can reference module
+// symbols named only where its interface is declared, for example the getter
+// of a use-associated explicit-shape bound. Imports them into `scope` (with
+// `do_import`) or only records whether there are any.
+class ProcedureTypeImporter: public ASR::BaseExprReplacer<ProcedureTypeImporter> {
+    Allocator &al;
+    SymbolTable* scope;
+    bool do_import;
+
+    // The import is made under a `1_`-prefixed name no user code can spell:
+    // a name the user can spell could be taken by a later declaration or
+    // capture a later implicit reference in the same scope.
+    ASR::symbol_t* named(ASR::symbol_t* sym) {
+        if (is_named_from(sym, scope)) return sym;
+        needed = true;
+        return do_import ? import_symbol(al, sym, scope,
+            ASR::accessType::Private, "1_") : sym;
+    }
+
+public:
+    bool needed = false;
+
+    ProcedureTypeImporter(Allocator &al_, SymbolTable* scope_, bool do_import_)
+        : al(al_), scope(scope_), do_import(do_import_) {}
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::BaseExprReplacer<ProcedureTypeImporter>::replace_FunctionCall(x);
+        x->m_name = named(x->m_name);
+        if (x->m_original_name) x->m_original_name = named(x->m_original_name);
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        x->m_v = named(x->m_v);
+    }
+
+    // The member types of a derived type belong to its Struct.
+    void replace_StructType(ASR::StructType_t* /*x*/) {}
+};
+
+// Returns `type` if it is not a procedure type or references only symbols
+// named from `scope`, otherwise a copy that references them through imports.
+static inline ASR::ttype_t* import_procedure_type(Allocator &al,
+        ASR::ttype_t* type, SymbolTable* scope) {
+    if (type == nullptr || scope == nullptr ||
+            !ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(type))) {
+        return type;
+    }
+    ProcedureTypeImporter checker(al, scope, false);
+    checker.replace_ttype(type);
+    if (!checker.needed) return type;
+    ASR::ttype_t* new_type = ExprStmtDuplicator(al).duplicate_ttype(type);
+    ProcedureTypeImporter(al, scope, true).replace_ttype(new_type);
+    return new_type;
 }
 
 // A variable's type declaration has to be visible from the variable's own
@@ -4538,6 +4594,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    a_type = import_procedure_type(al, a_type, a_parent_symtab);
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
@@ -9856,7 +9913,8 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
-            a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
+            a_dt, a_name, import_procedure_type(al, ASRUtils::duplicate_type(al,
+                ASRUtils::symbol_type(a_name)), current_scope), nullptr));
     }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
