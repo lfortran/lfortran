@@ -218,3 +218,21 @@ program continue_compilation_3
     end subroutine
         
 end program
+
+module fref_m_13849
+    implicit none
+    type :: s_13849
+        integer, allocatable :: a(:)
+    end type
+contains
+    function mk_13849(i) result(r)
+        integer, intent(in) :: i
+        type(s_13849) :: r
+        allocate(r%a(2))
+        r%a = i
+    end function
+    subroutine test_fref_13849()
+        print *, size(mk_13849(1)%a)
+        print *, mk_13849(1)%a
+    end subroutine
+end module
