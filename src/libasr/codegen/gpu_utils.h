@@ -773,6 +773,13 @@ inline std::string member_dim_size(const std::string &var,
     return member_size(var, member) + "_dim" + std::to_string(d + 1);
 }
 
+// The scalar parameter carrying the lower bound of dimension `d` (0-based)
+// of that component, which its subscripts are counted from.
+inline std::string member_lower_bound(const std::string &var,
+        const std::string &member, size_t d) {
+    return "__lb_" + var + "_" + member + "_dim" + std::to_string(d + 1);
+}
+
 // The device buffer holding the elements of that component.
 inline std::string member_data(const std::string &var,
         const std::string &member) {

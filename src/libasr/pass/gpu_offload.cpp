@@ -965,6 +965,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::type_get_past_allocatable(mv->m_type);
             size_t rank = ASR::down_cast<ASR::Array_t>(
                 mem_inner)->n_dims;
+            // The lower bound of each dimension, which subscripts,
+            // lbound() and ubound() of the component in device code are
+            // counted from.
+            for (size_t d = 0; d < rank; d++) {
+                ASR::symbol_t *lb_sym = gpu_new_variable(al, loc,
+                    kernel_scope, GpuNames::member_lower_bound(sym_name,
+                        mem_name, d),
+                    ASRUtils::duplicate_type(al, int_type_sz),
+                    ASR::intentType::InOut);
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, lb_sym)));
+                ASR::call_arg_t lb_carg;
+                lb_carg.loc = loc;
+                lb_carg.m_value = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
+                    loc, ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                        loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            orig_sym)), orig_mem_ref, mv->m_type, nullptr)),
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                        (int64_t)(d + 1), int_type_sz,
+                        ASR::integerbozType::Decimal)),
+                    int_type_sz, ASR::arrayboundType::LBound, nullptr));
+                call_args.push_back(al, lb_carg);
+            }
             if (rank <= 1) continue;
             for (size_t d = 0; d < rank; d++) {
                 std::string dim_size_name = GpuNames::member_dim_size(
