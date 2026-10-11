@@ -155,6 +155,8 @@ public:
 
     void mark_regions_device_code_runs();
 
+    void plain_allocatable_dummies(ASR::Function_t *fn);
+
     static ASR::expr_t* strip_array_casts(ASR::expr_t *e);
 
     static const ASR::FunctionCall_t* spliceable_call(ASR::stmt_t *stmt);

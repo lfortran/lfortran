@@ -185,6 +185,121 @@ void GpuOffloadVisitor::mark_regions_device_code_runs() {
     GpuSerialRegionMarker::run(serial_regions);
 }
 
+// The allocatable dummy arrays of a device routine that only use the array
+// the caller passed: they neither allocate nor deallocate it, ask whether
+// it is allocated, or hand it on to a dummy that does. A kernel receives
+// every array as a plain one, which is all such a dummy needs, so it is
+// declared as an assumed-shape dummy instead.
+namespace {
+
+class GpuAllocatableDummyUses :
+        public ASRUtils::BlockBodyWalkVisitor<GpuAllocatableDummyUses> {
+public:
+    std::set<ASR::symbol_t*> &needs_allocation;
+
+    explicit GpuAllocatableDummyUses(std::set<ASR::symbol_t*> &needs)
+        : needs_allocation(needs) {}
+
+    void mark(ASR::expr_t *e) {
+        e = ASRUtils::get_past_array_physical_cast(e);
+        if (e && ASR::is_a<ASR::Var_t>(*e)) {
+            needs_allocation.insert(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) mark(x.m_args[i].m_a);
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuAllocatableDummyUses>::visit_Allocate(x);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) mark(x.m_args[i].m_a);
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) mark(x.m_vars[i]);
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) mark(x.m_vars[i]);
+    }
+
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) mark(x.m_args[i]);
+    }
+
+    void visit_IntrinsicImpureSubroutine(
+            const ASR::IntrinsicImpureSubroutine_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) mark(x.m_args[i]);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (x.m_realloc_lhs || x.m_move_allocation) mark(x.m_target);
+        if (x.m_move_allocation) mark(x.m_value);
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuAllocatableDummyUses>::visit_Assignment(x);
+    }
+
+    void mark_allocatable_actuals(ASR::symbol_t *name,
+            ASR::call_arg_t *args, size_t n_args) {
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(name);
+        if (target) {
+            target = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                target);
+        }
+        if (!target || !ASR::is_a<ASR::Function_t>(*target)) return;
+        ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
+        for (size_t i = 0; i < n_args && i < callee->n_args; i++) {
+            if (args[i].m_value && ASRUtils::is_allocatable(
+                    ASRUtils::expr_type(callee->m_args[i]))) {
+                mark(args[i].m_value);
+            }
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        mark_allocatable_actuals(x.m_name, x.m_args, x.n_args);
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuAllocatableDummyUses>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        mark_allocatable_actuals(x.m_name, x.m_args, x.n_args);
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuAllocatableDummyUses>::visit_SubroutineCall(x);
+    }
+};
+
+} // namespace
+
+void GpuOffloadVisitor::plain_allocatable_dummies(ASR::Function_t *fn) {
+    std::set<ASR::symbol_t*> needs_allocation;
+    GpuAllocatableDummyUses uses(needs_allocation);
+    for (size_t i = 0; i < fn->n_body; i++) uses.visit_stmt(*fn->m_body[i]);
+    bool changed = false;
+    for (size_t i = 0; i < fn->n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym) || needs_allocation.count(sym)) {
+            continue;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!ASR::is_a<ASR::Allocatable_t>(*var->m_type) ||
+                !ASRUtils::is_array(var->m_type)) {
+            continue;
+        }
+        var->m_type = ASRUtils::type_get_past_allocatable(var->m_type);
+        changed = true;
+    }
+    if (!changed) return;
+    fn->m_function_signature = ASRUtils::TYPE(
+        ASRUtils::make_FunctionType_t_util(al, fn->base.base.loc,
+            fn->m_args, fn->n_args, fn->m_return_var,
+            ASRUtils::get_FunctionType(fn), fn->m_symtab));
+}
+
 // Strip the physical-type casts wrapping an actual argument. The
 // uncast expression keeps its declared shape, which is what makes
 // `size(dummy,1)` fold to a constant after substitution.
