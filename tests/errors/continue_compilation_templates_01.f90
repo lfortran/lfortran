@@ -1861,7 +1861,7 @@ end module
 module templated_subp_syntax_1a
     implicit none
 contains
-    subroutine swap{t}(x, y)  ! {Error} Token '{' is unexpected here
+    subroutine swap{t}(x, y)  ! {Error} Token '}' is unexpected here
         deferred type :: t
         type(t), intent(inout) :: x, y
     end subroutine
@@ -1872,7 +1872,7 @@ end module
 module templated_subp_syntax_1b
     implicit none
 contains
-    pure subroutine copy_into{t}(x, y)  ! {Error} Token '{' is unexpected here
+    pure subroutine copy_into{t}(x, y)  ! {Error} Token '}' is unexpected here
         deferred type :: t
         type(t), intent(in) :: x
         type(t), intent(out) :: y
@@ -1882,7 +1882,7 @@ end module
 module templated_subp_syntax_1c
     implicit none
 contains
-    function pick_last{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+    function pick_last{t}(x, y) result(res)  ! {Error} Token '}' is unexpected here
         deferred type :: t
         type(t), intent(in) :: x, y
         type(t) :: res
@@ -1892,7 +1892,7 @@ end module
 module templated_subp_syntax_1d
     implicit none
 contains
-    pure function pick_second{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
+    pure function pick_second{t}(x, y) result(res)  ! {Error} Token '}' is unexpected here
         deferred type :: t
         type(t), intent(in) :: x, y
         type(t) :: res

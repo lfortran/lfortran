@@ -75,6 +75,17 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 if ( !startswith(v->m_name, "lfortran_intrinsic") ) {
                     v->m_symtab->mark_all_variables_external(al);
                 }
+                break;
+            }
+            case ASR::symbolType::TraitWitness: {
+                auto *witness = ASR::down_cast<ASR::TraitWitness_t>(a.second);
+                witness->m_abi = ASR::abiType::ExternalUndefined;
+                witness->m_symtab->mark_all_variables_external(al);
+                break;
+            }
+            case ASR::symbolType::TraitErasure: {
+                ASR::down_cast<ASR::TraitErasure_t>(a.second)->m_symtab->mark_all_variables_external(al);
+                break;
             }
             default : {};
         }

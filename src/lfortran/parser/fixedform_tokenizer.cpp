@@ -142,6 +142,8 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"endif", KW_ENDIF},
     {"end_interface", KW_END_INTERFACE},
     {"endinterface", KW_ENDINTERFACE},
+    {"end_implements", KW_END_IMPLEMENTS},
+    {"endimplements", KW_ENDIMPLEMENTS},
     {"end_type", KW_END_TYPE},
     {"endtype", KW_ENDTYPE},
     {"end_associate", KW_END_ASSOCIATE},
@@ -184,6 +186,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"images", KW_IMAGES},
     {"implicit", KW_IMPLICIT},
     {"import", KW_IMPORT},
+    {"implements", KW_IMPLEMENTS},
     {"impure", KW_IMPURE},
     {"in", KW_IN},
     {"include", KW_INCLUDE},
@@ -239,6 +242,8 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"return", KW_RETURN},
     {"rewind", KW_REWIND},
     {"save", KW_SAVE},
+    {"sealed", KW_SEALED},
+    {"initial", KW_INITIAL},
     {"select", KW_SELECT},
     {"select_case", KW_SELECT_CASE},
     {"select_rank", KW_SELECT_RANK},
@@ -1131,13 +1136,23 @@ struct FixedFormRecursiveDescent {
     void lex_derived_type(unsigned char *&cur) {
         push_token_advance(cur, "type");
         tokenize_line(cur);
+        bool contains = false;
         while (true) {
-            if (next_is(cur, "endtype")) {
+            if (*cur == '\0') {
+                error(cur, "expected end type");
+            } else if (next_is(cur, "endtype")) {
                 push_token_advance(cur, "endtype");
                 tokenize_line(cur);
                 break;
+            } else if (next_is(cur, "contains")) {
+                contains = true;
+                tokenize_line(cur);
+            } else if (contains) {
+                tokenize_line(cur);
             } else {
-                lex_declaration(cur);
+                if (!lex_declaration(cur)) {
+                    error(cur, "expected a component declaration or end type");
+                }
             }
         }
     }
@@ -1161,7 +1176,7 @@ struct FixedFormRecursiveDescent {
         }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
-        if (next_is(cur, "type::")) {
+        if (next_is(cur, "type::") || next_is(cur, "type,")) {
             lex_derived_type(cur);
             return true;
         }
@@ -1171,9 +1186,7 @@ struct FixedFormRecursiveDescent {
         //    e.g. `TYPE(GT), SAVE :: DAT(10)` (must NOT be routed here)
         //  - a plain identifier that merely starts with "type", e.g.
         //    `TYPEX = 5` (must NOT be routed here)
-        // `TYPE, EXTENDS(parent) :: name` (attr-list form) is not handled
-        // by this check either, matching the pre-existing `type::` check's
-        // scope.
+        // Attribute-list openers were handled above.
         // A bare derived-type-def statement is exactly `TYPE type-name`
         // with nothing else on the line, so require a NAME immediately
         // after `type` followed immediately by end-of-line.

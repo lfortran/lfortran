@@ -9,7 +9,7 @@ A type-bound procedure of a derived type.
 ```text
 StructMethodDeclaration(symbol_table parent_symtab, identifier name,
     identifier? self_argument, identifier proc_name, symbol proc,
-    abi abi, bool is_deferred, bool is_nopass)
+    abi abi, bool is_deferred, bool is_nopass, symbol? dispatch_proc)
 ```
 
 ### Arguments
@@ -24,6 +24,7 @@ StructMethodDeclaration(symbol_table parent_symtab, identifier name,
 | `abi` | the ABI of the procedure. |
 | `is_deferred` | `true` for a `deferred` binding of an abstract type, which has no implementation here. |
 | `is_nopass` | `true` for `nopass`: the object is not passed as an argument. |
+| `dispatch_proc` | optional typed adapter for the inherited virtual slot of a sealed nonpolymorphic override; `proc` retains the source implementation identity. |
 
 ### Return values
 
@@ -43,6 +44,17 @@ the object the binding was reached through. For a `deferred` binding of an
 abstract type the actual procedure is chosen at run time from the dynamic type
 of `dt`.
 
+For a sealed override whose source receiver is `TYPE(T)` but whose inherited
+slot takes `CLASS(Parent)`, `dispatch_proc` is a private, typed forwarding entry
+with a `CLASS(T)` receiver and an explicit `ClassToStruct` conversion. Static
+calls and nominal conformance still use `proc`. The adapter forwards OUT dummies
+as INOUT so the real implementation alone performs entry cleanup. Its scope
+contains only signature declarations, not copied implementation locals.
+The verifier requires the adapter for this ABI change and checks its ownership,
+nominal receiver, signature and dummy attributes. Current result support is
+limited to scalar numeric/logical values; lifetime-bearing results require
+additional transparent result-slot lowering.
+
 ## Examples
 
 ```clojure
@@ -55,6 +67,7 @@ of `dt`.
   :abi :Source
   :is_deferred false
   :is_nopass false
+  :dispatch_proc nil
 )
 ```
 

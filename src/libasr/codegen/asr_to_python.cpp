@@ -633,6 +633,7 @@ public:
 Result<std::string> asr_to_python(Allocator& al, ASR::TranslationUnit_t &asr,
         diag::Diagnostics& diagnostics, CompilerOptions& co,
         bool color, int indent) {
+    if (ASRUtils::reject_runtime_traits(asr, diagnostics, "python")) return Error();
     ASRToLpythonVisitor v(al, diagnostics, co, color, indent=4);
     try {
         v.visit_TranslationUnit(asr);

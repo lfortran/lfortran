@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-traits_numeric_05_contracts-5a1bab5",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/traits_numeric_05_contracts.f90",
+    "infile_hash": "1a845660456a33ba583dde20347123ef4fec0bc8f3d06478d3ef7c0e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-traits_numeric_05_contracts-5a1bab5.stdout",
+    "stdout_hash": "2dcaa91c219dc2ee32c98311e482ed719c2f21ea3bc74b5f3ed953a7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

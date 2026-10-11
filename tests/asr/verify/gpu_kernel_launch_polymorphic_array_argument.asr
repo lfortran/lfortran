@@ -57,7 +57,7 @@
         :initializers []
         :alignment nil
         :parent nil
-        :kind_params []
+        :kind_params [] :is_sealed false :trait_obligations []
       )
       "__lfortran_gpu_kernel_0" (Function
         :symtab (SymbolTable

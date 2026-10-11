@@ -9,7 +9,16 @@
 "symbol.Block" = "helper:BlockCall"
 "symbol.Requirement" = "non-executable"
 "symbol.Template" = "non-executable"
+"symbol.Trait" = "non-executable"
+"symbol.TraitConstraint" = "metadata"
+"symbol.TraitImplementation" = "metadata"
+"symbol.TraitRuntimeContract" = "metadata"
+"symbol.TraitWitness" = "helper:module witness emission"
+"symbol.TraitErasure" = "helper:erased provider procedure emission"
 "symbol.Namelist" = "helper:formatted I/O"
+
+"type_set_operation.TypeSetBinary" = "metadata"
+"type_set_operation.TypeSetComparison" = "metadata"
 
 "stmt.Assign" = "helper:legacy assigned goto"
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
@@ -67,6 +76,8 @@
 "ttype.TypeParameter" = "helper:LLVM type lowering"
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"
+"ttype.TraitObjectType" = "helper:LLVM type lowering"
+"ttype.TraitOwnerList" = "helper:LLVM type lowering"
 
 "attribute.Attribute" = "metadata"
 "tbind.Bind" = "metadata"

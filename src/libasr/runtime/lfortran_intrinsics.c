@@ -332,6 +332,35 @@ LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void
     return &compiler_mem_dbg_allocator;
 }
 
+static void* checked_alloc(void* context, int64_t size) {
+    lfortran_allocator_t* base = (lfortran_allocator_t*)context;
+    if (size < 0) lfortran_error("negative allocation size");
+    void* result = base->alloc(base->context, size ? size : 1);
+    if (!result) lfortran_error("memory allocation failed during value initialization");
+    return result;
+}
+
+static void* checked_realloc(void* context, void* ptr, int64_t size) {
+    lfortran_allocator_t* base = (lfortran_allocator_t*)context;
+    if (size < 0) lfortran_error("negative allocation size");
+    void* result = base->realloc_func(base->context, ptr, size ? size : 1);
+    if (!result) lfortran_error("memory allocation failed during value initialization");
+    return result;
+}
+
+static void checked_dealloc(void* context, void* ptr) {
+    lfortran_allocator_t* base = (lfortran_allocator_t*)context;
+    base->dealloc(base->context, ptr);
+}
+
+LFORTRAN_API void _lcompilers_init_checked_allocator(
+        lfortran_allocator_t* proxy, lfortran_allocator_t* base) {
+    proxy->alloc = checked_alloc;
+    proxy->realloc_func = checked_realloc;
+    proxy->dealloc = checked_dealloc;
+    proxy->context = base;
+}
+
 /* --- CFI allocation helpers --- */
 /* Route CFI_allocate/CFI_deallocate through the debug allocator when
    --detect-leaks is active, so that C-side frees are properly tracked. */

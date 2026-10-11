@@ -992,7 +992,7 @@ FINALIZE_SYMTABLE_allocate_03:                    ; preds = %return
 
 Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_allocate_03
   %441 = load %array.3*, %array.3** %c, align 8
-  call void @finalize_allocatable__Array_3_i32(%array.3* %441)
+  call void @release_allocatable__Array_3_i32(%array.3* %441)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -3213,13 +3213,13 @@ declare void @_lfortran_internal_alloc_finalize()
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-define internal void @finalize_allocatable__Array_3_i32(%array.3* %0) {
+define internal void @release_allocatable__Array_3_i32(%array.3* %0) {
 entry:
   %1 = icmp ne %array.3* %0, null
   br i1 %1, label %is_allocated.then, label %is_allocated.else
 
 is_allocated.then:                                ; preds = %entry
-  call void @finalize_descriptorArray_Array_3_i32(%array.3* %0)
+  call void @release_descriptorArray_Array_3_i32(%array.3* %0)
   br label %is_allocated.ifcont
 
 is_allocated.else:                                ; preds = %entry
@@ -3229,7 +3229,7 @@ is_allocated.ifcont:                              ; preds = %is_allocated.else, 
   ret void
 }
 
-define internal void @finalize_descriptorArray_Array_3_i32(%array.3* %0) {
+define internal void @release_descriptorArray_Array_3_i32(%array.3* %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = getelementptr %array.3, %array.3* %0, i32 0, i32 0

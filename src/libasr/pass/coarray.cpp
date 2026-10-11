@@ -87,7 +87,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0,
                 ASR::abiType::Source, ASR::accessType::Public,
-                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
@@ -119,7 +119,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, members.p, members.n, nullptr, 0,
                 ASR::abiType::BindC, ASR::accessType::Public,
-                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
 
@@ -942,7 +942,7 @@ class PRIFInterface {
                 al, loc, struct_symtab, s2c(al, symbol_name), nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0,
                 ASR::abiType::Source, ASR::accessType::Public,
-                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0);
+                false, false, false, nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
             ASR::symbol_t *struct_sym = ASR::down_cast<ASR::symbol_t>(struct_asr);
             ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
             global_scope->add_symbol(symbol_name, struct_sym);
@@ -1509,7 +1509,7 @@ class PRIFInterface {
                 ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                 s2c(al, derived_type_name), nullptr, nullptr, 0, nullptr, 0,
                                                 nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, true, false,
-                                                nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                nullptr, 0, nullptr, nullptr, nullptr, 0, false, nullptr, 0);
                 ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                 ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);

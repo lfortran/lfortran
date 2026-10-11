@@ -1,0 +1,2062 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            traits_numeric_04:
+                (Program
+                    (SymbolTable
+                        12
+                        {
+                            __instantiated_strictly_between:
+                                (Function
+                                    (SymbolTable
+                                        23
+                                        {
+                                            answer:
+                                                (Variable
+                                                    23
+                                                    answer
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            lower:
+                                                (Variable
+                                                    23
+                                                    lower
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            t:
+                                                (Variable
+                                                    23
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            upper:
+                                                (Variable
+                                                    23
+                                                    upper
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    23
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __instantiated_strictly_between
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [__type_set_selected
+                                    __type_set_selected1]
+                                    [(Var 23 x)
+                                    (Var 23 lower)
+                                    (Var 23 upper)]
+                                    [(Assignment
+                                        (Var 23 answer)
+                                        (LogicalBinOp
+                                            (FunctionCall
+                                                12 __type_set_selected
+                                                ()
+                                                [((Var 23 x))
+                                                ((Var 23 lower))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            And
+                                            (FunctionCall
+                                                12 __type_set_selected1
+                                                ()
+                                                [((Var 23 x))
+                                                ((Var 23 upper))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 23 answer)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            __instantiated_strictly_between1:
+                                (Function
+                                    (SymbolTable
+                                        24
+                                        {
+                                            answer:
+                                                (Variable
+                                                    24
+                                                    answer
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            lower:
+                                                (Variable
+                                                    24
+                                                    lower
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            t:
+                                                (Variable
+                                                    24
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            upper:
+                                                (Variable
+                                                    24
+                                                    upper
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    24
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __instantiated_strictly_between1
+                                    (FunctionType
+                                        [(Real 8)
+                                        (Real 8)
+                                        (Real 8)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [__type_set_selected2
+                                    __type_set_selected3]
+                                    [(Var 24 x)
+                                    (Var 24 lower)
+                                    (Var 24 upper)]
+                                    [(Assignment
+                                        (Var 24 answer)
+                                        (LogicalBinOp
+                                            (FunctionCall
+                                                12 __type_set_selected2
+                                                ()
+                                                [((Var 24 x))
+                                                ((Var 24 lower))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            And
+                                            (FunctionCall
+                                                12 __type_set_selected3
+                                                ()
+                                                [((Var 24 x))
+                                                ((Var 24 upper))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 24 answer)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            __type_set_selected:
+                                (Function
+                                    (SymbolTable
+                                        25
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    25
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    25
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            value:
+                                                (Variable
+                                                    25
+                                                    value
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __type_set_selected
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 25 arg0)
+                                    (Var 25 arg1)]
+                                    [(Assignment
+                                        (Var 25 value)
+                                        (IntegerCompare
+                                            (Var 25 arg0)
+                                            Gt
+                                            (Var 25 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 25 value)
+                                    Private
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            __type_set_selected1:
+                                (Function
+                                    (SymbolTable
+                                        26
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    26
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    26
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            value:
+                                                (Variable
+                                                    26
+                                                    value
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __type_set_selected1
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 26 arg0)
+                                    (Var 26 arg1)]
+                                    [(Assignment
+                                        (Var 26 value)
+                                        (IntegerCompare
+                                            (Var 26 arg0)
+                                            Lt
+                                            (Var 26 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 26 value)
+                                    Private
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            __type_set_selected2:
+                                (Function
+                                    (SymbolTable
+                                        27
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    27
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    27
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            value:
+                                                (Variable
+                                                    27
+                                                    value
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __type_set_selected2
+                                    (FunctionType
+                                        [(Real 8)
+                                        (Real 8)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 27 arg0)
+                                    (Var 27 arg1)]
+                                    [(Assignment
+                                        (Var 27 value)
+                                        (RealCompare
+                                            (Var 27 arg0)
+                                            Gt
+                                            (Var 27 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 27 value)
+                                    Private
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            __type_set_selected3:
+                                (Function
+                                    (SymbolTable
+                                        28
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    28
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    28
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            value:
+                                                (Variable
+                                                    28
+                                                    value
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __type_set_selected3
+                                    (FunctionType
+                                        [(Real 8)
+                                        (Real 8)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 28 arg0)
+                                    (Var 28 arg1)]
+                                    [(Assignment
+                                        (Var 28 value)
+                                        (RealCompare
+                                            (Var 28 arg0)
+                                            Lt
+                                            (Var 28 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 28 value)
+                                    Private
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            real64:
+                                (ExternalSymbol
+                                    12
+                                    real64
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            strictly_between:
+                                (ExternalSymbol
+                                    12
+                                    strictly_between
+                                    2 strictly_between
+                                    traits_numeric_04_m
+                                    []
+                                    strictly_between
+                                    Public
+                                )
+                        })
+                    traits_numeric_04
+                    [traits_numeric_04_m
+                    iso_fortran_env]
+                    [(If
+                        ()
+                        (LogicalNot
+                            (FunctionCall
+                                12 __instantiated_strictly_between
+                                ()
+                                [((IntegerConstant 2 (Integer 4) Decimal))
+                                ((IntegerConstant 1 (Integer 4) Decimal))
+                                ((IntegerConstant 3 (Integer 4) Decimal))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (FunctionCall
+                                12 __instantiated_strictly_between
+                                ()
+                                [((IntegerConstant 2 (Integer 4) Decimal))
+                                ((IntegerConstant 1 (Integer 4) Decimal))
+                                ((IntegerConstant 3 (Integer 4) Decimal))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (FunctionCall
+                            12 __instantiated_strictly_between
+                            ()
+                            [((IntegerConstant 1 (Integer 4) Decimal))
+                            ((IntegerConstant 1 (Integer 4) Decimal))
+                            ((IntegerConstant 3 (Integer 4) Decimal))]
+                            (Logical 4)
+                            ()
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (FunctionCall
+                            12 __instantiated_strictly_between
+                            ()
+                            [((IntegerConstant 3 (Integer 4) Decimal))
+                            ((IntegerConstant 1 (Integer 4) Decimal))
+                            ((IntegerConstant 3 (Integer 4) Decimal))]
+                            (Logical 4)
+                            ()
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (FunctionCall
+                                12 __instantiated_strictly_between1
+                                ()
+                                [((RealConstant
+                                    2.500000
+                                    (Real 8)
+                                ))
+                                ((RealConstant
+                                    2.000000
+                                    (Real 8)
+                                ))
+                                ((RealConstant
+                                    3.000000
+                                    (Real 8)
+                                ))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (FunctionCall
+                                12 __instantiated_strictly_between1
+                                ()
+                                [((RealConstant
+                                    2.500000
+                                    (Real 8)
+                                ))
+                                ((RealConstant
+                                    2.000000
+                                    (Real 8)
+                                ))
+                                ((RealConstant
+                                    3.000000
+                                    (Real 8)
+                                ))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (FunctionCall
+                            12 __instantiated_strictly_between1
+                            ()
+                            [((RealConstant
+                                3.000000
+                                (Real 8)
+                            ))
+                            ((RealConstant
+                                2.000000
+                                (Real 8)
+                            ))
+                            ((RealConstant
+                                3.000000
+                                (Real 8)
+                            ))]
+                            (Logical 4)
+                            ()
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                    ()
+                ),
+            traits_numeric_04_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            inumeric:
+                                (Trait
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    inumeric
+                                    []
+                                    Public
+                                    IntrinsicTypeSet
+                                    [(Integer 4)
+                                    (Real 8)]
+                                ),
+                            real64:
+                                (ExternalSymbol
+                                    2
+                                    real64
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            strictly_between:
+                                (Template
+                                    (SymbolTable
+                                        10
+                                        {
+                                            __constraint_t:
+                                                (TraitConstraint
+                                                    10
+                                                    __constraint_t
+                                                    10 t
+                                                    2 inumeric
+                                                    []
+                                                    [(10 __type_set_requirement
+                                                    (TypeSetComparison
+                                                        Gt
+                                                    )
+                                                    [((Integer 4)
+                                                    10 __type_set_requirement_witness_0)
+                                                    ((Real 8)
+                                                    10 __type_set_requirement_witness_1)])
+                                                    (10 __type_set_requirement1
+                                                    (TypeSetComparison
+                                                        Lt
+                                                    )
+                                                    [((Integer 4)
+                                                    10 __type_set_requirement1_witness_0)
+                                                    ((Real 8)
+                                                    10 __type_set_requirement1_witness_1)])]
+                                                ),
+                                            __type_set_requirement:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    17
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    17
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    17
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 17 arg0)
+                                                    (Var 17 arg1)]
+                                                    []
+                                                    (Var 17 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __type_set_requirement1:
+                                                (Function
+                                                    (SymbolTable
+                                                        22
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    22
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    22
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    22
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement1
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .true.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 22 arg0)
+                                                    (Var 22 arg1)]
+                                                    []
+                                                    (Var 22 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __type_set_requirement1_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    18
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    18
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    18
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement1_witness_0
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 18 arg0)
+                                                    (Var 18 arg1)]
+                                                    [(Assignment
+                                                        (Var 18 value)
+                                                        (IntegerCompare
+                                                            (Var 18 arg0)
+                                                            Lt
+                                                            (Var 18 arg1)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 18 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __type_set_requirement1_witness_1:
+                                                (Function
+                                                    (SymbolTable
+                                                        20
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    20
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    20
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    20
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement1_witness_1
+                                                    (FunctionType
+                                                        [(Real 8)
+                                                        (Real 8)]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 20 arg0)
+                                                    (Var 20 arg1)]
+                                                    [(Assignment
+                                                        (Var 20 value)
+                                                        (RealCompare
+                                                            (Var 20 arg0)
+                                                            Lt
+                                                            (Var 20 arg1)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 20 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __type_set_requirement_witness_0:
+                                                (Function
+                                                    (SymbolTable
+                                                        13
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    13
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    13
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    13
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement_witness_0
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 13 arg0)
+                                                    (Var 13 arg1)]
+                                                    [(Assignment
+                                                        (Var 13 value)
+                                                        (IntegerCompare
+                                                            (Var 13 arg0)
+                                                            Gt
+                                                            (Var 13 arg1)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 13 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __type_set_requirement_witness_1:
+                                                (Function
+                                                    (SymbolTable
+                                                        15
+                                                        {
+                                                            arg0:
+                                                                (Variable
+                                                                    15
+                                                                    arg0
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            arg1:
+                                                                (Variable
+                                                                    15
+                                                                    arg1
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 8)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            value:
+                                                                (Variable
+                                                                    15
+                                                                    value
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __type_set_requirement_witness_1
+                                                    (FunctionType
+                                                        [(Real 8)
+                                                        (Real 8)]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 15 arg0)
+                                                    (Var 15 arg1)]
+                                                    [(Assignment
+                                                        (Var 15 value)
+                                                        (RealCompare
+                                                            (Var 15 arg0)
+                                                            Gt
+                                                            (Var 15 arg1)
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 15 value)
+                                                    Private
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            strictly_between:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            answer:
+                                                                (Variable
+                                                                    11
+                                                                    answer
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            lower:
+                                                                (Variable
+                                                                    11
+                                                                    lower
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            t:
+                                                                (Variable
+                                                                    11
+                                                                    t
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            upper:
+                                                                (Variable
+                                                                    11
+                                                                    upper
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    11
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    strictly_between
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    [__type_set_requirement
+                                                    __type_set_requirement1]
+                                                    [(Var 11 x)
+                                                    (Var 11 lower)
+                                                    (Var 11 upper)]
+                                                    [(Assignment
+                                                        (Var 11 answer)
+                                                        (LogicalBinOp
+                                                            (FunctionCall
+                                                                10 __type_set_requirement
+                                                                ()
+                                                                [((Var 11 x))
+                                                                ((Var 11 lower))]
+                                                                (Logical 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            And
+                                                            (FunctionCall
+                                                                10 __type_set_requirement1
+                                                                ()
+                                                                [((Var 11 x))
+                                                                ((Var 11 upper))]
+                                                                (Logical 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    (Var 11 answer)
+                                                    Public
+                                                    .true.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    10
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    strictly_between
+                                    [t]
+                                    []
+                                )
+                        })
+                    traits_numeric_04_m
+                    ()
+                    [iso_fortran_env
+                    traits_numeric_04_m]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

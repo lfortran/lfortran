@@ -25,6 +25,7 @@ Struct
 StructMethodDeclaration
 symbol
 Template
+TraitErasure
 Union
 Variable
 ```

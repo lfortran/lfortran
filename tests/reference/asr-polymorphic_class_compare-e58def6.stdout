@@ -370,6 +370,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             ~eq:
                                 (CustomOperator

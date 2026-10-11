@@ -338,6 +338,16 @@ class PromoteAllocatableToNonAllocatable:
 
 };
 
+// A runtime trait call names the explicit interface of its slot, which takes
+// the borrowed view as its first argument. An actual argument that promotion
+// made a fixed-size array needs the same cast to that interface as in an
+// ordinary call.
+template <typename T>
+static void fix_trait_call_arguments(Allocator& al, T& x) {
+    ASR::expr_t* dt = nullptr;
+    ASRUtils::Call_t_body(al, x.m_name, x.m_args, x.n_args, dt, nullptr, false);
+}
+
 class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
     private:
         Allocator& al;
@@ -368,6 +378,11 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(call);
             x->m_args = function_call->m_args;
             x->n_args = function_call->n_args;
+        }
+
+        void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+            ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_TraitFunctionCall(x);
+            fix_trait_call_arguments(al, *x);
         }
 
         void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
@@ -419,6 +434,11 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
             xx.m_args = subrout_call->m_args;
             xx.n_args = subrout_call->n_args;
+        }
+
+        void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+            ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_TraitSubroutineCall(x);
+            fix_trait_call_arguments(al, const_cast<ASR::TraitSubroutineCall_t&>(x));
         }
 
         void visit_Associate(const ASR::Associate_t& x) {

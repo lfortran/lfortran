@@ -195,7 +195,18 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            if (RUN_TEST_DRIVER)
+                find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
+                if (NOT LFORTRAN_TEST_PYTHON)
+                    message(FATAL_ERROR "TEST_DRIVER requires Python")
+                endif()
+                add_test(NAME ${name} COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/${RUN_TEST_DRIVER}
+                    --executable $<TARGET_FILE:${name}>
+                    --source ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90)
+            else()
+                add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            endif()
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
@@ -275,8 +286,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
-    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
+    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC ISOLATE_MODULES)
+    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES TEST_DRIVER)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -327,6 +338,17 @@ macro(RUN)
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     else ()
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+    endif()
+
+    if (RUN_ISOLATE_MODULES AND TARGET ${RUN_NAME})
+        # The forced-compiler runner can leave compiler identification unset.
+        if (NOT CMAKE_Fortran_MODDIR_FLAG)
+            set(CMAKE_Fortran_MODDIR_FLAG "-J")
+        endif()
+        set(module_dir "${CMAKE_CURRENT_BINARY_DIR}/modules/${RUN_NAME}")
+        file(MAKE_DIRECTORY "${module_dir}")
+        set_target_properties(${RUN_NAME} PROPERTIES Fortran_MODULE_DIRECTORY "${module_dir}")
+        target_include_directories(${RUN_NAME} PRIVATE "${module_dir}")
     endif()
 
 endmacro(RUN)
@@ -1968,6 +1990,7 @@ RUN(NAME parameter_22 LABELS gfortran llvm)
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME modules_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran mlir)
+RUN(NAME module_directory_01 LABELS gfortran llvm fortran ISOLATE_MODULES)
 RUN(NAME modules_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME modules_03 LABELS gfortran llvm)
 RUN(NAME modules_04 LABELS gfortran llvm)
@@ -3022,6 +3045,7 @@ RUN(NAME block_16 LABELS gfortran llvm)
 RUN(NAME block_17 LABELS gfortran llvm)
 RUN(NAME block_18 LABELS gfortran llvm)
 RUN(NAME block_19 LABELS gfortran llvm)
+RUN(NAME block_pure_01 LABELS gfortran llvm)
 RUN(NAME associate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3587,6 +3611,7 @@ RUN(NAME class_170 LABELS gfortran llvm)
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
 RUN(NAME generic_nopass_01 LABELS gfortran llvm)
+RUN(NAME generic_pass_01 LABELS gfortran llvm)
 
 RUN(NAME derived_type_member_procedure_call_01 LABELS gfortran llvm)
 RUN(NAME derived_type_member_procedure_call_02 LABELS gfortran llvm)
@@ -3810,6 +3835,327 @@ RUN(NAME template_instantiate_subp_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_rename_02 LABELS llvm)
 RUN(NAME template_instantiate_rename_02_oracle LABELS gfortran llvm)
+RUN(NAME traits_static_01 LABELS llvm c NO_STD_F23)
+RUN(NAME traits_type_adoption_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_type_adoption_02_contracts.f90 traits_type_adoption_02_parent.f90
+        traits_type_adoption_02_child.f90 traits_type_adoption_02_facade.f90
+        traits_type_adoption_02_consumer.f90)
+RUN(NAME traits_type_adoption_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_03_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_04 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_type_adoption_04_provider.f90 traits_type_adoption_04_consumer.f90)
+RUN(NAME traits_type_adoption_04_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_type_adoption_05 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_adoption_05_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_paper_printy LABELS llvm c fortran NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_intrinsic_01 LABELS llvm c NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_intrinsic_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_intrinsic_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_intrinsic_02_contracts.f90 traits_intrinsic_02_provider.f90
+        traits_intrinsic_02_facade.f90)
+RUN(NAME traits_intrinsic_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_intrinsic_03 LABELS llvm c NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_intrinsic_03_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_initializers_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_initializers_02_provider.f90 traits_initializers_02_facade.f90)
+RUN(NAME traits_initializers_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_initializers_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --fixed-form)
+RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_method_02 LABELS llvm c fortran wasm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_late_client.f90 traits_runtime_generic_01_consumer.f90)
+RUN(NAME traits_runtime_generic_01_matrix LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_matrix_client.f90 traits_runtime_generic_01_matrix_consumer.f90)
+RUN(NAME traits_runtime_generic_01_forward LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_provider.f90
+        traits_runtime_generic_01_forwarding.f90 traits_runtime_generic_01_matrix_client.f90)
+RUN(NAME traits_runtime_generic_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_02_debug FILE traits_runtime_generic_02 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --verify-all-passes -g ISOLATE_MODULES)
+RUN(NAME traits_runtime_generic_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_03_ops.f90
+        traits_runtime_generic_01_late_client.f90)
+RUN(NAME traits_runtime_generic_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_generic_01_contracts.f90 traits_runtime_generic_01_matrix_client.f90)
+RUN(NAME traits_runtime_generic_block_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_generic_block_01_oracle LABELS gfortran)
+RUN(NAME traits_static_bindc_01 LABELS llvm llvm2 c NO_STD_F23
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_static_bindc_01_m.f90)
+RUN(NAME bindc_source_value_01 LABELS gfortran llvm c fortran)
+RUN(NAME traits_static_declaration_01 LABELS llvm c fortran NO_STD_F23)
+RUN(NAME traits_static_declaration_01_oracle LABELS gfortran llvm c fortran)
+RUN(NAME traits_runtime_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_pointer_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_pointer_null_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_pointer_null_01_oracle LABELS gfortran)
+# Ordinary CLASS ASSOCIATED with allocatable targets has a pre-existing LLVM failure.
+RUN(NAME traits_runtime_pointer_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_pointer_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_pointer_separate_01_contracts.f90
+        traits_runtime_pointer_separate_01_consumer.f90
+        traits_runtime_pointer_separate_01_a.f90 traits_runtime_pointer_separate_01_b.f90)
+RUN(NAME traits_runtime_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_05 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_05_contracts.f90 traits_runtime_05_provider.f90
+        traits_runtime_05_consumer.f90 traits_runtime_05_alternative_impl.f90
+        traits_runtime_05_alternative.f90)
+RUN(NAME traits_runtime_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# Inline trait conjunctions are an extension; standard Fortran controls are separate.
+RUN(NAME traits_runtime_08 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_combination_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_combination_01_contracts.f90 traits_runtime_combination_01_provider.f90
+        traits_runtime_combination_01_reordered.f90 traits_runtime_combination_01_consumer.f90
+        traits_runtime_combination_01_alternative_impl.f90 traits_runtime_combination_01_alternative.f90)
+RUN(NAME traits_runtime_combination_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_combination_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_inspection_01_a.f90 traits_runtime_inspection_01_b.f90)
+RUN(NAME traits_runtime_inspection_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_io_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_io_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_inspection_nested_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_nested_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_inspection_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_inspection_03_oracle LABELS gfortran)
+RUN(NAME traits_runtime_inspection_04_oracle LABELS gfortran)
+RUN(NAME traits_runtime_inspection_state_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_inspection_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_inspection_separate_01_contracts.f90
+        traits_runtime_inspection_separate_01_provider.f90
+        traits_runtime_inspection_separate_01_consumer.f90
+        traits_runtime_inspection_separate_01_alternative_impl.f90
+        traits_runtime_inspection_separate_01_alternative.f90)
+RUN(NAME traits_runtime_projection_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_projection_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_projection_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_owning_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_05 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_07 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_07_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_08 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_08_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_09 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_09_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_10 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_11 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_11_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_12 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_13 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_owning_14 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_resolution_01 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_resolution_02 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_resolution_02_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_slot_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# This full ordinary CLASS oracle still fails a pre-existing FINAL assertion.
+RUN(NAME traits_runtime_slot_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_slot_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_slot_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_slot_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_slot_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_result_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_result_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# The existing ordinary CLASS allocatable-result lifetime is not yet complete.
+RUN(NAME traits_runtime_result_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_07 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_07_contracts.f90 traits_runtime_07_impl_a.f90
+        traits_runtime_07_impl_b.f90 traits_runtime_07_consumer.f90)
+RUN(NAME traits_runtime_factory_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_factory_01_contracts.f90 traits_runtime_factory_01_provider.f90
+        traits_runtime_factory_01_consumer.f90)
+RUN(NAME traits_runtime_owning_04_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_owning_failure_01 LABELS llvm NO_STD_F23
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_owning_failure_01.c)
+RUN(NAME traits_runtime_owning_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_owning_separate_01_contracts.f90
+        traits_runtime_owning_separate_01_types.f90
+        traits_runtime_owning_separate_01_consumer.f90
+        traits_runtime_owning_separate_01_a.f90 traits_runtime_owning_separate_01_b.f90)
+RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_03_oracle LABELS gfortran llvm)
+RUN(NAME derived_type_borrow_01 LABELS gfortran llvm fortran)
+RUN(NAME traits_runtime_scalar_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_character_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_character_01_m.f90)
+RUN(NAME traits_runtime_character_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_component_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_runtime_component_03_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME traits_runtime_component_04 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_component_04_provider.f90 traits_runtime_component_04_facade.f90)
+RUN(NAME traits_runtime_component_05 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_06 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_07 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_08 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_09 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_10 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_11 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_12 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_13 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_14 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_runtime_component_15 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_16 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_component_17 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_binding_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_binding_01_provider.f90)
+RUN(NAME traits_generic_binding_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_binding_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_numeric_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_numeric_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_numeric_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_runtime_numeric_03_provider.f90)
+RUN(NAME traits_runtime_numeric_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_numeric_separate_01_contracts.f90
+        traits_runtime_numeric_separate_01_provider.f90
+        traits_runtime_numeric_separate_01_consumer.f90)
+RUN(NAME traits_runtime_numeric_separate_01_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --separate-compilation
+    EXTRAFILES traits_runtime_numeric_separate_01_oracle_contracts.f90
+        traits_runtime_numeric_separate_01_oracle_provider.f90
+        traits_runtime_numeric_separate_01_oracle_consumer.f90)
+RUN(NAME traits_runtime_promote_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_pure_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_attributes_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_runtime_separate_01_contracts.f90
+        traits_runtime_separate_01_consumer.f90 traits_runtime_separate_01_a.f90
+        traits_runtime_separate_01_b.f90)
+RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
+    EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
+RUN(NAME traits_static_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_static_02 LABELS llvm NO_STD_F23)
+RUN(NAME traits_static_03 LABELS llvm NO_STD_F23)
+RUN(NAME traits_static_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_static_04 LABELS llvm NO_STD_F23)
+RUN(NAME traits_paper_functional1 FILE traits_paper_functional/functional1
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_functional2 FILE traits_paper_functional/functional2
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_mixed FILE traits_paper_dynamic/mixed
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_procedure_value_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_procedure_value_02 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_procedure_value_02_library.f90
+    traits_procedure_value_02_facade.f90)
+RUN(NAME traits_recursive_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRAFILES traits_recursive_01_mod.f90)
+RUN(NAME traits_recursive_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_forwarding_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_dependent_result_oracle LABELS gfortran llvm)
+RUN(NAME traits_module_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_separate_01 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_separate_01_contracts.f90 traits_separate_01_impl.f90)
+RUN(NAME traits_reexport_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_inheritance_02 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_03 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_04 LABELS llvm NO_STD_F23)
+RUN(NAME traits_inheritance_05 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_inheritance_05_contracts.f90
+        traits_inheritance_05_types.f90 traits_inheritance_05_impl.f90)
+RUN(NAME traits_composition_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_composition_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_composition_02 LABELS llvm NO_STD_F23)
+RUN(NAME traits_composition_03 LABELS llvm NO_STD_F23)
+RUN(NAME traits_composition_04 LABELS llvm NO_STD_F23)
+RUN(NAME traits_arrayitem_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_arrayitem_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_copy_order_01 LABELS llvm NO_STD_F23)
+RUN(NAME declaration_copy_01 LABELS gfortran llvm)
+RUN(NAME template_copy_order_01 LABELS llvm NO_STD_F23)
+RUN(NAME traits_numeric_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_05 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_numeric_05_contracts.f90 traits_numeric_05_ops.f90 traits_numeric_05_facade.f90
+    EXTRA_ARGS --separate-compilation --verify-all-passes)
+RUN(NAME traits_numeric_06 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_09 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_numeric_10 LABELS llvm NO_STD_F23
+    EXTRAFILES traits_numeric_10_ops.f90 traits_numeric_10_facade.f90
+    EXTRA_ARGS --separate-compilation --verify-all-passes)
+RUN(NAME traits_numeric_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_numeric_02_oracle LABELS gfortran llvm)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -4102,6 +4448,8 @@ RUN(NAME finalization_36 LABELS gfortran llvm)
 RUN(NAME finalization_37 LABELS gfortran llvm)
 RUN(NAME finalization_38 LABELS gfortran llvm)
 RUN(NAME finalization_39 LABELS gfortran llvm)
+RUN(NAME finalization_40 LABELS gfortran llvm)
+RUN(NAME finalization_41 LABELS gfortran llvm)
 RUN(NAME finalization_16 LABELS gfortran llvm)
 RUN(NAME finalization_17 LABELS gfortran llvm)
 RUN(NAME finalization_18 LABELS gfortran llvm)
@@ -5319,6 +5667,10 @@ RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 RUN(NAME ilp64_kind_arg_01 LABELS llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 
 # Type inference with := syntax
+RUN(NAME infer_walrus_loop_01 LABELS llvm llvm_infer NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME infer_walrus_loop_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
+RUN(NAME infer_walrus_loop_02 LABELS llvm llvm_infer NO_STD_F23 EXTRA_ARGS --separate-compilation --verify-all-passes)
+RUN(NAME infer_walrus_loop_02_oracle LABELS gfortran llvm EXTRA_ARGS --separate-compilation --verify-all-passes)
 RUN(NAME infer_walrus_01 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_02 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_03 LABELS llvm_infer NO_STD_F23)

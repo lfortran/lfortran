@@ -86,6 +86,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_stat:
                                 (Variable
@@ -632,6 +634,8 @@
                                     ()
                                     4 toml_value
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_value:
                                 (Struct
@@ -707,6 +711,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

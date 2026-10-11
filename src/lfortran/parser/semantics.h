@@ -72,6 +72,7 @@ static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
     switch (stmt.type) {
         case decl_stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::InferDoLoop:       ((InferDoLoop_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
         case decl_stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
@@ -1137,6 +1138,86 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
     return a;
 }
 
+static inline trait_parameter_t *TRAIT_PARAMETER(Allocator &al,
+        const ast_t *name, const Vec<ast_t*> &traits, Location &loc)
+{
+    trait_parameter_t *r = al.allocate<trait_parameter_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_traits = REDUCE_ARGS(al, traits);
+    r->n_traits = traits.size();
+    r->m_member_types = nullptr;
+    r->n_member_types = 0;
+    return r;
+}
+
+static inline trait_parameter_t *TRAIT_TYPE_PARAMETER(Allocator &al,
+        const ast_t *name, const Vec<ast_t*> &types, Location &loc)
+{
+    trait_parameter_t *r = al.allocate<trait_parameter_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_traits = nullptr;
+    r->n_traits = 0;
+    Vec<decl_attribute_t*> members;
+    members.reserve(al, types.size());
+    for (auto *type : types) {
+        members.push_back(al, down_cast<decl_attribute_t>(type));
+    }
+    r->m_member_types = members.p;
+    r->n_member_types = members.size();
+    return r;
+}
+
+static inline ast_t *TRAIT_PROCEDURE(Allocator &al, ast_t *procedure,
+        const Vec<trait_parameter_t> &parameters, Location &loc)
+{
+    if (parameters.size() == 0) {
+        return procedure;
+    }
+    return make_TraitProcedure_t(al, loc, down_cast<program_unit_t>(procedure),
+        parameters.p, parameters.size());
+}
+
+static inline ast_t *INTERFACE_TYPE_SET(Allocator &al,
+        const Vec<ast_t*> &types, const Location &loc)
+{
+    Vec<decl_attribute_t*> members;
+    members.reserve(al, types.size());
+    for (size_t i = 0; i < types.size(); i++) {
+        members.push_back(al, down_cast<decl_attribute_t>(types[i]));
+    }
+    return make_InterfaceTypeSet_t(al, loc, members.p, members.size());
+}
+
+static inline ast_t *TRAIT(Allocator &al, const ast_t *name,
+        const Vec<ast_t*> &parents, ast_t *end, ast_t *trivia,
+        const Vec<ast_t*> &items, Location &loc,
+        LCompilers::diag::Diagnostics &diag)
+{
+    (void) trivia;
+    return make_Trait_t(al, loc,
+        name2char_with_check(name, end, loc, "trait", diag),
+        REDUCE_ARGS(al, parents), parents.size(),
+        INTERFACE_ITEMS(items), items.size());
+}
+
+static inline ast_t *IMPLEMENTS(Allocator &al, const Vec<ast_t*> &traits,
+        const ast_t *type_name, const Vec<ast_t*> &procedures,
+        ast_t *end, ast_t *trivia, Location &loc,
+        LCompilers::diag::Diagnostics &diag)
+{
+    (void) trivia;
+    char *implementing_name = name2char_with_check(type_name, end, loc,
+        "implements", diag);
+    ast_t *implementing_type = make_AttrType_t(al, loc,
+        decl_typeType::TypeType, nullptr, 0, nullptr, implementing_name, None);
+    return make_Implements_t(al, loc,
+        REDUCE_ARGS(al, traits), traits.size(),
+        down_cast<decl_attribute_t>(implementing_type),
+        VEC_CAST(procedures, procedure_decl), procedures.size(), nullptr);
+}
+
 
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
@@ -1224,7 +1305,11 @@ ast_t* implied_do_loop(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
+    if (infer) {
+        return make_InferImpliedDoLoop_t(al, loc, EXPRS(ex_list),
+            ex_list.size(), name2char(i), EXPR(low), EXPR(high), EXPR_OPT(incr));
+    }
     return make_ImpliedDoLoop_t(al, loc,
             EXPRS(ex_list), ex_list.size(),
             name2char(i),
@@ -1238,11 +1323,11 @@ ast_t* implied_do1(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 1);
     v.push_back(al, ex);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 ast_t* implied_do2(Allocator &al, Location &loc,
@@ -1251,12 +1336,12 @@ ast_t* implied_do2(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 2);
     v.push_back(al, ex1);
     v.push_back(al, ex2);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 ast_t* implied_do3(Allocator &al, Location &loc,
@@ -1266,7 +1351,7 @@ ast_t* implied_do3(Allocator &al, Location &loc,
         ast_t* i,
         ast_t* low,
         ast_t* high,
-        ast_t* incr) {
+        ast_t* incr, bool infer = false) {
     Vec<ast_t*> v;
     v.reserve(al, 2+ex_list.size());
     v.push_back(al, ex1);
@@ -1274,7 +1359,7 @@ ast_t* implied_do3(Allocator &al, Location &loc,
     for (size_t i=0; i<ex_list.size(); i++) {
         v.push_back(al, ex_list[i]);
     }
-    return implied_do_loop(al, loc, v, i, low, high, incr);
+    return implied_do_loop(al, loc, v, i, low, high, incr, infer);
 }
 
 #define IMPLIED_DO_LOOP1(ex, i, low, high, l) \
@@ -2296,6 +2381,15 @@ static inline void drop_trailing_matching_continue(
     }
 }
 
+static inline ast_t* inferred_do_loop(Allocator &al, Location &loc,
+        ast_t* var, ast_t* start, ast_t* end, ast_t* increment,
+        ast_t* trivia, Vec<ast_t*> body, int64_t end_label) {
+    drop_trailing_matching_continue(body, end_label);
+    return make_InferDoLoop_t(al, loc, 0, nullptr, end_label,
+        name2char(var), EXPR(start), EXPR(end), EXPR_OPT(increment),
+        STMTS(body), body.size(), trivia_cast(trivia), nullptr, &var->loc);
+}
+
 #define DO1(trivia, body, end_label, l) ( \
         drop_trailing_matching_continue(body, end_label), \
         make_DoLoop_t(p.m_a, l, 0, nullptr, end_label, \
@@ -2580,6 +2674,18 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         /*fnarg_t* a_subargs*/ v1.p , /*size_t n_subargs*/ v1.size(),
         /*m_temp_args*/ v3.p, /*n_temp_args*/ v3.size());
 }
+
+static inline ast_t* generic_procedure_value(Allocator &al, Location &loc,
+        ast_t* name, const Vec<ast_t*>& args) {
+    Vec<decl_attribute_t*> attributes;
+    attributes.reserve(al, args.size());
+    for (auto* arg : args) {
+        attributes.push_back(al, down_cast<decl_attribute_t>(arg));
+    }
+    return make_GenericProcedureValue_t(al, loc, name2char(name),
+        attributes.p, attributes.size());
+}
+
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), empty_vecast(), l)
 #define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \
@@ -3144,6 +3250,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Allocate)
         TRIVIA_SET(Assign)
         TRIVIA_SET(Assignment)
+        TRIVIA_SET(InferAssignment)
         TRIVIA_SET(Associate)
         TRIVIA_SET(Backspace)
         TRIVIA_SET(Close)
@@ -3185,6 +3292,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Critical)
         TRIVIA_SET(DoConcurrentLoop)
         TRIVIA_SET(DoLoop)
+        TRIVIA_SET(InferDoLoop)
         TRIVIA_SET(ForAll)
         TRIVIA_SET(If)
         TRIVIA_SET(IfArithmetic)

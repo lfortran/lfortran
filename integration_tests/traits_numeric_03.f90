@@ -1,0 +1,34 @@
+! Named singleton traits use the same extension as finite unions.
+module traits_numeric_03_m
+    implicit none
+
+    abstract interface :: IIntegerOnly
+        integer
+    end interface IIntegerOnly
+
+contains
+
+    function singleton_value{IIntegerOnly :: T}(x, n) result(value)
+        type(T), intent(in) :: x
+        integer, intent(in) :: n
+        type(T) :: value
+        value = (x + T(n)) * T(2) - T(1)
+    end function singleton_value
+end module traits_numeric_03_m
+
+program traits_numeric_03
+    use traits_numeric_03_m, only: singleton_value
+    implicit none
+
+    call expect_integer(singleton_value(4, 3), 13)
+    call expect_integer(singleton_value{integer}(4, 3), 13)
+    call expect_integer(singleton_value(-4, 0), -9)
+    if (kind(singleton_value(4, 3)) /= kind(0)) error stop
+
+contains
+
+    subroutine expect_integer(actual, expected)
+        integer, intent(in) :: actual, expected
+        if (actual /= expected) error stop
+    end subroutine expect_integer
+end program traits_numeric_03

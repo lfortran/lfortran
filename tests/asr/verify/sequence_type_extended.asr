@@ -29,7 +29,7 @@
               []
               nil
               nil
-              []
+              [] false []
             )
             "derived" (Struct
               (SymbolTable
@@ -54,7 +54,7 @@
               []
               nil
               (SymbolRef 1 "base")
-              []
+              [] false []
             )
           }
         )

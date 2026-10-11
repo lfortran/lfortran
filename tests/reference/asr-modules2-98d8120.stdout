@@ -132,6 +132,8 @@
                                     ()
                                     10 toml_structure
                                     []
+                                    .false.
+                                    []
                                 ),
                             toml_structure:
                                 (Struct
@@ -148,6 +150,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_structure
@@ -168,6 +171,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })
@@ -500,6 +505,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             list:
                                                 (Variable
@@ -558,6 +564,8 @@
                                     []
                                     ()
                                     2 toml_value
+                                    []
+                                    .false.
                                     []
                                 ),
                             toml_ordered:
@@ -680,6 +688,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             key:
                                                 (Variable
@@ -728,6 +737,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

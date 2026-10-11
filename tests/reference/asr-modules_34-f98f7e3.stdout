@@ -160,6 +160,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             version_t:
                                 (ExternalSymbol
@@ -774,6 +776,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     version_t
@@ -802,6 +805,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 )
                         })

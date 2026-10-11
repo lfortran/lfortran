@@ -1,0 +1,106 @@
+! Bare keywords preserve visible traits; kinds and unions explicitly select types.
+module traits_numeric_09_m
+    implicit none
+    integer, parameter :: real = 17
+contains
+    function bare_integer{integer :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+    function bare_real{real :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+    function wide_integer{integer(kind=8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+    subroutine bump_two{integer(4) :: T, integer(4) :: U}(x, y)
+        type(T), intent(inout) :: x
+        type(U), intent(inout) :: y
+        x = x + T(1)
+        y = y + U(2)
+    end subroutine
+end module
+
+module traits_numeric_09_shadow_m
+    implicit none
+    abstract interface :: integer
+        function value() result(r)
+            integer :: r
+        end function
+    end interface
+    abstract interface :: real
+        integer(8)
+    end interface
+    type :: Box
+        integer :: n
+    end type
+    implements integer :: Box
+        procedure, pass :: value => box_value
+    end implements
+contains
+    function box_value(self) result(r)
+        class(Box), intent(in) :: self
+        integer :: r
+        r = self%n
+    end function
+    function named_integer{integer :: T}(x) result(r)
+        type(T), intent(in) :: x
+        integer :: r
+        r = x%value()
+    end function
+    function named_real{real :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+    function explicit_integer{integer(4) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+    function explicit_real{real(kind=8) :: T}(n) result(r)
+        integer, intent(in) :: n
+        type(T) :: r
+        r = T(n)
+    end function
+    function explicit_union{integer | real(8) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        r = x + T(1)
+    end function
+end module
+
+program traits_numeric_09
+    use traits_numeric_09_m, only: bare_integer, bare_real, wide_integer, bump_two
+    use traits_numeric_09_shadow_m
+    implicit none
+    type(Box) :: object
+    integer :: left, right
+    object = Box(9)
+    if (bare_integer(12) /= 13) error stop
+    if (bare_integer{integer}(-10) /= -9) error stop
+    if (abs(bare_real(1.5) - 2.5) > 1.e-6) error stop
+    if (kind(bare_real{real}(1.5)) /= kind(1.0)) error stop
+    if (wide_integer{integer(8)}(2147483648_8) /= 2147483649_8) error stop
+    if (kind(wide_integer(0_8)) /= 8) error stop
+    if (named_integer(object) /= 9) error stop
+    if (named_integer{Box}(object) /= 9) error stop
+    if (named_real(2147483648_8) /= 2147483649_8) error stop
+    if (kind(named_real{integer(8)}(0_8)) /= 8) error stop
+    if (explicit_integer{integer}(3) /= 4) error stop
+    if (explicit_real{real(8)}(16777217) /= 16777217.d0) error stop
+    if (kind(explicit_real{real(8)}(1)) /= 8) error stop
+    if (explicit_union(3) /= 4) error stop
+    if (abs(explicit_union{real(8)}(1.5d0) - 2.5d0) > 1.d-14) error stop
+    left = 3
+    right = 4
+    call bump_two(left, right)
+    if (left /= 4 .or. right /= 6) error stop
+    call bump_two{integer, integer}(left, right)
+    if (left /= 5 .or. right /= 8) error stop
+end program

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_numeric_05_contracts-156c866",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/traits_numeric_05_contracts.f90",
+    "infile_hash": "1a845660456a33ba583dde20347123ef4fec0bc8f3d06478d3ef7c0e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-traits_numeric_05_contracts-156c866.stdout",
+    "stdout_hash": "f6cb58ff83e2bbd65886f965a1f18a9c0c60ddd503decdda9d12d2e4",
+    "stderr": "asr-traits_numeric_05_contracts-156c866.stderr",
+    "stderr_hash": "fc32e20bf09a499eb28f87d0633d5b84ed7a743690f6cd9962bb60b0",
+    "returncode": 0
+}

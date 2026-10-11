@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_component_loaded_pure_02-ba834af",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/traits_component_loaded_pure_02.f90",
+    "infile_hash": "cf0d50c53417da1a8c493d2913524391250450b357eafa5217c9e04f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_component_loaded_pure_02-ba834af.stderr",
+    "stderr_hash": "0e207224db2d011875b19931f9c0a307c5783c3163da13c1483d1099",
+    "returncode": 2
+}

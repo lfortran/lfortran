@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-traits_runtime_01-8f3a28c",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/traits_runtime_01.f90",
+    "infile_hash": "9589d7308036f33bebce6969b5ee5ef5eebafc77894eee0553381a60",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-traits_runtime_01-8f3a28c.stdout",
+    "stdout_hash": "5b96855dff6c3ee4571f8373b680348b772a7cecaec090fefb0ff774",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

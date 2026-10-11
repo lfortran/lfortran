@@ -18,7 +18,7 @@
                     (SymbolRef 1 "base_meth")
                     :Source
                     true
-                    true
+                    true nil
                   )
                 }
               )
@@ -40,7 +40,7 @@
               []
               nil
               nil
-              []
+              [] false []
             )
             "base_meth" (Function
               (SymbolTable
@@ -129,7 +129,7 @@
               []
               nil
               (SymbolRef 1 "base")
-              []
+              [] false []
             )
           }
         )

@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    197 // shift/reduce conflicts
+%expect    198 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -236,6 +236,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_END_INTERFACE
 %token <string> KW_ENDINTERFACE
 
+%token <string> KW_END_IMPLEMENTS
+%token <string> KW_ENDIMPLEMENTS
+
 %token <string> KW_END_TYPE
 %token <string> KW_ENDTYPE
 
@@ -286,6 +289,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_IMAGES
 %token <string> KW_IMPLICIT
 %token <string> KW_IMPORT
+%token <string> KW_IMPLEMENTS
 %token <string> KW_IMPURE
 %token <string> KW_IN
 %token <string> KW_INCLUDE
@@ -342,6 +346,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_RETURN
 %token <string> KW_REWIND
 %token <string> KW_SAVE
+%token <string> KW_SEALED
 %token <string> KW_SELECT
 %token <string> KW_SELECT_CASE
 %token <string> KW_SELECT_RANK
@@ -383,6 +388,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_TUPLE
 %token <string> KW_UNION_TYPE
 %token <string> KW_END_UNION_TYPE
+%token <string> KW_INITIAL
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
@@ -409,8 +415,14 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> block_data
 %type <vec_ast> instantiate
 %type <ast> interface_decl
+%type <ast> trait_decl
+%type <ast> implements_decl
+%type <ast> implements_intrinsic_type
+%type <ast> implements_intrinsic_end
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <ast> derived_type_modifier
+%type <vec_ast> derived_type_modifiers derived_type_modifier_list
 %type <vec_ast> deferred_type_decl
 %type <ast> deferred_proc_decl
 %type <vec_ast> deferred_type_attr_list
@@ -422,6 +434,12 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> requirement_decl
 %type <ast> require_decl
 %type <ast> unit_require
+%type <trait_parameter> trait_parameter
+%type <vec_trait_parameter> trait_parameter_block_opt
+%type <vec_trait_parameter> trait_parameter_list
+%type <vec_ast> trait_name_list
+%type <vec_ast> trait_name_spec
+%type <vec_ast> procedure_list_opt
 %type <vec_ast> instantiate_symbol_list
 %type <vec_ast> instantiate_symbol_list_opt
 %type <ast> instantiate_symbol
@@ -586,6 +604,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <kind_arg> kind_arg2
 %type <vec_ast> interface_body
 %type <ast> interface_item
+%type <vec_ast> trait_body finite_type_set
 %type <interface_op_type> operator_type
 %type <ast> write_arg
 %type <argstarkw> write_arg2
@@ -701,6 +720,46 @@ interface_decl
             $$ = INTERFACE($1, TRIVIA($2, $5, @$), $3, @$); }
     ;
 
+trait_decl
+    : KW_ABSTRACT KW_INTERFACE "::" id sep trait_body
+        endinterface0 id_opt sep {
+            Vec<ast_t*> parents;
+            LIST_NEW(parents);
+            $$ = TRAIT(p.m_a, $4, parents, $8, TRIVIA($5, $9, @$), $6, @$, p.diag); }
+    | KW_ABSTRACT KW_INTERFACE "," KW_EXTENDS "(" trait_name_spec ")" "::" id
+        sep trait_body endinterface0 id_opt sep {
+            $$ = TRAIT(p.m_a, $9, $6, $13, TRIVIA($10, $14, @$), $11, @$, p.diag); }
+    ;
+
+implements_decl
+    : KW_IMPLEMENTS trait_name_spec "::" id sep procedure_list_opt
+        end_implements id_opt sep {
+            $$ = IMPLEMENTS(p.m_a, $2, $4, $6, $8, TRIVIA($5, $9, @$), @$,
+                p.diag); }
+    | KW_IMPLEMENTS trait_name_spec "::" implements_intrinsic_type sep procedure_list_opt
+        end_implements implements_intrinsic_end sep {
+            $$ = make_Implements_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $2), $2.size(),
+                down_cast<decl_attribute_t>($4),
+                VEC_CAST($6, procedure_decl), $6.size(),
+                $8 ? down_cast<decl_attribute_t>($8) : nullptr); }
+    ;
+
+implements_intrinsic_type
+    : KW_INTEGER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Integer, $3, @$); }
+    | KW_REAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Real, $3, @$); }
+    | KW_COMPLEX "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Complex, $3, @$); }
+    | KW_LOGICAL "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Logical, $3, @$); }
+    | KW_CHARACTER "(" kind_arg_list ")" { $$ = ATTR_TYPE_KIND(Character, $3, @$); }
+    ;
+
+implements_intrinsic_end
+    : %empty { $$ = nullptr; }
+    | implements_intrinsic_type { $$ = $1; }
+    | id {
+            $$ = make_AttrType_t(p.m_a, @$, decl_typeType::TypeType,
+                nullptr, 0, nullptr, name2char($1), None); }
+    ;
+
 interface_stmt
     : KW_INTERFACE { $$ = INTERFACE_HEADER(@$); }
     | KW_INTERFACE id { $$ = INTERFACE_HEADER_NAME($2, @$); }
@@ -734,10 +793,27 @@ endinterface0
     | KW_ENDINTERFACE
     ;
 
+end_implements
+    : KW_END_IMPLEMENTS
+    | KW_ENDIMPLEMENTS
+    ;
+
 
 interface_body
     : interface_body interface_item { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
+    ;
+
+trait_body
+    : trait_body interface_item { $$ = $1; LIST_ADD($$, $2); }
+    | trait_body finite_type_set sep {
+        $$ = $1; LIST_ADD($$, INTERFACE_TYPE_SET(p.m_a, $2, @2)); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+finite_type_set
+    : intrinsic_type_spec { LIST_NEW($$); LIST_ADD($$, $1); }
+    | finite_type_set "|" intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
     ;
 
 interface_item
@@ -753,6 +829,32 @@ interface_item
         $$ = INTERFACE_PROC($1, @$); }
     | function {
         $$ = INTERFACE_PROC($1, @$); }
+    ;
+
+trait_name_list
+    : trait_name_list "+" id { $$ = $1; LIST_ADD($$, $3); }
+    | id { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
+trait_name_spec
+    : trait_name_list { $$ = $1; }
+    | "(" trait_name_list ")" { $$ = $2; }
+    ;
+
+trait_parameter
+    : trait_name_spec "::" id %dprec 2 { $$ = TRAIT_PARAMETER(p.m_a, $3, $1, @$); }
+    | finite_type_set "::" id %dprec 1 {
+        $$ = TRAIT_TYPE_PARAMETER(p.m_a, $3, $1, @$); }
+    ;
+
+trait_parameter_list
+    : trait_parameter_list "," trait_parameter { $$ = $1; PLIST_ADD($$, $3); }
+    | trait_parameter { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+trait_parameter_block_opt
+    : %empty { LIST_NEW($$); }
+    | "{" trait_parameter_list "}" { $$ = $2; }
     ;
 
 enum_decl
@@ -771,12 +873,32 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE derived_type_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
-    | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
+    | KW_TYPE derived_type_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+derived_type_modifiers
+    : %empty { LIST_NEW($$); }
+    | "::" { LIST_NEW($$); }
+    | derived_type_modifier_list "::" { $$ = $1; }
+    ;
+
+derived_type_modifier_list
+    : derived_type_modifier_list "," derived_type_modifier {
+        $$ = $1; LIST_ADD($$, $3); }
+    | "," derived_type_modifier { LIST_NEW($$); LIST_ADD($$, $2); }
+    ;
+
+derived_type_modifier
+    : var_modifier { $$ = $1; }
+    | KW_SEALED { $$ = SIMPLE_ATTR(Sealed, @$); }
+    | KW_IMPLEMENTS "(" trait_name_list ")" {
+        $$ = make_AttrImplements_t(p.m_a, @$,
+            REDUCE_ARGS(p.m_a, $3), $3.size()); }
     ;
 
 deferred_type_decl
@@ -915,6 +1037,11 @@ procedure_list
     | procedure_decl { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
+procedure_list_opt
+    : procedure_list { $$ = $1; }
+    | %empty { LIST_NEW($$); }
+    ;
+
 procedure_decl
     : KW_PROCEDURE proc_modifiers use_symbol_list sep {
             $$ = DERIVED_TYPE_PROC($2, $3, TRIVIA_AFTER($4, @$), @$); }
@@ -936,6 +1063,9 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
+    | KW_INITIAL "::" id_list sep {
+            $$ = make_InitialProcedure_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $3),
+                $3.size(), trivia_cast(TRIVIA_AFTER($4, @$))); }
     ;
 
 access_spec_list
@@ -1085,14 +1215,14 @@ end_team
     ;
 
 subroutine
-    : KW_SUBROUTINE id sub_args bind_opt sep decl_statements
-        subroutine_contains_end sep {
-            LLOC(@$, @7); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $8, @$),
-                $6, $7, @$); }
-    | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep decl_statements
-        subroutine_contains_end sep {
-            LLOC(@$, @8); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $9, @$),
-                $7, $8, @$); }
+    : KW_SUBROUTINE id trait_parameter_block_opt sub_args bind_opt sep
+        decl_statements subroutine_contains_end sep {
+            LLOC(@$, @8); $$ = TRAIT_PROCEDURE(p.m_a, SUBROUTINE($2, $4, $5,
+                TRIVIA($6, $9, @$), $7, $8, @$), $3, @$); }
+    | fn_mod_plus KW_SUBROUTINE id trait_parameter_block_opt sub_args bind_opt
+        sep decl_statements subroutine_contains_end sep {
+            LLOC(@$, @9); $$ = TRAIT_PROCEDURE(p.m_a, SUBROUTINE1($1, $3, $5, $6,
+                TRIVIA($7, $10, @$), $8, $9, @$), $4, @$); }
     | template_sub_prefix id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
             LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE1($1, $2, $4, $6, $7,
@@ -1127,38 +1257,38 @@ procedure_contains_end
     ;
 
 function
-    : KW_FUNCTION id "(" id_list_opt ")"
+    : KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @8); $$ = FUNCTION0($2, $4, nullptr, nullptr,
-                TRIVIA($6, $9, @$), $7, $8, @$); }
-    | KW_FUNCTION id "(" id_list_opt ")"
+            LLOC(@$, @9); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION0($2, $5, nullptr,
+                nullptr, TRIVIA($7, $10, @$), $8, $9, @$), $3, @$); }
+    | KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         bind
         result_opt
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @10); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $11, @$),
-                $9, $10, @$); }
-    | KW_FUNCTION id "(" id_list_opt ")"
+            LLOC(@$, @11); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION0($2, $5, $8, $7,
+                TRIVIA($9, $12, @$), $10, $11, @$), $3, @$); }
+    | KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         result
         bind_opt
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @10); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $11, @$),
-                $9, $10, @$); }
-    | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
+            LLOC(@$, @11); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION0($2, $5, $7, $8,
+                TRIVIA($9, $12, @$), $10, $11, @$), $3, @$); }
+    | fn_mod_plus KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @9); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
-                TRIVIA($7, $10, @$), $8, $9, @$); }
-    | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
+            LLOC(@$, @10); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION($1, $3, $6, nullptr,
+                nullptr, TRIVIA($8, $11, @$), $9, $10, @$), $4, @$); }
+    | fn_mod_plus KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         bind
         result_opt
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $8, $7,
-                TRIVIA($9, $12, @$), $10, $11, @$); }
-    | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
+            LLOC(@$, @12); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION($1, $3, $6, $9, $8,
+                TRIVIA($10, $13, @$), $11, $12, @$), $4, @$); }
+    | fn_mod_plus KW_FUNCTION id trait_parameter_block_opt "(" id_list_opt ")"
         result
         bind_opt
         sep decl_statements function_contains_end sep {
-            LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $7, $8,
-                TRIVIA($9, $12, @$), $10, $11, @$); }
+            LLOC(@$, @12); $$ = TRAIT_PROCEDURE(p.m_a, FUNCTION($1, $3, $6, $8,
+                $9, TRIVIA($10, $13, @$), $11, $12, @$), $4, @$); }
     | template_fn_prefix id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
@@ -1669,6 +1799,11 @@ declaration_type_spec
     | KW_TYPE "(" id "(" kind_arg_list ")" ")" %dprec 1 { $$ = ATTR_TYPE_NAME_KIND(Type, $3, $5, @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
+    | KW_CLASS "(" trait_name_list "+" id ")" {
+        Vec<ast_t*> names = $3;
+        names.push_back(p.m_a, $5);
+        $$ = make_AttrTraitClass_t(p.m_a, @$, REDUCE_ARGS(p.m_a, names), names.size());
+      }
     | KW_CLASS "(" id "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_NAME_KIND(Class, $3, $5, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
     ;
@@ -1802,6 +1937,8 @@ decl_statement
     : var_decl
     | deferred_const_decl
     | interface_decl
+    | trait_decl
+    | implements_decl
     | derived_type_decl
     | deferred_proc_decl
     | union_type_decl
@@ -1946,6 +2083,8 @@ subroutine_call
             $$ = SUBROUTINE_CALL3($2, $3, @$); }
     | KW_CALL id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
             $$ = SUBROUTINE_CALL4($2, $4, $7, @$); }
+    | KW_CALL struct_member_star id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = SUBROUTINE_CALL0(p.m_a, $2.p, $2.n, $3, $8, $5, @$); }
     ;
 
 pragma_statement
@@ -2223,6 +2362,12 @@ do_statement
             $$ = DO2($3, $5, $7, TRIVIA_AFTER($8, @$), $9, $10, @$); }
     | KW_DO comma_opt id "=" expr "," expr "," expr sep statements enddo {
             $$ = DO3($3, $5, $7, $9, TRIVIA_AFTER($10, @$), $11, $12, @$); }
+    | KW_DO comma_opt id ":=" expr "," expr sep statements enddo {
+            $$ = inferred_do_loop(p.m_a, @$, $3, $5, $7, nullptr,
+                TRIVIA_AFTER($8, @$), $9, $10); }
+    | KW_DO comma_opt id ":=" expr "," expr "," expr sep statements enddo {
+            $$ = inferred_do_loop(p.m_a, @$, $3, $5, $7, $9,
+                TRIVIA_AFTER($10, @$), $11, $12); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr sep statements enddo {
             $$ = DO2_LABEL(INTEGER3($2), $4, $6, $8, TRIVIA_AFTER($9, @$), $10, $11, @$); }
     | KW_DO TK_INTEGER comma_opt id "=" expr "," expr "," expr sep statements enddo {
@@ -2526,9 +2671,15 @@ designator
     | struct_member_star id { NAME1($$, $2, $1, @$); }
     | id "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY($1, $3, @$); }
     | id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" { $$ = FUNCCALLORARRAY5($1, $6, $3, @$); }
+    | id "{" instantiate_symbol_list "}" {
+            $$ = generic_procedure_value(p.m_a, @$, $1, $3); }
+    | id "{" "}" {
+            $$ = generic_procedure_value(p.m_a, @$, $1, empty_vecast()); }
     | TK_STRING "(" fnarray_arg_list_opt ")" { $$ = SUBSTRING($1, $3, @$);}
     | struct_member_star id "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY2($1, $2, $4, @$); }
+    | struct_member_star id "{" instantiate_symbol_list "}" "(" fnarray_arg_list_opt ")" {
+            $$ = FUNCCALLORARRAY0(p.m_a, $2, $1, $7, empty1(), $4, @$); }
     | id "(" fnarray_arg_list_opt ")" "(" fnarray_arg_list_opt ")" {
             $$ = FUNCCALLORARRAY3($1, $3, $6, @$); }
     | struct_member_star id "(" fnarray_arg_list_opt ")" "(" fnarray_arg_list_opt ")" {
@@ -2584,6 +2735,18 @@ expr
             $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$); }
     | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
+    | "(" expr "," id ":=" expr "," expr ")" {
+            $$ = implied_do1(p.m_a, @$, $2, $4, $6, $8, nullptr, true); }
+    | "(" expr "," expr "," id ":=" expr "," expr ")" {
+            $$ = implied_do2(p.m_a, @$, $2, $4, $6, $8, $10, nullptr, true); }
+    | "(" expr "," expr "," expr_list "," id ":=" expr "," expr ")" {
+            $$ = implied_do3(p.m_a, @$, $2, $4, $6, $8, $10, $12, nullptr, true); }
+    | "(" expr "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do1(p.m_a, @$, $2, $4, $6, $8, $10, true); }
+    | "(" expr "," expr "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do2(p.m_a, @$, $2, $4, $6, $8, $10, $12, true); }
+    | "(" expr "," expr "," expr_list "," id ":=" expr "," expr "," expr ")" {
+            $$ = implied_do3(p.m_a, @$, $2, $4, $6, $8, $10, $12, $14, true); }
 
 // ### level-1
     | TK_DEF_OP def_unary_operand { $$ = UNARY_DEFOP($1, $2, @$); }
@@ -2739,6 +2902,8 @@ id
     | KW_ENDDO { $$ = SYMBOL($1, @$); }
     | KW_ENDIF { $$ = SYMBOL($1, @$); }
     | KW_ENDINTERFACE { $$ = SYMBOL($1, @$); }
+    | KW_ENDIMPLEMENTS { $$ = SYMBOL($1, @$); }
+    | KW_END_IMPLEMENTS { $$ = SYMBOL($1, @$); }
     | KW_ENDTYPE { $$ = SYMBOL($1, @$); }
     | KW_ENDPROGRAM { $$ = SYMBOL($1, @$); }
     | KW_ENDMODULE { $$ = SYMBOL($1, @$); }
@@ -2781,10 +2946,12 @@ id
     | KW_IMAGES { $$ = SYMBOL($1, @$); }
     | KW_IMPLICIT { $$ = SYMBOL($1, @$); }
     | KW_IMPORT { $$ = SYMBOL($1, @$); }
+    | KW_IMPLEMENTS { $$ = SYMBOL($1, @$); }
     | KW_IMPURE { $$ = SYMBOL($1, @$); }
     | KW_IN { $$ = SYMBOL($1, @$); }
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
+    | KW_INITIAL { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
     | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }
@@ -2838,6 +3005,7 @@ id
     | KW_RETURN { $$ = SYMBOL($1, @$); }
     | KW_REWIND { $$ = SYMBOL($1, @$); }
     | KW_SAVE { $$ = SYMBOL($1, @$); }
+    | KW_SEALED { $$ = SYMBOL($1, @$); }
     | KW_SELECT { $$ = SYMBOL($1, @$); }
     | KW_SELECT_CASE { $$ = SYMBOL($1, @$); }
     | KW_SELECT_RANK { $$ = SYMBOL($1, @$); }

@@ -11,16 +11,7 @@ namespace LCompilers {
 
         static llvm::Value* get_allocator(llvm::LLVMContext &context,
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
-            llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            std::string func_name = LLVM::use_memory_debug()
-                ? "_lfortran_get_compiler_mem_dbg_allocator"
-                : "_lfortran_get_default_allocator";
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
-                fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
-            }
-            return builder.CreateCall(fn, {});
+            return LLVM::get_allocator(context, module, builder);
         }
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,

@@ -723,6 +723,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co,
     int64_t default_lower_bound)
 {
+    if (ASRUtils::reject_runtime_traits(asr, diagnostics, "cpp")) return Error();
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);

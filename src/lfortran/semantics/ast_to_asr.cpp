@@ -120,6 +120,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return res.error;
         }
         if (compiler_options.rtlib) load_rtlib();
+        if (compiler_options.continue_compilation && diagnostics.has_error()) {
+            // Recovery can discard a call after recording its dependencies.
+            // Retain only dependencies of the surviving declarations and body.
+            u.visit_TranslationUnit(*tu);
+        }
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
             outfile << ";; Initial ASR after Body Visitor\n" << LCompilers::pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";

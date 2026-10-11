@@ -1921,7 +1921,7 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager, true);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1936,6 +1936,9 @@ int compile_to_binary_fortran(const std::string &infile,
     }
 
     std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
+    if (!compiler_options.po.mod_files_dir.empty()) {
+        cmd += " -J\"" + compiler_options.po.mod_files_dir.string() + "\"";
+    }
     int err = system(cmd.c_str());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;

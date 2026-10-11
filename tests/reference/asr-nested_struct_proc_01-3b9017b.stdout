@@ -213,6 +213,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             map:
                                                 (Variable
@@ -279,6 +280,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             integer_kinds:
@@ -588,6 +591,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             omap_insert_key_value:
@@ -1015,6 +1020,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             stored_value:
                                                 (Variable
@@ -1095,6 +1101,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             output_unit:

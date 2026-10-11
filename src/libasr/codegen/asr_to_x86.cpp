@@ -573,6 +573,7 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
         const std::string &filename, bool time_report,
         diag::Diagnostics &diagnostics)
 {
+    if (ASRUtils::reject_runtime_traits(asr, diagnostics, "x86")) return Error();
     int time_pass_global=0;
     int time_pass_do_loops=0;
     int time_visit_asr=0;

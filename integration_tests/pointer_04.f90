@@ -19,4 +19,11 @@ program pointer_04
     t%v = 100
     if (y%v /= 100) error stop
     if (x%v /= 42) error stop
+
+    deallocate(x)
+    if (allocated(x)) error stop
+    if (y%v /= 100) error stop
+    allocate(x, source=y)
+    if (x%v /= 100) error stop
+    deallocate(x)
 end program pointer_04

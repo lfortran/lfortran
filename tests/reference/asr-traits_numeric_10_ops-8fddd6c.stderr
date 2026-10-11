@@ -1,0 +1,9 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/../integration_tests/traits_numeric_10_ops.f90:7:5 - 12:16
+   |
+ 7 |        function shift{integer | real(rk) :: T}(x, n) result(r)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |        end function
+   | ...^^^^^^^^^^^^^^^^ LFortran extension

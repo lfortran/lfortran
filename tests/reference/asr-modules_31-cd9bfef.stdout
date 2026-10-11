@@ -422,6 +422,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             fpm_update_settings:
                                 (Struct
@@ -540,6 +542,8 @@
                                     ()
                                     4 fpm_cmd_settings
                                     []
+                                    .false.
+                                    []
                                 )
                         })
                     fpm_cmd_update_modules_31
@@ -637,6 +641,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             dependency_node_t:
@@ -785,6 +791,8 @@
                                     []
                                     ()
                                     9 dependency_config_t
+                                    []
+                                    .false.
                                     []
                                 ),
                             dependency_tree_t:
@@ -953,6 +961,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -1032,6 +1041,8 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -1085,6 +1096,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    .false.
                                     []
                                 ),
                             update_dependency:

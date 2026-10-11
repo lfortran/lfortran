@@ -24,10 +24,10 @@ Variable(symbol_table parent_symtab, identifier name,
 | `parent_symtab` | the symbol table this variable is stored in. |
 | `name` | the name of the variable. |
 | `dependencies` | the names of the symbols its type or initializer refers to. |
-| `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
+| `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. An `Association` uses `In` for nondefinable data and `Local` otherwise. |
 | `symbolic_value` | the initializer as written, before folding. |
 | `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
-| `storage` | `Default`, `Save` for a variable that keeps its value between calls, or `Parameter` for a named constant. |
+| `storage` | See [storage_type](../enum_nodes/storage_type.md), including nonowning construct `Association` storage. |
 | `type` | the type of the variable. |
 | `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
 | `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. |

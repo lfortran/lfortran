@@ -2062,6 +2062,7 @@ Result<std::string> asr_to_c(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co,
     int64_t default_lower_bound)
 {
+    if (ASRUtils::reject_runtime_traits(asr, diagnostics, "c")) return Error();
     ASRToCVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);

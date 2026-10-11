@@ -12,7 +12,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, bool is_sealed, symbol* trait_obligations)
 ```
 
 ### Arguments
@@ -34,6 +34,8 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
+| `is_sealed` | `true` when this type cannot be extended; incompatible with `is_abstract`. |
+| `trait_obligations` | canonical nominal traits adopted by this declaration, including inherited obligations; not storage parents. |
 
 ### Return values
 
@@ -45,6 +47,13 @@ None.
 owned by a symbol table and referred to by name. The type of a *variable* of
 that type is the separate [StructType](../type_nodes/StructType.md), which
 holds the component types.
+
+Concrete adopting types require complete `TraitImplementation` records for
+every obligation. An abstract type can leave requirements unsatisfied, without
+inventing deferred ordinary bindings. Its concrete descendants must complete
+them using their effective ordinary type-bound procedures. Verification checks
+that descendants retain the inherited obligations and that completion records
+agree with those bindings. A sealed type cannot be another type's `parent`.
 
 `members` is authoritative for layout. The symbol table is a mapping and says
 nothing about order, so a backend that walks components must walk `members` and
