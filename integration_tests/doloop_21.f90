@@ -1,0 +1,176 @@
+module doloop_21_mod
+    implicit none
+contains
+
+    ! Two loops sharing a CONTINUE, branch from the innermost loop
+    subroutine shared_continue_2(n)
+        integer, intent(out) :: n
+        integer :: i, j
+        n = 0
+        do 10 i = 1, 3
+        do 10 j = 1, 4
+            if (j == 2) go to 10
+            n = n + 1
+10      continue
+    end subroutine shared_continue_2
+
+    ! Three loops sharing an action statement, branch from the innermost
+    ! loop: the terminal statement is executed on every iteration
+    subroutine shared_action_3(n)
+        integer, intent(out) :: n
+        integer :: i, j, k
+        n = 0
+        do 10 i = 1, 2
+        do 10 j = 1, 2
+        do 10 k = 1, 3
+            if (k == 2) go to 10
+            n = n + 100
+10      n = n + 1
+    end subroutine shared_action_3
+
+    ! Branch to the shared terminal statement from inside an IF construct
+    subroutine shared_from_if(n)
+        integer, intent(out) :: n
+        integer :: i, j
+        n = 0
+        do 10 i = 1, 3
+        do 10 j = 1, 3
+            if (i == j) then
+                n = n + 10
+                go to 10
+            else
+                if (i < j .and. j == 3) go to 10
+            end if
+            n = n + 1
+10      continue
+    end subroutine shared_from_if
+
+end module doloop_21_mod
+
+! An external procedure using the same labels as the other program units
+subroutine doloop_21_external(n)
+    implicit none
+    integer, intent(out) :: n
+    integer :: i, j, k
+    n = 0
+    do 10 i = 1, 2
+    do 10 j = 1, 2
+10  n = n + i*j
+    do 20 i = 1, 2
+    do 20 j = 1, 2
+    do 20 k = 1, 2
+        if (i + j + k == 4) go to 20
+        n = n + 100
+20  continue
+end subroutine doloop_21_external
+
+program doloop_21
+    ! Nested DO loops that share their terminal statement
+    use doloop_21_mod
+    implicit none
+    interface
+        subroutine doloop_21_external(n)
+            integer, intent(out) :: n
+        end subroutine doloop_21_external
+    end interface
+    integer :: i, j, k, n
+    n = 0
+    do 10 i = 1, 3
+    do 10 j = 1, 3
+    do 10 k = 1, 2
+        if (k == 2) go to 10
+        if (j == 2) go to 10
+        n = n + 1
+10  continue
+    if (n /= 6) error stop
+    k = 0
+    do 20 i = 1, 2
+    do 20 j = 1, 2
+20  k = k + i*j
+    if (k /= 9) error stop
+
+    ! Sequential loops, each with its own label that nothing branches to
+    n = 0
+    do 30 i = 1, 3
+        n = n + i
+30  continue
+    do 40 i = 1, 3
+40  n = n + 10*i
+    do 50 i = 1, 3
+        n = n + 100*i
+50  end do
+    if (n /= 666) error stop
+
+    ! Nested loops with distinct labels: a branch from the outer loop, after
+    ! the inner loop, to the outer loop's own terminal statement
+    n = 0
+    do 70 i = 1, 3
+        do 60 j = 1, 3
+            if (j == i) go to 60
+            n = n + 1
+60      continue
+        if (i == 2) go to 70
+        n = n + 10
+70  continue
+    if (n /= 26) error stop
+
+    ! An outer loop with its own label around two loops sharing theirs
+    n = 0
+    do 90 i = 1, 2
+        if (i == 2) go to 90
+        do 80 j = 1, 2
+        do 80 k = 1, 3
+            if (k == j) go to 80
+            n = n + 1
+80      continue
+        n = n + 10
+90  continue
+    if (n /= 14) error stop
+
+    ! Loops sharing a label inside block constructs, and a branch out of them
+    n = 0
+    do i = 1, 2
+        if (i > 0) then
+            do 100 j = 1, 3
+            do 100 k = 1, 3
+                if (j + k == 6) go to 110
+                if (k > j) go to 100
+                do while (n < 0)
+                    n = n + 1000
+                end do
+                n = n + 1
+100         continue
+        end if
+110     n = n + 100
+    end do
+    if (n /= 210) error stop
+
+    ! The same labels in other program units
+    call shared_continue_2(n)
+    if (n /= 9) error stop
+    call shared_action_3(n)
+    if (n /= 812) error stop
+    call shared_from_if(n)
+    if (n /= 34) error stop
+    call doloop_21_external(n)
+    if (n /= 509) error stop
+    call internal_shared(n)
+    if (n /= 36) error stop
+
+contains
+
+    ! An internal procedure using the same labels as its host
+    subroutine internal_shared(n)
+        integer, intent(out) :: n
+        integer :: i, j
+        n = 0
+        do 10 i = 1, 4
+        do 10 j = 1, 4
+            if (i == j) go to 20
+            n = n + 1
+            go to 10
+20          n = n + 10
+10      n = n - 1
+    end subroutine internal_shared
+
+end program doloop_21
