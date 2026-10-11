@@ -165,14 +165,19 @@ serializing them in one long job:
 | Compiler | Complete regression modes |
 | --- | --- |
 | Linux/LLVM 11 Debug, compiled with `-O2` | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
-| Linux/LLVM 21 Debug | Separate compilation, submodules with separate compilation, and leak detection |
+| Linux/LLVM 21 Debug, compiled with `-O2` | Separate compilation, submodules with separate compilation, and leak detection |
 
 Every registered LLVM test runs in each of these modes on its designated
 compiler. Both are Debug builds, so every full Quick suite runs with
 assertions and per-pass ASR verification. The LLVM 11 compiler runs four full
 passes, so it is compiled with `-O2` (`CMAKE_CXX_FLAGS_DEBUG`); it stays a
 Debug build, so `WITH_LFORTRAN_ASSERT` stays on and nothing defines `NDEBUG`.
-This makes each pass about 1.6 times faster. The platform builds keep `-O0`.
+This makes each pass about 1.6 times faster. The Linux/LLVM 21 platform
+compiler is compiled with `-O2` the same way: `.github/actions/build-platform`
+adds `-O2` to `CFLAGS`/`CXXFLAGS` for that platform only, so Exhaustive's
+Linux/LLVM 21 platform job builds the same compiler and restores the same
+cache (key suffix `-o2`). The macOS, Windows and Linux/LLVM 11 platform builds
+keep their defaults, so Quick still tests a `-O0` compiler.
 Both also use the platform C/C++
 diagnostic and standard-library hardening flags, including `-Werror`, and
 `WITH_INTERNAL_ALLOC_CHECK=yes`. Splitting the modes across two
