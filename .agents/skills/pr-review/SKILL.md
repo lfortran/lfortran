@@ -8,7 +8,7 @@ description: >
   into AST-to-ASR, explicit ASR state and verification, or a focused ASR pass;
   keep backends small and mechanical. Covers correctness, reuse, tests, scope,
   and maintainability with concrete good and bad implementation patterns.
-compatibility: Requires git; use gh when reviewing a GitHub pull request.
+compatibility: Requires git; use gh or GitHub MCP tools when reviewing a GitHub pull request.
 ---
 
 # Review an LFortran Pull Request

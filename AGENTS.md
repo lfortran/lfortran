@@ -170,7 +170,8 @@ The reproduction and fix skills use the compiler from the assigned build:
 that directory on `PATH`. Use the assigned Pixi environment and its build
 consistently. Use Pixi's `gfortran`, matching the
 integration-test label, for differential testing.
-Issue classification requires authenticated `gh`, not a compiler build.
+Issue classification requires GitHub access (authenticated `gh` or the GitHub
+MCP tools; see "Git Remotes & Issues"), not a compiler build.
 
 ## Prerequisites
 - **Required:** Git and [Pixi](https://pixi.sh/). The repository manifest
@@ -295,6 +296,12 @@ only once, redirect to a log file and then examine the log file.
 - Fork workflow: fork the upstream lfortran/lfortran repository to your own
   username, then push PRs as branches into your fork and send a PR from there.
   Never push branches to upstream.
+- GitHub access: the `gh` commands in this file and the skills name the
+  required GitHub operation. Use `gh` where it works. In a cloud session, or
+  whenever the session instructions recommend GitHub MCP tools over `gh`, use
+  those tools instead; push with plain `git push` to the fork either way. If
+  no available tool can perform a required operation, such as filing a bug,
+  stop and report it to the user rather than continuing silently.
 
 ## Coding Style & Naming Conventions
 - C/C++: C++17; follow the existing formatting in the file to be consistent;

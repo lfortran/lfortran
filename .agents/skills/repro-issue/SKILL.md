@@ -45,7 +45,8 @@ Before starting, confirm you have:
   Do not duplicate package lists or CMake setup flags here.
 - Pixi's **reference Fortran compiler**, `gfortran`, in the selected environment.
   Additional reference compilers must also be provisioned through Pixi.
-- `gh` CLI available on `PATH` and authenticated (`gh auth status`)
+- GitHub access: authenticated `gh` (`gh auth status`), or GitHub MCP tools
+  where the session recommends them (see "Git Remotes & Issues" in `AGENTS.md`)
 - Working directory is the **assigned worktree's root** (same dir as
   `CMakeLists.txt`) — output files go here, never in another worker's checkout.
 

@@ -19,6 +19,8 @@ per-job phases in `../SKILL.md`; the coordinator does not implement fixes.
        -f per_page=100
    ```
    Substitute the actual selection; do not hard-code these example labels.
+   With GitHub MCP tools, run the same query and page through every result
+   (see **GitHub access** in `SKILL.md`).
    Keep only issues, deduplicate by repository and number, and verify the
    count against `total_count` and `incomplete_results`. GitHub search is
    capped at 1,000 results: partition the same query into non-overlapping
@@ -139,7 +141,8 @@ Use the follow-up filing phase in `SKILL.md`. File verified new bugs without
 waiting for a parent PR to exist. Include the originating issue links, and add
 PR links when available. Link filed and existing reports from all affected PRs
 and the final report; do not comment on or relabel the original/existing issues.
-An API or permission failure leaves an explicit unfiled/blocked entry.
+An API or permission failure leaves an explicit `blocked` entry with the
+ready-to-file body; report it to the user immediately, not only at the end.
 
 ## Finish each group and account for every issue
 
