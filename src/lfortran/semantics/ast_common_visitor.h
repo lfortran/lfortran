@@ -15445,15 +15445,21 @@ public:
         }
     }
 
+    // `v` is a Function, or a procedure variable (dummy procedure or
+    // procedure pointer) whose explicit interface declares the dummy arguments.
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
-        ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
+        ASR::Function_t* func = ASRUtils::get_function(v);
+        if (func == nullptr) {
+            // A procedure variable without an explicit interface.
+            return;
+        }
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
+        size_t n_args = std::min({args.size(), func_type->n_arg_types, func->n_args});
 
         // Currently present function is supporting only integer arguments
         // After implementing present below if condition should be removed
         if( to_lower(func->m_name) != "present" ){
-            for( size_t i = 0; i < args.size(); i++ ) {
+            for( size_t i = 0; i < n_args; i++ ) {
                 if( args.p[i].m_value == nullptr ) {
                     continue;
                 }
@@ -16060,6 +16066,7 @@ public:
                 call_args, n_call_args, return_type, nullptr, dt, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
         } else {
+            validate_create_function_arguments(args, v);
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
                 args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
