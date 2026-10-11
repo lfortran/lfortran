@@ -10598,6 +10598,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
         });
         llvm_utils->arr_api->set_rank(llvm_array_type, dest, n_dims);
+        builder->CreateStore(
+            llvm_utils->arr_api->get_offset(llvm_array_type, src),
+            llvm_utils->arr_api->get_offset(llvm_array_type, dest, false));
     }
 
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,
