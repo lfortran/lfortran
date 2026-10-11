@@ -2611,6 +2611,11 @@ RUN(NAME pdt_18 LABELS llvm flang)
 # gfortran rejects a default initializer on a component whose kind is a kind
 # parameter of the type, so this test is not labelled `gfortran`
 RUN(NAME pdt_19 LABELS llvm flang)
+RUN(NAME pdt_20 LABELS gfortran llvm)
+# GFortran 13 gives wrong values for default initializers of components that
+# depend on a kind parameter, so this test is not labelled `gfortran`
+RUN(NAME pdt_21 LABELS llvm)
+RUN(NAME pdt_22 LABELS gfortran llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

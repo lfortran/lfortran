@@ -3732,6 +3732,7 @@ public:
             struct_->n_member_functions = final_proc_names.size();
             ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
             struct_->m_struct_signature = struct_signature;
+            make_pdt_signature_scope_free(struct_);
 
             current_scope = parent_scope_pdt;
             return;
