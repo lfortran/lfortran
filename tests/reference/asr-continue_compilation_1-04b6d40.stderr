@@ -3298,3 +3298,15 @@ semantic error: Type mismatch in argument `a`: expected `real(4)` but got `integ
      |
 2356 |         cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
      |                                    ^ 
+
+semantic error: More actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_1.f90:2368:37
+     |
+2368 |         cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+     |                                     ^^^^^^^^ 
+
+semantic error: Missing actual argument for argument 'a'
+    --> tests/errors/continue_compilation_1.f90:2369:35
+     |
+2369 |         cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+     |                                   ^^^ 

@@ -2356,3 +2356,16 @@ contains
         cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
     end function cc1_proc_variable_call
 end module cc1_proc_variable_call_mod
+
+! A function reference through a dummy procedure checks the number of its
+! actual arguments against the interface of the procedure.
+module cc1_proc_variable_count_mod
+    use cc1_proc_variable_call_mod, only: cc1_proc_variable_iface
+    implicit none
+contains
+    real function cc1_proc_variable_count(f)
+        procedure(cc1_proc_variable_iface) :: f
+        cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+        cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+    end function cc1_proc_variable_count
+end module cc1_proc_variable_count_mod
