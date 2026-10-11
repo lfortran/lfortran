@@ -8994,6 +8994,25 @@ public:
         }
     }
 
+    // Prefix of the LLVM globals that hold the SAVE variables of the scope
+    // `x`. A procedure uses its LLVM function name, which is unique in the
+    // module, so that same-named procedures in different modules or hosts
+    // do not share their SAVE variables.
+    template<typename T>
+    std::string save_variable_global_prefix(const T &x) {
+        if constexpr (std::is_same_v<T, ASR::Function_t>) {
+            uint32_t h = get_hash((ASR::asr_t*)&x);
+            LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+            return llvm_symtab_fn[h]->getName().str();
+        } else {
+            std::string prefix = std::string(x.m_name);
+            if (x.class_type == ASR::symbolType::Block) {
+                prefix += "_" + x.m_symtab->get_counter();
+            }
+            return prefix;
+        }
+    }
+
     template<typename T>
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
         llvm::Value *target_var = nullptr;
@@ -9165,10 +9184,7 @@ public:
                 }
             } else { // Alloca for rest of types (not its internals if exist).
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    std::string parent_function_name = std::string(x.m_name);
-                    if (x.class_type == ASR::symbolType::Block) {
-                        parent_function_name += "_" + x.m_symtab->get_counter();
-                    }
+                    std::string parent_function_name = save_variable_global_prefix(x);
                     std::string global_name = parent_function_name+ "." + v->m_name;
                     ptr = module->getOrInsertGlobal(global_name, type);
                     llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
@@ -9353,10 +9369,7 @@ public:
                 llvm::BasicBlock* struct_init_bb = nullptr;
                 llvm::BasicBlock* struct_skip_bb = nullptr;
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    std::string parent_function_name = std::string(x.m_name);
-                    if (x.class_type == ASR::symbolType::Block) {
-                        parent_function_name += "_" + x.m_symtab->get_counter();
-                    }
+                    std::string parent_function_name = save_variable_global_prefix(x);
                     std::string guard_name = parent_function_name + "." + v->m_name + ".__struct_init";
                     llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
                     module->getOrInsertGlobal(guard_name, i1_type);
