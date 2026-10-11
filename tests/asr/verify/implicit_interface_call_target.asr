@@ -22,7 +22,7 @@
                       4
                     )
                     nil
-                    :BindC
+                    :Source
                     :Public
                     :Required
                     false
@@ -43,7 +43,7 @@
                 (Integer
                   4
                 )
-                :BindC
+                :Source
                 :ImplicitInterface
                 nil
                 false

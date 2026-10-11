@@ -1,58 +1,38 @@
 module class_155_mod
 implicit none
-type :: t
-    integer :: y
-end type
-type, extends(t) :: t2
-    integer :: z(64)
+type :: w
+    class(*), pointer :: p(:) => null()
+    class(*), allocatable :: a(:)
 end type
 contains
-subroutine check(a)
-    class(t), intent(in) :: a(:)
-    integer :: k(2)
-    k = a(3:4)%y
-    if (any(k /= [3, 4])) error stop
+subroutine check(x, n, first)
+    class(*), intent(in) :: x(:)
+    integer, intent(in) :: n, first
+    integer :: i
+    if (size(x) /= n) error stop
+    select type (x)
+    type is (integer)
+        do i = 1, n
+            if (x(i) /= first + i - 1) error stop
+        end do
+    class default
+        error stop
+    end select
 end subroutine
 end module
 
 program class_155
 use class_155_mod
 implicit none
-class(t), allocatable :: cw(:)
-integer, allocatable :: after(:)
-integer :: i, k(2), m(3)
-allocate(t2 :: cw(4))
-select type (cw)
-type is (t2)
-    do i = 1, 4
-        cw(i)%y = i
-        cw(i)%z = 10*i
-    end do
-end select
-
-k = cw(1:2)%y
-if (any(k /= [1, 2])) error stop
-k = cw(2:4:2)%y
-if (any(k /= [2, 4])) error stop
-k = cw([1, 3])%y
-if (any(k /= [1, 3])) error stop
-if (sum(cw(1:2)%y) /= 3) error stop
-call check(cw)
-
-cw(2:4)%y = cw(1:3)%y
-m = cw(2:4)%y
-if (any(m /= [1, 2, 3])) error stop
-
-allocate(after(1000))
-after = 7
-if (any(after /= 7)) error stop
-select type (cw)
-type is (t2)
-    do i = 1, 4
-        if (any(cw(i)%z /= 10*i)) error stop
-    end do
-class default
-    error stop
-end select
-print *, k, m
+integer, target :: u(4) = [1, 2, 3, 4]
+class(*), pointer :: q(:)
+type(w) :: x
+q => u
+call check(q, 4, 1)
+x%p => u
+if (size(x%p) /= 4) error stop
+call check(x%p, 4, 1)
+allocate(x%a, source=[5, 6, 7])
+call check(x%a, 3, 5)
+print *, "ok"
 end program

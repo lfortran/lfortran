@@ -58,14 +58,13 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
             case (ASR::symbolType::Function) : {
                 ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
                 ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
+                // An ImplicitInterface keeps its deftype: it is an
+                // interface-less external whose argument list is unknown, and
+                // must not look like a genuine zero-argument interface after
+                // a .mod round-trip.
                 if (v_func_type->m_abi != ASR::abiType::ExternalUndefined && v_func_type->m_abi != ASR::abiType::BindC) {
                     v_func_type->m_abi = ASR::abiType::ExternalUndefined;
-                } else if (v_func_type->m_abi == ASR::abiType::BindC
-                        && !ASRUtils::is_bare_implicit_interface(*v_func_type)) {
-                    // Do not overwrite ImplicitInterface: that is an
-                    // interface-less external whose argument list is unknown.
-                    // Forcing Interface would make it look like a genuine
-                    // zero-argument bind(c) interface after a .mod round-trip.
+                } else if (v_func_type->m_abi == ASR::abiType::BindC) {
                     v_func_type->m_deftype = ASR::deftypeType::Interface;
                 }
                 v->m_symtab->mark_all_variables_external(al);
