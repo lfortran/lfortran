@@ -195,6 +195,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_verify_intrinsic

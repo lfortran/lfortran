@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i1:
                                 (Variable
@@ -62,6 +63,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i2:
                                 (Variable
@@ -86,6 +88,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i32:
                                 (Variable
@@ -116,6 +119,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i64:
                                 (Variable
@@ -146,6 +150,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             l:
                                 (Variable
@@ -170,6 +175,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             l_knd:
                                 (Variable
@@ -203,6 +209,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r1:
                                 (Variable
@@ -227,6 +234,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r2:
                                 (Variable
@@ -251,6 +259,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sp:
                                 (Variable
@@ -283,6 +292,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     parameter_04

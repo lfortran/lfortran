@@ -371,8 +371,6 @@ public:
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -382,7 +380,6 @@ public:
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
-            common_variables_hash, common_variables_byte_offset,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
@@ -403,6 +400,11 @@ public:
         ASR::asr_t *tmp0 = ASR::make_TranslationUnit_t(al, x.base.base.loc,
             current_scope, nullptr, 0, nullptr);
 
+        // The declarations of the global scope of interactive evaluation. As
+        // in a scoping unit, its EQUIVALENCE statements are visited after
+        // its views of common blocks are complete.
+        std::vector<AST::decl_stmt_t*> global_declarations;
+        std::vector<AST::decl_stmt_t*> global_equivalences;
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
             // Executable statements and expressions of the global scope are
@@ -410,10 +412,29 @@ public:
             if (t == AST::astType::expr) continue;
             if (t == AST::astType::decl_stmt && AST::is_executable_stmt(
                     *AST::down_cast<AST::decl_stmt_t>(x.m_items[i]))) continue;
+            if (t == AST::astType::decl_stmt) {
+                AST::decl_stmt_t *d = AST::down_cast<AST::decl_stmt_t>(x.m_items[i]);
+                global_declarations.push_back(d);
+                if (is_equivalence_declaration(d)) {
+                    global_equivalences.push_back(d);
+                    continue;
+                }
+            }
             try {
                 visit_ast(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        if (!global_declarations.empty()) {
+            complete_common_blocks(global_declarations.data(),
+                global_declarations.size());
+            for (AST::decl_stmt_t *d : global_equivalences) {
+                try {
+                    visit_decl_stmt(*d);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
         }
         check_pending_instantiation_restrictions();
@@ -727,6 +748,10 @@ public:
         }
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            // COMMON and EQUIVALENCE statements are visited after the other
+            // declarations, as in the other scoping units.
+            if (is_common_declaration(x.m_items[i]) ||
+                    is_equivalence_declaration(x.m_items[i])) continue;
             try {
                 if ( AST::is_a<AST::Interface_t>(*x.m_items[i]) ) {
                     std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
@@ -735,6 +760,25 @@ public:
                 } else {
                     visit_decl_stmt(*x.m_items[i]);
                 }
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        complete_common_blocks(x.m_items, x.n_items);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
+            try {
+                visit_decl_stmt(*x.m_items[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
@@ -755,7 +799,9 @@ public:
                     // "~merge_config" public so that constructor
                     // overloads remain accessible.
                     es->m_access = assgnd_access[item.first.substr(1)];
-                } else {
+                } else if (es->m_access != ASR::accessType::Private) {
+                    // A private import is made by the compiler, not by a
+                    // USE statement, and is not exported.
                     es->m_access = dflt_access;
                 }
             } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
@@ -1053,6 +1099,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        complete_common_blocks(x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_equivalence_declaration(x.m_items[i])) continue;
@@ -1062,11 +1109,6 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        // Mark COMMON blocks as declared before processing contained procedures.
-        // This ensures that internal procedures referencing the same COMMON block
-        // will map their variables to the existing struct members by byte offset,
-        // rather than creating new struct members.
-        mark_common_blocks_as_declared();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1147,7 +1189,6 @@ public:
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
 
-        mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
         explicit_save_symbols = explicit_save_symbols_copy;
     }
@@ -1270,22 +1311,6 @@ public:
                 external_procedures.push_back(item.first);
                 // remove it from old_scope
                 symbols_to_erase.push_back(item.first);
-            }
-        }
-
-        // Register duplicated common block variables in common_variables_hash
-        // so that the body visitor can resolve them to StructInstanceMember
-        for (auto& item: old_scope->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*(item.second))) {
-                uint64_t old_hash = get_hash((ASR::asr_t*) item.second);
-                if (common_variables_hash.find(old_hash) != common_variables_hash.end()) {
-                    ASR::symbol_t* new_sym = current_scope->get_symbol(item.first);
-                    if (new_sym) {
-                        uint64_t new_hash = get_hash((ASR::asr_t*) new_sym);
-                        common_variables_hash[new_hash] = common_variables_hash[old_hash];
-                        common_variables_byte_offset[new_hash] = common_variables_byte_offset[old_hash];
-                    }
-                }
             }
         }
 
@@ -2065,6 +2090,7 @@ public:
             }
             is_Function = false;
         }
+        complete_common_blocks(x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_equivalence_declaration(x.m_items[i])) continue;
@@ -2378,7 +2404,6 @@ public:
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         is_template = is_template_copy;
-        mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
         explicit_save_symbols = explicit_save_symbols_copy;
         // A templated subroutine is complete; `parent_scope` is the Template
@@ -2671,6 +2696,7 @@ public:
             visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
+        complete_common_blocks(x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_equivalence_declaration(x.m_items[i])) continue;
@@ -2982,6 +3008,9 @@ public:
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
+            if (return_variable->m_common_block) {
+                reject_common_block_function_result(*return_variable);
+            }
 
             if (return_type && (is_alloc_standalone || is_ptr_standalone)) {
                 Vec<ASR::dimension_t> dummy_dims;
@@ -3243,7 +3272,6 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
-        mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
         explicit_save_symbols = explicit_save_symbols_copy;
         // A templated function is complete; `parent_scope` is the Template
@@ -4299,14 +4327,18 @@ public:
         }
     }
 
+    // A BLOCK DATA program unit gives initial values to common blocks. Its
+    // declarations, and the values its DATA statements give them, belong to
+    // its own scope; its views of the common blocks carry them to the
+    // storage that every view of a block shares.
     void visit_BlockData(const AST::BlockData_t& x) {
-        std::string base_module_name = "file_common_block_";
-        std::string base_struct_instance_name = "struct_instance_";
-
-        SymbolTable* global_scope = current_scope->get_tu_scope();
-
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
+        SymbolTable *parent_scope = current_scope;
+        std::string name;
         if (x.m_name) {
-            ASR::symbol_t* gs = global_scope->get_symbol(x.m_name);
+            name = to_lower(x.m_name);
+            ASR::symbol_t* gs = parent_scope->get_symbol(name);
             if (gs) {
                 diag.add(Diagnostic(
                     "Global name is already being used",
@@ -4316,17 +4348,48 @@ public:
                     }));
                 throw SemanticAbort();
             }
+        } else {
+            // A Fortran name cannot contain `~`, so this names no other
+            // global entity.
+            name = parent_scope->get_unique_name("block_data~", false);
         }
-
-        // Set up implicit typing for block data unit (similar to Program)
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        // The unit owns its scope while its declarations are visited, as
+        // what they look up, such as its implicit typing rules, is found
+        // through the owner.
+        ASR::BlockData_t *block_data = ASR::down_cast<ASR::BlockData_t>(
+            ASR::down_cast<ASR::symbol_t>(ASR::make_BlockData_t(al,
+                x.base.base.loc, current_scope, s2c(al, name),
+                x.m_name ? s2c(al, name) : nullptr, nullptr, 0)));
+        parent_scope->add_symbol(name, &block_data->base);
+        SetChar saved_module_dependencies = current_module_dependencies;
+        current_module_dependencies.clear(al);
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
+        check_if_global_save_is_enabled(x);
+        // As in the other scoping units, a rejected statement does not stop
+        // the visit of the others when compilation continues after errors,
+        // so that this unit's scope is left only at its end.
+        auto visit_item = [&](AST::decl_stmt_t &item) {
+            try {
+                this->visit_decl_stmt(item);
+            } catch (SemanticAbort &e) {
+                if (!compiler_options.continue_compilation) throw e;
+            }
+        };
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
+            visit_item(*x.m_items[i]);
+        }
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-            // Store implicit_dictionary in implicit_mapping so that
-            // resolve_variable (called during common block processing)
-            // can find it for the current scope.
-            implicit_mapping[get_hash(current_scope->asr_owner)] = implicit_dictionary;
+            try {
+                process_implicit_statements(x, implicit_dictionary);
+            } catch (SemanticAbort &e) {
+                if (!compiler_options.continue_compilation) throw e;
+            }
+            implicit_mapping[get_hash((ASR::asr_t*)block_data)] = implicit_dictionary;
         } else {
             for (size_t i=0; i<x.n_items; i++) {
                 if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
@@ -4335,7 +4398,9 @@ public:
                         "Implicit typing is not allowed, enable it by using --implicit-typing ",
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.m_items[i]->base.loc})}));
-                    throw SemanticAbort();
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
                 }
             }
         }
@@ -4349,220 +4414,54 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            this->visit_decl_stmt(*x.m_items[i]);
+            visit_item(*x.m_items[i]);
         }
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_common_declaration(x.m_items[i])) continue;
-            this->visit_decl_stmt(*x.m_items[i]);
+            visit_item(*x.m_items[i]);
         }
-        // NOTE: Equivalence declarations are intentionally skipped in
-        // BlockData. The common block struct already provides storage
-        // association, and BlockData has no local scope or body where
-        // equivalence CPtrToPointer statements could be emitted.
+        // Only the EQUIVALENCE sets connected to a common block affect what
+        // a BLOCK DATA program unit provides, and those are placed in the
+        // views of the blocks. Its EQUIVALENCE statements are not visited
+        // otherwise, so their objects are checked here.
+        complete_common_blocks(x.m_items, x.n_items);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+            try {
+                for (size_t j = 0; j < d->n_attributes; j++) {
+                    if (AST::is_a<AST::AttrEquivalence_t>(*d->m_attributes[j])) {
+                        check_equivalence_objects(*AST::down_cast<
+                            AST::AttrEquivalence_t>(d->m_attributes[j]));
+                    }
+                }
+            } catch (SemanticAbort &e) {
+                if (!compiler_options.continue_compilation) throw e;
+            }
+        }
 
-        SymbolTable* old_scope = current_scope;
+        // The DATA statements give the initial values of the variables of
+        // this scope. A BLOCK DATA has no body to run, so the assignments
+        // the visitor also builds for them are dropped.
         Vec<ASR::stmt_t*> block_data_body;
         block_data_body.reserve(al, x.n_items);
-        current_body = &block_data_body;
-        current_body_scope = current_scope;
+        CurrentBodyScope body_scope(*this, &block_data_body, current_scope);
         in_block_data = true;
-        // Visit DataStmt and set the constant values in the Struct_t symbol
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Statement)) continue;
-            this->visit_decl_stmt(*x.m_items[i]);
+            visit_item(*x.m_items[i]);
         }
         in_block_data = false;
-        current_scope = old_scope;
 
-        // Build a mapping from common block member names to their equivalenced
-        // variables. This is needed to propagate DATA initialization from
-        // equivalenced variables to the struct members.
-        // equiv_to_common: maps common_member_name -> equivalenced_var_name
-        std::map<std::string, std::string> equiv_to_common;
-        // common_member_names: set of variable names that appear in COMMON blocks
-        std::set<std::string> common_member_names;
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
-            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-            for (size_t j = 0; j < decl->n_attributes; j++) {
-                if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
-                    AST::AttrCommon_t* ac = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
-                    for (size_t k = 0; k < ac->n_blks; k++) {
-                        for (size_t m = 0; m < ac->m_blks[k].n_objects; m++) {
-                            std::string var_name = to_lower(ac->m_blks[k].m_objects[m].m_name);
-                            common_member_names.insert(var_name);
-                        }
-                    }
-                }
-            }
-        }
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!is_equivalence_declaration(x.m_items[i])) continue;
-            AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-            for (size_t j = 0; j < decl->n_attributes; j++) {
-                if (!AST::is_a<AST::AttrEquivalence_t>(*decl->m_attributes[j])) continue;
-                AST::AttrEquivalence_t* eq = AST::down_cast<AST::AttrEquivalence_t>(decl->m_attributes[j]);
-                for (size_t ei = 0; ei < eq->n_args; ei++) {
-                    if (eq->m_args[ei].n_set_list < 2) continue;
-                    // Collect names in this equivalence set
-                    std::vector<std::string> names;
-                    for (int si = 0; si < (int)eq->m_args[ei].n_set_list; si++) {
-                        AST::expr_t* e = eq->m_args[ei].m_set_list[si];
-                        if (AST::is_a<AST::Name_t>(*e)) {
-                            names.push_back(to_lower(AST::down_cast<AST::Name_t>(e)->m_id));
-                        }
-                    }
-                    // Find common member and non-common variable
-                    std::string common_name, non_common_name;
-                    for (auto& nm : names) {
-                        if (common_member_names.count(nm)) {
-                            common_name = nm;
-                        } else {
-                            non_common_name = nm;
-                        }
-                    }
-                    if (!common_name.empty() && !non_common_name.empty()) {
-                        equiv_to_common[common_name] = non_common_name;
-                    }
-                }
-            }
-        }
-
-        // Copy the constant values from Struct_t symbol to the instance, use StructConstant as the value of the instance variable
-        // Loop through all declarations again, find all the common blocks's names and update the instance variable
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                for (size_t j = 0; j < decl->n_attributes; j++) {
-                    if (AST::is_a<AST::AttrCommon_t>(*decl->m_attributes[j])) {
-                        AST::AttrCommon_t* attr_common = AST::down_cast<AST::AttrCommon_t>(decl->m_attributes[j]);
-                        for (size_t k = 0; k < attr_common->n_blks; k++) {
-                            std::string common_block_name(
-                                attr_common->m_blks[k].m_name ? attr_common->m_blks[k].m_name : ""
-                            );
-                            if (common_block_name.empty()) {
-                                continue;
-                            }
-                            // Convert to lowercase to match how symbols are stored
-                            std::string common_block_name_lower = to_lower(common_block_name);
-                            std::string module_name = base_module_name + common_block_name_lower;
-
-                            ASR::Module_t* mod_s = ASR::down_cast<ASR::Module_t>(global_scope->get_symbol(module_name));
-
-                            std::string struct_var_name = base_struct_instance_name + common_block_name_lower;
-                            ASR::Variable_t* var_s = ASR::down_cast<ASR::Variable_t>(mod_s->m_symtab->get_symbol(struct_var_name));
-
-                            ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name_lower);
-                            ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym, true);
-
-                            Vec<ASR::call_arg_t> vals;
-                            auto member2sym = struct_s->m_symtab->get_scope();
-                            vals.reserve(al, struct_s->n_members);
-                            for (size_t i = 0; i < struct_s->n_members; i++) {
-                                ASR::symbol_t* s = member2sym[struct_s->m_members[i]];
-                                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>( * s));
-                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(s);
-                                if (var->m_value) {
-                                    ASR::expr_t* expr = var->m_value;
-                                    ASR::call_arg_t call_arg;
-                                    call_arg.loc = expr->base.loc;
-                                    call_arg.m_value = expr;
-                                    vals.push_back(al, call_arg);
-                                } else {
-                                    // Check if an equivalenced variable has a DATA value
-                                    // that should initialize this member
-                                    std::string member_name = struct_s->m_members[i];
-                                    ASR::expr_t* equiv_val = nullptr;
-                                    auto it = equiv_to_common.find(member_name);
-                                    if (it != equiv_to_common.end()) {
-                                        ASR::symbol_t* equiv_sym = current_scope->get_symbol(it->second);
-                                        if (equiv_sym && ASR::is_a<ASR::Variable_t>(*equiv_sym)) {
-                                            ASR::Variable_t* equiv_var = ASR::down_cast<ASR::Variable_t>(equiv_sym);
-                                            if (equiv_var->m_value) {
-                                                // Bit-reinterpret the value if types differ
-                                                ASR::ttype_t* member_type = var->m_type;
-                                                ASR::ttype_t* equiv_type = equiv_var->m_type;
-                                                if (ASRUtils::types_equal(member_type, equiv_type, nullptr, nullptr)) {
-                                                    equiv_val = equiv_var->m_value;
-                                                } else {
-                                                    // Different types: perform compile-time bit-reinterpretation
-                                                    // (e.g., integer 34 stored in real memory)
-                                                    ASR::expr_t* src_val = equiv_var->m_value;
-                                                    if (ASR::is_a<ASR::IntegerConstant_t>(*src_val) &&
-                                                        ASR::is_a<ASR::Real_t>(*member_type)) {
-                                                        int64_t int_val = ASR::down_cast<ASR::IntegerConstant_t>(src_val)->m_n;
-                                                        int member_kind = ASR::down_cast<ASR::Real_t>(member_type)->m_kind;
-                                                        if (member_kind == 4) {
-                                                            int32_t iv = (int32_t)int_val;
-                                                            float fv;
-                                                            std::memcpy(&fv, &iv, sizeof(float));
-                                                            equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
-                                                                al, src_val->base.loc, fv, member_type));
-                                                        } else if (member_kind == 8) {
-                                                            double dv;
-                                                            std::memcpy(&dv, &int_val, sizeof(double));
-                                                            equiv_val = ASRUtils::EXPR(ASR::make_RealConstant_t(
-                                                                al, src_val->base.loc, dv, member_type));
-                                                        }
-                                                    } else if (ASR::is_a<ASR::RealConstant_t>(*src_val) &&
-                                                               ASR::is_a<ASR::Integer_t>(*member_type)) {
-                                                        double real_val = ASR::down_cast<ASR::RealConstant_t>(src_val)->m_r;
-                                                        int member_kind = ASR::down_cast<ASR::Integer_t>(member_type)->m_kind;
-                                                        if (member_kind == 4) {
-                                                            float fv = (float)real_val;
-                                                            int32_t iv;
-                                                            std::memcpy(&iv, &fv, sizeof(int32_t));
-                                                            equiv_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                                                al, src_val->base.loc, iv, member_type));
-                                                        } else if (member_kind == 8) {
-                                                            int64_t iv;
-                                                            std::memcpy(&iv, &real_val, sizeof(int64_t));
-                                                            equiv_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                                                al, src_val->base.loc, iv, member_type));
-                                                        }
-                                                    } else {
-                                                        // Fallback: use the value as-is
-                                                        equiv_val = equiv_var->m_value;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (equiv_val) {
-                                        // Set the value on the struct member variable
-                                        // so LLVM codegen knows it's initialized and
-                                        // won't overwrite with zeroinitializer.
-                                        var->m_value = equiv_val;
-                                        var->m_symbolic_value = equiv_val;
-                                        ASR::call_arg_t call_arg;
-                                        call_arg.loc = equiv_val->base.loc;
-                                        call_arg.m_value = equiv_val;
-                                        vals.push_back(al, call_arg);
-                                    } else {
-                                        // If no compile time value in DataStmt initialize to zero when visiting StructConstant in backend
-                                        ASR::call_arg_t call_arg{};
-                                        vals.push_back(al, call_arg);
-                                    }
-                                }
-                            }
-                            ASR::expr_t* structc = ASRUtils::EXPR(
-                                ASR::make_StructConstant_t(al, var_s->base.base.loc, struct_as_sym, vals.p, vals.size(), type));
-                            var_s->m_symbolic_value = structc;
-                            var_s->m_value = structc;
-
-                            // Mark the common block as declared
-                            common_block_dictionary[common_block_name].first = false;
-                        }
-                        // We processed the common attribute, no need to check any more attributes
-                        break;
-                    }
-                }
-            }
+        block_data->m_dependencies = current_module_dependencies.p;
+        block_data->n_dependencies = current_module_dependencies.size();
+        current_scope = parent_scope;
+        current_module_dependencies = saved_module_dependencies;
+        is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
+        if (compiler_options.implicit_typing) {
+            implicit_dictionary.clear();
         }
     }
 
@@ -7382,8 +7281,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, size_t>& common_variables_byte_offset,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
@@ -7393,8 +7290,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
-                         implicit_mapping, common_variables_hash,
-                         common_variables_byte_offset, external_procedures_mapping,
+                         implicit_mapping, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
                          entry_function_arguments_mapping, data_structure, lm);

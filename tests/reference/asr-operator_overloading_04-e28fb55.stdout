@@ -52,6 +52,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             rhs:
                                                 (Variable
@@ -76,6 +77,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     assign_string_char
@@ -155,6 +157,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     string_type
@@ -234,6 +237,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             trimmed_string:
                                                 (Variable
@@ -265,6 +269,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     trim_string
@@ -399,6 +404,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             last:
                                                 (Variable
@@ -423,6 +429,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -454,6 +461,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             ~assign:
                                                 (ExternalSymbol

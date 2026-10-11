@@ -8,14 +8,14 @@ target datalayout = "..."
 define void @__module_codegen_function_polymorphic_my_func(%codegen_function_polymorphic.abstype.3_class** %obj) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
-  %1 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 8
+  %1 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 1
   %2 = ptrtoint %codegen_function_polymorphic.abstype.3_class* %1 to i64
   %3 = icmp ne i64 %2, 0
   br i1 %3, label %then, label %else2
 
 then:                                             ; preds = %.entry
-  %4 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 8
-  %5 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 8
+  %4 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 1
+  %5 = load %codegen_function_polymorphic.abstype.3_class*, %codegen_function_polymorphic.abstype.3_class** %obj, align 1
   %6 = ptrtoint %codegen_function_polymorphic.abstype.3_class* %5 to i64
   %7 = icmp ne i64 %6, 0
   br i1 %7, label %then1, label %else
@@ -57,7 +57,7 @@ entry:
 is_allocated.then:                                ; preds = %entry
   call void @finalize_StructType_Class__abstype_3_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype.3_class* %0)
   %3 = getelementptr %codegen_function_polymorphic.abstype.3_class, %codegen_function_polymorphic.abstype.3_class* %0, i32 0, i32 1
-  %4 = load %codegen_function_polymorphic.abstype.3*, %codegen_function_polymorphic.abstype.3** %3, align 8
+  %4 = load %codegen_function_polymorphic.abstype.3*, %codegen_function_polymorphic.abstype.3** %3, align 1
   %5 = icmp ne %codegen_function_polymorphic.abstype.3* %4, null
   br i1 %5, label %is_allocated.then1, label %is_allocated.else
 
@@ -84,16 +84,16 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
 define internal void @finalize_StructType_Class__abstype_3_of_codegen_function_polymorphic(%codegen_function_polymorphic.abstype.3_class* %0) {
 entry:
   %1 = getelementptr %codegen_function_polymorphic.abstype.3_class, %codegen_function_polymorphic.abstype.3_class* %0, i32 0, i32 0
-  %2 = load i32 (...)**, i32 (...)*** %1, align 8
+  %2 = load i32 (...)**, i32 (...)*** %1, align 1
   %3 = getelementptr %codegen_function_polymorphic.abstype.3_class, %codegen_function_polymorphic.abstype.3_class* %0, i32 0, i32 1
-  %4 = load %codegen_function_polymorphic.abstype.3**, %codegen_function_polymorphic.abstype.3** %3, align 8
+  %4 = load %codegen_function_polymorphic.abstype.3**, %codegen_function_polymorphic.abstype.3** %3, align 1
   %5 = bitcast %codegen_function_polymorphic.abstype.3** %4 to i8*
   %6 = icmp ne i32 (...)** %2, null
   br i1 %6, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
   %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 2
-  %8 = load i8*, i32 (...)** %7, align 8
+  %8 = load i8*, i32 (...)** %7, align 1
   %9 = bitcast i8* %8 to void (i8*)*
   %10 = icmp ne i8* %5, null
   br i1 %10, label %is_allocated.then1, label %is_allocated.else
