@@ -375,7 +375,9 @@ nominal implementation, and a forwarded type parameter's declared constraints
 must imply the message's. The nominal implementation visible where a concrete
 argument is checked, also through a procedure- or `BLOCK`-local `USE`, is the
 one every instantiation uses: a client needs no conformance of that type and
-cannot replace it with its own. The same concrete argument checked in two
+cannot replace it with its own. This includes the runtime view formed when the
+generic implementation passes the argument on to a generic method of a runtime
+trait object. The same concrete argument checked in two
 scopes with different implementations uses each where it was checked. A
 forwarded type parameter instead uses the implementation its caller selects.
 The type parameter's name may coincide with the
@@ -392,7 +394,8 @@ compiled generic procedures, conformances and clients work together. See
 oracle), `traits_generic_requirement_02.f90`, the separately compiled
 `traits_generic_requirement_03.f90`, and `traits_generic_requirement_04.f90`
 to `traits_generic_requirement_06.f90` for implementations selected at the
-definition.
+definition, which `traits_generic_requirement_07.f90` and
+`traits_generic_requirement_08.f90` also check for runtime views.
 
 A generic message whose own type parameter is constrained by a trait that has
 generic messages, such a call in a specification expression, and a call whose
@@ -440,7 +443,9 @@ concrete substitutions feed static calls. Explicit borrowed-view and operation
 substitutions feed `TraitErasure` through the **same**
 `instantiate_symbol`/`instantiate_body` machinery. `TraitDeferredPack` retains a
 scoped nominal proof while a forwarding consumer is still generic. Instantiation
-turns it into a checked concrete `TraitPack`, another scoped deferred pack, or a
+turns it into a checked concrete `TraitPack` with the runtime witness of the
+conformance selected for its binder's static constraints, another scoped
+deferred pack, or a
 verified projection of an already-erased argument. LLVM only lowers the
 resulting explicit descriptors and calls.
 Ordinary `BLOCK` scopes use that same instantiator for static and erased
@@ -1556,6 +1561,12 @@ generic is instantiated, and forwarding republishes the record in the caller's
 generic requirement. The same type arguments checked with different
 conformances are distinct specializations and adapters. A forwarded type
 argument records nothing and takes the conformance its caller selected.
+The pending body of every specialization carries the conformances selected
+for its concrete binders where it was checked, recorded or visible there, and
+a forwarding edge composed with it gives each forwarded binder those of the
+caller's binder. A `TraitDeferredPack` of a concrete binder becomes a
+`TraitPack` with the runtime witness of that conformance, imported where the
+body is instantiated, never one looked up there.
 Verification checks that each record names a nominal constraint of the generic
 requirement and a conformance of its binder's concrete type argument to that
 trait binding all of its methods, that every such constraint has exactly one

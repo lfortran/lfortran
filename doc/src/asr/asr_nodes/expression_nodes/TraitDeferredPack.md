@@ -18,7 +18,10 @@ requested contract. Structural method similarity is not conformance.
 This expression exists only inside a checked generic definition. The existing
 template instantiator supplies explicit evidence and replaces it with:
 
-- `TraitPack` for a concrete actual and its selected witness;
+- `TraitPack` for a concrete actual, with the runtime witness of the
+  conformance selected for its binder where the specialization was checked
+  (recorded by a generic requirement's specialization or visible at the
+  generic's call), never one looked up where the body is instantiated;
 - another `TraitDeferredPack` referring to the forwarding caller's binder; or
 - `TraitProject` with a verified slot map for an already-erased argument.
 

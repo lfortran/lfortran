@@ -24476,8 +24476,12 @@ public:
         return witness;
     }
 
+    // The runtime witness of `declaration` for the contract of `target`, from
+    // the implementations visible here or, if given, from
+    // `selected_implementations`.
     ASR::symbol_t *select_runtime_trait_witness(ASR::ttype_t *target,
-            ASR::symbol_t *declaration, const Location &loc, bool owning = false) {
+            ASR::symbol_t *declaration, const Location &loc, bool owning = false,
+            const std::vector<ASR::TraitImplementation_t*> *selected_implementations = nullptr) {
         declaration = ASRUtils::symbol_get_past_external(declaration);
         if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) {
             trait_call_error("runtime trait construction requires a resolved concrete derived type", loc);
@@ -24486,7 +24490,8 @@ public:
             trait_call_error("owning runtime trait construction cannot instantiate an abstract type", loc);
         }
         auto *contract = ASRUtils::trait_runtime_contract(target);
-        auto implementations = trait_implementations_for_type(declaration, loc);
+        auto implementations = selected_implementations ? *selected_implementations
+            : trait_implementations_for_type(declaration, loc);
         ASR::TraitWitness_t *witness = nullptr;
         if (!contract->m_anonymous) {
             witness = select_named_runtime_trait_witness(contract, declaration, implementations, loc);
@@ -24709,7 +24714,9 @@ public:
             ASR::Template_t *generic,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
             const std::vector<TraitEvidence> &evidence,
-            std::map<std::string, ASR::symbol_t*> symbols) {
+            std::map<std::string, ASR::symbol_t*> symbols,
+            const std::map<std::string, std::vector<ASR::TraitImplementation_t*>>
+                &conformances) {
         ASR::symbol_t *procedure = generic->m_symtab->get_symbol(generic->m_name);
         std::string name = trait_specialization_name(target, "__instantiated_" +
             std::string(generic->m_name));
@@ -24722,7 +24729,7 @@ public:
             throw SemanticAbort();
         }
         trait_specializations.push_back({target, generic, types, evidence, specialization});
-        queue_body_instantiation(types, symbols, {{specialization, procedure}});
+        queue_body_instantiation(types, symbols, {{specialization, procedure}}, conformances);
         return specialization;
     }
 
@@ -24998,10 +25005,14 @@ public:
     }
 
     // The specialization of `generic` in `target` for resolved requirements,
-    // shared with every equal earlier selection.
+    // shared with every equal earlier selection. `selected` holds the
+    // conformance chosen for each nominal constraint of a concrete binder.
     ASR::symbol_t *specialize_trait_generic(SymbolTable *target, ASR::Template_t *generic,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
-            const std::vector<ResolvedRequirement> &requirements, const Location &loc) {
+            const std::vector<ResolvedRequirement> &requirements,
+            const std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                &selected,
+            const Location &loc) {
         std::vector<TraitEvidence> evidence;
         for (const auto &requirement : requirements) {
             if (requirement.forwarded) {
@@ -25030,7 +25041,16 @@ public:
                     ASR::down_cast<ASR::Function_t>(requirement.requirement),
                     type.first, type.second, *requirement.binding, target, loc);
         }
-        return instantiate_trait_signature(target, generic, types, evidence, symbols);
+        std::map<std::string, std::vector<ASR::TraitImplementation_t*>> conformances;
+        for (const auto &entry : selected) {
+            auto &implementations = conformances[ASRUtils::symbol_name(entry.first->m_parameter)];
+            if (std::find(implementations.begin(), implementations.end(), entry.second)
+                    == implementations.end()) {
+                implementations.push_back(entry.second);
+            }
+        }
+        return instantiate_trait_signature(target, generic, types, evidence, symbols,
+            conformances);
     }
 
     ASR::symbol_t *prepare_trait_procedure_call(ASR::Template_t *generic,
@@ -25101,7 +25121,9 @@ public:
                 }
             }
         }
-        auto requirements = resolve_trait_requirements(generic, types, forwarding, loc);
+        std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>> conformances;
+        auto requirements = resolve_trait_requirements(generic, types, forwarding, loc,
+            &conformances);
         if (runtime_signature) {
             if (closed_members) {
                 // Closed binders select a member slot instead of packing views.
@@ -25140,7 +25162,7 @@ public:
             }
             return &runtime_signature->base;
         }
-        return specialize_trait_generic(target, generic, types, requirements, loc);
+        return specialize_trait_generic(target, generic, types, requirements, conformances, loc);
     }
 
     bool trait_requirement_specializations_changed = false;
@@ -26056,6 +26078,10 @@ public:
         std::map<std::string, ASR::symbol_t*> symbol_subs;
         // (instantiated symbol, template symbol) pairs sharing one selection
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> symbols;
+        // The conformances selected for the nominal constraints of each
+        // concrete binder where the specialization was checked; deferred
+        // runtime packs of the body take their witnesses from them.
+        std::map<std::string, std::vector<ASR::TraitImplementation_t*>> conformances;
     };
     std::vector<PendingBodyInstantiation> pending_body_instantiations;
     // The template procedure of each instantiated body, which diagnostics
@@ -26158,9 +26184,11 @@ public:
     void queue_body_instantiation(
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
             const std::map<std::string, ASR::symbol_t*> &symbol_subs,
-            const std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &symbols) {
+            const std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &symbols,
+            const std::map<std::string, std::vector<ASR::TraitImplementation_t*>>
+                &conformances = {}) {
         if (symbols.empty()) return;
-        PendingBodyInstantiation p{type_subs, symbol_subs, symbols};
+        PendingBodyInstantiation p{type_subs, symbol_subs, symbols, conformances};
         if (is_body_visitor) {
             pending_body_instantiations.push_back(p);
         } else {
@@ -26253,8 +26281,16 @@ public:
                 LCOMPILERS_ASSERT(ASRUtils::trait_contract_implies(
                     *ASRUtils::trait_runtime_contract(actual.first), *contract));
             } else {
-                evidence = select_runtime_trait_witness(
-                    pack->m_type, actual.second, pack->base.base.loc);
+                // A concrete type argument is packed with the conformance
+                // selected for its binder where the specialization was
+                // checked, not with one visible where it is instantiated.
+                auto selected = p.conformances.find(
+                    ASRUtils::symbol_name(constraint->m_parameter));
+                LCOMPILERS_ASSERT(selected != p.conformances.end());
+                const std::vector<ASR::TraitImplementation_t*> none;
+                evidence = select_runtime_trait_witness(pack->m_type, actual.second,
+                    pack->base.base.loc, false,
+                    selected != p.conformances.end() ? &selected->second : &none);
             }
             p.symbol_subs[ASRUtils::trait_deferred_pack_key(*pack)] = evidence;
         }
@@ -26331,8 +26367,10 @@ public:
         current_scope = target;
         ASR::symbol_t *callee = nullptr;
         try {
+            std::vector<std::pair<ASR::TraitConstraint_t*, ASR::TraitImplementation_t*>>
+                conformances;
             auto requirements = resolve_trait_requirements(generic, implementation_types,
-                false, loc, nullptr, recorded_witnesses.empty() ? nullptr : &recorded);
+                false, loc, &conformances, recorded_witnesses.empty() ? nullptr : &recorded);
             // A recorded conformance can belong to a module this unit does not use.
             for (const auto &resolved : requirements) {
                 if (!resolved.binding) continue;
@@ -26347,7 +26385,7 @@ public:
                 }
             }
             callee = specialize_trait_generic(target, generic, implementation_types,
-                requirements, loc);
+                requirements, conformances, loc);
         } catch (const SemanticAbort &) {
             current_scope = saved_scope;
             throw;
@@ -26571,8 +26609,20 @@ public:
                     ASR::symbol_t *specialization =
                         find_trait_specialization(target, source.generic, types, evidence);
                     if (!specialization) {
+                        // A forwarded binder has the conformances this
+                        // instantiation selected for the caller's binder.
+                        std::map<std::string, std::vector<ASR::TraitImplementation_t*>>
+                            conformances;
+                        for (const auto &entry : source.types) {
+                            auto selected = p.conformances.find(
+                                ASR::down_cast<ASR::TypeParameter_t>(
+                                    entry.second.first)->m_param);
+                            if (selected != p.conformances.end()) {
+                                conformances[entry.first] = selected->second;
+                            }
+                        }
                         specialization = instantiate_trait_signature(
-                            target, source.generic, types, evidence, symbols);
+                            target, source.generic, types, evidence, symbols, conformances);
                     }
                     p.symbol_subs[ASRUtils::symbol_name(procedure)] = specialization;
                     forwarded = true;
