@@ -788,7 +788,17 @@ completed procedure interface. Saved or initialized borrowed view storage is not
 supported. A structure constructor or a concrete nonallocatable, nonpointer
 function result can be borrowed as an ordinary or generic procedure's view
 actual for the duration of that call; existing result storage and its lifetime
-are unchanged. Generic resolution, including `initial` constructors, first
+are unchanged. A named constant, or a component of one, is such a value
+rather than storage: it is borrowed as the structure constructor of its value,
+derived from the named constant itself (`traits_runtime_borrow_03`). A named
+constant is never finalized, so one of a finalizable type, or of a type whose
+components have defined assignment, is diagnosed as not implemented rather than
+borrowed through a copy. So are an element of a named constant array, or a
+component of one, that carries a folded value, which is not derived from the
+named constant, and a constant passed as an open generic method's
+type-parameter argument. Closed type-set arguments, including literal and named
+numeric constants, select member slots and are passed unchanged.
+Generic resolution, including `initial` constructors, first
 matches specifics exactly, as in ordinary Fortran: a view dummy then accepts
 only a view of an equal contract. Only when no specific matches exactly may a
 view dummy accept a view whose contract implies its own, or a nonpolymorphic

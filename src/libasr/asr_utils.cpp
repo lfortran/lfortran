@@ -6488,6 +6488,18 @@ bool trait_owner_same_slot(ASR::expr_t *left, ASR::expr_t *right) {
     return false;
 }
 
+bool is_constant_designator(ASR::expr_t *expr) {
+    if (!expr) return false;
+    if (ASR::is_a<ASR::Var_t>(*expr)) {
+        auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        return symbol && ASR::is_a<ASR::Variable_t>(*symbol) &&
+            ASR::down_cast<ASR::Variable_t>(symbol)->m_storage ==
+                ASR::storage_typeType::Parameter;
+    }
+    return (ASR::is_a<ASR::StructInstanceMember_t>(*expr) ||
+            ASR::is_a<ASR::ArrayItem_t>(*expr)) && expr_value(expr) != nullptr;
+}
+
 bool association_has_target(ASR::expr_t *value) {
     if (!value) return false;
     if (auto *source = association_source(value)) return association_has_target(source);

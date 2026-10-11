@@ -4013,6 +4013,8 @@ RUN(NAME traits_runtime_owning_separate_01 LABELS llvm llvm2 NO_STD_F23
         traits_runtime_owning_separate_01_a.f90 traits_runtime_owning_separate_01_b.f90)
 RUN(NAME traits_runtime_borrow_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_borrow_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_borrow_03_oracle LABELS gfortran llvm)
 RUN(NAME derived_type_borrow_01 LABELS gfortran llvm fortran)
 RUN(NAME traits_runtime_scalar_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_character_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES

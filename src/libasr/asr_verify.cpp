@@ -2443,15 +2443,22 @@ public:
                 !ASRUtils::is_class_type(scalar),
             "asr.verify.trait_pack.exact_scalar",
             "A borrowed pack requires exact, nonpolymorphic concrete storage and its contract");
-        require_id(ASR::is_a<Var_t>(*x.m_payload) ||
+        // A value of its statement is materialized by the passes before code
+        // generation; a structure constant is static data that they leave in
+        // place, so it is not one. A designator that stands for a compile-time
+        // value (ASRUtils::is_constant_designator) is not storage either: it is
+        // lowered to its value, which leaves a pack of it no address to borrow.
+        bool statement_value = ASR::is_a<StructConstructor_t>(*x.m_payload) ||
+            (ASR::is_a<FunctionCall_t>(*x.m_payload) &&
+             !ASRUtils::is_allocatable(type) && !ASRUtils::is_pointer(type));
+        require_id(statement_value || ASR::is_a<Var_t>(*x.m_payload) ||
                 ASR::is_a<StructInstanceMember_t>(*x.m_payload) ||
-                ASR::is_a<ArrayItem_t>(*x.m_payload) ||
-                ASR::is_a<StructConstructor_t>(*x.m_payload) ||
-                ASR::is_a<StructConstant_t>(*x.m_payload) ||
-                (ASR::is_a<FunctionCall_t>(*x.m_payload) &&
-                 !ASRUtils::is_allocatable(type) && !ASRUtils::is_pointer(type)),
+                ASR::is_a<ArrayItem_t>(*x.m_payload),
             "asr.verify.trait_pack.borrowed_designator",
             "A borrowed pack must preserve an existing payload designator or a value of its statement");
+        require_id(statement_value || !ASRUtils::is_constant_designator(x.m_payload),
+            "asr.verify.trait_pack.constant_designator",
+            "A borrowed pack cannot designate a named constant or a value folded from one as storage");
         require_id(ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) ==
                 ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
