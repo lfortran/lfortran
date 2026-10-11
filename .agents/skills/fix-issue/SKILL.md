@@ -7,10 +7,11 @@ description: >
   failures; the user need not name this skill. Expand
   the complete selection, use fresh per-issue subagents and isolated Git
   worktrees, and build with Pixi/LLVM 11. Run repro-issue, then create-mre and
-  fix-mre until every original reproducer passes; after a short local gate,
-  publish a draft at once so Quick checks CI runs the full suites while
-  pr-review runs locally. Publish independent fixes as separate fork PRs;
-  consolidate shared or dependent fixes into one PR with focused commits.
+  fix-mre (targeted checks, then the local suites once) until every original
+  reproducer passes, then publish a draft at once and review locally with
+  pr-review while Quick checks CI runs. Publish independent fixes as separate
+  fork PRs; consolidate shared or dependent fixes into one PR with focused
+  commits.
   Batch pushes and iterate on CI, review, and human feedback until green and
   clean, then mark ready. Extended Exhaustive checks
   are opt-in only when the user requests them.
@@ -41,15 +42,23 @@ per-job procedure below. Pass it its assigned issue IDs, not the original
 batch query, so it does not recursively redispatch the batch.
 
 Per job: setup → reproduce → (reduce → fix → original-issue check) until fixed
-→ local gate → draft PR → CI watch concurrent with the local pr-review/fix
-loop, with batched pushes → ready. Track additional bugs throughout, including
-jobs that stop without a PR.
+→ draft PR → CI watch concurrent with the local pr-review/fix loop, with
+batched pushes → ready. Track additional bugs throughout, including jobs that
+stop without a PR.
 
-Quick checks (about 30–90 minutes) runs the full suites in all modes and
-backends, so it is the long pole: publish the draft as soon as the short
-local gate of `fix-mre` passes, and review locally while CI runs. Do not run
-full suites locally except as a last resort to debug a CI failure. Every push
+Quick checks (about 30–90 minutes) is the long pole: publish the draft as
+soon as the fix is verified, and review locally while CI runs. Every push
 reruns Quick and cancels the run in progress, so pushes are batched.
+
+**Push invariant:** never push compiler-source changes that have not passed
+the local suites once (`fix-mre` Phase 5b: unit, integration, and reference,
+in the default mode only). Record the passing commit as `suites_green_sha` in
+`state.md`. The suites are current when
+`git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; otherwise
+whoever pushes next runs them once first. Changes outside `src/` and
+`grammar/` (tests, docs, commit messages, PR text) need only the changed tests
+run directly. Never rerun the suites locally with `--fast`, `--std=f23`, or
+other backends; Quick does.
 
 ## You are the orchestrator: delegate everything
 
@@ -92,10 +101,11 @@ Keep each job's handoffs in `.fix-issue/<id>/` inside its **assigned worktree**
 (gitignored). `<id>` is an issue number or a job slug. Maintain `state.md`:
 input/all included issues, absolute worktree, branch/base SHA, fork remote,
 build directory, compiler/Pixi invocation, resource budget, PR URL, round,
-last pushed SHA, and status. Update it after every phase; reread it on resume.
+last pushed SHA, `suites_green_sha`, and status. Update it after every phase;
+reread it on resume.
 
 Subagents write their artifacts there: `repro.md`; for each MRE iteration `j`,
-`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`, the gate and fail-before logs;
+`mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`, the test and fail-before logs;
 then `pr_body.md`, and for each review round `k`, `review_<k>.md`,
 `round_<k>.md`, `ci_<k>.log`. You maintain
 `followups.md`: one line per unrelated bug, with its status (`unfiled`,
@@ -160,9 +170,10 @@ the PR has base conflicts, needs a change that landed on `main`, or CI
 failures look caused by a stale base.
 
 To update, run `git rebase <upstream-remote>/main` and resolve any conflicts.
-Only if conflicts in compiler source were resolved, rebuild and rerun the
-local gate; otherwise let CI check. Then update the fork with
-`git push --force-with-lease`.
+If conflicts in `src/` or `grammar/` were resolved, rebuild and rerun the
+targeted checks and the suites once (see **Push invariant**); otherwise set
+`suites_green_sha` to the rebased head and let CI check. Then update the fork
+with `git push --force-with-lease`.
 This applies in every PR state, including after review. Rebasing only moves
 the existing commits; address review feedback with new commits and do not
 squash or reword commits reviewers have already seen.
@@ -310,19 +321,20 @@ Run the `fix-mre` skill on the MRE, with these additions to its instructions:
   iteration's fix and passes with it**, capturing the fail-before log with the
   build that predates this iteration's change (the first build at the base SHA
   for `j = 1`), not a separate baseline worktree unless that was missed.
-- It must pass the `fix-mre` local gate, not the full suites, which Quick CI
-  runs after publishing. For every gate failure, it must determine whether
-  this change caused it or whether it also fails on `main`.
+- It must pass `fix-mre` Phase 5: the targeted checks, then the unit,
+  integration, and reference suites once, in the default mode only. For every
+  failure, it must determine whether this change caused it or whether it also
+  fails on `main`. It records `suites_green_sha` in `state.md`.
 - **Commit is authorized.** Make one focused commit for this bug, with an
   imperative `fix: ...` message. Do not stage scratch reproducers, logs, or
   `.fix-issue/`. Follow **Commit authorship**, including no co-author lines.
 - Do not push.
 
 Report, also written to `fix_<j>.md`: the commit SHA, the changed files, the
-test name, fail-before/pass-after verified (log paths), local gate results,
-any failures that already exist on `main`, and one paragraph of
-rationale (the bug, the compiler phase at fault, and why the fix belongs
-there).
+test name, fail-before/pass-after verified (log paths), targeted and suite
+results, `suites_green_sha`, any failures that already exist on `main`, and
+one paragraph of rationale (the bug, the compiler phase at fault, and why the
+fix belongs there).
 
 #### 3c. Issue check subagent (fresh)
 
@@ -350,7 +362,7 @@ start iteration `j+1` on the next failure.
 
 ### Phase 4: Publish subagent
 
-Publish as soon as every included issue is fixed and the local gate passed;
+Publish as soon as every included issue is fixed and the suites are current;
 local review follows in Phase 5, concurrently with CI. In a batch, wait for
 the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
 
@@ -364,12 +376,12 @@ the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
      refactoring ideas or missing tests for existing behaviour, including
      review follow-up findings once known.
    - Verification: the integration tests added, each failing before its fix
-     and passing after; the original reproducer now passing; the local gate
-     commands; full suites run by Quick CI.
+     and passing after; the original reproducer now passing; the targeted
+     checks and default-mode local suites; other modes run by Quick CI.
    - Rationale: for each bug, why the fix belongs in the chosen compiler
      phase.
-2. Inspect all new commits for the authorship policy, then
-   `git push -u <fork-remote> <branch>`
+2. Inspect all new commits for the authorship policy, confirm the **Push
+   invariant**, then `git push -u <fork-remote> <branch>`
 3. `gh pr create --repo lfortran/lfortran --base main --head <login>:<branch> --draft --title "<title>" --body-file .fix-issue/<id>/pr_body.md`.
    The title is the commit subject when there is a single commit. Otherwise
    it is a `fix: ...` summary of the issue.
@@ -436,16 +448,21 @@ current head SHA.
       --jq 'group_by(.bucket)[] | "\(.[0].bucket): \(length) \([.[].name] | join(", "))"'
   ```
   If checks sit in `action_required` or never start, tell the user. If the
-  watch returned on a failure, go to 5d right away; do not cancel the run.
+  watch returned on a failure, go to 5d as soon as no review subagent is
+  running in the worktree; do not cancel the run.
   After the fix is committed, check whether other jobs failed meanwhile, and
   restart the watch for the remaining checks while no push is pending.
 - **Review subagent (fresh, read-only):** whenever the local head contains
   commits that no clean review has covered, always including round 1. Run
   the `pr-review` skill on the local branch: all commits since the merge base
   with `<upstream-remote>/main`, including unpushed ones, not just the latest
-  commit. It must not edit, commit, or push. It may build and run targeted
-  tests in the checkout to confirm a finding, as long as it leaves the tree
-  unchanged. It writes the full review to `review_<k>.md` and
+  commit. It must not edit tracked files, commit, or push. If the suites are
+  current (**Push invariant**), it assumes they passed. Otherwise (a review
+  or CI fix changed `src/`), it rebuilds and runs them once in the background,
+  with logs redirected, while it reviews; it records `suites_green_sha` if they
+  pass and reports each regression as a blocker. It may build and run targeted
+  tests to confirm a finding, one build/test process at a time, as long as it
+  leaves the tree unchanged. It writes the full review to `review_<k>.md` and
   reports the number of findings in each class (blocker / rework /
   follow-up), with a one-line title and file:line for each blocker and rework
   item. Tell it to review the PR on its merits and report only real findings
@@ -524,11 +541,10 @@ comments are new. It should:
   with that CI mode's flags, and fix the root cause. For a reference diff that
   is an intended output change, update only that test with
   `pixi run -e llvm11 tests -t <test> -u -s > reference-update.log 2>&1` and
-  review the diff. Run a full local suite only as a last resort for a failure
-  that cannot be reproduced individually. If a
-  failure also happens on `main` or is plainly infrastructure flakiness, do
-  not fix it in this PR. Re-run it once with `gh run rerun <run-id> --failed`
-  and report it; a pre-existing LFortran bug goes on its Unrelated bugs list.
+  review the diff. If a failure also happens on `main` or is plainly
+  infrastructure flakiness, do not fix it in this PR. Re-run it once with
+  `gh run rerun <run-id> --failed` and report it; a pre-existing LFortran bug
+  goes on its Unrelated bugs list.
 - For each review **blocker** and **rework** finding: first confirm the
   finding is real by reproducing it. Then fix it, or record in
   `round_<k>.md` exactly why it is not valid. Leave **follow-up** items
@@ -538,16 +554,18 @@ comments are new. It should:
 - For base conflicts, or when the PR needs a change from `main`: follow
   **Keeping the PR branch current** and push with `--force-with-lease` under
   the push rules below.
-- Verify only what changed. After a compiler-source change, rebuild and rerun
-  the local gate. After test-only edits, rerun just those tests directly.
-  After commit-message or PR-description edits, or a rebase without
-  compiler-source conflicts, rerun nothing; CI checks it. Update
+- Verify only what changed. After a compiler-source change, rebuild and run
+  the targeted checks for it; the next review round runs the suites. After
+  test-only edits, run just those tests directly. After commit-message or
+  PR-description edits, rerun nothing. Before any push, satisfy the **Push
+  invariant**: a CI fix that touches `src/` runs the suites once before
+  pushing, which is cheaper than a wasted Quick run. Update
   `pr_body.md` and the PR description (`gh pr edit <PR> --body-file ...`) if
   scope or rationale changed.
 - Commit focused follow-ups under **Commit authorship** (no co-author lines)
   and inspect the new commits. Fixing always starts immediately; these
   **push rules** decide only when to push to the fork remote (a normal push):
-  - **A CI job failed:** push as soon as the fix passes the local gate. Before
+  - **A CI job failed:** push as soon as the fix passes locally. Before
     pushing, check `gh pr checks` for other jobs that failed meanwhile and
     include their fixes in the same push. Do not wait for the remaining
     jobs; a failed job stops early, so only a new push can reveal later

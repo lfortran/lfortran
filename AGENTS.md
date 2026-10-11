@@ -143,18 +143,19 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
 - Use Pixi and LLVM 11 for fresh fixing worktrees, as described below. Pass
   each subagent the exact worktree, build directory, compiler path, environment
   invocation, and resource budget; shell activation is not inherited.
-- Quick checks, not local runs, is the full-suite gate. Once a branch passes
-  `fix-mre`'s short local gate (the reproducers, the MRE, and each new test
-  run directly in normal, `--fast`, and `--std=f23` modes and with GFortran),
-  publish a draft from the user's fork so Quick starts early, and review it
-  locally with `pr-review` while CI runs. Run full suites locally only as a
-  last resort to debug a CI failure. In a batch, at most four PRs run Quick
-  at once. Iterate on CI failures, review findings, and human feedback until
-  Quick is green and the review is clean before marking ready. Every push
-  reruns Quick, so batch pushes: push CI fixes as soon as they pass the local
-  gate; hold other changes until the current run finishes rather than
-  cancelling a healthy run. Follow the commit-authorship policy below in every
-  subagent, including CI fixers.
+- `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
+  and each new test run directly in normal, `--fast`, and `--std=f23` modes
+  and with GFortran), then runs the unit, integration, and reference suites
+  once, in the default mode. Then publish a draft from the user's fork so
+  Quick starts early, and review it locally with `pr-review` while CI runs;
+  the review reruns the suites only if compiler source changed since they
+  passed. Never push compiler-source changes that have not passed the local
+  suites once. In a batch, at most four PRs run Quick at once. Iterate on CI
+  failures, review findings, and human feedback until Quick is green and the
+  review is clean before marking ready. Every push reruns Quick, so batch
+  pushes: push CI fixes as soon as they pass locally; hold other changes until
+  the current run finishes rather than cancelling a healthy run. Follow the
+  commit-authorship policy below in every subagent, including CI fixers.
 - Record every additional compiler bug discovered in any phase. Fix regressions
   introduced by the current changes in the same PR. For unrelated pre-existing
   bugs, verify against upstream `main`, search open and closed GitHub issues,
@@ -243,12 +244,12 @@ pixi run -e llvm11 start --version
 ```
 
 The extra flags build a Debug compiler (assertions on) with `-O2`, like
-Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the CMake cache, so later
-`pixi run -e llvm11 build` rebuilds keep them. Rerun reproducers and new
-tests directly (the `fix-mre` local gate) and inspect their saved logs. The
-full suites below are for debugging CI failures that cannot be reproduced
-individually; budget `<jobs>` across active workers instead of giving each
-worker all cores:
+Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the
+CMake cache, so later `pixi run -e llvm11 build` rebuilds keep them. While
+iterating, rerun reproducers and new tests directly (`fix-mre` targeted
+checks). Run the full suites below once per compiler change, in the default
+mode only, and inspect their saved logs. Budget `<jobs>` across active
+workers instead of giving each worker all cores:
 
 ```bash
 pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
@@ -324,9 +325,10 @@ only once, redirect to a log file and then examine the log file.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
-  before your change and pass after. Do not merge until Quick checks, which
-  runs the full unit, integration, and reference suites, is green. Locally,
-  run the targeted tests; full local suites are optional.
+  before your change and pass after. Before pushing a compiler change, run
+  the unit, integration (default mode), and reference suites locally once.
+  Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
+  and is the merge gate.
 
 ### CI policy
 
@@ -392,7 +394,7 @@ only once, redirect to a log file and then examine the log file.
   but does not save them (`save-cache: 'false'`).
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
-  CI configurations, not a replacement for full regression testing.
+  CI configurations, not a replacement for full local regression testing.
 - The `main` ruleset requires all twelve Quick jobs directly (listed in
   `doc/src/installation.md`); there is no aggregate status job. Keep their
   job names stable, and update the ruleset in the same rollout when a
@@ -421,8 +423,7 @@ and the distinction between capability tests and application validation.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure the new test passes locally (agents: the `fix-mre` local gate); Quick
-  CI runs the full suite, which you may also run with
+- Ensure the new test passes locally, then run the full suite once:
   `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).

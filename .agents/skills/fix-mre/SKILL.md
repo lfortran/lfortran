@@ -4,17 +4,18 @@ description: >
   Fix an LFortran bug given an MRE (Minimal Reproducible Example) produced by
   the create-mre skill. Reproduces the bug, diagnoses which compiler phase is
   at fault, fixes it in the LFortran source, adds an integration test, and
-  verifies it with a short local gate, leaving the full suites to Quick CI.
-  Triggers: fix MRE, fix bug, fix lfortran, fix reproducer, implement,
-  resolve, patch, bugfix.
+  verifies it with targeted checks and one default-mode run of the unit,
+  integration, and reference suites. Triggers: fix MRE, fix bug, fix
+  lfortran, fix reproducer, implement, resolve, patch, bugfix.
 ---
 
 # Fix MRE — Fix an LFortran Bug from a Minimal Reproducible Example
 
 Given an MRE (produced by the `create-mre` skill or written by hand), reproduce
 the LFortran bug, fix it in the compiler source, add an integration test, and
-verify it with the short local gate (Phase 5). Quick CI runs the full unit,
-integration, and reference suites in all modes once the branch is pushed.
+verify it (Phase 5): targeted checks of the new test in every mode, then the
+full unit, integration, and reference suites once, in the default mode. Quick
+CI covers the other modes, backends, and platforms once the branch is pushed.
 
 ## Prerequisites
 
@@ -140,29 +141,30 @@ files stay untracked; the test is what gets committed.
    - Add a `RUN(NAME <test_name> LABELS gfortran llvm)` style entry.
    - Use at least the labels `gfortran` and `llvm`. An unregistered test is
      dead code.
-5. Verify it with the local gate (Phase 5). Its GFortran run confirms the
-   test is valid Fortran that does not depend on LFortran-specific behavior.
+5. Verify it with the targeted checks (Phase 5a). Their GFortran run confirms
+   the test is valid Fortran that does not depend on LFortran-specific
+   behavior.
 
-**Confirm the test actually captures the bug.** Run the new test through the
-gate with a build that predates the fix and save the failing log, for example
-`.fix-issue/<id>/fail_before_<test_name>.log`. Write the test before the first
-rebuild with the fix (Phase 3), so the existing build supplies this evidence:
-the worker's first build, made at the base SHA, for the first fix, or the
-build before this commit's change for a later dependent commit. Only if that
-evidence was not captured, use an isolated baseline worktree/build with the
-new test and its registration copied in, never the fix. Coordinate worktree
-creation with the orchestrator. Do not stash, reset, or switch the caller's or
-another worker's checkout: worktrees share Git refs and the stash stack. If the
-test passes without the fix, it does not cover the bug and the fix is not
-understood well enough.
+**Confirm the test actually captures the bug.** Run the new test's targeted
+checks with a build that predates the fix and save the failing log, for
+example `.fix-issue/<id>/fail_before_<test_name>.log`. Write the test before
+the first rebuild with the fix (Phase 3), so the existing build supplies this
+evidence: the worker's first build, made at the base SHA, for the first fix,
+or the build before this commit's change for a later dependent commit. Only if
+that evidence was not captured, use an isolated baseline worktree/build with
+the new test and its registration copied in, never the fix. Coordinate
+worktree creation with the orchestrator. Do not stash, reset, or switch the
+caller's or another worker's checkout: worktrees share Git refs and the stash
+stack. If the test passes without the fix, it does not cover the bug and the
+fix is not understood well enough.
 
-### Phase 5: Local Gate
+### Phase 5: Verify
 
-The local gate takes minutes, not a full suite. Quick CI runs the full unit,
-integration (all modes and backends), and reference suites after the branch is
-pushed, so do not run `pixi run -e llvm11 ctest`, `tests`, or
-`integration_tests` over the whole suite here. Do not use
-`integration_tests -t` either: each call reconfigures the whole CMake suite.
+Run the targeted checks after every rebuild, and the full suites once, after
+the fix is final. Do not use `integration_tests -t` for single tests: each
+call reconfigures the whole CMake suite.
+
+#### 5a. Targeted checks (seconds)
 
 1. Rerun the MRE (`pixi run -e llvm11 bash run.sh`) and any original
    reproducers supplied with it (`run_re.sh`).
@@ -176,11 +178,11 @@ pushed, so do not run `pixi run -e llvm11 ctest`, `tests`, or
    copy `COPY_TO_BIN` files into the scratch directory; a `FAIL` test must
    exit nonzero. Work in an ignored scratch directory, for example:
    ```bash
-   mkdir -p .fix-issue/<id>/gate
+   mkdir -p .fix-issue/<id>/targeted
    pixi run -e llvm11 bash -c 'set -ex; t=$PWD/integration_tests/<test_name>.f90
-       cd .fix-issue/<id>/gate
+       cd .fix-issue/<id>/targeted
        for m in "" --fast --std=f23; do lfortran $m "$t" -o a.out; ./a.out; done
-       gfortran "$t" -o a.out; ./a.out' > .fix-issue/<id>/gate.log 2>&1
+       gfortran "$t" -o a.out; ./a.out' > .fix-issue/<id>/targeted.log 2>&1
    ```
    Other backends in its labels are left to CI unless the fix targets them.
 3. When the deliverable is a reference test (for example a diagnostic appended
@@ -189,17 +191,45 @@ pushed, so do not run `pixi run -e llvm11 ctest`, `tests`, or
    ```bash
    pixi run -e llvm11 tests -t <test> -u -s > reference-update.log 2>&1
    ```
-   Never run `-u` blindly; an unreviewed update can bake a regression into the
-   expected output.
+   Never run `-u` blindly (see 5b).
+
+#### 5b. Full suites, once, in the default mode
+
+When the fix and its tests are final, run each suite once:
+
+```bash
+pixi run -e llvm11 ctest -j<jobs> > unit.log 2>&1
+pixi run -e llvm11 integration_tests -j<jobs> > integration.log 2>&1
+pixi run -e llvm11 tests -j<jobs> > reference.log 2>&1
+```
+
+Do not add `-f`, `--std f23`, or other backends: Quick CI runs those modes.
+Reference tests always use LLVM 11.
 
 **Always redirect test output to a log file and then examine it.** Do not pipe
 to `tail` directly; you may need more output than `tail` shows.
 
-If a gate check fails, determine whether your change caused it. Fix
-regressions, rebuild, and rerun the gate. Record pre-existing compiler bugs
-with their reproducer, baseline SHA, command, and output. Return them to the
-`fix-issue` orchestrator for batch-wide duplicate checking and issue filing;
-do not silently skip them or fix them here.
+For every failure, determine whether your change caused it (a regression) or
+it also fails on `main`. Fix regressions, rerun the failing tests and 5a
+directly until they pass, then rerun the suites once. Record pre-existing
+compiler bugs with their reproducer, baseline SHA, command, and output. Return
+them to the `fix-issue` orchestrator for batch-wide duplicate checking and
+issue filing; do not silently skip them or fix them here.
+
+For a reference failure that is an intended consequence of the fix, update
+only the affected tests with
+`pixi run -e llvm11 tests -t <affected-test> -u -s > reference-update.log 2>&1`,
+review every change with `git diff`, and rerun the reference suite without
+`-u`. Never run `-u` blindly: an unreviewed update can silently bake a
+regression into the expected output.
+
+#### 5c. Record the result
+
+Record the commit whose compiler source passed the suites: the fix commit, if
+`src/` and `grammar/` did not change after the run (under `fix-issue`, as
+`suites_green_sha`). The suites stay current while
+`git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; later
+test-only or documentation changes need only their targeted checks.
 
 ### Phase 6: Report
 
@@ -223,8 +253,12 @@ Files modified:
 Integration test: integration_tests/<test_name>.f90
   fails before this fix, passes on this branch — verified
 
-Local gate:        MRE, reproducers, test (normal/--fast/--std=f23/gfortran) pass
-Full suites:       left to Quick CI
+Targeted checks:   MRE, reproducers, test (normal/--fast/--std=f23/gfortran) pass
+Unit tests:        pass
+Integration tests: pass  (default mode)
+Reference tests:   pass  (<N> reference outputs updated, reviewed)
+Suites green at:   <sha>
+Other modes:       Quick CI
 Additional bugs:  <evidence paths for the orchestrator, or none>
 
 Not committed. Review the diff, then commit when ready.

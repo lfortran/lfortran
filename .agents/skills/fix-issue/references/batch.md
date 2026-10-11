@@ -112,10 +112,11 @@ For consolidation, select one group owner and branch, stop other writers to
 that group, and delegate integration of the verified commits in dependency
 order. Preserve the other workers' branches, REs, and evidence. Do not cherry-pick
 the same shared fix twice or discard uncommitted work. Archive each original
-RE separately under the group state directory. Rebuild and run the local gate
-on the combined head with every included issue's original scenarios and new
-tests, not only the final worker's MRE; Quick CI runs the suites. For each
-dependent commit, fail-before evidence uses the build of the preceding commit.
+RE separately under the group state directory. Rebuild and rerun every included
+issue's original scenarios and new tests on the combined head, not only the
+final worker's MRE, then run the suites once unless they are already current
+for that head (**Push invariant** in `../SKILL.md`). For each dependent
+commit, fail-before evidence uses the build of the preceding commit.
 
 Reassess grouping if later work exposes another dependency. Do not silently
 close or supersede already-published PRs; ask before changing that publication
@@ -127,11 +128,11 @@ verified by that PR, never for a partially fixed report.
 
 At most **four** of the batch's PRs may have Quick checks running at once:
 each run has about twelve jobs and competes with human PRs for the
-organization's runners. Branches that passed the local gate wait in a FIFO
-publication queue; when a running Quick run finishes, grant the next branch
-its slot and let it publish the draft. Later pushes to an already published
-PR do not wait: a CI-fix push replaces that PR's own run, and the push rules
-already batch the rest. A queued worker may start its local review rounds.
+organization's runners. Verified branches wait in a FIFO publication queue;
+when a running Quick run finishes, grant the next branch its slot and let it
+publish the draft. Later pushes to an already published PR do not wait: a
+CI-fix push replaces that PR's own run, and the push rules already batch the
+rest. A queued worker may start its local review rounds.
 
 ## Track additional bugs across the whole batch
 
