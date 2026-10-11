@@ -17,7 +17,7 @@ target datalayout = "..."
 define float @_lcompilers_cos_f32(float* %x) {
 .entry:
   %_lcompilers_cos_f32 = alloca float, align 4
-  %0 = load float, float* %x, align 4
+  %0 = load float, float* %x, align 1
   %1 = call float @_lfortran_scos(float %0)
   store float %1, float* %_lcompilers_cos_f32, align 4
   br label %return
@@ -99,9 +99,9 @@ free_nonnull:                                     ; preds = %associate_block_sta
 free_done:                                        ; preds = %free_nonnull, %associate_block_start
   %32 = load float*, float** %v, align 8
   %33 = load float*, float** %v, align 8
-  %34 = load float, float* %33, align 4
+  %34 = load float, float* %33, align 1
   %35 = fmul float %34, 0x4012666660000000
-  store float %35, float* %32, align 4
+  store float %35, float* %32, align 1
   br label %associate_block_end
 
 associate_block_end:                              ; preds = %free_done

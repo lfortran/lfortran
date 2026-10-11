@@ -68,6 +68,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -92,6 +93,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     next_token
@@ -158,6 +160,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration
@@ -257,6 +260,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -281,6 +285,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     next_token
@@ -372,6 +377,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -403,6 +409,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     parse_select
@@ -494,6 +501,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_table
@@ -571,6 +579,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration

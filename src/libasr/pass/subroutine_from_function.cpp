@@ -197,7 +197,8 @@ public:
                     ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
                     if (decl_sym && ASR::is_a<ASR::Function_t>(*decl_sym)) {
                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl_sym);
-                        ASR::ttype_t* new_type = func->m_function_signature;
+                        ASR::ttype_t* new_type = ASRUtils::import_procedure_type(al,
+                            func->m_function_signature, x.m_parent_symtab);
                         if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
                             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
                         }
@@ -218,7 +219,7 @@ public:
  * the procedure variable it is associated with and the calls through it
  * agree.
  */
-class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes> {
+class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes> {
     private:
         Allocator &al;
         std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
@@ -245,7 +246,7 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP) {}
 
         void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
-            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
             ASR::Function_t* to_fn = transformed_interface(x.m_to);
             if (to_fn == nullptr) {
                 return;
@@ -271,10 +272,11 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
         }
 
         void visit_Variable(const ASR::Variable_t &x) {
-            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
             ASR::ttype_t* new_type = transformed_procedure_variable_type(x);
             if (new_type != nullptr) {
-                const_cast<ASR::Variable_t&>(x).m_type = new_type;
+                const_cast<ASR::Variable_t&>(x).m_type = ASRUtils::import_procedure_type(
+                    al, new_type, x.m_parent_symtab);
             }
         }
 
@@ -282,7 +284,7 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
         // copied into the data of an outlined region) has the component's
         // type.
         void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
-            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_StructInstanceMember(x);
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_StructInstanceMember(x);
             ASR::symbol_t* member = ASRUtils::symbol_get_past_external(x.m_m);
             if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
                 return;
@@ -290,7 +292,8 @@ class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunction
             ASR::ttype_t* new_type = transformed_procedure_variable_type(
                 *ASR::down_cast<ASR::Variable_t>(member));
             if (new_type != nullptr) {
-                const_cast<ASR::StructInstanceMember_t&>(x).m_type = new_type;
+                const_cast<ASR::StructInstanceMember_t&>(x).m_type =
+                    ASRUtils::import_procedure_type(al, new_type, current_scope);
             }
         }
 };

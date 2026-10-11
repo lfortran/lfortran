@@ -437,17 +437,31 @@ Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
 are no duplicate or skipped Exhaustive copies of these jobs.
 
+The full LLVM-WASM suite runs in two parallel jobs that build the same
+compiler: `Test LLVM 19 WASM` runs the WASI backend (`llvm_wasm`, wasmtime)
+and the unit tests, and `Test LLVM 19 WASM Emscripten` runs the Emscripten
+backend (`llvm_wasm_emcc`, Node). The Emscripten pass alone takes about as
+long as building the compiler plus the WASI pass, because every `emcc` link
+runs Emscripten's JavaScript compiler (about 0.3 s per test). Only the WASI
+job saves the shared compiler cache. Like Quick's LLVM 11 compiler, this
+compiler is a Debug build compiled with `-O2`, which halves the time each
+test spends in LFortran.
+
 Quick distributes the full CPU modes over two existing builds rather than
 serializing them in one long job:
 
 | Compiler | Complete regression modes |
 | --- | --- |
-| Linux/LLVM 11 Debug | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
+| Linux/LLVM 11 Debug, compiled with `-O2` | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
 | Linux/LLVM 21 Debug | Separate compilation, submodules with separate compilation, and leak detection |
 
 Every registered LLVM test runs in each of these modes on its designated
 compiler. Both are Debug builds, so every full Quick suite runs with
-assertions and per-pass ASR verification. Both also use the platform C/C++
+assertions and per-pass ASR verification. The LLVM 11 compiler runs four full
+passes, so it is compiled with `-O2` (`CMAKE_CXX_FLAGS_DEBUG`); it stays a
+Debug build, so `WITH_LFORTRAN_ASSERT` stays on and nothing defines `NDEBUG`.
+This makes each pass about 1.6 times faster. The platform builds keep `-O0`.
+Both also use the platform C/C++
 diagnostic and standard-library hardening flags, including `-Werror`, and
 `WITH_INTERNAL_ALLOC_CHECK=yes`. Splitting the modes across two
 jobs reduces the critical path without sampling those suites or adding
@@ -535,7 +549,7 @@ one Debug build, so ccache evicted objects it still needed.
 
 ##### Required checks
 
-The `main` ruleset requires these eleven Quick checks directly, bound to the
+The `main` ruleset requires these twelve Quick checks directly, bound to the
 GitHub Actions app (app ID `15368`). There is no aggregate status job.
 
 ```text
@@ -548,6 +562,7 @@ Compiler compatibility / Test LLVM 7 (ubuntu-latest)
 Compiler compatibility / Test LLVM 11 (ubuntu-latest)
 Compiler compatibility / Test LLVM 23 (ubuntu-latest)
 Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)
+Compiler compatibility / Test LLVM 19 WASM Emscripten (ubuntu-latest)
 Compiler compatibility / Test without LLVM Backend
 Compiler compatibility / Test MLIR backend
 ```

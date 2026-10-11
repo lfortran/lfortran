@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             three:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             two:
                                 (Variable
@@ -120,6 +123,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zero:
                                 (Variable
@@ -150,6 +154,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dcstep

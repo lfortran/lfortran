@@ -192,6 +192,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -223,6 +224,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     char_string
@@ -310,6 +312,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -341,6 +344,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     len_string
@@ -405,6 +409,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     string_type
@@ -501,6 +506,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -525,6 +531,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     compute_lps
@@ -594,6 +601,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -618,6 +626,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     compute_lps_use
@@ -710,16 +719,7 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    9
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -751,6 +751,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     compute_lps_use1
@@ -784,7 +785,7 @@
                                             6 char
                                             [((Var 9 string))]
                                             (String 1 (FunctionCall
-                                                9 len_string
+                                                6 len_string
                                                 6 len
                                                 [((Var 9 string))]
                                                 (Integer 4)
@@ -857,6 +858,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -885,6 +887,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -909,6 +912,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     padl_char_default
@@ -1003,6 +1007,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -1027,6 +1032,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -1063,6 +1069,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -1087,6 +1094,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string_length:
                                                 (Variable
@@ -1111,6 +1119,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     padl_char_pad_with
@@ -1176,16 +1185,6 @@
                                                     char_string
                                                     Private
                                                 ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    10
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
-                                                ),
                                             output_length:
                                                 (Variable
                                                     10
@@ -1209,6 +1208,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -1240,6 +1240,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -1271,6 +1272,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     padl_string_default
@@ -1319,7 +1321,7 @@
                                                     6 char
                                                     [((Var 10 string))]
                                                     (String 1 (FunctionCall
-                                                        10 len_string
+                                                        6 len_string
                                                         6 len
                                                         [((Var 10 string))]
                                                         (Integer 4)
@@ -1342,7 +1344,7 @@
                                                             6 char
                                                             [((Var 10 string))]
                                                             (String 1 (FunctionCall
-                                                                10 len_string
+                                                                6 len_string
                                                                 6 len
                                                                 [((Var 10 string))]
                                                                 (Integer 4)
@@ -1398,16 +1400,6 @@
                                                     char_string
                                                     Private
                                                 ),
-                                            len_string:
-                                                (ExternalSymbol
-                                                    11
-                                                    len_string
-                                                    2 len_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    len_string
-                                                    Private
-                                                ),
                                             output_length:
                                                 (Variable
                                                     11
@@ -1431,6 +1423,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             pad_with:
                                                 (Variable
@@ -1455,6 +1448,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             res:
                                                 (Variable
@@ -1486,6 +1480,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -1517,6 +1512,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     padl_string_pad_with
@@ -1567,7 +1563,7 @@
                                                     6 char
                                                     [((Var 11 string))]
                                                     (String 1 (FunctionCall
-                                                        11 len_string
+                                                        6 len_string
                                                         6 len
                                                         [((Var 11 string))]
                                                         (Integer 4)
@@ -1587,7 +1583,7 @@
                                                             6 char
                                                             [((Var 11 string))]
                                                             (String 1 (FunctionCall
-                                                                11 len_string
+                                                                6 len_string
                                                                 6 len
                                                                 [((Var 11 string))]
                                                                 (Integer 4)

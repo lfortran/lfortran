@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <limits>
 #include <set>
 #include <unordered_set>
 #include <map>
@@ -1759,6 +1760,102 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
     }
 }
 
+ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
+        int64_t &element_index, int64_t &character_index) {
+    auto constant = [](ASR::expr_t *e, int64_t &n) {
+        ASR::expr_t *value = e ? ASRUtils::expr_value(e) : nullptr;
+        return value != nullptr && ASRUtils::extract_value(value, n);
+    };
+    element_index = 0;
+    character_index = 0;
+    // A substring is given by its first character, the start, which defaults
+    // to 1. Its end, which defaults to the length, and its stride, which is
+    // 1, only have to describe a substring that is not empty.
+    ASR::expr_t *substring = designator;
+    if (ASR::is_a<ASR::StringSection_t>(*designator)) {
+        designator = ASR::down_cast<ASR::StringSection_t>(designator)->m_arg;
+    } else if (ASR::is_a<ASR::StringItem_t>(*designator)) {
+        designator = ASR::down_cast<ASR::StringItem_t>(designator)->m_arg;
+    } else {
+        substring = nullptr;
+    }
+    ASR::ArrayItem_t *element = nullptr;
+    if (ASR::is_a<ASR::ArrayItem_t>(*designator)) {
+        element = ASR::down_cast<ASR::ArrayItem_t>(designator);
+        designator = element->m_v;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*designator)) return nullptr;
+    ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(designator)->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *base = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::ttype_t *type = base->m_type;
+    if (ASRUtils::is_pointer(type) || ASRUtils::is_allocatable(type)) {
+        return nullptr;
+    }
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    if (element != nullptr) {
+        if (element->n_args != n_dims || n_dims == 0) return nullptr;
+        // The arithmetic is done on offsets already known to lie within the
+        // array, so that no bound, however large, can overflow.
+        int64_t stride = 1;
+        for (size_t i = 0; i < n_dims; i++) {
+            const ASR::array_index_t &index = element->m_args[i];
+            int64_t subscript, lower = 1, extent;
+            if (index.m_left != nullptr || index.m_step != nullptr
+                    || !constant(index.m_right, subscript)
+                    || (dims[i].m_start != nullptr
+                        && !constant(dims[i].m_start, lower))
+                    || !constant(dims[i].m_length, extent)
+                    || extent <= 0 || subscript < lower) {
+                return nullptr;
+            }
+            uint64_t offset = static_cast<uint64_t>(subscript)
+                - static_cast<uint64_t>(lower);
+            if (offset >= static_cast<uint64_t>(extent)
+                    || offset > static_cast<uint64_t>(
+                        (std::numeric_limits<int64_t>::max() - element_index)
+                        / stride)) {
+                return nullptr;
+            }
+            element_index += static_cast<int64_t>(offset) * stride;
+            if (i + 1 < n_dims) {
+                if (extent > std::numeric_limits<int64_t>::max() / stride) {
+                    return nullptr;
+                }
+                stride *= extent;
+            }
+        }
+    }
+    if (substring != nullptr) {
+        int64_t length;
+        if (!ASRUtils::is_character(*type)
+                || !constant(ASRUtils::get_string_type(type)->m_len, length)) {
+            return nullptr;
+        }
+        int64_t first = 1, last = length, step = 1;
+        if (ASR::is_a<ASR::StringItem_t>(*substring)) {
+            if (!constant(ASR::down_cast<ASR::StringItem_t>(substring)->m_idx,
+                    first)) {
+                return nullptr;
+            }
+            last = first;
+        } else {
+            ASR::StringSection_t *s = ASR::down_cast<ASR::StringSection_t>(substring);
+            if ((s->m_start != nullptr && !constant(s->m_start, first))
+                    || (s->m_end != nullptr && !constant(s->m_end, last))
+                    || (s->m_step != nullptr && !constant(s->m_step, step))) {
+                return nullptr;
+            }
+        }
+        if (step != 1 || first < 1 || last < first || last > length) {
+            return nullptr;
+        }
+        character_index = first - 1;
+    }
+    return base;
+}
+
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
@@ -2027,6 +2124,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+        member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
 
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
             ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
@@ -5376,7 +5474,19 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            )
                 );
             }
-            member_types.push_back(al, var->m_type);
+            ASR::ttype_t* member_type = var->m_type;
+            // The signature is shared by every scope that uses the type, so
+            // a procedure component is recorded with the opaque procedure
+            // type: its interface can reference symbols of its own scope.
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(member_type))) {
+                member_type = ASRUtils::make_opaque_procedure_type(al,
+                    member_type->base.loc, nullptr);
+                if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                    member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                        member_type->base.loc, member_type));
+                }
+            }
+            member_types.push_back(al, member_type);
         }
     }
     return ASRUtils::TYPE(

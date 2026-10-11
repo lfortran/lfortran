@@ -65,6 +65,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     base_t
@@ -115,6 +116,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             e2:
                                 (Variable
@@ -144,6 +146,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             e2_t:
                                 (Struct
@@ -173,6 +176,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     e2_t
@@ -223,6 +227,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     e_t

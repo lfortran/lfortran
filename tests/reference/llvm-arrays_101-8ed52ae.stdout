@@ -43,7 +43,7 @@ target datalayout = "..."
 define float @_lcompilers_real_i32(i32* %x) {
 .entry:
   %_lcompilers_real_i32 = alloca float, align 4
-  %0 = load i32, i32* %x, align 4
+  %0 = load i32, i32* %x, align 1
   %1 = sitofp i32 %0 to float
   store float %1, float* %_lcompilers_real_i32, align 4
   br label %return
@@ -240,7 +240,7 @@ then17:                                           ; preds = %loop.body16
 
 ifcont18:                                         ; preds = %loop.body16
   %73 = getelementptr [2000 x float], [2000 x float]* %5, i32 0, i64 %53
-  store float 2.000000e+00, float* %73, align 4
+  store float 2.000000e+00, float* %73, align 1
   br label %loop.head15
 
 loop.end19:                                       ; preds = %loop.head15
@@ -326,7 +326,7 @@ then25:                                           ; preds = %ifcont24
 
 ifcont26:                                         ; preds = %ifcont24
   %109 = getelementptr [2000 x float], [2000 x float]* %5, i32 0, i64 0
-  %110 = load float, float* %109, align 4
+  %110 = load float, float* %109, align 1
   %111 = fcmp une float %110, 2.000000e+00
   br i1 %111, label %then27, label %else28
 
@@ -444,7 +444,7 @@ then44:                                           ; preds = %loop.body43
 ifcont45:                                         ; preds = %loop.body43
   %154 = getelementptr [500 x float], [500 x float]* %120, i32 0, i64 %134
   %155 = call float @_lcompilers_real_i32(i32* %i)
-  store float %155, float* %154, align 4
+  store float %155, float* %154, align 1
   br label %loop.head42
 
 loop.end46:                                       ; preds = %loop.head42
@@ -483,7 +483,7 @@ then47:                                           ; preds = %loop.end46
 
 ifcont48:                                         ; preds = %loop.end46
   %173 = getelementptr [500 x float], [500 x float]* %120, i32 0, i64 0
-  %174 = load float, float* %173, align 4
+  %174 = load float, float* %173, align 1
   %175 = fadd float %156, %174
   store float %175, float* %sum, align 4
   br label %block.end
