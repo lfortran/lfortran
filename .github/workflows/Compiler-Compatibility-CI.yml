@@ -194,10 +194,14 @@ jobs:
             make=4.3
             ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
 
+      # Quick's LLVM 11 compiler is a Debug build with extra checks, while
+      # Exhaustive builds LLVM 11 in Release; separate keys keep them from
+      # overwriting each other's cache.
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}
+          max-size: 1500M
           save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install libunwind

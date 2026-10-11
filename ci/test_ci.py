@@ -490,6 +490,53 @@ class WorkflowPolicyTests(unittest.TestCase):
                     else:
                         self.assertRegex(body, r"(?m)^    timeout-minutes: \S")
 
+    def test_headers_do_not_expand_the_version(self):
+        # LFORTRAN_VERSION changes with every commit. Expanding it in a header
+        # changes the preprocessed output of every including file, so compiler
+        # caches miss on every commit. Use it only in .cpp files.
+        headers = [path for path in (ROOT / "src").rglob("*")
+                   if path.suffix in (".h", ".hpp") and path.name != "config.h"]
+        uses = [str(path.relative_to(ROOT)) for path in headers
+                if "LFORTRAN_VERSION" in path.read_text(errors="ignore")]
+        self.assertEqual(uses, [])
+
+    def test_platform_build_path_does_not_depend_on_the_version(self):
+        # The version comes from git describe and changes with every commit;
+        # building under a versioned path makes every compiler cache entry miss.
+        source = (ROOT / "ci/build.sh").read_text()
+        self.assertIn("source_dir=lfortran-src\n", source)
+        self.assertIn('mv "lfortran-$lfortran_version" "$source_dir"\n', source)
+        self.assertIn('cd "$source_dir"\n', source)
+        uses = [line for line in source.splitlines()
+                if "lfortran-$lfortran_version" in line and not line.lstrip().startswith("#")]
+        self.assertEqual(uses, [
+            "tar xzf dist/lfortran-$lfortran_version.tar.gz",
+            'mv "lfortran-$lfortran_version" "$source_dir"',
+        ])
+
+    def test_macos_lfortran_does_not_export_cxx_symbols(self):
+        # dyld coalesces every exported weak symbol at launch; exporting the
+        # ~66,000 weak C++ symbols of a Debug build made each lfortran
+        # invocation spend ~150 ms in dyld. The JIT needs only C symbols.
+        cmake = (ROOT / "src/bin/CMakeLists.txt").read_text()
+        block = cmake.split("if (APPLE)\n    # At every launch dyld", 1)[1].split("\nendif()", 1)[0]
+        self.assertIn('"LINKER:-unexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/unexported_symbols.txt"', block)
+        symbols = (ROOT / "src/bin/unexported_symbols.txt").read_text().splitlines()
+        self.assertEqual([line for line in symbols if line and not line.startswith("#")], ["__Z*"])
+        
+    def test_compatibility_build_variants_have_separate_caches(self):
+        # Quick builds LLVM 11 as Debug with extra checks; Exhaustive builds it
+        # as Release. A shared cache key made each overwrite the other's cache.
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        build = source.split("      - name: Build\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn('if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then\n'
+                      "                BUILD_TYPE=Debug", build)
+        cache = source.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}"
+                      "${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}\n",
+                      cache)
+        self.assertIn("max-size: 1500M", cache)
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
