@@ -727,6 +727,9 @@ int64_t _lfortran_utf8_to_unicode(const char* data, int64_t data_len,
     return written;
 }
 
+static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
+    const char* str, int64_t str_len);
+
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
     if (str == NULL) {
@@ -750,6 +753,11 @@ LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_
         fwrite((char*)str, 1, str_len, stderr);
         fputc('\n', stderr);
         exit(1);
+    }
+    // PRINT in a defined output procedure of a statement writing to unit 6.
+    if (dtio_capture_formatted(6, NULL, (const char*)str, str_len)) {
+        internal_free(encoded);
+        return;
     }
 
     // Printing without depending on null termination:
@@ -1960,6 +1968,38 @@ static bool is_descriptor_requiring_comma(char c) {
             c == 't' || c == 's' || c == 'r');
 }
 
+// The index just past the DT edit descriptor that starts at `index`: `DT`,
+// then an optional character literal and an optional v-list, such as
+// `dt'list'(3,-2)`.
+static int dt_descriptor_end(const char* cformat, int64_t format_len, int index) {
+    index += 2;
+    if (index < format_len && (cformat[index] == '\'' || cformat[index] == '"')) {
+        char quote = cformat[index++];
+        while (index < format_len) {
+            if (cformat[index] == quote) {
+                if ((index + 1) < format_len && cformat[index + 1] == quote) {
+                    index += 2;
+                    continue;
+                }
+                break;
+            }
+            index++;
+        }
+        if (index < format_len) index++; // The closing quote.
+    }
+    if (index < format_len && cformat[index] == '(') {
+        int end = index + 1;
+        while (end < format_len && (isdigit(cformat[end]) || cformat[end] == ','
+                || cformat[end] == '-' || cformat[end] == '+')) {
+            end++;
+        }
+        if (end < format_len && cformat[end] == ')') {
+            index = end + 1;
+        }
+    }
+    return index;
+}
+
 /**
  * parse fortran format string by extracting individual 'format specifiers'
  * (e.g. 'i', 't', '*' etc.) into an array of strings
@@ -2110,10 +2150,20 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case 'd' :
                 start = index++;
-                // 'DT' (derived type), 'DC' and 'DP' (decimal edit mode) are
-                // two letter descriptors; everything else is 'D[w[.d]]'.
-                if (tolower(cformat[index]) == 't' ||
-                    tolower(cformat[index]) == 'c' ||
+                // 'DT' (derived type, with its character literal and
+                // v-list), 'DC' and 'DP' (decimal edit mode) are letter
+                // descriptors; everything else is 'D[w[.d]]'.
+                if (tolower(cformat[index]) == 't') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    index = dt_descriptor_end(cformat, format_len, start);
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                } else if (tolower(cformat[index]) == 'c' ||
                     tolower(cformat[index]) == 'p') {
                     if (last_was_descriptor && !comma_seen) {
                         fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
@@ -2285,6 +2335,14 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                             format_values_2[format_values_count++] = substring(cformat, start, index);
                         }
                         index--;
+                    } else if (tolower(cformat[index]) == 'd' &&
+                               tolower(cformat[index + 1]) == 't') {
+                        start = index;
+                        index = dt_descriptor_end(cformat, format_len, start);
+                        for (int i = 0; i < repeat; i++) {
+                            format_values_2[format_values_count++] = substring(cformat, start, index);
+                        }
+                        index--;
                     } else {
                         start = index;
                         while (isalpha(cformat[index])) index++; 
@@ -2332,6 +2390,8 @@ typedef enum primitive_types{
     LOGICAL_64_TYPE = 17,
     FLOAT_128_TYPE = 18,
     FLOAT_80_TYPE = 19,
+    // A derived-type item written by a defined output procedure.
+    DTIO_TYPE = 20,
 } Primitive_Types;
 
 typedef struct lfortran_string_descriptor {
@@ -2758,6 +2818,10 @@ typedef struct serialization_info{
     // Bytes of alignment padding the compiler asked us to skip once the
     // element in progress has been consumed (the `P<n>` marker).
     int64_t pending_padding;
+    // For a `DTIO_TYPE` element (`D<k>-<bytes>`): the index of its defined
+    // output procedure and the size of the item in bytes.
+    int32_t current_dtio_index;
+    int64_t current_dtio_bytes;
     char* temp_char_pp; // Dummy container (Should be removed)
 } Serialization_Info;
 
@@ -2878,7 +2942,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
         16/*FLOAT_128: 16 bytes = 128 bits*/,
-        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/ };
+        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/,
+        0/*DTIO: the size is serialized with each element*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2887,10 +2952,13 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         s_info->temp_char_pp =  arr_str_ptr + s_info->current_arg_info.current_string_len;
         s_info->current_arg_info.current_arg = (void*)&s_info->temp_char_pp;
     } else {
+        int64_t element_size = (s_info->current_element_type == DTIO_TYPE) ?
+            s_info->current_dtio_bytes :
+            primitive_type_sizes[s_info->current_element_type];
         s_info->current_arg_info.current_arg = 
             (void*)
             ((char*)s_info->current_arg_info.current_arg +
-                primitive_type_sizes[s_info->current_element_type] +
+                element_size +
                 s_info->pending_padding); // char* cast needed for windows MinGW.
     }
     s_info->pending_padding = 0;
@@ -3002,6 +3070,16 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
         set_string_kind(s_info);
         set_string_length(s_info);
         *PrimitiveType = str_phys_type;
+        break;
+    }
+    case 'D':{
+        // `D<k>-<bytes>`: a derived-type item written by defined output
+        // procedure `k`.
+        s_info->current_dtio_index = (int32_t)transform_string_size_into_int(s_info);
+        ASSERT_MSG(s_info->serialization_string[s_info->current_stop++] == '-',
+            "%s\n", s_info->serialization_string);
+        s_info->current_dtio_bytes = transform_string_size_into_int(s_info);
+        *PrimitiveType = DTIO_TYPE;
         break;
     }
     case 'C':
@@ -3534,13 +3612,170 @@ static inline char* write_to_result_at_pos(lfortran_allocator_t* al,
     return dest;
 }
 
+/*
+    Defined output (DTIO) capture.
+
+    When the formatter reaches a DT edit descriptor it calls the defined
+    output procedure of the item (child data transfer). The child writes to
+    the unit it was passed; everything it writes there is captured into the
+    record the parent formatter is building, at the parent's cursor and with
+    the same overwrite semantics as any other edit descriptor. A child never
+    ends the parent record: its record terminator is dropped, and a `/` in it
+    starts a new record in the parent buffer. The parent statement then
+    writes the record, and ends it, as usual.
+
+    The frames form a stack, so a child may itself write derived-type items
+    with defined output (nested child data transfer). A write to a unit goes
+    to the innermost frame of that unit. An internal file has no unit: its
+    child is given a pseudo-unit from a range near INT32_MIN.
+
+    The stack is a global like the unit table, so it is not thread safe.
+*/
+typedef struct dtio_capture_frame {
+    int32_t unit;
+    lfortran_allocator_t* al;
+    char** result;          // The parent record buffer,
+    int64_t* cursor;        // its current position,
+    int64_t* extent;        // its end,
+    int64_t* content_end;   // and the end of its non-blank content.
+} DTIO_Capture_Frame;
+
+static DTIO_Capture_Frame* dtio_capture_stack = NULL;
+static int32_t dtio_capture_depth = 0;
+static int32_t dtio_capture_capacity = 0;
+
+static DTIO_Capture_Frame* dtio_find_capture_frame(int32_t unit_num) {
+    for (int32_t i = dtio_capture_depth - 1; i >= 0; i--) {
+        if (dtio_capture_stack[i].unit == unit_num) {
+            return &dtio_capture_stack[i];
+        }
+    }
+    return NULL;
+}
+
+// Captures the formatted output `str` that a defined output procedure writes
+// to `unit_num`. Returns false if no parent statement captures that unit.
+static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
+        const char* str, int64_t str_len) {
+    if (dtio_capture_depth == 0) return false;
+    DTIO_Capture_Frame* frame = dtio_find_capture_frame(unit_num);
+    if (frame == NULL) return false;
+    if (str_len > 0 && str[0] == '\b') {
+        if (iostat == NULL) {
+            fprintf(stderr, "%.*s", (int)(str_len - 1), str + 1);
+            exit(1);
+        }
+        *iostat = 11;
+        return true;
+    }
+    *frame->result = write_to_result_at_pos(frame->al, *frame->result,
+        frame->extent, *frame->cursor, str, str_len);
+    *frame->cursor += str_len;
+    if (*frame->cursor > *frame->content_end) {
+        *frame->content_end = *frame->cursor;
+    }
+    if (iostat != NULL) *iostat = 0;
+    return true;
+}
+
+// Calls defined output procedure `k` for the derived-type item `dtv`, as the
+// DT edit descriptor `descriptor` (`DT`, an optional character literal and an
+// optional v-list) requests, and captures what it writes into the parent
+// record. Returns NULL, or an error message to be freed by the caller.
+static char* dtio_invoke(lfortran_allocator_t* al, char** result,
+        int64_t* cursor, int64_t* extent, int64_t* content_end,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
+        int32_t k, void* dtv, const char* descriptor) {
+    if (k < 0 || k >= n_dtio || dtio_procs == NULL || dtio_procs[k] == NULL) {
+        char* msg = (char*)internal_malloc(80);
+        snprintf(msg, 80, "no defined output procedure for a derived-type item");
+        return msg;
+    }
+    // iotype: "DT" followed by the character literal, if any.
+    int64_t descriptor_len = (int64_t)strlen(descriptor);
+    int64_t pos = 2;
+    char* literal = NULL;
+    int64_t literal_len = 0;
+    if (pos < descriptor_len && (descriptor[pos] == '\'' || descriptor[pos] == '"')) {
+        char quote = descriptor[pos];
+        int64_t start = pos + 1;
+        pos = start;
+        while (pos < descriptor_len) {
+            if (descriptor[pos] == quote) {
+                if (pos + 1 < descriptor_len && descriptor[pos + 1] == quote) {
+                    pos += 2;
+                    continue;
+                }
+                break;
+            }
+            pos++;
+        }
+        literal = unescape_quoted_literal(descriptor + start, pos - start, quote, &literal_len);
+        if (pos < descriptor_len) pos++;
+    }
+    char* iotype = (char*)internal_malloc(literal_len + 3);
+    iotype[0] = 'D';
+    iotype[1] = 'T';
+    if (literal != NULL) {
+        memcpy(iotype + 2, literal, literal_len);
+        internal_free(literal);
+    }
+    iotype[literal_len + 2] = '\0';
+    // v_list: the signed integers in parentheses, if any.
+    int32_t n_v = 0;
+    int32_t* v_list = (int32_t*)internal_malloc(sizeof(int32_t) * (descriptor_len + 1));
+    if (pos < descriptor_len && descriptor[pos] == '(') {
+        const char* p = descriptor + pos + 1;
+        while (*p != '\0' && *p != ')') {
+            char* next = NULL;
+            long value = strtol(p, &next, 10);
+            if (next == p) break;
+            v_list[n_v++] = (int32_t)value;
+            p = next;
+            if (*p == ',') p++;
+        }
+    }
+
+    if (dtio_capture_depth == dtio_capture_capacity) {
+        dtio_capture_capacity = dtio_capture_capacity == 0 ? 4 : 2 * dtio_capture_capacity;
+        dtio_capture_stack = (DTIO_Capture_Frame*)internal_realloc(dtio_capture_stack,
+            dtio_capture_capacity * sizeof(DTIO_Capture_Frame));
+    }
+    int32_t unit = (dtio_unit == INT32_MIN) ? INT32_MIN + 1 + dtio_capture_depth : dtio_unit;
+    DTIO_Capture_Frame frame = {unit, al, result, cursor, extent, content_end};
+    dtio_capture_stack[dtio_capture_depth++] = frame;
+
+    int32_t iostat = 0;
+    char iomsg[256];
+    memset(iomsg, ' ', sizeof(iomsg));
+    dtio_procs[k](dtv, &unit, iotype, &n_v, v_list, &iostat, iomsg,
+        literal_len + 2, (int64_t)sizeof(iomsg));
+
+    dtio_capture_depth--;
+    internal_free(iotype);
+    internal_free(v_list);
+    if (iostat != 0) {
+        int64_t msg_len = (int64_t)sizeof(iomsg);
+        while (msg_len > 0 && iomsg[msg_len - 1] == ' ') msg_len--;
+        char* msg = (char*)internal_malloc(msg_len + 64);
+        if (msg_len > 0) {
+            snprintf(msg, msg_len + 64, "%.*s", (int)msg_len, iomsg);
+        } else {
+            snprintf(msg, msg_len + 64, "defined output procedure returned iostat=%d", (int)iostat);
+        }
+        return msg;
+    }
+    return NULL;
+}
+
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode, int *pad_mode);
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
-    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank, ...)
+    int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank,
+    int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs, ...)
 {
     va_list args;
-    va_start(args, leading_blank);
+    va_start(args, dtio_procs);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
     result[0] = '\0';
     (*result_size) = 0;
@@ -3561,6 +3796,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     s_info.string_lengths.current_index = 0;
     s_info.just_peeked = false;
     s_info.pending_padding = 0;
+    s_info.current_dtio_index = -1;
+    s_info.current_dtio_bytes = 0;
 
     int64_t* array_sizes = (int64_t*) internal_malloc(array_sizes_cnt * sizeof(int64_t));
     for(int i=0; i<array_sizes_cnt; i++){
@@ -3808,6 +4045,47 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
             } else {
                 if (!move_to_next_element(&s_info, false)) break;
                 consumed_data_item_in_cycle = true;
+                bool is_dt_descriptor = tolower(value[0]) == 'd' && tolower(value[1]) == 't';
+                if (is_dt_descriptor || s_info.current_element_type == DTIO_TYPE) {
+                    char* error = NULL;
+                    if (!is_dt_descriptor) {
+                        const char* prefix = "derived-type item with defined output requires the DT edit descriptor, found ";
+                        error = (char*)internal_malloc(strlen(prefix) + value_len + 1);
+                        sprintf(error, "%s%s", prefix, value);
+                    } else if (s_info.current_element_type != DTIO_TYPE) {
+                        const char* type;
+                        switch (primitive_enum_to_format_specifier(s_info.current_element_type)) {
+                            case 'i': type = "INTEGER"; break;
+                            case 'f': type = "REAL"; break;
+                            case 'l': type = "LOGICAL"; break;
+                            case 'a': type = "CHARACTER"; break;
+                            default: type = "TYPE(C_PTR)"; break;
+                        }
+                        const char* prefix = "DT edit descriptor requires a derived-type item with defined output, got an item of type ";
+                        error = (char*)internal_malloc(strlen(prefix) + strlen(type) + 1);
+                        sprintf(error, "%s%s", prefix, type);
+                    } else {
+                        error = dtio_invoke(al, &result, &result_len, &result_extent,
+                            &content_end, dtio_unit, n_dtio, dtio_procs,
+                            s_info.current_dtio_index,
+                            s_info.current_arg_info.current_arg, value);
+                    }
+                    if (error != NULL) {
+                        ALLOCATOR_DEALLOC(al, result);
+                        int64_t error_len = (int64_t)strlen(error) + 32;
+                        result = (char*)ALLOCATOR_ALLOC(al, error_len * sizeof(char));
+                        snprintf(result, error_len, " Runtime Error : %s\n", error);
+                        internal_free(error);
+                        // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                        result[0] = '\b';
+                        result_len = strlen(result);
+                        result_extent = result_len;
+                        content_end = result_len;
+                        BreakWhileLoop = true;
+                        break;
+                    }
+                    continue;
+                }
                 if (!is_format_match(
                         tolower(value[0]), s_info.current_element_type)) {
                     char* type; // For better error message.
@@ -6630,6 +6908,11 @@ LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
 }
 
 LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
+    if (dtio_find_capture_frame(unit_num) != NULL) {
+        // A child data transfer statement does not end the record of its
+        // parent statement.
+        return;
+    }
     _lfortran_init_standard_units();
     bool unit_file_bin;
     int access_id;
@@ -13480,6 +13763,24 @@ bool is_write_and_open_format_match(bool unit_file_bin, const char* format_data)
 
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
 {
+    if (format_data[0] != '\0' && dtio_find_capture_frame(unit_num) != NULL) {
+        // Formatted output of a defined output procedure (child data
+        // transfer) goes into the record of its parent statement.
+        va_list args;
+        va_start(args, format_len);
+        char* str = va_arg(args, char*);
+        int64_t str_len = va_arg(args, int64_t);
+        char* wide_encoded = NULL;
+        if (format_data[1] == 'S') {
+            int32_t str_kind = va_arg(args, int32_t);
+            wide_encoded = _lfortran_unicode_to_utf8(str, str_len, str_kind, &str_len);
+            str = wide_encoded;
+        }
+        va_end(args);
+        dtio_capture_formatted(unit_num, iostat, str, str_len);
+        internal_free(wide_encoded);
+        return;
+    }
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;

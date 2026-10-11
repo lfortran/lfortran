@@ -191,6 +191,9 @@ public:
     AST::decl_stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
+    // The defined output bindings and unit of a formatted WRITE whose FORMAT
+    // statement is not known yet.
+    std::map<ASR::asr_t*, std::pair<Vec<ASR::dtio_binding_t>, ASR::expr_t*>> format_label_dtio;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
     // The regions of omp_region_body whose end directive was reached: they
@@ -647,7 +650,8 @@ public:
     }
 
     template <typename T>
-    void process_format_statement(ASR::asr_t *old_tmp, int64_t &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
+    void process_format_statement(ASR::asr_t *old_tmp, int64_t &label, Allocator &al, std::map<int64_t, std::string> &format_statements,
+            ASR::dtio_binding_t* dtio_bindings, size_t n_dtio_bindings, ASR::expr_t* dtio_unit) {
         T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));  
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
             al, old_stmt->base.base.loc, 1,
@@ -664,7 +668,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString))));
         ASR::expr_t *string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, old_stmt->base.base.loc,
             fmt_constant, old_stmt->m_values, old_stmt->n_values, ASR::string_format_kindType::FormatFortran,
-            nullptr, 0, nullptr, type, nullptr));
+            dtio_bindings, n_dtio_bindings, dtio_unit, type, nullptr));
         Vec<ASR::expr_t *> print_args;
         print_args.reserve(al, 1);
         print_args.push_back(al, string_format);
@@ -698,7 +702,17 @@ public:
                         string_fmt_arg->m_fmt = fmt_constant;
                     }
                 } else if (AST::is_a<AST::Write_t>(*x)) {
-                    process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements);
+                    ASR::dtio_binding_t* dtio_bindings = nullptr;
+                    size_t n_dtio_bindings = 0;
+                    ASR::expr_t* dtio_unit = nullptr;
+                    auto dtio = format_label_dtio.find(old_tmp);
+                    if (dtio != format_label_dtio.end()) {
+                        dtio_bindings = dtio->second.first.p;
+                        n_dtio_bindings = dtio->second.first.size();
+                        dtio_unit = dtio->second.second;
+                    }
+                    process_format_statement<ASR::FileWrite_t>(old_tmp, label, al, format_statements,
+                        dtio_bindings, n_dtio_bindings, dtio_unit);
                 } else if (AST::is_a<AST::Read_t>(*x)) {
                     // For READ, set m_fmt to the resolved format string
                     // directly instead of wrapping values in StringFormat.
@@ -718,6 +732,7 @@ public:
         }
         format_statements.clear();
         print_statements.clear();
+        format_label_dtio.clear();
     }
 
     void visit_Open(const AST::Open_t& x) {
@@ -1901,6 +1916,84 @@ public:
         return true;
     }
 
+    // Whether `item` is transferred by the defined output procedure of one of
+    // `bindings`. Only scalar items are, so far: an array or an implied-do
+    // item of derived type is still transferred by its components.
+    bool has_dtio_binding(ASR::expr_t* item, const Vec<ASR::dtio_binding_t> &bindings) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            return false;
+        }
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(item));
+        if (!ASR::is_a<ASR::StructType_t>(*type) ||
+                ASRUtils::is_unlimited_polymorphic_type(type)) {
+            return false;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(item);
+        if (struct_sym == nullptr) {
+            return false;
+        }
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        bool polymorphic = ASRUtils::is_class_type(type);
+        for (size_t i = 0; i < bindings.size(); i++) {
+            if (ASRUtils::symbol_get_past_external(bindings[i].m_type_declaration) == struct_sym &&
+                    bindings[i].m_polymorphic == polymorphic) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Resolves the defined output procedure (`write(formatted)`) of each
+    // derived-type item of a formatted WRITE or PRINT with a format, once per
+    // pair of type and polymorphism. The runtime formatter calls it when the
+    // item meets a DT edit descriptor.
+    void build_dtio_write_bindings(const Vec<ASR::expr_t*> &items,
+            Vec<ASR::dtio_binding_t> &bindings, const Location &loc) {
+        for (size_t i = 0; i < items.size(); i++) {
+            ASR::expr_t* item = items[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+                continue;
+            }
+            ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(item));
+            if (!ASR::is_a<ASR::StructType_t>(*type) ||
+                    ASRUtils::is_unlimited_polymorphic_type(type) ||
+                    ASRUtils::get_struct_sym_from_struct_expr(item) == nullptr ||
+                    has_dtio_binding(item, bindings)) {
+                continue;
+            }
+            std::string read_write = "~write_formatted";
+            ASR::symbol_t* a_original_name = nullptr;
+            ASR::expr_t* expr_dt = nullptr;
+            ASR::symbol_t* procedure = ASRUtils::resolve_defined_io_procedure(
+                read_write, item, current_scope, al, item->base.loc,
+                current_function_dependencies, current_module_dependencies,
+                [&](const std::string &msg, const Location &loc) {
+                    diag.add(Diagnostic(msg, Level::Error, Stage::Semantic,
+                        {Label("", {loc})}));
+                    throw SemanticAbort();
+                }, a_original_name, expr_dt);
+            if (procedure == nullptr) {
+                continue;
+            }
+            // The type, as a symbol of this scope, which a module file can
+            // refer to.
+            ASR::symbol_t* type_declaration = ASRUtils::get_struct_sym_from_struct_expr(item);
+            if (!ASRUtils::is_visible_from(type_declaration, current_scope)) {
+                type_declaration = ASRUtils::import_symbol(al, type_declaration,
+                    current_scope, ASR::accessType::Private, "1_");
+            }
+            ASR::dtio_binding_t binding;
+            binding.loc = loc;
+            binding.m_type_declaration = type_declaration;
+            binding.m_polymorphic = ASRUtils::is_class_type(type);
+            binding.m_procedure = procedure;
+            binding.m_callback = nullptr;
+            bindings.push_back(al, binding);
+        }
+    }
+
     void create_read_write_ASR_node(const AST::decl_stmt_t& read_write_stmt, AST::decl_stmtType _type) {
         int64_t m_label = -1;
         int64_t end_label = -1;
@@ -2688,7 +2781,19 @@ public:
         }
         read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
-        if (n_values > 0) {
+        // A formatted WRITE with a format transfers each derived-type item
+        // that has a defined output procedure through the runtime formatter,
+        // which calls the procedure when the item meets a DT edit descriptor.
+        bool dtio_through_formatter = _type == AST::decl_stmtType::Write
+            && formatted && a_fmt != nullptr && a_nml == nullptr;
+        Vec<ASR::dtio_binding_t> dtio_bindings;
+        dtio_bindings.reserve(al, 1);
+        if (dtio_through_formatter && n_values > 0) {
+            build_dtio_write_bindings(a_values_vec, dtio_bindings, loc);
+        }
+        std::string tmp_iostat_name;
+        std::string tmp_iomsg_name;
+        if (n_values > 0 && !dtio_through_formatter) {
             Vec<ASR::expr_t*> overload_args;
             overload_args.reserve(al, 2);
             overload_args.push_back(al, a_values_vec[0]);
@@ -2763,7 +2868,6 @@ public:
                     al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
             }
             ASR::expr_t *a_tmp_iostat = a_iostat;
-            std::string tmp_iostat_name;
             if (a_tmp_iostat == nullptr) {
                 ASR::ttype_t* int_type =
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
@@ -2782,7 +2886,6 @@ public:
             }
             overload_args.push_back(al, a_tmp_iostat);
             ASR::expr_t *a_tmp_iomsg = a_iomsg;
-            std::string tmp_iomsg_name;
             if (a_tmp_iomsg == nullptr) {
                 ASR::ttype_t *str_type = ASRUtils::TYPE(
                     ASR::make_String_t(
@@ -2810,8 +2913,11 @@ public:
                     })) {
                 overloaded_stmt = ASRUtils::STMT(asr);
             }
-            // If no overload found, expand any struct-typed values into their
-            // member components (recursively for nested structs).
+        }
+        if (n_values > 0) {
+            // If no overload found, expand any struct-typed values that are
+            // not written by a defined output procedure into their member
+            // components (recursively for nested structs).
             if (overloaded_stmt == nullptr && a_values_vec.size() >= 1) {
                 // Check if any value has struct type
                 bool has_struct = false;
@@ -2819,7 +2925,8 @@ public:
                     ASR::ttype_t* vtype = ASRUtils::expr_type(a_values_vec[vi]);
                     vtype = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(vtype));
-                    if (ASR::is_a<ASR::StructType_t>(*vtype)) {
+                    if (ASR::is_a<ASR::StructType_t>(*vtype) &&
+                            !has_dtio_binding(a_values_vec[vi], dtio_bindings)) {
                         has_struct = true;
                         break;
                     }
@@ -2886,8 +2993,10 @@ public:
                         ASR::ttype_t* etype = ASRUtils::expr_type(expr);
                         etype = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(etype));
-                        if (!ASR::is_a<ASR::StructType_t>(*etype)) {
-                            // Non-struct value, keep as-is
+                        if (!ASR::is_a<ASR::StructType_t>(*etype) ||
+                                has_dtio_binding(expr, dtio_bindings)) {
+                            // Non-struct value, or one written by its defined
+                            // output procedure: keep as-is
                             new_values_vec.push_back(al, expr);
                         } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                             // For ImpliedDoLoop with struct values like:
@@ -2951,6 +3060,34 @@ public:
                 ASR::make_Var_t(al, loc, iostat_sym));
         }
 
+        // The unit is passed to the defined output procedures. A unit given
+        // by an expression is evaluated once, into a variable that is both
+        // the unit of the statement and the one passed to them. An internal
+        // file has no unit to pass.
+        ASR::expr_t* dtio_unit = nullptr;
+        if (dtio_bindings.size() > 0 && a_unit != nullptr &&
+                ASRUtils::is_integer(*ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(a_unit)))) {
+            if (!ASR::is_a<ASR::Var_t>(*a_unit) &&
+                    !ASR::is_a<ASR::IntegerConstant_t>(*a_unit)) {
+                ASR::ttype_t* unit_type = ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(a_unit)));
+                std::string unit_name = current_scope->get_unique_name("__lfortran_unit");
+                ASR::symbol_t* unit_sym = declare_implicit_variable2(
+                    loc, unit_name, ASRUtils::intent_local, unit_type);
+                ASR::expr_t* unit_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, unit_sym));
+                tmp_vec.push_back(ASR::make_Assignment_t(al, loc, unit_var, a_unit,
+                    nullptr, false, false));
+                a_unit = unit_var;
+                for (ASR::asr_t* newline_if : newline_for_advance) {
+                    ASR::If_t* if_stmt = ASR::down_cast2<ASR::If_t>(newline_if);
+                    ASR::down_cast<ASR::FileWrite_t>(if_stmt->m_body[0])->m_unit = a_unit;
+                }
+            }
+            dtio_unit = a_unit;
+        }
+
         bool inserted_iostat = false;
         if (_type == AST::decl_stmtType::Read && a_iostat == nullptr
                 && (end_label != -1 || err_label != -1)) {
@@ -2970,6 +3107,14 @@ public:
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
                         a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos, a_asynchronous, a_decimal);
                     print_statements[tmp] = std::make_pair(&w->base, label);
+                    if (dtio_bindings.size() > 0) {
+                        format_label_dtio[tmp] = std::make_pair(dtio_bindings, dtio_unit);
+                    }
+                    if (!tmp_vec.empty()) {
+                        // The assignment of the unit comes first.
+                        tmp_vec.push_back(tmp);
+                        tmp = nullptr;
+                    }
                 } else if (_type == AST::decl_stmtType::Read) {
                     tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt, a_iomsg,
                         a_iostat, a_advance, a_size, a_id, a_pos, a_values_vec.p, a_values_vec.size(),
@@ -3036,7 +3181,7 @@ public:
                     : ASR::string_format_kindType::FormatFortran;
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
                     a_fmt_constant, a_values_vec.p, a_values_vec.size(), kind,
-                    nullptr, 0, nullptr, type, nullptr));
+                    dtio_bindings.p, dtio_bindings.size(), dtio_unit, type, nullptr));
                 a_values_vec.reserve(al, 1);
                 a_values_vec.push_back(al, string_format);
             }
@@ -9455,6 +9600,20 @@ public:
             }
             body.push_back(al, expr);
         }
+        // With a format, each derived-type item that has a defined output
+        // procedure is written by it, to unit 6, when the item meets a DT edit
+        // descriptor.
+        Vec<ASR::dtio_binding_t> dtio_bindings;
+        dtio_bindings.reserve(al, 1);
+        ASR::expr_t* dtio_unit = nullptr;
+        if (fmt) {
+            build_dtio_write_bindings(body, dtio_bindings, x.base.base.loc);
+            if (dtio_bindings.size() > 0) {
+                dtio_unit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    x.base.base.loc, 6, ASRUtils::TYPE(ASR::make_Integer_t(al,
+                        x.base.base.loc, 4))));
+            }
+        }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
@@ -9466,8 +9625,8 @@ public:
                         ASR::string_physical_typeType::DescriptorString))));
                 tmp =  ASR::make_Print_t(al, x.base.base.loc,
                     ASRUtils::EXPR(ASR::make_StringFormat_t(al, x.base.base.loc, nullptr, body.p, body.size(),
-                    ASR::string_format_kindType::FormatFortran, nullptr, 0, nullptr,
-                    char_type, nullptr)));
+                    ASR::string_format_kindType::FormatFortran, dtio_bindings.p,
+                    dtio_bindings.size(), dtio_unit, char_type, nullptr)));
                 print_statements[tmp] = std::make_pair(&x.base,label);
                 return;
             }
@@ -9487,7 +9646,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString))));
             ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt->base.loc,
                 fmt_constant, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
-                nullptr, 0, nullptr, type, nullptr));
+                dtio_bindings.p, dtio_bindings.size(), dtio_unit, type, nullptr));
 
 
             tmp = ASR::make_Print_t(al, x.base.base.loc, string_format);
@@ -9512,7 +9671,7 @@ public:
                 : ASR::string_format_kindType::FormatFortran;
             ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, fmt?fmt->base.loc:x.base.base.loc,
                 fmt, body.p, body.size(), kind,
-                nullptr, 0, nullptr, type, nullptr));
+                dtio_bindings.p, dtio_bindings.size(), dtio_unit, type, nullptr));
 
             Vec<ASR::expr_t*> print_args;
             print_args.reserve(al, 1);

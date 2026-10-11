@@ -3735,6 +3735,19 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
+// The specific procedure of the defined input/output generic `read_write`
+// (such as "~write_formatted") that `item` is transferred with, imported into
+// `curr_scope` with the dependencies a call needs: the symbol a
+// SubroutineCall names, or nullptr if there is none. `a_original_name`
+// receives the call's original name, and `expr_dt` the item for a type-bound
+// procedure (the call's `m_dt`), or nullptr.
+ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
+                               SymbolTable* curr_scope, Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt);
+
 void set_intrinsic(ASR::symbol_t* sym);
 
 static inline bool is_pointer(ASR::ttype_t *x) {

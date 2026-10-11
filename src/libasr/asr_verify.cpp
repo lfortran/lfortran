@@ -3706,6 +3706,29 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
+    // The number of dummies of `fn`, without the hidden lengths that the
+    // string_length_arguments pass adds after them.
+    static size_t explicit_dummy_count(const Function_t &fn) {
+        size_t n_hidden = count_hidden_string_lengths(fn);
+        if (n_hidden == 0 || fn.n_args < n_hidden) {
+            return fn.n_args;
+        }
+        for (size_t i = fn.n_args - n_hidden; i < fn.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) {
+                return fn.n_args;
+            }
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+                    !ASR::down_cast<ASR::Variable_t>(sym)->m_value_attr ||
+                    !is_hidden_string_length_type(
+                        ASR::down_cast<ASR::Variable_t>(sym)->m_type)) {
+                return fn.n_args;
+            }
+        }
+        return fn.n_args - n_hidden;
+    }
+
     // The Function a defined output procedure or its callback resolves to:
     // a type-bound procedure is reached through its declaration.
     static ASR::Function_t *dtio_function(ASR::symbol_t *sym) {
@@ -3729,9 +3752,17 @@ public:
         if (x.m_dtio_unit) {
             require(x.n_dtio_bindings > 0,
                 "StringFormat::m_dtio_unit must be nil when m_dtio_bindings is empty");
-            require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_dtio_unit))
-                    && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dtio_unit)),
-                "StringFormat::m_dtio_unit must be an integer scalar");
+            // A use-associated unit has no type until its module is
+            // resolved.
+            bool unit_type_known = check_external ||
+                !ASR::is_a<ASR::Var_t>(*x.m_dtio_unit) ||
+                !ASR::is_a<ASR::ExternalSymbol_t>(
+                    *ASR::down_cast<ASR::Var_t>(x.m_dtio_unit)->m_v);
+            if (unit_type_known) {
+                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_dtio_unit))
+                        && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dtio_unit)),
+                    "StringFormat::m_dtio_unit must be an integer scalar");
+            }
             require(ASR::is_a<ASR::Var_t>(*x.m_dtio_unit)
                     || ASR::is_a<ASR::IntegerConstant_t>(*x.m_dtio_unit),
                 "StringFormat::m_dtio_unit must be a Var or an IntegerConstant");
@@ -3768,7 +3799,8 @@ public:
                         "' must be a Function or StructMethodDeclaration",
                     b.loc);
                 ASR::Function_t *proc_fn = dtio_function(b.m_procedure);
-                require_with_loc(proc_fn != nullptr && proc_fn->n_args == 6
+                require_with_loc(proc_fn != nullptr
+                        && explicit_dummy_count(*proc_fn) == 6
                         && proc_fn->m_return_var == nullptr,
                     "StringFormat::m_dtio_bindings procedure '" +
                         std::string(symbol_name(b.m_procedure)) +
@@ -3777,7 +3809,7 @@ public:
                 if (b.m_callback) {
                     ASR::symbol_t *cb = ASRUtils::symbol_get_past_external(b.m_callback);
                     require_with_loc(cb != nullptr && ASR::is_a<ASR::Function_t>(*cb)
-                            && ASR::down_cast<ASR::Function_t>(cb)->n_args == 7
+                            && explicit_dummy_count(*ASR::down_cast<ASR::Function_t>(cb)) == 7
                             && ASR::down_cast<ASR::Function_t>(cb)->m_return_var == nullptr,
                         "StringFormat::m_dtio_bindings callback '" +
                             std::string(symbol_name(b.m_callback)) +

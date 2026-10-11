@@ -1239,6 +1239,10 @@ R"(    // Initialise Numpy
             throw CodeGenError("only Fortran formatting is supported by the C backend",
                 x.base.base.loc);
         }
+        if (x.n_dtio_bindings > 0) {
+            throw CodeGenError("user-defined derived-type output is not supported "
+                "by the C backend yet", x.base.base.loc);
+        }
         std::string leading_blank =
             x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank ? "1" : "0";
         std::string out;
@@ -1307,7 +1311,8 @@ R"(    // Initialise Numpy
         out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
             "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
             + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
-            + sign_mode + ", " + round_mode + ", " + leading_blank + item_ptrs + ");\n";
+            + sign_mode + ", " + round_mode + ", " + leading_blank + ", 0, 0, NULL"
+            + item_ptrs + ");\n";
         return out;
     }
 
