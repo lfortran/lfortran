@@ -920,6 +920,13 @@ void lex_format(unsigned char *&cur, Location &loc,
             int = digit (whitespace? digit)*;
             dot_int = '.' whitespace? int;
             E_int = 'E' whitespace? int;
+            dt_v = ('-' | '+')? whitespace? int;
+            dt_edit_desc
+                = 'D' whitespace? 'T'
+                  (whitespace? ('"' ('""'|[^"\x00])* '"' | "'" ("''"|[^'\x00])* "'"))?
+                  (whitespace? '(' whitespace? dt_v
+                      (whitespace? ',' whitespace? dt_v)* whitespace? ')')?
+                ;
             data_edit_desc
                 = 'I' whitespace? int whitespace? dot_int?
                 | 'B' whitespace? int whitespace? dot_int?
@@ -938,6 +945,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 | 'P' whitespace? 'F' whitespace? int whitespace? dot_int
                 | 'P'
                 | 'X'
+                | dt_edit_desc
                 ;
 
             position_edit_desc
