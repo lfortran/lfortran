@@ -565,8 +565,21 @@ public:
         valid = false;
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t *) {
-        valid = false;
+    // A function without side effects, such as the routine shared
+    // lowering gives `maxval`, has the value it has on entry when its
+    // arguments do; the host calls it as the device does.
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x->m_name);
+        if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                !ASRUtils::is_side_effect_free_function(
+                    *ASR::down_cast<ASR::Function_t>(callee))) {
+            valid = false;
+            return;
+        }
+        bool outer = in_shape;
+        in_shape = false;
+        Base::replace_FunctionCall(x);
+        in_shape = outer;
     }
 };
 

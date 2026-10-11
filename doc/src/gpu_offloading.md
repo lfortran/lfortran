@@ -150,9 +150,12 @@ generates the device source. It never falls back to the CPU:
   values the kernel gives the loop indices, and gives every slice room for
   the largest. Each thread uses the leading part its own size needs. The size
   may read the loop indices, the arguments of the loop and the shapes of
-  arrays, but not a value the loop writes, which the host does not know
-  before the launch: such a loop is an error ("workspace ... cannot be
-  sized on the host").
+  arrays, and call a function without side effects of the translation unit,
+  such as the one an array intrinsic (`maxval(n)`, `sum(n)`) is lowered to,
+  which the host calls before the launch as the device does. It may not
+  read a value the loop writes, which the host does not know before the
+  launch: such a loop is an error ("workspace ... cannot be sized on the
+  host").
 * A procedure the loop calls runs on the device as a procedure, wherever
   the call is: in an expression, an `associate` selector, a condition, or
   another procedure. A device without variable-length arrays or a heap
@@ -164,7 +167,12 @@ generates the device source. It never falls back to the CPU:
   written over the actual arguments of that call. Up the chain of calls
   this ends in the kernel, where the array is a per-thread workspace like
   any other (see the previous point). The extents may read the arguments of
-  the procedure and named constants. A procedure with such a local that
+  the procedure and named constants, and are written as they are on entry
+  to the procedure: a name it binds once (an associate name, a scalar
+  assigned once) stands for what it is bound to, the extent of a section
+  for the extents of its ranges, and a function without side effects is
+  called with arguments of that kind (`allocate(a(maxval(n)))` with
+  `associate (n => self%nodes_)`). A procedure with such a local that
   calls itself, directly or not, would need one array per level of the
   recursion, and is an error, and so is an extent that reads anything else
   ("workspace ... cannot be sized on the host"). A call that is the whole
@@ -379,7 +387,6 @@ them; it does not yet.
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
-* A per-thread workspace cannot be sized yet when its extent is the result
-  of an array intrinsic (`maxval(n)`), or reads the index of a `do` loop
-  inside the iteration (`n(l)` in `do l = 1, m`), even when the host could
-  work out the largest value before the launch.
+* A per-thread workspace cannot be sized yet when its extent reads the
+  index of a `do` loop inside the iteration (`n(l)` in `do l = 1, m`), even
+  when the host could work out the largest value before the launch.
