@@ -450,6 +450,22 @@ class WorkflowPolicyTests(unittest.TestCase):
         step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
         self.assertIn("max-size: 1500M", step)
 
+    def test_only_quick_saves_platform_caches(self):
+        # Quick and Exhaustive build the same platform compilers with the same
+        # keys; two ~1.5 GB copies per platform overflow the 10 GB cache limit.
+        workflows = ROOT / ".github/workflows"
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("save: ${{ github.ref == 'refs/heads/main' && inputs.save-cache == 'true' }}", step)
+        self.assertIn("    default: 'true'\n", action.split("  save-cache:\n", 1)[1].split("\nruns:", 1)[0])
+        for name, saves in (("Quick-Checks-CI.yml", True), ("Exhaustive-Checks-CI.yml", False)):
+            source = (workflows / name).read_text()
+            uses = source.split("uses: ./.github/actions/build-platform\n")[1:]
+            self.assertTrue(uses, name)
+            for use in uses:
+                inputs = use.split("\n\n", 1)[0]
+                self.assertEqual("save-cache: 'false'" not in inputs, saves, name)
+
     def test_superseded_main_caches_are_pruned(self):
         spec = importlib.util.spec_from_file_location(
             "prune_main_caches", ROOT / "ci/prune_main_caches.py")

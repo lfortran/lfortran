@@ -545,7 +545,12 @@ a new copy. After every Quick or Exhaustive run on `main`,
 newest copy of each key, keeping the total under the limit. This leaves room
 for a 1.5 GB ccache per platform build (`max-size: 1500M` in
 `.github/actions/build-platform`); the action's 500 MB default is smaller than
-one Debug build, so ccache evicted objects it still needed.
+one Debug build, so ccache evicted objects it still needed. Quick's `Build`
+and Exhaustive's `platform` jobs build the same platform compilers with the
+same cache keys, so only Quick saves them (`save-cache: 'false'` in
+Exhaustive). When both saved, each `main` push added a second copy of every
+platform cache before the prune ran, which pushed the total over 10 GB and
+evicted other jobs' caches.
 
 ##### Required checks
 
