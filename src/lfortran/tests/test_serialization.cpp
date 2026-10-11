@@ -6700,6 +6700,93 @@ end module
     }
 }
 
+TEST_CASE("Bindings of generic procedures are inherited and never overridden") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module generic_binding_inheritance_m
+implicit none
+type :: Base
+contains
+    procedure, nopass :: total => base_total
+    procedure, nopass :: label => base_label
+end type
+type, extends(Base) :: Child
+contains
+    procedure, nopass :: total => base_total
+    procedure, nopass :: label => child_label
+end type
+contains
+function base_total{integer | real(8) :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    s = x(1)
+end function
+function other_total{integer | real(8) :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    s = x(2)
+end function
+integer function base_label()
+    base_label = 1
+end function
+integer function child_label()
+    child_label = 2
+end function
+end module
+)";
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("generic_binding_inheritance_m"));
+    auto binding = [&](const char *type, const char *name) {
+        auto *structure = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol(type));
+        return ASR::down_cast<ASR::StructMethodDeclaration_t>(
+            structure->m_symtab->get_symbol(name));
+    };
+    // Rebinding the very same generic procedure does not override it.
+    CHECK(ASRUtils::symbol_get_past_external(binding("child", "total")->m_proc) ==
+        ASRUtils::symbol_get_past_external(binding("base", "total")->m_proc));
+    auto *other = ASRUtils::trait_method_function(module->m_symtab->get_symbol("other_total"));
+    REQUIRE(other);
+    REQUIRE(ASRUtils::trait_method_template(*other));
+    auto *child_label = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("child_label"));
+    // A binding of a generic procedure has a null binding-table entry and is
+    // called through static specializations, so no override may involve one.
+    auto rejects = [&]() {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code ==
+            "asr.verify.binding_override.generic_procedure");
+    };
+    SUBCASE("a generic binding cannot be replaced by another of the same interface") {
+        binding("child", "total")->m_proc = &other->base;
+        rejects();
+    }
+    SUBCASE("an ordinary binding cannot be replaced by a generic procedure") {
+        binding("child", "label")->m_proc = &other->base;
+        rejects();
+    }
+    SUBCASE("a generic binding cannot be replaced by an ordinary procedure") {
+        binding("child", "total")->m_proc = &child_label->base;
+        rejects();
+    }
+}
+
 TEST_CASE("Intrinsic conformances retain exact kinds and checked receivers") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

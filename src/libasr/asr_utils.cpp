@@ -7236,6 +7236,14 @@ InterfaceMismatch binding_override_mismatch(
     // An inherited binding names the very same procedure; only a binding that
     // names a different one overrides anything.
     if (base == proc) return {};
+    // A binding of a generic procedure has no single executable entry in the
+    // binding table; each call is a static specialization of the procedure it
+    // names, which would bypass an override. Dynamic dispatch of such bindings
+    // is not implemented.
+    if (trait_method_template(*proc) || trait_method_template(*base)) {
+        return {true, "generic_procedure",
+            what + " is not implemented yet for generic procedures"};
+    }
 
     if (x.m_is_nopass != base_decl->m_is_nopass) {
         return {true, "nopass_matches",

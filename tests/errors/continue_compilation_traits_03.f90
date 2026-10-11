@@ -344,3 +344,74 @@ contains
         class(IApply), intent(in) :: action
     end subroutine
 end program
+
+! A type-bound binding of a generic procedure is called only through static
+! specializations, so an extension cannot replace it, nor replace an ordinary
+! binding with one, until such bindings dispatch dynamically.
+module traits_generic_override_contracts
+    implicit none
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface
+    abstract interface :: ISum
+        function sum{INumeric :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T) :: s
+        end function
+    end interface
+end module
+
+module traits_generic_override
+    use traits_generic_override_contracts
+    implicit none
+    type, implements(ISum) :: Base
+    contains
+        procedure, nopass :: sum => base_sum
+    end type
+    type, extends(Base) :: Child
+    contains
+        procedure, nopass :: sum => child_sum
+    end type
+    type :: Tool
+    contains
+        procedure, nopass :: run => tool_run
+    end type
+    type, extends(Tool) :: Special
+    contains
+        procedure, nopass :: run => special_run
+    end type
+contains
+    function base_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function
+    function child_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(2)
+    end function
+    integer function tool_run(x)
+        integer, intent(in) :: x(:)
+        tool_run = x(1)
+    end function
+    function special_run{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(2)
+    end function
+end module
+
+! Each rejected override keeps the inherited binding, so later units still
+! call it statically through the extension and through its ancestor.
+module traits_generic_override_use
+    use traits_generic_override
+    implicit none
+contains
+    subroutine probe(c, b, x)
+        type(Child), intent(in) :: c
+        class(Base), intent(in) :: b
+        integer, intent(in) :: x(:)
+        print *, c%sum(x), b%sum(x)
+    end subroutine
+end module

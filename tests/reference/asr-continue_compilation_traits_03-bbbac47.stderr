@@ -120,6 +120,18 @@ semantic error: Dummy argument 'method' not defined
 206 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Type bound procedure 'sum' of 'child' overriding the binding of the same name in 'base' is not implemented yet for generic procedures
+   --> tests/errors/continue_compilation_traits_03.f90:373:9
+    |
+373 |         procedure, nopass :: sum => child_sum
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type bound procedure 'run' of 'special' overriding the binding of the same name in 'tool' is not implemented yet for generic procedures
+   --> tests/errors/continue_compilation_traits_03.f90:381:9
+    |
+381 |         procedure, nopass :: run => special_run
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
   --> tests/errors/continue_compilation_traits_03.f90:30:9
    |

@@ -10062,8 +10062,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         : method_decl->m_proc);
                 if (ASR::is_a<ASR::Function_t>(*impl_sym) && ASRUtils::trait_method_template(
                         *ASR::down_cast<ASR::Function_t>(impl_sym))) {
-                    // A generic binding has no single executable implementation;
-                    // calls are specialized statically or use runtime trait slots.
+                    // A generic binding has no single executable implementation.
+                    // Overriding one is rejected, so every call is a static
+                    // specialization of this procedure or uses runtime trait slots.
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;
                     impls.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
                     continue;

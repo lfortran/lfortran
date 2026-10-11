@@ -211,7 +211,12 @@ programs, within the existing static and runtime domains; initializers,
 trait-valued components and closed numeric generic messages are described in
 their own sections. A type-bound binding of a generic procedure names the
 procedure through an import in the type's module, so clients that load the
-module resolve it like any other binding. Generic derived types are not
+module resolve it like any other binding. Its binding-table entry is null:
+each call, also through `CLASS(Base)` storage, is a static specialization of
+the procedure it names. Overriding such a binding in an extension, or
+overriding an ordinary binding with a generic procedure, is therefore
+diagnosed as not implemented yet; extensions inherit it unchanged, and their
+ordinary overrides keep dynamic dispatch. Generic derived types are not
 supported.
 
 The byte-exact, module-only paper examples `extends_parent.f90` and
