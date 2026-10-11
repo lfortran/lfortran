@@ -24774,6 +24774,32 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 llvm_utils->void_type, args_type, true);
         tmp = builder->CreateCall(fn, printf_args);
+        bool has_dtio_bindings = false;
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]) &&
+                    ASR::down_cast<ASR::StringFormat_t>(
+                        x.m_values[i])->n_dtio_bindings > 0) {
+                has_dtio_bindings = true;
+            }
+        }
+        if (x.m_iomsg && has_dtio_bindings) {
+            // The iomsg of a defined output procedure whose error the
+            // statement took.
+            llvm::Value *iomsg_data, *iomsg_len;
+            std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            std::string func_name = "_lfortran_io_take_iomsg";
+            llvm::Function *iomsg_fn = module->getFunction(func_name);
+            if (!iomsg_fn) {
+                llvm::FunctionType *ft = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        character_type,
+                        llvm::Type::getInt64Ty(context)
+                    }, false);
+                iomsg_fn = llvm::Function::Create(ft,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+            }
+            builder->CreateCall(iomsg_fn, {iomsg_data, iomsg_len});
+        }
         for (llvm::Value* copy_ptr : unformatted_copies_to_free) {
             llvm_utils->lfortran_free(copy_ptr);
         }

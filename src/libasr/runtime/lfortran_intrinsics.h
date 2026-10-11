@@ -390,6 +390,7 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values);
 LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_io_take_iomsg(char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);

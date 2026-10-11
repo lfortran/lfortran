@@ -729,9 +729,11 @@ int64_t _lfortran_utf8_to_unicode(const char* data, int64_t data_len,
 
 static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
     const char* str, int64_t str_len);
+static int32_t dtio_take_error(int32_t* iostat);
 
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
+    dtio_take_error(NULL);
     if (str == NULL) {
         str = (fchar*)" "; // dummy output
         str_len = 1; // length of dummy output
@@ -3513,13 +3515,15 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
         int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
         int32_t k, void* dtv, const char* iotype, int64_t iotype_len,
-        int32_t n_v, int32_t* v_list);
+        int32_t n_v, int32_t* v_list, bool* failed);
 
 // With `leading_blank`, a blank is written before the first item, so that
 // output with no items stays empty. A derived-type item with defined output
 // is separated like a non-character item, and its procedure is called with
 // iotype "LISTDIRECTED" and an empty v_list to write it. If the procedure
-// fails, the result is the error message, starting with '\b'.
+// returns a nonzero iostat, the items after it are not written: the result
+// is the record so far, and the error is recorded for the statement that
+// writes it (see `dtio_take_error`).
 void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode, bool leading_blank,
         int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs){
     int64_t result_capacity = 100;
@@ -3583,14 +3587,19 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
             int64_t extent = result_size;
             int64_t content_end = result_size;
             int32_t empty_v_list[1] = {0};
+            bool failed = false;
             char* error = dtio_call(al, result, &result_size, &extent,
                 &content_end, dtio_unit, n_dtio, dtio_procs,
                 s_info->current_dtio_index, s_info->current_arg_info.current_arg,
-                "LISTDIRECTED", 12, 0, empty_v_list);
+                "LISTDIRECTED", 12, 0, empty_v_list, &failed);
             // The child output may have reallocated the buffer to its
             // exact size.
             result_capacity = result_size;
             dtio_item_written = true;
+            if (failed) {
+                (*result_size_ptr) = result_size;
+                return;
+            }
             if (error != NULL) {
                 ALLOCATOR_DEALLOC(al, *result);
                 int64_t error_len = (int64_t)strlen(error) + 32;
@@ -3682,6 +3691,66 @@ static DTIO_Capture_Frame* dtio_capture_stack = NULL;
 static int32_t dtio_capture_depth = 0;
 static int32_t dtio_capture_capacity = 0;
 
+/*
+    Errors of defined output procedures.
+
+    When a child returns a nonzero iostat, the formatter does not write the
+    remaining items: its result is the record built so far, and the child's
+    iostat and iomsg are recorded here. The statement that writes that record
+    takes the error (`dtio_take_error`) before writing. Without iostat=, that
+    is error termination with the child's iomsg. With iostat=, the partial
+    record is written, the statement's iostat gets the child's value and the
+    child's iomsg is kept for `_lfortran_io_take_iomsg`, which the statement
+    calls next when it has iomsg=.
+*/
+enum { DTIO_IOMSG_LEN = 256 };
+static int32_t dtio_error_iostat = 0;
+static char dtio_error_iomsg[DTIO_IOMSG_LEN];
+static int64_t dtio_error_iomsg_len = 0;
+static bool dtio_error_iomsg_pending = false;
+
+static void dtio_set_error(int32_t iostat, const char* iomsg, int64_t iomsg_len) {
+    while (iomsg_len > 0 && iomsg[iomsg_len - 1] == ' ') iomsg_len--;
+    if (iomsg_len > DTIO_IOMSG_LEN) iomsg_len = DTIO_IOMSG_LEN;
+    memcpy(dtio_error_iomsg, iomsg, (size_t)iomsg_len);
+    dtio_error_iomsg_len = iomsg_len;
+    dtio_error_iostat = iostat;
+}
+
+// Takes the error recorded while formatting the record that a statement with
+// `iostat` (NULL without iostat=) writes, and returns its iostat value, or 0.
+static int32_t dtio_take_error(int32_t* iostat) {
+    dtio_error_iomsg_pending = false;
+    if (dtio_error_iostat == 0) return 0;
+    int32_t value = dtio_error_iostat;
+    dtio_error_iostat = 0;
+    if (iostat == NULL) {
+        fflush(stdout);
+        if (dtio_error_iomsg_len > 0) {
+            fprintf(stderr, "Runtime Error : %.*s\n",
+                (int)dtio_error_iomsg_len, dtio_error_iomsg);
+        } else {
+            fprintf(stderr, "Runtime Error : defined output procedure "
+                "returned iostat=%d\n", (int)value);
+        }
+        exit(1);
+    }
+    dtio_error_iomsg_pending = dtio_error_iomsg_len > 0;
+    return value;
+}
+
+// Copies the iomsg of the defined output procedure whose error the last
+// formatted WRITE took into that statement's iomsg= variable. A blank child
+// iomsg leaves it unchanged.
+LFORTRAN_API void _lfortran_io_take_iomsg(char* iomsg, int64_t iomsg_len) {
+    if (!dtio_error_iomsg_pending) return;
+    dtio_error_iomsg_pending = false;
+    if (iomsg == NULL || iomsg_len <= 0) return;
+    int64_t len = dtio_error_iomsg_len < iomsg_len ? dtio_error_iomsg_len : iomsg_len;
+    memcpy(iomsg, dtio_error_iomsg, (size_t)len);
+    memset(iomsg + len, ' ', (size_t)(iomsg_len - len));
+}
+
 static DTIO_Capture_Frame* dtio_find_capture_frame(int32_t unit_num) {
     for (int32_t i = dtio_capture_depth - 1; i >= 0; i--) {
         if (dtio_capture_stack[i].unit == unit_num) {
@@ -3718,13 +3787,14 @@ static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
 
 // Calls defined output procedure `k` for the derived-type item `dtv` with
 // `iotype` and `v_list`, and captures what it writes into the parent record
-// (`result`, at `cursor`). Returns NULL, or an error message to be freed by
-// the caller.
+// (`result`, at `cursor`). If the procedure returns a nonzero iostat, records
+// the error (`dtio_set_error`) and sets `*failed`. Returns NULL, or the message
+// of an error of the call itself, to be freed by the caller.
 static char* dtio_call(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
         int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
         int32_t k, void* dtv, const char* iotype, int64_t iotype_len,
-        int32_t n_v, int32_t* v_list) {
+        int32_t n_v, int32_t* v_list, bool* failed) {
     if (k < 0 || k >= n_dtio || dtio_procs == NULL || dtio_procs[k] == NULL) {
         char* msg = (char*)internal_malloc(80);
         snprintf(msg, 80, "no defined output procedure for a derived-type item");
@@ -3747,15 +3817,8 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
 
     dtio_capture_depth--;
     if (iostat != 0) {
-        int64_t msg_len = (int64_t)sizeof(iomsg);
-        while (msg_len > 0 && iomsg[msg_len - 1] == ' ') msg_len--;
-        char* msg = (char*)internal_malloc(msg_len + 64);
-        if (msg_len > 0) {
-            snprintf(msg, msg_len + 64, "%.*s", (int)msg_len, iomsg);
-        } else {
-            snprintf(msg, msg_len + 64, "defined output procedure returned iostat=%d", (int)iostat);
-        }
-        return msg;
+        dtio_set_error(iostat, iomsg, (int64_t)sizeof(iomsg));
+        *failed = true;
     }
     return NULL;
 }
@@ -3763,11 +3826,11 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
 // Calls defined output procedure `k` for the derived-type item `dtv`, as the
 // DT edit descriptor `descriptor` (`DT`, an optional character literal and an
 // optional v-list) requests, and captures what it writes into the parent
-// record. Returns NULL, or an error message to be freed by the caller.
+// record. Returns as `dtio_call`.
 static char* dtio_invoke(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
         int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
-        int32_t k, void* dtv, const char* descriptor) {
+        int32_t k, void* dtv, const char* descriptor, bool* failed) {
     // iotype: "DT" followed by the character literal, if any.
     int64_t descriptor_len = (int64_t)strlen(descriptor);
     int64_t pos = 2;
@@ -3815,7 +3878,7 @@ static char* dtio_invoke(lfortran_allocator_t* al, char** result,
 
     char* error = dtio_call(al, result, cursor, extent, content_end,
         dtio_unit, n_dtio, dtio_procs, k, dtv, iotype, literal_len + 2,
-        n_v, v_list);
+        n_v, v_list, failed);
     internal_free(iotype);
     internal_free(v_list);
     return error;
@@ -4102,6 +4165,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 bool is_dt_descriptor = tolower(value[0]) == 'd' && tolower(value[1]) == 't';
                 if (is_dt_descriptor || s_info.current_element_type == DTIO_TYPE) {
                     char* error = NULL;
+                    bool failed = false;
                     if (!is_dt_descriptor) {
                         const char* prefix = "derived-type item with defined output requires the DT edit descriptor, found ";
                         error = (char*)internal_malloc(strlen(prefix) + value_len + 1);
@@ -4122,7 +4186,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         error = dtio_invoke(al, &result, &result_len, &result_extent,
                             &content_end, dtio_unit, n_dtio, dtio_procs,
                             s_info.current_dtio_index,
-                            s_info.current_arg_info.current_arg, value);
+                            s_info.current_arg_info.current_arg, value, &failed);
+                    }
+                    if (failed) {
+                        // The items after it are not written; the record
+                        // so far is the result.
+                        BreakWhileLoop = true;
+                        break;
                     }
                     if (error != NULL) {
                         ALLOCATOR_DEALLOC(al, result);
@@ -13817,6 +13887,7 @@ bool is_write_and_open_format_match(bool unit_file_bin, const char* format_data)
 
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
 {
+    int32_t dtio_iostat = format_data[0] != '\0' ? dtio_take_error(iostat) : 0;
     if (format_data[0] != '\0' && dtio_find_capture_frame(unit_num) != NULL) {
         // Formatted output of a defined output procedure (child data
         // transfer) goes into the record of its parent statement.
@@ -13832,6 +13903,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
         va_end(args);
         dtio_capture_formatted(unit_num, iostat, str, str_len);
+        if (dtio_iostat != 0) *iostat = dtio_iostat;
         internal_free(wide_encoded);
         return;
     }
@@ -14078,7 +14150,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
 
 
-        if(iostat != NULL) *iostat = 0;
+        if(iostat != NULL) *iostat = dtio_iostat;
         internal_free(wide_encoded);
         va_end(args);
     }
@@ -14093,6 +14165,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
     bool is_array_unit, int32_t char_kind, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
+    int32_t dtio_iostat = dtio_take_error(iostat);
     va_list args;
     va_start(args, format_len);
     char* str = "";
@@ -14196,7 +14269,7 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
     internal_free(s);
 
     va_end(args);
-    if(iostat != NULL) *iostat = 0;
+    if(iostat != NULL) *iostat = dtio_iostat;
 }
 
 // Helper function to skip whitespace, and handle commas in list-directed I/O
