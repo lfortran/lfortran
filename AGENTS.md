@@ -160,7 +160,7 @@ pixi run -e llvm22 integration_tests -j8 > integration-llvm22.log 2>&1
 
 Each named environment has its own `.pixi/envs/<environment>` dependencies and
 `build/<environment>` CMake cache, objects, executable, and runtime modules.
-Reference-test scratch files live under `build/<environment>/reference-tests`;
+Reference tests run in the source root and write `tests/output`, like CI;
 integration-test builds live under `build/<environment>/integration_tests`.
 Tasks select that environment's compiler explicitly, even if an older in-source
 binary exists. Do not run the legacy test entry points instead of these tasks
