@@ -4,23 +4,29 @@ description: >
   Fix an LFortran bug given an MRE (Minimal Reproducible Example) produced by
   the create-mre skill. Reproduces the bug, diagnoses which compiler phase is
   at fault, fixes it in the LFortran source, adds an integration test, and
-  runs the integration and reference test suites. Triggers: fix MRE, fix bug,
-  fix lfortran, fix reproducer, implement, resolve, patch, bugfix.
+  verifies it with a short local gate, leaving the full suites to Quick CI.
+  Triggers: fix MRE, fix bug, fix lfortran, fix reproducer, implement,
+  resolve, patch, bugfix.
 ---
 
 # Fix MRE — Fix an LFortran Bug from a Minimal Reproducible Example
 
 Given an MRE (produced by the `create-mre` skill or written by hand), reproduce
 the LFortran bug, fix it in the compiler source, add an integration test, and
-verify the full suites still pass.
+verify it with the short local gate (Phase 5). Quick CI runs the full unit,
+integration, and reference suites in all modes once the branch is pushed.
 
 ## Prerequisites
 
 - The **assigned LFortran worktree** is the current working directory. Do not
   switch branches or modify another worker's checkout.
-- A configured build. **Use `pixi run -e llvm11 build`**, which installs
-  dependencies and builds `build/llvm11/src/bin/lfortran`. Reuse the exact
-  Pixi environment/build supplied by `fix-issue` or the user.
+- A configured build. For a new build, **use
+  `pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2'`**,
+  which installs dependencies and builds `build/llvm11/src/bin/lfortran` like
+  Quick's LLVM 11 compiler (Debug with assertions, compiled with `-O2`); the
+  flags persist in the CMake cache for later `pixi run -e llvm11 build`
+  rebuilds. Reuse the exact Pixi environment/build supplied by `fix-issue` or
+  the user.
   `AGENTS.md` owns setup details; do not duplicate dependency
   lists or CMake configuration recipes here.
 - Put the assigned build's absolute `src/bin` directory first on `PATH` inside
@@ -101,7 +107,9 @@ you have not observed is a guess.
 1. Make the code change in the LFortran source. Keep changes minimal and
    focused on the bug. Match the formatting of the file you are editing;
    do not reformat surrounding code.
-2. Rebuild:
+2. Before the first rebuild with the fix, write the integration test (Phase 4)
+   and capture its fail-before log with the still-unfixed build (see
+   **Confirm the test actually captures the bug**). Then rebuild:
    ```bash
    CMAKE_BUILD_PARALLEL_LEVEL=<jobs> pixi run -e llvm11 build > build.log 2>&1
    ```
@@ -132,82 +140,68 @@ files stay untracked; the test is what gets committed.
    - Add a `RUN(NAME <test_name> LABELS gfortran llvm)` style entry.
    - Use at least the labels `gfortran` and `llvm`. An unregistered test is
      dead code.
-5. Verify the test compiles with the reference compiler — this confirms the
-   test is valid Fortran and does not depend on LFortran-specific behavior:
+5. Verify it with the local gate (Phase 5). Its GFortran run confirms the
+   test is valid Fortran that does not depend on LFortran-specific behavior.
+
+**Confirm the test actually captures the bug.** Run the new test through the
+gate with a build that predates the fix and save the failing log, for example
+`.fix-issue/<id>/fail_before_<test_name>.log`. Write the test before the first
+rebuild with the fix (Phase 3), so the existing build supplies this evidence:
+the worker's first build, made at the base SHA, for the first fix, or the
+build before this commit's change for a later dependent commit. Only if that
+evidence was not captured, use an isolated baseline worktree/build with the
+new test and its registration copied in, never the fix. Coordinate worktree
+creation with the orchestrator. Do not stash, reset, or switch the caller's or
+another worker's checkout: worktrees share Git refs and the stash stack. If the
+test passes without the fix, it does not cover the bug and the fix is not
+understood well enough.
+
+### Phase 5: Local Gate
+
+The local gate takes minutes, not a full suite. Quick CI runs the full unit,
+integration (all modes and backends), and reference suites after the branch is
+pushed, so do not run `pixi run -e llvm11 ctest`, `tests`, or
+`integration_tests` over the whole suite here. Do not use
+`integration_tests -t` either: each call reconfigures the whole CMake suite.
+
+1. Rerun the MRE (`pixi run -e llvm11 bash run.sh`) and any original
+   reproducers supplied with it (`run_re.sh`).
+2. Run each new or changed integration test directly with the built
+   `lfortran`, mirroring its `RUN(...)` entry in
+   `integration_tests/CMakeLists.txt`: in normal mode, with `--fast` (unless
+   `NO_FAST`; add `--no-fast-math` for `NO_FAST_MATH`), and with `--std=f23`
+   (unless `NO_STD_F23`), then with Pixi's `gfortran` (plus its
+   `GFORTRAN_ARGS`). Pass its `EXTRA_ARGS` and `-I` for `INCLUDE_PATH`;
+   compile its `EXTRAFILES` first, in order, with `-c` and link their objects;
+   copy `COPY_TO_BIN` files into the scratch directory; a `FAIL` test must
+   exit nonzero. Work in an ignored scratch directory, for example:
    ```bash
-   pixi run -e llvm11 gfortran -o test_ref integration_tests/<test_name>.f90 && pixi run -e llvm11 ./test_ref
-   rm -f test_ref
+   mkdir -p .fix-issue/<id>/gate
+   pixi run -e llvm11 bash -c 'set -ex; t=$PWD/integration_tests/<test_name>.f90
+       cd .fix-issue/<id>/gate
+       for m in "" --fast --std=f23; do lfortran $m "$t" -o a.out; ./a.out; done
+       gfortran "$t" -o a.out; ./a.out' > .fix-issue/<id>/gate.log 2>&1
    ```
-   Run this in the assigned worktree; a shared `/tmp/test_ref` races with other
-   issue workers.
-6. Verify the test compiles and runs with `lfortran`:
+   Other backends in its labels are left to CI unless the fix targets them.
+3. When the deliverable is a reference test (for example a diagnostic appended
+   to `tests/errors/continue_compilation_1.f90`), create or update only that
+   test's references with LLVM 11 and review the diff:
    ```bash
-   pixi run -e llvm11 integration_tests -t <test_name> -j<jobs> > targeted.log 2>&1
+   pixi run -e llvm11 tests -t <test> -u -s > reference-update.log 2>&1
    ```
-
-**Confirm the test actually captures the bug.** Record the pre-fix SHA and use
-an isolated baseline worktree/build to verify the new test fails without the
-fix and passes with it. Copy only the new test and its registration into that
-baseline, not the fix. For the first independent fix the baseline is upstream
-`main`; for a later dependent commit it is the branch immediately before that
-commit. Coordinate worktree creation with the orchestrator. Do not stash, reset,
-or switch the caller's or another worker's checkout: worktrees share Git refs
-and the stash stack. If the test passes without the fix, it does not cover the
-bug and the fix is not understood well enough.
-
-### Phase 5: Run Unit and Integration Tests
-
-Run the unit tests from the assigned build and the full integration test suite,
-using the worker's resource budget:
-
-```bash
-pixi run -e llvm11 ctest -j<jobs> > unit.log 2>&1
-pixi run -e llvm11 integration_tests -j<jobs> > integration.log 2>&1
-tail -n30 integration.log
-```
+   Never run `-u` blindly; an unreviewed update can bake a regression into the
+   expected output.
 
 **Always redirect test output to a log file and then examine it.** Do not pipe
-to `tail` directly — if you need more output than `tail` shows you have to
-rerun the whole suite, which takes several minutes.
+to `tail` directly; you may need more output than `tail` shows.
 
-- If all tests pass, proceed to Phase 6.
-- If any test fails:
-  1. Examine the log to identify which test failed and why.
-  2. Determine if the failure is caused by your change (a regression) or a
-     pre-existing issue.
-  3. If your change caused it, fix the regression, rebuild, and re-run tests.
-  4. Repeat until the changed code introduces no failures. Record pre-existing
-     compiler bugs with their reproducer, baseline SHA, command, and output.
-     Return them to the `fix-issue` orchestrator for batch-wide duplicate
-     checking and issue filing; do not silently skip them or fix them here.
+If a gate check fails, determine whether your change caused it. Fix
+regressions, rebuild, and rerun the gate. Record pre-existing compiler bugs
+with their reproducer, baseline SHA, command, and output. Return them to the
+`fix-issue` orchestrator for batch-wide duplicate checking and issue filing;
+do not silently skip them or fix them here.
 
-### Phase 6: Run Reference Tests
-
-Return to the assigned worktree root and run reference tests with its LLVM 11
-build. Do not regenerate LLVM-version differences using a newer toolchain:
-
-```bash
-cd <lfortran-root>
-pixi run -e llvm11 tests -j<jobs> > reference.log 2>&1
-```
-
-- If reference tests pass, proceed to Phase 7.
-- If reference tests fail:
-  1. Distinguish intended output changes from regressions or environment
-     mismatches. For intended changes only, update the affected tests:
-     ```bash
-     pixi run -e llvm11 tests -t <affected-test> -u -s > reference-update.log 2>&1
-     ```
-  2. Review the changes with `git diff` to ensure all reference updates are
-     correct and expected — they should all be consequences of your bug fix,
-     not regressions.
-  3. If any reference change looks wrong, investigate and fix before proceeding.
-  4. Rerun the reference suite without `-u` and inspect the saved log.
-
-Never run `-u` blindly. An unreviewed reference update can silently bake a
-regression into the expected output.
-
-### Phase 7: Report
+### Phase 6: Report
 
 Summarize the work and, by default, let the user decide whether to commit.
 An explicit user request or a `fix-issue` handoff can authorize a commit; report
@@ -229,9 +223,8 @@ Files modified:
 Integration test: integration_tests/<test_name>.f90
   fails before this fix, passes on this branch — verified
 
-Unit tests:        pass
-Integration tests: pass
-Reference tests:   pass  (<N> reference outputs updated, reviewed)
+Local gate:        MRE, reproducers, test (normal/--fast/--std=f23/gfortran) pass
+Full suites:       left to Quick CI
 Additional bugs:  <evidence paths for the orchestrator, or none>
 
 Not committed. Review the diff, then commit when ready.

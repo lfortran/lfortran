@@ -70,13 +70,15 @@ Every worker handoff includes:
 - Absolute worktree and state paths, branch, pinned base SHA, fork remote,
   and any existing PR/head SHA.
 - The Pixi environment and exact invocation, build directory, compiler path,
-  and job budget. Use only Pixi, starting with `pixi run -e llvm11 build`
+  and job budget. Use only Pixi, starting with
+  `pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2'`
   from the assigned worktree; the build is `build/llvm11`, with dependencies
   in that worktree's `.pixi`. All reference tests and updates use `llvm11`.
   Never install dependencies outside Pixi. Do not share or copy build caches, runtime
   modules, or environments.
 - Skills to load, authorized actions, and the no-co-author commit policy.
-  Commits are allowed; publication waits for the coordinator's grouping decision.
+  Commits are allowed; publication waits for the coordinator's grouping
+  decision and a Quick CI slot.
 - A short report with verified root cause, required/shared fixes, commit/MRE/
   test evidence, original-issue status, blockers, and every additional bug.
   Keep verbose evidence in the state directory.
@@ -110,16 +112,26 @@ For consolidation, select one group owner and branch, stop other writers to
 that group, and delegate integration of the verified commits in dependency
 order. Preserve the other workers' branches, REs, and evidence. Do not cherry-pick
 the same shared fix twice or discard uncommitted work. Archive each original
-RE separately under the group state directory. Rebuild and rerun every included
-issue's original scenarios, not only the final worker's MRE, and rerun the suites
-on the combined head. For each dependent commit, fail-before evidence uses the
-preceding commit as its baseline.
+RE separately under the group state directory. Rebuild and run the local gate
+on the combined head with every included issue's original scenarios and new
+tests, not only the final worker's MRE; Quick CI runs the suites. For each
+dependent commit, fail-before evidence uses the build of the preceding commit.
 
 Reassess grouping if later work exposes another dependency. Do not silently
 close or supersede already-published PRs; ask before changing that publication
 plan. Before publication, record the final issue-to-PR mapping and authorize
 only the owner to push/open the draft. Include `Fixes #N` for every issue fully
 verified by that PR, never for a partially fixed report.
+
+## Limit concurrent Quick runs
+
+At most **four** of the batch's PRs may have Quick checks running at once:
+each run has about twelve jobs and competes with human PRs for the
+organization's runners. Branches that passed the local gate wait in a FIFO
+publication queue; when a running Quick run finishes, grant the next branch
+its slot and let it publish the draft. Later pushes to an already published
+PR do not wait: a CI-fix push replaces that PR's own run, and the push rules
+already batch the rest. A queued worker may start its local review rounds.
 
 ## Track additional bugs across the whole batch
 
