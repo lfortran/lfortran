@@ -434,7 +434,9 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind);
-    v.visit_TranslationUnit(unit);
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        v.visit_TranslationUnit(unit);
+    });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
