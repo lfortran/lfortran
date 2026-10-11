@@ -911,6 +911,13 @@ public:
             std::string(x.m_original_name).find('@') != std::string::npos) {
             return;
         }
+        // An import whose local name starts with a digit is made by the
+        // compiler, for example for the symbols in the bounds of a procedure
+        // type. Such a name is not a valid Fortran identifier, so it cannot
+        // appear in a USE ONLY list.
+        if (std::isdigit(static_cast<unsigned char>(x.m_name[0]))) {
+            return;
+        }
         auto append_import_name = [&](std::string &out) {
             if (std::strcmp(x.m_name, x.m_original_name) == 0) {
                 out += std::string(x.m_name);

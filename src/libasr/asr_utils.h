@@ -4422,6 +4422,126 @@ static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
     return false;
 }
 
+// Whether the name `name`, looked up from `scope`, can stand for a symbol
+// other than `sym`. A symbol can be stored under a key other than its name,
+// for example a USE import under the lower-cased name; a pass that copies its
+// symbol table stores it under its name, so it counts as well.
+static inline bool name_stands_for_other(const std::string &name,
+        ASR::symbol_t* sym, SymbolTable* scope) {
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        ASR::symbol_t* found = s->get_symbol(name);
+        if (found != nullptr) {
+            return found != sym;
+        }
+        for (auto &item : s->get_scope()) {
+            if (item.second != sym && name == symbol_name(item.second)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Whether `sym` is what its name resolves to from `scope`, so that a
+// utility that looks it up by name from there finds it.
+static inline bool resolves_to(ASR::symbol_t* sym, SymbolTable* scope) {
+    return scope != nullptr && scope->resolve_symbol(symbol_name(sym)) == sym &&
+        !name_stands_for_other(symbol_name(sym), sym, scope);
+}
+
+// Returns a symbol that names `sym` from `scope`: `sym` itself when it is
+// visible there, otherwise an existing import of the same target, otherwise
+// a new ExternalSymbol in `scope`. Returns `sym` unchanged when it cannot be
+// imported, because its owner is not a module or a derived type. With
+// `by_name`, a symbol only counts as visible when its name resolves to it
+// from `scope`, and a new import gets a name that resolves to nothing there,
+// so that a symbol shadowed by another one of the same name is not used.
+static inline ASR::symbol_t* import_symbol_into_scope(Allocator &al,
+        ASR::symbol_t* sym, SymbolTable* scope, bool by_name=false) {
+    auto visible = [&](ASR::symbol_t* s) {
+        return by_name ? resolves_to(s, scope) : is_visible_from(s, scope);
+    };
+    // Already visible as given: prefer the symbol the caller passed, which
+    // may be an import that keeps a module boundary intact.
+    if (visible(sym)) return sym;
+    // Otherwise the definition itself may be visible, which happens when the
+    // caller handed over an import made for some other scope.
+    ASR::symbol_t* definition = symbol_get_past_external(sym);
+    if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
+        return sym;
+    }
+    if (visible(definition)) return definition;
+    std::string name = symbol_name(definition);
+    // Reuse a name already standing for this symbol in the scope chain.
+    ASR::symbol_t* existing = scope->resolve_symbol(name);
+    if (existing != nullptr &&
+            symbol_get_past_external(existing) == definition &&
+            (!by_name || resolves_to(existing, scope))) {
+        return existing;
+    }
+    // The name may stand for something else, so an earlier import can have
+    // been given another name. Only an import that can be found under its
+    // own name can be referenced.
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        for (auto &item : s->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
+                    ASR::down_cast<ASR::ExternalSymbol_t>(
+                        item.second)->m_external == definition &&
+                    item.first == symbol_name(item.second) &&
+                    (!by_name || resolves_to(item.second, scope)) &&
+                    scope->resolve_symbol(item.first) == item.second) {
+                return item.second;
+            }
+        }
+    }
+    // An ExternalSymbol names its target through the module or derived type
+    // that owns it. A symbol owned by a program or a procedure cannot be
+    // named that way, so it cannot be imported at all.
+    ASR::symbol_t* module_sym = get_asr_owner(definition);
+    if (module_sym == nullptr) return sym;
+    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
+            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
+        return sym;
+    }
+    // With `by_name` the import is made for the compiler, not by a USE of the
+    // program: it gets a reserved name, so that it can neither clash with a
+    // later declaration nor be found by the program's own names, it is
+    // private, so that a USE of the module does not export it, and it is not
+    // placed among the members of a derived type.
+    SymbolTable* host = scope;
+    std::string base_name = name;
+    if (by_name) {
+        while (host->parent != nullptr && host->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*host->asr_owner) &&
+                ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(
+                    host->asr_owner))) {
+            host = host->parent;
+        }
+        base_name = "1_" + std::string(symbol_name(module_sym)) + "_" + name;
+    }
+    std::string local_name = base_name;
+    auto taken = [&](const std::string &n) {
+        return host->get_symbol(n) != nullptr || (by_name &&
+            (scope->resolve_symbol(n) != nullptr ||
+             name_stands_for_other(n, nullptr, scope)));
+    };
+    if (taken(local_name)) {
+        local_name = host->get_unique_name(base_name);
+        int counter = 1;
+        while (taken(local_name)) {
+            local_name = host->get_unique_name(base_name + "_" + std::to_string(counter));
+            counter++;
+        }
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, host,
+            s2c(al, local_name), definition, symbol_name(module_sym),
+            nullptr, 0, s2c(al, name),
+            by_name ? ASR::accessType::Private : ASR::accessType::Public));
+    host->add_symbol(local_name, imported);
+    return imported;
+}
+
 // A variable's type declaration has to be visible from the variable's own
 // scope, the same way its name is. A producer that carries a type over from
 // somewhere else -- the frontend declaring an entity of a type it imported,
@@ -4455,46 +4575,82 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
+    return import_symbol_into_scope(al, type_declaration, scope);
+}
 
-    // Already visible as given: prefer the symbol the caller passed, which
-    // may be an import that keeps a module boundary intact.
-    SymbolTable* given_owner = symbol_parent_symtab(type_declaration);
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == given_owner) return type_declaration;
+// The bounds of a procedure type's dummy arguments can reference module
+// symbols that are only visible from the module that declared the interface
+// (for example the getter of a use-associated explicit-shape bound). Replaces
+// every such reference with one that is visible from `scope`. With
+// `only_check` set, it only records in `found` whether there is any. The
+// member types of a derived type belong to its Struct and are shared by every
+// use of the type, so they are left alone.
+class ProcedureTypeSymbolImporter:
+    public ASR::BaseExprReplacer<ProcedureTypeSymbolImporter> {
+    Allocator &al;
+    SymbolTable *scope;
+    bool only_check;
+
+    public:
+
+    bool found = false;
+
+    ProcedureTypeSymbolImporter(Allocator &al_, SymbolTable *scope_,
+        bool only_check_): al(al_), scope(scope_), only_check(only_check_) {}
+
+    ASR::symbol_t* import_symbol(ASR::symbol_t *sym) {
+        // Passes look these symbols up by name, so a symbol of the same
+        // name in between must not shadow the one referenced.
+        if (ASRUtils::resolves_to(sym, scope)) {
+            return sym;
+        }
+        found = true;
+        if (only_check) {
+            return sym;
+        }
+        return ASRUtils::import_symbol_into_scope(al, sym, scope, true);
     }
-    // Otherwise the definition itself may be visible, which happens when the
-    // caller handed over an import made for some other scope.
-    SymbolTable* owner = symbol_parent_symtab(definition);
-    if (owner == nullptr) return type_declaration;
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == owner) return definition;
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        ASR::BaseExprReplacer<ProcedureTypeSymbolImporter>::replace_FunctionCall(x);
+        ASR::symbol_t *name = x->m_name;
+        x->m_name = import_symbol(name);
+        if (x->m_original_name == name) {
+            x->m_original_name = x->m_name;
+        } else if (x->m_original_name) {
+            x->m_original_name = import_symbol(x->m_original_name);
+        }
     }
-    std::string name = symbol_name(definition);
-    // Reuse a name already standing for this type in the scope chain.
-    ASR::symbol_t* existing = scope->resolve_symbol(name);
-    if (existing != nullptr &&
-            symbol_get_past_external(existing) == definition) {
-        return existing;
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = import_symbol(x->m_v);
     }
-    // An ExternalSymbol names its target through the module or derived type
-    // that owns it. A symbol owned by a program or a procedure cannot be
-    // named that way, so it cannot be imported at all.
-    ASR::symbol_t* module_sym = get_asr_owner(definition);
-    if (module_sym == nullptr) return type_declaration;
-    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
-        return type_declaration;
+
+    void replace_StructType(ASR::StructType_t */*x*/) {
     }
-    std::string local_name = name;
-    if (scope->get_symbol(local_name) != nullptr) {
-        local_name = scope->get_unique_name(name);
+};
+
+// Whether the procedure type `type` references a symbol that is not visible
+// from `scope`. With no `scope`, whether it references any symbol at all.
+static inline bool procedure_type_references_symbols(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    ProcedureTypeSymbolImporter checker(al, scope, true);
+    checker.replace_ttype(type);
+    return checker.found;
+}
+
+// Returns the procedure type `type` as it can be referenced from `scope`:
+// `type` itself, or a copy whose module symbols are imported into `scope`.
+static inline ASR::ttype_t* import_procedure_type(Allocator &al,
+        ASR::ttype_t *type, SymbolTable *scope) {
+    if (!procedure_type_references_symbols(al, type, scope)) {
+        return type;
     }
-    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
-            s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), ASR::accessType::Public));
-    scope->add_symbol(local_name, imported);
-    return imported;
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t *new_type = duplicator.duplicate_ttype(type);
+    ProcedureTypeSymbolImporter importer(al, scope, false);
+    importer.replace_ttype(new_type);
+    return new_type;
 }
 
 static inline void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -4528,6 +4684,12 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    // The same holds for the symbols in the bounds of a procedure type, for
+    // example in a variable a pass creates in another scope.
+    if (a_type != nullptr && a_parent_symtab != nullptr &&
+            ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(a_type))) {
+        a_type = import_procedure_type(al, a_type, a_parent_symtab);
+    }
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
@@ -7227,7 +7389,17 @@ class SymbolDuplicator {
             return nullptr;
         }
         node_duplicator.success = true;
-        ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(variable->m_type);
+        ASR::ttype_t* m_type = nullptr;
+        if (ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(variable->m_type))) {
+            // A procedure type references the symbols of its interface's
+            // module, which can be shadowed by name in the destination, so
+            // they are imported rather than looked up by name.
+            m_type = import_procedure_type(al,
+                ExprStmtDuplicator(al).duplicate_ttype(variable->m_type),
+                destination_symtab);
+        } else {
+            m_type = node_duplicator.duplicate_ttype(variable->m_type);
+        }
         if( !node_duplicator.success ) {
             return nullptr;
         }
@@ -9921,8 +10093,12 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
+        ASR::ttype_t* member_type = ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name));
+        if (current_scope) {
+            member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
+        }
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
-            a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
+            a_dt, a_name, member_type, nullptr));
     }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,

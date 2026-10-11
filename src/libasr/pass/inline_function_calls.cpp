@@ -320,6 +320,12 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
     void replace_OverloadedCompare(ASR::OverloadedCompare_t* /*x*/) {
     }
 
+    // A procedure type is not evaluated where it appears, and its argument
+    // types cannot reference variables of the scope, so a call in a bound
+    // of a dummy argument is left as it is.
+    void replace_FunctionType(ASR::FunctionType_t* /*x*/) {
+    }
+
 };
 
 class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallsVisitor> {
@@ -417,6 +423,10 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
         current_body = nullptr;
         ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallsVisitor>::visit_IfExp(x);
         current_body = current_body_copy;
+    }
+
+    // See InlineFunctionCalls::replace_FunctionType.
+    void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t& /*x*/) {

@@ -865,6 +865,27 @@ class ParallelRegionVisitor :
             return ASRUtils::get_struct_sym_from_struct_expr(var);
         }
 
+        // The member `member` of the thread data `data`, which holds the
+        // variable `var` of the current scope. A procedure member is given
+        // the procedure type of `var`, which names the symbols of its
+        // interface as they are seen from the current scope; the member's
+        // own type names them from the thread data type's scope. The member
+        // stays a procedure pointer when `var` is a procedure, which is
+        // passed to the region as a pointer to it.
+        ASR::expr_t* thread_data_member(const Location &loc, ASR::expr_t* data,
+                ASR::symbol_t* member, ASR::symbol_t* var) {
+            ASR::ttype_t* type = ASRUtils::symbol_type(member);
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(type))) {
+                ASR::ttype_t* proc_type = ASRUtils::type_get_past_pointer(
+                    ASRUtils::symbol_type(var));
+                type = ASRUtils::is_pointer(type)
+                    ? ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, proc_type))
+                    : proc_type;
+            }
+            return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data,
+                member, type, nullptr));
+        }
+
         // `target = value` for a variable passed to a region by value. A
         // procedure pointer is copied by pointer association.
         ASR::stmt_t* copy_value(ASR::expr_t* target, ASR::expr_t* value) {
@@ -1812,8 +1833,8 @@ class ParallelRegionVisitor :
                 if (!is_array && !is_shared) {
                     body.push_back(al, copy_value(
                         b.Var(current_scope->get_symbol(it.first)),
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr))
+                        thread_data_member(loc, tdata_expr, sym,
+                            current_scope->get_symbol(it.first))
                     ));
                 }
             }
@@ -2145,8 +2166,8 @@ class ParallelRegionVisitor :
                 } else {
                     // Handle private variables (direct value assignment)
                     nested_lowered_body.push_back(copy_value(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        thread_data_member(loc, data_expr, sym,
+                            current_scope->get_symbol(it.first)),
                         b.Var(current_scope->get_symbol(it.first))
                     ));
                 }

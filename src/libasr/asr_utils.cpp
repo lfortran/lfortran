@@ -2027,6 +2027,9 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(member_type))) {
+            member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
+        }
 
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
             ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
@@ -5376,7 +5379,32 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            )
                 );
             }
-            member_types.push_back(al, var->m_type);
+            ASR::ttype_t* member_type = var->m_type;
+            ASR::ttype_t* proc_type = ASRUtils::type_get_past_pointer(member_type);
+            if (ASR::is_a<ASR::FunctionType_t>(*proc_type)) {
+                // The signature is shared by every scope that uses the type,
+                // so it cannot carry a procedure type whose bounds reference
+                // symbols of the scope that declared the interface. The
+                // component's own type keeps the interface; the signature
+                // only records that the component is a procedure.
+                if (ASRUtils::procedure_type_references_symbols(al, member_type, nullptr)) {
+                    member_type = ASRUtils::TYPE(ASR::make_FunctionType_t(al,
+                        member_type->base.loc, nullptr, 0, nullptr, ASR::abiType::Source,
+                        ASR::deftypeType::Interface, nullptr, false, false, false, false,
+                        false, nullptr, 0, false, ASR::exec_spaceType::Host));
+                    if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                        member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                            member_type->base.loc, member_type));
+                    }
+                } else if (ASR::down_cast<ASR::FunctionType_t>(proc_type)->n_arg_types == 0 &&
+                        ASR::down_cast<ASR::FunctionType_t>(proc_type)->m_return_var_type == nullptr) {
+                    // The interface of the component may be declared after
+                    // the type. Its placeholder is completed in place then,
+                    // which must not reach the signature for the same reason.
+                    member_type = ASRUtils::duplicate_type(al, member_type);
+                }
+            }
+            member_types.push_back(al, member_type);
         }
     }
     return ASRUtils::TYPE(
