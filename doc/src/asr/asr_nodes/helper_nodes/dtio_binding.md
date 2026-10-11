@@ -33,7 +33,9 @@ derived-type items that has a defined output procedure, and no two with the
 same `type_declaration` and `polymorphic`. Generic resolution of a defined
 output procedure depends only on the declared type of the item, so this pair
 determines `procedure` for every item of the statement, including array
-elements, implied-do values and components of other derived-type items.
+elements and implied-do values. A component of a derived-type item that has no
+defined output procedure of its own is not bound, even when the type of the
+component has one.
 
 `procedure` counts as a call in the dependencies of the enclosing procedure,
 and `procedure` and `callback` must both be visible from the scope of the
