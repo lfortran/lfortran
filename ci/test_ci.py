@@ -267,7 +267,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
         jobs = (
-            ("test_llvm_wasm", "Test LLVM 19 WASM (ubuntu-latest)"),
+            ("test_llvm_wasm", "Test LLVM 19 WASM${{ matrix.suffix }} (ubuntu-latest)"),
             ("test_without_llvm", "Test without LLVM Backend"),
             ("test_mlir", "Test MLIR backend"),
         )
@@ -278,8 +278,32 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn(f"name: Compiler compatibility / {name}\n", body)
             self.assertNotIn("\n    if:", body)
         wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
-        self.assertIn("./run_tests.py -b llvm_wasm llvm_wasm_emcc\n", wasm)
+        self.assertIn("./run_tests.py -b ${{ matrix.backend }}\n", wasm)
         self.assertNotIn("--smoke", wasm)
+
+    def test_llvm_wasm_backends_run_in_parallel_jobs(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
+        matrix = re.findall(r'- backend: (\w+)\n\s+suffix: "([^"]*)"', wasm)
+        self.assertEqual(matrix, [("llvm_wasm", ""), ("llvm_wasm_emcc", " Emscripten")])
+        self.assertIn("fail-fast: false", wasm)
+        # Both jobs build the same compiler, so only one saves the cache.
+        self.assertIn("save: ${{ github.ref == 'refs/heads/main' && matrix.backend == 'llvm_wasm' }}", wasm)
+        unit = wasm.split("      - name: Test unit tests\n", 1)[1].split("\n      - ", 1)[0]
+        self.assertIn("if: matrix.backend == 'llvm_wasm'", unit)
+
+    def test_llvm_wasm_compiler_is_an_optimized_debug_build(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
+        build = wasm.split("      - name: Build Linux ( WASM )\n", 1)[1].split("\n      - ", 1)[0]
+        self.assertIn('export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"', build)
+        self.assertIn("-DCMAKE_BUILD_TYPE=Debug", build)
+        self.assertIn('"-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"', build)
+        self.assertIn('"-DCMAKE_C_FLAGS_DEBUG=-O2"', build)
+        commands = "\n".join(l for l in build.splitlines() if not l.lstrip().startswith("#"))
+        self.assertNotIn("NDEBUG", commands)
+        # -O2 objects must not be mixed with the old -O0 cache.
+        self.assertIn("key: ${{ github.job }}-ubuntu-latest-19-o2\n", wasm)
 
     def test_full_platform_coverage_moves_to_exhaustive_without_changing_builds(self):
         workflows = ROOT / ".github/workflows"
@@ -347,6 +371,7 @@ class WorkflowPolicyTests(unittest.TestCase):
             "Compiler compatibility / Test LLVM 11 (ubuntu-latest)",
             "Compiler compatibility / Test LLVM 23 (ubuntu-latest)",
             "Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)",
+            "Compiler compatibility / Test LLVM 19 WASM Emscripten (ubuntu-latest)",
             "Compiler compatibility / Test without LLVM Backend",
             "Compiler compatibility / Test MLIR backend",
         ])
@@ -409,14 +434,15 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_compiler_caches_are_saved_only_on_main(self):
         # PR and tag caches can only be restored by the same ref; saving them
         # evicts the main caches that every run restores from.
-        save = "save: ${{ github.ref == 'refs/heads/main' }}"
+        # A job may narrow this further (e.g. one matrix entry saves).
+        save = re.compile(r"save: \$\{\{ github\.ref == 'refs/heads/main'( && [^}\n]+)? \}\}\n")
         paths = [*(ROOT / ".github/workflows").glob("*.yml"),
                  *(ROOT / ".github/actions").glob("*/action.yml")]
         steps = 0
         for path in paths:
             for step in path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]:
                 steps += 1
-                self.assertIn(save, step.split("\n\n", 1)[0], path)
+                self.assertRegex(step.split("\n\n", 1)[0] + "\n", save, path)
         self.assertGreaterEqual(steps, 8)
 
     def test_platform_ccache_fits_a_debug_build(self):

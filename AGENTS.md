@@ -162,6 +162,8 @@ only once, redirect to a log file and then examine the log file.
   These modes are not just smoke selections.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
+  The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its
+  WASI and Emscripten suites run in two parallel jobs.
   Full Linux LLVM 11/21 Debug platform suites and macOS LLVM 11 normal/reference
   coverage belong to supplemental Exhaustive jobs, preserving the original
   main coverage without making Quick slower on main.
@@ -197,7 +199,7 @@ only once, redirect to a log file and then examine the log file.
 - `integration_tests/run_tests.py --smoke` selects the maintained feature set in
   `integration_tests/smoke_tests.cmake` before compilation. This is for secondary
   CI configurations, not a replacement for full local regression testing.
-- The `main` ruleset requires all eleven Quick jobs directly (listed in
+- The `main` ruleset requires all twelve Quick jobs directly (listed in
   `doc/src/installation.md`); there is no aggregate status job. Keep their
   job names stable, and update the ruleset in the same rollout when a
   required Quick job is renamed or added. Do not gate required jobs on
