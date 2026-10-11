@@ -1398,7 +1398,7 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                                                     result_type, value);
             return;
         } else if( ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::type_get_past_allocatable_pointer(operand_type)) ) {
+                    *ASRUtils::extract_type(operand_type)) ) {
             ASR::expr_t* overloaded_uminus = nullptr;
             if( ASRUtils::use_overloaded_unary_minus(operand,
                 current_scope, asr, al,
@@ -3205,7 +3205,7 @@ public:
                 error = true;
             } else if (!is_named_constant_expr(dim_expr)) {
                 bool in_function_scope = in_Subroutine;
-                if (!in_function_scope) {
+                if (!in_function_scope && !is_derived_type) {
                     SymbolTable* scope = current_scope;
                     while (scope != nullptr && !in_function_scope) {
                         if (scope->asr_owner != nullptr &&
@@ -3217,7 +3217,7 @@ public:
                         scope = scope->parent;
                     }
                 }
-                if (!in_function_scope) {
+                if (!in_function_scope || is_derived_type) {
                     diag.add(Diagnostic(
                         "Explicit shaped array with nonconstant bounds",
                         Level::Error, Stage::Semantic, {

@@ -1,0 +1,9 @@
+[0;31;1msemantic error[0;0m[0;1m: No matching `operator(-)` found for this operand type[0;0m
+ [0;34;1m-->[0;0m tests/errors/derived_type_unary_error_01.f90:5:6
+  [0;34;1m|[0;0m
+[0;34;1m5 |[0;0m qq = -q
+  [0;34;1m|[0;0m      [0;31;1m^^ [0;0m
+
+
+[0;1mNote[0;0m: Please report unclear, confusing or incorrect messages as bugs at
+https://github.com/lfortran/lfortran/issues.

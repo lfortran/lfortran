@@ -2509,30 +2509,36 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     }
 
     bool found = false;
-    ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-    ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-    for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
-        switch(proc->type) {
-            case ASR::symbolType::Function: {
-                process_overloaded_unary_minus_function(proc, operand, operand_type,
-                    found, al, curr_scope, loc, current_function_dependencies,
-                    current_module_dependencies, asr, err);
-                break;
-            }
-            case ASR::symbolType::StructMethodDeclaration: {
-                ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                process_overloaded_unary_minus_function(class_procedure_t->m_proc,
-                    operand, operand_type, found, al, curr_scope, loc,
-                    current_function_dependencies, current_module_dependencies, asr, err);
-                break;
-            }
-            default: {
-                err("While overloading binary operators only functions can be used",
-                                    proc->base.loc);
+        
+    if (sym != nullptr) {
+        ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        if (orig_sym != nullptr && ASR::is_a<ASR::CustomOperator_t>(*orig_sym)) {
+            ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+            for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
+                ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+                switch(proc->type) {
+                    case ASR::symbolType::Function: {
+                        process_overloaded_unary_minus_function(proc, operand, operand_type,
+                            found, al, curr_scope, loc, current_function_dependencies,
+                            current_module_dependencies, asr, err);
+                        break;
+                    }
+                    case ASR::symbolType::StructMethodDeclaration: {
+                        ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                        process_overloaded_unary_minus_function(class_procedure_t->m_proc,
+                            operand, operand_type, found, al, curr_scope, loc,
+                            current_function_dependencies, current_module_dependencies, asr, err);
+                        break;
+                    }
+                    default: {
+                        err("While overloading binary operators only functions can be used",
+                                            proc->base.loc);
+                    }
+                }
             }
         }
     }
+    
     if (!found && ASR::is_a<ASR::StructType_t>(*operand_type) &&
             !ASRUtils::is_class_type(operand_type)) {
         ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
