@@ -234,7 +234,10 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                 x.m_storage != ASR::storage_typeType::Parameter &&
                 x.m_storage != ASR::storage_typeType::Save &&
                 !(asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner));
-            if( !(symbolic_value &&
+            // The initial value of a variable in a common block is the
+            // initial value of the block's static storage, not code.
+            if( x.m_common_block != nullptr ||
+                !(symbolic_value &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||
                    ASR::is_a<ASR::StructConstructor_t>(*symbolic_value) ||
                    (ASR::is_a<ASR::Cast_t>(*x.m_symbolic_value) && ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value)) ||

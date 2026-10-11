@@ -54,7 +54,7 @@ define void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__
   store %string_descriptor zeroinitializer, %string_descriptor* %command_argument_holder, align 8
   %length_to_allocate = alloca i32, align 4
   store i32 0, i32* %length_to_allocate, align 4
-  %4 = load i32, i32* %number, align 4
+  %4 = load i32, i32* %number, align 1
   %5 = call i32 @_lfortran_get_command_argument_length(i32 %4)
   store i32 %5, i32* %length_to_allocate, align 4
   %6 = load i32, i32* %length_to_allocate, align 4
@@ -80,7 +80,7 @@ ifcont:                                           ; preds = %else, %then
   %14 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 1
   %15 = sext i32 %6 to i64
   store i64 %15, i64* %14, align 8
-  %16 = load i32, i32* %number, align 4
+  %16 = load i32, i32* %number, align 1
   %17 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 0
   %18 = load i8*, i8** %17, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 0

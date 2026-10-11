@@ -46,6 +46,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                   "red" (Variable
                     :parent_symtab 2
@@ -83,6 +84,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )
@@ -138,6 +140,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "color" (ExternalSymbol
               :parent_symtab 3
@@ -172,6 +175,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "s" (Variable
               :parent_symtab 3
@@ -206,6 +210,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )

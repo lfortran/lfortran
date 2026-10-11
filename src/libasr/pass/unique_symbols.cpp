@@ -184,7 +184,21 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         }
         if (intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
-            sym_to_renamed[sym] = update_name(x.m_name);
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
+            if (owner && ASR::is_a<ASR::Module_t>(*owner) &&
+                    (!ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod
+                    || f_type->m_abi == ASR::abiType::ExternalUndefined)) {
+                // A procedure of a module that is compiled in this unit, or
+                // one that a loaded module defines in another unit (such as
+                // the getter of a module variable that bounds an array), is
+                // named by its module like any module procedure, so that all
+                // units agree on its name. A procedure that a pass adds here
+                // to a loaded module is defined in every unit that adds it,
+                // so it keeps the ID of the unit.
+                sym_to_renamed[sym] = module_name + x.m_name;
+            } else {
+                sym_to_renamed[sym] = update_name(x.m_name);
+            }
         }
         if (mangle_underscore_external) {
             bool is_external_interface = (ASRUtils::is_declaration_deftype(f_type->m_deftype) &&

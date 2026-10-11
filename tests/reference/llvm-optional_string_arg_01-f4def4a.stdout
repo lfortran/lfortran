@@ -129,7 +129,7 @@ define void @check(i32* %n, i8* %s, i32* %__libasr_is_present_s, i64 %__libasr_l
   store i64 %__libasr_len_s, i64* %__libasr_len_s_value, align 8
   %0 = getelementptr %string_descriptor, %string_descriptor* %s_desc, i32 0, i32 0
   store i8* %s, i8** %0, align 8
-  %1 = load i32, i32* %n, align 4
+  %1 = load i32, i32* %n, align 1
   %2 = sext i32 %1 to i64
   %3 = getelementptr %string_descriptor, %string_descriptor* %s_desc, i32 0, i32 1
   store i64 %2, i64* %3, align 8
@@ -149,7 +149,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %8 = load i32, i32* %__libasr_is_present_s, align 4
+  %8 = load i32, i32* %__libasr_is_present_s, align 1
   %9 = icmp ne i32 %8, 0
   br i1 %9, label %then1, label %else5
 
@@ -195,7 +195,7 @@ define void @sub(i32* %n, i8* %s, i32* %__libasr_is_present_s, i64 %__libasr_len
   store i64 %__libasr_len_s, i64* %__libasr_len_s_value, align 8
   %0 = getelementptr %string_descriptor, %string_descriptor* %s_desc, i32 0, i32 0
   store i8* %s, i8** %0, align 8
-  %1 = load i32, i32* %n, align 4
+  %1 = load i32, i32* %n, align 1
   %2 = sext i32 %1 to i64
   %3 = getelementptr %string_descriptor, %string_descriptor* %s_desc, i32 0, i32 1
   store i64 %2, i64* %3, align 8
