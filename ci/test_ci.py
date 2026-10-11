@@ -490,6 +490,30 @@ class WorkflowPolicyTests(unittest.TestCase):
                     else:
                         self.assertRegex(body, r"(?m)^    timeout-minutes: \S")
 
+    def test_headers_do_not_expand_the_version(self):
+        # LFORTRAN_VERSION changes with every commit. Expanding it in a header
+        # changes the preprocessed output of every including file, so compiler
+        # caches miss on every commit. Use it only in .cpp files.
+        headers = [path for path in (ROOT / "src").rglob("*")
+                   if path.suffix in (".h", ".hpp") and path.name != "config.h"]
+        uses = [str(path.relative_to(ROOT)) for path in headers
+                if "LFORTRAN_VERSION" in path.read_text(errors="ignore")]
+        self.assertEqual(uses, [])
+
+    def test_platform_build_path_does_not_depend_on_the_version(self):
+        # The version comes from git describe and changes with every commit;
+        # building under a versioned path makes every compiler cache entry miss.
+        source = (ROOT / "ci/build.sh").read_text()
+        self.assertIn("source_dir=lfortran-src\n", source)
+        self.assertIn('mv "lfortran-$lfortran_version" "$source_dir"\n', source)
+        self.assertIn('cd "$source_dir"\n', source)
+        uses = [line for line in source.splitlines()
+                if "lfortran-$lfortran_version" in line and not line.lstrip().startswith("#")]
+        self.assertEqual(uses, [
+            "tar xzf dist/lfortran-$lfortran_version.tar.gz",
+            'mv "lfortran-$lfortran_version" "$source_dir"',
+        ])
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]

@@ -1,65 +1,98 @@
-module finalization_39_m
+! An allocated allocatable scalar component is finalized when the structure
+! that it is a component of is finalized or deallocated: at the end of the
+! procedure for a local, or by DEALLOCATE of an allocatable structure.
+module finalization_39_mod
     implicit none
-    integer :: events = 0
-    type :: Parent
-        integer :: n = 17
+    integer :: nfin = 0, total = 0
+    integer :: order(4) = 0
+    type :: t
+        integer :: v = 0
     contains
-        final :: parent_final
+        final :: fin_t
     end type
-    type :: Leaf
-        integer, allocatable :: data(:)
+    type, extends(t) :: d
     contains
-        final :: leaf_final
+        final :: fin_d
     end type
-    type, extends(Parent) :: Child
-        type(Leaf), allocatable :: leaf
-    contains
-        final :: child_final
+    type :: holder
+        type(t), allocatable :: c
     end type
-    type :: Envelope
-        type(Child), allocatable :: parts(:)
+    type :: dholder
+        type(d), allocatable :: c
+    end type
+    type :: outer
+        type(holder) :: h
     end type
 contains
-    impure elemental subroutine child_final(self)
-        type(Child), intent(inout) :: self
-        events = 10 * events + 2
+    subroutine fin_t(x)
+        type(t), intent(inout) :: x
+        nfin = nfin + 1
+        total = total + x%v
+        order(nfin) = 1
     end subroutine
-    impure elemental subroutine parent_final(self)
-        type(Parent), intent(inout) :: self
-        events = 10 * events + 1
+
+    subroutine fin_d(x)
+        type(d), intent(inout) :: x
+        nfin = nfin + 1
+        total = total + 10*x%v
+        order(nfin) = 2
     end subroutine
-    impure elemental subroutine leaf_final(self)
-        type(Leaf), intent(inout) :: self
-        if (any(self%data /= 5)) error stop 10
-        events = 10 * events + 3
+
+    subroutine local_component()
+        type(holder) :: h
+        allocate(h%c)
+        h%c%v = 4
+    end subroutine
+
+    subroutine unallocated_component()
+        type(holder) :: h
+    end subroutine
+
+    subroutine deallocated_component()
+        type(holder) :: h
+        allocate(h%c)
+        h%c%v = 5
+        deallocate(h%c)
+    end subroutine
+
+    subroutine deallocate_structure()
+        type(holder), allocatable :: h
+        allocate(h)
+        allocate(h%c)
+        h%c%v = 6
+        deallocate(h)
+    end subroutine
+
+    subroutine extended_component()
+        type(dholder) :: h
+        allocate(h%c)
+        h%c%v = 7
+    end subroutine
+
+    subroutine nested_component()
+        type(outer) :: o
+        allocate(o%h%c)
+        o%h%c%v = 8
     end subroutine
 end module
 
 program finalization_39
-    use finalization_39_m
+    use finalization_39_mod
     implicit none
-    type(Envelope) :: source, empty
-    type(Envelope), allocatable :: owner
-    integer :: i
-    allocate(source%parts(2))
-    do i = 1, 2
-        allocate(source%parts(i)%leaf)
-        allocate(source%parts(i)%leaf%data(3))
-        source%parts(i)%leaf%data = 5
-    end do
-    allocate(owner, source=source)
-    if (events /= 0) error stop 1
-    owner = source
-    if (events /= 223311) error stop 2
-    events = 0
-    owner = empty
-    if (events /= 223311) error stop 3
-    events = 0
-    owner = source
-    if (events /= 0) error stop 4
-    deallocate(owner)
-    if (events /= 223311) error stop 5
-    events = 0
-    deallocate(source%parts)
-    if (events /= 223311) error stop 6
+    call local_component()
+    if (nfin /= 1 .or. total /= 4) error stop 1
+    call unallocated_component()
+    if (nfin /= 1) error stop 2
+    call deallocated_component()
+    if (nfin /= 2 .or. total /= 9) error stop 3
+    call deallocate_structure()
+    if (nfin /= 3 .or. total /= 15) error stop 4
+    nfin = 0
+    total = 0
+    call extended_component()
+    if (nfin /= 2 .or. total /= 77) error stop 5
+    if (order(1) /= 2 .or. order(2) /= 1) error stop 6
+    call nested_component()
+    if (nfin /= 3 .or. total /= 85) error stop 7
+    print *, "ok"
 end program
