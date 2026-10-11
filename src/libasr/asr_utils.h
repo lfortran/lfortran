@@ -11038,17 +11038,29 @@ bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
 bool same_generic_instance(const ASR::Struct_t &left, const ASR::Struct_t &right);
 // `Name{args}` for diagnostics; the plain name for any other Struct.
 std::string generic_type_spelling(const ASR::Struct_t &x);
+// Whether `procedure` (or the method Template of its function) is one of the
+// procedure copies the instance `x` records.
+bool generic_instance_procedure(const ASR::GenericTypeInstance_t &x, ASR::symbol_t *procedure);
+// The symbols of `scope` that make up its generic type instances: each
+// instance, its procedure copies, a generic procedure of only such copies
+// (the instance's initializers) and its conformances.
+std::set<ASR::symbol_t*> generic_instance_entities(SymbolTable &scope);
 // Whether `implementation` is a main program's conformance of a generic type
-// instance that program owns, whose bindings (those `contract` needs, or all)
-// are the instance's own procedure copies in the program, capturing no
-// program variable, and whose definition belongs to a module's package. Only
-// such a conformance of a program may have runtime evidence.
+// instance that program owns: the definition belongs to a module's package,
+// its bindings (those `contract` needs, or all) are procedure copies the
+// instance records and the program owns, and the conformance selected for
+// each type argument is a module's or, recursively, another such conformance
+// of the same program. Only such a conformance of a program may have runtime
+// evidence; the rule is structural and does not inspect procedure bodies.
 bool program_generic_instance_conformance(const ASR::TraitImplementation_t &implementation,
     const ASR::TraitRuntimeContract_t *contract);
-// Whether the generic procedure `generic` is a method copy, capturing no
-// program variable, that the program `scope` owns and binds in its
-// conformance of a generic type instance it owns.
+// Whether the generic procedure `generic` is a method copy that the program
+// `scope` owns and binds in a conformance satisfying
+// program_generic_instance_conformance.
 bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable *scope);
+// Whether a program-owned procedure copy (its method Template, if any)
+// references a variable of the program `program`.
+bool program_generic_instance_captures(ASR::symbol_t *procedure, SymbolTable *program);
 
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);

@@ -124,7 +124,8 @@ def asr_symbols(node):
 
 def generic_instance(node):
     """The definition and the type argument declarations that a generic type
-    instance records, or None for any other node."""
+    instance records, and the symbols of the instance's own scope, from
+    which those references are made, or None for any other node."""
     start = node.find("(GenericTypeInstance")
     if start < 0:
         return None
@@ -138,20 +139,22 @@ def generic_instance(node):
         require(declaration is not None, "a generic type argument has no declaration")
         arguments.append(declaration[1])
         position = node_end(block, argument.end() - 1)
-    return head[1], arguments
+    return head[1], arguments, asr_symbols(node)
 
 
-def spelling(symbols, name):
-    """`module::name` for an import, `definition{arguments}` for an instance."""
-    node = symbols.get(name, "")
+def spelling(scopes, name):
+    """`module::name` for an import, `definition{arguments}` for an instance,
+    looking `name` up in `scopes` innermost first."""
+    node = next((scope[name] for scope in scopes if name in scope), "")
     external = ASR_EXTERNAL.match(node)
     if external:
         return f"{external[1]}::{external[2]}"
     instance = generic_instance(node)
     if instance:
-        definition, arguments = instance
-        return (spelling(symbols, definition) + "{"
-                + ", ".join(spelling(symbols, argument) for argument in arguments) + "}")
+        definition, arguments, own = instance
+        inner = [own, scopes[-1]]
+        return (spelling(inner, definition) + "{"
+                + ", ".join(spelling(inner, argument) for argument in arguments) + "}")
     return str(name)
 
 
@@ -201,7 +204,7 @@ def check_static(logs):
     require(units["simple_library"].count("(TraitWitness") == 1,
             "simple_library must keep the witness of its conformance")
     symbols = asr_symbols(main)
-    instances = {name: spelling(symbols, name) for name, node in symbols.items()
+    instances = {name: spelling([symbols], name) for name, node in symbols.items()
                  if node.startswith("(Struct") and generic_instance(node)}
     require(sorted(instances.values()) == STATIC_INSTANCES,
             f"main must own the instances {STATIC_INSTANCES}, not {sorted(instances.values())}")

@@ -817,8 +817,10 @@ public:
                         ? assgnd_access[item.first] : dflt_access;
             } else if (ASR::is_a<ASR::Struct_t>(*item.second)) {
                 // A derived type may precede the `public :: t` or default
-                // `private` statement that sets its access.
+                // `private` statement that sets its access. A generic type's
+                // instance stays private to its unit.
                 ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
+                if (ASRUtils::generic_type_instance(*st)) continue;
                 if (assgnd_access.count(item.first)) {
                     st->m_access = assgnd_access[item.first];
                 } else {
@@ -862,6 +864,9 @@ public:
         add_overloaded_procedures();
         add_class_procedures();
         complete_trait_implementations();
+        if (!resolve_deferred_generic_evidence()) {
+            invalid_type_adoption_scopes.insert(current_scope);
+        }
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
@@ -1336,6 +1341,9 @@ public:
         try {
             add_class_procedures();
             complete_trait_implementations();
+            if (!resolve_deferred_generic_evidence()) {
+                invalid_type_adoption_scopes.insert(current_scope);
+            }
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }

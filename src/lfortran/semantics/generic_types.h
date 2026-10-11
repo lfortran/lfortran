@@ -140,49 +140,39 @@ inline bool generic_type_attribute_dependent(const AST::decl_attribute_t *x,
     return false;
 }
 
-inline bool generic_type_procedure_dependent(const AST::program_unit_t &x,
-        const std::set<std::string> &parameters, const std::string &type);
+// Finds a declaration anywhere in a procedure, in its specification part,
+// in a BLOCK of its body or in a procedure it contains, that names a
+// parameter of the generic type `type` or applies `type`.
+class GenericTypeDependence : public AST::BaseWalkVisitor<GenericTypeDependence> {
+public:
+    const std::set<std::string> &parameters;
+    const std::string &type;
+    bool found = false;
 
-inline bool generic_type_declarations_dependent(AST::decl_stmt_t **items,
-        size_t n_items, AST::program_unit_t **contains, size_t n_contains,
-        const std::set<std::string> &parameters, const std::string &type) {
-    for (size_t i = 0; i < n_items; i++) {
-        if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
-        auto *declaration = AST::down_cast<AST::Declaration_t>(items[i]);
-        if (generic_type_attribute_dependent(declaration->m_vartype, parameters, type)) {
-            return true;
-        }
-    }
-    for (size_t i = 0; i < n_contains; i++) {
-        if (generic_type_procedure_dependent(*contains[i], parameters, type)) return true;
-    }
-    return false;
-}
+    GenericTypeDependence(const std::set<std::string> &parameters_,
+            const std::string &type_) : parameters(parameters_), type(type_) {}
 
-// Whether the declarations of a procedure (dummies, result, locals, internal
-// procedures) name a parameter of the generic type `type` or apply `type`.
+    void visit_Declaration(const AST::Declaration_t &x) {
+        found |= generic_type_attribute_dependent(x.m_vartype, parameters, type);
+        AST::BaseWalkVisitor<GenericTypeDependence>::visit_Declaration(x);
+    }
+
+    void visit_Function(const AST::Function_t &x) {
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            found |= generic_type_attribute_dependent(x.m_attributes[i], parameters, type);
+        }
+        AST::BaseWalkVisitor<GenericTypeDependence>::visit_Function(x);
+    }
+};
+
+// Whether the declarations of a procedure (dummies, result, locals, BLOCK
+// locals, internal procedures) name a parameter of the generic type `type`
+// or apply `type`.
 inline bool generic_type_procedure_dependent(const AST::program_unit_t &x,
         const std::set<std::string> &parameters, const std::string &type) {
-    if (AST::is_a<AST::TraitProcedure_t>(x)) {
-        return generic_type_procedure_dependent(
-            *AST::down_cast<AST::TraitProcedure_t>(&x)->m_procedure, parameters, type);
-    }
-    if (AST::is_a<AST::Function_t>(x)) {
-        auto *function = AST::down_cast<AST::Function_t>(&x);
-        for (size_t i = 0; i < function->n_attributes; i++) {
-            if (generic_type_attribute_dependent(function->m_attributes[i],
-                    parameters, type)) return true;
-        }
-        return generic_type_declarations_dependent(function->m_items, function->n_items,
-            function->m_contains, function->n_contains, parameters, type);
-    }
-    if (AST::is_a<AST::Subroutine_t>(x)) {
-        auto *subroutine = AST::down_cast<AST::Subroutine_t>(&x);
-        return generic_type_declarations_dependent(subroutine->m_items,
-            subroutine->n_items, subroutine->m_contains, subroutine->n_contains,
-            parameters, type);
-    }
-    return false;
+    GenericTypeDependence dependence(parameters, type);
+    dependence.visit_program_unit(x);
+    return dependence.found;
 }
 
 // The module `x` with each generic derived type lowered to its package, or
@@ -194,7 +184,7 @@ inline AST::Module_t *lower_generic_type_module(Allocator &al, const AST::Module
         if (AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) {
             auto *definition = AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i]);
             generic_types.emplace(generic_type_name(*definition),
-                GenericTypePackageAST{definition, {}});
+                GenericTypePackageAST{definition, {}, {}, {}});
         }
     }
     if (generic_types.empty()) return nullptr;

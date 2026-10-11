@@ -627,8 +627,10 @@ inherits the parameters without declaring them, and a method can add its own
 independent parameters, as `function sum{INumeric :: T}(self, x)`. Calls
 through a value of a parameter type, such as `self%other%sum(x)`, use the
 parameter's constraints, including their generic messages, and are checked
-when the module is compiled. An `implements` statement for the type repeats
-its parameter list: `implements ISum :: Box{ISum :: T}`.
+when the module is compiled. A procedure whose declarations, including those
+of a BLOCK of its body, use the parameters depends on them. An `implements`
+statement for the type repeats its parameter list:
+`implements ISum :: Box{ISum :: T}`.
 
 A client names an instance with concrete type arguments,
 `type(PairwiseSum{SimpleSum})`, or lets a constructor infer them:
@@ -636,19 +638,30 @@ A client names an instance with concrete type arguments,
 constructor and binds each parameter from the actual arguments, nested
 constructors first. Explicit arguments, `PairwiseSum{SimpleSum}(...)`, must
 agree with those of the actual arguments; a parameter no actual argument
-determines is never guessed. Every type argument needs a visible nominal
-conformance to each trait of its parameter, and the conformance selected
-where the instance is created becomes its evidence: generic methods of the
-argument are then called through that conformance, also in separately
-compiled clients.
+determines is never guessed; a structure constructor converts the values of
+components that are not of a parameter type as usual. Every type argument
+needs a nominal conformance to each trait of its parameter visible where the
+type is used, and the conformance selected there becomes the instance's
+evidence: generic methods of the argument are then called through that
+conformance, also in separately compiled clients. The instance records its
+evidence in its own scope, so selecting it makes no conformance visible to
+the rest of the unit, and two procedures that see different conformances of
+one type use two different instances. A conformance that the instance's own
+unit declares later, such as one of a type declared in the same module, is
+selected once the unit's conformances are complete.
 
 An instance is an ordinary sealed derived type of the module or main program
 that creates it; equal instances of one module or program are one type. It
 owns copies of the type's procedures, specialized for its arguments, and its
-own bindings, initializers and conformances. The module that defines the
-generic type keeps only its definition, so compiling a client never changes
-that module's file or object. A program owns the runtime witnesses and
-generic entries of its instances too:
+own bindings, initializers and conformances. These are private to the unit
+and named in a namespace no Fortran identifier can take, so no user entity
+collides with them, no USE imports them, and a constructor call lowers the
+instance it resolved rather than a name. The unit's public procedures can
+still pass values of its instances on. The module that defines the generic
+type keeps only its definition, so compiling a client never changes that
+module's file or object. A program owns the runtime witnesses and generic
+entries of its instances too, when the conformance of every type argument is
+a module's or, recursively, that of another such instance of the program:
 
 ```fortran
 class(IAverager), allocatable :: av
@@ -660,7 +673,10 @@ dispatches `average` at runtime through the conformance of
 `Averager{PairwiseSum{SimpleSum}}` that the program owns, while every call
 inside the instance's methods is a static specialization. A conformance that
 another module owns, like `SimpleSum`'s, keeps its runtime evidence there; a
-client only specializes its generic bodies for static calls.
+client only specializes its generic bodies for static calls. A conformance
+the program writes itself stays static only, also as the evidence of an
+instance's type argument: the runtime view of such an instance is diagnosed
+where it is formed.
 
 The paper's `static.f90` is registered byte-exact through
 `traits_paper_functional.py` for both inputs, and as the native
@@ -671,7 +687,14 @@ instance, witness and entry. `traits_generic_type_01` covers explicit and
 inferred instances, initializers and structure constructors, nesting,
 renamed imports, independent method parameters, a CLASS receiver and runtime
 averaging over several instances, with a standard-Fortran oracle.
-`continue_compilation_traits_04` covers the diagnostics.
+`traits_generic_type_02` covers evidence selected where an instance is used,
+conformances a unit declares later and a program's own conformance used
+statically; `traits_generic_type_03` user names like those of instances,
+structure constructor conversions and parameters used in a BLOCK;
+`traits_generic_type_04` and the native `test_generic_type_private_*` CTests
+a private module that owns instances, compiled separately.
+`continue_compilation_traits_04` and `continue_compilation_traits_05` cover
+the diagnostics.
 
 These are boundaries of the current prototype, diagnosed where they apply:
 generic types are declared in modules and instantiated in other modules or
@@ -683,10 +706,11 @@ bindings and constructors, not by name; parameters are constrained by
 universal traits; type arguments are concrete, not parameters of an
 enclosing generic; and generic types and their instances cannot be extended.
 A generic type binds only procedures that use its parameters, and has no
-FINAL procedures and no GENERIC or DEFERRED bindings. Instances are not shared
-between program units yet: equal instances created by different units are
-different types, and the conformances of an instance are visible only in the
-unit that created it.
+FINAL procedures and no GENERIC or DEFERRED bindings. A method calls a
+generic method through a parameter only with its own parameters as type
+arguments. Instances are not shared between program units yet: equal
+instances created by different units are different types, and the
+conformances of an instance are visible only in the unit that created it.
 
 ## Inheritance and composed constraints
 
@@ -1673,16 +1697,21 @@ initializer generic and the definition's conformances; no code is generated
 for it. An instance is an ordinary `Struct` of the module or program that
 creates it, with `GenericTypeInstance`: an import of the definition and, for
 each parameter, the concrete type, its declaration and the conformance
-selected for each universal constraint. The shared symbol and body
-instantiators copy the package into the instance's owner. A generic
+selected for each universal constraint, all referenced from the instance's
+own scope, and the procedure copies its owner made for it. The shared symbol
+and body instantiators copy the package into the instance's owner. A generic
 requirement that a method's body publishes for the method's own binders is
 bound, in each copy, to a static adapter of the evidence's generic
 implementation forwarded with the copy's binders. Verification checks that a
 definition belongs to its package, that an instance names a definition with
-one concrete, visible argument per parameter and its evidence, layout and
-uniqueness, that no generic type or instance is extended, and that a program
-owns the runtime evidence of generic bindings only for its own instances,
-through procedure copies that capture none of its variables
+one concrete, visible argument per parameter and its evidence, that its
+components are the definition's with the arguments substituted, that a
+completed instance records one copy of each package procedure and that its
+bindings and conformances use those copies, uniqueness, that no generic type
+or instance is extended, and that a program owns the runtime evidence of
+generic bindings only for its own instances, through procedure copies that
+capture none of its variables, when the evidence of every type argument is a
+module's conformance or, recursively, such a conformance of the program
 (`asr.verify.trait_witness.program_owner`). Inside a program, its symbols
 nested in generic or trait scopes are imported through `ExternalSymbol`s that
 name the program, like those of a module.

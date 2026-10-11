@@ -2549,6 +2549,9 @@ public:
         for (auto const &sym_pair: new_s->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
+            // A symbol the copy has and the source does not, such as an
+            // import a generic type's instance records, has no body.
+            if (sym_i == nullptr) continue;
 
             BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);

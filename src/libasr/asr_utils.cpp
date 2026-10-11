@@ -7588,56 +7588,117 @@ static bool captures_program_variable(ASR::symbol_t *procedure, SymbolTable *pro
     return capture.found;
 }
 
-static bool program_instance_procedure(ASR::symbol_t *procedure, SymbolTable *program)
+bool generic_instance_procedure(const ASR::GenericTypeInstance_t &x, ASR::symbol_t *procedure)
 {
     procedure = procedure ? symbol_get_past_external(procedure) : nullptr;
-    if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure)) return false;
-    SymbolTable *scope = symbol_parent_symtab(procedure);
-    // A copy is owned by the program or by a method Template the program owns.
-    if (scope != program) {
-        if (!scope || scope->parent != program || !scope->asr_owner ||
-                !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ||
-                !ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-            return false;
-        }
+    if (!procedure) return false;
+    ASR::symbol_t *generic = nullptr;
+    if (ASR::is_a<ASR::Function_t>(*procedure)) {
+        auto *method = trait_method_template(*ASR::down_cast<ASR::Function_t>(procedure));
+        if (method) generic = &method->base;
     }
-    auto *generic = trait_method_template(*ASR::down_cast<ASR::Function_t>(procedure));
-    return !captures_program_variable(generic ? &generic->base : procedure, program);
+    for (size_t i = 0; i < x.n_procedures; i++) {
+        ASR::symbol_t *copy = symbol_get_past_external(x.m_procedures[i]);
+        if (copy == procedure || (generic && copy == generic)) return true;
+    }
+    return false;
 }
 
-// Whether `implementation` is a conformance a program owns for an instance
-// of a module's generic type that the program also owns.
-static bool program_generic_instance_implementation(
+std::set<ASR::symbol_t*> generic_instance_entities(SymbolTable &scope)
+{
+    std::set<ASR::symbol_t*> entities;
+    std::vector<ASR::GenericTypeInstance_t*> instances;
+    for (const auto &entry : scope.get_scope()) {
+        if (!ASR::is_a<ASR::Struct_t>(*entry.second)) continue;
+        auto *instance = generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second));
+        if (!instance) continue;
+        entities.insert(entry.second);
+        instances.push_back(instance);
+        for (size_t i = 0; i < instance->n_procedures; i++) {
+            entities.insert(symbol_get_past_external(instance->m_procedures[i]));
+        }
+    }
+    for (const auto &entry : scope.get_scope()) {
+        ASR::symbol_t *symbol = entry.second;
+        if (ASR::is_a<ASR::TraitImplementation_t>(*symbol)) {
+            ASR::symbol_t *type = ASR::down_cast<ASR::TraitImplementation_t>(
+                symbol)->m_type_declaration;
+            if (type && entities.count(symbol_get_past_external(type))) {
+                entities.insert(symbol);
+            }
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*symbol)) {
+            // An instance's initializers form a generic of its own copies.
+            auto *generic = ASR::down_cast<ASR::GenericProcedure_t>(symbol);
+            for (auto *instance : instances) {
+                bool copies = generic->n_procs > 0;
+                for (size_t i = 0; copies && i < generic->n_procs; i++) {
+                    copies = generic_instance_procedure(*instance, generic->m_procs[i]);
+                }
+                if (copies) entities.insert(symbol);
+            }
+        }
+    }
+    return entities;
+}
+
+// The program instance and its metadata that the program conformance
+// `implementation` is for: the instance is the program's own, and its
+// definition belongs to a module's package.
+static ASR::GenericTypeInstance_t *program_generic_instance_of(
     const ASR::TraitImplementation_t &implementation)
 {
     SymbolTable *program = implementation.m_parent_symtab;
     if (!program || !program->asr_owner || !ASR::is_a<ASR::symbol_t>(*program->asr_owner) ||
             !ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(program->asr_owner))) {
-        return false;
+        return nullptr;
     }
     ASR::symbol_t *declaration = implementation.m_type_declaration;
-    if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
+    if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return nullptr;
     auto *instance = ASR::down_cast<ASR::Struct_t>(declaration);
     auto *metadata = generic_type_instance(*instance);
     if (!metadata || instance->m_symtab->parent != program || !metadata->m_definition) {
-        return false;
+        return nullptr;
     }
     ASR::symbol_t *definition = symbol_get_past_external(metadata->m_definition);
-    if (!definition || !ASR::is_a<ASR::Struct_t>(*definition)) return false;
+    if (!definition || !ASR::is_a<ASR::Struct_t>(*definition)) return nullptr;
     ASR::symbol_t *package = get_asr_owner(definition);
     if (!package || !ASR::is_a<ASR::Template_t>(*package) ||
             &generic_type_definition(*ASR::down_cast<ASR::Template_t>(package))->base !=
                 definition) {
-        return false;
+        return nullptr;
     }
     ASR::symbol_t *module = get_asr_owner(package);
-    return module && ASR::is_a<ASR::Module_t>(*module);
+    return module && ASR::is_a<ASR::Module_t>(*module) ? metadata : nullptr;
 }
 
-bool program_generic_instance_conformance(const ASR::TraitImplementation_t &implementation,
-    const ASR::TraitRuntimeContract_t *contract)
+// Whether `procedure` is one of the copies the program owns for `metadata`:
+// a function of the program, or the function of a method Template it owns.
+static bool program_instance_procedure(ASR::symbol_t *procedure, SymbolTable *program,
+    const ASR::GenericTypeInstance_t &metadata)
 {
-    if (!program_generic_instance_implementation(implementation)) return false;
+    procedure = procedure ? symbol_get_past_external(procedure) : nullptr;
+    if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure) ||
+            !generic_instance_procedure(metadata, procedure)) return false;
+    SymbolTable *scope = symbol_parent_symtab(procedure);
+    return scope == program || (scope && scope->parent == program && scope->asr_owner &&
+        ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+        ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner)));
+}
+
+// `visiting` holds the conformances whose rule is being checked, so that
+// malformed metadata naming an instance's own conformance as its evidence is
+// rejected instead of recursing forever.
+static bool program_generic_instance_conformance(
+    const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract,
+    std::set<const ASR::TraitImplementation_t*> &visiting);
+
+static bool program_generic_instance_rule(const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract,
+    std::set<const ASR::TraitImplementation_t*> &visiting)
+{
+    ASR::GenericTypeInstance_t *metadata = program_generic_instance_of(implementation);
+    if (!metadata) return false;
     SymbolTable *program = implementation.m_parent_symtab;
     for (size_t i = 0; i < implementation.n_bindings; i++) {
         const auto &binding = implementation.m_bindings[i];
@@ -7651,26 +7712,89 @@ bool program_generic_instance_conformance(const ASR::TraitImplementation_t &impl
             }
             if (!needed) continue;
         }
-        if (!program_instance_procedure(binding.m_procedure, program)) return false;
+        if (!program_instance_procedure(binding.m_procedure, program, *metadata)) return false;
+    }
+    // The copies call the conformances selected for the type arguments
+    // statically. Each is a module's, whose runtime entries that module
+    // owns, or the conformance of another instance of this program that
+    // satisfies this rule, never one the program wrote itself.
+    auto *definition = ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(metadata->m_definition));
+    auto *package = ASR::down_cast<ASR::Template_t>(get_asr_owner(&definition->base));
+    if (metadata->n_arguments != package->n_args) return false;
+    for (size_t i = 0; i < metadata->n_arguments; i++) {
+        const auto &argument = metadata->m_arguments[i];
+        ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
+        bool constrained = false;
+        for (const auto &entry : package->m_symtab->get_scope()) {
+            constrained |= ASR::is_a<ASR::TraitConstraint_t>(*entry.second) &&
+                symbol_get_past_external(ASR::down_cast<ASR::TraitConstraint_t>(
+                    entry.second)->m_parameter) == binder;
+        }
+        if (constrained && argument.n_evidence == 0) return false;
+        for (size_t j = 0; j < argument.n_evidence; j++) {
+            ASR::symbol_t *evidence = symbol_get_past_external(argument.m_evidence[j]);
+            if (!evidence || !ASR::is_a<ASR::TraitImplementation_t>(*evidence)) return false;
+            auto *conformance = ASR::down_cast<ASR::TraitImplementation_t>(evidence);
+            SymbolTable *owner = conformance->m_parent_symtab;
+            if (owner && owner->asr_owner && ASR::is_a<ASR::symbol_t>(*owner->asr_owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                        owner->asr_owner))) continue;
+            if (owner != program || !program_generic_instance_conformance(*conformance,
+                    nullptr, visiting)) return false;
+        }
     }
     return true;
+}
+
+static bool program_generic_instance_conformance(
+    const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract,
+    std::set<const ASR::TraitImplementation_t*> &visiting)
+{
+    if (!visiting.insert(&implementation).second) return false;
+    bool result = program_generic_instance_rule(implementation, contract, visiting);
+    visiting.erase(&implementation);
+    return result;
+}
+
+bool program_generic_instance_conformance(const ASR::TraitImplementation_t &implementation,
+    const ASR::TraitRuntimeContract_t *contract)
+{
+    std::set<const ASR::TraitImplementation_t*> visiting;
+    return program_generic_instance_conformance(implementation, contract, visiting);
 }
 
 bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable *scope)
 {
     if (!scope || generic.m_symtab->parent != scope) return false;
     ASR::Function_t *function = trait_method_function(const_cast<ASR::symbol_t*>(&generic.base));
-    if (!function || !program_instance_procedure(&function->base, scope)) return false;
+    if (!function) return false;
     for (const auto &entry : scope->get_scope()) {
         if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
         auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
-        if (!program_generic_instance_implementation(*implementation)) continue;
-        for (size_t i = 0; i < implementation->n_bindings; i++) {
-            if (symbol_get_past_external(implementation->m_bindings[i].m_procedure) ==
-                    &function->base) return true;
+        bool binds = false;
+        for (size_t i = 0; i < implementation->n_bindings && !binds; i++) {
+            binds = symbol_get_past_external(implementation->m_bindings[i].m_procedure) ==
+                &function->base;
+        }
+        if (binds && program_generic_instance_conformance(*implementation, nullptr)) {
+            return true;
         }
     }
     return false;
+}
+
+bool program_generic_instance_captures(ASR::symbol_t *procedure, SymbolTable *program)
+{
+    procedure = procedure ? symbol_get_past_external(procedure) : nullptr;
+    if (!procedure) return false;
+    if (ASR::is_a<ASR::Function_t>(*procedure)) {
+        if (auto *method = trait_method_template(*ASR::down_cast<ASR::Function_t>(procedure))) {
+            procedure = &method->base;
+        }
+    }
+    return captures_program_variable(procedure, program);
 }
 
 std::string generic_type_spelling(const ASR::Struct_t &x)

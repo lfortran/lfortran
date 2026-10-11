@@ -8835,15 +8835,29 @@ contains
 end module gt_averager
 
 program gt_main
-    use gt_contracts, only: IAverager
+    use gt_contracts, only: IAverager, ISum, INumeric
     use gt_simple, only: SimpleSum
     use gt_averager, only: Averager
     implicit none
+    ! A conformance the program writes itself: static only.
+    type, sealed, implements(ISum) :: LocalSum
+    contains
+        procedure, nopass :: sum => local_sum
+    end type LocalSum
+    type :: Plain
+        integer :: n = 0
+    end type Plain
     class(IAverager), allocatable :: av
     integer :: key
     key = 1
     av = Averager(drv = SimpleSum())
-    print *, av%average([1, 2, 3]), key
+    print *, av%average([1, 2, 3]), key, local_sum([key])
+contains
+    function local_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function local_sum
 end program gt_main
 )";
     ast_ser(source);
@@ -8881,25 +8895,42 @@ end program gt_main
     REQUIRE(parameters->n_parameters == 1);
     CHECK(parameters->m_parameters[0] == package->m_symtab->get_symbol("u"));
     ASR::Struct_t *instance = nullptr;
-    ASR::TraitImplementation_t *conformance = nullptr;
+    ASR::TraitImplementation_t *conformance = nullptr, *local = nullptr;
+    ASR::TraitWitness_t *witness = nullptr;
+    ASR::TraitErasure_t *erasure = nullptr;
     size_t witnesses = 0, entries = 0;
     for (const auto &entry : program->m_symtab->get_scope()) {
         if (ASR::is_a<ASR::Struct_t>(*entry.second) &&
                 ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second))) {
             CHECK(instance == nullptr);
             instance = ASR::down_cast<ASR::Struct_t>(entry.second);
-        } else if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) {
-            conformance = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
         } else if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
             witnesses++;
-            CHECK(ASR::down_cast<ASR::TraitWitness_t>(entry.second)->m_implementation ==
-                &conformance->base);
+            witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
         } else if (ASR::is_a<ASR::TraitErasure_t>(*entry.second)) {
             entries++;
+            erasure = ASR::down_cast<ASR::TraitErasure_t>(entry.second);
         }
     }
     REQUIRE(instance != nullptr);
+    // The instance's conformance, and the one the program wrote for LocalSum.
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        if (implementation->m_type_declaration == &instance->base) {
+            conformance = implementation;
+        } else if (implementation->m_type_declaration ==
+                program->m_symtab->get_symbol("localsum")) {
+            local = implementation;
+        }
+    }
     REQUIRE(conformance != nullptr);
+    REQUIRE(local != nullptr);
+    REQUIRE(witness != nullptr);
+    REQUIRE(erasure != nullptr);
+    CHECK(witness->m_implementation == &conformance->base);
+    // The program's own conformance has no runtime evidence.
+    CHECK_FALSE(ASRUtils::program_generic_instance_conformance(*local, nullptr));
     CHECK(ASRUtils::generic_type_spelling(*instance) == "averager{simplesum}");
     CHECK(conformance->m_type_declaration == &instance->base);
     CHECK(ASRUtils::program_generic_instance_conformance(*conformance, nullptr));
@@ -8925,12 +8956,17 @@ end program gt_main
         CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
     }
 
-    auto rejects = [&](const std::string &code) {
+    // Verification fails with `code`, and with a message containing `text`.
+    auto rejects = [&](const std::string &code, const std::string &text = "") {
         LCompilers::diag::Diagnostics invalid;
         CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
         INFO(invalid.render2());
-        REQUIRE(!invalid.diagnostics.empty());
-        CHECK(invalid.diagnostics.back().code == code);
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) {
+            found |= diagnostic.code == code &&
+                diagnostic.message.find(text) != std::string::npos;
+        }
+        CHECK(found);
     };
     SUBCASE("a definition records its package's binders") {
         parameters->n_parameters = 0;
@@ -8966,7 +9002,380 @@ end program gt_main
             key, key, nullptr, false, false)));
         method->m_body = body.p;
         method->n_body = body.size();
-        rejects("asr.verify.trait_witness.program_owner");
+        rejects("asr.verify.trait_witness.program_owner", "runtime witness");
+    }
+    SUBCASE("an instance belongs to a module or program") {
+        auto *copy = ASRUtils::symbol_get_past_external(metadata->m_procedures[0]);
+        REQUIRE(ASR::is_a<ASR::Template_t>(*copy));
+        instance->m_symtab->parent = ASR::down_cast<ASR::Template_t>(copy)->m_symtab;
+        rejects("asr.verify.generic_type.instance_owner");
+    }
+    SUBCASE("a scope declares one instance for equal arguments") {
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t *twin = duplicator.duplicate_Struct(instance, program->m_symtab);
+        REQUIRE(twin != nullptr);
+        ASR::down_cast<ASR::Struct_t>(twin)->m_name = LCompilers::s2c(al, "__twin");
+        program->m_symtab->add_symbol("__twin", twin);
+        rejects("asr.verify.generic_type.instance_unique");
+    }
+    SUBCASE("an instance extends no type") {
+        instance->m_parent = program->m_symtab->get_symbol("plain");
+        rejects("asr.verify.generic_type.not_extended");
+    }
+    SUBCASE("an instance's components have its type arguments") {
+        auto *component = ASR::down_cast<ASR::Variable_t>(
+            instance->m_symtab->get_symbol(instance->m_members[0]));
+        component->m_type_declaration = program->m_symtab->get_symbol("localsum");
+        rejects("asr.verify.generic_type.instance_layout");
+    }
+    SUBCASE("a completed instance records its procedure copies") {
+        metadata->n_procedures = 0;
+        rejects("asr.verify.generic_type.instance_procedures");
+    }
+    SUBCASE("a program's generic entry instantiates its instance's method") {
+        // Without the witness, the entry alone is checked: LocalSum's own
+        // conformance binds this generic, an instance's does not.
+        program->m_symtab->erase_symbol(witness->m_name);
+        erasure->m_generic = program->m_symtab->get_symbol("local_sum");
+        REQUIRE(ASR::is_a<ASR::Template_t>(*erasure->m_generic));
+        rejects("asr.verify.trait_witness.program_owner", "generic entry");
+    }
+    SUBCASE("a program's generic entry captures no program variable") {
+        program->m_symtab->erase_symbol(witness->m_name);
+        auto *method = ASRUtils::trait_method_function(erasure->m_generic);
+        auto *key = ASRUtils::EXPR(ASR::make_Var_t(al, method->base.base.loc,
+            program->m_symtab->get_symbol("key")));
+        LCompilers::Vec<ASR::stmt_t*> body;
+        body.reserve(al, method->n_body + 1);
+        for (size_t i = 0; i < method->n_body; i++) body.push_back(al, method->m_body[i]);
+        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, method->base.base.loc,
+            key, key, nullptr, false, false)));
+        method->m_body = body.p;
+        method->n_body = body.size();
+        rejects("asr.verify.trait_witness.program_owner", "generic entry");
+    }
+    SUBCASE("a program's runtime evidence uses no conformance the program wrote") {
+        // A consistent instance of LocalSum, whose conformance the program
+        // wrote, cannot have runtime evidence.
+        ASR::symbol_t *local_type = program->m_symtab->get_symbol("localsum");
+        auto &argument = metadata->m_arguments[0];
+        argument.m_type_declaration = local_type;
+        argument.m_type = ASRUtils::make_StructType_t_util(al, local_type->base.loc,
+            local_type, true);
+        argument.m_evidence[0] = &local->base;
+        auto *component = ASR::down_cast<ASR::Variable_t>(
+            instance->m_symtab->get_symbol(instance->m_members[0]));
+        component->m_type_declaration = local_type;
+        rejects("asr.verify.trait_witness.program_owner", "runtime witness");
+    }
+}
+
+TEST_CASE("Generic derived type instances keep their evidence and internals to their unit") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module gx_contracts
+    implicit none
+    private
+    public :: INumeric, ISum, IAverager
+    abstract interface :: INumeric
+        integer | real(8)
+    end interface INumeric
+    abstract interface :: ISum
+        function sum{INumeric :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T) :: s
+        end function sum
+    end interface ISum
+    abstract interface :: IAverager
+        function average{INumeric :: T}(x) result(a)
+            type(T), intent(in) :: x(:)
+            type(T) :: a
+        end function average
+    end interface IAverager
+end module gx_contracts
+
+module gx_leaf
+    implicit none
+    private
+    public :: Leaf
+    type :: Leaf
+        integer :: pad = 0
+    end type Leaf
+end module gx_leaf
+
+module gx_provider_a
+    use gx_contracts, only: ISum, INumeric
+    use gx_leaf, only: Leaf
+    implicit none
+    implements ISum :: Leaf
+        procedure, nopass :: sum => sum_a
+    end implements
+contains
+    function sum_a{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function sum_a
+end module gx_provider_a
+
+module gx_provider_b
+    use gx_contracts, only: ISum, INumeric
+    use gx_leaf, only: Leaf
+    implicit none
+    implements ISum :: Leaf
+        procedure, nopass :: sum => sum_b
+    end implements
+contains
+    function sum_b{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1) + T(100)
+    end function sum_b
+end module gx_provider_b
+
+module gx_simple
+    use gx_contracts, only: ISum, INumeric
+    implicit none
+    private
+    public :: SimpleSum
+    type, sealed, implements(ISum) :: SimpleSum
+    contains
+        procedure, nopass :: sum => simple_sum
+    end type SimpleSum
+contains
+    function simple_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function simple_sum
+end module gx_simple
+
+module gx_pairwise
+    use gx_contracts, only: ISum, INumeric
+    implicit none
+    private
+    public :: PairwiseSum
+    type, sealed, implements(ISum) :: PairwiseSum{ISum :: U}
+        type(U), allocatable :: other
+    contains
+        initial :: init
+        procedure, pass :: sum
+    end type PairwiseSum
+contains
+    function init(other) result(res)
+        type(U), intent(in) :: other
+        type(PairwiseSum{U}) :: res
+        res%other = other
+    end function init
+    function sum{INumeric :: T}(self, x) result(s)
+        type(PairwiseSum{U}), intent(in) :: self
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = self%other%sum(x)
+    end function sum
+end module gx_pairwise
+
+module gx_averager
+    use gx_contracts, only: IAverager, ISum, INumeric
+    implicit none
+    private
+    public :: Averager
+    type, sealed, implements(IAverager) :: Averager{ISum :: U}
+        type(U), allocatable :: drv
+    contains
+        initial :: init
+        procedure, pass :: average
+    end type Averager
+contains
+    function init(drv) result(res)
+        type(U), intent(in) :: drv
+        type(Averager{U}) :: res
+        res%drv = drv
+    end function init
+    function average{INumeric :: T}(self, x) result(a)
+        type(Averager{U}), intent(in) :: self
+        type(T), intent(in) :: x(:)
+        type(T) :: a
+        a = self%drv%sum(x) / T(size(x))
+    end function average
+end module gx_averager
+
+module gx_owner
+    use gx_leaf, only: Leaf
+    use gx_provider_a
+    use gx_pairwise, only: PairwiseSum
+    implicit none
+    private
+    public :: make_pair
+contains
+    function make_pair() result(p)
+        type(PairwiseSum{Leaf}) :: p
+        p = PairwiseSum(Leaf())
+    end function make_pair
+end module gx_owner
+
+program gx_client
+    use gx_contracts, only: IAverager, ISum, INumeric
+    use gx_leaf, only: Leaf
+    use gx_simple, only: SimpleSum
+    use gx_pairwise, only: PairwiseSum
+    use gx_averager, only: Averager
+    use gx_owner
+    implicit none
+    type, sealed, implements(ISum) :: LocalSum
+    contains
+        procedure, nopass :: sum => local_sum
+    end type LocalSum
+    class(IAverager), allocatable :: av
+    av = Averager(drv = PairwiseSum(other = SimpleSum()))
+    print *, av%average([1, 2]), run_a(), run_b(), local_sum([1])
+contains
+    integer function run_a() result(r)
+        use gx_provider_a
+        p := PairwiseSum(Leaf())
+        r = p%sum([1, 2])
+    end function run_a
+    integer function run_b() result(r)
+        use gx_provider_b
+        q := PairwiseSum(Leaf())
+        r = q%sum([1, 2])
+    end function run_b
+    function local_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+        s = x(1)
+    end function local_sum
+end program gx_client
+)";
+    asr_ser(source);
+    asr_mod(source, "gx_owner");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    LCompilers::SymbolTable *tu = result.result->m_symtab;
+    auto *program = ASR::down_cast<ASR::Program_t>(tu->get_symbol("gx_client"));
+    auto *owner = ASR::down_cast<ASR::Module_t>(tu->get_symbol("gx_owner"));
+    auto *leaf = tu->get_symbol("gx_leaf");
+    auto conformance_of = [&](const char *module) {
+        auto *unit = ASR::down_cast<ASR::Module_t>(tu->get_symbol(module));
+        for (const auto &entry : unit->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) return entry.second;
+        }
+        return static_cast<ASR::symbol_t*>(nullptr);
+    };
+    ASR::symbol_t *provider_a = conformance_of("gx_provider_a");
+    ASR::symbol_t *provider_b = conformance_of("gx_provider_b");
+    REQUIRE(provider_a != nullptr);
+    REQUIRE(provider_b != nullptr);
+    REQUIRE(leaf != nullptr);
+
+    // Each internal procedure creates its own instance with the conformance
+    // visible there; the program's scope imports neither conformance.
+    std::vector<ASR::Struct_t*> leaves;
+    ASR::Struct_t *nested = nullptr, *inner = nullptr;
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*entry.second)) {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(entry.second);
+            CHECK(target != provider_a);
+            CHECK(target != provider_b);
+        }
+        if (!ASR::is_a<ASR::Struct_t>(*entry.second)) continue;
+        auto *structure = ASR::down_cast<ASR::Struct_t>(entry.second);
+        auto *metadata = ASRUtils::generic_type_instance(*structure);
+        if (!metadata) continue;
+        // A Fortran identifier cannot name an instance.
+        CHECK(structure->m_name[0] == '_');
+        ASR::symbol_t *argument = ASRUtils::symbol_get_past_external(
+            metadata->m_arguments[0].m_type_declaration);
+        if (ASR::is_a<ASR::Struct_t>(*argument) && ASRUtils::generic_type_instance(
+                *ASR::down_cast<ASR::Struct_t>(argument))) {
+            nested = structure;
+            inner = ASR::down_cast<ASR::Struct_t>(argument);
+        } else if (std::string(ASRUtils::symbol_name(argument)) == "leaf") {
+            leaves.push_back(structure);
+        }
+    }
+    REQUIRE(leaves.size() == 2);
+    REQUIRE(nested != nullptr);
+    std::set<ASR::symbol_t*> selected;
+    for (auto *instance : leaves) {
+        auto *metadata = ASRUtils::generic_type_instance(*instance);
+        REQUIRE(metadata->m_arguments[0].n_evidence == 1);
+        ASR::symbol_t *record = metadata->m_arguments[0].m_evidence[0];
+        // The record is the instance's own import.
+        CHECK(ASRUtils::symbol_parent_symtab(record) == instance->m_symtab);
+        selected.insert(ASRUtils::symbol_get_past_external(record));
+    }
+    CHECK(selected == std::set<ASR::symbol_t*>{provider_a, provider_b});
+
+    // The owner's instance, copies, initializers and conformance are
+    // private, and an unrestricted USE imports none of them.
+    std::set<ASR::symbol_t*> internals = ASRUtils::generic_instance_entities(*owner->m_symtab);
+    size_t structures = 0, procedures = 0, generics = 0, conformances = 0;
+    for (auto *symbol : internals) {
+        if (ASR::is_a<ASR::Struct_t>(*symbol)) {
+            structures++;
+            CHECK(ASR::down_cast<ASR::Struct_t>(symbol)->m_access == ASR::accessType::Private);
+        } else if (ASR::is_a<ASR::Function_t>(*symbol) || ASR::is_a<ASR::Template_t>(*symbol)) {
+            procedures++;
+            CHECK(ASRUtils::trait_method_function(symbol)->m_access ==
+                ASR::accessType::Private);
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*symbol)) {
+            generics++;
+            CHECK(ASR::down_cast<ASR::GenericProcedure_t>(symbol)->m_access ==
+                ASR::accessType::Private);
+        } else if (ASR::is_a<ASR::TraitImplementation_t>(*symbol)) {
+            conformances++;
+            CHECK(ASR::down_cast<ASR::TraitImplementation_t>(symbol)->m_access ==
+                ASR::accessType::Private);
+        }
+    }
+    CHECK(structures == 1);
+    CHECK(procedures == 2);
+    CHECK(generics == 1);
+    CHECK(conformances == 1);
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::ExternalSymbol_t>(*entry.second)) continue;
+        CHECK(internals.count(ASRUtils::symbol_get_past_external(entry.second)) == 0);
+    }
+
+    // A program's runtime evidence for a nested instance, recursively through
+    // the inner instance's conformance, which uses a module's.
+    ASR::TraitImplementation_t *outer = nullptr, *inner_conformance = nullptr, *local = nullptr;
+    for (const auto &entry : program->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+        auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+        if (implementation->m_type_declaration == &nested->base) outer = implementation;
+        if (implementation->m_type_declaration == &inner->base) inner_conformance = implementation;
+        if (implementation->m_type_declaration == program->m_symtab->get_symbol("localsum")) {
+            local = implementation;
+        }
+    }
+    REQUIRE(outer != nullptr);
+    REQUIRE(inner_conformance != nullptr);
+    REQUIRE(local != nullptr);
+    CHECK(ASRUtils::program_generic_instance_conformance(*outer, nullptr));
+    CHECK(ASRUtils::program_generic_instance_conformance(*inner_conformance, nullptr));
+    SUBCASE("a nested instance's argument uses a conformance the program wrote") {
+        auto *metadata = ASRUtils::generic_type_instance(*inner);
+        metadata->m_arguments[0].m_evidence[0] = &local->base;
+        CHECK_FALSE(ASRUtils::program_generic_instance_conformance(*outer, nullptr));
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) {
+            found |= diagnostic.code == "asr.verify.trait_witness.program_owner";
+        }
+        CHECK(found);
     }
 }
 

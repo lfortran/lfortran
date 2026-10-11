@@ -44,6 +44,8 @@ cmake -E copy \
     integration_tests/traits_runtime_07*.f90 \
     integration_tests/traits_paper_functional.py \
     integration_tests/traits_paper_separate.py \
+    integration_tests/traits_generic_type_private.py \
+    integration_tests/traits_generic_type_04*.f90 \
     integration_tests/traits_type_adoption.py \
     integration_tests/traits_type_adoption_02*.f90 \
     integration_tests/traits_type_adoption_04*.f90 \

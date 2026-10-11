@@ -50,10 +50,12 @@ trait_lifecycle
 -- constraints, its definition Struct and the procedures that depend on its
 -- parameters. The definition records the binders (the Template's arguments,
 -- in order). An instance is an ordinary Struct of the Module or Program that
--- instantiated it; it records the definition and its type arguments.
+-- instantiated it; it records the definition, its type arguments and the
+-- copies of the package's procedures that the same unit owns for it (none
+-- until the unit completes it).
 struct_generic
     = GenericTypeDefinition(symbol* parameters)
-    | GenericTypeInstance(symbol definition, generic_type_argument* arguments)
+    | GenericTypeInstance(symbol definition, generic_type_argument* arguments, symbol* procedures)
 
 -- A concrete type argument of an instance. type_declaration is present iff
 -- type is a derived type. evidence holds the conformance selected for each
