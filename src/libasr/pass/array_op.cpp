@@ -905,7 +905,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
         fmt_args.push_back(al, val_i);
         ASR::expr_t* fmt_i = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
-            al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind, fmt->m_type, fmt->m_value));
+            al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind,
+            fmt->m_dtio_bindings, fmt->n_dtio_bindings, fmt->m_dtio_unit,
+            fmt->m_type, fmt->m_value));
         Vec<ASR::expr_t*> inner_vals; inner_vals.reserve(al, 1);
         inner_vals.push_back(al, fmt_i);
         ASR::stmt_t* inner_write = ASRUtils::STMT(ASR::make_FileWrite_t(

@@ -772,6 +772,8 @@
                             ()
                             [(Var 2 c_arr)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -783,6 +785,8 @@
                             ()
                             [(Var 2 r_ptr)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

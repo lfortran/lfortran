@@ -19,6 +19,7 @@ codimension
 common_association
 dimension
 do_loop_head
+dtio_binding
 rank_stmt
 reduction_expr
 require_instantiation

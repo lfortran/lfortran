@@ -8,7 +8,7 @@ A formatted string built from a format and a list of values.
 
 ```text
 StringFormat(expr? fmt, expr* args, string_format_kind kind,
-    ttype type, expr? value)
+    dtio_binding* dtio_bindings, expr? dtio_unit, ttype type, expr? value)
 ```
 
 ### Arguments
@@ -18,6 +18,8 @@ StringFormat(expr? fmt, expr* args, string_format_kind kind,
 | `fmt` | the format, or `nil` for list-directed formatting. |
 | `args` | the values to format. |
 | `kind` | which formatting language the format is written in; see [string_format_kind](../enum_nodes/string_format_kind.md). |
+| `dtio_bindings` | the defined output procedures of the derived-type items, one per declared type and polymorphism; see [dtio_binding](../helper_nodes/dtio_binding.md). Empty when no item has one. |
+| `dtio_unit` | the unit passed to a defined output procedure: an `IntegerConstant` or a `Var`, or `nil` for an internal file. Always `nil` when `dtio_bindings` is empty. |
 | `type` | the string type of the result. |
 | `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
@@ -36,6 +38,11 @@ backend that can build the string has already implemented both.
 `kind` distinguishes Fortran edit descriptors from C's `printf` and from
 Python's several formatting languages, so one node serves every frontend.
 
+A derived-type item with a defined output procedure is formatted by calling
+that procedure when its edit descriptor is reached. `dtio_bindings` says which
+procedure each such item calls, and `dtio_unit` which unit it is given, so the
+formatting stays one expression.
+
 ## Examples
 
 ```clojure
@@ -47,6 +54,8 @@ Python's several formatting languages, so one node serves every frontend.
     )
   ]
   :kind :FormatFortran
+  :dtio_bindings []
+  :dtio_unit nil
   :type (String
     :kind 1
     :len nil

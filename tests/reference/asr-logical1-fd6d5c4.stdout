@@ -86,6 +86,8 @@
                             [(Var 2 a)
                             (Var 2 b)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

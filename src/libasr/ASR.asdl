@@ -179,7 +179,7 @@ expr
     | StringContains(expr substr, expr str, ttype type, expr? value)
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
-    | StringFormat(expr? fmt, expr* args, string_format_kind kind, ttype type, expr? value)
+    | StringFormat(expr? fmt, expr* args, string_format_kind kind, dtio_binding* dtio_bindings, expr? dtio_unit, ttype type, expr? value)
     | StringPhysicalCast(expr arg, string_physical_type old, string_physical_type new, ttype type, expr? value)
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
@@ -299,6 +299,10 @@ alloc_arg = (expr a, dimension* dims, codimension* codims, expr? len_expr, symbo
 attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
 call_arg = (expr? value)
+-- The defined output procedure `procedure` formats the items of declared type
+-- `type_declaration` (class(T) if `polymorphic`) of a StringFormat; the
+-- runtime formatter calls it through `callback`.
+dtio_binding = (symbol type_declaration, bool polymorphic, symbol procedure, symbol? callback)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written)
 gpu_workspace_dimension = (expr extent, symbol? parameter)

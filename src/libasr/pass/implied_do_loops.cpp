@@ -1559,7 +1559,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 al, loc, m_unit, accum_ref, nullptr, false, false));
         }
 
-        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, ASR::expr_t* format_string) {
+        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, const ASR::StringFormat_t &source) {
             ASR::stmt_t* do_loop = nullptr;
 
             ASR::do_loop_head_t do_loop_head;
@@ -1574,15 +1574,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for (size_t i = 0; i < x->n_values; i++ ) {
                 if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
                     do_loop_body.push_back(al, create_do_loop_form_idl(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), format_string));
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), source));
                 } else {
                     args.push_back(al, x->m_values[i]);
                 }
             }
             
             if (args.size() > 0) {
-                ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, format_string,
+                ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, source.m_fmt,
                     args.p, args.size(), ASR::string_format_kindType::FormatFortran,
+                    source.m_dtio_bindings, source.n_dtio_bindings, source.m_dtio_unit,
                     ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, 
                         ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
                             nullptr,
@@ -1848,7 +1849,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                                 }
                             }
                             remove_original_statement = true;
-                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x.m_fmt));
+                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x));
                             continue;
                         }
                     }

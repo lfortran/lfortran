@@ -10000,7 +10000,8 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
                 ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
-            ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
+            ASR::string_format_kindType::FormatFortran, nullptr, 0, nullptr,
+            char_type, nullptr)));
     }
 }
 
@@ -10624,6 +10625,7 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
 
 static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
+        ASR::dtio_binding_t* a_dtio_bindings, size_t n_dtio_bindings, ASR::expr_t* a_dtio_unit,
         ASR::ttype_t* a_type, ASR::expr_t* a_value) {
     if (a_fmt && ASR::is_a<ASR::Var_t>(*a_fmt)) {
         ASR::Variable_t* fmt_str = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(a_fmt)->m_v));
@@ -10643,7 +10645,8 @@ static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location
             }
         }
     }
-    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
+    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind,
+        a_dtio_bindings, n_dtio_bindings, a_dtio_unit, a_type, a_value);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {

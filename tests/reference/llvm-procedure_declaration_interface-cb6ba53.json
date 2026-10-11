@@ -2,7 +2,7 @@
     "basename": "llvm-procedure_declaration_interface-cb6ba53",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/asr/compile/procedure_declaration_interface.asr",
-    "infile_hash": "aa14f11062264a2ed8554a9ca0a57334890cd72aecd7fcb2be2b3d3b",
+    "infile_hash": "3c5e0201180fd4b53448403db65471ece31931fb3f94f96f93bd76d6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-procedure_declaration_interface-cb6ba53.stdout",
