@@ -3232,6 +3232,7 @@ RUN(NAME string_119 LABELS gfortran llvm)
 RUN(NAME string_120 LABELS gfortran llvm)
 RUN(NAME string_121 LABELS gfortran llvm)
 RUN(NAME string_122 LABELS gfortran llvm)
+RUN(NAME string_123 LABELS gfortran llvm)
 RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
