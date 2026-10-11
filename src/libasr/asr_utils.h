@@ -4422,6 +4422,111 @@ static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
     return false;
 }
 
+// Whether `sym` is what its name stands for in `scope`, so that a lookup by
+// name, as passes do, finds it.
+static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
+    return scope->resolve_symbol(symbol_name(sym)) == sym;
+}
+
+// Returns a symbol that names the definition of `sym` from `scope`: `sym` or
+// its definition when named from there, an existing import of the definition,
+// or a new ExternalSymbol added to `scope` under a name that is free at this
+// point and starts with `name_prefix`. Returns `sym` unchanged when it cannot
+// be imported because no module or derived type owns its definition.
+static inline ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
+        SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
+        const std::string &name_prefix="") {
+    if (is_named_from(sym, scope)) return sym;
+    ASR::symbol_t* definition = symbol_get_past_external(sym);
+    if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
+        return sym;
+    }
+    if (is_named_from(definition, scope)) return definition;
+    std::string name = symbol_name(definition);
+    ASR::symbol_t* existing = scope->resolve_symbol(name);
+    if (existing != nullptr && symbol_get_past_external(existing) == definition &&
+            is_named_from(existing, scope)) {
+        return existing;
+    }
+    for (auto &item : scope->get_scope()) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
+                symbol_get_past_external(item.second) == definition &&
+                is_named_from(item.second, scope)) {
+            return item.second;
+        }
+    }
+    ASR::symbol_t* module_sym = get_asr_owner(definition);
+    if (module_sym == nullptr || (!ASR::is_a<ASR::Module_t>(*module_sym) &&
+            !ASR::is_a<ASR::Struct_t>(*module_sym))) {
+        return sym;
+    }
+    std::string local_name = name_prefix + name;
+    for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
+        local_name = name_prefix + name + std::to_string(i);
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
+            s2c(al, local_name), definition, symbol_name(module_sym),
+            nullptr, 0, s2c(al, name), access));
+    scope->add_symbol(local_name, imported);
+    return imported;
+}
+
+// The argument and result types of a procedure type can reference module
+// symbols named only where its interface is declared, for example the getter
+// of a use-associated explicit-shape bound. Imports them into `scope` (with
+// `do_import`) or only records whether there are any.
+class ProcedureTypeImporter: public ASR::BaseExprReplacer<ProcedureTypeImporter> {
+    Allocator &al;
+    SymbolTable* scope;
+    bool do_import;
+
+    // The import is made under a `1_`-prefixed name no user code can spell:
+    // a name the user can spell could be taken by a later declaration or
+    // capture a later implicit reference in the same scope.
+    ASR::symbol_t* named(ASR::symbol_t* sym) {
+        if (is_named_from(sym, scope)) return sym;
+        needed = true;
+        return do_import ? import_symbol(al, sym, scope,
+            ASR::accessType::Private, "1_") : sym;
+    }
+
+public:
+    bool needed = false;
+
+    ProcedureTypeImporter(Allocator &al_, SymbolTable* scope_, bool do_import_)
+        : al(al_), scope(scope_), do_import(do_import_) {}
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::BaseExprReplacer<ProcedureTypeImporter>::replace_FunctionCall(x);
+        x->m_name = named(x->m_name);
+        if (x->m_original_name) x->m_original_name = named(x->m_original_name);
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        x->m_v = named(x->m_v);
+    }
+
+    // The member types of a derived type belong to its Struct.
+    void replace_StructType(ASR::StructType_t* /*x*/) {}
+};
+
+// Returns `type` if it is not a procedure type or references only symbols
+// named from `scope`, otherwise a copy that references them through imports.
+static inline ASR::ttype_t* import_procedure_type(Allocator &al,
+        ASR::ttype_t* type, SymbolTable* scope) {
+    if (type == nullptr || scope == nullptr ||
+            !ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(type))) {
+        return type;
+    }
+    ProcedureTypeImporter checker(al, scope, false);
+    checker.replace_ttype(type);
+    if (!checker.needed) return type;
+    ASR::ttype_t* new_type = ExprStmtDuplicator(al).duplicate_ttype(type);
+    ProcedureTypeImporter(al, scope, true).replace_ttype(new_type);
+    return new_type;
+}
+
 // A variable's type declaration has to be visible from the variable's own
 // scope, the same way its name is. A producer that carries a type over from
 // somewhere else -- the frontend declaring an entity of a type it imported,
@@ -4455,46 +4560,7 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-
-    // Already visible as given: prefer the symbol the caller passed, which
-    // may be an import that keeps a module boundary intact.
-    SymbolTable* given_owner = symbol_parent_symtab(type_declaration);
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == given_owner) return type_declaration;
-    }
-    // Otherwise the definition itself may be visible, which happens when the
-    // caller handed over an import made for some other scope.
-    SymbolTable* owner = symbol_parent_symtab(definition);
-    if (owner == nullptr) return type_declaration;
-    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-        if (s == owner) return definition;
-    }
-    std::string name = symbol_name(definition);
-    // Reuse a name already standing for this type in the scope chain.
-    ASR::symbol_t* existing = scope->resolve_symbol(name);
-    if (existing != nullptr &&
-            symbol_get_past_external(existing) == definition) {
-        return existing;
-    }
-    // An ExternalSymbol names its target through the module or derived type
-    // that owns it. A symbol owned by a program or a procedure cannot be
-    // named that way, so it cannot be imported at all.
-    ASR::symbol_t* module_sym = get_asr_owner(definition);
-    if (module_sym == nullptr) return type_declaration;
-    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
-        return type_declaration;
-    }
-    std::string local_name = name;
-    if (scope->get_symbol(local_name) != nullptr) {
-        local_name = scope->get_unique_name(name);
-    }
-    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
-            s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), ASR::accessType::Public));
-    scope->add_symbol(local_name, imported);
-    return imported;
+    return import_symbol(al, type_declaration, scope, ASR::accessType::Public);
 }
 
 static inline void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -4528,6 +4594,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    a_type = import_procedure_type(al, a_type, a_parent_symtab);
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
@@ -6677,55 +6744,12 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        ASR::symbol_t *new_es = x->m_name;
-        // Import a function as external only if necessary
-        ASR::Function_t *f = nullptr;
-        ASR::symbol_t* f_sym = nullptr;
-        if (ASR::is_a<ASR::Function_t>(*x->m_name)) {
-            f = ASR::down_cast<ASR::Function_t>(x->m_name);
-        } else if( ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name) ) {
-            f_sym = ASRUtils::symbol_get_past_external(x->m_name);
-            if( ASR::is_a<ASR::Function_t>(*f_sym) ) {
-                f = ASR::down_cast<ASR::Function_t>(f_sym);
-            }
-        }
-        ASR::Module_t *m = nullptr;
-        if (ASR::is_a<ASR::symbol_t>(*f->m_symtab->parent->asr_owner)) {
-            ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(f->m_symtab->parent->asr_owner);
-            if (ASR::is_a<ASR::Module_t>(*sym)) {
-                m = ASR::down_cast<ASR::Module_t>(sym);
-                char *modname = m->m_name;
-                ASR::symbol_t *maybe_f = current_scope->resolve_symbol(std::string(f->m_name));
-                ASR::symbol_t* maybe_f_actual = nullptr;
-                std::string maybe_modname = "";
-                if( maybe_f && ASR::is_a<ASR::ExternalSymbol_t>(*maybe_f) ) {
-                    maybe_modname = ASR::down_cast<ASR::ExternalSymbol_t>(maybe_f)->m_module_name;
-                    maybe_f_actual = ASRUtils::symbol_get_past_external(maybe_f);
-                }
-                // If the Function to be imported is already present
-                // then do not import.
-                if( maybe_modname == std::string(modname) &&
-                    f_sym == maybe_f_actual ) {
-                    new_es = maybe_f;
-                } else {
-                    // Import while assigning a new name to avoid conflicts
-                    // For example, if someone is using `len` from a user
-                    // define module then `get_unique_name` will avoid conflict
-                    std::string unique_name = current_scope->get_unique_name(f->m_name, false);
-                    Str s; s.from_str_view(unique_name);
-                    char *unique_name_c = s.c_str(al);
-                    LCOMPILERS_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
-                    new_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, f->base.base.loc,
-                        /* a_symtab */ current_scope,
-                        /* a_name */ unique_name_c,
-                        (ASR::symbol_t*)f,
-                        modname, nullptr, 0,
-                        f->m_name,
-                        ASR::accessType::Private
-                        ));
-                    current_scope->add_symbol(unique_name, new_es);
-                }
+        ASR::symbol_t* f = ASRUtils::symbol_get_past_external(x->m_name);
+        ASR::symbol_t* owner = f ? ASRUtils::get_asr_owner(f) : nullptr;
+        if (owner && ASR::is_a<ASR::Function_t>(*f)) {
+            if (ASR::is_a<ASR::Module_t>(*owner)) {
+                // Import a module function as external only if necessary
+                ASR::symbol_t* new_es = import_symbol(al, x->m_name, current_scope);
                 // The following substitutes args from the current scope
                 for (size_t i = 0; i < x->n_args; i++) {
                     ASR::expr_t** current_expr_copy_ = current_expr;
@@ -6740,48 +6764,15 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                 ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
                 x->m_name = new_es;
                 if( x->m_original_name ) {
-                    std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
-                    ASR::symbol_t* x_original_name = current_scope->resolve_symbol(orig_name);
-                    if( x_original_name ) {
-                        x->m_original_name = x_original_name;
-                    } else {
-                        // The original_name (e.g. a GenericProcedure) is not
-                        // in the current scope. Create an ExternalSymbol so
-                        // that modfile serialisation can find the symbol table.
-                        ASR::symbol_t* orig_sym = x->m_original_name;
-                        // Resolve through any ExternalSymbol chain to get the
-                        // actual symbol and its owning module.
-                        if (ASR::is_a<ASR::ExternalSymbol_t>(*orig_sym)) {
-                            ASR::ExternalSymbol_t* es = ASR::down_cast<ASR::ExternalSymbol_t>(orig_sym);
-                            orig_sym = es->m_external;
-                        }
-                        SymbolTable* orig_symtab = ASRUtils::symbol_parent_symtab(orig_sym);
-                        if( orig_symtab->asr_owner &&
-                            ASR::is_a<ASR::symbol_t>(*orig_symtab->asr_owner) &&
-                            ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(orig_symtab->asr_owner)) ) {
-                            ASR::Module_t* orig_mod = ASR::down_cast<ASR::Module_t>(
-                                ASR::down_cast<ASR::symbol_t>(orig_symtab->asr_owner));
-                            std::string unique_name = current_scope->get_unique_name(orig_name, false);
-                            Str s2; s2.from_str_view(unique_name);
-                            char *unique_name_c = s2.c_str(al);
-                            ASR::symbol_t* new_orig = ASR::down_cast<ASR::symbol_t>(
-                                ASR::make_ExternalSymbol_t(
-                                    al, orig_sym->base.loc,
-                                    current_scope, unique_name_c,
-                                    orig_sym,
-                                    orig_mod->m_name, nullptr, 0,
-                                    ASRUtils::symbol_name(orig_sym),
-                                    ASR::accessType::Private));
-                            current_scope->add_symbol(unique_name, new_orig);
-                            ASRUtils::insert_module_dependency(new_orig, al, current_module_dependencies);
-                            x->m_original_name = new_orig;
-                        }
-                    }
+                    // The original_name (e.g. a GenericProcedure) has to be
+                    // visible for modfile serialisation to find its table.
+                    x->m_original_name = import_symbol(al,
+                        x->m_original_name, current_scope);
+                    ASRUtils::insert_module_dependency(x->m_original_name,
+                        al, current_module_dependencies);
                 }
-                return;
-            } else {
-                return;
             }
+            return;
         }
         // iterate over the arguments and replace them
         for (size_t i = 0; i < x->n_args; i++) {
@@ -9922,7 +9913,8 @@ static inline ASR::asr_t* make_SubroutineCall_t_util(
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
-            a_dt, a_name, ASRUtils::duplicate_type(al, ASRUtils::symbol_type(a_name)), nullptr));
+            a_dt, a_name, import_procedure_type(al, ASRUtils::duplicate_type(al,
+                ASRUtils::symbol_type(a_name)), current_scope), nullptr));
     }
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
