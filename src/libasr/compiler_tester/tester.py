@@ -175,7 +175,22 @@ def use_build_dir(build_dir):
         elif os.path.realpath(link) != os.path.realpath(target):
             raise SystemExit(f"{link} exists and does not link to {target}")
     os.chdir(build_dir)
-    OUTPUT_DIR = "output"
+    # Not `output`: the x86 tests write an executable of that name.
+    OUTPUT_DIR = "test_output"
+
+
+def check_llvm_version(compiler, major):
+    """Exits unless `compiler --version` reports LLVM version `major`."""
+    exe = shutil.which(compiler)
+    if exe is None:
+        raise SystemExit(f"{compiler} not found")
+    r = subprocess.run([exe, "--version"], stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT, text=True)
+    m = re.search(r"^LLVM:\s*(\S+)", r.stdout, re.MULTILINE)
+    version = m.group(1) if m else "unknown"
+    if version.split(".")[0] != str(major):
+        raise SystemExit(f"{exe} uses LLVM {version}, but these tests "
+                         f"require LLVM {major}")
 
 def fix_datalayout(s: bytes) -> bytes:
     return re.sub(
@@ -589,6 +604,9 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                     help="Run every test and report all failures")
     parser.add_argument("--compiler-dir",
                         help="Use the compiler in this directory instead of src/bin")
+    parser.add_argument("--require-llvm", type=int, metavar="MAJOR",
+                        help="Exit before running or updating any test unless "
+                        "the compiler uses this LLVM major version")
     parser.add_argument("--build-dir",
                         help="Run the tests in this directory and write all "
                         "their files there instead of the source tree")
@@ -641,6 +659,8 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
         os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
             + os.pathsep + os.environ["PATH"]
 
+    if args.require_llvm is not None:
+        check_llvm_version(compiler.lower(), args.require_llvm)
     if args.build_dir:
         use_build_dir(args.build_dir)
 

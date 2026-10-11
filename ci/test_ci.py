@@ -169,7 +169,8 @@ class RunnerTests(unittest.TestCase):
                 tester.use_build_dir(build_dir)
                 build = Path(build_dir).resolve()
                 self.assertEqual(Path(os.getcwd()).resolve(), build)
-                self.assertEqual(tester.OUTPUT_DIR, "output")
+                # The x86 tests write an executable named `output`.
+                self.assertEqual(tester.OUTPUT_DIR, "test_output")
                 for name in ("tests", "integration_tests"):
                     self.assertEqual((build / name).resolve(), ROOT / name)
                 self.assertTrue((build / "tests/../integration_tests").is_dir())
@@ -179,6 +180,26 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(out, b"$DIR/a $DIR/tests/b")
             finally:
                 os.chdir(cwd)
+
+    def test_require_llvm_checks_the_selected_compiler(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        with tempfile.TemporaryDirectory() as bin_dir:
+            compiler = Path(bin_dir) / "lfortran"
+            for version, ok in (("11.1.0", True), ("22.1.0", False),
+                                ("none", False)):
+                with self.subTest(version=version):
+                    compiler.write_text(f"#!/bin/sh\necho 'LLVM: {version}'\n")
+                    compiler.chmod(0o755)
+                    with patch.dict(os.environ, {"PATH": bin_dir}):
+                        if ok:
+                            tester.check_llvm_version("lfortran", 11)
+                        else:
+                            with self.assertRaises(SystemExit):
+                                tester.check_llvm_version("lfortran", 11)
 
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
