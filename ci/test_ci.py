@@ -514,6 +514,19 @@ class WorkflowPolicyTests(unittest.TestCase):
             'mv "lfortran-$lfortran_version" "$source_dir"',
         ])
 
+    def test_compatibility_build_variants_have_separate_caches(self):
+        # Quick builds LLVM 11 as Debug with extra checks; Exhaustive builds it
+        # as Release. A shared cache key made each overwrite the other's cache.
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        build = source.split("      - name: Build\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn('if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then\n'
+                      "                BUILD_TYPE=Debug", build)
+        cache = source.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}"
+                      "${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}\n",
+                      cache)
+        self.assertIn("max-size: 1500M", cache)
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
