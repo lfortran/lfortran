@@ -171,6 +171,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
         std::map<ASR::symbol_t*, int> alloc_count;
+        std::map<ASR::symbol_t*, std::vector<ASR::dimension_t>> alloc_shape;
         bool device_only;
         bool in_device;
         Allocator* al;
@@ -285,13 +286,6 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void check_allocation(const ASR::alloc_arg_t& alloc_arg) {
-            if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
-                alloc_count[sym] += 1;
-                if( alloc_count[sym] > 1 ) {
-                    push_to_scopes_until_symbol_scope(sym);
-                }
-            }
             ASR::dimension_t* dims = alloc_arg.m_dims;
             if( in_device && al != nullptr ) {
                 ExplicitShapeInquiryResolver resolver(*al);
@@ -299,6 +293,42 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                     alloc_arg.m_dims, alloc_arg.n_dims);
                 if( resolved != nullptr ) {
                     dims = resolved;
+                }
+            }
+            if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                alloc_count[sym] += 1;
+                // A device has no heap: an array of device code allocated
+                // more than once with the one shape, as shared lowering
+                // allocates a temporary and then reallocates it to the
+                // shape it already has, has that shape on entry.
+                bool same_shape = false;
+                if( alloc_count[sym] == 1 ) {
+                    alloc_shape[sym] = std::vector<ASR::dimension_t>(
+                        dims, dims + alloc_arg.n_dims);
+                } else if( in_device ) {
+                    const std::vector<ASR::dimension_t>& first = alloc_shape[sym];
+                    same_shape = first.size() == alloc_arg.n_dims;
+                    // An allocation that states no lower bound starts at 1.
+                    auto same_start = [](ASR::expr_t* a, ASR::expr_t* b) {
+                        int64_t value = 0;
+                        if( a == nullptr || b == nullptr ) {
+                            ASR::expr_t* given = a ? a : b;
+                            return given == nullptr || (ASRUtils::extract_value(
+                                ASRUtils::expr_value(given), value) &&
+                                value == 1);
+                        }
+                        return PassUtils::same_expression(a, b);
+                    };
+                    for( size_t i = 0; same_shape && i < first.size(); i++ ) {
+                        same_shape = same_start(first[i].m_start,
+                                dims[i].m_start) &&
+                            PassUtils::same_expression(
+                                first[i].m_length, dims[i].m_length);
+                    }
+                }
+                if( alloc_count[sym] > 1 && !same_shape ) {
+                    push_to_scopes_until_symbol_scope(sym);
                 }
             }
             if( !ASRUtils::is_dimension_dependent_only_on_arguments(

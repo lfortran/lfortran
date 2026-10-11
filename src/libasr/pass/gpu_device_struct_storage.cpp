@@ -3,7 +3,6 @@
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
-#include <libasr/pickle.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -795,11 +794,8 @@ class StructStorage {
         return true;
     }
 
-    // Whether two extents are the same expression, node for node: the
-    // same operations on the same variables and constants.
     static bool same(ASR::expr_t *a, ASR::expr_t *b) {
-        if (a == nullptr || b == nullptr) return a == b;
-        return a == b || pickle(a->base) == pickle(b->base);
+        return PassUtils::same_expression(a, b);
     }
 
     // The shapes the statements of `fn` give the component of `base`.

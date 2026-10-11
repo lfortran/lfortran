@@ -173,7 +173,9 @@ generates the device source. It never falls back to the CPU:
   place of the dummy arguments, which more often makes the extents
   constants. Inside device code an allocatable local is given the shape of
   the `allocate`, reallocation or move that gives it one, also when that
-  shape is read from another such local.
+  shape is read from another such local, and when several of them give it
+  the same shape, as shared lowering does when it allocates a temporary and
+  then reallocates it to the shape it already has.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
