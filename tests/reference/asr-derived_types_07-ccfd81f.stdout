@@ -291,7 +291,7 @@
                                     max_width]
                                     [final_logger]
                                     Source
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     .false.

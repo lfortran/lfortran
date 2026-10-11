@@ -60,6 +60,7 @@
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
+#include <libasr/pass/string_length_arguments.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
@@ -127,6 +128,7 @@ namespace LCompilers {
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
+            {"string_length_arguments", &pass_string_length_arguments},
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
@@ -348,6 +350,10 @@ namespace LCompilers {
                 "device_launch_expand",
                 "do_loops",
                 "while_else",
+                // Every call the passes above can create is in place, so each
+                // character dummy gets its hidden length argument here, and
+                // each call the length of its actual.
+                "string_length_arguments",
                 "unused_functions",
                 "unique_symbols",
                 "intent_out_deallocate",

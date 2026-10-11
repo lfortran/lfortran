@@ -78,7 +78,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -121,7 +121,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -151,7 +151,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -182,7 +182,7 @@
                                             Global
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -230,7 +230,7 @@
                                                 Global
                                             )]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -345,7 +345,7 @@
                                     Global
                                 )]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

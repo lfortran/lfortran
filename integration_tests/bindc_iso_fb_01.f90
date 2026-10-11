@@ -153,7 +153,7 @@ module bindc_18_mod
     end interface
 end module
 
-module bindc_19_mod
+module bindc_iso_fb_01_19_mod
     use iso_c_binding, only: c_int, c_float, c_double, c_bool, &
                              c_float_complex, c_double_complex
     implicit none
@@ -352,7 +352,7 @@ end module
 
 program bindc_iso_fb_01
     use bindc_18_mod
-    use bindc_19_mod
+    use bindc_iso_fb_01_19_mod
     use bindc_24_mod
     use iso_c_binding
     implicit none
