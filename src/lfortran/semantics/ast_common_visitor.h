@@ -5489,6 +5489,25 @@ public:
         return type;
     }
 
+    void mark_common_block_for_resave(ASR::Struct_t* struct_type) {
+        // The COMMON block layout lives in a synthetic file_common_block_*
+        // module. When that module was loaded from a modfile, save_mod_files
+        // skips it (m_loaded_from_mod). If this translation unit extends the
+        // layout with new members, the module must be written again, otherwise
+        // later files that use modules referencing the new members fail with
+        // "ExternalSymbol cannot be resolved".
+        SymbolTable *global_scope = current_scope;
+        while (global_scope && global_scope->parent) {
+            global_scope = global_scope->parent;
+        }
+        if (!global_scope) return;
+        std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
+        ASR::symbol_t* mod_sym = global_scope->resolve_symbol(module_name);
+        if (mod_sym && ASR::is_a<ASR::Module_t>(*mod_sym)) {
+            ASR::down_cast<ASR::Module_t>(mod_sym)->m_loaded_from_mod = false;
+        }
+    }
+
     void add_sym_to_struct(ASR::Variable_t* var_, ASR::Struct_t* struct_type) {
         char* var_name = var_->m_name;
         SymbolTable* struct_scope = struct_type->m_symtab;
@@ -5513,6 +5532,7 @@ public:
         members.push_back(al, var_name);
         struct_type->m_members = members.p;
         struct_type->n_members = members.size();
+        mark_common_block_for_resave(struct_type);
     }
 
     ASR::Variable_t * get_symtab_var_for_common(AST::var_sym_t const &s) {
