@@ -16480,6 +16480,16 @@ public:
                 member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
             return expr_;
         }
+        {
+            ASR::symbol_t* v_past_ext = ASRUtils::symbol_get_past_external(v);
+            if (ASR::is_a<ASR::Function_t>(*v_past_ext)
+                    || ASR::is_a<ASR::GenericProcedure_t>(*v_past_ext)) {
+                diag.add(Diagnostic(
+                    "The leftmost part-ref in a data-ref cannot be a function reference",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
         ASR::Variable_t* v_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t* v_variable_m_type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(v_variable->m_type));
 

@@ -442,4 +442,12 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
 }
 
 
+namespace ASRUtils::CompilerVersion {
+
+std::string version_string() {
+    return std::string("LFortran version ") + LFORTRAN_VERSION;
+}
+
+} // namespace ASRUtils::CompilerVersion
+
 } // namespace LCompilers
