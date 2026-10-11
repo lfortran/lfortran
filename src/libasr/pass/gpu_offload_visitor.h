@@ -151,6 +151,14 @@ public:
 
     void plain_allocatable_dummies(ASR::Function_t *fn);
 
+    // The allocatable dummy arrays plain_allocatable_dummies declared as
+    // plain arrays, per routine, until pass_plain_dummy_lower_bounds
+    // gives them the lower bounds of their actual arguments.
+    std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
+        plain_allocatable_dummy_args;
+
+    void pass_plain_dummy_lower_bounds(ASR::Function_t &kernel);
+
     static ASR::expr_t* strip_array_casts(ASR::expr_t *e);
 
     static const ASR::FunctionCall_t* spliceable_call(ASR::stmt_t *stmt);

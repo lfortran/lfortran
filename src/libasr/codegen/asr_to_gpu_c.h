@@ -424,6 +424,13 @@ public:
     // by visit_expr when emitting ArraySize.
     std::map<std::string, std::string> func_array_size_params;
 
+    // The lower bound of each dimension of an array whose type does not
+    // carry it, keyed as a per-dimension extent of func_array_size_params
+    // is (see dim_size_key): an allocatable component of a derived-type
+    // argument, `key` "var.member", and a name bound to one. A dimension
+    // with no entry starts at one.
+    std::map<std::string, std::string> func_array_lb_params;
+
     // Maps "struct_var.member" to the device-pointer parameter name
     // for allocatable array members passed alongside the struct. Holds a
     // scalar struct argument's components and a device function's own
@@ -1958,6 +1965,8 @@ public:
             if (arr->n_dims > 1) {
                 func_array_size_params[dim_size_key(key, d)] = len;
             }
+            func_array_lb_params[dim_size_key(key, d)] =
+                get_lower_bound_str(arr, d);
             total += total.empty() ? len : (" * " + len);
         }
         func_array_size_params[key] = "(" + total + ")";
@@ -2176,23 +2185,30 @@ public:
     }
 
     // The sizes buffer of an allocatable component of a struct-array kernel
-    // argument holds the extents of the component, one entry per dimension
-    // per element (see `gpu_struct_member_rank` in gpu_utils.h). These two
-    // render the extent of one dimension and the element count of a whole
-    // element out of it; a rank-one component reads back exactly the single
-    // entry it has always had.
+    // argument holds `2 * rank` entries per element (see
+    // device_launch_expand.cpp): the extent of each dimension, then its
+    // lower bound. These render the extent and the lower bound of one
+    // dimension and the element count of a whole element out of it.
     static std::string struct_member_extent_expr(
             const std::string &sizes_param, const std::string &idx_str,
             size_t rank, size_t d) {
-        if (rank <= 1) return sizes_param + "[" + idx_str + "]";
         return sizes_param + "[(" + idx_str + ") * "
-            + std::to_string(rank) + " + " + std::to_string(d) + "]";
+            + std::to_string(2 * rank) + " + " + std::to_string(d) + "]";
+    }
+
+    static std::string struct_member_lower_bound_expr(
+            const std::string &sizes_param, const std::string &idx_str,
+            size_t rank, size_t d) {
+        return struct_member_extent_expr(sizes_param, idx_str, rank,
+            rank + d);
     }
 
     static std::string struct_member_total_size_expr(
             const std::string &sizes_param, const std::string &idx_str,
             size_t rank) {
-        if (rank <= 1) return sizes_param + "[" + idx_str + "]";
+        if (rank <= 1) {
+            return struct_member_extent_expr(sizes_param, idx_str, rank, 0);
+        }
         std::string res;
         for (size_t d = 0; d < rank; d++) {
             if (d > 0) res += " * ";
@@ -2253,6 +2269,84 @@ public:
         for (auto &e : copied) {
             func_array_size_params[e.first] = e.second;
         }
+        copied.clear();
+        for (auto &entry : func_array_lb_params) {
+            std::string base;
+            size_t d = 0;
+            if (!dim_size_key_parts(entry.first, base, d)) continue;
+            if (base != from) continue;
+            copied.push_back({dim_size_key(to, d), entry.second});
+        }
+        for (auto &e : copied) {
+            func_array_lb_params[e.first] = e.second;
+        }
+    }
+
+    // The key the shape of an array designator is registered under: the
+    // name of a variable, or "var.member" for a component of one.
+    static std::string array_shape_key(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (e == nullptr) return "";
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            ASR::StructInstanceMember_t *sm =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            if (!ASR::is_a<ASR::Var_t>(*sm->m_v)) return "";
+            return std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v)) + "."
+                + ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(sm->m_m));
+        }
+        return "";
+    }
+
+    // The lower bound of dimension `d` of the deferred-shape array `e`: a
+    // component of an element of an array of a derived type reads it from
+    // the sizes buffer of the component, anything else from what is
+    // registered under its shape key.
+    std::string deferred_lower_bound_str(ASR::expr_t *e, ASR::Array_t *arr,
+            size_t d) {
+        ASR::expr_t *v = e;
+        while (v && ASR::is_a<ASR::ArrayPhysicalCast_t>(*v)) {
+            v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(v)->m_arg;
+        }
+        if (v && ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+            ASR::StructInstanceMember_t *sm =
+                ASR::down_cast<ASR::StructInstanceMember_t>(v);
+            if (ASR::is_a<ASR::ArrayItem_t>(*sm->m_v)) {
+                ASR::ArrayItem_t *arr_ai =
+                    ASR::down_cast<ASR::ArrayItem_t>(sm->m_v);
+                if (ASR::is_a<ASR::Var_t>(*arr_ai->m_v)) {
+                    const GpuComponentLayout *component =
+                        struct_components.find(ASR::down_cast<ASR::Var_t>(
+                            arr_ai->m_v)->m_v, sm->m_m);
+                    std::string idx_str =
+                        struct_array_element_index_str(arr_ai);
+                    if (component && component->sizes && !idx_str.empty()) {
+                        return struct_member_lower_bound_expr(
+                            kernel_parameter(component->sizes), idx_str,
+                            component->rank, d);
+                    }
+                }
+            }
+        }
+        return get_lower_bound_str(arr, d, array_shape_key(e));
+    }
+
+    // A name bound to the component `key` ("var.member") has its shape:
+    // its element count, and the extent and lower bound of each dimension.
+    void bind_component_alias(const std::string &key,
+            const std::string &alias) {
+        auto it = func_array_size_params.find(key);
+        if (it != func_array_size_params.end()
+                && !func_array_size_params.count(alias)) {
+            func_array_size_params[alias] = it->second;
+        }
+        copy_dim_size_keys(key, alias);
     }
 
     // Name of the kernel/function parameter holding that extent.
@@ -2346,8 +2440,9 @@ public:
         }
         return gpu_linearized_index_str(subscripts,
             [&](size_t d) {
-                return get_lower_bound_str(mem_arr, d,
-                    arr_name + "%" + mem_name);
+                if (sizes_param.empty()) return std::string("1");
+                return struct_member_lower_bound_expr(sizes_param,
+                    arr_idx_str, rank, d);
             },
             [&](size_t d) {
                 return struct_member_extent_expr(sizes_param, arr_idx_str,
@@ -2501,6 +2596,8 @@ public:
                                 arr_name, mem_name, d);
                         }
                     }
+                    emit_component_lower_bounds(component, idx_str, key,
+                        rank);
                 }
                 return;
             }
@@ -2620,6 +2717,37 @@ public:
                     }
                 }
             }
+
+            // The lower bound of each dimension, matching the callee
+            // signature.
+            if (arr_it != struct_from_array_elem.end()) {
+                std::string arr_name = arr_it->second.first;
+                emit_component_lower_bounds(
+                    struct_components.find(arr_name, &mv->base),
+                    arr_it->second.second, arr_name + "." + mem_name, rank);
+            } else {
+                emit_component_lower_bounds(nullptr, "",
+                    var_name + "." + mem_name, rank);
+            }
+        }
+    }
+
+    // The lower bounds of a component, one argument per dimension: those
+    // of the element `element_index` of an array of a derived type in its
+    // sizes buffer, or those registered under `key` ("var.member").
+    void emit_component_lower_bounds(const GpuComponentLayout *component,
+            const std::string &element_index, const std::string &key,
+            size_t rank) {
+        for (size_t d = 0; d < rank; d++) {
+            if (component && component->sizes && !element_index.empty()) {
+                src << ", " << struct_member_lower_bound_expr(
+                    kernel_parameter(component->sizes), element_index,
+                    rank, d);
+                continue;
+            }
+            auto it = func_array_lb_params.find(dim_size_key(key, d));
+            src << ", " << (it != func_array_lb_params.end()
+                ? it->second : std::string("1"));
         }
     }
 
@@ -2930,6 +3058,7 @@ public:
             const std::string &device_name) {
         GpuEmissionScope emission_scope(active_scope, fn->m_symtab);
         func_array_size_params.clear();
+        func_array_lb_params.clear();
         func_array_data_params.clear();
         func_array_params.clear();
         // A device function is emitted before the kernel that calls it
@@ -3028,6 +3157,15 @@ public:
                                         dim_size_key(key, d)]
                                         = dim_name;
                                 }
+                            }
+                            // The lower bound of each dimension.
+                            for (size_t d = 0; d < rank; d++) {
+                                std::string lb_name =
+                                    GpuNames::member_lower_bound(
+                                        arg->m_name, mem_name, d);
+                                src << ", int " << lb_name;
+                                func_array_lb_params[dim_size_key(key, d)]
+                                    = lb_name;
                             }
                         }
                     }
@@ -3251,12 +3389,8 @@ public:
                         if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
                             std::string struct_name = ASRUtils::symbol_name(
                                 ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
-                            std::string key = struct_name + "." + mem_name;
-                            auto spit = func_array_size_params.find(key);
-                            if (spit != func_array_size_params.end() &&
-                                    !func_array_size_params.count(tgt_name)) {
-                                func_array_size_params[tgt_name] = spit->second;
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                         continue;
                     }
@@ -3300,6 +3434,7 @@ public:
         indent_level--;
         src << "}\n\n";
         func_array_size_params.clear();
+        func_array_lb_params.clear();
         func_array_data_params.clear();
         alloc_pointer_params.clear();
         func_array_params.clear();
@@ -3423,7 +3558,7 @@ public:
                     std::string to = std::string(ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v)) + ".";
                     for (auto *table : {&func_array_data_params,
-                            &func_array_size_params}) {
+                            &func_array_size_params, &func_array_lb_params}) {
                         std::vector<std::pair<std::string, std::string>>
                             copies;
                         for (auto &entry : *table) {
@@ -3466,18 +3601,8 @@ public:
                                 ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(
                                         sm->m_v)->m_v);
-                            std::string key =
-                                struct_name + "." + mem_name;
-                            if (!func_array_size_params.count(
-                                    tgt_name)) {
-                                auto spit =
-                                    func_array_size_params.find(key);
-                                if (spit !=
-                                        func_array_size_params.end()) {
-                                    func_array_size_params[tgt_name]
-                                        = spit->second;
-                                }
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                     } else if (ASR::is_a<ASR::Var_t>(*val)) {
                         std::string val_name = ASRUtils::symbol_name(
@@ -4366,21 +4491,8 @@ public:
                                 ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(
                                         sm->m_v)->m_v);
-                            std::string key =
-                                struct_name + "." + mem_name;
-                            if (!func_array_size_params.count(
-                                    tgt_name)) {
-                                auto spit =
-                                    func_array_size_params.find(
-                                        key);
-                                if (spit !=
-                                        func_array_size_params
-                                            .end()) {
-                                    func_array_size_params[
-                                        tgt_name]
-                                        = spit->second;
-                                }
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                     } else if (ASR::is_a<ASR::Var_t>(*assoc_val)) {
                         std::string val_name = ASRUtils::symbol_name(
@@ -4605,14 +4717,34 @@ public:
                                     ab->m_dim)->m_n - 1;
                             }
                         }
+                        // A deferred-shape array -- a component of a
+                        // derived-type argument, or a name bound to one --
+                        // has its lower bound registered with its extents.
+                        std::string registered_lb = arr->n_dims > 0
+                            && dim_idx >= 0 && (size_t)dim_idx < arr->n_dims
+                            && !arr->m_dims[dim_idx].m_start
+                            && !arr->m_dims[dim_idx].m_length
+                            ? deferred_lower_bound_str(ab->m_v, arr,
+                                dim_idx)
+                            : "1";
                         if (dim_idx >= 0 && (size_t)dim_idx < arr->n_dims) {
                             if (ab->m_bound == ASR::arrayboundType::LBound) {
                                 if (arr->m_dims[dim_idx].m_start) {
                                     visit_expr(arr->m_dims[dim_idx].m_start);
                                 } else {
-                                    src << "1";
+                                    src << registered_lb;
                                 }
                             } else {
+                                // The branches below without a length
+                                // render the extent of the dimension,
+                                // which is its upper bound when it starts
+                                // at one.
+                                bool offset_extent =
+                                    !arr->m_dims[dim_idx].m_length
+                                    && registered_lb != "1";
+                                if (offset_extent) {
+                                    src << "((" << registered_lb << ") + ";
+                                }
                                 // UBound = start + length - 1
                                 if (arr->m_dims[dim_idx].m_length) {
                                     src << "(";
@@ -4661,6 +4793,7 @@ public:
                                 } else {
                                     unresolved_upper_bound(ab->base.base.loc, "");
                                 }
+                                if (offset_extent) src << " - 1)";
                             }
                         } else {
                             src << "/* dim out of range */";
@@ -4944,7 +5077,8 @@ public:
                         if (ASR::is_a<ASR::Array_t>(*inner_1d)) {
                             arr_1d = ASR::down_cast<ASR::Array_t>(inner_1d);
                         }
-                        std::string lb = get_lower_bound_str(arr_1d, 0);
+                        std::string lb = get_lower_bound_str(arr_1d, 0,
+                            array_shape_key(ai->m_v));
                         src << "((int)(";
                         visit_expr(idx);
                         src << ") - (" << lb << "))";
@@ -5266,7 +5400,14 @@ public:
     // counting from 1 instead would address a different element.
     std::string get_lower_bound_str(ASR::Array_t *arr, size_t d,
             const std::string &arr_var_name = "") {
-        if (!arr || d >= arr->n_dims || !arr->m_dims[d].m_start) return "1";
+        if (!arr || d >= arr->n_dims || !arr->m_dims[d].m_start) {
+            auto it = func_array_lb_params.find(
+                dim_size_key(arr_var_name, d));
+            if (!arr_var_name.empty() && it != func_array_lb_params.end()) {
+                return it->second;
+            }
+            return "1";
+        }
         ASR::expr_t *start = arr->m_dims[d].m_start;
         if (ASR::is_a<ASR::IntegerConstant_t>(*start)) {
             return std::to_string(
@@ -5293,12 +5434,10 @@ public:
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             arr = ASR::down_cast<ASR::Array_t>(inner);
         }
-        // Extract array variable name for assumed-shape __size_ parameters
-        std::string arr_var_name;
-        if (ASR::is_a<ASR::Var_t>(*ai->m_v)) {
-            arr_var_name = ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
-        }
+        // The key the extents and lower bounds of the array are
+        // registered under: an assumed-shape dummy's own name, or
+        // "var.member" for a component of a derived-type argument.
+        std::string arr_var_name = array_shape_key(ai->m_v);
         std::vector<std::string> subscripts;
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right

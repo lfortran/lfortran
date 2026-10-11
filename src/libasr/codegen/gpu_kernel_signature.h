@@ -105,6 +105,7 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     const auto &layout = *kernel.m_gpu;
     current_kernel_layout = &layout;
     func_array_size_params.clear();
+    func_array_lb_params.clear();
     func_array_data_params.clear();
     struct_components.clear();
     array_extent_params.clear();
@@ -133,6 +134,10 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
                     func_array_size_params[dim_size_key(key, d)] =
                         struct_member_dim_param(name, member, d);
                 }
+            }
+            for (size_t d = 0; d < component.rank; d++) {
+                func_array_lb_params[dim_size_key(key, d)] =
+                    GpuNames::member_lower_bound(name, member, d);
             }
         }
     }

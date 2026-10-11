@@ -342,14 +342,14 @@ class DeviceLaunchExpandVisitor :
                 dim.m_length = n;
                 dims.push_back(al, dim);
                 out.push_back(al, b.Allocate(offsets, dims.p, dims.n));
-                // One entry per dimension per element.
+                // Two entries per dimension per element: the extent and
+                // the lower bound.
                 Vec<ASR::dimension_t> size_dims;
                 size_dims.reserve(al, 1);
                 ASR::dimension_t size_dim;
                 size_dim.loc = loc;
                 size_dim.m_start = b.i32(1);
-                size_dim.m_length = rank > 1
-                    ? b.Mul(n, b.i32((int)rank)) : n;
+                size_dim.m_length = b.Mul(n, b.i32(2 * (int)rank));
                 size_dims.push_back(al, size_dim);
                 out.push_back(al, b.Allocate(sizes, size_dims.p,
                     size_dims.n));
@@ -364,8 +364,15 @@ class DeviceLaunchExpandVisitor :
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
                             int32)));
+                    extents.push_back(b.Assignment(
+                        member_lower_bound(loc, sizes, k, rank, d),
+                        b.GetLBound(struct_member(loc, arg, k, member),
+                            (int)d + 1)));
                     no_extents.push_back(b.Assignment(
                         member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                    no_extents.push_back(b.Assignment(
+                        member_lower_bound(loc, sizes, k, rank, d),
+                        b.i32(1)));
                 }
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
@@ -405,9 +412,8 @@ class DeviceLaunchExpandVisitor :
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes = rank > 1
-                    ? b.Mul(index_bytes, b.i64((int64_t)rank))
-                    : index_bytes;
+                ASR::expr_t *sizes_bytes =
+                    b.Mul(index_bytes, b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
@@ -505,15 +511,22 @@ class DeviceLaunchExpandVisitor :
         }
 
         // Where the extent of dimension `d` of element `index` sits in the
-        // sizes buffer: the buffer carries `rank` entries per element, in
-        // dimension order.
+        // sizes buffer: the buffer carries `2 * rank` entries per element,
+        // the extents in dimension order and then the lower bounds.
         ASR::expr_t* member_extent(const Location &loc, ASR::expr_t *sizes,
                 ASR::expr_t *index, size_t rank, size_t d) {
             ASRUtils::ASRBuilder b(al, loc);
-            if (rank <= 1) return b.ArrayItem_01(sizes, {index});
             return b.ArrayItem_01(sizes, {b.Add(
-                b.Mul(b.Sub(index, b.i32(1)), b.i32((int)rank)),
+                b.Mul(b.Sub(index, b.i32(1)), b.i32(2 * (int)rank)),
                 b.i32((int)d + 1))});
+        }
+
+        // Where the lower bound of dimension `d` of element `index` sits in
+        // the sizes buffer.
+        ASR::expr_t* member_lower_bound(const Location &loc,
+                ASR::expr_t *sizes, ASR::expr_t *index, size_t rank,
+                size_t d) {
+            return member_extent(loc, sizes, index, rank, rank + d);
         }
 
         // Number of elements of one element's component: the product of its

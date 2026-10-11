@@ -291,6 +291,7 @@ void GpuOffloadVisitor::plain_allocatable_dummies(ASR::Function_t *fn) {
             continue;
         }
         var->m_type = ASRUtils::type_get_past_allocatable(var->m_type);
+        plain_allocatable_dummy_args[fn].push_back(sym);
         changed = true;
     }
     if (!changed) return;
@@ -298,6 +299,154 @@ void GpuOffloadVisitor::plain_allocatable_dummies(ASR::Function_t *fn) {
         ASRUtils::make_FunctionType_t_util(al, fn->base.base.loc,
             fn->m_args, fn->n_args, fn->m_return_var,
             ASRUtils::get_FunctionType(fn), fn->m_symtab));
+}
+
+namespace {
+
+// Appends to every call of a routine in `lower_bounds` the lower bounds
+// of the actual arguments for the dummies listed there, one per
+// dimension, in the order the routine was given dummies for them.
+class GpuLowerBoundActuals :
+        public ASRUtils::BlockBodyWalkVisitor<GpuLowerBoundActuals> {
+public:
+    Allocator &al;
+    const std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
+        &lower_bounds;
+
+    GpuLowerBoundActuals(Allocator &al_,
+            const std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
+                &lower_bounds_)
+        : al(al_), lower_bounds(lower_bounds_) {}
+
+    void extend(ASR::symbol_t *name, ASR::call_arg_t *&args,
+            size_t &n_args, bool passes_object) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
+        if (s) s = ASRUtils::symbol_get_past_StructMethodDeclaration(s);
+        if (!s || !ASR::is_a<ASR::Function_t>(*s)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        auto it = lower_bounds.find(fn);
+        if (it == lower_bounds.end()) return;
+        // A type-bound call hands over the object apart from the
+        // actual arguments, which then start at the second dummy.
+        size_t shift = passes_object ? 1 : 0;
+        Vec<ASR::call_arg_t> extended;
+        extended.reserve(al, n_args + it->second.size());
+        for (size_t i = 0; i < n_args; i++) extended.push_back(al, args[i]);
+        ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            fn->base.base.loc, 4));
+        for (ASR::symbol_t *dummy : it->second) {
+            ASR::expr_t *actual = nullptr;
+            for (size_t i = 0; i < fn->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*fn->m_args[i]) &&
+                        ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v
+                            == dummy && i >= shift && i - shift < n_args) {
+                    actual = args[i - shift].m_value;
+                    break;
+                }
+            }
+            while (actual && ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual)) {
+                actual = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    actual)->m_arg;
+            }
+            const Location &loc = actual ? actual->base.loc
+                : fn->base.base.loc;
+            size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::symbol_type(dummy));
+            for (size_t d = 0; d < rank; d++) {
+                ASR::call_arg_t arg;
+                arg.loc = loc;
+                if (actual) {
+                    arg.m_value = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
+                        loc, actual, ASRUtils::EXPR(
+                            ASR::make_IntegerConstant_t(al, loc, d + 1,
+                                int4, ASR::integerbozType::Decimal)),
+                        int4, ASR::arrayboundType::LBound, nullptr));
+                } else {
+                    arg.m_value = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, 1, int4,
+                            ASR::integerbozType::Decimal));
+                }
+                extended.push_back(al, arg);
+            }
+        }
+        args = extended.p;
+        n_args = extended.n;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuLowerBoundActuals>::visit_FunctionCall(x);
+        ASR::FunctionCall_t &xx = const_cast<ASR::FunctionCall_t&>(x);
+        extend(xx.m_name, xx.m_args, xx.n_args, xx.m_dt != nullptr);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASRUtils::BlockBodyWalkVisitor<
+            GpuLowerBoundActuals>::visit_SubroutineCall(x);
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        extend(xx.m_name, xx.m_args, xx.n_args, xx.m_dt != nullptr);
+    }
+};
+
+} // namespace
+
+// An allocatable dummy array has the lower bounds of its actual argument,
+// which an array a device routine is handed as a plain array does not
+// carry. Each such dummy of a routine the kernel reaches is given them as
+// dummies of their own, as an assumed-shape dummy `a(lb:)` is, and every
+// call passes `lbound(actual, d)` for them.
+void GpuOffloadVisitor::pass_plain_dummy_lower_bounds(
+        ASR::Function_t &kernel) {
+    std::vector<ASR::Function_t*> code = {&kernel};
+    std::set<ASR::Function_t*> seen = {&kernel};
+    for (size_t i = 0; i < code.size(); i++) {
+        for (ASR::Function_t *callee : gpu_callees(code[i]->m_body,
+                code[i]->n_body, false)) {
+            if (seen.insert(callee).second) code.push_back(callee);
+        }
+    }
+    std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>> lower_bounds;
+    for (ASR::Function_t *fn : code) {
+        auto it = plain_allocatable_dummy_args.find(fn);
+        if (it == plain_allocatable_dummy_args.end()) continue;
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, fn->n_args);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            args.push_back(al, fn->m_args[i]);
+        }
+        for (ASR::symbol_t *dummy : it->second) {
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(dummy);
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_pointer(var->m_type));
+            const Location &loc = dummy->base.loc;
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                ASR::symbol_t *lb = gpu_new_variable(al, loc, fn->m_symtab,
+                    fn->m_symtab->get_unique_name(GpuNames::lower_bound(
+                        var->m_name, d)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASR::intentType::In);
+                arr->m_dims[d].m_start = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, lb));
+                args.push_back(al, ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, lb)));
+            }
+        }
+        fn->m_args = args.p;
+        fn->n_args = args.n;
+        fn->m_function_signature = ASRUtils::TYPE(
+            ASRUtils::make_FunctionType_t_util(al, fn->base.base.loc,
+                fn->m_args, fn->n_args, fn->m_return_var,
+                ASRUtils::get_FunctionType(fn), fn->m_symtab));
+        lower_bounds[fn] = it->second;
+        plain_allocatable_dummy_args.erase(it);
+    }
+    if (lower_bounds.empty()) return;
+    GpuLowerBoundActuals actuals(al, lower_bounds);
+    for (ASR::Function_t *fn : code) {
+        for (size_t i = 0; i < fn->n_body; i++) {
+            actuals.visit_stmt(*fn->m_body[i]);
+        }
+    }
 }
 
 // Strip the physical-type casts wrapping an actual argument. The
