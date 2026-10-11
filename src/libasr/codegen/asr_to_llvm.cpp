@@ -11148,7 +11148,13 @@ public:
                     x.m_tgt, ASRUtils::expr_type(x.m_tgt), module.get());
                 tgt = llvm_utils->CreateLoad2(t_llvm_type, tgt);
             }
-            tmp = builder->CreateICmpEQ(to_int64(ptr), to_int64(tgt));
+            // c_associated(c_ptr_1, c_ptr_2) is false when c_ptr_1 is null,
+            // even if c_ptr_2 is null too.
+            llvm::Value* ptr_int = to_int64(ptr);
+            tmp = builder->CreateAnd(
+                builder->CreateICmpNE(ptr_int,
+                    llvm::ConstantInt::get(ptr_int->getType(), 0)),
+                builder->CreateICmpEQ(ptr_int, to_int64(tgt)));
             return ;
         }
         // The data field of the non-null class wrapper {VTable*, data*} of a
