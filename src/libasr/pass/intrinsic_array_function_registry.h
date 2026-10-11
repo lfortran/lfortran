@@ -7321,7 +7321,7 @@ namespace DotProduct {
         ASR::ttype_t *type_vector_a = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_a)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector_a);
 
-        int kind = ASRUtils::extract_kind_from_ttype_t(type_a);
+        int kind = ASRUtils::extract_kind_from_ttype_t(return_type);
         int dim = ASRUtils::get_fixed_size_of_array(type_vector_a);
 
         if (dim < 0) return nullptr;
@@ -7437,7 +7437,25 @@ namespace DotProduct {
                 return nullptr;
             }
         }
-        ret_type = extract_type(type_a);
+        {
+            ASR::ttype_t *elem_a = extract_type(type_a);
+            ASR::ttype_t *elem_b = extract_type(type_b);
+            if ((is_integer(*elem_a) && is_integer(*elem_b)) ||
+                (is_real(*elem_a) && is_real(*elem_b)) ||
+                (is_complex(*elem_a) && is_complex(*elem_b))) {
+                int result_kind = std::max(extract_kind_from_ttype_t(elem_a),
+                                           extract_kind_from_ttype_t(elem_b));
+                if (is_integer(*elem_a)) {
+                    ret_type = TYPE(ASR::make_Integer_t(al, loc, result_kind));
+                } else if (is_real(*elem_a)) {
+                    ret_type = TYPE(ASR::make_Real_t(al, loc, result_kind));
+                } else {
+                    ret_type = TYPE(ASR::make_Complex_t(al, loc, result_kind));
+                }
+            } else {
+                ret_type = elem_a;
+            }
+        }
         ASR::dimension_t* matrix_a_dims = nullptr;
         ASR::dimension_t* matrix_b_dims = nullptr;
         int matrix_a_rank = extract_dimensions_from_ttype(type_a, matrix_a_dims);
@@ -7499,9 +7517,14 @@ namespace DotProduct {
         } else if (is_complex(*return_type)) {
             body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));
 
+            int ret_kind = extract_kind_from_ttype_t(return_type);
+            auto to_ret_kind = [&](ASR::expr_t* e) {
+                return extract_kind_from_ttype_t(expr_type(e)) == ret_kind ? e : b.c2c_t(e, return_type);
+            };
+
             Vec<ASR::call_arg_t> new_args_conjg; new_args_conjg.reserve(al, 1);
             ASR::call_arg_t call_arg; call_arg.loc = loc;
-            call_arg.m_value = b.ArrayItem_01(args[0], {i});
+            call_arg.m_value = to_ret_kind(b.ArrayItem_01(args[0], {i}));
             new_args_conjg.push_back(al, call_arg);
 
             Vec<ASR::ttype_t*> arg_types_conjg; arg_types_conjg.reserve(al, 1);
@@ -7509,17 +7532,17 @@ namespace DotProduct {
 
             ASR::expr_t* func_call_conjg = Conjg::instantiate_Conjg(al, loc, scope, arg_types_conjg, return_type, new_args_conjg, 0, index_kind);
             body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
-                b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, b.ArrayItem_01(args[1], {i}), return_type, nullptr))))
+                b.Assignment(result, b.Add(result, EXPR(ASR::make_ComplexBinOp_t(al, loc, func_call_conjg, ASR::binopType::Mul, to_ret_kind(b.ArrayItem_01(args[1], {i})), return_type, nullptr))))
             }, nullptr));
         } else if (is_real(*return_type)) {
             body.push_back(al, b.Assignment(result, ASRUtils::make_RealConstant_util(al, loc, 0.0, return_type)));
             body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
-                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.r2r_t(b.ArrayItem_01(args[1], {i}), ASRUtils::extract_type(arg_types[0])))))
+                b.Assignment(result, b.Add(result, b.Mul(b.r2r_t(b.ArrayItem_01(args[0], {i}), return_type), b.r2r_t(b.ArrayItem_01(args[1], {i}), return_type))))
             }, nullptr));
         } else {
             body.push_back(al, b.Assignment(result, make_ConstantWithType(make_IntegerConstant_t, 0, return_type, loc)));
             body.push_back(al, b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
-                b.Assignment(result, b.Add(result, b.Mul(b.ArrayItem_01(args[0], {i}), b.i2i_t(b.ArrayItem_01(args[1], {i}), ASRUtils::extract_type(arg_types[0])))))
+                b.Assignment(result, b.Add(result, b.Mul(b.i2i_t(b.ArrayItem_01(args[0], {i}), return_type), b.i2i_t(b.ArrayItem_01(args[1], {i}), return_type))))
             }, nullptr));
         }
         body.push_back(al, b.Return());
