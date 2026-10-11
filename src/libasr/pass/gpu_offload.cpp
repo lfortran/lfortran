@@ -1889,6 +1889,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
             retarget_declaration_calls(func->m_symtab, *kernel_scope);
+            // `sum(f(x))` in a routine becomes a loop, as in the loop body,
+            // so that it needs no temporary for the array `f` returns. The
+            // routine is the kernel's own copy: the host's is left as it is.
+            inline_sum_in_stmts(func->m_body, func->n_body, func->m_symtab);
             gather_strided_sections_in_routine(*func);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
