@@ -4513,6 +4513,7 @@ RUN(NAME dtio_write_04_fixed LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTR
 RUN(NAME dtio_write_05 LABELS gfortran llvm)
 RUN(NAME dtio_write_05_sc LABELS gfortran llvm EXTRAFILES dtio_write_05_sc_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME dtio_write_06 LABELS gfortran llvm EXTRA_ARGS --std=f23)
+RUN(NAME dtio_write_07 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
