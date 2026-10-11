@@ -41,9 +41,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
-            // A Metal shader has no way to halt the program: the shading
-            // language has no trap.
-            caps.device_abort = false;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -55,8 +52,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
-            // A CUDA kernel has a trap it can raise, so it keeps that
-            // default.
             break;
         case GpuDevice::None:
             break;
@@ -232,8 +227,12 @@ std::string gpu_decline_message(const GpuDecline &decline) {
 
         case GpuDeclineReason::StatementIo:
             return unsupported + "input or output" + in_routine(decline);
-        case GpuDeclineReason::StatementStop:
-            return unsupported + "stop" + in_routine(decline);
+        case GpuDeclineReason::StopCodeNotConstant:
+            return unsupported + "a character stop code that is not a "
+                "constant" + in_routine(decline);
+        case GpuDeclineReason::StoppingProcedureShared:
+            return unsupported + "procedure '" + decline.name + "', which "
+                "can stop, passed as an argument or shared with the host";
 
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +

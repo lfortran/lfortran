@@ -169,18 +169,6 @@ public:
             case ASR::stmtType::Flush:
                 record(GpuUnsupportedKind::InputOutput, s.base.loc);
                 return;
-            case ASR::stmtType::ErrorStop:
-                if (!caps.device_abort) {
-                    record(GpuUnsupportedKind::ErrorStop, s.base.loc);
-                    return;
-                }
-                break;
-            case ASR::stmtType::Stop:
-                if (!caps.device_abort) {
-                    record(GpuUnsupportedKind::Stop, s.base.loc);
-                    return;
-                }
-                break;
             default:
                 break;
         }
@@ -303,12 +291,6 @@ std::string gpu_unsupported_construct_message(
         case GpuUnsupportedKind::InputOutput:
             what = "input/output statements";
             break;
-        case GpuUnsupportedKind::ErrorStop:
-            what = "error stop";
-            break;
-        case GpuUnsupportedKind::Stop:
-            what = "stop";
-            break;
     }
     return "the " + caps.name + " GPU does not support " + what;
 }
@@ -334,12 +316,6 @@ std::string gpu_unsupported_construct_label(
         }
         case GpuUnsupportedKind::InputOutput:
             label = "input/output statement";
-            break;
-        case GpuUnsupportedKind::ErrorStop:
-            label = "error stop statement";
-            break;
-        case GpuUnsupportedKind::Stop:
-            label = "stop statement";
             break;
     }
     if (!construct.routine.empty()) {

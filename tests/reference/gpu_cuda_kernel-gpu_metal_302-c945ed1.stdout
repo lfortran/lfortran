@@ -7,6 +7,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* a,
     float* x,
+    int* __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -29,7 +30,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         a[((int)(i) - (1))] = r[((int)(i) - (1))];
     }
     if ((i < 0)) {
-        __trap();
+        __gpu_stop_status[((int)(1) - (1))] = 1;
+        return;
     }
 }
 

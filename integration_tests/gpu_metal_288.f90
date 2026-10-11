@@ -1,15 +1,13 @@
 program gpu_metal_288
-  ! Test: what the offload pass has to give back when it turns a loop down.
+  ! Test: a loop with a BLOCK and an `error stop` it never reaches, then a
+  ! second loop.
   !
-  ! The first loop is declined -- a `stop` is not something a device can run
-  ! -- but only after the pass has copied the BLOCK in it into this scope and
-  ! taken a kernel number for the draft.  Both have to go back: a block copy
-  ! nothing calls is left-over ASR in a live procedure, and a consumed number
-  ! makes the kernel the second loop becomes depend on a decline that has
-  ! nothing to do with it.
-  !
-  ! The declined loop still has to compute what Fortran says it computes, on
-  ! the host, through the block it declares.
+  ! The `error stop` once kept the first loop off the device, after the pass
+  ! had copied the BLOCK and taken a kernel number for it. It is now lowered
+  ! into a write to the launch's status buffer, so both loops are offloaded:
+  ! the stop inside the loop next to the BLOCK must not disturb the kernel
+  ! the BLOCK is copied into, and both loops have to compute what Fortran
+  ! says they compute.
   implicit none
 
   integer :: a(4), b(4), i

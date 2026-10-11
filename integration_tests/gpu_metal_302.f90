@@ -1,6 +1,7 @@
 ! An array-valued ASSOCIATE in a do concurrent body is rebuilt as a
-! BLOCK after copy_loop_stmt. That BLOCK must be a kernel copy: a
-! later decline must drop it, and the host ASSOCIATE must still run.
+! BLOCK after copy_loop_stmt. That BLOCK must be a kernel copy, so that
+! the `error stop` next to it, lowered into a write to the launch's
+! status buffer, is lowered in the kernel alone.
 program gpu_metal_302
 implicit none
 integer, parameter :: n = 4
