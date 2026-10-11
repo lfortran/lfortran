@@ -514,6 +514,16 @@ class WorkflowPolicyTests(unittest.TestCase):
             'mv "lfortran-$lfortran_version" "$source_dir"',
         ])
 
+    def test_macos_lfortran_does_not_export_cxx_symbols(self):
+        # dyld coalesces every exported weak symbol at launch; exporting the
+        # ~66,000 weak C++ symbols of a Debug build made each lfortran
+        # invocation spend ~150 ms in dyld. The JIT needs only C symbols.
+        cmake = (ROOT / "src/bin/CMakeLists.txt").read_text()
+        block = cmake.split("if (APPLE)\n    # At every launch dyld", 1)[1].split("\nendif()", 1)[0]
+        self.assertIn('"LINKER:-unexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/unexported_symbols.txt"', block)
+        symbols = (ROOT / "src/bin/unexported_symbols.txt").read_text().splitlines()
+        self.assertEqual([line for line in symbols if line and not line.startswith("#")], ["__Z*"])
+
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
