@@ -23062,10 +23062,15 @@ public:
         ASR::ttype_t *dest_type = right_type;
 
         if( overloaded == nullptr ) {
-            // A deferred type of a template has no intrinsic arithmetic and
-            // no implicit conversion; only an operator from a requirement
-            // (resolved as `overloaded` above) applies to it.
-            if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+            // Only an intrinsic type has intrinsic arithmetic. An operand of
+            // a derived type, `type(c_ptr)` or a deferred type of a template
+            // needs a defined operator (resolved as `overloaded` above).
+            auto has_intrinsic_type = [](ASR::ttype_t *t) {
+                return ASRUtils::is_integer(*t) || ASRUtils::is_unsigned_integer(*t) ||
+                    ASRUtils::is_real(*t) || ASRUtils::is_complex(*t) ||
+                    ASRUtils::is_character(*t) || ASRUtils::is_logical(*t);
+            };
+            if (!has_intrinsic_type(left_type) || !has_intrinsic_type(right_type)) {
                 std::string op_str = "+";
                 switch (op) {
                     case (ASR::Add):
@@ -23085,8 +23090,8 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
-                                    + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_with_kind(left_type, left)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str_with_kind(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
             ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,

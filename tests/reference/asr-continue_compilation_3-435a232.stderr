@@ -546,3 +546,33 @@ semantic error: The leftmost part-ref in a data-ref cannot be a function referen
     |
 236 |         print *, mk_13849(1)%a
     |                  ^^^^^^^^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:250:14
+    |
+250 |     print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:251:14
+    |
+251 |     print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:252:14
+    |
+252 |     print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+   --> tests/errors/continue_compilation_3.f90:253:14
+    |
+253 |     print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    |              ^^^^^^^^ 
+
+semantic error: Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+   --> tests/errors/continue_compilation_3.f90:254:14
+    |
+254 |     print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+    |              ^^^^^ 

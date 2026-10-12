@@ -236,3 +236,20 @@ contains
         print *, mk_13849(1)%a
     end subroutine
 end module
+
+! An intrinsic numeric operator applied to an operand of a derived type, or of
+! `type(c_ptr)`, for which no operator is defined is an error.
+subroutine cc3_derived_type_intrinsic_binop_error(c)
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr), intent(in) :: c
+    type :: cc3_binop_t
+        integer :: k = 2
+    end type
+    type(cc3_binop_t) :: x, y(3)
+    print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+end subroutine cc3_derived_type_intrinsic_binop_error
