@@ -11264,6 +11264,18 @@ public:
 
         // Parameterized Derived Type: store as template for later monomorphization
         if (x.n_namelist > 0) {
+            ASR::symbol_t *orig_decl = current_scope->get_symbol(dt_name);
+            if (orig_decl != nullptr) {
+                // add_symbol asserts the name is free, so report the duplicate
+                // here rather than letting invalid input reach the assertion.
+                diag.add(diag::Diagnostic(
+                    "Symbol is already declared in the same scope",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("redeclaration", {x.base.base.loc}),
+                        diag::Label("original declaration", {orig_decl->base.loc}, false)
+                    }));
+                throw SemanticAbort();
+            }
 
             // Build a full PDT template Struct in ASR with kind_params populated.
             // This allows instantiation from ASR alone (e.g. when loaded from .mod files).

@@ -2433,3 +2433,13 @@ contains
         tan = 0
     end function tan
 end function later_internal_function_interface_error
+
+! The name of a parameterized derived type cannot be the name of another
+! entity of the same scope.
+module cc1_pdt_name_mod
+    implicit none
+    integer :: cc1_pdt_name
+    type :: cc1_pdt_name(k)  ! {Error} Symbol is already declared in the same scope
+        integer, kind :: k
+    end type cc1_pdt_name
+end module cc1_pdt_name_mod
