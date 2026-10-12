@@ -6973,39 +6973,41 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
     return unit;
 }
 
-// The scope of a BLOCK construct is created by the body visitor, which visits
-// the specification part of the BLOCK. An interface block in it declares its
-// procedures and generic interfaces in that scope, the same way as an
-// interface block in the specification part of any other scoping unit.
-void visit_block_interface(Allocator &al, const AST::Interface_t &x,
-        SymbolTable *block_scope, diag::Diagnostics &diagnostics,
-        CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
+BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_scope,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm,
-        SetChar &module_dependencies)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        LCompilers::LocationManager &lm)
+    : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
+        compiler_options, implicit_mapping, external_procedures_mapping,
+        explicit_intrinsic_procedures_mapping, instantiate_types,
+        instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+        data_structure, lm))
 {
-    SymbolTableVisitor v(al, block_scope, diagnostics, compiler_options,
-                         implicit_mapping, external_procedures_mapping,
-                         explicit_intrinsic_procedures_mapping,
-                         instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
-    v.global_scope = block_scope;
-    while (v.global_scope->parent != nullptr) {
-        v.global_scope = v.global_scope->parent;
+    v->global_scope = block_scope;
+    while (v->global_scope->parent != nullptr) {
+        v->global_scope = v->global_scope->parent;
     }
-    v.visit_Interface(x);
-    v.add_generic_procedures();
-    v.resolve_proc_pointer_placeholders();
-    // The modules used in the interface bodies are dependencies of the
-    // enclosing module, as for an interface block in its specification part.
-    for (size_t i = 0; i < v.current_module_dependencies.size(); i++) {
-        module_dependencies.push_back(al, v.current_module_dependencies[i]);
+}
+
+BlockInterfaceVisitor::~BlockInterfaceVisitor() = default;
+
+void BlockInterfaceVisitor::visit_Interface(const AST::Interface_t &x)
+{
+    v->visit_Interface(x);
+}
+
+void BlockInterfaceVisitor::finalize(Allocator &al, SetChar &module_dependencies)
+{
+    v->finalize_interfaces();
+    for (size_t i = 0; i < v->current_module_dependencies.size(); i++) {
+        module_dependencies.push_back(al, v->current_module_dependencies[i]);
     }
 }
 

@@ -23,6 +23,7 @@
 #include <map>
 #include <queue>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <cstring>
 
@@ -1783,6 +1784,38 @@ public:
         }
         active = nullptr;
     }
+};
+
+class SymbolTableVisitor;
+
+// The scope of a BLOCK construct is created by the body visitor, which visits
+// the specification part of the BLOCK. Its interface blocks are declared in
+// that scope by one symbol table visitor, in order, the same way as in the
+// specification part of any other scoping unit: `finalize` builds the generic
+// interfaces once the whole specification part has been visited.
+class BlockInterfaceVisitor {
+    std::unique_ptr<SymbolTableVisitor> v;
+
+public:
+    BlockInterfaceVisitor(Allocator &al, SymbolTable *block_scope,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        LCompilers::LocationManager &lm);
+    ~BlockInterfaceVisitor();
+    BlockInterfaceVisitor(const BlockInterfaceVisitor &) = delete;
+    BlockInterfaceVisitor &operator=(const BlockInterfaceVisitor &) = delete;
+
+    void visit_Interface(const AST::Interface_t &x);
+    // The modules used in the interface bodies are added to
+    // `module_dependencies`, the dependencies of the enclosing module.
+    void finalize(Allocator &al, SetChar &module_dependencies);
 };
 
 template <class Derived>

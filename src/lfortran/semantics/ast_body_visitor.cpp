@@ -21,19 +21,6 @@
 
 namespace LCompilers::LFortran {
 
-void visit_block_interface(Allocator &al, const AST::Interface_t &x,
-        SymbolTable *block_scope, diag::Diagnostics &diagnostics,
-        CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
-        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
-        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
-        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        LCompilers::LocationManager &lm, SetChar &module_dependencies);
-
 // `implicit_interface_procedures`: the procedure variables that calls through
 // an implicit interface are made through, mapped to the called procedure.
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
@@ -159,6 +146,9 @@ private:
 public:
     ASR::asr_t *asr;
     bool from_block;
+    // The interface blocks of the specification part of the BLOCK construct
+    // being visited
+    std::unique_ptr<BlockInterfaceVisitor> block_interfaces;
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     bool in_loop = false;
@@ -352,14 +342,18 @@ public:
     }
 
     void visit_Interface(const AST::Interface_t& x) {
-        if( from_block ) {
-            visit_block_interface(al, x, current_scope, diag, compiler_options,
-                implicit_mapping, external_procedures_mapping,
+        if( !from_block ) {
+            return;
+        }
+        if( !block_interfaces ) {
+            block_interfaces = std::make_unique<BlockInterfaceVisitor>(al,
+                current_scope, diag, compiler_options, implicit_mapping,
+                external_procedures_mapping,
                 explicit_intrinsic_procedures_mapping, instantiate_types,
                 instantiate_symbols, entry_functions,
-                entry_function_arguments_mapping, data_structure, lm,
-                current_module_dependencies);
+                entry_function_arguments_mapping, data_structure, lm);
         }
+        block_interfaces->visit_Interface(x);
     }
 
     void visit_Block(const AST::Block_t &x) {
@@ -406,6 +400,21 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             try {
                 visit_decl_stmt(*x.m_items[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    current_scope = parent_scope;
+                    from_block = false;
+                    external_procedures = saved_external_procedures;
+                    all_loops_blocks_nesting--;
+                    throw a;
+                }
+            }
+        }
+        if (block_interfaces) {
+            std::unique_ptr<BlockInterfaceVisitor> interfaces
+                = std::move(block_interfaces);
+            try {
+                interfaces->finalize(al, current_module_dependencies);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
