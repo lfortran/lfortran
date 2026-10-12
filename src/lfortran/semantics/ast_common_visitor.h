@@ -6315,9 +6315,13 @@ public:
     // statement declares an external procedure unless the entity is a
     // pointer, a dummy argument or a component. Returns false if the
     // interface cannot be duplicated.
+    //
+    // The binding label is not part of the interface (18.10.2): it is the
+    // NAME= of the statement's own BIND(C) (`abi` and `bindc_name`), and
+    // otherwise, when either has BIND(C), the procedure's name.
     bool declare_external_procedure(const std::string &sym,
             const Location &loc, ASR::Function_t *iface,
-            ASR::accessType access) {
+            ASR::accessType access, ASR::abiType abi, char *bindc_name) {
         ASRUtils::SymbolDuplicator duplicator(al);
         ASR::symbol_t *proc = duplicator.duplicate_Function(iface,
             current_scope);
@@ -6330,8 +6334,13 @@ public:
         f->m_body = nullptr;
         f->n_body = 0;
         f->m_access = access;
-        ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature)->m_deftype
-            = ASR::deftypeType::Interface;
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(f);
+        ftype->m_deftype = ASR::deftypeType::Interface;
+        ftype->m_bindc_name = nullptr;
+        if (abi == ASR::abiType::BindC) {
+            ftype->m_abi = ASR::abiType::BindC;
+            ftype->m_bindc_name = bindc_name;
+        }
         current_scope->add_symbol(sym, proc);
         return true;
     }
@@ -9567,7 +9576,7 @@ public:
                         && declare_external_procedure(sym, x.m_syms[i].loc,
                             ASR::down_cast<ASR::Function_t>(
                                 ASRUtils::symbol_get_past_external(type_declaration)),
-                            s_access)) {
+                            s_access, s_abi, bindc_name)) {
                     continue;
                 }
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
