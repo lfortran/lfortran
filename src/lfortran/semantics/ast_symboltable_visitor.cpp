@@ -208,12 +208,20 @@ public:
         SymbolTable *scope;
         AST::program_unit_t **procedures;
         size_t n_procedures;
+        // Whether these are the module procedures of a module or submodule,
+        // and then its specification part.
+        bool is_module;
+        AST::decl_stmt_t **module_items;
+        size_t n_module_items;
 
         ContainedProcedureScope(SymbolTableVisitor &v_,
-                AST::program_unit_t **procedures_, size_t n_procedures_)
+                AST::program_unit_t **procedures_, size_t n_procedures_,
+                bool is_module_=false, AST::decl_stmt_t **module_items_=nullptr,
+                size_t n_module_items_=0)
             : v(v_), enclosing(v_.contained_procedure_scope),
               scope(v_.current_scope), procedures(procedures_),
-              n_procedures(n_procedures_) {
+              n_procedures(n_procedures_), is_module(is_module_),
+              module_items(module_items_), n_module_items(n_module_items_) {
             v.contained_procedure_scope = this;
         }
 
@@ -237,7 +245,47 @@ public:
             return nullptr;
         }
 
+        // Whether an interface body of the module's specification part
+        // declares the procedure `name`.
+        bool has_interface_body(const std::string &name) {
+            for (size_t i = 0; i < n_module_items; i++) {
+                if (!AST::is_a<AST::Interface_t>(*module_items[i])) continue;
+                AST::Interface_t *interface = AST::down_cast<AST::Interface_t>(
+                    module_items[i]);
+                for (size_t j = 0; j < interface->n_items; j++) {
+                    if (!AST::is_a<AST::InterfaceProc_t>(*interface->m_items[j])) {
+                        continue;
+                    }
+                    AST::program_unit_t *p = AST::down_cast<AST::InterfaceProc_t>(
+                        interface->m_items[j])->m_proc;
+                    if ((AST::is_a<AST::Function_t>(*p)
+                            && to_lower(AST::down_cast<AST::Function_t>(p)->m_name) == name)
+                            || (AST::is_a<AST::Subroutine_t>(*p)
+                            && to_lower(AST::down_cast<AST::Subroutine_t>(p)->m_name) == name)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
     };
+
+    // A module procedure, or a procedure of an interface body in the
+    // module's specification part, is not defined until its turn comes, so
+    // until then its name must not be taken to be an intrinsic procedure.
+    // Every other name that the module does not declare can be.
+    bool is_procedure_declared_later(const std::string &name) {
+        for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                procedures; procedures = procedures->enclosing) {
+            if (procedures->is_module && !procedures->scope->get_symbol(name)
+                    && (procedures->find(name)
+                        || procedures->has_interface_body(name))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     struct PendingInstantiationRestriction {
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
@@ -639,7 +687,8 @@ public:
         assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            true, x.m_items, x.n_items);
         // Isolate this module's externals from a previous program unit, and
         // restore that unit's list when the module ends so a later sibling
         // does not inherit them.

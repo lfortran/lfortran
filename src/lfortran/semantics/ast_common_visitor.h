@@ -6304,6 +6304,15 @@ public:
         current_scope = parent_scope;
     }
 
+    // Whether a module procedure `name` of a module being visited is defined
+    // later in the source, so that the name cannot yet be resolved to an
+    // intrinsic procedure. Only the symbol table visitor, which defines the
+    // module procedures in source order, overrides this; afterwards every
+    // module procedure is defined.
+    bool is_procedure_declared_later(const std::string &/*name*/) {
+        return false;
+    }
+
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
         s = ASRUtils::symbol_get_past_external(s);
         for (auto &placeholder : pending_proc_placeholders) {
@@ -13204,14 +13213,15 @@ public:
                 type_declaration = existing;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
-                // A procedure of a module may be defined after it is used as
-                // an interface, so there a specific intrinsic function is
-                // only used if it has the INTRINSIC attribute. The INTRINSIC
-                // statements of the module seen so far are in
+                // A module procedure may be defined after it is used as an
+                // interface. Then the name is not the specific intrinsic
+                // function, unless it has the INTRINSIC attribute. The
+                // INTRINSIC statements of a module seen so far are in
                 // `explicit_intrinsic_procedures`; check_is_explicit_intrinsic
                 // would replace that list with the module's entry of
                 // `explicit_intrinsic_procedures_mapping`, which is empty.
-                if (!v && (!in_module
+                if (!v && (!static_cast<Derived&>(*this)
+                            .is_procedure_declared_later(func_name)
                         || std::find(explicit_intrinsic_procedures.begin(),
                             explicit_intrinsic_procedures.end(), func_name)
                             != explicit_intrinsic_procedures.end())) {
