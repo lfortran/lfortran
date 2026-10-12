@@ -3816,6 +3816,11 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
         iotype_len, (int64_t)sizeof(iomsg));
 
     dtio_capture_depth--;
+    if (dtio_capture_depth == 0) {
+        internal_free(dtio_capture_stack);
+        dtio_capture_stack = NULL;
+        dtio_capture_capacity = 0;
+    }
     if (iostat != 0) {
         dtio_set_error(iostat, iomsg, (int64_t)sizeof(iomsg));
         *failed = true;
