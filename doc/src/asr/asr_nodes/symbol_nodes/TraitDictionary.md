@@ -32,5 +32,12 @@ view, a dictionary never modifies a receiver. A conformance outside a module
 has none either. Using such a conformance at runtime is diagnosed with the
 reason at the call.
 
+In LLVM the dictionary is the constant table `__trait_dictionary_<name>`
+defined by its module: the size of a value, a procedure that default
+initializes the storage of a derived type value (null otherwise), then the
+adapters in slot order. A `TraitDictionaryType` value is the address of that
+table. The table describes no copy or destruction procedure, since values
+are copied bitwise and own nothing.
+
 Verification checks the contract and implementation, the adapters' slot
 signatures and owner, and that `TraitRecover` names the dictionary.

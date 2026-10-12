@@ -28694,8 +28694,7 @@ public:
         auto *function_type = llvm_utils->get_function_type(*procedure, module.get());
         llvm::Value *entry = nullptr;
         if (ASRUtils::is_trait_dictionary_call(x.m_args, x.n_args)) {
-            // Dictionary slots follow its size and initializer entries.
-            entry = trait_dictionary_entry(args[0], x.m_slot + 2);
+            entry = trait_dictionary_entry(args[0], trait_dictionary_slot_entry(x.m_slot));
         } else {
             entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                 llvm_utils->trait_method_address(args[0], x.m_slot));
@@ -28732,6 +28731,16 @@ public:
         return llvm_symtab.at(h);
     }
 
+    // A dictionary table: the size of the values, their default
+    // initializer or null, then one adapter per contract slot.
+    static constexpr size_t trait_dictionary_size_entry = 0;
+    static constexpr size_t trait_dictionary_initializer_entry = 1;
+    static constexpr size_t trait_dictionary_header_entries = 2;
+
+    static size_t trait_dictionary_slot_entry(size_t slot) {
+        return trait_dictionary_header_entries + slot;
+    }
+
     llvm::Value *trait_dictionary_entry(llvm::Value *dictionary, size_t index) {
         auto *table = builder->CreateBitCast(dictionary, llvm_utils->i8_ptr->getPointerTo());
         return llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
@@ -28740,7 +28749,8 @@ public:
 
     llvm::Value *trait_erased_size(const std::string &parameter) {
         return builder->CreatePtrToInt(trait_dictionary_entry(
-            trait_erased_dictionary(parameter), 0), llvm::Type::getInt64Ty(context));
+            trait_erased_dictionary(parameter), trait_dictionary_size_entry),
+            llvm::Type::getInt64Ty(context));
     }
 
     // Entry-block storage for one erased value of `parameter`, sized by the
@@ -28751,8 +28761,9 @@ public:
         llvm::IRBuilder<> entry_builder(context);
         entry_builder.SetInsertPoint(&entry, entry.getFirstInsertionPt());
         auto *table = entry_builder.CreateBitCast(dictionary, llvm_utils->i8_ptr->getPointerTo());
-        auto *size = entry_builder.CreatePtrToInt(
-            entry_builder.CreateLoad(llvm_utils->i8_ptr, table),
+        auto *size = entry_builder.CreatePtrToInt(entry_builder.CreateLoad(llvm_utils->i8_ptr,
+                entry_builder.CreateConstGEP1_32(llvm_utils->i8_ptr, table,
+                    trait_dictionary_size_entry)),
             llvm::Type::getInt64Ty(context));
         auto *storage = entry_builder.CreateAlloca(llvm::Type::getInt8Ty(context), size, name);
         storage->setAlignment(llvm::Align(16));
@@ -28762,7 +28773,8 @@ public:
     void trait_erased_initialize(const std::string &parameter, llvm::Value *storage) {
         auto *initialize_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
             {llvm_utils->i8_ptr}, false);
-        llvm::Value *initialize = trait_dictionary_entry(trait_erased_dictionary(parameter), 1);
+        llvm::Value *initialize = trait_dictionary_entry(trait_erased_dictionary(parameter),
+            trait_dictionary_initializer_entry);
         llvm_utils->create_if_else(builder->CreateIsNotNull(initialize), [&]() {
             builder->CreateCall(initialize_type,
                 builder->CreateBitCast(initialize, initialize_type->getPointerTo()),
@@ -28945,7 +28957,7 @@ public:
             "runtime trait lowering", x.base.base.loc);
     }
 
-    // [size, default initializer or null, one adapter per contract slot].
+    // The table described at trait_dictionary_size_entry.
     llvm::GlobalVariable *emit_trait_dictionary(const ASR::TraitDictionary_t &x, bool define) {
         if (x.m_abi == ASR::abiType::Source) {
             auto *saved_scope = current_scope;
@@ -28957,7 +28969,8 @@ public:
             current_scope = saved_scope;
         }
         std::string name = "__trait_dictionary_" + ASRUtils::nominal_symbol_name(&x.base);
-        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr, x.n_procedures + 2);
+        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr,
+            trait_dictionary_slot_entry(x.n_procedures));
         auto *table = module->getNamedGlobal(name);
         if (!table) {
             table = new llvm::GlobalVariable(*module, type, true,
@@ -28973,10 +28986,10 @@ public:
                 ? llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(declaration), module.get())
                 : llvm_utils->get_type_from_ttype_t_util(nullptr, concrete, module.get());
             uint64_t size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(value_type);
-            std::vector<llvm::Constant*> entries;
-            entries.push_back(llvm::ConstantExpr::getIntToPtr(
+            std::vector<llvm::Constant*> entries(trait_dictionary_slot_entry(x.n_procedures));
+            entries[trait_dictionary_size_entry] = llvm::ConstantExpr::getIntToPtr(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), size),
-                llvm_utils->i8_ptr));
+                llvm_utils->i8_ptr);
             if (declaration && ASR::is_a<ASR::Struct_t>(*declaration)) {
                 auto *initialize = llvm::Function::Create(llvm::FunctionType::get(
                         llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false),
@@ -28990,15 +29003,18 @@ public:
                     storage, concrete);
                 builder->CreateRetVoid();
                 builder->restoreIP(saved_ip);
-                entries.push_back(llvm::ConstantExpr::getBitCast(initialize, llvm_utils->i8_ptr));
+                entries[trait_dictionary_initializer_entry] =
+                    llvm::ConstantExpr::getBitCast(initialize, llvm_utils->i8_ptr);
             } else {
-                entries.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+                entries[trait_dictionary_initializer_entry] =
+                    llvm::ConstantPointerNull::get(llvm_utils->i8_ptr);
             }
             for (size_t i = 0; i < x.n_procedures; i++) {
                 auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
                 uint32_t h = get_hash((ASR::asr_t*)procedure);
                 auto *function = llvm_symtab_fn.at(h);
-                entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+                entries[trait_dictionary_slot_entry(i)] =
+                    llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr);
             }
             table->setInitializer(llvm::ConstantArray::get(type, entries));
         }
