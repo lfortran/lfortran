@@ -13186,12 +13186,15 @@ public:
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
                 // A procedure of a module may be defined after it is used as
                 // an interface, so there a specific intrinsic function is
-                // only used if it has the INTRINSIC attribute.
+                // only used if it has the INTRINSIC attribute. The INTRINSIC
+                // statements of the module seen so far are in
+                // `explicit_intrinsic_procedures`; check_is_explicit_intrinsic
+                // would replace that list with the module's entry of
+                // `explicit_intrinsic_procedures_mapping`, which is empty.
                 if (!v && (!in_module
                         || std::find(explicit_intrinsic_procedures.begin(),
                             explicit_intrinsic_procedures.end(), func_name)
-                            != explicit_intrinsic_procedures.end()
-                        || check_is_explicit_intrinsic(func_name))) {
+                            != explicit_intrinsic_procedures.end())) {
                     std::string iface_name = current_scope->parent->get_unique_name(
                         "__" + sym + "_iface_" + func_name, false);
                     v = create_specific_intrinsic_interface(
