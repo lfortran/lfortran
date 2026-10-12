@@ -6272,6 +6272,42 @@ public:
         current_scope = parent_scope;
     }
 
+    bool is_pending_proc_placeholder(ASR::symbol_t *s) {
+        s = ASRUtils::symbol_get_past_external(s);
+        for (auto &placeholder : pending_proc_placeholders) {
+            if (ASRUtils::symbol_get_past_external(placeholder.second) == s) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Declares `sym` as an external procedure with the explicit interface of
+    // the procedure `iface` (Fortran 2018, 15.4.3.6): a procedure declaration
+    // statement declares an external procedure unless the entity is a
+    // pointer, a dummy argument or a component. Returns false if the
+    // interface cannot be duplicated.
+    bool declare_external_procedure(const std::string &sym,
+            const Location &loc, ASR::Function_t *iface,
+            ASR::accessType access) {
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t *proc = duplicator.duplicate_Function(iface,
+            current_scope);
+        if (!proc) {
+            return false;
+        }
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(proc);
+        f->base.base.loc = loc;
+        f->m_name = s2c(al, sym);
+        f->m_body = nullptr;
+        f->n_body = 0;
+        f->m_access = access;
+        ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature)->m_deftype
+            = ASR::deftypeType::Interface;
+        current_scope->add_symbol(sym, proc);
+        return true;
+    }
+
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
         // The `external_procedures` member accumulates the external procedures
         // of the scope currently being built (filled by
@@ -9374,6 +9410,19 @@ public:
                     throw SemanticAbort();
                 }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
+                if (sym_type->m_type == AST::decl_typeType::TypeProcedure
+                        && !is_pointer && !is_argument && !is_derived_type
+                        && !is_external && !is_template && !is_requirement
+                        && current_scope->get_symbol(sym) == nullptr
+                        && ASR::is_a<ASR::FunctionType_t>(*type)
+                        && !ASRUtils::is_opaque_procedure_type(type)
+                        && type_declaration && !is_pending_proc_placeholder(type_declaration)
+                        && declare_external_procedure(sym, x.m_syms[i].loc,
+                            ASR::down_cast<ASR::Function_t>(
+                                ASRUtils::symbol_get_past_external(type_declaration)),
+                            s_access)) {
+                    continue;
+                }
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
                         return type of external function is specified
