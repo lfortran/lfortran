@@ -10,6 +10,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/exception.h>
 #include <libasr/codegen/gpu_utils.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
 namespace LCompilers {
@@ -366,9 +367,11 @@ public:
     }
 };
 
-// Every routine a loop body reaches, however deep.
+// Every routine a loop body reaches, however deep: the implementation of
+// a separate module procedure, which `implementations` finds, in place of
+// the interface the call names.
 std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
-        size_t n_body);
+        size_t n_body, GpuProcedureImplementations &implementations);
 
 // Collects every parallel region reached from the statements walked,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is

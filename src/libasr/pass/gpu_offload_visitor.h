@@ -14,6 +14,7 @@
 #include <libasr/utils.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/stmt_walk_visitor.h>
@@ -59,7 +60,8 @@ public:
     GpuOffloadVisitor(Allocator &al, PassOptions pass_options_,
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_),
-          device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
+          device_caps(gpu_device_capabilities(pass_options_)), tu(tu_),
+          implementations(al, tu_, pass_options) {}
 
     void load_submodule_deps(ASR::TranslationUnit_t &sub_tu);
 
@@ -120,18 +122,10 @@ public:
     // inline_device_function_calls() afterwards.
     std::set<ASR::Function_t*> functions_to_inline;
 
-    // The implementation already found for an interface declaration.
-    // Loading a submodule from disk builds a fresh copy of its symbol
-    // table every time, so without this the same `module procedure`
-    // would resolve to a different Function_t at every call. The
-    // inliner identifies a planned callee by pointer, so the plan and
-    // the splice would then disagree and the callee would silently stay
-    // an out-of-line device function.
-    std::map<ASR::Function_t*, ASR::Function_t*> function_implementations;
+    // The bodies of the separate module procedures device code calls.
+    GpuProcedureImplementations implementations;
 
     ASR::Function_t* resolve_function_implementation(ASR::Function_t *fn);
-
-    ASR::Function_t* find_function_implementation(ASR::Function_t *fn);
 
     ASR::Function_t* resolve_device_function(ASR::symbol_t *sym);
 
