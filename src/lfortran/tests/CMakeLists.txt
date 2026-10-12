@@ -210,6 +210,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                         --example vector --mode ${mode}
                 )
                 add_test(
+                    NAME test_paper_separate_ocp_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_paper_separate.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --example ocp --mode ${mode}
+                )
+                add_test(
                     NAME test_generic_type_private_${mode}
                     COMMAND ${LFORTRAN_TEST_PYTHON}
                         ${CMAKE_SOURCE_DIR}/integration_tests/traits_generic_type_private.py

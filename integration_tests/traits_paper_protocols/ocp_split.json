@@ -1,0 +1,128 @@
+{
+ "schema": "traits-final-four-acceptance.split.v1",
+ "example": "ocp",
+ "source": "integration_tests/traits_paper_protocols/ocp.f90",
+ "source_sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+ "original_sha256": "7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
+ "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce source_sha256 before any compilation. Pieces are verbatim slices; no unit is renamed, reordered, simplified or completed.",
+ "rejoined_sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+ "frozen_before_main": [
+  "interfaces",
+  "intrinsics",
+  "simple_library",
+  "pairwise_library",
+  "averager_library"
+ ],
+ "dependency_note": "simple_library, pairwise_library and averager_library use only interfaces and never see intrinsics, so none of them can hold integer- or real(real64)-specific sum/average code without global conformance discovery. Only main (acceptance line 160) uses intrinsics. A type added after the providers are frozen is covered by traits_protocol_separate_01.",
+ "units": [
+  {
+   "unit": "interfaces",
+   "kind": "module",
+   "first_line": 1,
+   "end_statement_line": 36,
+   "last_line": 37,
+   "bytes": 985,
+   "sha256": "e79b87528b8642e0ef07c57ad757244458969cd95b35b38c6388f15179ebf1af",
+   "imports": [],
+   "file": "ocp_1_interfaces.f90",
+   "compile_after": []
+  },
+  {
+   "unit": "intrinsics",
+   "kind": "module",
+   "first_line": 38,
+   "end_statement_line": 49,
+   "last_line": 50,
+   "bytes": 272,
+   "sha256": "1078fc2b6da07046258a5865743ed9c41010df805d12cf2ac848ef5c043f354c",
+   "imports": [
+    "interfaces"
+   ],
+   "file": "ocp_2_intrinsics.f90",
+   "compile_after": [
+    "interfaces"
+   ]
+  },
+  {
+   "unit": "simple_library",
+   "kind": "module",
+   "first_line": 51,
+   "end_statement_line": 76,
+   "last_line": 77,
+   "bytes": 478,
+   "sha256": "43e6d21551165cb73359d05e1315f68e8bddd5fa64e66884148769ccbc8b95a1",
+   "imports": [
+    "interfaces"
+   ],
+   "file": "ocp_3_simple_library.f90",
+   "compile_after": [
+    "interfaces",
+    "intrinsics"
+   ]
+  },
+  {
+   "unit": "pairwise_library",
+   "kind": "module",
+   "first_line": 78,
+   "end_statement_line": 115,
+   "last_line": 116,
+   "bytes": 873,
+   "sha256": "2afd4142bb2074950996915c1ba17eed9da893ee57430859f7574de1f5063441",
+   "imports": [
+    "interfaces"
+   ],
+   "file": "ocp_4_pairwise_library.f90",
+   "compile_after": [
+    "interfaces",
+    "intrinsics",
+    "simple_library"
+   ]
+  },
+  {
+   "unit": "averager_library",
+   "kind": "module",
+   "first_line": 117,
+   "end_statement_line": 149,
+   "last_line": 150,
+   "bytes": 747,
+   "sha256": "6c29e5b4fa1590628f05166c73ecc45c91ea96beef2f1cb7fc2238b890738e4f",
+   "imports": [
+    "interfaces"
+   ],
+   "file": "ocp_5_averager_library.f90",
+   "compile_after": [
+    "interfaces",
+    "intrinsics",
+    "simple_library",
+    "pairwise_library"
+   ]
+  },
+  {
+   "unit": "main",
+   "kind": "program",
+   "first_line": 151,
+   "end_statement_line": 188,
+   "last_line": 188,
+   "bytes": 897,
+   "sha256": "51ffe135e78b8b24c439745659a5fa406ca3d9b7ae0e53b56e48bef4793cb84d",
+   "imports": [
+    "interfaces",
+    "simple_library",
+    "pairwise_library",
+    "averager_library",
+    "intrinsics"
+   ],
+   "file": "ocp_6_main.f90",
+   "compile_after": [
+    "interfaces",
+    "intrinsics",
+    "simple_library",
+    "pairwise_library",
+    "averager_library"
+   ],
+   "contains_adaptation": true,
+   "original_piece_sha256": "45f169182af3ef33c2816240cea7268edea09ef237b3eebda6fefa45c6f3497a",
+   "original_piece_bytes": 879
+  }
+ ]
+}

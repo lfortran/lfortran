@@ -758,6 +758,11 @@ Array values computed from erased values, such as an elemental requirement
 applied to arrays, other erased storage and a binder constrained by several
 traits are diagnosed as not implemented.
 
+`traits_paper_ocp` runs the exact paper program, with its approved
+`use intrinsics`, for both choices in normal and fast modes and rejects the
+original without it; its split native gate freezes all five library modules
+before compiling `main` and checks that each algorithm library has one open
+entry and `intrinsics` owns the dictionaries `main` references.
 `traits_protocol_separate_01` freezes
 and hides a provider of `ISum` and `IAverager` before any derived or
 `real(real32)` conformance exists; `traits_runtime_numeric_separate_01.py

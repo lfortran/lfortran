@@ -40,6 +40,7 @@ SPLIT_HASHES = {
     "static": "80415aaa04a5a4dc36d1ad0464bc628a29459d2d3b0afa46e855ffd3870aef62",
     "overloading": "169bf3b284a278ff59bfe5bbcb5e0cadb1fa725f20935978f4b5bb09e1b15c42",
     "vector": "37ae6618a4f171d718a7df43f72abca9995f0169da199c5e91256e009d059737",
+    "ocp": "7e4cbc6989eb0f329d638df6b975d48d334086c26dadcb7d6010ca12b7dbe2ef",
 }
 # Every library unit of a split has a role; see the module docstring.
 ROLES = {
@@ -48,6 +49,8 @@ ROLES = {
     "overloading": {"basic_interfaces": "provider", "my_type": "provider",
                     "real_type": "provider"},
     "vector": {"traits": "provider", "vector_library": "package"},
+    "ocp": {"interfaces": "provider", "intrinsics": "provider", "simple_library": "provider",
+            "pairwise_library": "provider", "averager_library": "provider"},
 }
 # The units, symbols, symbol references and imports of an ASR dump, and the
 # definitions of LLVM IR. Compiler-made names, such as those of generic type
@@ -424,8 +427,64 @@ def check_vector(logs):
             "holds runtime trait evidence, views or dispatch")
 
 
+# The generic messages each algorithm library implements.
+OCP_ENTRIES = {"simple_library.o": "sum", "pairwise_library.o": "sum",
+               "averager_library.o": "average"}
+
+
+def check_ocp(logs):
+    """Open protocol dispatch: each algorithm library defines one open entry
+    per generic message, taking the caller's INumeric dictionary, and no
+    per-type code; intrinsics owns the integer and real(real64) dictionaries,
+    which main only references; main defines no entry, witness or body of
+    the libraries' conformances."""
+    units = asr_units(logs["main-asr"])
+    require(set(units) >= {"main", "interfaces", "intrinsics", "simple_library",
+                           "pairwise_library", "averager_library"},
+            f"the ASR of main lacks a unit: {sorted(units)}")
+    main = units["main"]
+    for node in ("(GenericTypeInstance", "(TraitWitness", "(TraitErasure",
+                 "(TraitDictionary\n", "(TraitDeferredDictionary", "(TraitDeferredCall"):
+        require(node not in main, f"main must own no {node[1:].strip()}")
+    require(main.count("(TraitFunctionCall") == 2 and main.count("(TraitDictionaryValue") == 2,
+            "main must make exactly the two av%average calls, each with a dictionary")
+    require(len(re.findall(r"(?m)\(TraitDictionary$", units["intrinsics"])) == 2,
+            "intrinsics must own the integer and real(real64) dictionaries")
+    objects = nm_definitions(logs["library-symbols"])
+    for library, message in OCP_ENTRIES.items():
+        require(library in objects, f"the archive has no {library}")
+        entries = [name for name in objects[library] if "__trait_erasure_" in name]
+        require(len(entries) == 1 and f"__trait_erasure_{message}" in entries[0]
+                and entries[0].endswith("_entry"),
+                f"{library} must define one open {message} entry, not {entries}")
+        specialized = [name for name in objects[library] if "__instantiated_" in name
+                       or "__trait_dictionary_" in name]
+        require(not specialized, f"{library} holds per-type code: {specialized}")
+    dictionaries = sorted(name for name in objects.get("intrinsics.o", [])
+                          if re.search(r"__trait_dictionary_\w*implements_(i32|r64)_", name))
+    require(len(dictionaries) == 2,
+            f"intrinsics.o must define the integer and real(real64) dictionaries, "
+            f"not {dictionaries}")
+    main_symbols = [name for names in nm_definitions(logs["main-symbols"]).values()
+                    for name in names]
+    copied = [name for name in main_symbols
+              if any(fragment in name for fragment in
+                     ("__trait_erasure_", "__trait_witness_", "__trait_dictionary_",
+                      "__instantiated_", "implements_simplesum", "implements_pairwisesum",
+                      "implements_averager"))]
+    require(not copied, f"main.o defines evidence or code that a library owns: {copied}")
+    references = nm_references(logs["main-symbols"])
+    require(sorted(name for name in references if "__trait_dictionary_" in name)
+            == dictionaries,
+            f"main.o must reference exactly the dictionaries of intrinsics.o, "
+            f"not {[name for name in references if '__trait_dictionary_' in name]}")
+    return ("simple_library, pairwise_library and averager_library each define one open "
+            "dictionary entry; intrinsics owns the integer and real(real64) dictionaries, "
+            "which main only references; main defines no library entry, witness or body")
+
+
 STRUCTURE = {"static": check_static, "overloading": check_overloading,
-             "vector": check_vector}
+             "vector": check_vector, "ocp": check_ocp}
 
 
 def units_of(content, split):

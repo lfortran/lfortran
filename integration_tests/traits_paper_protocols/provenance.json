@@ -23,7 +23,7 @@
       "oracle": {
         "file": "ocp_oracle.f90",
         "sha256": "9bf12d3f6d8e7490faae568e15071218cfcbb07a1ada5a7963eaedbbb51c4d10",
-        "kind": "standard-Fortran oracle (gfortran and llvm labels); not trait syntax"
+        "kind": "standard-Fortran oracle (gfortran label only: LFortran calls a null procedure in its deferred NOPASS bindings returning polymorphic allocatables, a defect that predates traits); not trait syntax"
       },
       "adaptation": {
         "kind": "explicit provider USE",

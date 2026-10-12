@@ -4199,6 +4199,14 @@ RUN(NAME traits_paper_overloading FILE traits_paper_protocols/overloading
 # derived-type arrays, a defect that predates traits, so only GFortran runs it.
 RUN(NAME traits_paper_overloading_oracle FILE traits_paper_protocols/overloading_oracle
     LABELS gfortran ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py)
+RUN(NAME traits_paper_ocp FILE traits_paper_protocols/ocp
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes)
+# LFortran calls a null procedure in the oracle's deferred NOPASS bindings
+# returning polymorphic allocatables, a defect that predates traits
+# (0.67.0-247 fails the same way), so only GFortran runs it.
+RUN(NAME traits_paper_ocp_oracle FILE traits_paper_protocols/ocp_oracle
+    LABELS gfortran ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py)
 RUN(NAME traits_protocol_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_protocol_01_oracle LABELS gfortran llvm ISOLATE_MODULES)

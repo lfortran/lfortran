@@ -24,12 +24,14 @@ SOURCE_HASHES = {
     "static": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
     "overloading": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
     "vector": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+    "ocp": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
 }
 SOURCE_DIRECTORIES = {
     "mixed": "traits_paper_dynamic",
     "static": "traits_paper_static",
     "overloading": "traits_paper_protocols",
     "vector": "traits_paper_associated",
+    "ocp": "traits_paper_protocols",
 }
 # Explicit provider imports: the fixture is the original paper file plus one
 # USE line after the anchor line. The original, which contains the provider
@@ -38,11 +40,15 @@ PROVIDER_IMPORTS = {
     "overloading": ("9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
                     b"   use my_type,          only: MyType\n", b"   use real_type\n",
                     ("ireducible", "iprintable")),
+    "ocp": ("7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
+            b"   use averager_library, only: Averager\n", b"   use intrinsics\n",
+            ("inumeric",)),
 }
 ORACLE_HASHES = {
     "static_oracle": "8dd669518a6849e7d2c72cea4e2ce55be053f24b3f035a0ed119053b751d994b",
     "overloading_oracle": "5f361d44de40fa5381e418af774821ffac900de3ec54bde5136e02a369b3a958",
     "vector_oracle": "ce00fc818858df104299695f019b64040d01c925fdf2e862a7c318a697376c2a",
+    "ocp_oracle": "9bf12d3f6d8e7490faae568e15071218cfcbb07a1ada5a7963eaedbbb51c4d10",
 }
 # Standard semantics a program needs beyond the default options: vector
 # appends with `elements = [elements, item]`, which reallocates the
