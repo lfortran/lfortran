@@ -3980,6 +3980,7 @@ RUN(NAME template_submodule_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_plus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_procedure_dummy_05 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
