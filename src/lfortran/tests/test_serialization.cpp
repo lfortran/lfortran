@@ -806,6 +806,99 @@ TEST_CASE("Kind wildcards are type sets of every supported kind") {
     CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
 }
 
+// The module `name` of `unit`.
+static LCompilers::ASR::Module_t *unit_module(LCompilers::ASR::TranslationUnit_t &unit,
+        const char *name) {
+    namespace ASR = LCompilers::ASR;
+    ASR::symbol_t *symbol = unit.m_symtab->get_symbol(name);
+    REQUIRE(symbol);
+    REQUIRE(ASR::is_a<ASR::Module_t>(*symbol));
+    return ASR::down_cast<ASR::Module_t>(symbol);
+}
+
+// What the local name `local` of the module `name` of `unit` stands for.
+static LCompilers::ASR::symbol_t *module_local(LCompilers::ASR::TranslationUnit_t &unit,
+        const char *name, const char *local) {
+    return LCompilers::ASRUtils::symbol_get_past_external(
+        unit_module(unit, name)->m_symtab->get_symbol(local));
+}
+
+static bool module_depends_on(LCompilers::ASR::TranslationUnit_t &unit, const char *name,
+        const std::string &dependency) {
+    auto *m = unit_module(unit, name);
+    for (size_t i = 0; i < m->n_dependencies; i++) {
+        if (dependency == m->m_dependencies[i]) return true;
+    }
+    return false;
+}
+
+// Compiles the module `alone`, whose one statement is `use`.
+static LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> compile_use_alone(
+        Allocator &al, const std::string &use, LCompilers::CompilerOptions &options,
+        LCompilers::diag::Diagnostics &diagnostics) {
+    auto parsed = LCompilers::LFortran::parse(al,
+        "module alone\n" + use + "\nend module alone\n", diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    return LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+}
+
+TEST_CASE("A USE of generics reaches the program's own module generics") {
+    // No USE here loads a modfile, so this needs no runtime library.
+    const std::string source = R"(
+module generics
+implicit none
+abstract interface :: INumeric
+    integer
+end interface INumeric
+end module generics
+module plain_user
+use generics, only: INumeric
+end module plain_user
+module own_user
+use, non_intrinsic :: generics, only: INumeric
+end module own_user
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    // The module search path holds no modfile of a module named generics.
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    options.po.mod_files_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto &unit = *result.result;
+    CHECK(LCompilers::asr_verify(unit, true, diagnostics));
+
+    // Without a module nature, the accessible module of the program is used;
+    // with NON_INTRINSIC, always the program's own.
+    auto *own = unit_module(unit, "generics");
+    CHECK_FALSE(own->m_intrinsic);
+    CHECK(module_local(unit, "plain_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(module_local(unit, "own_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(module_depends_on(unit, "plain_user", "generics"));
+    CHECK(module_depends_on(unit, "own_user", "generics"));
+    CHECK_FALSE(unit.m_symtab->get_symbol("lfortran_intrinsic_generics"));
+
+    // NON_INTRINSIC never falls back to the intrinsic module.
+    LCompilers::diag::Diagnostics errors;
+    auto rejected = compile_use_alone(al, "use, non_intrinsic :: generics, only: INumeric",
+        options, errors);
+    CHECK_FALSE(rejected.ok);
+    REQUIRE(!errors.diagnostics.empty());
+    CHECK(errors.diagnostics.back().message == "Module 'generics' modfile was not found");
+}
+
+// The standalone WASM unit-test image has no runtime modfiles: it does not
+// build the runtime library and preloads none. The intrinsic module is
+// therefore tested in the native builds only.
+#ifndef HAVE_BUILD_TO_WASM
 TEST_CASE("The intrinsic module generics follows the USE module nature") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
@@ -836,12 +929,6 @@ end module user_code
 module renamed_user
 use, intrinsic :: generics, only: Numeric => INumeric
 end module renamed_user
-module plain_user
-use generics, only: INumeric
-end module plain_user
-module own_user
-use, non_intrinsic :: generics, only: INumeric
-end module own_user
 )";
     Allocator al(1024 * 1024);
     LCompilers::CompilerOptions options;
@@ -858,21 +945,12 @@ end module own_user
     REQUIRE(result.ok);
     auto *unit = result.result;
     CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
-    auto module = [&](const char *name) {
-        ASR::symbol_t *symbol = unit->m_symtab->get_symbol(name);
-        REQUIRE(symbol);
-        REQUIRE(ASR::is_a<ASR::Module_t>(*symbol));
-        return ASR::down_cast<ASR::Module_t>(symbol);
-    };
+    auto module = [&](const char *name) { return unit_module(*unit, name); };
     auto imported = [&](const char *name, const char *local) {
-        return ASRUtils::symbol_get_past_external(module(name)->m_symtab->get_symbol(local));
+        return module_local(*unit, name, local);
     };
     auto depends = [&](const char *name, const std::string &dependency) {
-        auto *m = module(name);
-        for (size_t i = 0; i < m->n_dependencies; i++) {
-            if (dependency == m->m_dependencies[i]) return true;
-        }
-        return false;
+        return module_depends_on(*unit, name, dependency);
     };
 
     // The runtime's module, loaded as intrinsic, declares the one INumeric:
@@ -896,23 +974,17 @@ end module own_user
         {I, 4}, {I, 8}, {R, 4}, {R, 8}, {R, 16}, {C, 4}, {C, 8}});
 
     // INTRINSIC, renamed or not, reaches it whatever modules of the program
-    // exist, and ONLY imports nothing else. Without a nature, an accessible
-    // module of the program wins, the intrinsic module otherwise: early_user
-    // precedes the program's generics. NON_INTRINSIC is the program's own.
-    auto *own = module("generics");
-    CHECK_FALSE(own->m_intrinsic);
+    // exist, and ONLY imports nothing else. Without a nature, it is used when
+    // no module of the program is accessible: early_user precedes the
+    // program's generics.
+    CHECK_FALSE(module("generics")->m_intrinsic);
     CHECK(imported("user_code", "inumeric") == numeric);
     CHECK(imported("renamed_user", "numeric") == numeric);
     CHECK(imported("early_user", "inumeric") == numeric);
-    CHECK(imported("plain_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
-    CHECK(imported("own_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
     CHECK(depends("user_code", "lfortran_intrinsic_generics"));
     CHECK_FALSE(depends("user_code", "generics"));
     CHECK(depends("early_user", "lfortran_intrinsic_generics"));
     CHECK_FALSE(depends("early_user", "generics"));
-    CHECK(depends("plain_user", "generics"));
-    CHECK_FALSE(depends("plain_user", "lfortran_intrinsic_generics"));
-    CHECK(depends("own_user", "generics"));
     for (const auto &entry : module("user_code")->m_symtab->get_scope()) {
         CAPTURE(entry.first);
         CHECK((entry.first == "inumeric" || entry.first == "isum"));
@@ -952,17 +1024,10 @@ end module own_user
     check_user_code(copy);
 
     // Alone, a USE without a nature reaches the intrinsic module, recorded as
-    // the dependency, while NON_INTRINSIC never falls back to it.
-    auto compile_alone = [&](const std::string &use, LCompilers::diag::Diagnostics &out) {
-        auto parsed_alone = LCompilers::LFortran::parse(al,
-            "module alone\n" + use + "\nend module alone\n", out, options);
-        REQUIRE(parsed_alone.ok);
-        LCompilers::LocationManager alone_lm;
-        return LCompilers::LFortran::ast_to_asr(
-            al, *parsed_alone.result, out, nullptr, false, options, alone_lm);
-    };
+    // the dependency.
     LCompilers::diag::Diagnostics fallback_diagnostics;
-    auto fallback = compile_alone("use generics, only: INumeric", fallback_diagnostics);
+    auto fallback = compile_use_alone(al, "use generics, only: INumeric", options,
+        fallback_diagnostics);
     INFO(fallback_diagnostics.render2());
     REQUIRE(fallback.ok);
     CHECK_FALSE(fallback.result->m_symtab->get_symbol("generics"));
@@ -974,12 +1039,8 @@ end module own_user
         ASR::down_cast<ASR::Module_t>(fallback_module)->m_symtab->get_symbol("inumeric"));
     REQUIRE(alone->n_dependencies == 1);
     CHECK(std::string(alone->m_dependencies[0]) == "lfortran_intrinsic_generics");
-    LCompilers::diag::Diagnostics errors;
-    auto rejected = compile_alone("use, non_intrinsic :: generics, only: INumeric", errors);
-    CHECK_FALSE(rejected.ok);
-    REQUIRE(!errors.diagnostics.empty());
-    CHECK(errors.diagnostics.back().message == "Module 'generics' modfile was not found");
 }
+#endif
 
 TEST_CASE("Numeric trait source, binary, text and module roundtrips") {
     namespace ASR = LCompilers::ASR;
