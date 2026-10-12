@@ -2528,21 +2528,21 @@ contains
         deferred type :: t
         type(t), intent(in) :: x
         integer :: y
-        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer(4)`
     end subroutine
 
     template subroutine mul_real_left{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         real :: y
-        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real(4) * t`
     end subroutine
 
     template subroutine pow_int{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer :: y
-        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer(4)`
     end subroutine
 end module
 
@@ -2715,6 +2715,42 @@ module continue_compilation_templates_01_op_mismatch
             y = y + x  ! {Error} Operator `+` undefined for the types in the expression `b_t + a_t`
             l = y == x  ! {Error} Operator `==` undefined for the types in the expression `b_t == a_t`
             l = y .and. x  ! {Error} Left operand must be LOGICAL or LOGICAL array
+        end subroutine
+    end template
+end module
+
+! A unary `-` on a value of a deferred type needs a user-defined `operator(-)`
+! whose dummy has that deferred type (#13913).
+module continue_compilation_templates_01_unary_minus
+    implicit none
+contains
+    template subroutine unary_minus_s{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        integer :: y
+        y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t`
+    end subroutine
+end module
+
+module continue_compilation_templates_01_unary_minus_mismatch
+    implicit none
+    template unary_minus_mismatch_t {a_t, b_t, p}
+        deferred type :: a_t, b_t
+        deferred interface
+            function p(x)
+                type(a_t), intent(in) :: x
+                type(b_t) :: p
+            end function
+        end interface
+        interface operator(-)
+            module procedure p
+        end interface
+    contains
+        subroutine unary_minus_mismatch_s(x, y)
+            type(a_t), intent(in) :: x
+            type(b_t), intent(inout) :: y
+            y = -x
+            y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
         end subroutine
     end template
 end module

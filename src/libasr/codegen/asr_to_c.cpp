@@ -1948,6 +1948,13 @@ R"(    // Initialise Numpy
             opening_pragma = "#pragma omp single ";
         } else if (x.m_region == ASR::omp_region_typeType::Critical) {
             opening_pragma = "#pragma omp critical ";
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                if (ASR::is_a<ASR::OMPCriticalName_t>(*x.m_clauses[i])) {
+                    opening_pragma = "#pragma omp critical("
+                        + std::string(ASR::down_cast<ASR::OMPCriticalName_t>(
+                            x.m_clauses[i])->m_name) + ") ";
+                }
+            }
         } else if (x.m_region == ASR::omp_region_typeType::Atomic) {
             opening_pragma = "#pragma omp atomic ";
         } else if (x.m_region == ASR::omp_region_typeType::Barrier) {

@@ -2642,6 +2642,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else {
+            return false;
         }
     }
 

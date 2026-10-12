@@ -2380,6 +2380,22 @@ subroutine block_derived_type_bound_procedure()
     end block
 end subroutine
 
+! A non-logical `mask` of a reduction intrinsic is reported with the name of
+! that intrinsic.
+module cc1_reduction_mask_mod
+    implicit none
+contains
+    subroutine cc1_reduction_mask()
+        integer :: a(3)
+        a = [1, 2, 3]
+        print *, iany(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iany' intrinsic must be logical
+        print *, iall(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iall' intrinsic must be logical
+        print *, iparity(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iparity' intrinsic must be logical
+        print *, product(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'product' intrinsic must be logical
+        print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
+    end subroutine cc1_reduction_mask
+end module cc1_reduction_mask_mod
+
 ! A procedure pointer or a dummy procedure cannot have an elemental interface,
 ! such as the interface of a specific intrinsic function.
 subroutine elemental_procedure_interface_error(f)
