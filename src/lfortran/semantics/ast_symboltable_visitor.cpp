@@ -200,8 +200,8 @@ public:
     struct OperatorProcedureScope {
         SymbolTableVisitor &v;
         bool active;
-        std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
-        std::map<std::string, std::vector<std::pair<std::string, Location>>> defined_op_procs;
+        std::map<std::string, std::vector<GenericSpecific>> overloaded_op_procs;
+        std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
 
         OperatorProcedureScope(SymbolTableVisitor &v_, bool active_=true)
                 : v(v_), active(active_) {
@@ -218,8 +218,10 @@ public:
     };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
-    std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
-    std::map<std::string, std::vector<std::pair<std::string, Location>>> defined_op_procs;
+    // The specific procedures of the operator interface blocks, by operator,
+    // with the scope of each block (see GenericSpecific).
+    std::map<std::string, std::vector<GenericSpecific>> overloaded_op_procs;
+    std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
@@ -576,6 +578,9 @@ public:
                 }
             }
         }
+        // The operator interfaces of external procedures that are not
+        // followed by a module or a main program.
+        add_overloaded_procedures();
         check_pending_instantiation_restrictions();
         global_scope = nullptr;
         tmp = tmp0;
@@ -1146,6 +1151,7 @@ public:
     void finalize_interfaces() {
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
+        add_overloaded_procedures();
         evaluate_postponed_calls_to_genericProcedure();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
@@ -3866,6 +3872,18 @@ public:
         }
     }
 
+    // The specific procedures named in the interface block `x`, with the
+    // current scope, which is the scope of the block.
+    std::vector<GenericSpecific> interface_specifics(const AST::Interface_t &x) {
+        std::vector<std::pair<std::string, Location>> proc_names;
+        fill_interface_proc_names_with_loc(x, proc_names);
+        std::vector<GenericSpecific> specifics;
+        for (auto &proc_name : proc_names) {
+            specifics.push_back({proc_name.first, proc_name.second, current_scope});
+        }
+        return specifics;
+    }
+
     void fill_interface_proc_names_with_loc(const AST::Interface_t& x,
                                     std::vector<std::pair<std::string, Location>>& proc_names) {
         for (size_t i = 0; i < x.n_items; i++) {
@@ -4021,26 +4039,14 @@ public:
             }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
-            std::vector<std::pair<std::string, Location>> proc_names;
-            fill_interface_proc_names_with_loc(x, proc_names);
-            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
-            if (overloaded_op_procs.find(op) != overloaded_op_procs.end()) {
-                overloaded_op_procs[op].insert(overloaded_op_procs[op].end(),
-                    proc_names.begin(), proc_names.end());
-            } else {
-                overloaded_op_procs[op] = proc_names;
-            }
+            std::vector<GenericSpecific> specifics = interface_specifics(x);
+            std::vector<GenericSpecific> &procs = overloaded_op_procs[op];
+            procs.insert(procs.end(), specifics.begin(), specifics.end());
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
             std::string op = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
-            std::vector<std::pair<std::string, Location>> proc_names;
-            fill_interface_proc_names_with_loc(x, proc_names);
-            // check if the operator is already defined, if yes, then a new defition means it is being overloaded
-            if (defined_op_procs.find(op) != defined_op_procs.end()) {
-                defined_op_procs[op].insert(defined_op_procs[op].end(),
-                    proc_names.begin(), proc_names.end());
-            } else {
-                defined_op_procs[op] = proc_names;
-            }
+            std::vector<GenericSpecific> specifics = interface_specifics(x);
+            std::vector<GenericSpecific> &procs = defined_op_procs[op];
+            procs.insert(procs.end(), specifics.begin(), specifics.end());
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
             fill_interface_proc_names_with_loc(x, assgn_proc_names_locations);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
@@ -4053,9 +4059,7 @@ public:
                 throw SemanticAbort();
             }
             op_name = "~write_" + op_name;
-            std::vector<std::pair<std::string, Location>> proc_names;
-            fill_interface_proc_names_with_loc(x, proc_names);
-            defined_op_procs[op_name] = proc_names;
+            defined_op_procs[op_name] = interface_specifics(x);
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
             if (op_name != "formatted" && op_name != "unformatted") {
@@ -4066,9 +4070,7 @@ public:
                 throw SemanticAbort();
             }
             op_name = "~read_" + op_name;
-            std::vector<std::pair<std::string, Location>> proc_names;
-            fill_interface_proc_names_with_loc(x, proc_names);
-            defined_op_procs[op_name] = proc_names;
+            defined_op_procs[op_name] = interface_specifics(x);
         }  else {
             diag.add(diag::Diagnostic(
                 "Interface type not imlemented yet",
@@ -4252,8 +4254,30 @@ public:
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
-        append_accessible_custom_operator_procs(
-            current_scope->get_symbol(generic_name), generic_name, symbols);
+        ASR::symbol_t *existing = current_scope->get_symbol(generic_name);
+        append_accessible_custom_operator_procs(existing, generic_name, symbols);
+        if (existing == nullptr && current_scope->parent != nullptr
+                && current_scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)
+                && ASR::is_a<ASR::Function_t>(
+                    *ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+            // An operator interface block in a procedure extends the operator
+            // of its host.
+            ASR::symbol_t *host = current_scope->parent->resolve_symbol(
+                generic_name);
+            if (host != nullptr && ASR::is_a<ASR::CustomOperator_t>(
+                    *ASRUtils::symbol_get_past_external(host))) {
+                ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(
+                    ASRUtils::symbol_get_past_external(host));
+                for (size_t i = 0; i < cop->n_procs; i++) {
+                    ASR::symbol_t *s = accessible_generic_specific(
+                        cop->m_procs[i], new_operator_name, op_loc);
+                    if (s != nullptr) {
+                        symbols.push_back(al, s);
+                    }
+                }
+            }
+        }
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, op_loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
         current_scope->add_or_overwrite_symbol(new_operator_name, ASR::down_cast<ASR::symbol_t>(v));
@@ -4290,18 +4314,39 @@ public:
         }
     }
 
+    // Builds each operator in the scope of its interface blocks (such as a
+    // procedure, whose dummy procedures can be its specific procedures);
+    // blocks for the same operator in different scopes declare different
+    // operators.
     void add_overloaded_procedures() {
-        for (auto &proc : overloaded_op_procs) {
-            std::pair<const std::string, std::vector<std::pair<std::string, Location>>>
-                proc_ = {proc.first, proc.second};
-            add_custom_operator(proc_, ASR::accessType::Public);
+        SymbolTable *current_scope_copy = current_scope;
+        for (auto *op_procs : {&overloaded_op_procs, &defined_op_procs}) {
+            for (auto &proc : *op_procs) {
+                std::vector<std::pair<SymbolTable*,
+                    std::vector<std::pair<std::string, Location>>>> scopes;
+                for (auto &specific : proc.second) {
+                    auto it = std::find_if(scopes.begin(), scopes.end(),
+                        [&](const std::pair<SymbolTable*,
+                                std::vector<std::pair<std::string, Location>>> &s) {
+                            return s.first == specific.scope;
+                        });
+                    if (it == scopes.end()) {
+                        scopes.push_back({specific.scope,
+                            {{specific.name, specific.loc}}});
+                    } else {
+                        it->second.push_back({specific.name, specific.loc});
+                    }
+                }
+                for (auto &scope : scopes) {
+                    current_scope = scope.first;
+                    std::pair<const std::string, std::vector<std::pair<std::string, Location>>>
+                        proc_ = {proc.first, scope.second};
+                    add_custom_operator(proc_, ASR::accessType::Public);
+                }
+            }
+            op_procs->clear();
         }
-        overloaded_op_procs.clear();
-
-        for (auto &proc : defined_op_procs) {
-            add_custom_operator(proc, ASR::accessType::Public);
-        }
-        defined_op_procs.clear();
+        current_scope = current_scope_copy;
     }
 
     void add_assignment_procedures() {
