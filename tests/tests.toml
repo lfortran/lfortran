@@ -413,6 +413,10 @@ filename = "errors/intent_inout_missing_arg.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "errors/generic_typed_external_subroutine_01.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
