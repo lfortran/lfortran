@@ -1921,8 +1921,28 @@ public:
         return new_x;
     }
 
+    // A type-bound operator or assignment of a derived type declared in the
+    // template binds the instantiated type's own procedure bindings.
     ASR::symbol_t* instantiate_CustomOperator(ASR::CustomOperator_t* x) {
-        return new_scope->resolve_symbol(x->m_name);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&x->base);
+        if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)) {
+            return new_scope->resolve_symbol(x->m_name);
+        }
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, x->n_procs);
+        for (size_t i = 0; i < x->n_procs; i++) {
+            ASR::symbol_t* proc = x->m_procs[i];
+            SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(proc), proc, diagnostics);
+            procs.push_back(al, t.instantiate());
+        }
+
+        ASR::symbol_t* new_x = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_CustomOperator_t(al, x->base.base.loc, target_scope,
+                s2c(al, new_sym_name), procs.p, procs.size(), x->m_access));
+        target_scope->add_symbol(new_sym_name, new_x);
+
+        return new_x;
     }
 
     static bool is_in_template(SymbolTable* scope) {
