@@ -7193,10 +7193,45 @@ class SymbolDuplicator {
 
     void duplicate_SymbolTable(SymbolTable* symbol_table,
         SymbolTable* destination_symtab) {
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
         for( auto& item: symbol_table->get_scope() ) {
+            bool is_new = destination_symtab->get_symbol(item.first) == nullptr;
             duplicate_symbol(item.second, destination_symtab);
+            ASR::symbol_t* copy = destination_symtab->get_symbol(item.first);
+            if (is_new && copy && ASR::is_a<ASR::Variable_t>(*item.second)
+                    && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(item.second),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
         }
+        remap_local_references(variables, destination_symtab);
         fixup_local_type_declarations(destination_symtab, symbol_table);
+    }
+
+    // The type and the values of a copied variable may refer to other
+    // variables of the same scope, e.g. `a(n)` or `character(len=len(s))`.
+    // When such a variable is copied before the variables it refers to,
+    // those references still point into the original scope, so copy them
+    // again once every variable of the scope exists.
+    void remap_local_references(
+            const std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> &variables,
+            SymbolTable* destination_symtab) {
+        for (auto &pair : variables) {
+            ASR::Variable_t* orig = pair.first;
+            ASR::Variable_t* copy = pair.second;
+            ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
+            node_duplicator.success = true;
+            ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(orig->m_type);
+            ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(
+                orig->m_symbolic_value);
+            ASR::expr_t* m_value = node_duplicator.duplicate_expr(orig->m_value);
+            if (!node_duplicator.success) {
+                continue;
+            }
+            copy->m_type = m_type;
+            copy->m_symbolic_value = m_symbolic_value;
+            copy->m_value = m_value;
+        }
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
