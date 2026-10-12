@@ -4,6 +4,8 @@
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <utility>
+
 namespace LCompilers {
 
 namespace {
@@ -409,13 +411,16 @@ public:
             ASR::expr_t *exit = gpu_bind_kernel_expression(al, kernel,
                 x.m_args, x.n_args, prelude.exits[i]);
             LCOMPILERS_ASSERT(exit != nullptr);
-            body = {b.If(replay.replay(exit), {}, body)};
+            ASR::stmt_t *guarded = b.If(replay.replay(exit), {},
+                std::move(body));
+            body = {guarded};
         }
         pass_result.push_back(al, b.Assignment(largest, b.i_t(0, type)));
         pass_result.push_back(al, b.DoLoop(block, b.i_t(0, index_type),
             b.Sub(grid_size, b.i_t(1, index_type)), {
                 b.DoLoop(thread, b.i_t(0, index_type),
-                    b.Sub(block_size, b.i_t(1, index_type)), body)}));
+                    b.Sub(block_size, b.i_t(1, index_type)),
+                    std::move(body))}));
     }
 };
 
