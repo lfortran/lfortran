@@ -1776,10 +1776,14 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         // default ArrayConstructor path so that siblings are
                         // preserved in the same StringFormat / write statement.
                     }
-                    if ( (x.m_fmt != nullptr) && !is_internal_file &&
+                    if ( (x.m_fmt != nullptr) &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
-                          implied_do_loop_has_string_trim(implied_do_loop)) ) {
-                        // Try flat expansion first to preserve sibling args
+                          (!is_internal_file &&
+                           implied_do_loop_has_string_trim(implied_do_loop))) ) {
+                        // Try flat expansion first to preserve sibling args.
+                        // Values of different types cannot share a temporary
+                        // array, so an internal file is expanded too; only a
+                        // write per iteration would overwrite it.
                         Vec<ASR::expr_t*> expanded_values;
                         expanded_values.reserve(al, 16);
                         if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
@@ -1812,7 +1816,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             this->visit_expr(*string_format_stmt->m_args[i]);
                             continue;
                         }
-                        {
+                        if (!is_internal_file) {
                             // Use DO loop to preserve trim() semantics.
                             // When there are sibling args (n_args > 1), merge
                             // non-IDL siblings into the IDL values so each

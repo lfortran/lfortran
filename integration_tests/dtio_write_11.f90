@@ -92,6 +92,13 @@ call check_line(out, 'T1 7 1.5', 10)
 call check_line(out, 'T4 7 1.5', 11)
 call check_line(out, 'T1 7 1.5 T4 7 1.5', 12)
 close(out)
+
+write(line, '(*(dt,1x,dt,1x))') (a(i), c(i), i=1,2)
+if (trim(line) /= 'T1 U9 T4 U8') error stop 13
+call check_calls('T1 U9 T4 U8', 14)
+write(line, '(*(dt,1x,i0,1x,f3.1,1x))') (a(i), b(i), i=1,2)
+if (trim(line) /= 'T1 7 1.5 T4 7 1.5') error stop 15
+call check_calls('T1 T4', 16)
 print *, 'ok'
 
 contains

@@ -55,5 +55,12 @@ read(u, *) a1, a2, r1, a3, a4, r2
 if (a1 /= 1 .or. a2 /= 1 .or. abs(r1 - 2.5) > 1e-6) error stop 6
 if (a3 /= 3 .or. a4 /= 4 .or. abs(r2 - 5.5) > 1e-6) error stop 7
 close(u)
+
+write(line, '(*(f3.1,1x,i0,1x))') (a(i), b(i), i=1,2)
+if (trim(line) /= '1.5 7 2.5 8') error stop 8
+write(line, '(*(i0,1x,i0,1x,f3.1,1x))') (p(i), c(i), i=1,2)
+if (trim(line) /= '1 1 2.5 3 4 5.5') error stop 9
+write(line, '(*(i0,1x,f3.1,1x))') (i, real(i), i=1,2)
+if (trim(line) /= '1 1.0 2 2.0') error stop 10
 print *, 'ok'
 end program
