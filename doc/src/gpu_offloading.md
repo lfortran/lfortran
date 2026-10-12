@@ -559,9 +559,14 @@ host hands over, and it is never on the heap. Where it meets heap values:
   `do l = 1, m`, a local of higher rank, or such a local of the kernel
   itself, cannot be sized yet, even when the host could work out the
   largest value before the launch by going over the loop.
-* The device heap holds heap arrays of intrinsic types only: heap types
-  (derived-type values on the heap) and copy-out records are not
-  implemented yet, so a derived-type value that host-sized storage cannot
-  hold is still an error. A heap array of rank greater than one cannot be
-  passed whole, and a section of a heap array whose elements are not
-  contiguous is not lowered yet.
+* Copy-out records are not implemented yet: a heap value stored into a
+  kernel argument is an error. A heap array of rank greater than one cannot
+  be passed whole, a section of a heap array whose elements are not
+  contiguous is not lowered yet, and neither is an array of a heap type of
+  rank greater than one, a component of a heap type that is an array of
+  values of a heap type of a fixed size, an allocatable scalar, pointer or
+  polymorphic component of a heap type, an allocatable component of a heap
+  type in a value the host hands over, or an array of a heap type the host
+  hands over passed to a procedure. A value the host hands over is copied
+  into an image even when its allocatable component is not allocated (the
+  device sees it as allocated with no elements).
