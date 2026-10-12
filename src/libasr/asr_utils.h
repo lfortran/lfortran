@@ -41,7 +41,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
         } \
     } \
@@ -59,7 +59,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, dep_name); \
         } \
     } \
@@ -1695,6 +1695,23 @@ static inline bool is_present_in_current_scope(ASR::ExternalSymbol_t* external_s
         }
         return false;
     }
+
+// Whether `scope` is `inner` or one of the scopes that enclose it, up to
+// `outer`. Between a procedure (`outer`) and a scope of its body (`inner`) are
+// its BLOCK and ASSOCIATE scopes: a procedure declared in one of them is not a
+// dependency of the procedure.
+static inline bool is_scope_between(SymbolTable *scope, SymbolTable *inner,
+        SymbolTable *outer) {
+    for (SymbolTable *s = inner; s != nullptr; s = s->parent) {
+        if (s->get_counter() == scope->get_counter()) {
+            return true;
+        }
+        if (s == outer) {
+            break;
+        }
+    }
+    return false;
+}
 
 static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
 {
