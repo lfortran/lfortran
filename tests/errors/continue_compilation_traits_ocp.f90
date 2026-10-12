@@ -230,3 +230,28 @@ contains
         end subroutine accumulate
     end function nested_sum
 end module cc_traits_ocp_internal
+
+! E12: a protocol with a requirement that a dictionary cannot pass has no
+! runtime dictionaries; its static uses stay valid.
+module cc_traits_ocp_static_protocols
+    implicit none
+    abstract interface :: IWeigh
+        function operator(*)(lhs, v) result(res)
+            type(itself), intent(in) :: lhs
+            type(itself), intent(in) :: v(:)
+            type(itself)             :: res
+        end function operator(*)
+    end interface IWeigh
+    abstract interface :: IReduce
+        function reduce{IWeigh :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T)             :: s
+        end function reduce
+    end interface IReduce
+contains
+    subroutine reduce_view()
+        ! E12: IWeigh's operator(*) takes an array of type(itself), so the
+        ! message of IReduce has no runtime view.
+        class(IReduce), allocatable :: r
+    end subroutine reduce_view
+end module cc_traits_ocp_static_protocols

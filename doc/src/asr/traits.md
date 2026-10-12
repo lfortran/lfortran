@@ -781,7 +781,13 @@ never operands of intrinsics or input/output, arrays of them are descriptors
 held only by dummies or pointer associations, never constructors, results
 or allocated temporaries, and an erased actual meets only an erased dummy.
 
-A binder constrained by several traits is not implemented yet.
+A protocol whose requirements a dictionary cannot pass has no dictionaries,
+but its conformances and generic procedures keep working statically. That
+is the case for a generic requirement, a `type(itself)` argument that is an
+array or not a required `intent(in)` scalar, and a `type(itself)` array or
+allocatable result. A runtime view of a trait whose message is constrained
+by such a protocol is diagnosed with the reason. A binder constrained by
+several traits is not implemented yet.
 
 `traits_paper_ocp` runs the exact paper program, with its approved
 `use intrinsics`, for both choices in normal and fast modes and rejects the

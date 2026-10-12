@@ -24,6 +24,12 @@ semantic error: internal procedures of a runtime generic message with a protocol
 230 |            end subroutine accumulate
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: runtime views of trait 'ireduce' are not implemented yet: its generic message 'reduce' constrains type parameter 't' by trait 'iweigh', which has no runtime dictionaries because its requirement 'operator(*)' takes an array of type(itself)
+   --> tests/errors/continue_compilation_traits_ocp.f90:255:9
+    |
+255 |         class(IReduce), allocatable :: r
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: the conformance of type(bag) to trait 'inumeric' has no runtime dictionary: its component 'v' needs ownership the dictionary does not describe yet
    --> tests/errors/continue_compilation_traits_ocp.f90:141:10
     |

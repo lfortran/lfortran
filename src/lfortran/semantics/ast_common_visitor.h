@@ -12121,6 +12121,14 @@ public:
                 check_runtime_trait_without_associated_types(*trait, loc);
                 check_trait_runtime_view(*trait, loc);
                 auto *contract = ASRUtils::trait_runtime_contract(v);
+                if (!contract) {
+                    std::string reason = trait_runtime_contract_obstacle(
+                        *ASR::down_cast<ASR::Trait_t>(ASRUtils::symbol_get_past_external(v)), loc);
+                    if (!reason.empty()) {
+                        trait_call_error("runtime views of trait '" + derived_type_name +
+                            "' are not implemented yet: " + reason, loc);
+                    }
+                }
                 type_declaration = nullptr;
                 return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
                     dims.size() || is_assumed_rank);
@@ -24604,10 +24612,7 @@ public:
             ASR::TraitDictionaryContract_t &contract, SymbolTable *scope,
             const Location &loc) {
         auto *method = ASRUtils::trait_method_function(member);
-        if (ASRUtils::trait_method_template(*method)) {
-            trait_call_error("generic requirements of a trait with initializer or "
-                "static operator requirements are not implemented yet", loc);
-        }
+        LCOMPILERS_ASSERT(!ASRUtils::trait_method_template(*method));
         const char *parameter = "itself";
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
         types[parameter] = {ASRUtils::TYPE(ASR::make_TraitErasedType_t(al, loc,
@@ -24634,10 +24639,77 @@ public:
         return &slot->base;
     }
 
+    // Why a protocol's binders cannot be erased with a dictionary, or "".
+    // A dictionary passes scalar values of the implementing type by
+    // address, so every requirement must be a non-generic procedure whose
+    // type(itself) arguments are required, read-only scalars and whose
+    // type(itself) result is a scalar. Static uses never depend on it.
+    std::string trait_dictionary_contract_obstacle(const ASR::Trait_t &trait,
+            const Location &loc) {
+        for (auto *member : checked_trait_hierarchy(trait, loc).members) {
+            auto *method = ASRUtils::trait_method_function(member);
+            std::string name = "its requirement '" +
+                ASRUtils::trait_member_display_name(member) + "'";
+            if (!method || ASRUtils::trait_method_template(*method)) {
+                return name + " is generic";
+            }
+            for (size_t i = 0; i < method->n_args; i++) {
+                auto *dummy = ASRUtils::expr_to_variable_or_null(method->m_args[i]);
+                if (!dummy || !ASRUtils::contains_trait_itself(dummy->m_type)) continue;
+                if (ASRUtils::is_array(dummy->m_type)) {
+                    return name + " takes an array of type(itself)";
+                }
+                if (ASRUtils::is_allocatable_or_pointer(dummy->m_type) ||
+                        dummy->m_presence == ASR::presenceType::Optional ||
+                        dummy->m_value_attr || dummy->m_intent != ASR::intentType::In) {
+                    return name + " takes a type(itself) argument that is not a required "
+                        "intent(in) scalar";
+                }
+            }
+            if (method->m_return_var) {
+                auto *result = ASRUtils::expr_type(method->m_return_var);
+                if (ASRUtils::contains_trait_itself(result) &&
+                        (ASRUtils::is_array(result) ||
+                         ASRUtils::is_allocatable_or_pointer(result))) {
+                    return name + " returns a type(itself) array or allocatable";
+                }
+            }
+        }
+        return "";
+    }
+
+    // Why a trait has no runtime contract because a generic message
+    // constrains a type parameter by a protocol without dictionaries, or "".
+    std::string trait_runtime_contract_obstacle(const ASR::Trait_t &trait,
+            const Location &loc) {
+        for (auto *member : checked_trait_hierarchy(trait, loc).members) {
+            auto *method = ASRUtils::trait_method_function(member);
+            auto *message = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            for (size_t i = 0; message && i < message->n_args; i++) {
+                auto *binder = message->m_symtab->get_symbol(message->m_args[i]);
+                for (auto *constraint : ASRUtils::trait_parameter_traits(binder)) {
+                    auto *protocol = ASR::down_cast<ASR::Trait_t>(
+                        ASRUtils::symbol_get_past_external(constraint));
+                    if (!trait_is_protocol(*protocol, loc)) continue;
+                    std::string obstacle = trait_dictionary_contract_obstacle(*protocol, loc);
+                    if (obstacle.empty()) continue;
+                    return "its generic message '" + ASRUtils::trait_member_display_name(member) +
+                        "' constrains type parameter '" + std::string(message->m_args[i]) +
+                        "' by trait '" + std::string(protocol->m_name) +
+                        "', which has no runtime dictionaries because " + obstacle;
+                }
+            }
+        }
+        return "";
+    }
+
     ASR::TraitDictionaryContract_t *create_trait_dictionary_contract(ASR::Trait_t *trait) {
         const Location &loc = trait->base.base.loc;
         if (!trait_is_protocol(*trait, loc)) return nullptr;
         if (auto *existing = ASRUtils::trait_dictionary_contract(&trait->base)) return existing;
+        // An ineligible protocol stays a static constraint; its runtime use
+        // is diagnosed with the reason.
+        if (!trait_dictionary_contract_obstacle(*trait, loc).empty()) return nullptr;
         auto hierarchy = checked_trait_hierarchy(*trait, loc);
         auto *parent = trait->m_symtab->parent;
         auto *scope = al.make_new<SymbolTable>(parent);
