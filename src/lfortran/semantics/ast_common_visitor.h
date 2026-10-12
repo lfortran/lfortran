@@ -17473,10 +17473,6 @@ public:
                 throw SemanticAbort();
             }
         }
-        // LEN of a character array is the length of its element type, which
-        // is defined even when the array has zero size. Keep the array as the
-        // StringLen argument rather than indexing its first element, which
-        // would be an out-of-bounds access for a zero-size array.
         if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
             ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
                 if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
@@ -17502,6 +17498,10 @@ public:
             }
         }
 
+        // LEN of a character array is the length of its element type, which
+        // is defined even when the array has zero size. Keep the array as the
+        // StringLen argument rather than indexing its first element, which
+        // would be an out-of-bounds access for a zero-size array.
         { // Try to get expression's string length (if exist)
             ASR::ttype_t* base_t = ASRUtils::type_get_past_allocatable_pointer( v_type );
             base_t = ASRUtils::type_get_past_array(base_t);
