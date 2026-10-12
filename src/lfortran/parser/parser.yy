@@ -843,6 +843,15 @@ trait_operator
         result_opt sep decl_statements end_function_operator sep {
             $$ = TRAIT_OPERATOR($1, $5, $8, $10, TRIVIA($11, $14, @$),
                 $12, $13, @$); }
+    | KW_FUNCTION KW_OPERATOR "(" "/)" "(" id_list_opt ")"
+        result_opt sep decl_statements end_function_operator sep {
+            Vec<ast_t*> prefix; LIST_NEW(prefix);
+            $$ = TRAIT_OPERATOR(prefix, OPERATOR(DIV, @$), $6, $8,
+                TRIVIA($9, $12, @$), $10, $11, @$); }
+    | fn_mod_plus KW_FUNCTION KW_OPERATOR "(" "/)" "(" id_list_opt ")"
+        result_opt sep decl_statements end_function_operator sep {
+            $$ = TRAIT_OPERATOR($1, OPERATOR(DIV, @$), $7, $9,
+                TRIVIA($10, $13, @$), $11, $12, @$); }
     ;
 
 end_function_operator
@@ -850,6 +859,8 @@ end_function_operator
     | KW_ENDFUNCTION { $$ = OPERATOR_INVALID(@$); }
     | KW_END_FUNCTION KW_OPERATOR "(" operator_type ")" { $$ = $4; }
     | KW_ENDFUNCTION KW_OPERATOR "(" operator_type ")" { $$ = $4; }
+    | KW_END_FUNCTION KW_OPERATOR "(" "/)" { $$ = OPERATOR(DIV, @$); }
+    | KW_ENDFUNCTION KW_OPERATOR "(" "/)" { $$ = OPERATOR(DIV, @$); }
     ;
 
 finite_type_set

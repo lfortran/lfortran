@@ -29275,6 +29275,33 @@ public:
                 ASR::make_TypeSetComparison_t(al, x.base.base.loc, op)), x.base.base.loc);
             return;
         }
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(left))) ||
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(right)))) {
+            ASR::cmpopType op = ASR::Eq;
+            switch (x.m_op) {
+                case AST::Eq: op = ASR::Eq; break;
+                case AST::NotEq: op = ASR::NotEq; break;
+                case AST::Lt: op = ASR::Lt; break;
+                case AST::LtE: op = ASR::LtE; break;
+                case AST::Gt: op = ASR::Gt; break;
+                case AST::GtE: op = ASR::GtE; break;
+            }
+            // An ordinary defined operator takes precedence.
+            ASR::asr_t *overloaded = nullptr;
+            if (!ASRUtils::use_overloaded(left, right, op, cmpop2str[x.m_op],
+                    current_scope, overloaded, al, x.base.base.loc,
+                    current_function_dependencies, current_module_dependencies,
+                    [&](const std::string &message, const Location &loc) {
+                        diag.add(Diagnostic(message, Level::Error, Stage::Semantic,
+                            {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }) &&
+                    trait_static_operator(left, right, *ASR::down_cast<ASR::type_set_operation_t>(
+                        ASR::make_TypeSetComparison_t(al, x.base.base.loc, op)),
+                        x.base.base.loc, tmp)) {
+                return;
+            }
+        }
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
