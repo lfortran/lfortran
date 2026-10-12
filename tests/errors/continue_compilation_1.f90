@@ -2380,6 +2380,60 @@ subroutine block_derived_type_bound_procedure()
     end block
 end subroutine
 
+! A procedure pointer or a dummy procedure cannot have an elemental interface,
+! such as the interface of a specific intrinsic function.
+subroutine elemental_procedure_interface_error(f)
+    implicit none
+    intrinsic :: sin
+    procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
+    procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+end subroutine elemental_procedure_interface_error
+
+! Only specific intrinsic functions listed in Table 16.2 can be used as the
+! interface in a procedure declaration statement.
+subroutine unsupported_intrinsic_procedure_interface_error()
+    implicit none
+    intrinsic :: floor, min0
+    procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
+    procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
+end subroutine unsupported_intrinsic_procedure_interface_error
+
+! `procedure(real)`, `procedure(logical)` and `procedure(complex)` name a type
+! as the interface, not the intrinsic function of that name.
+subroutine type_spec_procedure_interface_error()
+    implicit none
+    procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+end subroutine type_spec_procedure_interface_error
+
+! An internal procedure named like a specific intrinsic function that its host
+! defines after it is used as the interface is not supported yet.
+subroutine later_internal_procedure_interface_error()
+    implicit none
+contains
+    subroutine use_later_internal(x)
+        real, intent(in) :: x
+        procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+    end subroutine use_later_internal
+    integer function cos(x)
+        real, intent(in) :: x
+        cos = 0
+    end function cos
+end subroutine later_internal_procedure_interface_error
+
+integer function later_internal_function_interface_error(x)
+    implicit none
+    real, intent(in) :: x
+    procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+    later_internal_function_interface_error = 0
+contains
+    integer function tan(x)
+        real, intent(in) :: x
+        tan = 0
+    end function tan
+end function later_internal_function_interface_error
+
 ! An elemental procedure without the IMPURE prefix is pure (Fortran 2018
 ! 15.8.1), so it cannot do output; an impure elemental one can.
 elemental integer function cc1_elemental_print_error(n)

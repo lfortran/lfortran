@@ -1475,9 +1475,6 @@ public:
             r += "/";
         } else if(x.m_name) {
             r.append(x.m_name);
-            if(x.m_sym == DoubleAsterisk) {
-                r += symbol2str(x.m_sym);
-            }
         }
         if (x.n_dim > 0) {
             r.append("(");
@@ -1497,9 +1494,17 @@ public:
             }
             r.append("]");
         }
+        if (x.m_sym == DoubleAsterisk) {
+            r += symbol2str(x.m_sym);
+        }
         if (x.m_length) {
+            // `name*len` or `name*(len)`; m_sym describes the initializer
             visit_expr(*x.m_length);
-            r += symbol2str(x.m_sym) + s;
+            if (is_a<Num_t>(*x.m_length)) {
+                r += "*" + s;
+            } else {
+                r += "*(" + s + ")";
+            }
         }
         if (x.m_initializer) {
             if (x.m_sym == SlashInit) {
@@ -1518,7 +1523,11 @@ public:
                 r += "/";
             } else {
                 visit_expr(*x.m_initializer);
-                r += symbol2str(x.m_sym) + s;
+                if (x.m_sym == DoubleAsterisk) {
+                    r += symbol2str(Equal) + s;
+                } else {
+                    r += symbol2str(x.m_sym) + s;
+                }
             }
         }
         if (x.m_spec) {

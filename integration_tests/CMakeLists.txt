@@ -448,6 +448,8 @@ RUN(NAME fixed_form_io_keyword_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form G
 RUN(NAME fixed_form_goto LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_stmt_func_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_string_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_semicolon_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_semicolon_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_do_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --use-loop-variable-after-loop GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_do_while_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_type_save_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
@@ -1941,7 +1943,10 @@ RUN(NAME intrinsics_486 LABELS gfortran llvm) # array intrinsic results are 1-ba
 RUN(NAME intrinsics_487 LABELS gfortran llvm) # cshift with an array shift whose lower bounds are named constants or not 1 (#13720)
 RUN(NAME intrinsics_488 LABELS gfortran llvm) # dot_product of descriptor integer arrays and mixed real kinds (#13489)
 RUN(NAME intrinsics_489 LABELS gfortran llvm) 
+RUN(NAME intrinsics_490 LABELS gfortran llvm) # get_command status is 0 on success, -1 on truncation (#690)
+RUN(NAME intrinsics_491 LABELS llvm EXTRAFILES intrinsics_491c.c) # get_command status is positive when called from a C main (#690); GFortran gives 0
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
@@ -2447,6 +2452,7 @@ RUN(NAME generic_interface_dummy_procedure_04 LABELS gfortran llvm)
 RUN(NAME generic_interface_dummy_procedure_05 LABELS gfortran llvm)
 RUN(NAME generic_interface_dummy_procedure_06 LABELS gfortran llvm)
 RUN(NAME generic_interface_dummy_procedure_07 LABELS gfortran llvm)
+RUN(NAME generic_interface_dummy_procedure_08 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3023,6 +3029,8 @@ RUN(NAME realloc_lhs_24 LABELS gfortran llvm
 RUN(NAME realloc_lhs_25 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_26 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_27 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -3954,6 +3962,7 @@ RUN(NAME implied_do_loops45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops47 LABELS gfortran llvm)
 RUN(NAME implied_do_loops48 LABELS gfortran llvm)
+RUN(NAME implied_do_loops49 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -4394,6 +4403,15 @@ RUN(NAME procedure_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_pointer_abstract_01 LABELS gfortran llvm)
 RUN(NAME procedure_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME procedure_50 LABELS gfortran llvm)
+RUN(NAME procedure_51 LABELS gfortran llvm)
+RUN(NAME procedure_52 LABELS gfortran llvm)
+RUN(NAME procedure_53 LABELS gfortran llvm)
+RUN(NAME procedure_54 LABELS gfortran llvm)
+RUN(NAME procedure_55 LABELS gfortran llvm)
+RUN(NAME procedure_56 LABELS gfortran llvm)
+RUN(NAME procedure_57 LABELS gfortran llvm)
+RUN(NAME procedure_58 LABELS gfortran llvm)
+RUN(NAME procedure_59 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
@@ -4585,6 +4603,7 @@ RUN(NAME character_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_32 LABELS gfortran llvm)
 RUN(NAME character_33 LABELS gfortran llvm)
 RUN(NAME character_34 LABELS gfortran llvm)
+RUN(NAME character_35 LABELS gfortran llvm)
 RUN(NAME character_assignment_01 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5097,6 +5116,7 @@ RUN(NAME openmp_97 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_98 LABELS gfortran llvm_omp EXTRAFILES openmp_98b.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_99 LABELS gfortran llvm_omp EXTRAFILES openmp_99_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_100 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)

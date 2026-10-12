@@ -1,0 +1,5 @@
+semantic error: Arguments do not match for any generic procedure, gen
+  --> tests/errors/generic_typed_external_subroutine_01.f90:21:1
+   |
+21 | call gen(mysub)
+   | ^^^^^^^^^^^^^^^ 

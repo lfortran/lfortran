@@ -798,7 +798,8 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                                    current_scope, temp_scope)) {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                             }
                         }
@@ -840,7 +841,8 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                                    current_scope, temp_scope)) {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                             }
                         }

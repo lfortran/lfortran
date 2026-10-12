@@ -41,7 +41,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
         } \
     } \
@@ -59,7 +59,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, dep_name); \
         } \
     } \
@@ -115,6 +115,7 @@ bool is_iso_c_binding_symbol(SymbolTable* scope, ASR::symbol_t* sym,
 bool is_iso_c_null_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
         ASR::symbol_t* type_decl);
 ASR::ttype_t* make_cptr_type(Allocator& al, const Location& loc,
@@ -1694,6 +1695,23 @@ static inline bool is_present_in_current_scope(ASR::ExternalSymbol_t* external_s
         }
         return false;
     }
+
+// Whether `scope` is `inner` or one of the scopes that enclose it, up to
+// `outer`. Between a procedure (`outer`) and a scope of its body (`inner`) are
+// its BLOCK and ASSOCIATE scopes: a procedure declared in one of them is not a
+// dependency of the procedure.
+static inline bool is_scope_between(SymbolTable *scope, SymbolTable *inner,
+        SymbolTable *outer) {
+    for (SymbolTable *s = inner; s != nullptr; s = s->parent) {
+        if (s->get_counter() == scope->get_counter()) {
+            return true;
+        }
+        if (s == outer) {
+            break;
+        }
+    }
+    return false;
+}
 
 static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
 {
@@ -7196,9 +7214,18 @@ class SymbolDuplicator {
         for( auto& item: destination_symtab->get_scope() ) {
             existing.insert(item.first);
         }
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
         for( auto& item: symbol_table->get_scope() ) {
+            bool is_new = destination_symtab->get_symbol(item.first) == nullptr;
             duplicate_symbol(item.second, destination_symtab);
+            ASR::symbol_t* copy = destination_symtab->get_symbol(item.first);
+            if (is_new && copy && ASR::is_a<ASR::Variable_t>(*item.second)
+                    && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(item.second),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
         }
+        remap_local_references(variables, destination_symtab);
         fixup_local_type_declarations(destination_symtab, symbol_table);
         fixup_local_symbol_references(destination_symtab, symbol_table,
             existing);
@@ -7273,6 +7300,32 @@ class SymbolDuplicator {
             }
         }
         copied_scopes.pop_back();
+    }
+
+    // The type and the values of a copied variable may refer to other
+    // variables of the same scope, e.g. `a(n)` or `character(len=len(s))`.
+    // When such a variable is copied before the variables it refers to,
+    // those references still point into the original scope, so copy them
+    // again once every variable of the scope exists.
+    void remap_local_references(
+            const std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> &variables,
+            SymbolTable* destination_symtab) {
+        for (auto &pair : variables) {
+            ASR::Variable_t* orig = pair.first;
+            ASR::Variable_t* copy = pair.second;
+            ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
+            node_duplicator.success = true;
+            ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(orig->m_type);
+            ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(
+                orig->m_symbolic_value);
+            ASR::expr_t* m_value = node_duplicator.duplicate_expr(orig->m_value);
+            if (!node_duplicator.success) {
+                continue;
+            }
+            copy->m_type = m_type;
+            copy->m_symbolic_value = m_symbolic_value;
+            copy->m_value = m_value;
+        }
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
