@@ -2433,6 +2433,36 @@ subroutine implied_do_mixed_derived_types_error(n)
     print *, (x(i), (y(j), j=1,n), i=1,0)
 end subroutine implied_do_mixed_derived_types_error
 
+! Defined output of the elements of a polymorphic array, as an array item or
+! as the items of an implied-do loop, is not supported yet.
+module cc1_dtio_poly_array_1
+    implicit none
+    type :: cc1_dtio_t
+        integer :: v = 3
+    contains
+        procedure :: cc1_dtio_wf
+        generic :: write(formatted) => cc1_dtio_wf
+    end type
+contains
+    subroutine cc1_dtio_wf(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(cc1_dtio_t), intent(in) :: dtv
+        integer, intent(in) :: unit
+        character(*), intent(in) :: iotype
+        integer, intent(in) :: v_list(:)
+        integer, intent(out) :: iostat
+        character(*), intent(inout) :: iomsg
+        write(unit, '(a,i0)', iostat=iostat) 'T', dtv%v
+    end subroutine
+
+    subroutine cc1_dtio_poly_array_error()
+        class(cc1_dtio_t), allocatable :: c(:)
+        integer :: i
+        allocate(c(2))
+        print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+        print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+    end subroutine
+end module
+
 ! A procedure pointer or a dummy procedure cannot have an elemental interface,
 ! such as the interface of a specific intrinsic function.
 subroutine elemental_procedure_interface_error(f)
