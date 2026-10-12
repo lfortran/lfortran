@@ -190,6 +190,12 @@ public:
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
+    // The regions of omp_region_body whose end directive was reached: they
+    // are statements of the enclosing region now, not regions still open
+    std::set<ASR::OMPRegion_t*> closed_omp_regions;
+    // For each region still open, innermost last, the all_blocks_nesting
+    // at its directive
+    std::vector<int> open_omp_region_block_levels;
     std::set<ASR::symbol_t*> non_definable_associate_variables;
     bool is_first_section=false;
     int program_count = 0;
@@ -10673,8 +10679,9 @@ public:
         if (omp_region_body.size() > 0) {
             Vec<ASR::stmt_t*> last_pragma_body;
             last_pragma_body.reserve(al,0);
-            //Collect till we encounter required OMPRegion of region_type
-            while(!omp_region_body.empty() && !(omp_region_body.back()->type == ASR::stmtType::OMPRegion && (ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())->m_region == region_type))) {
+            //Collect till we encounter the innermost open OMPRegion of region_type
+            while(!omp_region_body.empty() && !(omp_region_body.back()->type == ASR::stmtType::OMPRegion && (ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())->m_region == region_type)
+                    && closed_omp_regions.find(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())) == closed_omp_regions.end())) {
                 last_pragma_body.push_back(al, omp_region_body.back());
                 omp_region_body.pop_back();
             }
@@ -10687,6 +10694,7 @@ public:
             ASR::OMPRegion_t* omp_region = ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back());
             omp_region->m_body = tmp_body.p;
             omp_region->n_body = tmp_body.size();
+            closed_omp_regions.insert(omp_region);
         }
     }
 
@@ -10869,6 +10877,12 @@ public:
                     diag.add(Diagnostic("the default clause expects one of shared, none, private or firstprivate", Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
+            } else if (clause_name == "hint" &&
+                    LCompilers::startswith(to_lower(x.m_construct_name), "critical")) {
+                // A hint only suggests how to implement the mutual exclusion
+                // and does not change what the program means, so it is
+                // not needed to lower the construct.
+                continue;
             } else {
                 diag.add(Diagnostic("The clause " + clause_name + " is not supported for parallel sections", Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
@@ -10883,6 +10897,7 @@ public:
         }
         Location loc = x.base.base.loc;
         if (x.m_type == AST::OMPPragma) {
+            int open_regions = pragma_nesting_level_2;
             if (x.m_end) {
                 pragma_nesting_level_2--;
                 if (LCompilers::startswith(x.m_construct_name, "parallel sections")) {
@@ -10926,8 +10941,17 @@ public:
                 } else if (LCompilers::startswith(x.m_construct_name, "target")) {
                     collect_omp_body(ASR::omp_region_typeType::Target);
                 }
-                pragma_in_block=false;
-                if((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0) {
+                for (int i = pragma_nesting_level_2; i < open_regions &&
+                        !open_omp_region_block_levels.empty(); i++) {
+                    open_omp_region_block_levels.pop_back();
+                }
+                // A region that ends inside a region opened in the same block
+                // is a statement of that region, not of the block
+                bool in_open_region_of_block = all_blocks_nesting > 0 &&
+                    !open_omp_region_block_levels.empty() &&
+                    open_omp_region_block_levels.back() == all_blocks_nesting;
+                pragma_in_block = in_open_region_of_block;
+                if(!in_open_region_of_block && ((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0)) {
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
                     omp_region_body.pop_back();
                 }
@@ -11023,10 +11047,37 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
-            } else if (to_lower(x.m_construct_name) == "critical") {
+            } else if (to_lower(x.m_construct_name) == "critical" ||
+                    LCompilers::startswith(to_lower(x.m_construct_name), "critical(")) {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
                 clauses = get_clauses(x);
+                std::string construct_name = to_lower(x.m_construct_name);
+                if (construct_name != "critical") {
+                    // `critical (name)`: critical constructs with the same
+                    // name exclude each other, and only them
+                    std::string name = construct_name.substr(
+                        std::string("critical(").size());
+                    if (!name.empty() && name.back() == ')') {
+                        name.pop_back();
+                    }
+                    name.erase(0, name.find_first_not_of(" \t"));
+                    LCompilers::rtrim(name);
+                    bool valid_name = !name.empty() && std::isalpha(
+                        static_cast<unsigned char>(name[0]));
+                    for (char c : name) {
+                        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+                            valid_name = false;
+                        }
+                    }
+                    if (!valid_name) {
+                        diag.add(Diagnostic("the name of a critical construct must be an identifier",
+                            Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                        ASR::make_OMPCriticalName_t(al, loc, s2c(al, name))));
+                }
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
@@ -11111,6 +11162,9 @@ public:
                         Label("",{loc})
                     }));
                 throw SemanticAbort();
+            }
+            if (pragma_nesting_level_2 > open_regions) {
+                open_omp_region_block_levels.push_back(all_blocks_nesting);
             }
         } else {
             diag.add(Diagnostic(
