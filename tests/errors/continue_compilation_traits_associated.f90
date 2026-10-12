@@ -314,3 +314,18 @@ contains
         pairs = Shelf(Pair(1, [2.0, 3.0]))
     end subroutine fill
 end module cc_traits_associated_shelf_user
+
+! A10: a unit abandoned because one of its generic type instances is not
+! implemented yet (A09) does not stop the units after it from being checked.
+module cc_traits_associated_chain
+    use cc_traits_associated_shelf, only: Shelf
+    implicit none
+    type :: Link
+        integer          :: n = 0
+        integer, pointer :: next => null()
+    end type Link
+contains
+    subroutine chain()
+        type(Shelf{Link}) :: links
+    end subroutine chain
+end module cc_traits_associated_chain

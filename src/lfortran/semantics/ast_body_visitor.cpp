@@ -507,6 +507,10 @@ public:
                 if (!compiler_options.continue_compilation) {
                     throw a;
                 } else {
+                    // A unit can be abandoned inside its own scope, such as by
+                    // completing its generic type instances.
+                    current_scope = unit->m_symtab;
+                    current_module = nullptr;
                     tmp = nullptr;
                     tmp_vec.clear();
                 }

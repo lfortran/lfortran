@@ -125,3 +125,9 @@ semantic error: default input/output of type(bag) in 'show' of the generic type 
     |
 313 |         type(Shelf{Bag}) :: bags
     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: default input/output of type(link) in 'show' of the generic type instance shelf{link} is not implemented yet: component 'next' of link is a pointer
+   --> tests/errors/continue_compilation_traits_associated.f90:329:9
+    |
+329 |         type(Shelf{Link}) :: links
+    |         ^^^^^^^^^^^^^^^^^ 
