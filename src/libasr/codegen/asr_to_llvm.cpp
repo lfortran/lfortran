@@ -713,6 +713,20 @@ public:
     };
     std::vector<FlatCopyback> pending_flat_copybacks;
 
+    /* An allocatable or pointer array passed to a bind(C) procedure as a
+       CFI descriptor; the callee may allocate, deallocate or associate it,
+       so after the call the CFI descriptor is copied back into the
+       internal one. */
+    struct CFIArrayWriteback {
+        llvm::Value* internal_desc;
+        llvm::Value* cfi_desc;
+        llvm::Type* internal_type;
+        llvm::Type* el_type;
+        int n_dims;
+        uint64_t elem_size;
+    };
+    std::vector<CFIArrayWriteback> pending_cfi_array_writebacks;
+
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
@@ -25546,6 +25560,7 @@ public:
         // nested calls (in argument expressions) clobbering allocas
         if (convert_call_args_depth == 1) {
             pending_flat_copybacks.clear();
+            pending_cfi_array_writebacks.clear();
             reset_call_arg_alloca_pool();
         }
         for (size_t i=0; i<x.n_args; i++) {
@@ -26919,6 +26934,13 @@ public:
                     tmp = arr_descr->internal_to_cfi(
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size,
                         cfi_type_code, cfi_attr);
+                    if (cfi_attr != 0 && !is_type_star &&
+                            !ASRUtils::is_character(*elem_asr_type) &&
+                            ASRUtils::is_array(actual_type) &&
+                            orig_arg->m_intent != ASR::intentType::In) {
+                        pending_cfi_array_writebacks.push_back({internal_desc_ptr,
+                            tmp, desc_type, elem_llvm_type, n_dims, elem_size});
+                    }
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
                             tmp)->getAllocatedType();
@@ -28600,7 +28622,16 @@ public:
                     fc.struct_llvm_type, fc.layout);
             }
             pending_flat_copybacks.clear();
+            apply_cfi_array_writebacks();
         }
+    }
+
+    void apply_cfi_array_writebacks() {
+        for (auto& wb : pending_cfi_array_writebacks) {
+            arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
+                wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
+        }
+        pending_cfi_array_writebacks.clear();
     }
 
     void fixup_descriptor_after_cchar_bind_c_call(
@@ -29167,6 +29198,7 @@ public:
                 } else {
                     tmp = builder->CreateCall(fn, args);
                 }
+                apply_cfi_array_writebacks();
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
