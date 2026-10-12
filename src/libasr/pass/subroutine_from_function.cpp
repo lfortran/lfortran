@@ -66,21 +66,25 @@ public:
                 handle_finalizable_result(*x_ptr);
             }
 
-            /* Visit Functions In Current SymTable */
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
-                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
-                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
-                }
-            }
+            visit_procedures_of_scoping_unit(x.m_symtab);
+        }
 
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*a.second) && 
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
-                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+        /* Visit the procedures and procedure variables declared in a
+           procedure or program, including in its BLOCK constructs */
+        void visit_procedures_of_scoping_unit(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scoping_unit(scope, [&](ASR::symbol_t *sym) {
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(sym));
+                } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(sym));
                 }
-            }
+            });
+            ASRUtils::for_each_symbol_in_scoping_unit(scope, [&](ASR::symbol_t *sym) {
+                if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(sym)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(sym));
+                }
+            });
         }
 
         // The result became the last dummy argument, with intent(out). A
@@ -118,20 +122,7 @@ public:
         }
 
         void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
-            /* Visit Functions In Current SymTable */
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
-                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
-                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
-                }
-            }
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*str_sym_pair.second) && 
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(str_sym_pair.second)))) {
-                    this->visit_Variable(*down_cast<ASR::Variable_t>(str_sym_pair.second));
-                }
-            }
+            visit_procedures_of_scoping_unit(x.m_symtab);
         }
 
         void visit_Module(const ASR::Module_t &x) {

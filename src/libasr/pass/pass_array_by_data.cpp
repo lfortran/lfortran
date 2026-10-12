@@ -327,9 +327,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
-            for( auto& item: xx.m_symtab->get_scope() ) {
-                if( ASR::is_a<ASR::Function_t>(*item.second) ) {
-                    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
+            // Including the procedures declared in the BLOCK constructs
+            ASRUtils::for_each_symbol_in_scoping_unit(xx.m_symtab, [&](ASR::symbol_t* sym) {
+                if( ASR::is_a<ASR::Function_t>(*sym) ) {
+                    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(sym);
                     std::vector<size_t> arg_indices;
                     if( ASRUtils::runs_on_device(*subrout) ) {
                         // Device code is emitted as Metal/CUDA source, where
@@ -340,22 +341,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         // inside the device code.
                         pass_array_by_data_functions.push_back(subrout);
                         if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
-                            proc2inplace[item.second] = {arg_indices,
+                            proc2inplace[sym] = {arg_indices,
                                 subrout->m_args, subrout->n_args};
                             edit_procedure_args(subrout, arg_indices);
                         }
-                        continue;
+                        return;
                     }
                     pass_array_by_data_functions.push_back(subrout);
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
-                        ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
-                        if( sym != nullptr ) {
-                            ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
+                        ASR::symbol_t* new_sym = insert_new_procedure(subrout, arg_indices);
+                        if( new_sym != nullptr ) {
+                            ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(new_sym);
                             edit_procedure_args(new_subrout, arg_indices);
                         }
                     }
                 }
-            }
+            });
             return pass_array_by_data_functions.size() > 0;
         }
 

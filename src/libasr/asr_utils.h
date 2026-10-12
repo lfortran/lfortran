@@ -1848,6 +1848,24 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
     }
 }
 
+// Calls `f` with each symbol declared in the scoping unit (procedure,
+// program, ...) whose scope is `scope`: the symbols of `scope` and,
+// recursively, of the scopes of the BLOCK and ASSOCIATE constructs in it.
+// The procedures declared by an interface block in a BLOCK construct are in
+// the scope of the BLOCK, so a pass that transforms the procedures declared
+// in a scoping unit has to visit these scopes too.
+template <typename F>
+static inline void for_each_symbol_in_scoping_unit(SymbolTable *scope, const F &f)
+{
+    for (auto &item : scope->get_scope()) {
+        f(item.second);
+        if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+            for_each_symbol_in_scoping_unit(symbol_symtab(item.second), f);
+        }
+    }
+}
+
 static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
     if( s->asr_owner == nullptr ||
