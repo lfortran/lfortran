@@ -3828,6 +3828,18 @@ public:
         }
     }
 
+    // Whether `s`, an entity of the template `temp`, is one of its named
+    // constants, as opposed to a deferred constant. An INSTANTIATE statement
+    // without an only-list makes them accessible, like the template's
+    // procedures and derived types.
+    static bool is_template_named_constant(ASR::symbol_t *s,
+            ASR::symbol_t *temp) {
+        return ASR::is_a<ASR::Variable_t>(*s)
+            && ASR::down_cast<ASR::Variable_t>(s)->m_storage
+                == ASR::storage_typeType::Parameter
+            && !ASRUtils::is_template_arg(temp, ASRUtils::symbol_name(s));
+    }
+
     // Rejects `e`, the array bound or character length just built for
     // `context`, when it reads a local of the scoping unit being compiled.
     // The context is passed in rather than read from

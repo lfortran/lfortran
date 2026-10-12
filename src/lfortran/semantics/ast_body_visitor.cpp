@@ -3127,9 +3127,11 @@ public:
                 std::string s_name = ASRUtils::symbol_name(s);
                 // A derived type is instantiated under its own name too, and
                 // the bodies of its type-bound procedures are instantiated
-                // with it.
-                if ((ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
-                        && !ASRUtils::is_template_arg(sym, s_name)) {
+                // with it, as are the procedures that the declaration of a
+                // named constant calls.
+                if (((ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
+                            && !ASRUtils::is_template_arg(sym, s_name))
+                        || is_template_named_constant(s, template_sym)) {
                     ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
                     if (new_s == nullptr) {
                         continue;
