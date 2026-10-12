@@ -5858,6 +5858,18 @@ options = "--backend=cpp"
 run = true
 
 [[test]]
+filename = "errors/continue_compilation_no_main_1.f90"
+options = "--continue-compilation"
+obj = true
+run = true
+
+[[test]]
+filename = "continue_compilation_no_main_2.f90"
+options = "--continue-compilation"
+obj = true
+run = true
+
+[[test]]
 filename = "errors/read_eof_01.f90"
 run = true
 
@@ -5924,6 +5936,18 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/continue_compilation_traits_06.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_traits_07.f90"
+options = "--continue-compilation"
+obj = true
+run = true
+
+[[test]]
+filename = "errors/continue_compilation_traits_08.f90"
+options = "--continue-compilation --fast"
+obj = true
+run = true
 
 [[test]]
 filename = "errors/continue_compilation_traits_generic_requirement_01.f90"

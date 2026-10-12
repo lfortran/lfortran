@@ -1,0 +1,13 @@
+{
+    "basename": "obj-continue_compilation_traits_07-0f456f4",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/errors/continue_compilation_traits_07.f90",
+    "infile_hash": "bd8072f4a217bb453c3941a297ca4ed39977e75a6327d4f24dd4bc0c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "obj-continue_compilation_traits_07-0f456f4.stderr",
+    "stderr_hash": "a6a271e1a82cf30deee819d8534acedf5124ea3c4104e42d3897c118",
+    "returncode": 1
+}
