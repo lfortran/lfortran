@@ -79,8 +79,9 @@ existing function-result ownership and finalization apply. AST printing retains
 the `initial ::` syntax. `initial` remains usable as an ordinary identifier.
 
 An `initial ::` binding in an `implements` statement for a type of the same
-module overloads the type's constructor in the same way. Parameterized
-initializer bindings remain separate work.
+module overloads the type's constructor in the same way, whether the statement
+precedes or follows the type definition. Parameterized initializer bindings
+remain separate work.
 
 ## Initializer and operator requirements
 
@@ -106,9 +107,14 @@ end interface IReducible
 
 An initializer declares no result; its result is the implementing type. An
 operator requirement is a function of two operands, at least one of type
-`itself`, for `+`, `-`, `*`, `/`, `**` or a comparison. Requirements of one
-operator, or several initializers, can be overloaded with different
-signatures; the same signature twice is diagnosed. Neither has a receiver.
+`itself`, for `+`, `-`, `*`, `/`, `**` or a comparison. As for a defined
+operator, its operands are nonoptional data objects with `intent(in)` or the
+`value` attribute. Requirements of one operator, or several initializers, can
+be overloaded with different signatures; the same signature twice is
+diagnosed. Neither has a receiver. A requirement is identified by its operation
+and signature, not by a name: a child trait can add an overload of an operator
+that its parent requires, and equal requirements in a trait hierarchy are bound
+to the same procedure.
 `type(itself)` in an ordinary message is not implemented yet. Like a trait
 with associated types, a trait that refers to `itself` is only a generic
 constraint, not a runtime `class(...)` view.
@@ -119,9 +125,11 @@ A derived type binds them in an `implements` statement of its module:
 which have no passed-object argument. Each requirement is bound to the one
 listed procedure whose signature matches it with `itself` replaced by the
 type, including PURE and ELEMENTAL; no match, several matches and an operator
-procedure that matches no requirement are diagnosed. An intrinsic type
-acknowledges its intrinsic conversion and operators, which cannot be
-redefined:
+procedure that matches no requirement are diagnosed. Operator bindings and the
+`static` attribute are only valid in an `implements` statement: in a type
+definition, `generic :: operator(*) => f` binds a type-bound operator and
+NOPASS a procedure without a passed object. An intrinsic type acknowledges its
+intrinsic conversion and operators, which cannot be redefined:
 
 ```fortran
 implements (IReducible + IPrintable) :: real
@@ -132,18 +140,21 @@ end implements real
 The conformance owns one procedure per acknowledged requirement that applies
 the intrinsic conversion (`int`, `real` or `cmplx` with the type's kind) or
 operation, and its result must be the required type; equal requirements that
-conformances of one unit acknowledge for a type share that procedure.
+one conformance, or conformances of one unit, acknowledge for a type share that
+procedure.
 
 In a generic body, `T(args)` calls the initializer requirement of `T`'s
 constraints that accepts the arguments, and an intrinsic operator with an
 operand of type `T` calls the operator requirement that accepts both operands,
 by type, kind and rank as generic resolution does; an elemental requirement
 also accepts conformable arrays. No implicit conversion applies, and no or
-several accepting requirements are diagnosed. Equal requirements of composed
-traits are one requirement. Specialization calls the bound procedures
-statically. Where a conformance is visible, its static operator bindings also
-apply to values of the type as defined operators, when no ordinary operator
-does.
+several accepting requirements are diagnosed. The actual arguments of `T(args)`
+are checked as for an ordinary call, so one associated with an initializer
+argument that has `intent(out)` or `intent(inout)` must be definable. Equal
+requirements of composed traits are one requirement. Specialization calls the
+bound procedures statically. Where a conformance is visible, its static
+operator bindings also apply to values of the type as defined operators, when
+no ordinary operator does.
 
 The paper's `overloading.f90` is registered through
 `traits_paper_functional.py`, which also requires that the original without
