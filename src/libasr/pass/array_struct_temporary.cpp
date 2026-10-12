@@ -181,6 +181,11 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
+    // LEN of a character array is a scalar; its argument is not an operand.
+    void visit_StringLen(const ASR::StringLen_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,

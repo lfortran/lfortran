@@ -55,6 +55,53 @@ contains
       v = v + len(a) * [1, 2, 3]
       if (any(v /= n * u)) error stop
    end subroutine len_array_ops
+
+   subroutine take(w, expect)
+      integer, intent(in) :: w(:), expect(:)
+      if (size(w) /= size(expect)) error stop
+      if (any(w /= expect)) error stop
+   end subroutine take
+
+   subroutine take_real(w, expect)
+      real, intent(in) :: w(:), expect(:)
+      if (size(w) /= size(expect)) error stop
+      if (any(w /= expect)) error stop
+   end subroutine take_real
+
+   subroutine len_runtime_shape_ops(a, u, n)
+      character(len=*), intent(in) :: a(:)
+      integer, intent(in) :: u(:)
+      integer, intent(in) :: n
+      integer, allocatable :: ua(:), w(:)
+      character(len=40) :: buf, expect
+      call take(len(a) * u, n * u)
+      call take(-len(a) + u, u - n)
+      call take_real(real(len(a)) * real(u), real(n * u))
+      if (sum(len(a) * u) /= n * sum(u)) error stop
+      if (maxval(len(a) + u) /= n + maxval(u)) error stop
+      if (dot_product(len(a) * u, u) /= n * dot_product(u, u)) error stop
+      if (size(pack(len(a) * u, u > 1)) /= count(u > 1)) error stop
+      if (any(pack(len(a) * u, u > 1) /= pack(n * u, u > 1))) error stop
+      write(buf, "(10i4)") len(a) + u
+      write(expect, "(10i4)") n + u
+      if (buf /= expect) error stop
+      allocate(w(size(u)))
+      w = 0
+      where (u > 100)
+         w = 1
+      elsewhere
+         w = len(a) * u
+      end where
+      if (size(w) /= size(u)) error stop
+      if (any(w /= n * u)) error stop
+      allocate(ua(size(u)))
+      ua = u
+      call take(len(a) * ua, n * u)
+      if (sum(len(a) * ua) /= n * sum(u)) error stop
+      write(buf, "(10i4)") len(a) * ua
+      write(expect, "(10i4)") n * u
+      if (buf /= expect) error stop
+   end subroutine len_runtime_shape_ops
 end module intrinsics_len_01_mod
 
 program intrinsics_len_01
@@ -95,6 +142,11 @@ program intrinsics_len_01
    call len_array_ops(full(1:2), 3)
    call len_array_ops(one, 2)
    call len_array_ops(empty, 5)
+
+   call len_runtime_shape_ops(full, [1, 2, 3], 3)
+   call len_runtime_shape_ops(full(1:2), [1, 2, 3], 3)
+   call len_runtime_shape_ops(one, [4, 5, 6], 2)
+   call len_runtime_shape_ops(empty, [1, 2, 3], 5)
 
    allocate(character(len=4) :: d5(5))
    w = len(d5) + [10, 20]
