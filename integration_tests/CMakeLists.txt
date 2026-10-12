@@ -4029,6 +4029,7 @@ RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f90)
 RUN(NAME external_27 LABELS gfortran llvm)
 RUN(NAME external_28 LABELS gfortran llvm EXTRAFILES external_28_procs.f90)
+RUN(NAME external_29 LABELS gfortran llvm wasm)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm

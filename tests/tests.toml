@@ -3393,6 +3393,10 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/wasm_external_procedure.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 
