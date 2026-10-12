@@ -6200,6 +6200,7 @@ RUN(NAME gpu_metal_402 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 

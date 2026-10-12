@@ -124,6 +124,10 @@ void append_dummies(Allocator &al, ASR::Function_t &fn,
     fn.m_function_signature = ASRUtils::TYPE(
         ASRUtils::make_FunctionType_t_util(al, loc, fn.m_args, fn.n_args,
             fn.m_return_var, ASRUtils::get_FunctionType(fn), fn.m_symtab));
+    // Shared lowering has already turned every elemental reference over an
+    // array into a loop of scalar calls, and an elemental routine cannot
+    // take the arrays of the heap.
+    ASRUtils::get_FunctionType(fn)->m_elemental = false;
 }
 
 // Where each kernel is launched, so that a loop the pipeline cannot offload
@@ -1218,6 +1222,53 @@ public:
         : al(al_), heap(heap_), types(types_), routines(routines_), fn(fn_),
           kernel(kernel_), locals(locals_) {}
 
+    // A pointer the kernel binds once to a section of a derived-type array
+    // argument, as shared lowering binds the actual argument of an
+    // elemental call: its elements are written as elements of the
+    // argument, whose components the device reads from the buffers the
+    // host hands over (a pointer has no such buffers).
+    std::map<ASR::symbol_t*, ASR::ArraySection_t*> sections;
+
+    // The number of elements of the range `r` of a section.
+    ASR::expr_t* range_count(ASR::ArraySection_t *section, size_t d,
+            const Location &loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::array_index_t &r = section->m_args[d];
+        ASR::expr_t *left = r.m_left ? as_int4(duplicate_expr(al, r.m_left),
+            loc) : ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                duplicate_expr(al, section->m_v), b.i32(d + 1),
+                int_type(al, loc), ASR::arrayboundType::LBound, nullptr));
+        ASR::expr_t *right = r.m_right ? as_int4(duplicate_expr(al,
+            r.m_right), loc) : ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                duplicate_expr(al, section->m_v), b.i32(d + 1),
+                int_type(al, loc), ASR::arrayboundType::UBound, nullptr));
+        ASR::expr_t *step = r.m_step ? as_int4(duplicate_expr(al, r.m_step),
+            loc) : b.i32(1);
+        return b.Max(b.Add(b.Div(b.Sub(right, left), step), b.i32(1)),
+            b.i32(0));
+    }
+
+    // The one range of a section, or -1.
+    static int section_range(ASR::ArraySection_t *section) {
+        int range = -1;
+        for (size_t d = 0; d < section->n_args; d++) {
+            ASR::array_index_t &r = section->m_args[d];
+            if (r.m_left == nullptr && r.m_step == nullptr && r.m_right) {
+                continue;
+            }
+            if (range >= 0) return -2;
+            range = d;
+        }
+        return range;
+    }
+
+    ASR::ArraySection_t* section_of(ASR::expr_t *e) {
+        ASR::symbol_t *s = variable_of(e);
+        if (s == nullptr) return nullptr;
+        auto it = sections.find(s);
+        return it == sections.end() ? nullptr : it->second;
+    }
+
 
     // Statements a reference needs before the statement that holds it.
     std::vector<ASR::stmt_t*> before;
@@ -1257,6 +1308,7 @@ public:
         if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return nullptr;
         ASR::StructInstanceMember_t *x =
             ASR::down_cast<ASR::StructInstanceMember_t>(e);
+        rebase(x);
         x->m_v = replaced(x->m_v);
         Image *img = types.image_of(x->m_v);
         if (img == nullptr) return nullptr;
@@ -1360,6 +1412,31 @@ public:
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t *x) {
+        if (ASR::ArraySection_t *section = section_of(x->m_v)) {
+            const Location &loc = x->base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            int range = section_range(section);
+            ASR::expr_t *j = as_int4(replaced(x->m_args[0].m_right), loc);
+            std::vector<ASR::expr_t*> subs;
+            for (size_t d = 0; d < section->n_args; d++) {
+                ASR::array_index_t &r = section->m_args[d];
+                if ((int)d != range) {
+                    subs.push_back(duplicate_expr(al, r.m_right));
+                    continue;
+                }
+                ASR::expr_t *left = r.m_left ? as_int4(duplicate_expr(al,
+                    r.m_left), loc) : ASRUtils::EXPR(ASR::make_ArrayBound_t(
+                        al, loc, duplicate_expr(al, section->m_v),
+                        b.i32(d + 1), int_type(al, loc),
+                        ASR::arrayboundType::LBound, nullptr));
+                ASR::expr_t *step = r.m_step ? as_int4(duplicate_expr(al,
+                    r.m_step), loc) : b.i32(1);
+                subs.push_back(b.Add(left, b.Mul(b.Sub(j, b.i32(1)), step)));
+            }
+            *current_expr = b.ArrayItem_01(duplicate_expr(al, section->m_v),
+                subs);
+            return;
+        }
         Descriptor *h = designator(x->m_v);
         if (h == nullptr) {
             Base::replace_ArrayItem(x);
@@ -1385,6 +1462,16 @@ public:
     }
 
     void replace_ArraySize(ASR::ArraySize_t *x) {
+        if (ASR::ArraySection_t *section = section_of(x->m_v)) {
+            ASR::expr_t *n = range_count(section, section_range(section),
+                x->base.base.loc);
+            if (ASRUtils::extract_kind_from_ttype_t(x->m_type) != 4) {
+                ASRUtils::ASRBuilder b(al, x->base.base.loc);
+                n = b.i2i_t(n, x->m_type);
+            }
+            *current_expr = n;
+            return;
+        }
         Descriptor *h = designator(x->m_v);
         if (h == nullptr) {
             Base::replace_ArraySize(x);
@@ -1412,6 +1499,17 @@ public:
     }
 
     void replace_ArrayBound(ASR::ArrayBound_t *x) {
+        if (ASR::ArraySection_t *section = section_of(x->m_v)) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            ASR::expr_t *bound = x->m_bound == ASR::arrayboundType::LBound
+                ? b.i32(1) : range_count(section, section_range(section),
+                    x->base.base.loc);
+            if (ASRUtils::extract_kind_from_ttype_t(x->m_type) != 4) {
+                bound = b.i2i_t(bound, x->m_type);
+            }
+            *current_expr = bound;
+            return;
+        }
         Descriptor *h = designator(x->m_v);
         if (h == nullptr) {
             Base::replace_ArrayBound(x);
@@ -1546,6 +1644,7 @@ public:
             *current_expr = whole(*h, x->base.base.loc);
             return;
         }
+        rebase(x);
         x->m_v = replaced(x->m_v);
         Image *img = types.image_of(x->m_v);
         if (img == nullptr) return;
@@ -1587,8 +1686,63 @@ public:
         }
     }
 
+    // The arguments of the kernel it stores images into (see
+    // HeapLowering::store), which it reads as images too.
+    std::set<ASR::symbol_t*> stored;
+
+    // The array argument of the kernel an element `e` is of, when the
+    // kernel stores images into it.
+    ASR::symbol_t* stored_array(ASR::expr_t *e) {
+        e = ASRUtils::get_past_array_physical_cast(e);
+        if (&fn != kernel || !ASR::is_a<ASR::ArrayItem_t>(*e)) return nullptr;
+        ASR::symbol_t *s = variable_of(ASR::down_cast<ASR::ArrayItem_t>(e)
+            ->m_v);
+        return stored.count(s) ? s : nullptr;
+    }
+
+    // The position of the element `item` of the kernel argument `array` in
+    // array element order, from one.
+    ASR::expr_t* position(ASR::symbol_t *array, ASR::ArrayItem_t *item,
+            const Location &loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *a = var(array, loc);
+        ASR::expr_t *p = b.i32(1);
+        ASR::expr_t *stride = nullptr;
+        for (size_t d = 0; d < item->n_args; d++) {
+            ASR::expr_t *sub = as_int4(duplicate_expr(al,
+                item->m_args[d].m_right), loc);
+            ASR::expr_t *term = b.Sub(sub, ASRUtils::EXPR(
+                ASR::make_ArrayBound_t(al, loc, duplicate_expr(al, a),
+                    b.i32(d + 1), int_type(al, loc),
+                    ASR::arrayboundType::LBound, nullptr)));
+            if (stride != nullptr) term = b.Mul(term, stride);
+            p = b.Add(p, term);
+            ASR::expr_t *n = b.ArraySize(duplicate_expr(al, a), b.i32(d + 1),
+                int_type(al, loc));
+            stride = stride ? b.Mul(stride, n) : n;
+        }
+        return p;
+    }
+
+    ASR::stmt_t* call2(ASR::Function_t *callee, ASR::expr_t *x,
+            ASR::expr_t *y, const Location &loc) {
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, 2);
+        for (ASR::expr_t *a : {x, y}) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = a;
+            args.push_back(al, arg);
+        }
+        return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+            &callee->base, nullptr, args.p, args.n, nullptr, nullptr, false));
+    }
+
     // A new image the value `value` the host handed over is copied into
-    // before the statement.
+    // before the statement. An element of an argument the kernel stores
+    // images into is the image the iteration stored, when it has stored
+    // one: an iteration of a `do concurrent` is the only one that reads an
+    // element it writes.
     ASR::expr_t* copied_in(ASR::expr_t *value, Image *img,
             ASR::Struct_t *source) {
         const Location &loc = value->base.loc;
@@ -1596,20 +1750,34 @@ public:
         ASR::expr_t *tmp = b.Variable(fn.m_symtab,
             fn.m_symtab->get_unique_name("__gpu_heap_in", false),
             types.image_type(img), ASR::intentType::Local, img->symbol);
-        Vec<ASR::call_arg_t> args;
-        args.reserve(al, 2);
-        for (ASR::expr_t *a : {value, tmp}) {
-            ASR::call_arg_t arg;
-            arg.loc = loc;
-            arg.m_value = a;
-            args.push_back(al, arg);
+        ASR::stmt_t *copy = call2(routines.copy_in(kernel, img, source),
+            value, duplicate_expr(al, tmp), loc);
+        if (ASR::symbol_t *array = stored_array(value)) {
+            HeapRecord &r = heap.record(fn, array, img, img->symbol,
+                types.image_type(img), source);
+            ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(
+                ASRUtils::get_past_array_physical_cast(value));
+            ASR::expr_t *p = position(array, item, loc);
+            before.push_back(b.If(b.NotEq(b.ArrayItem_01(var(r.written, loc),
+                {p}), b.i32(0)), {b.Assignment(duplicate_expr(al, tmp),
+                    b.ArrayItem_01(var(r.images, loc), {duplicate_expr(al,
+                        p)}))}, {copy}));
+        } else {
+            before.push_back(copy);
         }
-        before.push_back(ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
-            al, loc, &routines.copy_in(kernel, img, source)->base, nullptr,
-            args.p,
-            args.n, nullptr, nullptr, false)));
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             ASR::down_cast<ASR::Var_t>(tmp)->m_v));
+    }
+
+    // A component of an element of an argument the kernel stores images
+    // into is read from the element as an image.
+    void rebase(ASR::StructInstanceMember_t *x) {
+        if (stored_array(x->m_v) == nullptr) return;
+        ASR::Struct_t *source = types.heap_source_of(x->m_v);
+        if (source == nullptr || types.images.count(source->m_name) == 0) {
+            return;
+        }
+        x->m_v = copied_in(x->m_v, &types.images[source->m_name], source);
     }
 
 private:
@@ -1659,9 +1827,110 @@ public:
     std::string unsupported;
 
     void run() {
+        if (&fn == kernel) {
+            find_sections();
+            find_stores();
+        }
         std::set<ASR::symbol_t*> visited;
         transform(fn.m_body, fn.n_body, visited);
         if (!replacer.unsupported.empty()) unsupported = replacer.unsupported;
+    }
+
+    // The pointers to sections of derived-type array arguments of the
+    // kernel the kernel binds once, with one range, and uses only through
+    // their elements and bounds.
+    void find_sections() {
+        class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
+        public:
+            std::map<ASR::symbol_t*, std::vector<ASR::Associate_t*>> found;
+            void visit_Associate(const ASR::Associate_t &x) {
+                ASR::symbol_t *s = variable_of(x.m_target);
+                if (s != nullptr) {
+                    found[s].push_back(const_cast<ASR::Associate_t*>(&x));
+                }
+            }
+        };
+        Bindings bindings;
+        for (size_t i = 0; i < fn.n_body; i++) {
+            bindings.visit_stmt(*fn.m_body[i]);
+        }
+        std::set<ASR::symbol_t*> arguments;
+        for (size_t i = 0; i < fn.n_args; i++) {
+            if (ASR::symbol_t *a = variable_of(fn.m_args[i])) {
+                arguments.insert(a);
+            }
+        }
+        for (auto &binding : bindings.found) {
+            if (binding.second.size() != 1) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                binding.first);
+            if (!ASRUtils::is_pointer(v->m_type) ||
+                    types.heap_source_of(binding.second[0]->m_target) ==
+                        nullptr) {
+                continue;
+            }
+            ASR::expr_t *value = binding.second[0]->m_value;
+            if (!ASR::is_a<ASR::ArraySection_t>(*value)) continue;
+            ASR::ArraySection_t *section =
+                ASR::down_cast<ASR::ArraySection_t>(value);
+            if (arguments.count(variable_of(section->m_v)) == 0 ||
+                    HeapReplacer::section_range(section) < 0) {
+                continue;
+            }
+            replacer.sections[binding.first] = section;
+            bound_sections.insert(&binding.second[0]->base);
+        }
+    }
+
+    std::set<ASR::stmt_t*> bound_sections;
+
+    // The array arguments of the kernel it stores images into: an element
+    // of one is the target of an assignment of a value of a heap type, or
+    // the actual argument of a dummy of an image type a procedure defines.
+    void find_stores() {
+        class Stores : public ASRUtils::BlockBodyWalkVisitor<Stores> {
+        public:
+            HeapTypes &types;
+            std::set<ASR::symbol_t*> arguments, found;
+            explicit Stores(HeapTypes &t) : types(t) {}
+            void element(ASR::expr_t *e) {
+                e = ASRUtils::get_past_array_physical_cast(e);
+                if (!ASR::is_a<ASR::ArrayItem_t>(*e)) return;
+                if (types.heap_source_of(e) == nullptr) return;
+                ASR::symbol_t *s = variable_of(
+                    ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+                if (arguments.count(s)) found.insert(s);
+            }
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+                    element(x.m_target);
+                }
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                ASR::symbol_t *t = call_target(x.m_name);
+                if (t == nullptr || !ASR::is_a<ASR::Function_t>(*t)) return;
+                ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(t);
+                for (size_t i = 0; i < x.n_args && i < callee->n_args; i++) {
+                    if (x.m_args[i].m_value == nullptr ||
+                            types.image_of(callee->m_args[i]) == nullptr) {
+                        continue;
+                    }
+                    ASR::Variable_t *d = ASR::down_cast<ASR::Variable_t>(
+                        ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v);
+                    if (d->m_intent != ASR::intentType::In) {
+                        element(x.m_args[i].m_value);
+                    }
+                }
+            }
+        };
+        Stores stores(types);
+        for (size_t i = 0; i < fn.n_args; i++) {
+            if (ASR::symbol_t *a = variable_of(fn.m_args[i])) {
+                stores.arguments.insert(a);
+            }
+        }
+        for (size_t i = 0; i < fn.n_body; i++) stores.visit_stmt(*fn.m_body[i]);
+        replacer.stored = stores.found;
     }
 
 private:
@@ -1832,6 +2101,19 @@ private:
     // the host handed over copies that into the image.
     void assignment(ASR::stmt_t *s, Vec<ASR::stmt_t*> &out) {
         ASR::Assignment_t *x = ASR::down_cast<ASR::Assignment_t>(s);
+        // A component of an element the kernel stores images into is
+        // written to the element after the launch only as a whole.
+        if (!ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::get_past_array_physical_cast(
+                x->m_target)) || !ASRUtils::is_struct(*ASRUtils::expr_type(
+                    x->m_target))) {
+            ASR::symbol_t *root = designator_root(x->m_target);
+            if (root != nullptr && replacer.stored.count(root)) {
+                unsupported = "stored into '" + std::string(
+                    ASRUtils::symbol_name(root)) + "', a component of which "
+                    "the loop also writes,";
+                return;
+            }
+        }
         expression(x->m_target);
         expression(x->m_value);
         flush_before(out);
@@ -1901,22 +2183,7 @@ private:
         HeapRecord &r = heap.record(fn, argument, img, img->symbol,
             types.image_type(img), source);
         heap.state(fn);
-        ASR::expr_t *array = var(argument, loc);
-        ASR::expr_t *position = b.i32(1);
-        ASR::expr_t *stride = nullptr;
-        for (size_t d = 0; d < item->n_args; d++) {
-            ASR::expr_t *sub = replacer.as_int4(duplicate_expr(al,
-                item->m_args[d].m_right), loc);
-            ASR::expr_t *term = b.Sub(sub, ASRUtils::EXPR(
-                ASR::make_ArrayBound_t(al, loc, duplicate_expr(al, array),
-                    b.i32(d + 1), int_type(al, loc),
-                    ASR::arrayboundType::LBound, nullptr)));
-            if (stride != nullptr) term = b.Mul(term, stride);
-            position = b.Add(position, term);
-            ASR::expr_t *n = b.ArraySize(duplicate_expr(al, array),
-                b.i32(d + 1), int_type(al, loc));
-            stride = stride ? b.Mul(stride, n) : n;
-        }
+        ASR::expr_t *position = replacer.position(argument, item, loc);
         out.push_back(b.Assignment(b.ArrayItem_01(var(r.images, loc),
             {position}), value));
         out.push_back(b.Assignment(b.ArrayItem_01(var(r.written, loc),
@@ -2133,6 +2400,9 @@ private:
                 // device, and the heap arrays it names have no bounds there.
                 case ASR::stmtType::DebugCheckArrayBounds:
                     break;
+                case ASR::stmtType::Associate:
+                    if (bound_sections.count(s) == 0) statement(s, out);
+                    break;
                 default:
                     statement(s, out);
                     break;
@@ -2296,6 +2566,30 @@ public:
             }
         }
         ASRUtils::BlockBodyWalkVisitor<UnsizedComponents>::visit_If(x);
+    }
+};
+
+// The variables a body assigns, or may assign through a call.
+class AssignedSymbols :
+        public ASRUtils::BlockBodyWalkVisitor<AssignedSymbols> {
+public:
+    std::set<ASR::symbol_t*> symbols;
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (ASR::symbol_t *s = designator_root(x.m_target)) symbols.insert(s);
+        ASRUtils::BlockBodyWalkVisitor<AssignedSymbols>::visit_Assignment(x);
+    }
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (ASR::symbol_t *s = variable_of(x.m_head.m_v)) symbols.insert(s);
+        ASRUtils::BlockBodyWalkVisitor<AssignedSymbols>::visit_DoLoop(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::symbol_t *s = designator_root(x.m_args[i].m_value)) {
+                symbols.insert(s);
+            }
+        }
+        ASRUtils::BlockBodyWalkVisitor<AssignedSymbols>
+            ::visit_SubroutineCall(x);
     }
 };
 
@@ -2727,8 +3021,9 @@ private:
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
-                if (!runtime_sized_array(*v) ||
-                        !ASRUtils::is_allocatable(v->m_type)) {
+                if (!runtime_sized_array(*v)) continue;
+                if (!ASRUtils::is_allocatable(v->m_type)) {
+                    choose_explicit(kernel, v);
                     continue;
                 }
                 if (types.by_symbol.count(v->m_type_declaration) ||
@@ -2737,6 +3032,31 @@ private:
                 }
             }
         }
+    }
+
+    // A run-time sized array of images of an explicit shape: a workspace
+    // holds only intrinsic types, so it is allocated on the heap where its
+    // scope starts, when its extents have their values there -- they read
+    // nothing the procedure assigns (past the prelude of a kernel).
+    void choose_explicit(ASR::Function_t &fn, ASR::Variable_t *v) {
+        if (types.by_symbol.count(v->m_type_declaration) == 0) return;
+        AssignedSymbols assigned;
+        size_t start = is_kernel(fn) ? kernel_prelude_length(fn) : 0;
+        for (size_t i = start; i < fn.n_body; i++) {
+            assigned.visit_stmt(*fn.m_body[i]);
+        }
+        SymbolReader reader;
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type,
+            dims);
+        for (size_t d = 0; d < n_dims; d++) {
+            if (dims[d].m_start) reader.visit_expr(*dims[d].m_start);
+            if (dims[d].m_length) reader.visit_expr(*dims[d].m_length);
+        }
+        for (ASR::symbol_t *read : reader.symbols) {
+            if (assigned.symbols.count(read)) return;
+        }
+        choose(fn, v);
     }
 
     // An allocatable local of a routine allocated with a shape read from a
@@ -2752,8 +3072,9 @@ private:
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
-                if (!runtime_sized_array(*v) ||
-                        !ASRUtils::is_allocatable(v->m_type)) {
+                if (!runtime_sized_array(*v)) continue;
+                if (!ASRUtils::is_allocatable(v->m_type)) {
+                    choose_explicit(fn, v);
                     continue;
                 }
                 if (types.by_symbol.count(v->m_type_declaration) ||
@@ -2800,8 +3121,28 @@ private:
                 h.extent.push_back(local("_n" + std::to_string(d + 1)));
             }
             locals[&v->base] = h;
-            // An allocatable array starts unallocated.
+            // An allocatable array starts unallocated; one of an explicit
+            // shape is allocated where its scope starts.
             entry[scope].push_back(b.Assignment(b.Var(h.base), b.i32(-1)));
+            if (ASRUtils::is_allocatable(v->m_type)) continue;
+            ASR::dimension_t *dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                v->m_type, dims);
+            Vec<ASR::alloc_arg_t> args;
+            args.reserve(al, 1);
+            ASR::alloc_arg_t arg;
+            arg.loc = loc;
+            arg.m_a = b.Var(&v->base);
+            arg.m_dims = dims;
+            arg.n_dims = n_dims;
+            arg.m_len_expr = nullptr;
+            arg.m_type = nullptr;
+            arg.m_sym_subclass = nullptr;
+            arg.m_codims = nullptr;
+            arg.n_codims = 0;
+            args.push_back(al, arg);
+            entry[scope].push_back(ASRUtils::STMT(ASR::make_Allocate_t(al,
+                loc, args.p, args.n, nullptr, nullptr, nullptr)));
         }
         // An image starts with nothing allocated, and so does an
         // `intent(out)` dummy and a function result.
@@ -2816,7 +3157,10 @@ private:
                 if (types.by_symbol.count(v->m_type_declaration) == 0) {
                     continue;
                 }
-                if (ASRUtils::is_allocatable_or_pointer(v->m_type)) continue;
+                if (ASRUtils::is_allocatable_or_pointer(v->m_type) ||
+                        locals.count(&v->base)) {
+                    continue;
+                }
                 bool result = fn.m_return_var != nullptr &&
                     variable_of(fn.m_return_var) == item.second;
                 if (v->m_intent != ASR::intentType::Local &&

@@ -799,16 +799,18 @@ public:
             if (ASR::is_a<ASR::Array_t>(*ptr_inner)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(ptr_inner);
                 std::string vname(var->m_name);
+                std::string elem_type = is_struct_type(arr->m_type)
+                    ? get_struct_name(var) : gpu_type(arr->m_type);
                 if (ptr_to_local_alloc.count((ASR::symbol_t*)var)) {
                     src << get_indent()
                         << space_prefix(ASR::memory_spaceType::Thread)
-                        << gpu_type(arr->m_type)
+                        << elem_type
                         << "* " << sanitize_name(vname) << ";\n";
                 } else {
                     std::string ptr_addr =
                         space_prefix(arr->m_memory_space);
                     src << get_indent() << ptr_addr
-                        << gpu_type(arr->m_type)
+                        << elem_type
                         << "* " << sanitize_name(vname) << ";\n";
                 }
                 return;

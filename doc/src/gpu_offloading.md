@@ -487,6 +487,11 @@ host hands over, and it is never on the heap. Where it meets heap values:
   recursively through components of heap types, by a host procedure the
   offload passes generate for every heap type. A component that the image
   does not have allocated is left deallocated.
+* Read after the iteration stored an image into it -- only that iteration
+  can, in a `do concurrent` -- an element of such an argument is that
+  image, which the record holds; before, it is copied in from the buffers
+  the host handed over. (`outs(i) = f(ins(i))` after `ins(i) = g(...)` in
+  one iteration reads the new `ins(i)`.)
 
 ## Testing
 
@@ -539,10 +544,10 @@ host hands over, and it is never on the heap. Where it meets heap values:
   largest value before the launch by going over the loop.
 * A heap value can be stored into an element of an array argument of the
   loop, but not into a scalar argument or a section, and a loop that also
-  reads or writes the components of an array it stores heap values into is
-  an error. A heap array of rank greater than one cannot be passed whole, a
-  section of a heap array whose elements are not contiguous is not lowered
-  yet, and neither is an array of a heap type of
+  writes a component of an element of an array it stores heap values into
+  is an error. A heap array of rank greater than one cannot be passed
+  whole, a section of a heap array whose elements are not contiguous is not
+  lowered yet, and neither is an array of a heap type of
   rank greater than one, a component of a heap type that is an array of
   values of a heap type of a fixed size, an allocatable scalar, pointer or
   polymorphic component of a heap type, an allocatable component of a heap
