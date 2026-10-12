@@ -1,0 +1,211 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            if_08:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    if_08
+                    []
+                    [(Assignment
+                        (Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoTo
+                            86
+                            86
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoToTarget
+                            86
+                            86
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            Eq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoToTarget
+                            91
+                            91
+                        )]
+                        [(GoTo
+                            91
+                            91
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            Eq
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                        )
+                        (GoToTarget
+                            92
+                            92
+                        )]
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (Var 2 i)
+                                Eq
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(GoTo
+                                92
+                                92
+                            )
+                            (Assignment
+                                (Var 2 i)
+                                (IntegerConstant 20 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )]
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerConstant 30 (Integer 4) Decimal)
+                                ()
+                                .false.
+                                .false.
+                            )]
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

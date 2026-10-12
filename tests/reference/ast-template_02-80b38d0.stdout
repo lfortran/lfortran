@@ -259,6 +259,7 @@
                 (If
                     0
                     ()
+                    0
                     (< n 1)
                     [(Return
                         0
@@ -310,6 +311,7 @@
                     [(If
                         0
                         ()
+                        0
                         (FuncCallOrArray
                             ne
                             []

@@ -114,6 +114,7 @@
         (If
             0
             ()
+            0
             (/= total 42)
             [(ErrorStop
                 0

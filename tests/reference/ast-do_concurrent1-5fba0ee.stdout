@@ -243,6 +243,7 @@
             [(If
                 0
                 ()
+                0
                 (> (FuncCallOrArray
                     a
                     []
@@ -465,6 +466,7 @@
             [(If
                 0
                 ()
+                0
                 (> (FuncCallOrArray
                     a
                     []
@@ -683,6 +685,7 @@
             [(If
                 0
                 ()
+                0
                 (> (FuncCallOrArray
                     a
                     []
