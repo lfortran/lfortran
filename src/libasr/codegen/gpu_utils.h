@@ -2201,6 +2201,19 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     GpuStructMemberKey struct_key;
     ASR::expr_t *source_array = nullptr;
     bool from_member = true;
+    auto is_array = [](ASR::expr_t *v) {
+        return ASRUtils::is_array(ASRUtils::expr_type(v));
+    };
+    // An array assigned to the whole of it gives it its shape.
+    auto find_source_array = [&]() {
+        ASR::expr_t *source = gpu_find_assigned_value(scope_body,
+            scope_n_body, var_name, is_array);
+        if (source == nullptr) {
+            source = gpu_find_assigned_value(kernel.m_body, kernel.n_body,
+                var_name, is_array);
+        }
+        return source;
+    };
     if (scope_body != nullptr
             && find_struct_member_key_from_assignments(scope_body,
                 scope_n_body, var_name, struct_key, &source_array)) {
@@ -2208,20 +2221,11 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     } else if (find_struct_member_key_from_assignments(kernel.m_body,
             kernel.n_body, var_name, struct_key, &source_array)) {
         // The assignment in the kernel body names the member.
+    } else if ((source_array = find_source_array()) != nullptr) {
+        from_member = false;
     } else if (unique_struct_alloc_member_key(kernel, struct_key)) {
         // The kernel's one allocatable component is only a guess at what
-        // the array is a copy of: an array assigned to the whole of it is
-        // what gives it its shape.
-        auto is_array = [](ASR::expr_t *v) {
-            return ASRUtils::is_array(ASRUtils::expr_type(v));
-        };
-        source_array = gpu_find_assigned_value(scope_body, scope_n_body,
-            var_name, is_array);
-        if (source_array == nullptr) {
-            source_array = gpu_find_assigned_value(kernel.m_body,
-                kernel.n_body, var_name, is_array);
-        }
-        from_member = source_array == nullptr;
+        // the array is a copy of.
     } else {
         return false;
     }
