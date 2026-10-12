@@ -622,3 +622,17 @@ contains
         y = -x  ! {Error} No matching `operator(-)` found for this operand type
     end subroutine
 end module cc2_unary_minus_array_mod
+
+! A unary `+` on an array of a derived type needs a user-defined `operator(+)`
+! (#14730).
+module cc2_unary_plus_array_mod
+    implicit none
+    type :: cc2_up_t
+        integer :: k = 0
+    end type
+contains
+    subroutine cc2_up_s()
+        type(cc2_up_t) :: x(2), y(2)
+        y = +x  ! {Error} No matching `operator(+)` found for this operand type
+    end subroutine
+end module cc2_unary_plus_array_mod

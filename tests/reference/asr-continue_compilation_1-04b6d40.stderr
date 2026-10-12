@@ -2368,6 +2368,12 @@ semantic error: No matching `operator(-)` found for this operand type
 665 |         print *, -tt
     |                  ^^^ 
 
+semantic error: No matching `operator(+)` found for this operand type
+   --> tests/errors/continue_compilation_1.f90:666:18
+    |
+666 |         print *, +tt
+    |                  ^^^ 
+
 semantic error: Variable 'k' is not declared
    --> tests/errors/continue_compilation_1.f90:681:12
     |

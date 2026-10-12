@@ -2519,6 +2519,7 @@ RUN(NAME operator_overloading_40 LABELS gfortran llvm)
 RUN(NAME operator_overloading_41 LABELS gfortran llvm)
 RUN(NAME operator_overloading_42 LABELS gfortran llvm)
 RUN(NAME operator_overloading_43 LABELS gfortran llvm)
+RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3963,6 +3964,7 @@ RUN(NAME template_proc_component_02 LABELS llvm)
 RUN(NAME template_submodule_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_unary_plus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
