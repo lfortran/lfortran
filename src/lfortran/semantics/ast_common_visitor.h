@@ -6304,13 +6304,16 @@ public:
         current_scope = parent_scope;
     }
 
-    // Whether a module procedure `name` of a module being visited is defined
-    // later in the source, so that the name cannot yet be resolved to an
-    // intrinsic procedure. Only the symbol table visitor, which defines the
-    // module procedures in source order, overrides this; afterwards every
-    // module procedure is defined.
-    bool is_procedure_declared_later(const std::string &/*name*/) {
-        return false;
+    // Where a procedure `name` that is not yet in scope is defined later in
+    // the source, so that the name cannot yet be resolved to an intrinsic
+    // procedure: as a module procedure or an interface body of a module
+    // being visited, or as an internal procedure of a host being visited.
+    enum class ProcedureDeclaredLater { No, InModule, InHost };
+
+    // Only the symbol table visitor, which defines the procedures in source
+    // order, overrides this; afterwards every procedure is defined.
+    ProcedureDeclaredLater procedure_declared_later(const std::string &/*name*/) {
+        return ProcedureDeclaredLater::No;
     }
 
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
@@ -13223,18 +13226,41 @@ public:
                 type_declaration = existing;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
-                // A module procedure may be defined after it is used as an
-                // interface. Then the name is not the specific intrinsic
-                // function, unless it has the INTRINSIC attribute. The
-                // INTRINSIC statements of a module seen so far are in
-                // `explicit_intrinsic_procedures`; check_is_explicit_intrinsic
-                // would replace that list with the module's entry of
+                // A module procedure or an internal procedure may be defined
+                // after it is used as an interface. Then the name is not the
+                // specific intrinsic function, unless it has the INTRINSIC
+                // attribute. The INTRINSIC statements of a module seen so far
+                // are in `explicit_intrinsic_procedures`;
+                // check_is_explicit_intrinsic would replace that list with
+                // the module's entry of
                 // `explicit_intrinsic_procedures_mapping`, which is empty.
-                if (!v && (!static_cast<Derived&>(*this)
-                            .is_procedure_declared_later(func_name)
-                        || std::find(explicit_intrinsic_procedures.begin(),
-                            explicit_intrinsic_procedures.end(), func_name)
-                            != explicit_intrinsic_procedures.end())) {
+                ProcedureDeclaredLater declared_later = ProcedureDeclaredLater::No;
+                bool is_explicit_intrinsic = false;
+                if (!v) {
+                    declared_later = static_cast<Derived&>(*this)
+                        .procedure_declared_later(func_name);
+                    is_explicit_intrinsic = std::find(
+                        explicit_intrinsic_procedures.begin(),
+                        explicit_intrinsic_procedures.end(), func_name)
+                        != explicit_intrinsic_procedures.end();
+                }
+                if (declared_later == ProcedureDeclaredLater::InHost
+                        && !is_explicit_intrinsic
+                        && (specific_intrinsic_interfaces.count(func_name)
+                            || intrinsic_mapping.count(func_name))) {
+                    // Its interface is not known yet, and the specific
+                    // intrinsic function of that name is a different
+                    // procedure.
+                    diag.add(Diagnostic("using the internal procedure '"
+                            + func_name + "', which is defined later, as a "
+                            "procedure interface is not supported yet",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (!v && (declared_later != ProcedureDeclaredLater::InModule
+                        || is_explicit_intrinsic)) {
                     std::string iface_name = current_scope->parent->get_unique_name(
                         "__" + sym + "_iface_" + func_name, false);
                     v = create_specific_intrinsic_interface(
