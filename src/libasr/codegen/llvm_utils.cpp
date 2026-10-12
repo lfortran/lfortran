@@ -3671,7 +3671,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             total_data_bytes, llvm::MaybeAlign());
 
         // Store data in wrapper's data field (field 1)
-        builder->CreateStore(data_mem,
+        builder->CreateStore(builder->CreateBitCast(data_mem,
+                class_type->getStructElementType(1)),
             create_gep2(class_type, wrapper, 1));
 
         // For string types, initialize each string descriptor.
