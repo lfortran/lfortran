@@ -7495,10 +7495,13 @@ public:
         }
 
         if( overloaded_stmt == nullptr ) {
+            // An ArrayPhysicalCast target is the assumed-rank selector of
+            // SELECT RANK viewed with the rank of its RANK block.
             bool lhs_supports_implicit_cast = (
                 target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
+                target->type == ASR::exprType::ArrayPhysicalCast ||
                 target->type == ASR::exprType::StructInstanceMember ||
                 target->type == ASR::exprType::UnionInstanceMember ||
                 (target->type == ASR::exprType::Cast &&
