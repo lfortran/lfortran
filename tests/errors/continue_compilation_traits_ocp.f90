@@ -255,3 +255,46 @@ contains
         class(IReduce), allocatable :: r
     end subroutine reduce_view
 end module cc_traits_ocp_static_protocols
+
+! E13-E14: forwarding a binder of a derived protocol where its parent is
+! required would need the parent's dictionary.
+module cc_traits_ocp_field
+    use cc_traits_ocp_contracts, only: INumeric, ISum
+    use cc_traits_ocp_provider, only: simple_sum
+    implicit none
+    abstract interface, extends(INumeric) :: IField
+        function operator(*)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs, rhs
+            type(itself)             :: res
+        end function operator(*)
+    end interface IField
+    abstract interface :: IScale
+        function scaled{IField :: T}(x) result(s)
+            type(T), intent(in) :: x(:)
+            type(T)             :: s
+        end function scaled
+    end interface IScale
+    type, sealed, implements(IScale) :: Helped
+    contains
+        procedure, nopass :: scaled => helped_scaled
+    end type Helped
+    type, sealed, implements(IScale) :: Forwarded
+        class(ISum), allocatable :: inner
+    contains
+        procedure, pass :: scaled => forwarded_scaled
+    end type Forwarded
+contains
+    function helped_scaled{IField :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        ! E13: to a generic procedure.
+        s = simple_sum(x) * x(1)
+    end function helped_scaled
+    function forwarded_scaled{IField :: T}(self, x) result(s)
+        class(Forwarded), intent(in) :: self
+        type(T),          intent(in) :: x(:)
+        type(T)                      :: s
+        ! E14: to a runtime generic message.
+        s = self%inner%sum(x) * x(1)
+    end function forwarded_scaled
+end module cc_traits_ocp_field

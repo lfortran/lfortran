@@ -25037,6 +25037,68 @@ public:
     // Each requirement of a dictionary binder is called through the slot of
     // its dictionary: `symbols` maps the requirement to the slot interface
     // and to the binder whose dictionary the call passes.
+    // The contract of the dictionary that describes erased parameter
+    // `parameter` in the erased entry owning `scope`: its binder's.
+    ASR::TraitDictionaryContract_t *trait_erased_dictionary_contract(SymbolTable *scope,
+            const std::string &parameter) {
+        for (; scope; scope = scope->parent) {
+            auto *owner = scope->asr_owner;
+            if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                    !ASR::is_a<ASR::TraitErasure_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+                continue;
+            }
+            auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(
+                ASR::down_cast<ASR::symbol_t>(owner));
+            auto *generic = ASR::down_cast<ASR::Template_t>(
+                ASRUtils::symbol_get_past_external(erasure->m_generic));
+            return ASRUtils::trait_parameter_dictionary(generic->m_symtab->get_symbol(parameter));
+        }
+        return nullptr;
+    }
+
+    // An erased binder forwards its own dictionary, so the callee must
+    // require that protocol. A parent protocol's dictionary of the same
+    // conformance is not reachable from it yet.
+    void check_trait_dictionary_forwarding(SymbolTable *scope, const std::string &parameter,
+            ASR::TraitDictionaryContract_t *required, const Location &loc) {
+        auto *forwarded = trait_erased_dictionary_contract(scope, parameter);
+        if (!forwarded || !required || forwarded == required) return;
+        trait_call_error("forwarding protocol type parameter '" + parameter + "' of trait '" +
+            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(forwarded->m_trait)) +
+            "' where trait '" +
+            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(required->m_trait)) +
+            "' is required is not implemented yet in runtime generic messages", loc);
+    }
+
+    // Where `function`'s body calls `callee`, or the function itself.
+    Location trait_call_site(const ASR::Function_t &function, ASR::symbol_t *callee) {
+        class Find : public ASR::BaseWalkVisitor<Find> {
+        public:
+            ASR::symbol_t *callee;
+            const Location *found = nullptr;
+            explicit Find(ASR::symbol_t *callee) : callee(callee) {}
+            bool calls(ASR::symbol_t *name) {
+                return name && ASRUtils::symbol_get_past_external(name) == callee;
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                if (!found && calls(x.m_name)) found = &x.base.base.loc;
+                ASR::BaseWalkVisitor<Find>::visit_FunctionCall(x);
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                if (!found && calls(x.m_name)) found = &x.base.base.loc;
+                ASR::BaseWalkVisitor<Find>::visit_SubroutineCall(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+        } find(ASRUtils::symbol_get_past_external(callee));
+        for (size_t i = 0; i < function.n_body && !find.found; i++) {
+            find.visit_stmt(*function.m_body[i]);
+        }
+        return find.found ? *find.found : function.base.base.loc;
+    }
+
     // Binds the requirements of the erased dictionary binders of `generic`
     // to their dictionary slots, recording them as evidence when asked.
     void bind_trait_dictionary_operations(ASR::Template_t &generic, SymbolTable *scope,
@@ -28050,6 +28112,18 @@ public:
                             actual->second;
                     }
                     // A forwarded erased binder keeps the caller's dictionary.
+                    for (size_t j = 0; j < source.generic->n_args; j++) {
+                        auto type = types.find(source.generic->m_args[j]);
+                        if (type == types.end() || !type->second.first ||
+                                !ASR::is_a<ASR::TraitErasedType_t>(*type->second.first)) continue;
+                        check_trait_dictionary_forwarding(target,
+                            ASR::down_cast<ASR::TraitErasedType_t>(
+                                type->second.first)->m_parameter,
+                            ASRUtils::trait_parameter_dictionary(
+                                source.generic->m_symtab->get_symbol(source.generic->m_args[j])),
+                            trait_call_site(*ASR::down_cast<ASR::Function_t>(selection.second),
+                                procedure));
+                    }
                     bind_trait_dictionary_operations(*source.generic, target, symbols, &types);
                     ASR::symbol_t *specialization =
                         find_trait_specialization(target, source.generic, types, evidence);
@@ -28153,6 +28227,9 @@ public:
                     evidence = &trait_forwarded_constraint(actual.second, contract->m_trait,
                         loc)->base;
                 } else if (ASR::is_a<ASR::TraitErasedType_t>(*actual.first)) {
+                    check_trait_dictionary_forwarding(target,
+                        ASR::down_cast<ASR::TraitErasedType_t>(actual.first)->m_parameter,
+                        contract, loc);
                     evidence = binder;
                 } else {
                     ASR::TraitImplementation_t *selected = nullptr;

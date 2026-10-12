@@ -786,8 +786,13 @@ but its conformances and generic procedures keep working statically. That
 is the case for a generic requirement, a `type(itself)` argument that is an
 array or not a required `intent(in)` scalar, and a `type(itself)` array or
 allocatable result. A runtime view of a trait whose message is constrained
-by such a protocol is diagnosed with the reason. A binder constrained by
-several traits is not implemented yet.
+by such a protocol is diagnosed with the reason. The dictionary of a binder
+is the one of the protocol constraining it, so forwarding the binder of a
+derived protocol (`IField`, extending `INumeric`) to a callee that requires
+a different protocol (`INumeric`) is not implemented yet; the same
+forwarding is supported statically, where the conformance provides each
+protocol's dictionary. A binder constrained by several traits is not
+implemented yet either.
 
 `traits_paper_ocp` runs the exact paper program, with its approved
 `use intrinsics`, for both choices in normal and fast modes and rejects the

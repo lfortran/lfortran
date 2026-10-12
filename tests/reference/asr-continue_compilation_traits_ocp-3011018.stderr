@@ -54,6 +54,18 @@ semantic error: this use of a value of protocol type parameter 't' as a computed
 116 |         s = first(x * x)
     |                   ^^^^^ 
 
+semantic error: forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:298:13
+    |
+298 |         s = self%inner%sum(x) * x(1)
+    |             ^^^^^^^^^^^^^^^^^ 
+
+semantic error: forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:291:13
+    |
+291 |         s = simple_sum(x) * x(1)
+    |             ^^^^^^^^^^^^^ 
+
 semantic error: this use of a value of protocol type parameter 't' as a section in a bound inquiry is not implemented yet in runtime generic messages
    --> tests/errors/continue_compilation_traits_ocp.f90:209:22
     |
