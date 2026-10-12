@@ -2889,6 +2889,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/program_06.f90"
+ast_f90 = true
+
+[[test]]
 filename = "use_statement.f90"
 ast = true
 
