@@ -3310,3 +3310,9 @@ semantic error: Missing actual argument for argument 'a'
      |
 2369 |         cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
      |                                   ^^^ 
+
+semantic error: type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+    --> tests/errors/continue_compilation_1.f90:2378:13
+     |
+2378 |             procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
