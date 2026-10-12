@@ -5644,9 +5644,8 @@ bool is_trait_type_declaration(const ASR::symbol_t &symbol)
     if (!ASR::is_a<ASR::Variable_t>(symbol)) return false;
     auto &variable = *ASR::down_cast<ASR::Variable_t>(&symbol);
     return variable.m_type && ASR::is_a<ASR::TypeParameter_t>(*variable.m_type) &&
-        std::string(variable.m_name) == trait_itself_name &&
-        std::string(ASR::down_cast<ASR::TypeParameter_t>(variable.m_type)->m_param)
-            == trait_itself_name;
+        std::string(variable.m_name) ==
+            ASR::down_cast<ASR::TypeParameter_t>(variable.m_type)->m_param;
 }
 
 bool contains_trait_itself(ASR::ttype_t *type)
@@ -5983,8 +5982,7 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
             }
             for (const auto &entry : current.m_symtab->get_scope()) {
                 ASR::symbol_t *member = entry.second;
-                // An associated type is declared by the trait, not a member.
-                if (member && ASR::is_a<ASR::Variable_t>(*member)) continue;
+                if (member && is_trait_type_declaration(*member)) continue;
                 if (!member || !trait_method_function(member) ||
                         symbol_parent_symtab(member) != current.m_symtab) {
                     result.error = TraitHierarchyError::Member;
@@ -6887,7 +6885,7 @@ std::vector<ASR::symbol_t*> trait_declared_associated_types(const ASR::Trait_t &
     std::vector<ASR::symbol_t*> declarations;
     if (!trait.m_symtab) return declarations;
     for (const auto &entry : trait.m_symtab->get_scope()) {
-        if (ASR::is_a<ASR::Variable_t>(*entry.second) && entry.first != trait_itself_name) {
+        if (is_trait_type_declaration(*entry.second) && entry.first != trait_itself_name) {
             declarations.push_back(entry.second);
         }
     }

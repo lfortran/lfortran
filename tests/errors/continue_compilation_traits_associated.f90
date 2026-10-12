@@ -39,6 +39,17 @@ module cc_traits_associated_unused
     end interface IUnused
 end module cc_traits_associated_unused
 
+! A08: itself is the implementing type, not an associated type.
+module cc_traits_associated_itself
+    implicit none
+    abstract interface :: ISelf
+        type :: itself
+        subroutine take(item)
+            type(itself), intent(in) :: item
+        end subroutine take
+    end interface ISelf
+end module cc_traits_associated_itself
+
 module cc_traits_associated_views
     use cc_traits_associated_contracts, only: IPeek
     implicit none

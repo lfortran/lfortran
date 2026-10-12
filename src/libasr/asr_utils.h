@@ -10829,7 +10829,9 @@ ASR::Function_t *trait_method_function(ASR::symbol_t *method);
 ASR::Template_t *trait_method_template(const ASR::Function_t &method);
 // The name a trait declares for the type that implements it.
 constexpr const char *trait_itself_name = "itself";
-// A trait's declaration of `itself`, which is not one of its members.
+// A type a trait declares, which is not one of its members: `itself` or an
+// associated type (`type :: Element`), a variable of the trait's scope whose
+// type is the type parameter of its own name.
 bool is_trait_type_declaration(const ASR::symbol_t &symbol);
 bool contains_trait_itself(ASR::ttype_t *type);
 // The operation of an initializer or operator requirement, which has no
@@ -11023,8 +11025,8 @@ typedef std::map<ASR::symbol_t*, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
 // The declaration of the associated type of a trait (`type :: Element`) that
 // a dummy argument or result of one of the trait's messages has, or nullptr.
 ASR::symbol_t *trait_associated_type(ASR::expr_t *value);
-// The associated types a trait declares itself, `type :: Element`: the
-// variables of its scope, whose type is the type parameter of their name.
+// The associated types a trait declares itself, `type :: Element`: its type
+// declarations other than `itself`, which each conformance infers.
 std::vector<ASR::symbol_t*> trait_declared_associated_types(const ASR::Trait_t &trait);
 // Whether a trait or one of its ancestors declares an associated type, which
 // makes it usable only as a generic constraint (no runtime views).

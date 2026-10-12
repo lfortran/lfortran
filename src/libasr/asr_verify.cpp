@@ -1222,25 +1222,14 @@ public:
         }
         for (auto &a : x.m_symtab->get_scope()) {
             if (ASRUtils::is_trait_type_declaration(*a.second)) {
-                require_id(x.m_kind == ASR::trait_kindType::UniversalTrait,
-                    "asr.verify.trait.itself_universal",
-                    "Only a universal trait declares its implementing type");
-                this->visit_symbol(*a.second);
-                continue;
-            }
-            if (ASR::is_a<ASR::Variable_t>(*a.second)) {
-                // An associated type, `type :: Element`, of a universal trait.
+                // `itself` or an associated type, `type :: Element`.
                 auto *declaration = ASR::down_cast<ASR::Variable_t>(a.second);
                 require_id(x.m_kind == ASR::trait_kindType::UniversalTrait &&
-                        declaration->m_type &&
-                        ASR::is_a<ASR::TypeParameter_t>(*declaration->m_type) &&
-                        std::string(ASR::down_cast<ASR::TypeParameter_t>(
-                            declaration->m_type)->m_param) == a.first &&
                         !declaration->m_type_declaration && !declaration->m_symbolic_value &&
                         !declaration->m_value,
-                    "asr.verify.trait.associated_type",
-                    "A variable of trait '" + std::string(x.m_name) + "' must declare an "
-                    "associated type: a type parameter of its own name");
+                    "asr.verify.trait.type_declaration",
+                    "Only a universal trait declares types, as bare type parameters");
+                this->visit_symbol(*a.second);
                 continue;
             }
             require_id(ASRUtils::trait_method_function(a.second) != nullptr,

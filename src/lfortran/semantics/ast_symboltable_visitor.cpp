@@ -4913,6 +4913,10 @@ public:
                 if (!AST::is_a<AST::InterfaceAssociatedType_t>(*x.m_items[i])) continue;
                 auto *declared = AST::down_cast<AST::InterfaceAssociatedType_t>(x.m_items[i]);
                 std::string type_name = to_lower(declared->m_name);
+                if (type_name == ASRUtils::trait_itself_name) {
+                    trait_error("'itself' is the type that implements a trait; it cannot "
+                        "be declared as an associated type", declared->base.base.loc);
+                }
                 if (type_name == name || current_scope->get_symbol(type_name)) {
                     trait_error("associated type '" + type_name + "' of trait '" + name +
                         "' is already declared", declared->base.base.loc);

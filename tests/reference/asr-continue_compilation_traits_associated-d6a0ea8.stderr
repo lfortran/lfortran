@@ -14,102 +14,108 @@ semantic error: associated type 'thing' of trait 'iunused' is not used by any of
 36 |         type :: Thing
    |         ^^^^^^^^^^^^^ 
 
-semantic error: trait 'ipeek' has associated types and can only be used as a generic constraint
-  --> tests/errors/continue_compilation_traits_associated.f90:48:9
+semantic error: 'itself' is the type that implements a trait; it cannot be declared as an associated type
+  --> tests/errors/continue_compilation_traits_associated.f90:46:9
    |
-48 |         class(IPeek), intent(in) :: x
+46 |         type :: itself
+   |         ^^^^^^^^^^^^^^ 
+
+semantic error: trait 'ipeek' has associated types and can only be used as a generic constraint
+  --> tests/errors/continue_compilation_traits_associated.f90:59:9
+   |
+59 |         class(IPeek), intent(in) :: x
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'x' not defined
-  --> tests/errors/continue_compilation_traits_associated.f90:47:5 - 49:28
+  --> tests/errors/continue_compilation_traits_associated.f90:58:5 - 60:28
    |
-47 |        subroutine show_peek(x)
+58 |        subroutine show_peek(x)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-49 |        end subroutine show_peek
+60 |        end subroutine show_peek
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' of trait 'ipeek' is bound to integer(4) by 'count_after' and to real(4) by 'first_or'
-  --> tests/errors/continue_compilation_traits_associated.f90:56:5 - 61:19
+  --> tests/errors/continue_compilation_traits_associated.f90:67:5 - 72:19
    |
-56 |        type, sealed, implements(IPeek) :: Mixed
+67 |        type, sealed, implements(IPeek) :: Mixed
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-61 |        end type Mixed
+72 |        end type Mixed
    | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' cannot be inferred as a character type without a constant length from 'text_append'
-  --> tests/errors/continue_compilation_traits_associated.f90:81:5 - 85:18
+  --> tests/errors/continue_compilation_traits_associated.f90:92:5 - 96:18
    |
-81 |        type, sealed, implements(IAppendable) :: Text
+92 |        type, sealed, implements(IAppendable) :: Text
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-85 |        end type Text
+96 |        end type Text
    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: traits with associated types as generic constraints are not implemented yet
-  --> tests/errors/continue_compilation_traits_associated.f90:99:25
-   |
-99 |     function peek_count{IPeek :: T}(x) result(n)
-   |                         ^^^^^^^^^^ 
+   --> tests/errors/continue_compilation_traits_associated.f90:110:25
+    |
+110 |     function peek_count{IPeek :: T}(x) result(n)
+    |                         ^^^^^^^^^^ 
 
 semantic error: trait receivers require intent(in) or intent(inout) without pointer or allocatable
-   --> tests/errors/continue_compilation_traits_associated.f90:165:5 - 169:19
+   --> tests/errors/continue_compilation_traits_associated.f90:176:5 - 180:19
     |
-165 |        type, sealed, implements(ICounter) :: Reset
+176 |        type, sealed, implements(ICounter) :: Reset
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-169 |        end type Reset
+180 |        end type Reset
     | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a character generic type argument requires a constant length
-   --> tests/errors/continue_compilation_traits_associated.f90:157:24
+   --> tests/errors/continue_compilation_traits_associated.f90:168:24
     |
-157 |         print *, size([Box(s)])
+168 |         print *, size([Box(s)])
     |                        ^^^^^^ 
 
 semantic error: Argument `c` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:212:9
+   --> tests/errors/continue_compilation_traits_associated.f90:223:9
     |
-212 |         call c%bump()
+223 |         call c%bump()
     |         ^^^^^^^^^^^^^ 
 
 semantic error: Argument `t` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:218:9
+   --> tests/errors/continue_compilation_traits_associated.f90:229:9
     |
-218 |         call t(1)%append(4)
+229 |         call t(1)%append(4)
     |         ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical`.
-   --> tests/errors/continue_compilation_traits_associated.f90:244:23
+   --> tests/errors/continue_compilation_traits_associated.f90:255:23
     |
-244 |     i = k%count_after(.true.)
+255 |     i = k%count_after(.true.)
     |                       ^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:249:5
+   --> tests/errors/continue_compilation_traits_associated.f90:260:5
     |
-249 |     call frozen%append(1)
+260 |     call frozen%append(1)
     |     ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:252:9
+   --> tests/errors/continue_compilation_traits_associated.f90:263:9
     |
-252 |         call fixed%append(1)
+263 |         call fixed%append(1)
     |         ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: generic trait calls are read-only: 'count_bump' implements 'bump' of trait 'icounter' with an intent(inout) receiver, which only direct calls on a concrete object may use
-   --> tests/errors/continue_compilation_traits_associated.f90:255:5
+   --> tests/errors/continue_compilation_traits_associated.f90:266:5
     |
-255 |     call generic_bump(c)
+266 |     call generic_bump(c)
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait views are read-only: 'count_bump' implements 'bump' of trait 'icounter' with an intent(inout) receiver, which only direct calls on a concrete object may use
-   --> tests/errors/continue_compilation_traits_associated.f90:257:20
+   --> tests/errors/continue_compilation_traits_associated.f90:268:20
     |
-257 |     call view_bump(c)
+268 |     call view_bump(c)
     |                    ^ 
