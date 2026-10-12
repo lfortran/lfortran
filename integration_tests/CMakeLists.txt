@@ -4205,6 +4205,8 @@ RUN(NAME traits_protocol_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_protocol_operators_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_protocol_operators_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_protocol_operators_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_infer_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_infer_01_oracle LABELS gfortran llvm ISOLATE_MODULES)

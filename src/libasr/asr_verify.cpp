@@ -1860,6 +1860,10 @@ public:
             hierarchy.members.begin(), hierarchy.members.end());
         std::set<ASR::symbol_t*> bound_members;
         std::map<std::string, const ASR::trait_binding_t*> methods;
+        // Initializer and operator requirements are identified by their
+        // operation and signature; distinct overloads of an operator are
+        // different requirements whatever their generated names.
+        std::vector<const ASR::trait_binding_t*> operations;
         for (size_t i = 0; i < x.n_bindings; i++) {
             visit_trait_binding(x.m_bindings[i]);
             ASR::symbol_t *member = check_external
@@ -1877,9 +1881,27 @@ public:
                 "asr.verify.trait_implementation.member_belongs_to_trait",
                 "TraitImplementation binding member '" + member_name +
                 "' does not belong to the trait");
-            auto previous = methods.emplace(member_name, &x.m_bindings[i]);
-            require_id(previous.second || ASRUtils::trait_bindings_equal(
-                    *previous.first->second, x.m_bindings[i]),
+            const ASR::trait_binding_t *previous = nullptr;
+            if (auto *operation = ASRUtils::trait_member_operation(member)) {
+                auto *required = ASRUtils::trait_method_function(member);
+                for (auto *other : operations) {
+                    ASR::symbol_t *other_member =
+                        ASRUtils::symbol_get_past_external(other->m_member);
+                    if (ASRUtils::same_trait_operation(
+                                *ASRUtils::trait_member_operation(other_member), *operation) &&
+                            ASRUtils::trait_operation_signatures_equal(
+                                *ASRUtils::trait_method_function(other_member), *required)) {
+                        previous = other;
+                        break;
+                    }
+                }
+                operations.push_back(&x.m_bindings[i]);
+            } else {
+                auto method = methods.emplace(member_name, &x.m_bindings[i]);
+                if (!method.second) previous = method.first->second;
+            }
+            require_id(!previous || ASRUtils::trait_bindings_equal(
+                    *previous, x.m_bindings[i]),
                 "asr.verify.trait_implementation.coalesced_binding_agrees",
                 "Equivalent inherited methods must have the same procedure and receiver binding");
         }

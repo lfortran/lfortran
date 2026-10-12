@@ -5720,10 +5720,12 @@ public:
 
     // The intrinsic initializer or operation of an intrinsic type that an
     // acknowledged conformance binds: a procedure of the unit that declares
-    // the conformance, with the member's signature.
+    // the conformance, with the member's signature. `bound` are the bindings
+    // of this conformance so far.
     ASR::symbol_t *intrinsic_trait_operation(ASR::symbol_t *member,
             const ASR::type_set_operation_t &operation, ASR::ttype_t *type,
-            const ASR::Trait_t &trait, const Location &loc) {
+            const ASR::Trait_t &trait, const Vec<ASR::trait_binding_t> &bound,
+            const Location &loc) {
         std::string type_name = ASRUtils::type_to_str_fortran_symbol(type, nullptr, true);
         std::string display = ASRUtils::trait_member_display_name(member);
         std::string operation_name = ASRUtils::symbol_name(
@@ -5731,21 +5733,26 @@ public:
         if (!operation_name.empty() && operation_name[0] == '~') {
             operation_name = operation_name.substr(1);
         }
-        // An equal requirement that another conformance of this unit
+        // An equal requirement that this or another conformance of this unit
         // acknowledges for the type is the same intrinsic operation.
         auto *required = ASRUtils::trait_method_function(member);
+        auto acknowledges = [&](const ASR::trait_binding_t &binding) {
+            auto *acknowledged = ASRUtils::trait_member_operation(binding.m_member);
+            return acknowledged && ASRUtils::same_trait_operation(*acknowledged, operation) &&
+                ASRUtils::trait_operation_signatures_equal(
+                    *ASRUtils::trait_method_function(binding.m_member), *required);
+        };
+        for (size_t i = 0; i < bound.size(); i++) {
+            if (acknowledges(bound[i])) return bound[i].m_procedure;
+        }
         for (const auto &entry : current_scope->get_scope()) {
             if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
             auto *previous = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
             if (previous->m_type_declaration || !ASRUtils::types_equal(
                     previous->m_implementing_type, type, nullptr, nullptr)) continue;
             for (size_t i = 0; i < previous->n_bindings; i++) {
-                const auto &binding = previous->m_bindings[i];
-                auto *acknowledged = ASRUtils::trait_member_operation(binding.m_member);
-                if (acknowledged && ASRUtils::same_trait_operation(*acknowledged, operation) &&
-                        ASRUtils::trait_operation_signatures_equal(
-                            *ASRUtils::trait_method_function(binding.m_member), *required)) {
-                    return binding.m_procedure;
+                if (acknowledges(previous->m_bindings[i])) {
+                    return previous->m_bindings[i].m_procedure;
                 }
             }
         }
@@ -5843,7 +5850,8 @@ public:
     ASR::trait_binding_t bind_trait_operation(ASR::symbol_t *member,
             const ASR::type_set_operation_t &operation, ASR::ttype_t *type,
             ASR::symbol_t *type_symbol, const ASR::Trait_t &trait,
-            std::vector<DeclaredTraitOperation> *declared, const Location &loc) {
+            std::vector<DeclaredTraitOperation> *declared,
+            const Vec<ASR::trait_binding_t> &bound, const Location &loc) {
         std::string display = ASRUtils::trait_member_display_name(member);
         std::string type_name = type_symbol
             ? ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(type_symbol))
@@ -5868,7 +5876,7 @@ public:
                     " cannot be redefined", candidate->loc);
             }
             binding.m_procedure = intrinsic_trait_operation(member, operation, type,
-                trait, loc);
+                trait, bound, loc);
             return binding;
         }
         auto *scratch = al.make_new<SymbolTable>(current_scope);
@@ -5953,7 +5961,7 @@ public:
             for (ASR::symbol_t *member : hierarchy.members) {
                 if (auto *operation = ASRUtils::trait_member_operation(member)) {
                     ASR::trait_binding_t binding = bind_trait_operation(member, *operation,
-                        type, type_symbol, *trait, operations, loc);
+                        type, type_symbol, *trait, operations, bindings, loc);
                     binding.m_member = reference_trait_member(member, current_scope, loc);
                     binding.m_procedure = make_operator_proc_visible(
                         binding.m_procedure, "trait", current_scope);
