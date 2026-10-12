@@ -5,17 +5,17 @@ module gpu_metal_387_m
   ! of `a` has to read the copy of `n`, not the original routine's.
   implicit none
 contains
-  pure function fill_sum(n, x, a) result(r)
+  pure subroutine fill_sum(n, x, a, r)
     integer, intent(in) :: n
     real, intent(in) :: x
     real, intent(inout) :: a(n)
-    real :: r
+    real, intent(out) :: r
     integer :: i
     do i = 1, n
       a(i) = x*i
     end do
     r = sum(a)
-  end function
+  end subroutine
 end module
 
 program gpu_metal_387
@@ -27,7 +27,7 @@ program gpu_metal_387
   do concurrent (i = 1:8)
     block
       real :: w(3)
-      y(i) = fill_sum(3, x(i), w)
+      call fill_sum(3, x(i), w, y(i))
     end block
   end do
   do i = 1, 8
