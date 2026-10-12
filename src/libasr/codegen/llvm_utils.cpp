@@ -3959,16 +3959,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         ensure_string_descriptor_on_heap(llvm_array_type, dest, llvm_str_desc_type);
                         ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(
                             ASRUtils::extract_type(alloc_type->m_type));
-                        int64_t str_len;
-                        ASRUtils::extract_value(str_t->m_len, str_len);
-                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
-                        llvm::Value* total_bytes = builder->CreateMul(
-                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(context, llvm::APInt(64, str_len)));
                         // Get src string_descriptor and char data
                         llvm::Value* src_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, src);
                         llvm::Value* src_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), src_data_ptr);
                         llvm::Value* src_char_ptr = CreateLoad2(i8_ptr, create_gep2(llvm_str_desc_type, src_str_desc, 0));
+                        // The element length is a run-time value for deferred length
+                        llvm::Value* str_len = get_string_length(str_t, src_str_desc);
+                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                        llvm::Value* total_bytes = builder->CreateMul(
+                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
+                            str_len);
                         // Reuse existing dest string_descriptor; allocate new char data and copy
                         llvm::Value* dest_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, dest);
                         llvm::Value* dest_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), dest_data_ptr);
@@ -3980,7 +3980,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         // Update the existing dest string_descriptor with new char data and length
                         builder->CreateStore(builder->CreateBitCast(new_char_data, i8_ptr),
                             create_gep2(llvm_str_desc_type, dest_str_desc, 0));
-                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, str_len)),
+                        builder->CreateStore(str_len,
                             create_gep2(llvm_str_desc_type, dest_str_desc, 1));
                         // Fill the array details for offset, rank, dim using existing function
                         arr_api->fill_array_details(src_expr, src_expr, src, dest,
