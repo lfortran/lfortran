@@ -154,8 +154,28 @@ and signature, not by a name: a child trait can add an overload of an operator
 that its parent requires, and equal requirements in a trait hierarchy are bound
 to the same procedure.
 `type(itself)` in an ordinary message is not implemented yet. Like a trait
-with associated types, a trait that refers to `itself` is only a generic
+with associated types, a trait with an operator requirement is only a generic
 constraint, not a runtime `class(...)` view.
+
+A trait whose only requirements without a receiver are initializers, such as
+the paper's `ICastable`, its child `IAdmissible` or the combination
+`ICastable + IPrintable`, is also a runtime view (paper inline-12 and
+inline-13). An initializer is required for conformance: a type is packed into
+such a view only through a conformance that binds it, and a conformance that
+binds none is diagnosed. It is not callable through an object, so the view's
+contract has no slot for it and a view dispatches only the messages; a view of
+`ICastable` alone has no slot and is inspected with `SELECT TYPE`. `itself`,
+the result of the initializer, does not prevent the view. Values are still
+constructed through the type, `MyType(n)`, or a generic `T(n)`. A generic
+binder constrained by such a trait is not erased through the view
+(`ASRUtils::trait_parameter_contract` is null for a trait with requirements
+without a receiver) and stays a static specialization. The predicates are
+`ASRUtils::trait_member_is_initializer`, `trait_has_operations` and
+`trait_runtime_view_admissible`; the verifier requires that a runtime contract
+belongs to an admissible trait and has one slot per message, none per
+initializer. `traits_runtime_initializers_01` checks owners, borrowed views,
+the combination, projection and `SELECT TYPE` of separately compiled
+contracts and conformance.
 
 A derived type binds them in an `implements` statement of its module:
 `initial :: f` lists initializers, which also overload the constructor, and
@@ -1268,7 +1288,8 @@ The broader proposal is not yet implemented. In particular, pointer trait
 results, mutating generic or runtime trait calls, associated-type projections
 in generic code, unrestricted intrinsic capabilities,
 generic derived types beyond the boundaries described in their section, runtime
-views and runtime generic methods over initializer and operator requirements,
+views over operator requirements, runtime generic methods over initializer and
+operator requirements,
 and unrestricted generic-method signatures are separate implementation stages.
 Existing `:=` inferred assignment is a different extension and is not required
 to use static traits; in a generic body it also declares a variable of a type
@@ -2100,7 +2121,9 @@ retroactive implementation does not mutate the original imported derived type.
 The LLVM backend does not infer conformance or choose trait overloads.
 
 Runtime contracts use `TraitRuntimeContract` and `trait_slot` to retain all
-nominal origins, including coalesced messages and shared diamonds.
+nominal origins, including coalesced messages and shared diamonds. Only
+messages have slots: an initializer requirement, recognized by its
+`TypeSetConversion` operation in the trait's `operations`, has none.
 Explicit anonymous provenance records a normalized, parent-only conjunction;
 neither equality nor weakening recognizes generated symbol names.
 `TraitWitness` records the selected conformance, typed adapters, liveness

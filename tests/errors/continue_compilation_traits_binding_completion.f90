@@ -185,3 +185,73 @@ contains
         res%n = n
     end function from_wide
 end module cc_traits_binding_completion_incompatible
+
+module cc_traits_binding_completion_views
+    use cc_traits_binding_completion_contracts, only: IConstructable, IPrintable
+    implicit none
+    abstract interface, extends(IConstructable + IPrintable) :: IAdmissible
+        subroutine input(filename)
+            character(*), intent(in) :: filename
+        end subroutine input
+    end interface IAdmissible
+end module cc_traits_binding_completion_views
+
+! E08: a runtime view has no slot for an initializer, but a conformance to
+! a trait with an initializer requirement still binds one.
+module cc_traits_binding_completion_unconstructed
+    use cc_traits_binding_completion_views, only: IAdmissible
+    implicit none
+    type, sealed :: Unconstructed
+        integer :: n = 0
+    end type Unconstructed
+
+    implements IAdmissible :: Unconstructed
+        procedure, pass :: output => unconstructed_output
+        procedure, pass :: input => unconstructed_input
+    end implements Unconstructed
+contains
+    subroutine unconstructed_output(self)
+        type(Unconstructed), intent(in) :: self
+        print *, self%n
+    end subroutine unconstructed_output
+
+    subroutine unconstructed_input(self, filename)
+        type(Unconstructed), intent(in) :: self
+        character(*), intent(in)        :: filename
+        print *, self%n, filename
+    end subroutine unconstructed_input
+end module cc_traits_binding_completion_unconstructed
+
+module cc_traits_binding_completion_printed
+    use cc_traits_binding_completion_contracts, only: IPrintable
+    implicit none
+    type, sealed :: Printed
+        integer :: n = 0
+    end type Printed
+
+    implements IPrintable :: Printed
+        procedure, pass :: output => printed_output
+    end implements Printed
+contains
+    subroutine printed_output(self)
+        type(Printed), intent(in) :: self
+        print *, self%n
+    end subroutine printed_output
+end module cc_traits_binding_completion_printed
+
+! E09: a type that only implements IPrintable does not conform to the
+! combination with IConstructable. E10: an initializer requirement is not a
+! method of a runtime view.
+module cc_traits_binding_completion_view_use
+    use cc_traits_binding_completion_contracts, only: IConstructable, IPrintable
+    use cc_traits_binding_completion_views, only: IAdmissible
+    use cc_traits_binding_completion_printed, only: Printed
+    implicit none
+contains
+    subroutine use_views()
+        class(IConstructable + IPrintable), allocatable :: pair
+        class(IAdmissible), allocatable :: obj
+        allocate(pair, source=Printed(1))
+        call obj%initial(3)
+    end subroutine use_views
+end module cc_traits_binding_completion_view_use

@@ -10923,6 +10923,18 @@ bool contains_trait_itself(ASR::ttype_t *type);
 // The operation of an initializer or operator requirement, which has no
 // receiver, or nullptr for an ordinary message.
 ASR::type_set_operation_t *trait_member_operation(ASR::symbol_t *member);
+// Whether `member` is an initializer requirement: its operation in its
+// trait's operations is a TypeSetConversion.
+bool trait_member_is_initializer(ASR::symbol_t *member);
+// Whether `trait` or one of its ancestors declares a requirement without a
+// receiver: an initializer or an operator.
+bool trait_has_operations(const ASR::Trait_t &trait);
+// Whether `trait` can be a runtime class(...) view: a universal trait without
+// associated types whose requirements without a receiver are all
+// initializers, in its whole hierarchy, and whose messages do not use
+// `itself`. An initializer is required for conformance but is not callable
+// through an object, so the view's contract has no slot for it.
+bool trait_runtime_view_admissible(const ASR::Trait_t &trait);
 // The member as a source names it: `initial`, `operator(*)` or its name.
 std::string trait_member_display_name(ASR::symbol_t *member);
 std::string trait_operation_display_name(const ASR::type_set_operation_t &operation);
@@ -10934,6 +10946,9 @@ bool trait_operation_signatures_equal(const ASR::Function_t &left,
     const ASR::Function_t &right);
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
 std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
+// The runtime contract that erases a binder: that of its single nominal
+// trait, unless the trait has requirements without a receiver, which no view
+// slot provides.
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
 // The single normalized type-set trait of a closed binder, or nullptr.
 ASR::Trait_t *trait_parameter_type_set(ASR::symbol_t *parameter);

@@ -5735,6 +5735,44 @@ ASR::type_set_operation_t *trait_member_operation(ASR::symbol_t *member)
     return nullptr;
 }
 
+bool trait_member_is_initializer(ASR::symbol_t *member)
+{
+    ASR::type_set_operation_t *operation = trait_member_operation(member);
+    return operation && ASR::is_a<ASR::TypeSetConversion_t>(*operation);
+}
+
+bool trait_has_operations(const ASR::Trait_t &trait)
+{
+    for (const ASR::Trait_t *ancestor : trait_hierarchy(trait).traits) {
+        if (ancestor->n_operations) return true;
+    }
+    return false;
+}
+
+bool trait_runtime_view_admissible(const ASR::Trait_t &trait)
+{
+    if (trait.m_kind != ASR::trait_kindType::UniversalTrait ||
+            trait_has_associated_types(trait)) return false;
+    TraitHierarchy hierarchy = trait_hierarchy(trait);
+    if (hierarchy.error != TraitHierarchyError::None) return false;
+    for (const ASR::Trait_t *ancestor : hierarchy.traits) {
+        for (size_t i = 0; i < ancestor->n_operations; i++) {
+            if (!ASR::is_a<ASR::TypeSetConversion_t>(
+                    *ancestor->m_operations[i].m_operation)) return false;
+        }
+    }
+    for (ASR::symbol_t *member : hierarchy.members) {
+        if (trait_member_operation(member)) continue;
+        ASR::Function_t *message = trait_method_function(member);
+        if (message->m_return_var &&
+                contains_trait_itself(expr_type(message->m_return_var))) return false;
+        for (size_t i = 0; i < message->n_args; i++) {
+            if (contains_trait_itself(expr_type(message->m_args[i]))) return false;
+        }
+    }
+    return true;
+}
+
 std::string trait_operation_display_name(const ASR::type_set_operation_t &operation)
 {
     if (ASR::is_a<ASR::TypeSetConversion_t>(operation)) return "initializer";
@@ -5892,7 +5930,9 @@ std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter)
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter)
 {
     auto traits = trait_parameter_traits(parameter);
-    return traits.size() == 1 ? trait_runtime_contract(traits[0]) : nullptr;
+    if (traits.size() != 1 ||
+            trait_has_operations(*ASR::down_cast<ASR::Trait_t>(traits[0]))) return nullptr;
+    return trait_runtime_contract(traits[0]);
 }
 
 ASR::Trait_t *trait_parameter_type_set(ASR::symbol_t *parameter)

@@ -3891,6 +3891,10 @@ RUN(NAME traits_initializers_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_initializers_05_contracts.f90 traits_initializers_05_basic.f90
         traits_initializers_05_enhanced.f90)
+RUN(NAME traits_runtime_initializers_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_initializers_01_contracts.f90
+        traits_runtime_initializers_01_types.f90)
 RUN(NAME traits_implements_bindings_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_method_01 LABELS llvm c NO_STD_F23 EXTRA_ARGS --verify-all-passes)

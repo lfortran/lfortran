@@ -56,6 +56,16 @@ semantic error: argument 'n' does not match trait method 'initializer': expected
 180 |        end type Wide
     | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: type 'unconstructed' does not bind an initializer matching the requirement of trait 'iadmissible'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:208:5 - 211:33
+    |
+208 |        implements IAdmissible :: Unconstructed
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+211 |        end implements Unconstructed
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_binding_completion.f90:60:9
    |
@@ -67,3 +77,15 @@ semantic error: no visible nominal implementation of trait 'iprintable' for type
    |
 61 |     allocate(printer, source=Bound(4))
    |                              ^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for type 'printed'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:254:31
+    |
+254 |         allocate(pair, source=Printed(1))
+    |                               ^^^^^^^^^^ 
+
+semantic error: method 'initial' is not provided by the declared runtime trait
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:255:9
+    |
+255 |         call obj%initial(3)
+    |         ^^^^^^^^^^^^^^^^^^^ 

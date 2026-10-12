@@ -23796,8 +23796,12 @@ public:
             bool anonymous = false) {
         const Location &loc = trait->base.base.loc;
         auto hierarchy = checked_trait_hierarchy(*trait, loc);
+        // A view calls only messages: an initializer requirement has no slot,
+        // and an operator requirement leaves the trait a generic constraint.
+        if (!ASRUtils::trait_runtime_view_admissible(*trait)) return nullptr;
         std::map<std::string, ASR::Function_t*> methods;
         for (auto *member : hierarchy.members) {
+            if (ASRUtils::trait_member_is_initializer(member)) continue;
             auto *method = ASRUtils::trait_method_function(member);
             if (!ASRUtils::runtime_trait_method_supported(*method) ||
                     has_postponed_array_bounds(*method)) return nullptr;
@@ -23824,6 +23828,7 @@ public:
         Vec<ASR::trait_slot_t> slots;
         slots.reserve(al, hierarchy.members.size());
         for (auto *member : hierarchy.members) {
+            if (ASRUtils::trait_member_is_initializer(member)) continue;
             auto *method = ASRUtils::trait_method_function(member);
             auto inserted = indices.emplace(method->m_name, families.size());
             if (inserted.second) {
@@ -23916,16 +23921,17 @@ public:
         return scope;
     }
 
-    // A trait whose requirements refer to the implementing type, the
-    // associated type `itself`, has no runtime view.
+    // A runtime view dispatches the messages of its trait. A trait whose
+    // operator requirements or messages refer to the implementing type, the
+    // associated type `itself`, has none; an initializer requirement, whose
+    // result is `itself`, is required for conformance only and is not
+    // callable through an object, so it leaves no slot in the view.
     void check_trait_runtime_view(const ASR::Trait_t &trait, const Location &loc) {
-        for (auto *ancestor : checked_trait_hierarchy(trait, loc).traits) {
-            if (ancestor->n_operations || ancestor->m_symtab->get_symbol(
-                    ASRUtils::trait_itself_name)) {
-                trait_call_error("trait '" + std::string(trait.m_name) +
-                    "' has the associated type itself and can only be used as a "
-                    "generic constraint", loc);
-            }
+        checked_trait_hierarchy(trait, loc);
+        if (!ASRUtils::trait_runtime_view_admissible(trait)) {
+            trait_call_error("trait '" + std::string(trait.m_name) +
+                "' has the associated type itself and can only be used as a "
+                "generic constraint", loc);
         }
     }
 

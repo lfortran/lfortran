@@ -2417,7 +2417,14 @@ public:
             }
             std::map<std::string, size_t> indices;
             std::vector<std::vector<symbol_t*>> expected;
+            require_id(ASRUtils::trait_runtime_view_admissible(*ASR::down_cast<Trait_t>(trait_symbol)),
+                "asr.verify.trait_contract.view_admissible",
+                "A runtime contract belongs to a trait whose requirements without a "
+                "receiver are initializers and whose messages do not use itself");
             for (auto *member : hierarchy.members) {
+                // An initializer is required for conformance but is not
+                // callable through an object: it has no slot.
+                if (ASRUtils::trait_member_is_initializer(member)) continue;
                 auto inserted = indices.emplace(ASRUtils::symbol_name(member), expected.size());
                 if (inserted.second) expected.emplace_back();
                 expected[inserted.first->second].push_back(member);
