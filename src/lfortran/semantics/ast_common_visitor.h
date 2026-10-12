@@ -23198,6 +23198,34 @@ public:
                             );
                 throw SemanticAbort();
             }
+        } else if (ASRUtils::is_logical(*dest_type)) {
+            if (overloaded == nullptr) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add):
+                        break;
+                    case (ASR::Sub):
+                        op_str = "-";
+                        break;
+                    case (ASR::Mul):
+                        op_str = "*";
+                        break;
+                    case (ASR::Div):
+                        op_str = "/";
+                        break;
+                    case (ASR::Pow):
+                        op_str = "**";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                std::string ltype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(left), left);
+                std::string rtype = ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(right), right);
+                diag.add(Diagnostic(
+                    "Operands of binary numeric operator '" + op_str + "' are " + ltype + " and " + rtype,
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         } else if( overloaded == nullptr ) {
             LCOMPILERS_ASSERT(false);
         }

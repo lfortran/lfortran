@@ -2433,3 +2433,16 @@ contains
         tan = 0
     end function tan
 end function later_internal_function_interface_error
+
+! Binary numeric operators with two LOGICAL operands are an error (#14735).
+subroutine logical_binop_error()
+    implicit none
+    logical :: a, b
+    a = .true.
+    b = .false.
+    print *, a + b ! {Error} Operands of binary numeric operator '+' are logical(4) and logical(4)
+    print *, a - b ! {Error} Operands of binary numeric operator '-' are logical(4) and logical(4)
+    print *, a * b ! {Error} Operands of binary numeric operator '*' are logical(4) and logical(4)
+    print *, a / b ! {Error} Operands of binary numeric operator '/' are logical(4) and logical(4)
+    print *, a ** b ! {Error} Operands of binary numeric operator '**' are logical(4) and logical(4)
+end subroutine logical_binop_error
