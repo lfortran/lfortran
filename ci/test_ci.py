@@ -987,22 +987,64 @@ class QuickScriptTests(unittest.TestCase):
         build = (ROOT / "ci/build.sh").read_text()
         block = build.split('if [[ $WIN == "1" ]]; then # Windows', 1)[1]
         block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\ncmake --build", 1)[0]
-        environment_log = self.directory / "build-environment.jsonl"
-        env = dict(self.env, CI_BUILD_ENV_LOG=str(environment_log),
-                   LFORTRAN_CMAKE_GENERATOR="Ninja", ENABLE_RUNTIME_STACKTRACE="yes")
-        result = subprocess.run(
-            ["bash", "-e"], input=script + "\n" + block,
-            cwd=self.directory, env=env, capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
-        self.assertEqual(len(calls), 1)
-        self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", calls[0])
-        self.assertIn("-DCMAKE_BUILD_TYPE=Debug", calls[0])
         expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                     "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
-        flags = json.loads(environment_log.read_text())
-        self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected))
+        for optimize, cflags, cxxflags in (
+                (None, expected, expected),
+                ("yes", expected + " -O2", expected + " -O2 -Wno-mismatched-new-delete")):
+            with self.subTest(optimize=optimize):
+                self.calls.write_text("")
+                environment_log = self.directory / "build-environment.jsonl"
+                environment_log.unlink(missing_ok=True)
+                env = dict(self.env, CI_BUILD_ENV_LOG=str(environment_log),
+                           LFORTRAN_CMAKE_GENERATOR="Ninja", ENABLE_RUNTIME_STACKTRACE="yes")
+                # The CI job that runs these tests may itself be optimized.
+                env.pop("LFORTRAN_CI_OPTIMIZE", None)
+                if optimize:
+                    env["LFORTRAN_CI_OPTIMIZE"] = optimize
+                result = subprocess.run(
+                    ["bash", "-e"], input=script + "\n" + block,
+                    cwd=self.directory, env=env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
+                self.assertEqual(len(calls), 1)
+                self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", calls[0])
+                # Still a Debug build: assertions and ASR verification stay on.
+                self.assertIn("-DCMAKE_BUILD_TYPE=Debug", calls[0])
+                flags = json.loads(environment_log.read_text())
+                self.assertEqual(flags, {"CFLAGS": cflags, "CXXFLAGS": cxxflags})
+                self.assertNotIn("NDEBUG", cflags + cxxflags)
+
+    def test_only_linux_llvm_21_platform_compiler_is_optimized(self):
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("    - name: Select compiler optimization\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("id: optimize\n", step)
+        script = step.split("      run: |\n", 1)[1]
+        cache = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        # -O2 objects get their own cache instead of mixing with -O0 ones.
+        self.assertIn("key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}"
+                      "${{ steps.optimize.outputs.key-suffix }}\n", cache)
+        self.assertLess(action.index("name: Select compiler optimization"),
+                        action.index("uses: hendrikmuhs/ccache-action@main"))
+        for platform, llvm, optimized in (
+                ("ubuntu-latest", "21", True), ("ubuntu-latest", "11", False),
+                ("macos-latest", "11", False), ("windows-2025", "11", False),
+                ("macos-latest", "21", False)):
+            with self.subTest(platform=platform, llvm=llvm):
+                rendered = script.replace("${{ inputs.os }}", platform)
+                rendered = rendered.replace("${{ inputs.llvm-version }}", llvm)
+                env_file = self.directory / "github_env"
+                output_file = self.directory / "github_output"
+                env_file.write_text("")
+                output_file.write_text("")
+                result = subprocess.run(
+                    ["bash", "-e"], input=rendered, cwd=self.directory,
+                    env=dict(self.env, GITHUB_ENV=str(env_file), GITHUB_OUTPUT=str(output_file)),
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(env_file.read_text(), "LFORTRAN_CI_OPTIMIZE=yes\n" if optimized else "")
+                self.assertEqual(output_file.read_text(), "key-suffix=-o2\n" if optimized else "")
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

@@ -14,11 +14,25 @@ Run from the assigned worktree's root, saving and inspecting logs:
 
 ```bash
 CMAKE_BUILD_PARALLEL_LEVEL=8 pixi run -e llvm11 build > build.log 2>&1
+CMAKE_BUILD_PARALLEL_LEVEL=8 pixi run -e llvm11 rebuild > build.log 2>&1
 pixi run -e llvm11 start --version
 pixi run -e llvm11 ctest -j8 > unit.log 2>&1
 pixi run -e llvm11 tests -j8 > reference.log 2>&1
 pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
 ```
+
+**Use `build` once, then `rebuild` after edits.** `build` configures CMake,
+which reruns `build0.sh` and rewrites every generated source (`asr.h`, `ast.h`,
+the parser, ...) with a new timestamp even when its content is unchanged, so
+Ninja then recompiles almost everything (a one-line edit can cost 15+ minutes).
+`rebuild` (`cmake --build`) recompiles only what changed. Run `build` again
+only for a new worktree, for new CMake options, or after editing a generator
+input: `src/libasr/ASR.asdl`, `grammar/AST.asdl`,
+`src/lfortran/parser/parser.yy`, `tokenizer.re`, `preprocessor.re`,
+`src/libasr/wasm_instructions.txt`, the generator scripts themselves
+(`asdl_cpp.py`, `wasm_instructions_visitor.py`,
+`intrinsic_func_registry_util_gen.py`) or `src/server/generator/`. `rebuild`
+does not regenerate these, so it would compile stale generated sources.
 
 Use the allocated job budget instead of `8` when sharing resources. `pixi run`
 installs the selected environment automatically. The compiler is
@@ -85,7 +99,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
-| `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, review locally, publish dependency-aware PRs from a fork, and iterate on review and CI |
+| `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work.
@@ -143,13 +157,20 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
 - Use Pixi and LLVM 11 for fresh fixing worktrees, as described below. Pass
   each subagent the exact worktree, build directory, compiler path, environment
   invocation, and resource budget; shell activation is not inherited.
-- Review each fixed branch locally with `pr-review` until it is clean, then
-  publish a draft from the user's fork and iterate on CI failures, review
-  findings, and human feedback until Quick checks is green before marking
-  ready. Every push reruns the full Quick checks, so batch pushes: push CI
-  fixes as soon as they pass locally; hold other changes until the current
-  run finishes rather than cancelling a healthy run. Follow the
-  commit-authorship policy below in every subagent, including CI fixers.
+- `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
+  and each new test run directly in normal, `--fast`, and `--std=f23` modes
+  and with GFortran); after the last fix, the job runs the unit, integration,
+  and reference suites once, in the default mode. Then publish a draft from
+  the user's fork so Quick starts early, and review it locally with
+  `pr-review` while CI runs; the review reruns the suites only if compiler
+  source changed since they passed. Never push compiler-source changes that
+  have not passed the local suites once. In a batch, at most four PRs run
+  Quick at once. Iterate on CI failures, review findings, and human feedback
+  until Quick is green and the review is clean before marking ready. Every
+  push reruns Quick, so batch pushes: push CI fixes as soon as they pass
+  locally; hold other changes until the current run finishes rather than
+  cancelling a healthy run. Follow the commit-authorship policy below in every
+  subagent, including CI fixers.
 - Record every additional compiler bug discovered in any phase. Fix regressions
   introduced by the current changes in the same PR. For unrelated pre-existing
   bugs, verify against upstream `main`, search open and closed GitHub issues,
@@ -189,6 +210,7 @@ the same when the build system or dependencies change:
 
 ```bash
 pixi run -e llvm11 build
+pixi run -e llvm11 rebuild
 pixi run -e llvm11 start --version
 pixi run -e llvm11 ctest -j8 > unit.log 2>&1
 pixi run -e llvm11 tests -j8 > reference.log 2>&1
@@ -232,19 +254,25 @@ In a fresh worktree, create its ignored state directory and set
 worktree's root (substitute the assigned `<id>`):
 
 ```bash
-pixi run -e llvm11 build > .fix-issue/<id>/build.log 2>&1
+pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2' > .fix-issue/<id>/build.log 2>&1
 pixi run -e llvm11 llvm-config --version
 pixi run -e llvm11 start --version
 ```
 
-Use the same tasks for rebuilds and tests, and inspect their saved logs.
-Budget `<jobs>` across active workers instead of giving each worker all cores:
+The extra flags build a Debug compiler (assertions on) with `-O2`, like
+Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the
+CMake cache, so later `build` and `rebuild` runs keep them. While iterating,
+rebuild with `pixi run -e llvm11 rebuild` (see above for when `build` is
+needed instead) and rerun reproducers and new tests directly (`fix-mre` targeted
+checks). Run the full suites below once, after the last fix, in the default
+mode only, and inspect their saved logs. Budget `<jobs>` across active
+workers instead of giving each worker all cores:
 
 ```bash
+pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
 pixi run -e llvm11 ctest -j<jobs> > .fix-issue/<id>/unit.log 2>&1
 pixi run -e llvm11 tests -j<jobs> > .fix-issue/<id>/reference.log 2>&1
 pixi run -e llvm11 integration_tests -j<jobs> > .fix-issue/<id>/integration.log 2>&1
-pixi run -e llvm11 bash run.sh > .fix-issue/<id>/mre.log 2>&1
 ```
 
 Pixi sets `LFORTRAN_BUILD_DIR` to the absolute `build/<environment>` path and
@@ -274,7 +302,8 @@ that is very expensive, the tests can run several minutes. Instead, run tests
 only once, redirect to a log file and then examine the log file.
 
 ## Quick Smoke Test
-- Default build: `pixi run -e llvm11 build` (LLVM enabled).
+- Default build: `pixi run -e llvm11 build` (LLVM enabled); after edits,
+  `pixi run -e llvm11 rebuild`.
 - AST/ASR: `pixi run -e llvm11 start --show-ast examples/expr2.f90`
 - Compile and run: `pixi run -e llvm11 start examples/expr2.f90`.
 - Keep an executable: `pixi run -e llvm11 start examples/expr2.f90 -o expr2`.
@@ -314,8 +343,10 @@ only once, redirect to a log file and then examine the log file.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
-  before your change and pass after. Do not merge without a full local pass of
-  unit and integration suites.
+  before your change and pass after. Before pushing a compiler change, run
+  the unit, integration (default mode), and reference suites locally once.
+  Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
+  and is the merge gate.
 
 ### CI policy
 
@@ -337,7 +368,9 @@ only once, redirect to a log file and then examine the log file.
   Every full Quick suite runs with assertions and per-pass ASR verification.
   The LLVM 11 compiler is a Debug build compiled with `-O2` (assertions and
   verification stay on, no `NDEBUG`), which makes its four full passes ~1.6x
-  faster; the platform builds keep `-O0`.
+  faster. The Linux LLVM 21 platform compiler is compiled with `-O2` the same
+  way (in `.github/actions/build-platform`, also for Exhaustive's copy); the
+  macOS, Windows and Linux LLVM 11 platform builds keep their defaults.
   Both full-suite compilers also use the platform C/C++ diagnostic/hardening
   flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
@@ -410,7 +443,8 @@ and the distinction between capability tests and application validation.
   - Avoid custom generation; place real sources in the tree and check them in.
   - Search for similar tests and use similar name convention (e.g., `intrinsic_name_NN.f90`, `derived_type_feature_NN.f90`)
 - Prefer integration tests; all new tests should be integration tests.
-- Ensure integration tests pass locally: `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
+- Ensure the new test passes locally, then run the full suite once:
+  `pixi run -e llvm11 integration_tests -j16 > integration.log 2>&1`.
 - Add checks for correct results inside the `.f90` file using `if (i /= 4) error stop`-style idioms.
 - Always label new tests with at least `gfortran` (to ensure the code compiles with GFortran and does not rely on any LFortran-specific behavior) and `llvm` (to test with LFortran's default LLVM backend).
 - When fixing a bug, add an integration test that reproduces the failure and now compiles/runs successfully.
@@ -499,4 +533,4 @@ and the distinction between capability tests and application validation.
 - Do not commit generated artifacts, large binaries, or local configs.
 - Use Draft PRs while iterating; click “Ready for review” only when satisfied.
 - Use plain Markdown in PR descriptions (no escaped `\n`). Keep it clean, minimal, and follow simple headings (Summary, Scope, Verification, Rationale).
-- Before marking ready: ensure all local tests pass (unit + integration) and include evidence.
+- Before marking ready: ensure Quick checks is green and include local test evidence.

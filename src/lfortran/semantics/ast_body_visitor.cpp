@@ -307,6 +307,12 @@ public:
         }
     }
 
+    void visit_Enum(const AST::Enum_t& x) {
+        if( from_block ) {
+            visit_EnumUtil(x);
+        }
+    }
+
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
@@ -4786,7 +4792,7 @@ public:
                         current_scope->add_symbol(x.m_assoc_name, assoc_sym);
                         ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
                         ASR::expr_t* cast_expr = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*variable_type) && rank == 0) {
+                        if (ASRUtils::is_class_type(variable_type) && rank == 0) {
                             cast_expr = m_selector;
                         } else {
                             cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
@@ -4956,6 +4962,7 @@ public:
         size_t selector_variable_n_dependencies = 0;
         if( ASR::is_a<ASR::Var_t>(*m_selector) ) {
             ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
+            selector_sym = ASRUtils::symbol_get_past_external(selector_sym);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*selector_sym));
             selector_variable = ASR::down_cast<ASR::Variable_t>(selector_sym);
             selector_variable_type = selector_variable->m_type;
@@ -9452,10 +9459,11 @@ public:
                     diag::Label("", {test_int->base.loc})}));
             throw SemanticAbort();
         }
-        if (ASRUtils::contains_finalizable_function_reference(test_int)) {
-            // The test is evaluated once, and the results of the functions
-            // it references are finalized after that (F2018 7.5.6.3 p5):
-            // the two comparisons below would otherwise share the reference.
+        if (ASRUtils::contains_function_reference(test_int)) {
+            // The test is evaluated once (F2008 8.2.4), so the functions it
+            // references are invoked once, and their results are finalized
+            // after that (F2018 7.5.6.3 p5): the two comparisons below would
+            // otherwise each evaluate the reference.
             std::string tmp_name = current_scope->get_unique_name(
                 "__lfortran_arithmetic_if_test");
             ASR::asr_t* tmp_sym = ASRUtils::make_Variable_t_util(

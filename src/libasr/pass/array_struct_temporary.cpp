@@ -2188,13 +2188,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
         // F2018 10.2.1.3: the expression is evaluated before an allocated
         // polymorphic variable of another shape or dynamic type is
-        // deallocated (array_op inserts the deallocation for a value that
-        // is not polymorphic). A value that array_op would evaluate element
-        // by element after that deallocation, and that names the variable
-        // or an array pointer (such as an associate name), is evaluated
-        // into a temporary first, e.g. `v = g(v)` with an elemental `g`, or
-        // `u = int(q) + 1` inside `select type (q => u)`. The result of a
-        // call to a non-elemental function is already a temporary.
+        // deallocated (array_op inserts the deallocation). A value that
+        // array_op would evaluate element by element after that
+        // deallocation, and that names the variable or an array pointer
+        // (such as an associate name), is evaluated into a temporary first,
+        // e.g. `v = g(v)` with an elemental `g`, `u = int(q) + 1` inside
+        // `select type (q => u)`, or `v = v(2:3)`. The result of a call to a
+        // non-elemental function is already a temporary.
         ASR::ttype_t* target_type = ASRUtils::expr_type(xx.m_target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(xx.m_value);
         ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(xx.m_value);
@@ -2204,7 +2204,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::is_allocatable(target_type) &&
             ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
             ASRUtils::is_array(value_type) &&
-            !ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
             !ASR::is_a<ASR::Var_t>(*value) &&
             !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
               !ASRUtils::is_elemental(

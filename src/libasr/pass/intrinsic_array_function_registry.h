@@ -694,6 +694,14 @@ static inline void fill_dimensions_for_ArrIntrinsic(Allocator& al, size_t n_dims
     }
 }
 
+// The result of an array-valued intrinsic is indexed from 1 whatever the
+// lower bounds of its arguments, so a result dimension takes only the extent
+// of the argument dimension it comes from, never its lower bound. A dimension
+// whose extent is not known here stays deferred.
+static inline ASR::dimension_t result_dim(ASRBuilder& b, ASR::expr_t* length) {
+    return b.set_dim(length ? b.i32(1) : nullptr, length);
+}
+
 static inline bool is_same_shape(ASR::expr_t* &array, ASR::expr_t* &mask, const std::string &intrinsic_func_name, diag::Diagnostics &diag, const std::vector<Location> &location) {
     ASR::ttype_t* array_type = ASRUtils::expr_type(array);
     ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
@@ -1788,11 +1796,7 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
                 if ( i == dim ) {
                     continue;
                 }
-                ASR::dimension_t tmp_dim;
-                tmp_dim.loc = args[0]->base.loc;
-                tmp_dim.m_start = m_dims[i - 1].m_start;
-                tmp_dim.m_length = m_dims[i - 1].m_length;
-                result_dims.push_back(al, tmp_dim);
+                result_dims.push_back(al, result_dim(b, m_dims[i - 1].m_length));
             }
         }
         m_args.push_back(al, dim_expr);
@@ -2357,6 +2361,7 @@ namespace Cshift {
         if (curr_idx == (int)do_loop_variables.size() - 1) {
             std::vector<ASR::expr_t*> array_vars(rank);
             std::vector<ASR::expr_t*> res_vars(rank);
+            std::vector<ASR::expr_t*> shift_vars(rank - 1);
 
             array_vars[shifting_dim - 1] = j;
             res_vars[shifting_dim - 1] = i;
@@ -2366,6 +2371,10 @@ namespace Cshift {
                 if (idim == shifting_dim - 1) continue;
                 array_vars[idim] = do_loop_variables[k];
                 res_vars[idim] = do_loop_variables[k];
+                // `shift` need not have the lower bounds of `array`
+                shift_vars[k] = b.Add(do_loop_variables[k], b.Sub(
+                    b.GetLBound(shift, k + 1, index_kind),
+                    b.GetLBound(array, idim + 1, index_kind)));
                 k++;
             }
 
@@ -2376,7 +2385,7 @@ namespace Cshift {
             return b.DoLoop(do_loop_variables[curr_idx],
                 b.GetLBound(array, actual_dim, index_kind),
                 b.GetUBound(array, actual_dim, index_kind), {
-                    b.Assignment(shift_val, b.ArrayItem_01(shift, do_loop_variables)),
+                    b.Assignment(shift_val, b.ArrayItem_01(shift, shift_vars)),
                     b.If(b.Lt(shift_val, b.i_idx(0, index_kind)), {
                         b.Assignment(shift_val, b.Add(shift_val,
                             b.GetUBound(array, shifting_dim, index_kind)))
@@ -2496,7 +2505,7 @@ namespace Cshift {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
         for(int i=0; i<array_rank; i++){
-            result_dims.push_back(al, b.set_dim(array_dims[i].m_start, array_dims[i].m_length));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, array_dims[i].m_length));
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
@@ -2544,7 +2553,21 @@ namespace Cshift {
         }
         declare_basic_variables(cshift_fn_name);
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
-        fill_func_arg("shift", arg_types[1]);
+        ASR::ttype_t* shift_type = arg_types[1];
+        if (is_shift_array) {
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n_dims = extract_dimensions_from_ttype(shift_type, m_dims);
+            Vec<ASR::dimension_t> shift_dims; shift_dims.reserve(al, n_dims);
+            for (size_t idim = 0; idim < n_dims; idim++) {
+                shift_dims.push_back(al, b.set_dim(
+                    m_dims[idim].m_start ? ASRUtils::expr_value(m_dims[idim].m_start) : nullptr,
+                    m_dims[idim].m_length ? ASRUtils::expr_value(m_dims[idim].m_length) : nullptr));
+            }
+            shift_type = ASRUtils::duplicate_type(al, shift_type, &shift_dims,
+                ASRUtils::extract_physical_type(shift_type),
+                !ASRUtils::is_dimension_empty(shift_dims.p, shift_dims.n));
+        }
+        fill_func_arg("shift", shift_type);
         ASR::ttype_t* return_type_ = return_type;
         /*
             cshift(array, shift, dim)
@@ -2964,7 +2987,7 @@ namespace Spread {
         }
         if( is_scalar ){
             Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
-            result_dims.push_back(al, b.set_dim(source_dims[0].m_start, ncopies));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, ncopies));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
             bool is_dim_compile_time_constant = ASRUtils::is_value_constant(dim);
@@ -3288,7 +3311,7 @@ namespace Eoshift {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, array_rank);
         int overload_id = 2;
         for (int i = 0; i < array_rank; i++) {
-            result_dims.push_back(al, b.set_dim(array_dims[i].m_start, array_dims[i].m_length));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, array_dims[i].m_length));
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
@@ -5204,11 +5227,7 @@ namespace FindLoc {
                     if ( i == dim ) {
                         continue;
                     }
-                    ASR::dimension_t tmp_dim;
-                    tmp_dim.loc = args[0]->base.loc;
-                    tmp_dim.m_start = m_dims[i - 1].m_start;
-                    tmp_dim.m_length = m_dims[i - 1].m_length;
-                    result_dims.push_back(al, tmp_dim);
+                    result_dims.push_back(al, ArrIntrinsic::result_dim(b, m_dims[i - 1].m_length));
                 }
             }
             m_args.push_back(al, dim_expr);
@@ -5574,7 +5593,7 @@ namespace MatMul {
                     return nullptr;
                 }
             }
-            result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b,
                 matrix_b_dims[1].m_length));
         } else if (matrix_a_rank == 2) {
             overload_id = 2;
@@ -5593,11 +5612,11 @@ namespace MatMul {
                     return nullptr;
                 }
             }
-            result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b,
                 matrix_a_dims[0].m_length));
             if (matrix_b_rank == 2) {
                 overload_id = 3;
-                result_dims.push_back(al, b.set_dim(matrix_b_dims[1].m_start,
+                result_dims.push_back(al, ArrIntrinsic::result_dim(b,
                     matrix_b_dims[1].m_length));
             }
         } else {
@@ -6772,7 +6791,7 @@ namespace Pack {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
         int overload_id = 2;
         if (is_vector_present) {
-            result_dims.push_back(al, b.set_dim(vector_dims[0].m_start, vector_dims[0].m_length));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, vector_dims[0].m_length));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
             ASR::expr_t* count = nullptr;
@@ -6788,7 +6807,7 @@ namespace Pack {
                 Vec<ASR::expr_t*> args_count; args_count.reserve(al, 1); args_count.push_back(al, mask);
                 count = EXPR(Count::create_Count(al, loc, args_count, diag));
             }
-            result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
             is_type_allocatable = true;
         }
@@ -7157,7 +7176,7 @@ namespace Unpack {
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 1);
         int overload_id = 2;
         for (int i = 0; i < mask_rank; i++) {
-            result_dims.push_back(al, b.set_dim(mask_dims[i].m_start, mask_dims[i].m_length));
+            result_dims.push_back(al, ArrIntrinsic::result_dim(b, mask_dims[i].m_length));
         }
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {
@@ -7602,9 +7621,9 @@ namespace Transpose {
         ASRBuilder b(al, loc);
         Vec<ASR::dimension_t> result_dims; result_dims.reserve(al, 2);
         int overload_id = 2;
-        result_dims.push_back(al, b.set_dim(matrix_a_dims[0].m_start,
+        result_dims.push_back(al, ArrIntrinsic::result_dim(b,
             matrix_a_dims[1].m_length));
-        result_dims.push_back(al, b.set_dim(matrix_a_dims[1].m_start,
+        result_dims.push_back(al, ArrIntrinsic::result_dim(b,
             matrix_a_dims[0].m_length));
         ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         if (is_type_allocatable) {

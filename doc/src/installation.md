@@ -31,6 +31,21 @@ test suite. Its executable is `build/llvm11/src/bin/lfortran`; run it through
 On Windows the executable has the `.exe` extension. The native Windows task
 uses Release mode with compiler and runtime stacktraces disabled.
 
+After editing sources, rebuild incrementally:
+
+```bash
+pixi run -e llvm11 rebuild > build.log 2>&1
+```
+
+`rebuild` runs `cmake --build` and recompiles only what changed. `build`
+reconfigures CMake, which reruns `build0.sh`: it regenerates `asr.h`, `ast.h`,
+the parser and the other generated sources with new timestamps, so almost
+everything is recompiled. Use `build` for the first build, for new CMake
+options, and after editing a generator input (`src/libasr/ASR.asdl`,
+`grammar/AST.asdl`, `src/lfortran/parser/parser.yy`, the `.re` tokenizers,
+`src/libasr/wasm_instructions.txt`, the generator scripts or
+`src/server/generator/`); `rebuild` would compile stale generated sources.
+
 Select another environment explicitly to keep multiple configurations:
 
 ```bash
@@ -165,14 +180,19 @@ serializing them in one long job:
 | Compiler | Complete regression modes |
 | --- | --- |
 | Linux/LLVM 11 Debug, compiled with `-O2` | Normal, `--fast`, Fortran 2023 normal/fast, full references, small LLVM variants, submodules and single invocation |
-| Linux/LLVM 21 Debug | Separate compilation, submodules with separate compilation, and leak detection |
+| Linux/LLVM 21 Debug, compiled with `-O2` | Separate compilation, submodules with separate compilation, and leak detection |
 
 Every registered LLVM test runs in each of these modes on its designated
 compiler. Both are Debug builds, so every full Quick suite runs with
 assertions and per-pass ASR verification. The LLVM 11 compiler runs four full
 passes, so it is compiled with `-O2` (`CMAKE_CXX_FLAGS_DEBUG`); it stays a
 Debug build, so `WITH_LFORTRAN_ASSERT` stays on and nothing defines `NDEBUG`.
-This makes each pass about 1.6 times faster. The platform builds keep `-O0`.
+This makes each pass about 1.6 times faster. The Linux/LLVM 21 platform
+compiler is compiled with `-O2` the same way: `.github/actions/build-platform`
+adds `-O2` to `CFLAGS`/`CXXFLAGS` for that platform only, so Exhaustive's
+Linux/LLVM 21 platform job builds the same compiler and restores the same
+cache (key suffix `-o2`). The macOS, Windows and Linux/LLVM 11 platform builds
+keep their defaults, so Quick still tests a `-O0` compiler.
 Both also use the platform C/C++
 diagnostic and standard-library hardening flags, including `-Werror`, and
 `WITH_INTERNAL_ALLOC_CHECK=yes`. Splitting the modes across two

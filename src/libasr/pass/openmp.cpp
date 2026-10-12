@@ -4161,7 +4161,12 @@ void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
     if (pass_options.openmp) {
         ParallelRegionVisitor v(al, pass_options);
-        v.visit_TranslationUnit(unit);
+        // The outlined region procedures are reachable only through the
+        // function pointers this translation unit passes to the OpenMP
+        // runtime, and their names are unique only within it.
+        PassUtils::make_new_tu_functions_private(unit, [&]() {
+            v.visit_TranslationUnit(unit);
+        });
         RepointCallArguments r(al);
         r.visit_TranslationUnit(unit);
         // The outlined procedures call omp_lib (GOMP) functions and call and
