@@ -27132,10 +27132,13 @@ public:
     // parameter, visible where the type is instantiated; none for an instance
     // of this unit that is not completed yet, whose conformances its
     // completion copies. While the symbol table visitor declares a unit, the
-    // conformances of a type of that unit may not exist yet: with `deferred`,
-    // such an argument without a visible conformance is marked instead of
-    // diagnosed, and its evidence is selected in the same scope once the
-    // unit's conformances are complete.
+    // conformances the unit declares do not exist yet, those of a type it
+    // declares and those of intrinsic types: with `deferred`, such an
+    // argument for which no constraint of the parameter has a visible
+    // conformance is marked instead of diagnosed, and its evidence is
+    // selected in the same scope once the unit's conformances are complete.
+    // Every scope that waits then sees the same conformances for it, those of
+    // the unit, so the uses of one waiting instance agree.
     std::vector<ASR::TraitImplementation_t*> generic_type_argument_evidence(
             ASR::Template_t &package, size_t i,
             const std::pair<ASR::ttype_t*, ASR::symbol_t*> &argument,
@@ -27144,14 +27147,17 @@ public:
         std::vector<ASR::TraitImplementation_t*> evidence;
         ASR::symbol_t *declaration = argument.second
             ? ASRUtils::symbol_get_past_external(argument.second) : nullptr;
-        bool unit_type = deferred && declaration && ASR::is_a<ASR::Struct_t>(*declaration) &&
-            !ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(declaration)) &&
-            ASRUtils::symbol_parent_symtab(declaration) ==
-                generic_instance_unit_scope(current_scope);
+        bool may_wait = deferred && (declaration
+            ? ASR::is_a<ASR::Struct_t>(*declaration) &&
+                !ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(declaration)) &&
+                ASRUtils::symbol_parent_symtab(declaration) ==
+                    generic_instance_unit_scope(current_scope)
+            : true);
         ASR::symbol_t *binder = package.m_symtab->get_symbol(package.m_args[i]);
         // An instance this unit has not completed yet gets the conformances
         // of its definition when it is completed.
         ASR::Struct_t *pending = pending_generic_instance(argument.second);
+        std::vector<std::pair<ASR::Trait_t*, ASR::TraitImplementation_t*>> selections;
         for (auto *constraint : trait_constraints(&package)) {
             if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) {
                 continue;
@@ -27170,10 +27176,14 @@ public:
                     break;
                 }
             }
-            if (!selected && unit_type) {
-                *deferred = true;
-                return {};
-            }
+            selections.push_back({trait, selected});
+        }
+        if (may_wait && !selections.empty() && std::all_of(selections.begin(),
+                selections.end(), [](const auto &selection) { return !selection.second; })) {
+            *deferred = true;
+            return {};
+        }
+        for (const auto &[trait, selected] : selections) {
             if (!selected) {
                 if (argument.second) {
                     trait_call_error("no visible nominal implementation of trait '" +
@@ -27209,8 +27219,7 @@ public:
     }
 
     // An argument of an instance whose evidence waits for the conformances
-    // of the unit that declares the argument's type: the scope and the place
-    // where the instance was used.
+    // its unit declares: the scope and the place where the instance was used.
     struct DeferredGenericEvidence {
         ASR::Struct_t *instance;
         size_t argument;
@@ -27317,18 +27326,20 @@ public:
         return records;
     }
 
-    // The part of an instance's name after its reserved prefix: the
-    // definition's name and, for each type argument, its type's name, which
-    // for an instance is that part of its own name.
-    static std::string generic_instance_base_name(const ASR::Struct_t &definition,
+    // The name of an instance: the type applied to its type arguments, as in
+    // `averager{pairwisesum{simplesum}}` or `pair{integer(4),simplesum}`. No
+    // name a Fortran source can spell, in any source form or after
+    // preprocessing, contains `{`, so no user entity can name, import or
+    // collide with an instance or with its copies, whose names extend it.
+    static std::string generic_instance_name(const ASR::Struct_t &definition,
             const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments) {
-        std::string name = definition.m_name;
-        for (const auto &argument : arguments) {
-            ASR::symbol_t *declaration = argument.second
-                ? ASRUtils::symbol_get_past_external(argument.second) : nullptr;
-            name += "__";
+        std::string name = std::string(definition.m_name) + "{";
+        for (size_t i = 0; i < arguments.size(); i++) {
+            if (i > 0) name += ",";
+            ASR::symbol_t *declaration = arguments[i].second
+                ? ASRUtils::symbol_get_past_external(arguments[i].second) : nullptr;
             if (!declaration) {
-                name += ASRUtils::get_type_code(argument.first);
+                name += ASRUtils::type_to_str_fortran_symbol(arguments[i].first, nullptr, true);
                 continue;
             }
             auto *structure = ASR::is_a<ASR::Struct_t>(*declaration)
@@ -27339,14 +27350,14 @@ public:
                 continue;
             }
             std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> inner;
-            for (size_t i = 0; i < metadata->n_arguments; i++) {
-                inner.push_back({metadata->m_arguments[i].m_type,
-                    metadata->m_arguments[i].m_type_declaration});
+            for (size_t j = 0; j < metadata->n_arguments; j++) {
+                inner.push_back({metadata->m_arguments[j].m_type,
+                    metadata->m_arguments[j].m_type_declaration});
             }
-            name += generic_instance_base_name(
+            name += generic_instance_name(
                 *ASRUtils::generic_instance_definition(*metadata), inner);
         }
-        return name;
+        return name + "}";
     }
 
     // The canonical instance of `package` for `arguments` in the module or
@@ -27411,11 +27422,10 @@ public:
             if (is_body_visitor) complete_generic_instance(*candidate);
             return entry.second;
         }
-        // An instance and its copies are named in a namespace no Fortran
-        // identifier can occupy; its type arguments, definition and evidence
-        // are referenced from its own scope.
+        // Its type arguments, definition and evidence are referenced from the
+        // instance's own scope.
         std::string name = owner->get_unique_name(
-            "__" + generic_instance_base_name(*definition, arguments), false);
+            generic_instance_name(*definition, arguments), false);
         SymbolTable *scope = al.make_new<SymbolTable>(owner);
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         Vec<ASR::generic_type_argument_t> instance_arguments;
@@ -28066,7 +28076,8 @@ public:
                 if (!ASR::is_a<ASR::Function_t>(*member) && !ASR::is_a<ASR::Template_t>(*member)) {
                     continue;
                 }
-                // The instance's name is reserved, so are its copies' names.
+                // A copy's name extends its instance's, which no Fortran
+                // name can spell.
                 std::string name = owner->get_unique_name(
                     std::string(instance.m_name) + "_" + entry.first, false);
                 if (ASR::is_a<ASR::Function_t>(*member)) {
@@ -31897,8 +31908,12 @@ public:
                              const Location& loc) {
         remote_sym = to_lower(remote_sym);
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
-        if (!t) {
-            check_generic_type_procedure_reference(*m, remote_sym, loc);
+        // A generic type instance, its procedure copies, initializers and
+        // conformances are internals of the unit that owns them: like an
+        // unrestricted USE, a USE that lists or renames symbols imports
+        // none of them. A submodule reaches them through its host.
+        if (!t || ASRUtils::generic_instance_entities(*m->m_symtab).count(t)) {
+            if (!t) check_generic_type_procedure_reference(*m, remote_sym, loc);
             diag.add(diag::Diagnostic(
                 "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
                 diag::Level::Error, diag::Stage::Semantic, {

@@ -646,18 +646,24 @@ evidence: generic methods of the argument are then called through that
 conformance, also in separately compiled clients. The instance records its
 evidence in its own scope, so selecting it makes no conformance visible to
 the rest of the unit, and two procedures that see different conformances of
-one type use two different instances. A conformance that the instance's own
-unit declares later, such as one of a type declared in the same module, is
-selected once the unit's conformances are complete.
+one type use two different instances. The conformances a unit declares
+itself, of its own types or of intrinsic types such as `implements ISum ::
+integer`, exist once the unit's conformances are complete: an argument with
+none of its parameter's conformances visible yet, of a type the unit declares
+or of an intrinsic type, gets them then, in the scope where it is used.
 
 An instance is an ordinary sealed derived type of the module or main program
 that creates it; equal instances of one module or program are one type. It
 owns copies of the type's procedures, specialized for its arguments, and its
-own bindings, initializers and conformances. These are private to the unit
-and named in a namespace no Fortran identifier can take, so no user entity
-collides with them, no USE imports them, and a constructor call lowers the
-instance it resolved rather than a name. The unit's public procedures can
-still pass values of its instances on. The module that defines the generic
+own bindings, initializers and conformances. These are private to the unit.
+An instance is named like its type applied to its arguments,
+`averager{simplesum}`, and its copies' names extend that name; LFortran
+accepts identifiers that start with an underscore, but no name a source can
+spell contains `{`, so no user entity collides with these or names them, and
+a constructor call lowers the instance it resolved rather than a name. No
+USE imports them, whether it lists, renames or omits the module's symbols;
+only a submodule reaches them, through its host. The unit's public procedures
+can still pass values of its instances on. The module that defines the generic
 type keeps only its definition, so compiling a client never changes that
 module's file or object. A program owns the runtime witnesses and generic
 entries of its instances too, when the conformance of every type argument is
@@ -690,9 +696,12 @@ averaging over several instances, with a standard-Fortran oracle.
 `traits_generic_type_02` covers evidence selected where an instance is used,
 conformances a unit declares later and a program's own conformance used
 statically; `traits_generic_type_03` user names like those of instances,
-structure constructor conversions and parameters used in a BLOCK;
-`traits_generic_type_04` and the native `test_generic_type_private_*` CTests
-a private module that owns instances, compiled separately.
+also with leading underscores, structure constructor conversions and
+parameters used in a BLOCK; `traits_generic_type_04` and the native
+`test_generic_type_private_*` CTests a private module that owns instances,
+compiled separately, whose instance entities no USE imports by any name;
+`traits_generic_type_05` intrinsic type arguments whose conformances the
+unit declares.
 `continue_compilation_traits_04` and `continue_compilation_traits_05` cover
 the diagnostics.
 

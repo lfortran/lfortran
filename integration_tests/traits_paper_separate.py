@@ -45,12 +45,15 @@ ROLES = {
                "pairwise_library": "package", "averager_library": "package"},
 }
 # The units, symbols, symbol references and imports of an ASR dump, and the
-# definitions of LLVM IR.
+# definitions of LLVM IR. Compiler-made names, such as those of generic type
+# instances, may contain any character but whitespace and ':' (LLVM quotes
+# them), so the patterns do not assume Fortran identifiers.
 ASR_UNIT = re.compile(r"^ {12}(\w+):$", re.MULTILINE)
-ASR_SYMBOL = re.compile(r"\s*,?\s*([^\s:,{}()]+):\s*\(")
+ASR_SYMBOL = re.compile(r"\s*,?\s*([^\s:]+):\s*\(")
 ASR_REFERENCE = re.compile(r"\s*(?:\(\)|\d+ (\S+))")
 ASR_EXTERNAL = re.compile(r"\(ExternalSymbol\s+\d+\s+\S+\s+\d+ \S+\s+(\S+)\s+\[[^\]]*\]\s+(\S+)")
-LLVM_DEFINITION = re.compile(r"^(?:define\b[^@]*@([\w.$]+)\(|@([\w.$]+) = (?!external\b))",
+LLVM_NAME = r'(?:"(?:[^"\\]|\\.)*"|[\w.$]+)'
+LLVM_DEFINITION = re.compile(rf"^(?:define\b[^@]*@({LLVM_NAME})\(|@({LLVM_NAME}) = (?!external\b))",
                              re.MULTILINE)
 HEADER = re.compile(r"(module|program)\s+(\w+)\s*", re.IGNORECASE)
 END = re.compile(r"\s*end\s+(module|program)\s+(\w+)\s*", re.IGNORECASE)
@@ -74,6 +77,13 @@ def asr_units(dump):
     starts = list(ASR_UNIT.finditer(dump))
     return {match[1]: dump[match.start():starts[i + 1].start() if i + 1 < len(starts)
                           else len(dump)] for i, match in enumerate(starts)}
+
+
+def llvm_name(text):
+    """A global's name from its LLVM IR spelling, quoted or not."""
+    if not text.startswith('"'):
+        return text
+    return re.sub(r"\\([0-9A-Fa-f]{2})", lambda match: chr(int(match[1], 16)), text[1:-1])
 
 
 def nm_definitions(listing):
@@ -216,7 +226,7 @@ def check_static(logs):
     # instances and their entries is static.
     require(main.count("(TraitFunctionCall") == 2 and "(TraitDeferredCall" not in main,
             "main must make exactly the two av%average calls through the runtime view")
-    definitions = [a or b for a, b in LLVM_DEFINITION.findall(logs["main-llvm"])]
+    definitions = [llvm_name(a or b) for a, b in LLVM_DEFINITION.findall(logs["main-llvm"])]
     provider = [name for name in definitions if simple_sum_evidence(name)]
     require(not provider, f"main defines evidence that simple_library owns: {provider}")
     witnesses = [name for name in definitions if name.startswith("__trait_witness_4_main")]

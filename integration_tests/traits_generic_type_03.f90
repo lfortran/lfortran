@@ -1,7 +1,8 @@
 ! Generic derived type instances and their procedure copies have names no
-! Fortran identifier can take, and a constructor call lowers the instance it
+! Fortran source can spell, and a constructor call lowers the instance it
 ! resolved rather than a name looked up again: user entities named like an
-! instance never collide with it or capture its constructor. An inferred
+! instance, also with the leading underscores LFortran accepts, never
+! collide with it or its copies or capture its constructor. An inferred
 ! structure constructor converts the values of components that are not of a
 ! parameter type like any structure constructor, and a procedure that uses a
 ! parameter only in a BLOCK belongs to its type.
@@ -108,6 +109,7 @@ program traits_generic_type_03
     ! Declared after the instance, with the name an instance once had.
     type(PairwiseSum{SimpleSum}) :: p
     integer :: pairwisesum__simplesum
+    integer :: __pairwisesum__simplesum, _scale
     type(Holder{SimpleSum}) :: h
     type(Tagged{SimpleSum}) :: t
     integer(8) :: big
@@ -116,6 +118,12 @@ program traits_generic_type_03
     p = PairwiseSum(SimpleSum())
     pairwisesum__simplesum = 5
     call check(p%sum([1, 2, 3]) + pairwisesum__simplesum == 11)
+    ! The names an earlier compiler gave the instance and its initializer
+    ! copy are the user's own too.
+    __pairwisesum__simplesum = 7
+    _scale = 2
+    call check(_scale * p%sum([1, 2, 3]) + __pairwisesum__simplesum == 19)
+    call check(__pairwisesum__simplesum_init(3) == 30)
     h = Holder(SimpleSum(), 2)
     call check(h%total([1, 2, 3]) == 12)
     call inner_local()
@@ -136,6 +144,10 @@ contains
         if (.not. condition) error stop
         checks = checks + 1
     end subroutine check
+    integer function __pairwisesum__simplesum_init(n) result(r)
+        integer, intent(in) :: n
+        r = 10 * n
+    end function __pairwisesum__simplesum_init
     function make(item, n) result(r)
         type(SimpleSum), intent(in) :: item
         integer, intent(in) :: n

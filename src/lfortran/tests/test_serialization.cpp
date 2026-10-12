@@ -8968,11 +8968,29 @@ end program gt_main
         }
         CHECK(found);
     };
+    // The program's runtime evidence and the instance's conformance rely on
+    // the instance's metadata; without them, the instance's own rule is what
+    // rejects a malformed instance.
+    auto instance_only = [&]() {
+        std::vector<std::string> names;
+        for (const auto &entry : program->m_symtab->get_scope()) {
+            ASR::symbol_t *symbol = entry.second;
+            if (ASR::is_a<ASR::TraitWitness_t>(*symbol) ||
+                    ASR::is_a<ASR::TraitErasure_t>(*symbol) ||
+                    (ASR::is_a<ASR::TraitImplementation_t>(*symbol) &&
+                        ASR::down_cast<ASR::TraitImplementation_t>(symbol)->m_type_declaration
+                            == &instance->base)) {
+                names.push_back(entry.first);
+            }
+        }
+        for (const auto &name : names) program->m_symtab->erase_symbol(name);
+    };
     SUBCASE("a definition records its package's binders") {
         parameters->n_parameters = 0;
         rejects("asr.verify.generic_type.definition_owner");
     }
     SUBCASE("an instance has one type argument per parameter") {
+        instance_only();
         metadata->n_arguments = 0;
         rejects("asr.verify.generic_type.instance_definition");
     }
@@ -8981,6 +8999,7 @@ end program gt_main
         rejects("asr.verify.generic_type.instance_arguments");
     }
     SUBCASE("a type argument records its conformance") {
+        instance_only();
         metadata->m_arguments[0].n_evidence = 0;
         rejects("asr.verify.generic_type.instance_evidence");
     }
@@ -9007,6 +9026,7 @@ end program gt_main
     SUBCASE("an instance belongs to a module or program") {
         auto *copy = ASRUtils::symbol_get_past_external(metadata->m_procedures[0]);
         REQUIRE(ASR::is_a<ASR::Template_t>(*copy));
+        instance_only();
         instance->m_symtab->parent = ASR::down_cast<ASR::Template_t>(copy)->m_symtab;
         rejects("asr.verify.generic_type.instance_owner");
     }
@@ -9014,8 +9034,9 @@ end program gt_main
         ASRUtils::SymbolDuplicator duplicator(al);
         ASR::symbol_t *twin = duplicator.duplicate_Struct(instance, program->m_symtab);
         REQUIRE(twin != nullptr);
-        ASR::down_cast<ASR::Struct_t>(twin)->m_name = LCompilers::s2c(al, "__twin");
-        program->m_symtab->add_symbol("__twin", twin);
+        std::string name = std::string(instance->m_name) + "1";
+        ASR::down_cast<ASR::Struct_t>(twin)->m_name = LCompilers::s2c(al, name);
+        program->m_symtab->add_symbol(name, twin);
         rejects("asr.verify.generic_type.instance_unique");
     }
     SUBCASE("an instance extends no type") {
@@ -9029,6 +9050,7 @@ end program gt_main
         rejects("asr.verify.generic_type.instance_layout");
     }
     SUBCASE("a completed instance records its procedure copies") {
+        instance_only();
         metadata->n_procedures = 0;
         rejects("asr.verify.generic_type.instance_procedures");
     }
@@ -9292,8 +9314,9 @@ end program gx_client
         auto *structure = ASR::down_cast<ASR::Struct_t>(entry.second);
         auto *metadata = ASRUtils::generic_type_instance(*structure);
         if (!metadata) continue;
-        // A Fortran identifier cannot name an instance.
-        CHECK(structure->m_name[0] == '_');
+        // An instance is named like its type applied to its arguments; no
+        // name a Fortran source can spell contains '{'.
+        CHECK(std::string(structure->m_name).find('{') != std::string::npos);
         ASR::symbol_t *argument = ASRUtils::symbol_get_past_external(
             metadata->m_arguments[0].m_type_declaration);
         if (ASR::is_a<ASR::Struct_t>(*argument) && ASRUtils::generic_type_instance(
@@ -9376,6 +9399,48 @@ end program gx_client
             found |= diagnostic.code == "asr.verify.trait_witness.program_owner";
         }
         CHECK(found);
+    }
+    SUBCASE("a USE that lists or renames symbols imports no instance entity") {
+        // Even under names a Fortran source could spell, the owner's instance
+        // and its initializer copy are not imported by a USE naming them.
+        ASR::Struct_t *owned = nullptr;
+        ASR::symbol_t *copy = nullptr;
+        for (auto *symbol : internals) {
+            if (ASR::is_a<ASR::Struct_t>(*symbol)) owned = ASR::down_cast<ASR::Struct_t>(symbol);
+            if (ASR::is_a<ASR::Function_t>(*symbol)) copy = symbol;
+        }
+        REQUIRE(owned != nullptr);
+        REQUIRE(copy != nullptr);
+        owner->m_symtab->erase_symbol(owned->m_name);
+        owned->m_name = LCompilers::s2c(al, "exposed_type");
+        owner->m_symtab->add_symbol("exposed_type", &owned->base);
+        auto *function = ASR::down_cast<ASR::Function_t>(copy);
+        owner->m_symtab->erase_symbol(function->m_name);
+        function->m_name = LCompilers::s2c(al, "exposed_init");
+        owner->m_symtab->add_symbol("exposed_init", copy);
+        const std::vector<std::pair<std::string, std::string>> uses = {
+            {"use gx_owner, only: exposed_type", "exposed_type"},
+            {"use gx_owner, only: init => exposed_init", "exposed_init"},
+            {"use gx_owner, renamed => exposed_type", "exposed_type"},
+        };
+        for (size_t i = 0; i < uses.size(); i++) {
+            std::string client = "module gx_probe_" + std::to_string(i) + "\n    " +
+                uses[i].first + "\n    implicit none\nend module\n";
+            LCompilers::diag::Diagnostics probe;
+            auto parsed_client = LCompilers::LFortran::parse(al, client, probe, options);
+            REQUIRE(parsed_client.ok);
+            auto compiled = LCompilers::LFortran::ast_to_asr(
+                al, *parsed_client.result, probe, tu, false, options, lm);
+            INFO(client);
+            INFO(probe.render2());
+            CHECK_FALSE(compiled.ok);
+            bool not_found = false;
+            for (const auto &diagnostic : probe.diagnostics) {
+                not_found |= diagnostic.message == "The symbol '" + uses[i].second +
+                    "' not found in the module 'gx_owner'";
+            }
+            CHECK(not_found);
+        }
     }
 }
 

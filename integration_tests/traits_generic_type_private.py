@@ -6,8 +6,11 @@ procedure copies, initializers, conformances and runtime evidence. Its
 libraries and the module itself are compiled separately into their own module
 directories and frozen. Then:
 
-* a client that names an instance the way an earlier compiler did is
-  rejected: no entity of the module has that name;
+* clients that name an instance or its procedure copies and conformance
+  the way earlier compilers did, also with the leading underscores LFortran
+  accepts in identifiers, are rejected whether a USE lists or renames them:
+  no entity of the module has those names, and a USE that names symbols
+  never imports an instance entity;
 * a client that forms a runtime view of a value of the module's instance gets
   the located diagnostic of an instance it does not own;
 * a client that uses all of the module and names no instance type compiles
@@ -32,14 +35,22 @@ import traits_paper_separate as separate  # noqa: E402
 
 LIBRARIES = ["traits_generic_type_04_lib", "traits_generic_type_04_owner"]
 OWNER = "traits_generic_type_04_owner"
+NOT_FOUND = "The symbol '{}' not found in the module 'traits_generic_type_04_owner'"
+# Each rejected client, compiled with --continue-compilation, and every
+# diagnostic it must get: the message and the line it is located at.
 REJECTED = {
-    "traits_generic_type_04_use_internal":
-        "The symbol 'averager__simplesum' not found in the module "
-        "'traits_generic_type_04_owner'",
-    "traits_generic_type_04_use_view":
-        "no visible nominal implementation of trait 'iaverager' for type "
-        "'averager{simplesum}'",
+    "traits_generic_type_04_use_internal": [(NOT_FOUND.format("averager__simplesum"), 4)],
+    "traits_generic_type_04_use_view": [
+        ("no visible nominal implementation of trait 'iaverager' for type "
+         "'averager{simplesum}'", 9)],
+    "traits_generic_type_04_use_reserved": [
+        (NOT_FOUND.format("__averager__simplesum"), 7),
+        (NOT_FOUND.format("__averager__simplesum_average"), 11),
+        (NOT_FOUND.format("__averager__simplesum"), 15),
+        (NOT_FOUND.format("__averager__simplesum_init"), 19),
+        (NOT_FOUND.format("__implements___averager__simplesum_iaverager"), 23)],
 }
+DIAGNOSTIC = re.compile(r"^semantic error: (.*)\n\s*--> (\S+):(\d+):\d+", re.MULTILINE)
 ASR_LIST = re.compile(r"\s*\[([^\[\]]*)\]")
 
 
@@ -126,16 +137,20 @@ def main():
               for library in LIBRARIES for path in (work / library).rglob("*")
               if path.is_file()}
 
-    for client, message in REJECTED.items():
+    for client, expected in REJECTED.items():
         modules = work / client / "modules"
         modules.mkdir(parents=True)
-        code, text = run(f"{client}-compile", [compiler, *flags, *includes, "-J", modules, "-c",
+        code, text = run(f"{client}-compile", [compiler, *flags, "--continue-compilation",
+                                               *includes, "-J", modules, "-c",
                                                HERE / f"{client}.f90", "-o",
                                                work / client / f"{client}.o"],
                          expect_success=False)
-        separate.require(code != 0 and message in text and f"{client}.f90:" in text and
+        located = sorted((message, int(line)) for message, path, line in DIAGNOSTIC.findall(text)
+                         if Path(path).name == f"{client}.f90")
+        separate.require(code != 0 and located == sorted(expected) and
                          "Internal Compiler Error" not in text,
-                         f"{client} must fail with a located '{message}':\n{text}")
+                         f"{client} must fail with exactly {sorted(expected)}, "
+                         f"not {located}:\n{text}")
 
     client = "traits_generic_type_04_use_all"
     modules = work / client / "modules"
@@ -164,7 +179,8 @@ def main():
                          f"{path.relative_to(work)} changed")
     print(f"generic type private, {args.mode}: none of the {len(entities)} instance "
           f"entities of {OWNER} imported by a client using all of it; "
-          f"{len(REJECTED)} clients rejected with located diagnostics; "
+          f"{sum(map(len, REJECTED.values()))} uses in {len(REJECTED)} clients rejected "
+          f"with located diagnostics; "
           f"{len(frozen)} frozen files unchanged", flush=True)
     if not args.keep_work:
         shutil.rmtree(work)
