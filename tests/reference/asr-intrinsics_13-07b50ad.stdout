@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p1:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p2:
                                 (Variable
@@ -96,6 +98,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p3:
                                 (Variable
@@ -129,6 +132,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p4:
                                 (Variable
@@ -162,6 +166,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p5:
                                 (Variable
@@ -195,6 +200,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p6:
                                 (Variable
@@ -228,6 +234,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             p7:
                                 (Variable
@@ -261,6 +268,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_13

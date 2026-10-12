@@ -1,0 +1,5 @@
+semantic error: `!$omp threadprivate(...)` common blocks are not supported yet
+ --> tests/errors/openmp_threadprivate_common_01.f90:7:5
+  |
+7 |     !$omp threadprivate(/otc_blk/)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

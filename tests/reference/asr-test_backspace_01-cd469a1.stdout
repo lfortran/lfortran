@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lfortran_iomsg2:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             line:
                                 (Variable
@@ -102,6 +105,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             u:
                                 (Variable
@@ -126,6 +130,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     test_backspace_01

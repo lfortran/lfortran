@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     int_01

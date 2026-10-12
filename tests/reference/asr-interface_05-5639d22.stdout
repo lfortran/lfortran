@@ -80,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -104,6 +105,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     interface_05
@@ -274,6 +276,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a1:
                                                 (Variable
@@ -298,6 +301,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     a1
@@ -365,6 +369,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a2:
                                                 (Variable
@@ -389,6 +394,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     a2

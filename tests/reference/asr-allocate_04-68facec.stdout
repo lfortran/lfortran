@@ -42,6 +42,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             message:
                                 (Variable
@@ -68,6 +69,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             num:
                                 (Variable
@@ -92,6 +94,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             string:
                                 (Variable
@@ -118,6 +121,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     allocate_04

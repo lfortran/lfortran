@@ -651,6 +651,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // Ignore type variables
             return;
         }
+        reject_common_block_variable(*v);
 
         using namespace wasm;
         uint32_t global_var_idx = UINT_MAX;
@@ -754,6 +755,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (x.m_global_init != nullptr) {
             throw CodeGenError("a startup initializer of the translation unit "
                 "is not supported by this backend");
+        }
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::BlockData_t>(*item.second)) {
+                throw CodeGenError("BLOCK DATA is not supported by the WASM backend",
+                    item.second->base.loc);
+            }
         }
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -996,11 +1003,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 v->m_intent == ASRUtils::intent_return_var);
     }
 
+    // A variable in a common block has no storage of its own, and this
+    // backend does not lay out the storage of common blocks.
+    void reject_common_block_variable(const ASR::Variable_t &v) {
+        if (ASR::CommonBlock_t *block = ASRUtils::get_common_block(&v)) {
+            throw CodeGenError("COMMON blocks are not supported by the WASM backend",
+                block->base.base.loc);
+        }
+    }
+
     void get_local_vars(SymbolTable* symtab) {
         for (auto &item : symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
+                reject_common_block_variable(*v);
                 if (isLocalVar(v)) {
                     m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info.no_of_params + local_vars.size();
                     get_var_type(v, local_vars);
@@ -3646,7 +3663,12 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        wasm::save_bin(wasm.result, filename);
+        if (!wasm::save_bin(wasm.result, filename)) {
+            diagnostics.add(diag::Diagnostic(
+                "cannot write the output file '" + filename + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+            return Error();
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)

@@ -1545,7 +1545,9 @@ void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUn
         OffloadableScopeCollector collector(v.uncaptured_scopes);
         collector.collect(unit);
     }
-    v.visit_TranslationUnit(unit);
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        v.visit_TranslationUnit(unit);
+    });
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
 }
