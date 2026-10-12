@@ -4525,6 +4525,8 @@ RUN(NAME dtio_write_10 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_10_ma.f90 dtio_write_10_mb.f90 dtio_write_10_user.f90
     EXTRA_ARGS --separate-compilation)
 RUN(NAME dtio_write_11 LABELS gfortran llvm)
+RUN(NAME dtio_write_12 LABELS gfortran llvm)
+RUN(NAME dtio_write_13 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
