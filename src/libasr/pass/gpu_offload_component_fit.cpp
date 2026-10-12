@@ -1288,8 +1288,17 @@ class GpuComponentFit {
                     ASR::down_cast<ASR::FunctionCall_t>(value);
                 ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(
                     call->m_name);
-                if (call->m_dt || !callee ||
-                        !ASR::is_a<ASR::Function_t>(*callee)) {
+                if (callee && ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *callee)) {
+                    callee = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                            callee)->m_proc);
+                }
+                // A polymorphic object may have a type that binds another
+                // procedure.
+                if (!callee || !ASR::is_a<ASR::Function_t>(*callee) ||
+                        (call->m_dt && ASRUtils::is_class_type(
+                            ASRUtils::expr_type(call->m_dt)))) {
                     continue;
                 }
                 // A separate module procedure shapes the component in its
@@ -1300,10 +1309,24 @@ class GpuComponentFit {
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
                 }
+                // The object of a type-bound call is the actual argument
+                // of the first dummy argument, when the call does not list
+                // it among its arguments already.
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, call->n_args + 1);
+                if (call->m_dt && call->n_args + 1 == fn->n_args) {
+                    ASR::call_arg_t object;
+                    object.loc = call->m_dt->base.loc;
+                    object.m_value = call->m_dt;
+                    args.push_back(al, object);
+                }
+                for (size_t a = 0; a < call->n_args; a++) {
+                    args.push_back(al, call->m_args[a]);
+                }
                 write.shape = call_component_shape(al, *fn,
                     ASRUtils::symbol_get_past_external(ASR::down_cast<
                         ASR::Var_t>(fn->m_return_var)->m_v), name,
-                    call->m_args, call->n_args);
+                    args.p, args.n);
             } else if (ASR::is_a<ASR::StructConstructor_t>(*value)) {
                 // `t(i) = tt(...)`
                 ASR::expr_t *given = constructor_value(
