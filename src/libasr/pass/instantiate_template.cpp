@@ -1055,6 +1055,16 @@ static bool is_template_procedure(ASR::symbol_t* s) {
     return true;
 }
 
+// A variable, such as a named constant, declared in the template itself, as
+// opposed to a deferred constant, which is substituted by the instantiation's
+// argument.
+static bool is_template_variable(ASR::symbol_t* s) {
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(s);
+    return owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
+        && ASR::is_a<ASR::Variable_t>(*s)
+        && !ASRUtils::is_template_arg(owner, ASRUtils::symbol_name(s));
+}
+
 // Collects the procedures called in a declaration.
 class DeclarationCallCollector
     : public ASR::BaseWalkVisitor<DeclarationCallCollector>
@@ -1114,6 +1124,11 @@ public:
     // host-associated variables of an enclosing template procedure to their
     // instantiated counterparts.
     SymbolTable* source_scope = nullptr;
+    // Whether target_scope is the instance of the scope declaring sym, as for
+    // an entity of an only-list or a dependency of the instantiation, rather
+    // than e.g. a procedure that gets its own copy of a named constant of
+    // the template.
+    bool instantiates_own_scope = false;
 
     SymbolInstantiator(Allocator &al,
             SymbolTable* target_scope,
@@ -1147,10 +1162,17 @@ public:
         // if passed as instantiation's argument. Members of a derived type
         // (components and type-bound procedures) live in the type's own
         // namespace, so a substitution for a same-named symbol elsewhere in
-        // the template must not replace them.
+        // the template must not replace them. A named constant of the
+        // template has no identity, so an only-list name for it is a new
+        // instance even if the instantiation already has one, e.g. created
+        // for a component of a type listed before it.
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
         bool is_struct_member = owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner);
-        if (!is_struct_member && symbol_subs.find(sym_name) != symbol_subs.end()) {
+        bool is_new_constant = instantiates_own_scope && is_template_variable(sym)
+            && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                == ASR::storage_typeType::Parameter;
+        if (!is_struct_member && !is_new_constant
+                && symbol_subs.find(sym_name) != symbol_subs.end()) {
             ASR::symbol_t* added_sym = symbol_subs[sym_name];
             std::string added_sym_name = ASRUtils::symbol_name(added_sym);
             if (new_scope->resolve_symbol(added_sym_name)) {
@@ -1363,12 +1385,12 @@ public:
         // The initializer can refer to the variable itself, e.g. the mold of
         // `=> null()`, so the variable is added before it is instantiated.
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
-            x->base.base.loc, target_scope, s2c(al, x->m_name), nullptr, 0,
+            x->base.base.loc, target_scope, s2c(al, new_sym_name), nullptr, 0,
             x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
             x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
             x->m_is_protected, x->m_pass_attr, x->m_self_argument));
-        target_scope->add_symbol(x->m_name, s);
+        target_scope->add_symbol(new_sym_name, s);
 
         // The initializer of a named constant may refer to the template's
         // deferred constants, so it goes through the same substitution as
@@ -2020,7 +2042,62 @@ public:
         return new_x;
     }
 
+    // A name in the declaration of a component denotes an entity of the
+    // scope enclosing the derived type, never a component, e.g. in
+    //     integer, parameter :: k = n*2
+    //     integer, parameter :: m = k + 1
+    //     type :: w
+    //         real :: k
+    //         integer :: b(m)
+    //     end type
+    // the bound is the template's `m`, whose initializer in turn uses the
+    // template's `k`. The instantiated type's scope holds only its own
+    // members, and the scope of the instantiation may declare its own `m`
+    // or `k`, before or after the instantiation. So a variable of the
+    // template used in the declaration of a component, or of a variable of
+    // the template instantiated in its own scope, is its substitution, or
+    // else is instantiated once in the corresponding enclosing scope, like
+    // the other dependencies of the instantiation, and is shared by all the
+    // declarations that use it.
+    ASR::symbol_t* instantiate_template_dependency(ASR::symbol_t* v) {
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+        ASR::symbol_t* new_owner = target_scope->asr_owner
+            && ASR::is_a<ASR::symbol_t>(*target_scope->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(target_scope->asr_owner) : nullptr;
+        ASR::symbol_t* v_owner = ASRUtils::get_asr_owner(v);
+        bool in_component = owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner)
+            && new_owner != nullptr && ASR::is_a<ASR::Struct_t>(*new_owner);
+        bool in_template_variable = instantiates_own_scope
+            && is_template_variable(sym);
+        if (!(in_component || in_template_variable)
+                || !ASR::is_a<ASR::Variable_t>(*v)
+                || v_owner == nullptr || !ASR::is_a<ASR::Template_t>(*v_owner)) {
+            return nullptr;
+        }
+        std::string name = ASRUtils::symbol_name(v);
+        if (symbol_subs.find(name) != symbol_subs.end()) {
+            return symbol_subs[name];
+        }
+        if (ASRUtils::is_template_arg(v_owner, name)) {
+            // A deferred constant of a nested template, left deferred
+            return nullptr;
+        }
+        SymbolTable* scope = corresponding_target_scope(
+            ASRUtils::symbol_parent_symtab(v));
+        std::string new_name = scope->get_unique_name("__asr_" + name, false);
+        SymbolInstantiator t(al, scope, type_subs, symbol_subs, new_name, v,
+            diagnostics);
+        t.instantiates_own_scope = true;
+        symbol_subs[name] = t.instantiate();
+        return symbol_subs[name];
+    }
+
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
+        ASR::symbol_t* dependency = instantiate_template_dependency(x->m_v);
+        if (dependency != nullptr) {
+            return ASR::make_Var_t(al, x->base.base.loc, dependency);
+        }
+
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
 
         SymbolInstantiator t(al, new_scope, type_subs, symbol_subs, sym_name, x->m_v,
@@ -2892,6 +2969,7 @@ ASR::symbol_t* instantiate_symbol(Allocator &al,
         diag::Diagnostics &diagnostics) {
     SymbolInstantiator t(al, target_scope, type_subs, symbol_subs, new_sym_name, sym,
         &diagnostics);
+    t.instantiates_own_scope = true;
     return t.instantiate();
 }
 
