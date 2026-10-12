@@ -1039,3 +1039,9 @@ semantic error: Procedure 'p' requires an argument list
     |
 600 |         print *, p
     |                  ^ 
+
+semantic error: No matching `operator(-)` found for this operand type
+   --> tests/errors/continue_compilation_2.f90:622:13
+    |
+622 |         y = -x  ! {Error} No matching `operator(-)` found for this operand type
+    |             ^^ 
