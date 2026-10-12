@@ -332,8 +332,8 @@ generates the device source. It never falls back to the CPU:
       between them; writes in different branches of one `if` or
       `select case` each give their own size.
       In all these cases the host does not allocate the component.
-      With the option (and bounds checking on), the type of `t` becomes a
-      heap type instead: the value written is made on the device heap and
+      With the option, with or without bounds checking, the type of `t`
+      becomes a heap type instead: the value written is made on the device heap and
       stored into `t(i)` after the launch, with the size the loop gave it
       (see [Allocating on the device](#allocating-on-the-device)).
       Without the option, with bounds checking on, the launch stops if the
