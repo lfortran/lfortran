@@ -119,6 +119,13 @@ public:
         loc.last = cur-string_start-1+loc_offset;
     }
     void add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form, int rel_token) const;
+
+    // Lex an OpenMP directive whose first line spans `tok` to `cur` (which
+    // points to the newline). Free-form continuation lines (`&` at the end
+    // of a line followed by a line starting with `!$omp`) are consumed and
+    // joined into a single directive string.
+    int lex_omp_directive(Allocator &al, YYSTYPE &yylval, Location &loc,
+        int directive_token);
 };
 
 bool lex_int(const unsigned char *s, const unsigned char *e, uint64_t &u,
