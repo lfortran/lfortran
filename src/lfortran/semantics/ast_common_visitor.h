@@ -12120,11 +12120,6 @@ public:
                 }
                 check_runtime_trait_without_associated_types(*trait, loc);
                 check_trait_runtime_view(*trait, loc);
-                if (ASRUtils::trait_dictionary_contract(ASRUtils::symbol_get_past_external(v))) {
-                    trait_call_error("trait '" + derived_type_name + "' requires an initializer "
-                        "or operators of type(itself), so it is not a runtime class; it can "
-                        "constrain a generic type parameter", loc);
-                }
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 type_declaration = nullptr;
                 return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
@@ -24486,8 +24481,7 @@ public:
                 auto *known_operation = ASRUtils::trait_member_operation(known.first);
                 if (operation && known_operation) {
                     if (ASRUtils::same_trait_operation(*operation, *known_operation) &&
-                            ASRUtils::trait_method_mismatch(*known_method, *method)
-                                .difference == ASRUtils::TraitMethodDifference::None) {
+                            ASRUtils::trait_operation_signatures_equal(*known_method, *method)) {
                         index = known.second;
                     }
                 } else if (!operation && !known_operation &&
