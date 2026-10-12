@@ -13013,6 +13013,27 @@ public:
                                             }));
                                         throw SemanticAbort();
                                     }
+                                    // A length type parameter of the
+                                    // enclosing type is not a constant
+                                    // expression, so it cannot be the value
+                                    // of a kind type parameter.
+                                    std::string target_name = sym_type->m_kind[ki].m_id
+                                        ? to_lower(sym_type->m_kind[ki].m_id) : kp_name;
+                                    if (is_param && !target_name.empty()
+                                            && !is_pdt_len_param(pdt_st, target_name)
+                                            && is_pdt_len_param(
+                                                ASR::down_cast<ASR::Var_t>(ke)->m_v)) {
+                                        diag.add(Diagnostic(
+                                            "length type parameter '"
+                                            + std::string(ASRUtils::symbol_name(
+                                                ASR::down_cast<ASR::Var_t>(ke)->m_v))
+                                            + "' cannot be the value of kind type parameter '"
+                                            + target_name + "' of '" + derived_type_name + "'",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {sym_type->m_kind[ki].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
                                     int64_t kv = pdt_type_param_constant(ke,
                                         sym_type->m_kind[ki].loc, derived_type_name, kp_name,
                                         is_pdt_len_param(pdt_st, kp_name));

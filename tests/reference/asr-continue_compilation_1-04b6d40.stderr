@@ -1200,6 +1200,12 @@ semantic error: value of length type parameter 'n' of parameterized derived type
 2457 |         type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
      |                                  ^^^ 
 
+semantic error: length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
+    --> tests/errors/continue_compilation_1.f90:2472:39
+     |
+2472 |         type(cc1_pdt_len_as_kind_in_t(p, 3)) :: c  ! {Error} length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
+     |                                       ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

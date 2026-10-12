@@ -2521,3 +2521,18 @@ contains
         type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
     end subroutine cc1_pdt_kind_value_sub
 end module cc1_pdt_kind_value_mod
+
+! A length type parameter is not a constant expression, so it cannot be the
+! value of a kind type parameter of a component.
+module cc1_pdt_len_as_kind_mod
+    implicit none
+    type :: cc1_pdt_len_as_kind_in_t(k, a)
+        integer, kind :: k
+        integer, len :: a
+        real(k) :: x(a)
+    end type cc1_pdt_len_as_kind_in_t
+    type :: cc1_pdt_len_as_kind_t(p)
+        integer, len :: p
+        type(cc1_pdt_len_as_kind_in_t(p, 3)) :: c  ! {Error} length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
+    end type cc1_pdt_len_as_kind_t
+end module cc1_pdt_len_as_kind_mod
