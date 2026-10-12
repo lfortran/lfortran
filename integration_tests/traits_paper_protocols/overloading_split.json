@@ -1,0 +1,85 @@
+{
+ "schema": "traits-final-four-acceptance.split.v1",
+ "example": "overloading",
+ "source": "integration_tests/traits_paper_protocols/overloading.f90",
+ "source_sha256": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+ "original_sha256": "9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
+ "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce source_sha256 before any compilation. Pieces are verbatim slices; no unit is renamed, reordered, simplified or completed.",
+ "rejoined_sha256": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+ "frozen_before_main": [
+  "basic_interfaces",
+  "my_type",
+  "real_type"
+ ],
+ "dependency_note": "my_type declares MyType with its conformance (initial, static operator(*), output); real_type declares real's conformance with only output bound. Only main, which contains the generic products and prod, instantiates T = MyType and R = real; my_type and real_type hold no instance code of products or prod.",
+ "units": [
+  {
+   "unit": "basic_interfaces",
+   "kind": "module",
+   "first_line": 1,
+   "end_statement_line": 28,
+   "last_line": 29,
+   "bytes": 764,
+   "sha256": "1f303edf65255ca7b2834c145837c4f4ccb9f10a2a83e94db291c8ccabbafa5b",
+   "imports": [],
+   "file": "overloading_1_basic_interfaces.f90",
+   "compile_after": []
+  },
+  {
+   "unit": "my_type",
+   "kind": "module",
+   "first_line": 30,
+   "end_statement_line": 74,
+   "last_line": 75,
+   "bytes": 1115,
+   "sha256": "8cacb6d63eeaff63662dcc2bb5b0c001d6a2c5afbb38d4d0c7d8251b8b3bc5c6",
+   "imports": [
+    "basic_interfaces"
+   ],
+   "file": "overloading_2_my_type.f90",
+   "compile_after": [
+    "basic_interfaces"
+   ]
+  },
+  {
+   "unit": "real_type",
+   "kind": "module",
+   "first_line": 76,
+   "end_statement_line": 94,
+   "last_line": 95,
+   "bytes": 366,
+   "sha256": "b3f4d9907d382a6eb240f2c994701c58a4081d4fbb7b42d414e0e4ce34cba5bb",
+   "imports": [
+    "basic_interfaces"
+   ],
+   "file": "overloading_3_real_type.f90",
+   "compile_after": [
+    "basic_interfaces",
+    "my_type"
+   ]
+  },
+  {
+   "unit": "main",
+   "kind": "program",
+   "first_line": 96,
+   "end_statement_line": 131,
+   "last_line": 131,
+   "bytes": 1233,
+   "sha256": "bf3570f2987324d262be241e236e2e1005abf2d55641e4c1ff5bb421f9cd9a9f",
+   "imports": [
+    "basic_interfaces",
+    "my_type",
+    "real_type"
+   ],
+   "file": "overloading_4_main.f90",
+   "compile_after": [
+    "basic_interfaces",
+    "my_type",
+    "real_type"
+   ],
+   "contains_adaptation": true,
+   "original_piece_sha256": "181d3d331203470e83d7dbba8283029ffa3eb86b478e38280c722209bd0e9336",
+   "original_piece_bytes": 1216
+  }
+ ]
+}

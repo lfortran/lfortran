@@ -1,0 +1,73 @@
+{
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21"
+  },
+  "fixtures": [
+    {
+      "corpus_id": "ocp",
+      "source_path": "Code/Fortran/ocp.f90",
+      "file": "ocp.f90",
+      "original_sha256": "7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
+      "sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+      "listing": "lst:OCPFortran (sect:ocp_conformance) lines 1-49 of the companion file, plus lines 8-21 in sect:tats",
+      "expected": {
+        "stdin_choices": [
+          1,
+          2
+        ],
+        "stdout_each_choice": "Simple   sum average: 1\nPairwise sum average: 2\nChoose an averaging method: 3\n3.0\n"
+      },
+      "oracle": {
+        "file": "ocp_oracle.f90",
+        "sha256": "9bf12d3f6d8e7490faae568e15071218cfcbb07a1ada5a7963eaedbbb51c4d10",
+        "kind": "standard-Fortran oracle (gfortran and llvm labels); not trait syntax"
+      },
+      "adaptation": {
+        "kind": "explicit provider USE",
+        "added_line": "   use intrinsics\n",
+        "after_line": 159,
+        "anchor": "   use averager_library, only: Averager\n",
+        "reason": "av%average(xi) and av%average(xf) in program main instantiate T = integer and T = real(real64); their INumeric conformances are declared only in module intrinsics, which no program unit uses"
+      }
+    },
+    {
+      "corpus_id": "overloading",
+      "source_path": "Code/Fortran/overloading.f90",
+      "file": "overloading.f90",
+      "original_sha256": "9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
+      "sha256": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+      "listing": "lst:types (sect:overloading) lines 1-136 of the companion file",
+      "expected": {
+        "stdin_choices": [],
+        "stdout": "I am:    13824\nI am:  13824.0\n"
+      },
+      "oracle": {
+        "file": "overloading_oracle.f90",
+        "sha256": "5f361d44de40fa5381e418af774821ffac900de3ec54bde5136e02a369b3a958",
+        "kind": "standard-Fortran oracle (gfortran label only: LFortran prints 'I am: 16' for it because of a defect in nested elemental defined operators on derived-type arrays that predates traits); not trait syntax"
+      },
+      "adaptation": {
+        "kind": "explicit provider USE",
+        "added_line": "   use real_type\n",
+        "after_line": 99,
+        "anchor": "   use my_type,          only: MyType\n",
+        "reason": "call products(at,ar) in program main instantiates R = real; real's IReducible + IPrintable conformance is declared only in module real_type, which no program unit uses. MyType's conformance is retained by the existing ONLY import of MyType"
+      }
+    }
+  ],
+  "preservation": "Byte-for-byte copies of the companion files, including module names, whitespace, trailing blanks and comments. The only change is one explicit provider USE line where a fixture lists an adaptation; removing that line reproduces the original sha256. No other boilerplate, erratum or simplification is applied.",
+  "acceptance": {
+    "driver": "traits_paper_functional.py",
+    "modes": [
+      "normal",
+      "fast"
+    ],
+    "flags": [
+      "--no-color",
+      "--verify-all-passes"
+    ]
+  }
+}

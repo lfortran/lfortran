@@ -38,11 +38,14 @@ import traits_paper_functional as paper  # noqa: E402
 # The split maps beside the fixtures are pinned like the fixtures themselves.
 SPLIT_HASHES = {
     "static": "80415aaa04a5a4dc36d1ad0464bc628a29459d2d3b0afa46e855ffd3870aef62",
+    "overloading": "169bf3b284a278ff59bfe5bbcb5e0cadb1fa725f20935978f4b5bb09e1b15c42",
 }
 # Every library unit of a split has a role; see the module docstring.
 ROLES = {
     "static": {"interfaces": "provider", "simple_library": "provider",
                "pairwise_library": "package", "averager_library": "package"},
+    "overloading": {"basic_interfaces": "provider", "my_type": "provider",
+                    "real_type": "provider"},
 }
 # The units, symbols, symbol references and imports of an ASR dump, and the
 # definitions of LLVM IR. Compiler-made names, such as those of generic type
@@ -84,6 +87,12 @@ def llvm_name(text):
     if not text.startswith('"'):
         return text
     return re.sub(r"\\([0-9A-Fa-f]{2})", lambda match: chr(int(match[1], 16)), text[1:-1])
+
+
+def nm_references(listing):
+    """The undefined symbols an nm listing of one object references."""
+    return [fields[-1] for fields in map(str.split, listing.splitlines())
+            if len(fields) >= 2 and fields[-2] == "U"]
 
 
 def nm_definitions(listing):
@@ -258,7 +267,71 @@ def check_static(logs):
             "definitions only; simple_library alone defines its conformance's evidence")
 
 
-STRUCTURE = {"static": check_static}
+# The procedures of the providers that the specializations in main call,
+# by the linker symbol fragment of their module and name.
+OVERLOADING_PROVIDED = {
+    "my_type": ["init", "multiply", "multiply_by_int", "output"],
+    "real_type": ["output"],
+}
+
+
+def check_overloading(logs):
+    """Static protocols: main owns the specializations of products and prod
+    for MyType and real, which call the initializer, operators and output
+    that my_type and real_type define; no runtime dispatch, witness or
+    instance is involved, and no provider holds specialized code."""
+    units = asr_units(logs["main-asr"])
+    require(set(units) >= {"main", "basic_interfaces", "my_type", "real_type"},
+            f"the ASR of main lacks a unit: {sorted(units)}")
+    main = units["main"]
+    for node in ("(GenericTypeInstance", "(TraitWitness", "(TraitFunctionCall",
+                 "(TraitSubroutineCall", "(TraitDeferredCall", "(TraitPack",
+                 "(TraitDeferredPack", "(TraitErasure"):
+        require(node not in main, f"main must dispatch statically, but has a {node[1:]}")
+    real_type = units["real_type"]
+    require(real_type.count("(TraitImplementation") == 2 and "(TraitWitness" not in real_type,
+            "real_type must declare real's two conformances without runtime evidence")
+    definitions = [llvm_name(a or b) for a, b in LLVM_DEFINITION.findall(logs["main-llvm"])]
+    copied = [name for name in definitions
+              if "module_my_type_" in name or "module_real_type_" in name]
+    require(not copied, f"main defines procedures that the providers own: {copied}")
+    objects = nm_definitions(logs["library-symbols"])
+    main_symbols = [name for names in nm_definitions(logs["main-symbols"]).values()
+                    for name in names]
+    specializations = [name for name in main_symbols if "__instantiated_" in name]
+    require(len([name for name in specializations if "products" in name]) == 1 and
+            len([name for name in specializations if "prod" in name and
+                 "products" not in name]) == 2,
+            f"main.o must define products{{MyType, real}}, prod{{MyType}} and "
+            f"prod{{real}}, not {specializations}")
+    require(not any("trait_witness" in name or "implements" in name
+                    for name in main_symbols),
+            "main.o must define no conformance evidence")
+    references = nm_references(logs["main-symbols"])
+    for module, procedures in OVERLOADING_PROVIDED.items():
+        for procedure in procedures:
+            symbol = f"module_{module}_{procedure}"
+            require(any(name.endswith(symbol) for name in references),
+                    f"main.o must call {module}'s {procedure}, which it does not define")
+            require(any(name.endswith(symbol) for name in objects.get(f"{module}.o", [])),
+                    f"{module}.o must define {procedure}")
+    acknowledged = [name for name in references if "module_real_type_ireducible" in name]
+    require(len(acknowledged) == 3 and all(
+                any(name == symbol for symbol in objects.get("real_type.o", []))
+                for name in acknowledged),
+            f"main.o must call real's acknowledged initializer and two operator(*) "
+            f"procedures in real_type.o, not {acknowledged}")
+    for library in ("basic_interfaces.o", "my_type.o", "real_type.o"):
+        require(library in objects, f"the archive has no {library}")
+        require(not any("__instantiated_" in name for name in objects[library]),
+                f"{library} holds specialized code")
+    return ("main owns the static specializations products{MyType, real}, prod{MyType} "
+            "and prod{real}; they call MyType's init, operators and output in my_type.o "
+            "and real's acknowledged initializer and operators and output in real_type.o; "
+            "no runtime evidence or dispatch")
+
+
+STRUCTURE = {"static": check_static, "overloading": check_overloading}
 
 
 def units_of(content, split):
@@ -312,13 +385,27 @@ def units_of(content, split):
     return units
 
 
+def original_of(name, content):
+    """The paper's own bytes: the fixture without its explicit provider USE."""
+    if name not in paper.PROVIDER_IMPORTS:
+        return content
+    return paper.check_provider_import(name, content)
+
+
 def verified_units(name, content, split):
-    """Check the fixture and its split; return the units."""
+    """Check the fixture, its paper original and its split; return the units."""
     require(name in paper.SOURCE_HASHES and digest(content) == paper.SOURCE_HASHES[name],
             f"the authoritative {name}.f90 fixture was changed")
-    require(split.get("original_sha256", digest(content)) == digest(content),
+    original = original_of(name, content)
+    require(split.get("original_sha256", digest(original)) == digest(original),
             "the split map records a different paper original")
     units = units_of(content, split)
+    for unit in units:
+        if unit.record.get("contains_adaptation"):
+            _, anchor, line, _ = paper.PROVIDER_IMPORTS[name]
+            require(digest(unit.piece.replace(anchor + line, anchor, 1))
+                    == unit.record.get("original_piece_sha256"),
+                    f"{unit.name}: the piece is not its original plus the provider USE")
     modules = [unit.name for unit in units[:-1]]
     require(split.get("frozen_before_main", modules) == modules,
             "every library unit must be frozen before the main program")

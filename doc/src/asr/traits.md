@@ -142,7 +142,12 @@ statically. Where a conformance is visible, its static operator bindings also
 apply to values of the type as defined operators, when no ordinary operator
 does.
 
-`traits_protocol_01` covers
+The paper's `overloading.f90` is registered through
+`traits_paper_functional.py`, which also requires that the original without
+its provider `USE` is rejected, and as the native
+`test_paper_separate_overloading_{normal,fast}` CTests, which check that the
+main program owns the specializations and calls the initializer, operators and
+output that `my_type` and `real_type` define. `traits_protocol_01` covers
 derived, `integer`, `real(real64)` and `real(real32)` implementations,
 overloads, forwarding, composed constraints and static operators on concrete
 values, with a standard-Fortran oracle.
