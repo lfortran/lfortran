@@ -4261,6 +4261,8 @@ RUN(NAME traits_protocol_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_protocol_02_oracle LABELS gfortran ISOLATE_MODULES)
 RUN(NAME traits_protocol_runtime_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_protocol_runtime_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_protocol_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_protocol_separate_01_contracts.f90

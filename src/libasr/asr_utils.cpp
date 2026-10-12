@@ -5988,37 +5988,53 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
         if (contract) dictionaries.push_back({method->m_args[i], contract});
     }
     if (erased.n_args != generic.n_args + offset + dictionaries.size()) return false;
-    for (size_t i = 0; i < dictionaries.size(); i++) {
-        auto *expr = erased.m_args[offset + generic.n_args + i];
-        if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) return false;
+    auto dictionary_type = [&](size_t i) -> ASR::TraitDictionaryType_t* {
+        auto *expr = erased.m_args[i];
+        if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) return nullptr;
         auto *dummy = get_variable_from_symbol(symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(expr)->m_v));
-        if (!dummy || !dummy->m_type || !ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type) ||
-                dummy->m_intent != ASR::intentType::In) return false;
-        auto *type = ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type);
-        if (!type->m_parameter || dictionaries[i].first != type->m_parameter ||
+        return dummy && dummy->m_type && ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type) &&
+                dummy->m_intent == ASR::intentType::In
+            ? ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type) : nullptr;
+    };
+    // Arguments a later pass appends to both procedures, such as hidden
+    // character lengths, follow the dictionaries, which are found by type.
+    size_t first = offset + generic.n_args;
+    if (!dictionaries.empty()) {
+        first = offset;
+        while (first < erased.n_args && !dictionary_type(first)) first++;
+        if (first + dictionaries.size() > erased.n_args) return false;
+    }
+    size_t n_explicit = first - offset;
+    if (n_explicit > generic.n_args) return false;
+    for (size_t i = 0; i < dictionaries.size(); i++) {
+        auto *type = dictionary_type(first + i);
+        if (!type || !type->m_parameter || dictionaries[i].first != type->m_parameter ||
                 symbol_get_past_external(type->m_contract) != &dictionaries[i].second->base) {
             return false;
         }
     }
+    auto erased_arg = [&](size_t i) {
+        return erased.m_args[i < n_explicit ? offset + i : offset + i + dictionaries.size()];
+    };
     auto *result = typed_expr_type(generic.m_return_var);
     bool erased_result = result && trait_dictionary_erased_type(result,
         typed_expr_type(erased.m_return_var), *method);
     if (!result || (!ASR::is_a<ASR::Integer_t>(*result) && !erased_result)) return false;
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
     for (size_t i = 0; i < generic.n_args; i++) {
-        if (!generic.m_args[i] || !erased.m_args[i + offset] ||
+        if (!generic.m_args[i] || !erased_arg(i) ||
                 !ASR::is_a<ASR::Var_t>(*generic.m_args[i]) ||
-                !ASR::is_a<ASR::Var_t>(*erased.m_args[i + offset])) return false;
+                !ASR::is_a<ASR::Var_t>(*erased_arg(i))) return false;
         auto *a = get_variable_from_symbol(symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(generic.m_args[i])->m_v));
         auto *b = get_variable_from_symbol(symbol_get_past_external(
-            ASR::down_cast<ASR::Var_t>(erased.m_args[i + offset])->m_v));
+            ASR::down_cast<ASR::Var_t>(erased_arg(i))->m_v));
         if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) return false;
         arguments.emplace(&a->base, &b->base);
     }
     for (size_t i = 0; i < generic.n_args; i++) {
-        auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(erased.m_args[i + offset]);
+        auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(erased_arg(i));
         if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
                 a->m_value_attr != b->m_value_attr ||
                 std::string(a->m_name) != b->m_name) return false;
@@ -6035,7 +6051,7 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
                     !trait_contracts_equal(
                         ASR::down_cast<ASR::TraitObjectType_t>(b->m_type)->m_contract,
                         &contract->base)) return false;
-        } else if (!trait_types_equal(generic.m_args[i], erased.m_args[i + offset], arguments)) {
+        } else if (!trait_types_equal(generic.m_args[i], erased_arg(i), arguments)) {
             return false;
         }
     }
