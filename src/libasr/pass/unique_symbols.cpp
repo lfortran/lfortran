@@ -131,7 +131,10 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
                 // mangle functions / variables declared inside intrinsic modules
                 ASR::symbol_t *sym = a.second;
-                if (sym_to_renamed.find(sym) == sym_to_renamed.end()) {
+                // A trait is not a linker symbol and, as in any other
+                // module, keeps the name that its references use.
+                if (!ASR::is_a<ASR::Trait_t>(*sym) &&
+                        sym_to_renamed.find(sym) == sym_to_renamed.end()) {
                     sym_to_renamed[sym] = update_name(ASRUtils::symbol_name(sym));
                 }
             }

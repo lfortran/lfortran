@@ -806,6 +806,153 @@ TEST_CASE("Kind wildcards are type sets of every supported kind") {
     CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
 }
 
+TEST_CASE("The intrinsic module generics is used only through its intrinsic nature") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    // traits.tex inline-20 after an ordinary module of the same name.
+    const std::string source = R"(
+module generics
+implicit none
+abstract interface :: INumeric
+    integer
+end interface INumeric
+end module generics
+module user_code
+
+   use, intrinsic :: generics, only: INumeric
+
+   abstract interface :: ISum
+      function sum{INumeric :: T}(x) result(s)
+         type(T), intent(in) :: x(:)
+         type(T)             :: s
+      end function sum
+   end interface ISum
+
+end module user_code
+module renamed_user
+use, intrinsic :: generics, only: Numeric => INumeric
+end module renamed_user
+module plain_user
+use generics, only: INumeric
+end module plain_user
+module own_user
+use, non_intrinsic :: generics, only: INumeric
+end module own_user
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto *unit = result.result;
+    CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+    auto module = [&](const char *name) {
+        ASR::symbol_t *symbol = unit->m_symtab->get_symbol(name);
+        REQUIRE(symbol);
+        REQUIRE(ASR::is_a<ASR::Module_t>(*symbol));
+        return ASR::down_cast<ASR::Module_t>(symbol);
+    };
+    auto imported = [&](const char *name, const char *local) {
+        return ASRUtils::symbol_get_past_external(module(name)->m_symtab->get_symbol(local));
+    };
+    auto depends = [&](const char *name, const std::string &dependency) {
+        auto *m = module(name);
+        for (size_t i = 0; i < m->n_dependencies; i++) {
+            if (dependency == m->m_dependencies[i]) return true;
+        }
+        return false;
+    };
+
+    // The runtime's module, loaded as intrinsic, declares the one INumeric:
+    // integer(*) | real(*) | complex(*).
+    auto *intrinsic = module("lfortran_intrinsic_generics");
+    CHECK(intrinsic->m_intrinsic);
+    CHECK(intrinsic->m_loaded_from_mod);
+    ASR::symbol_t *numeric = intrinsic->m_symtab->get_symbol("inumeric");
+    REQUIRE(numeric);
+    REQUIRE(ASR::is_a<ASR::Trait_t>(*numeric));
+    auto *set = ASR::down_cast<ASR::Trait_t>(numeric);
+    CHECK(set->m_kind == ASR::IntrinsicTypeSet);
+    std::vector<std::pair<ASR::ttypeType, int64_t>> members;
+    for (size_t i = 0; i < set->n_member_types; i++) {
+        members.push_back({set->m_member_types[i]->type,
+            ASRUtils::extract_kind_from_ttype_t(set->m_member_types[i])});
+    }
+    const auto I = ASR::ttypeType::Integer, R = ASR::ttypeType::Real,
+        C = ASR::ttypeType::Complex;
+    CHECK(members == std::vector<std::pair<ASR::ttypeType, int64_t>>{{I, 1}, {I, 2},
+        {I, 4}, {I, 8}, {R, 4}, {R, 8}, {R, 16}, {C, 4}, {C, 8}});
+
+    // An intrinsic USE, renamed or not, reaches it, and ONLY imports nothing
+    // else; a USE without nature, or NON_INTRINSIC, reaches the program's own.
+    auto *own = module("generics");
+    CHECK_FALSE(own->m_intrinsic);
+    CHECK(imported("user_code", "inumeric") == numeric);
+    CHECK(imported("renamed_user", "numeric") == numeric);
+    CHECK(imported("plain_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(imported("own_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(depends("user_code", "lfortran_intrinsic_generics"));
+    CHECK_FALSE(depends("user_code", "generics"));
+    CHECK(depends("plain_user", "generics"));
+    CHECK_FALSE(depends("plain_user", "lfortran_intrinsic_generics"));
+    for (const auto &entry : module("user_code")->m_symtab->get_scope()) {
+        CAPTURE(entry.first);
+        CHECK((entry.first == "inumeric" || entry.first == "isum"));
+    }
+
+    // ISum's binder is constrained by that canonical trait, in memory and
+    // through user_code's modfile.
+    auto check_user_code = [&](ASR::Module_t *user) {
+        auto *isum = ASR::down_cast<ASR::Trait_t>(user->m_symtab->get_symbol("isum"));
+        auto *message = ASR::down_cast<ASR::Template_t>(isum->m_symtab->get_symbol("sum"));
+        size_t constraints = 0;
+        for (const auto &entry : message->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            constraints++;
+            CHECK(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::TraitConstraint_t>(entry.second)->m_trait) == numeric);
+        }
+        CHECK(constraints == 1);
+        CHECK(ASRUtils::symbol_get_past_external(user->m_symtab->get_symbol("inumeric")) ==
+            numeric);
+    };
+    auto *user = module("user_code");
+    check_user_code(user);
+    auto *user_scope = al.make_new<LCompilers::SymbolTable>(nullptr);
+    user_scope->add_symbol("user_code", &user->base);
+    user->m_symtab->parent = user_scope;
+    std::string modfile = LCompilers::save_modfile(
+        *ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(
+            al, user->base.base.loc, user_scope, nullptr, 0, nullptr)), lm);
+    user->m_symtab->parent = unit->m_symtab;
+    auto loaded = LCompilers::load_modfile(al, modfile, true, *unit->m_symtab, lm);
+    REQUIRE(loaded.ok);
+    fix_external_symbols(*loaded.result, *unit->m_symtab);
+    CHECK(LCompilers::asr_verify(*loaded.result, true, diagnostics));
+    auto *copy = ASR::down_cast<ASR::Module_t>(loaded.result->m_symtab->get_symbol("user_code"));
+    REQUIRE(copy != user);
+    check_user_code(copy);
+
+    // Without its nature and without a module of the program, `generics`
+    // is not found: the intrinsic module is not a fallback.
+    LCompilers::diag::Diagnostics errors;
+    auto lonely = LCompilers::LFortran::parse(al,
+        "module lonely\nuse generics, only: INumeric\nend module lonely\n", errors, options);
+    REQUIRE(lonely.ok);
+    LCompilers::LocationManager lonely_lm;
+    auto rejected = LCompilers::LFortran::ast_to_asr(
+        al, *lonely.result, errors, nullptr, false, options, lonely_lm);
+    CHECK_FALSE(rejected.ok);
+    REQUIRE(!errors.diagnostics.empty());
+    CHECK(errors.diagnostics.back().message == "Module 'generics' modfile was not found");
+}
+
 TEST_CASE("Numeric trait source, binary, text and module roundtrips") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

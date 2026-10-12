@@ -1,6 +1,6 @@
-! Located diagnostics for kind wildcards in type sets. A wildcard stands for
-! every supported kind of an integer, real or complex type. Each numbered case
-! is an independent violation; all other code is valid.
+! Located diagnostics for kind wildcards in type sets and the intrinsic module
+! generics; a wildcard stands for every supported kind of its numeric type.
+! Each numbered case is an independent violation; all other code is valid.
 module cc_traits_kind_sets_contracts
     implicit none
     abstract interface :: IReal
@@ -88,3 +88,49 @@ contains
         class(ISum), intent(in) :: summer
     end subroutine use_view
 end module cc_traits_kind_sets_complex_slot
+
+! E08: the intrinsic module generics provides INumeric only.
+module cc_traits_kind_sets_any_type
+    use, intrinsic :: generics, only: IAnyType
+    implicit none
+end module cc_traits_kind_sets_any_type
+
+! The program's own module named generics, an ordinary module.
+module generics
+    implicit none
+    abstract interface :: INumeric
+        integer
+    end interface INumeric
+contains
+    integer function origin()
+        origin = 1
+    end function origin
+end module generics
+
+! E09: an intrinsic USE never reaches the program's own module generics.
+module cc_traits_kind_sets_intrinsic_origin
+    use, intrinsic :: generics, only: origin
+    implicit none
+end module cc_traits_kind_sets_intrinsic_origin
+
+! E10: a USE without module nature reaches the program's own module, whose
+! INumeric admits only the default integer.
+module cc_traits_kind_sets_own_numeric
+    use generics, only: INumeric
+    implicit none
+contains
+    function total{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        integer             :: i
+        s = T(0)
+        do i = 1, size(x)
+            s = s + x(i)
+        end do
+    end function total
+
+    subroutine sum_reals(x)
+        real(8), intent(in) :: x(:)
+        print *, total(x)
+    end subroutine sum_reals
+end module cc_traits_kind_sets_own_numeric

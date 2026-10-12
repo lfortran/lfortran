@@ -48,6 +48,18 @@ semantic error: Dummy argument 'summer' not defined
 89 |        end subroutine use_view
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: The symbol 'ianytype' not found in the module 'generics'
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:94:39
+   |
+94 |     use, intrinsic :: generics, only: IAnyType
+   |                                       ^^^^^^^^ 
+
+semantic error: The symbol 'origin' not found in the module 'generics'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:112:39
+    |
+112 |     use, intrinsic :: generics, only: origin
+    |                                       ^^^^^^ 
+
 semantic error: operator '<' is not available for type-set member complex(4)
   --> tests/errors/continue_compilation_traits_kind_sets.f90:67:13
    |
@@ -59,3 +71,9 @@ semantic error: real(10) is not a member of type-set trait 'ireal'
    |
 78 |         x = twice(x)
    |             ^^^^^^^^ 
+
+semantic error: real(8) is not a member of type-set trait 'inumeric'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:134:18
+    |
+134 |         print *, total(x)
+    |                  ^^^^^^^^ 

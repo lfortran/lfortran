@@ -1207,6 +1207,40 @@ Logical and character wildcards, like their explicit members, are not
 implemented. `traits_kind_sets_01` calls every member statically and through
 closed runtime slots of separately compiled modules.
 
+### The intrinsic module `generics`
+
+The proposal's predefined constraints come from an intrinsic module:
+
+```fortran
+module user_code
+   use, intrinsic :: generics, only: INumeric
+   abstract interface :: ISum
+      function sum{INumeric :: T}(x) result(s)
+         type(T), intent(in) :: x(:)
+         type(T)             :: s
+      end function sum
+   end interface ISum
+end module user_code
+```
+
+The runtime builds and installs it like the other intrinsic modules, from
+`src/runtime/pure/lfortran_intrinsic_generics.f90`. It exports one trait,
+`INumeric`, the closed type set `integer(*) | real(*) | complex(*)`, not the
+operation trait of the same name of the OCP example. Every client names this
+one declaration, so generics constrained by it, under any local name and in
+separately compiled modules, forward to each other. The empty trait
+`IAnyType` is not provided: an empty trait is a nominal contract that a type
+adopts, while an unconstrained binder `{T}` already admits every type.
+
+Only a USE with the `INTRINSIC` module nature accesses the module. Without a
+nature, or with `NON_INTRINSIC`, `generics` remains a module of the program:
+a program's own module of that name keeps working and is never shadowed, and
+the intrinsic module is not a fallback for a missing one. A module that uses
+it records the intrinsic module as its dependency, so a client of its modfile
+loads it from the runtime without any provider of the program.
+`traits_generics_module_01` and `_02` cover separate compilation, renamed
+imports and a program's own module `generics`.
+
 ### Inline finite constraints
 
 A generic can declare a finite constraint directly, using the same exact

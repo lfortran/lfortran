@@ -6140,10 +6140,8 @@ public:
     }
 
     void visit_Use(const AST::Use_t &x) {
-        std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
-            msym = "lfortran_intrinsic_" + msym;
-        }
+        UsedModule used = used_module(x);
+        std::string msym = used.name;
         Str msym_c; msym_c.from_str_view(msym);
         char *msym_cc = msym_c.c_str(al);
         current_module_dependencies.push_back(al, msym_cc);
@@ -6153,7 +6151,7 @@ public:
             SymbolTable *tu_symtab = current_scope->get_tu_scope();
             std::set<std::string> loaded_submodules;
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
+                msym, x.base.base.loc, used.intrinsic, loaded_submodules, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
                     diag.add(diag::Diagnostic(
                         msg, diag::Level::Error, diag::Stage::Semantic, {

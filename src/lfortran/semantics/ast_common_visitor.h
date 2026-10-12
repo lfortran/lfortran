@@ -34294,11 +34294,35 @@ public:
         }
     }
 
-    void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
-        std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
-            msym = "lfortran_intrinsic_" + msym;
+    // The module that the USE statement `x` accesses, by its name in the
+    // translation unit, and whether it is loaded as an intrinsic module. The
+    // runtime module lfortran_intrinsic_generics provides the intrinsic module
+    // `generics` of the traits proposal only to a USE with the INTRINSIC
+    // module nature: without it, `generics` remains a module of the program.
+    struct UsedModule {
+        std::string name;
+        bool intrinsic;
+    };
+
+    UsedModule used_module(const AST::Use_t &x) {
+        std::string name = to_lower(x.m_module);
+        if (name == "ieee_arithmetic") return {"lfortran_intrinsic_" + name, false};
+        if (name == "generics") {
+            for (size_t i = 0; i < x.n_nature; i++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*x.m_nature[i]) &&
+                        AST::down_cast<AST::SimpleAttribute_t>(x.m_nature[i])->m_attr ==
+                            AST::simple_attributeType::AttrIntrinsic) {
+                    return {"lfortran_intrinsic_" + name, true};
+                }
+            }
         }
+        return {name, false};
+    }
+
+    void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
+        std::string msym = used_module(x).name;
+        // Diagnostics name the module as the USE statement does.
+        std::string written = to_lower(x.m_module);
         if (x.n_symbols == 0 && !x.m_only_present) {
             modules_imported_all.insert({current_scope, msym});
             std::string unsupported_sym_name = import_all(m);
@@ -34377,7 +34401,7 @@ public:
                 } else {
                     local_sym = remote_sym;
                 }
-                import_symbols_util(m, msym, remote_sym, local_sym,
+                import_symbols_util(m, written, remote_sym, local_sym,
                                     to_be_imported_with_renaming, x.m_symbols[i]->base.loc);
                 symbols_already_imported_with_renaming.push_back(remote_sym);
             }
@@ -34391,7 +34415,7 @@ public:
                 std::string local_sym = to_be_imported_with_renaming.front().second;
                 to_be_imported_with_renaming.pop();
                 if( current_scope->resolve_symbol(local_sym) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, local_sym,
+                    import_symbols_util(m, written, remote_sym, local_sym,
                                         to_be_imported_with_renaming, x.base.base.loc);
                     symbols_already_imported_with_renaming.push_back(remote_sym);
                 }
@@ -34488,7 +34512,7 @@ public:
                     remote_sym = to_lower(remote_sym);
                     local_sym = remote_sym;
                 }
-                import_symbols_util(m, msym, remote_sym, local_sym,
+                import_symbols_util(m, written, remote_sym, local_sym,
                                     to_be_imported_later, x.m_symbols[i]->base.loc);
             }
 
@@ -34502,7 +34526,7 @@ public:
                 std::string local_sym = to_be_imported_later.front().second;
                 to_be_imported_later.pop();
                 if( current_scope->resolve_symbol(local_sym) == nullptr ) {
-                    import_symbols_util(m, msym, remote_sym, local_sym,
+                    import_symbols_util(m, written, remote_sym, local_sym,
                                         to_be_imported_later, x.base.base.loc);
                 }
             }
