@@ -841,7 +841,8 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         }
     } else if (args[2]) {
         if (!is_logical(*ASRUtils::expr_type(args[2]))) {
-            diag.add(diag::Diagnostic("'mask' argument of 'sum' intrinsic must be logical",
+            diag.add(diag::Diagnostic("'mask' argument of '" + to_lower(intrinsic_func_name) +
+                "' intrinsic must be logical",
                 diag::Level::Error, diag::Stage::Semantic, {diag::Label("", {loc})}));
             return nullptr;
         }
