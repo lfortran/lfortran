@@ -225,7 +225,7 @@ then5:                                            ; preds = %ifcont4
   unreachable
 
 ifcont6:                                          ; preds = %ifcont4
-  call void @driver(void ()* bitcast (void (i32*, i32*, i32*)* @implicit_interface_check to void ()*), i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
+  call void @main.driver(void ()* bitcast (void (i32*, i32*, i32*)* @main.implicit_interface_check to void ()*), i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
   br label %return
 
 return:                                           ; preds = %ifcont6
@@ -236,7 +236,7 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
-define void @driver(void ()* %fnc, i32* %arr, i32* %m) {
+define void @main.driver(void ()* %fnc, i32* %arr, i32* %m) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
@@ -323,7 +323,7 @@ declare void @"fnc~fpcast"(i32*, i32*, i32*)
 
 declare void @"fnc~fpcast_ptr"(i32*, i32*, i32*)
 
-define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
+define void @main.implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = load i32, i32* %m, align 1

@@ -15,7 +15,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   store i32 200, i32* %call_arg_value, align 4
-  call void @ss(i32* %call_arg_value)
+  call void @finalize_02.ss(i32* %call_arg_value)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -26,7 +26,7 @@ FINALIZE_SYMTABLE_finalize_02:                    ; preds = %return
   ret i32 0
 }
 
-define void @ss(i32* %nang) {
+define void @finalize_02.ss(i32* %nang) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = call i8* @_lfortran_get_default_allocator()

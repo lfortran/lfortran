@@ -172,7 +172,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
 void pass_replace_intrinsic_subroutine(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& /*pass_options*/) {
     ReplaceIntrinsicSubroutines v(al);
-    v.visit_TranslationUnit(unit);
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        v.visit_TranslationUnit(unit);
+    });
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
 }

@@ -1591,3 +1591,21 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |
 2572 |             copy = original  ! {Error} Type mismatch in assignment, the types must be compatible
      |             ^^^^   ^^^^^^^^ type mismatch (original_t and copy_t)
+
+semantic error: Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2668:21
+     |
+2668 |             r = foo(right, right)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+     |                     ^^^^^ 
+
+semantic error: Type mismatch in argument `right`: expected `right_t` but got `left_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2669:27
+     |
+2669 |             r = foo(left, left)  ! {Error} Type mismatch in argument `right`: expected `right_t` but got `left_t`.
+     |                           ^^^^ 
+
+semantic error: Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2670:21
+     |
+2670 |             r = foo(right, left)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+     |                     ^^^^^ 

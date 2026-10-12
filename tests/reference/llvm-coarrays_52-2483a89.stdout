@@ -78,7 +78,7 @@ target datalayout = "..."
 @42 = private unnamed_addr constant [103 x i8] c"Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
 @global_array_6 = private constant [1 x i64] [i64 1]
 @global_array_7 = private constant [0 x i64] zeroinitializer
-@__lfortran_global_init_coarrays_52.__lfortran_global_init_done = internal global i32 0
+@coarrays_52.__lfortran_global_init_coarrays_52.__lfortran_global_init_done = internal global i32 0
 @global_array_8 = private constant [1 x i64] [i64 1]
 @global_array_9 = private constant [0 x i64] zeroinitializer
 @global_array_10 = private constant [1 x i64] [i64 1]
@@ -250,7 +250,7 @@ FINALIZE_SYMTABLE_coarrays_52_sub:                ; preds = %return
   ret void
 }
 
-define i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8* %coarray_handle, i64* %sub, i32* %__1sub, i64 %offset) {
+define internal i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8* %coarray_handle, i64* %sub, i32* %__1sub, i64 %offset) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %call_arg_value4 = alloca i64, align 8
@@ -316,7 +316,7 @@ Finalize_Variable___libasr_created_variable_3:    ; preds = %Finalize_Variable__
   ret i32 %19
 }
 
-define i32 @lcompilers_prif_this_image() {
+define internal i32 @lcompilers_prif_this_image() {
 .entry:
   %call_arg_value = alloca i32, align 4
   %__libasr_created_variable_ = alloca %__module_prif_prif_team_type.22, align 8
@@ -1359,7 +1359,7 @@ define i32 @main(i32 %0, i8** %1) {
   %v = alloca i32, align 4
   %23 = load i32*, i32** @coarrays_52.m, align 8
   store i32* %23, i32** @__module___lcompilers_created__nested_context__coarrays_52__m, align 8
-  call void @__lfortran_global_init_coarrays_52()
+  call void @coarrays_52.__lfortran_global_init_coarrays_52()
   %24 = load i32*, i32** @__module___lcompilers_created__nested_context__coarrays_52__m, align 8
   store i32* %24, i32** @coarrays_52.m, align 8
   call void @__module_prif_prif_init(i32* %stat)
@@ -1422,7 +1422,7 @@ else8:                                            ; preds = %ifcont6
 ifcont9:                                          ; preds = %else8, %then7
   %37 = load i32*, i32** @coarrays_52.m, align 8
   store i32* %37, i32** @__module___lcompilers_created__nested_context__coarrays_52__m, align 8
-  call void @coarrays_52_int_sub(i32* %v)
+  call void @coarrays_52.coarrays_52_int_sub(i32* %v)
   %38 = load i32*, i32** @__module___lcompilers_created__nested_context__coarrays_52__m, align 8
   store i32* %38, i32** @coarrays_52.m, align 8
   %39 = load i32, i32* %v, align 4
@@ -1623,7 +1623,7 @@ Finalize_Variable___libasr_created_variable_7:    ; preds = %Finalize_Variable__
   ret i32 0
 }
 
-define void @__lfortran_global_init_coarrays_52() {
+define void @coarrays_52.__lfortran_global_init_coarrays_52() {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %array_descriptor8 = alloca %array.1.0, align 8
@@ -1659,13 +1659,13 @@ define void @__lfortran_global_init_coarrays_52() {
   store i8* %8, i8** %6, align 8
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_5, align 8
   %stat = alloca i32, align 4
-  %9 = load i32, i32* @__lfortran_global_init_coarrays_52.__lfortran_global_init_done, align 4
+  %9 = load i32, i32* @coarrays_52.__lfortran_global_init_coarrays_52.__lfortran_global_init_done, align 4
   %10 = xor i32 %9, 1
   %11 = icmp ne i32 %10, 0
   br i1 %11, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 1, i32* @__lfortran_global_init_coarrays_52.__lfortran_global_init_done, align 4
+  store i32 1, i32* @coarrays_52.__lfortran_global_init_coarrays_52.__lfortran_global_init_done, align 4
   call void @__module_coarrays_52_m___lfortran_global_init_coarrays_52_m()
   call void @__module_prif_prif_init(i32* %stat)
   %12 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 0
@@ -1821,7 +1821,7 @@ Finalize_Variable___libasr_created_variable_5:    ; preds = %Finalize_Variable__
   ret void
 }
 
-define void @coarrays_52_int_sub(i32* %v) {
+define void @coarrays_52.coarrays_52_int_sub(i32* %v) {
 .entry:
   %0 = load i32*, i32** @__cac_m__coarray_ptr, align 8
   %1 = load i32*, i32** @__cac_m__coarray_ptr, align 8

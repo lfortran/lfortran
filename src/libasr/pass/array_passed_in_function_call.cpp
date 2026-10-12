@@ -150,10 +150,17 @@ public:
                     cast->m_old == ASR::array_physical_typeType::DescriptorArray) ) {
                 return false;
             }
+            ASR::expr_t* inner = cast->m_arg;
+            // An allocatable array is always contiguous, so its data is
+            // passed as it is, without a copy-in temporary.
+            ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
+            if ( ASRUtils::is_allocatable(inner_type) &&
+                 !ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ) {
+                return false;
+            }
             // Skip copy-in/copy-out when the inner expression is an ArraySection
             // whose source array is UnboundedPointerArray (assumed-size) and has
             // an undefined upper bound on the assumed-size dimension.
-            ASR::expr_t* inner = cast->m_arg;
             if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
                 ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
                 ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);

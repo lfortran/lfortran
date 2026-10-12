@@ -221,7 +221,7 @@ ifcont:                                           ; preds = %else, %then
   %17 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
   store i64 10, i64* %17, align 8
   call void @__module_finalize_01_mod_ss()
-  call void @internal_sub()
+  call void @finalize_01.internal_sub()
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
@@ -246,7 +246,7 @@ Finalize_Variable_str:                            ; preds = %Finalize_Variable_a
   ret i32 0
 }
 
-define void @internal_sub() {
+define void @finalize_01.internal_sub() {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %arr_desc1 = alloca %array.1, align 8
