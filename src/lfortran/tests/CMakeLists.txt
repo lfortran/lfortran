@@ -220,8 +220,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
-        # Several interactive evaluator tests in test_llvm.cpp hang or fail
-        # on Windows, so the prompt is driven on the other platforms only.
+        # The prompt is driven through a pipe on the other platforms only;
+        # this test has not been run on Windows.
         if (NOT WIN32)
             add_test(
                 NAME test_repl

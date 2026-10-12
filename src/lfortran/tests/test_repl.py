@@ -3,18 +3,36 @@
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import threading
 
 ENTER = b"\r"
 CTRL_D = b"\x04"
 
 
-def run_repl(lfortran, cwd, cells):
+def run_repl(lfortran, cwd, cells, timeout=60, max_output=1 << 20):
+    # A prompt that never finishes can print without end, so its output is
+    # capped and it is killed after `timeout` seconds.
     keys = b"".join(cell.encode() + ENTER for cell in cells) + CTRL_D
-    return subprocess.run([lfortran, "--no-color"], input=keys, cwd=cwd,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=300)
+    p = subprocess.Popen([lfortran, "--no-color"], cwd=cwd,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    timer = threading.Timer(timeout, p.kill)
+    timer.start()
+    try:
+        p.stdin.write(keys)
+        p.stdin.close()
+        out = p.stdout.read(max_output)
+        if len(out) >= max_output:
+            p.kill()
+            sys.exit("the prompt printed more than %d bytes" % max_output)
+        p.wait()
+    finally:
+        timer.cancel()
+        p.stdout.close()
+    return p.returncode, out.decode(errors="replace")
 
 
 def check_keeps_files_in_cwd(lfortran):
@@ -27,18 +45,19 @@ def check_keeps_files_in_cwd(lfortran):
             f.write(sentinel)
         # The incomplete cells make the prompt quote them in a diagnostic,
         # the unterminated string already when it checks for completeness.
-        r = run_repl(lfortran, cwd, ["integer :: trial_seed = 41",
+        code, out = run_repl(lfortran, cwd, ["integer :: trial_seed = 41",
             "trial_seed + 1", "integer :: x = ", 'x = "abc', "trial_seed"])
-        out = r.stdout.decode(errors="replace")
-        if r.returncode != 0 or "Exiting." not in out:
+        if code != 0 or "Exiting." not in out:
             sys.exit("the prompt did not exit cleanly (code %d):\n%s"
-                % (r.returncode, out))
-        if "File not found." in out:
-            sys.exit("a diagnostic did not quote the cell:\n%s" % out)
-        for expected in ["42", "41", "token not recognized", 'x = "abc']:
-            if expected not in out:
+                % (code, out))
+        # The prompt echoes every keystroke, so the results are matched as
+        # whole lines and the cell as a line quoted by a diagnostic.
+        for expected in [r"^42\r?$", r"^41\r?$", r'^1 \| x = "abc\r?$']:
+            if not re.search(expected, out, re.M):
                 sys.exit("expected %r in the prompt output:\n%s"
                     % (expected, out))
+        if "File not found." in out or sentinel.decode().strip() in out:
+            sys.exit("a diagnostic did not quote the cell:\n%s" % out)
         with open(path, "rb") as f:
             if f.read() != sentinel:
                 sys.exit("the prompt overwrote `input` in its directory")
