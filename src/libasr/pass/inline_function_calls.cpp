@@ -140,6 +140,18 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             return false;
         }
 
+        // Inlining not possible as target dummy is copied into a local variable
+        // before the inlined body runs.
+        for( size_t i = 0; i < function->n_args; i++ ) {
+            if( ASR::is_a<ASR::Var_t>(*function->m_args[i]) ) {
+                ASR::Variable_t* dummy = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v);
+                if( dummy->m_target_attr ) {
+                    return false;
+                }
+            }
+        }
+
         // ⁠Function should have only Variable symbols in its symtab.
         // The type of those Variable symbols shouldn't be FunctionType.
         for( auto sym: function->m_symtab->get_scope() ) {
