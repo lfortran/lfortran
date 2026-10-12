@@ -1200,6 +1200,9 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // The assignment(=) blocks of the internal procedures are not the program's.
+        std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
+            = assgn_proc_names_locations;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1210,6 +1213,7 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
             try {
                 visit_decl_stmt(*x.m_items[i]);

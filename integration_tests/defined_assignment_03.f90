@@ -25,6 +25,27 @@ contains
 
 end module
 
+subroutine defined_assignment_03_negate(lhs, rhs)
+    use defined_assignment_03_mod, only: b_t
+    implicit none
+    type(b_t), intent(out) :: lhs
+    type(b_t), intent(in) :: rhs
+    lhs%x = -rhs%x
+end subroutine
+
+! An earlier external procedure with an assignment(=) of its own.
+subroutine defined_assignment_03_ext()
+    use defined_assignment_03_mod, only: b_t
+    implicit none
+    interface assignment(=)
+        subroutine defined_assignment_03_negate(lhs, rhs)
+            import :: b_t
+            type(b_t), intent(out) :: lhs
+            type(b_t), intent(in) :: rhs
+        end subroutine
+    end interface
+end subroutine
+
 program defined_assignment_03
     use defined_assignment_03_mod
     implicit none
@@ -38,7 +59,7 @@ program defined_assignment_03
     end interface
 
     type(a_t) :: a
-    type(b_t) :: b
+    type(b_t) :: b, b2
 
     a = 5
     if (a%i /= 5) error stop
@@ -49,7 +70,12 @@ program defined_assignment_03
 
     call assign_in_internal()
 
-    print *, a%i, b%x
+    ! Intrinsic: the assignment(=) of defined_assignment_03_ext() and of
+    ! local_assignment() is not the program's.
+    b2 = b
+    if (abs(b2%x - 3.0) > 1e-6) error stop
+
+    print *, a%i, b%x, b2%x
 
 contains
 
@@ -63,6 +89,16 @@ contains
         type(a_t) :: c
         c = 7
         if (c%i /= 7) error stop
+    end subroutine
+
+    subroutine local_assignment()
+        interface assignment(=)
+            subroutine defined_assignment_03_negate(lhs, rhs)
+                import :: b_t
+                type(b_t), intent(out) :: lhs
+                type(b_t), intent(in) :: rhs
+            end subroutine
+        end interface
     end subroutine
 
 end program
