@@ -6400,3 +6400,7 @@ options = "--gpu=metal"
 [[test]]
 filename = "../integration_tests/string_122.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/character_35.f90"
+ast_f90 = true

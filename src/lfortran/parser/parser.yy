@@ -1708,6 +1708,10 @@ var_sym_decl
     | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
     | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
             $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
+    | id "(" array_comp_decl_list ")" "*" "(" "*" ")" {
+            $$ = VAR_SYM_DIM($1, $3.p, $3.n, DoubleAsterisk, @$); }
+    | id "(" array_comp_decl_list ")" "*" "(" "*" ")" "=" expr {
+            $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $10, DoubleAsterisk, @$); }
     | id "(" array_comp_decl_list ")" "=" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
     | id "(" array_comp_decl_list ")" "*" expr "=" expr {
