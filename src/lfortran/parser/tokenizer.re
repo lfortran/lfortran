@@ -1,4 +1,5 @@
 #include <limits>
+#include <cctype>
 
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/tokenizer.h>
@@ -151,6 +152,76 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
             {loc},
             "help: write this as '" + rel_new + "'");
     }
+}
+
+static bool is_omp_blank(unsigned char c)
+{
+    return c == ' ' || c == '\t' || c == '\v' || c == '\r';
+}
+
+// Returns true if `p` starts with the free-form OpenMP sentinel `!$omp`
+// (case-insensitive) that is not part of a longer name.
+static bool is_omp_sentinel(const unsigned char *p)
+{
+    if (p[0] != '!' || p[1] != '$') return false;
+    const char *omp = "omp";
+    for (size_t i = 0; i < 3; i++) {
+        if (std::tolower(p[i+2]) != omp[i]) return false;
+    }
+    unsigned char c = p[5];
+    return !(std::isalnum(c) || c == '_');
+}
+
+int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
+        Location &loc, int directive_token)
+{
+    if (last_token != yytokentype::TK_NEWLINE) {
+        // A directive after a statement on the same line is a comment
+        line_num++; cur_line=cur;
+        token(yylval.string);
+        token_loc(loc);
+        last_token=yytokentype::TK_NEWLINE;
+        return yytokentype::TK_EOLCOMMENT;
+    }
+    // Free-form continuation: if the last nonblank character of a line is
+    // `&`, the directive continues on the next line, which must start with
+    // the `!$omp` sentinel, optionally followed by `&`. With the `&` the text
+    // continues right after it, otherwise after the following blanks.
+    std::string joined;
+    bool continued = false;
+    const unsigned char *line_start = tok;
+    while (*cur == '\n') {
+        const unsigned char *e = cur;
+        while (e > line_start && is_omp_blank(e[-1])) e--;
+        if (e == line_start || e[-1] != '&') break;
+        const unsigned char *p = cur + 1;
+        while (is_omp_blank(*p)) p++;
+        if (!is_omp_sentinel(p)) break;
+        p += 5;
+        while (is_omp_blank(*p)) p++;
+        const unsigned char *next_start = p;
+        if (*p == '&') {
+            next_start = p + 1;
+        }
+        const unsigned char *eol = p;
+        while (*eol != '\n' && *eol != '\0') eol++;
+        if (*eol != '\n') break;
+        joined.append((const char*)line_start, (const char*)(e - 1));
+        if (*p != '&') joined += ' ';
+        line_start = next_start;
+        cur = (unsigned char*)eol;
+        line_num++;
+        continued = true;
+    }
+    line_num++; cur_line=cur;
+    if (continued) {
+        joined.append((const char*)line_start, (const char*)cur);
+        yylval.string.from_str(al, joined);
+    } else {
+        token(yylval.string);
+    }
+    token_loc(loc);
+    return directive_token;
 }
 
 int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
@@ -711,13 +782,15 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 if (!openmp_enabled) {
                     TK_TRIVIA(TK_COMMENT)
                 }
-                TK_TRIVIA(TK_OMP_END)
+                return lex_omp_directive(al, yylval, loc,
+                    yytokentype::TK_OMP_END);
             }
             omp / newline {
                 if (!openmp_enabled) {
                     TK_TRIVIA(TK_COMMENT)
                 }
-                TK_TRIVIA(TK_OMP)
+                return lex_omp_directive(al, yylval, loc,
+                    yytokentype::TK_OMP);
             }
             pragma_decl / newline { TK_TRIVIA(TK_PRAGMA_DECL) }
 
