@@ -3951,6 +3951,21 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
                         continue;
                     }
+                    // A formal procedure with an implicit interface (e.g.
+                    // `real(8), external :: f`) has no argument list to
+                    // compare. Only its result type is known: when both are
+                    // functions, the result types must agree.
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if (ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
+                        ASR::ttype_t* actual_result = arg1_func_type->m_return_var_type;
+                        ASR::ttype_t* formal_result = arg2_func_type->m_return_var_type;
+                        if (actual_result && formal_result &&
+                                !types_equal(actual_result, formal_result,
+                                    nullptr, nullptr, true)) {
+                            return false;
+                        }
+                        continue;
+                    }
                 }
 
                 Allocator al(512);

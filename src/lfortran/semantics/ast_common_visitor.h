@@ -15225,6 +15225,7 @@ public:
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         validate_missing_required_arguments(loc, args, func);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        cast_procedure_actuals(args, func);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
             value, nullptr, current_scope, current_function_dependencies,
@@ -15422,6 +15423,7 @@ public:
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             validate_missing_required_arguments(loc, args, func);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+            cast_procedure_actuals(args, func);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr, current_scope, current_function_dependencies,
@@ -15552,6 +15554,7 @@ public:
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
                 validate_missing_required_arguments(loc, args, func);
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                cast_procedure_actuals(args, func);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
                     nullptr, nullptr, current_scope, current_function_dependencies,
@@ -16341,11 +16344,7 @@ public:
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-        for (size_t i = 0; i < args.size() && i < func->n_args; i++) {
-            // A procedure actual of another type than its dummy is cast to
-            // the dummy's type.
-            args.p[i].m_value = cast_procedure_actual(args.p[i].m_value, func->m_args[i]);
-        }
+        cast_procedure_actuals(args, func);
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
         if (!func->m_deterministic) {
@@ -20805,6 +20804,14 @@ public:
         }
         return ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(al, loc, actual,
             to, ASRUtils::duplicate_type(al, &formal->base), nullptr));
+    }
+
+    // Each procedure actual in `args` of another type than its dummy
+    // argument of `func` is cast to the dummy's type.
+    void cast_procedure_actuals(Vec<ASR::call_arg_t>& args, ASR::Function_t* func) {
+        for (size_t i = 0; i < args.size() && i < func->n_args; i++) {
+            args.p[i].m_value = cast_procedure_actual(args.p[i].m_value, func->m_args[i]);
+        }
     }
 
     // `actual` associated with the dummy argument `dummy` of a procedure.
