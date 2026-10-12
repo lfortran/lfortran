@@ -310,17 +310,16 @@ generates the device source. It never falls back to the CPU:
       sizes (`t(i) = f(2); t(i) = f(3)`), since a kernel cannot reallocate
       between them; writes in different branches of one `if` or
       `select case` each give their own size.
-      In all these cases even with the option the component is not
-      allocated. With bounds
-      checking on, the launch stops if the component is not allocated.
-      Without the option the message is the usual "Array ... is not
-      allocated". With the option the message says that the size of
-      `t(i)%v` cannot be determined before the loop runs, and that the
-      component has to be allocated before the loop. That is a limitation:
-      the program is valid with the option, and allocating the component
-      before the loop makes it run. A wrong preallocated size is not
-      detected. Without bounds checking nothing is checked, and the kernel
-      writes storage that does not exist.
+      In all these cases the host does not allocate the component.
+      With the option (and bounds checking on), the type of `t` becomes a
+      heap type instead: the value written is made on the device heap and
+      stored into `t(i)` after the launch, with the size the loop gave it
+      (see [Allocating on the device](#allocating-on-the-device)).
+      Without the option, with bounds checking on, the launch stops if the
+      component is not allocated, with the usual "Array ... is not
+      allocated"; a wrong preallocated size is not detected, and without
+      bounds checking nothing is checked and the kernel writes storage that
+      does not exist.
     * Which elements the loop writes. The element may be picked by a call
       (`t(g(i))`) or by a value the loop writes. A test may call a procedure
       or read a value the loop writes. The write may be inside another
@@ -410,8 +409,10 @@ Which one is used is decided per array and per derived type:
   such values (the result of an elemental constructor, `pair_t(a(:), b(:))`),
   a value held in a component or in an element of an allocatable component
   of another value, or a local whose component's shape cannot be told on
-  entry to its procedure. A type with a component of a heap type is a heap
-  type too. Every value of a heap type that device code creates -- a local,
+  entry to its procedure -- or when, with `--realloc-lhs-arrays`, the loop
+  gives a component of an element of an array argument a size the host
+  cannot tell before the launch (see the host preallocation above). A type
+  with a component of a heap type is a heap type too. Every value of a heap type that device code creates -- a local,
   a temporary, a function result, a dummy argument of a device procedure,
   an element of such an array -- is then on the heap, also one the host
   could have sized, so that a type has one representation in device code
@@ -559,9 +560,10 @@ host hands over, and it is never on the heap. Where it meets heap values:
   `do l = 1, m`, a local of higher rank, or such a local of the kernel
   itself, cannot be sized yet, even when the host could work out the
   largest value before the launch by going over the loop.
-* Copy-out records are not implemented yet: a heap value stored into a
-  kernel argument is an error. A heap array of rank greater than one cannot
-  be passed whole, a section of a heap array whose elements are not
+* A heap value can be stored into an element of an array argument of the
+  loop, but not into a scalar argument or a section, and a loop that also
+  reads or writes the components of an array it stores heap values into is
+  an error. A heap array of rank greater than one cannot be passed whole, a section of a heap array whose elements are not
   contiguous is not lowered yet, and neither is an array of a heap type of
   rank greater than one, a component of a heap type that is an array of
   values of a heap type of a fixed size, an allocatable scalar, pointer or
