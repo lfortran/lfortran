@@ -1125,6 +1125,33 @@ public:
         return found;
     }
 
+    // Completes the interface blocks and procedure declarations of a
+    // specification part once all of its declarations have been visited: a
+    // generic interface can name a specific procedure declared after it.
+    void finalize_interfaces() {
+        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
+        add_generic_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
+        resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
+             if (current_sym == placeholder_sym) {
+                 diag.add(diag::Diagnostic(
+                    "Interface '" + name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
+                    }));
+             }
+        }
+        pending_proc_placeholders.clear();
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+    }
+
     void visit_Program(const AST::Program_t &x) {
         // Check for multiple program units in the same file 
         program_count++;
@@ -1289,27 +1316,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
-        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
-        add_generic_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
-        resolve_proc_pointer_placeholders();
-        resolve_pending_proc_ptr_inits();
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
-             if (current_sym == placeholder_sym) {
-                 diag.add(diag::Diagnostic(
-                    "Interface '" + name + "' is referenced but not defined",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("Referenced here", {placeholder_sym->base.loc})
-                    }));
-             }
-        }
-        pending_proc_placeholders.clear();
-        try {
-            add_class_procedures();
-        } catch (SemanticAbort &e) {
-            if ( !compiler_options.continue_compilation ) throw e;
-        }
+        finalize_interfaces();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &e) {
