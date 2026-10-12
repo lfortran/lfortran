@@ -1,0 +1,1 @@
+  pairwise := PairwiseSum{SimpleSum}(SimpleSum())

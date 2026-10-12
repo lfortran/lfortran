@@ -54,6 +54,8 @@ cmake -E copy \
     integration_tests/traits_paper_printy.f90 \
     integration_tests/traits_intrinsic_02*.f90 \
     integration_tests/traits_paper_manual_values.f90 \
+    integration_tests/traits_paper_inline.py \
+    integration_tests/traits_paper_inline_*.f90 \
     $dest/integration_tests
 cmake -E copy_directory integration_tests/traits_paper_functional \
     $dest/integration_tests/traits_paper_functional
@@ -61,6 +63,8 @@ cmake -E copy_directory integration_tests/traits_paper_dynamic \
     $dest/integration_tests/traits_paper_dynamic
 cmake -E copy_directory integration_tests/traits_paper_type_adoption \
     $dest/integration_tests/traits_paper_type_adoption
+cmake -E copy_directory integration_tests/traits_paper_inline \
+    $dest/integration_tests/traits_paper_inline
 cmake -E copy_directory integration_tests/traits_paper_static \
     $dest/integration_tests/traits_paper_static
 cmake -E copy_directory integration_tests/traits_paper_protocols \

@@ -476,6 +476,17 @@ declares `INumeric` as `integer | real(real32) | real(real64)`, so the original
 real32 `ASSOCIATE` alias and real64 pointer both remain intact. This context is
 independent of either functional program's private constraint.
 
+The paper's 35 core inline listings are accounted for in
+`integration_tests/traits_paper_inline/provenance.json`. Each fixture is the
+listing byte for byte, or with recorded adaptations (completed ellipses,
+explicit trait imports, approved errata and initialization) whose reversal
+reproduces the listing's hash. `traits_paper_inline.py` checks this record in
+the normal and fast `test_paper_inline` CTests: declarations are compiled to
+verified ASR and objects, programs are run and checked, and listings that need
+a missing feature are reported with their blocker instead of being compiled.
+The self-checking programs are also `traits_paper_inline_NN` integration
+tests.
+
 ## Generic messages
 
 A trait message may use the same constrained generic-procedure syntax:

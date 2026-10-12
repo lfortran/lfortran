@@ -1,0 +1,834 @@
+{
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21"
+  },
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "scope": "The 35 core inline Fortran listings of traits.tex, in paper order. Each fixture is the listing byte for byte, or with the adaptations recorded beside it: completed ellipses, explicit trait imports and user-approved errata or initialization. Reverting them reproduces listing_sha256.",
+  "contexts": {
+    "core.f90": "Module traits_paper_inline_core: inline-01 (explicit-shape copy), -02, -04, -16 and -14 included unchanged, providing ICastable, ICalculable, IPrintable, IConstructable, IAdmissible, INumeric and ISum.",
+    "generic_sum.f90": "Module traits_paper_inline_sum: inline-16's INumeric and the canonical inline-25 fixture, as assumed by the paper for inline-26/27 (traits.tex 2115-2121)."
+  },
+  "gates": {
+    "declaration": "compiled to verified ASR and an object; never executed",
+    "output": "compiled and run; printed lines must equal 'expected.stdout', numbers compared by value",
+    "run": "compiled and run; the program checks its own results with ERROR STOP and prints nothing; also the traits_paper_inline_NN integration test",
+    "existing": "accepted by traits_paper_manual_values.f90; not duplicated"
+  },
+  "listings": [
+    {
+      "id": "inline-01",
+      "paper_lines": [
+        1071,
+        1089
+      ],
+      "listing_sha256": "a34932f4dbb198f82580c9e4b370c21fafb7bf95b228a5bcbc6b49e366e12ef4",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_01.f90",
+      "sha256": "7c900d9e92a06af9cffcad30a730bf8ad50cb9ad602158fda821e327f339371b",
+      "wrapper": "traits_paper_inline_01.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      },
+      "adaptations": [
+        {
+          "kind": "approved design resolution PAPER-D04 (explicit_shape)",
+          "listing": "        real             :: res(:)\n",
+          "fixture": "        real             :: res(size(x))\n",
+          "reason": "A deferred-shape function result needs ALLOCATABLE or POINTER; the user approved the explicit-shape result res(size(x)) for the acceptance copy."
+        }
+      ]
+    },
+    {
+      "id": "inline-02",
+      "paper_lines": [
+        1129,
+        1138
+      ],
+      "listing_sha256": "5fcc4d8650fa8a4f7851689ec35833f90e8398e08db3cddee94ce0a7ba289021",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_02.f90",
+      "sha256": "5fcc4d8650fa8a4f7851689ec35833f90e8398e08db3cddee94ce0a7ba289021",
+      "wrapper": "traits_paper_inline_02.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-03",
+      "paper_lines": [
+        1156,
+        1159
+      ],
+      "listing_sha256": "f9f66670df44d11ce80b0baf763b8f11dd932eb2975ce83f97ec68581ce36e80",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_03.f90",
+      "sha256": "f9f66670df44d11ce80b0baf763b8f11dd932eb2975ce83f97ec68581ce36e80",
+      "wrapper": "traits_paper_inline_03.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-04",
+      "paper_lines": [
+        1169,
+        1175
+      ],
+      "listing_sha256": "656b491a608aa584ed12ceb0471f841063efd53a88461aa460008214688f30f2",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_04.f90",
+      "sha256": "656b491a608aa584ed12ceb0471f841063efd53a88461aa460008214688f30f2",
+      "wrapper": "traits_paper_inline_04.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-05",
+      "paper_lines": [
+        1250,
+        1283
+      ],
+      "listing_sha256": "017da10929c536f5504de2de2dc9441c84fda950daf9bc3ec30d32442d509f7e",
+      "purpose": "executable",
+      "gate": "output",
+      "status": "blocked",
+      "blocked_by": "implements statement without traits ('implements :: MyType', binding procedures to a type): syntax error at '::'",
+      "fixture": "inline_05.f90",
+      "sha256": "1fe1dd201e9d95fde0c30d2706b8dad2e08ac5661e9fbe2502c8295068bd45d7",
+      "wrapper": "traits_paper_inline_05.f90",
+      "expected": {
+        "stdout": [
+          "I am 3.0",
+          "I am 2.5"
+        ]
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module basic\n   ...\n",
+          "fixture": "module basic\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; this module needs no declaration besides IMPLICIT NONE."
+        },
+        {
+          "kind": "approved erratum PAPER-D03 (end type MyType)",
+          "listing": "   end MyType\n",
+          "fixture": "   end type MyType\n",
+          "reason": "The listing closes the derived type with 'end MyType'; the user approved 'end type MyType' for inline-05/07/09."
+        }
+      ]
+    },
+    {
+      "id": "inline-06",
+      "paper_lines": [
+        1324,
+        1333
+      ],
+      "listing_sha256": "31e5b53e4057360c726ea133e74255b3d6eec0b099f9ef732245f762b8a7fa82",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "blocked",
+      "blocked_by": "needs inline-05's 'implements :: MyType', and an acknowledgement whose initializer requirements are met by initializers the type already binds: 'does not bind an initializer matching the requirement of trait 'iconstructable''",
+      "fixture": "inline_06.f90",
+      "sha256": "80681be8253134f3358d79e841bbf37d93e08a1cfeb0afeabf9264a03dc6f6b6",
+      "wrapper": "traits_paper_inline_06.f90",
+      "context": [
+        "core.f90",
+        "inline_05.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module enhanced\n   ...  \n",
+          "fixture": "module enhanced\n   use traits_paper_inline_core, only: IConstructable, IPrintable\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        }
+      ]
+    },
+    {
+      "id": "inline-07",
+      "paper_lines": [
+        1348,
+        1364
+      ],
+      "listing_sha256": "670aee53cab430be69321d48d52d0657fb59eb9bd080e90a2c7520437f881b8a",
+      "purpose": "executable",
+      "gate": "output",
+      "status": "ready",
+      "fixture": "inline_07.f90",
+      "sha256": "8b70c363d9426d6eaa3e908b3bdca8a8681e160345b548ed21d2ba7cbb052bbf",
+      "wrapper": "traits_paper_inline_07.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "stdout": [
+          "I am 3.0",
+          "I am 2.5"
+        ]
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module basic\n   ...\n",
+          "fixture": "module basic\n   use traits_paper_inline_core, only: IConstructable, IPrintable\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        },
+        {
+          "kind": "approved erratum PAPER-D03 (end type MyType)",
+          "listing": "   end MyType\n",
+          "fixture": "   end type MyType\n",
+          "reason": "The listing closes the derived type with 'end MyType'; the user approved 'end type MyType' for inline-05/07/09."
+        },
+        {
+          "kind": "context completion",
+          "listing": "contains\n...\nend module basic",
+          "fixture": "contains\n\n   function init_by_int(n) result(res)\n      integer, intent(in) :: n\n      type(MyType)        :: res\n      res%a = real(n)\n   end function init_by_int\n\n   function init_by_real(a) result(res)\n      real, intent(in) :: a\n      type(MyType)     :: res\n      res%a = a\n   end function init_by_real\n\n   subroutine output(self)\n      class(MyType), intent(in) :: self\n      write(*,*) \"I am \", self%a\n   end subroutine output\n\nend module basic",
+          "reason": "The paper omits the implementations, 'done exactly as it was shown' in inline-05 (traits.tex 1365-1367); they are inline-05's three procedures, byte for byte."
+        }
+      ]
+    },
+    {
+      "id": "inline-08",
+      "paper_lines": [
+        1374,
+        1393
+      ],
+      "listing_sha256": "b5bdf6a440bbe80eb13315e69d970be5b4902f430957b28cfe2f3c081adc2bf5",
+      "purpose": "executable",
+      "gate": "output",
+      "status": "ready",
+      "fixture": "inline_08.f90",
+      "sha256": "c962d14bcb917a8160b46add28bd5927c67e520271d36e037a01e0a1c85ba43f",
+      "wrapper": "traits_paper_inline_08.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "stdout": [
+          "I am 3.0",
+          "I am 2.5"
+        ]
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module basic\n   ...\n",
+          "fixture": "module basic\n   use traits_paper_inline_core, only: IConstructable, IPrintable\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        },
+        {
+          "kind": "approved erratum (end type MyType), decision approve_end_type of 2026-10-12",
+          "listing": "   end MyType\n",
+          "fixture": "   end type MyType\n",
+          "reason": "The listing closes the derived type with 'end MyType' (traits.tex 1380); the user approved 'end type MyType' for this acceptance copy only, as PAPER-D03 did for inline-05/07/09. traits.tex and the frozen listing are unchanged."
+        },
+        {
+          "kind": "context completion",
+          "listing": "contains\n   ...   \nend module basic",
+          "fixture": "contains\n\n   function init_by_int(n) result(res)\n      integer, intent(in) :: n\n      type(MyType)        :: res\n      res%a = real(n)\n   end function init_by_int\n\n   function init_by_real(a) result(res)\n      real, intent(in) :: a\n      type(MyType)     :: res\n      res%a = a\n   end function init_by_real\n\n   subroutine output(self)\n      class(MyType), intent(in) :: self\n      write(*,*) \"I am \", self%a\n   end subroutine output\n\nend module basic",
+          "reason": "The paper skips the implementations 'for brevity' (traits.tex 1394); they are inline-05's three procedures, byte for byte."
+        }
+      ]
+    },
+    {
+      "id": "inline-09",
+      "paper_lines": [
+        1474,
+        1505
+      ],
+      "listing_sha256": "8125a9577f3534cb8d81ca5a1e1ecbe2e37e7dcb01049cabd94c077766cb9811",
+      "purpose": "executable",
+      "gate": "output",
+      "status": "blocked",
+      "blocked_by": "the implements attribute of a type cannot bind initializer requirements to the type's 'initial ::' bindings: 'does not bind an initializer matching the requirement of trait 'iconstructable''",
+      "fixture": "inline_09.f90",
+      "sha256": "dc68c382581ff6fceb20f8d13efdddd89ecd1787a80d1cf26334363787fe9c0a",
+      "wrapper": "traits_paper_inline_09.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "stdout": [
+          "I am 3.0",
+          "I am 2.5"
+        ]
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module basic\n   ...\n",
+          "fixture": "module basic\n   use traits_paper_inline_core, only: IConstructable, IPrintable\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        },
+        {
+          "kind": "approved erratum PAPER-D03 (end type MyType)",
+          "listing": "   end implements MyType\n",
+          "fixture": "   end type MyType\n",
+          "reason": "The listing closes the derived type with 'end implements MyType'; the user approved 'end type MyType' for inline-05/07/09."
+        }
+      ]
+    },
+    {
+      "id": "inline-10",
+      "paper_lines": [
+        1625,
+        1628
+      ],
+      "listing_sha256": "71962a6bb245e42e1b191e6f200b67f3060b950846d524b7c13560f1cbd4ced0",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_10.f90",
+      "sha256": "71962a6bb245e42e1b191e6f200b67f3060b950846d524b7c13560f1cbd4ced0",
+      "wrapper": "traits_paper_inline_10.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-11",
+      "paper_lines": [
+        1630,
+        1632
+      ],
+      "listing_sha256": "c144382febf1394535be2316e5f8687917c24578738a53dbffb051b1bb949e5f",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_11.f90",
+      "sha256": "c144382febf1394535be2316e5f8687917c24578738a53dbffb051b1bb949e5f",
+      "wrapper": "traits_paper_inline_11.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-12",
+      "paper_lines": [
+        1660,
+        1662
+      ],
+      "listing_sha256": "38615ec6aa779854e7519ecd61c77ae8466d2ea04e53861f8acec2c93af4eef1",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "blocked",
+      "blocked_by": "runtime views of traits with initializer requirements: 'trait 'iadmissible' has the associated type itself and can only be used as a generic constraint'",
+      "fixture": "inline_12.f90",
+      "sha256": "38615ec6aa779854e7519ecd61c77ae8466d2ea04e53861f8acec2c93af4eef1",
+      "wrapper": "traits_paper_inline_12.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-13",
+      "paper_lines": [
+        1669,
+        1671
+      ],
+      "listing_sha256": "4dd8d6ad7f51cc032fb1f734a2f5d4b4c6cfed85f89fe0a58c00a66fd66a2cad",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "blocked",
+      "blocked_by": "runtime views of traits with initializer requirements: 'trait 'icastable' has the associated type itself and can only be used as a generic constraint'",
+      "fixture": "inline_13.f90",
+      "sha256": "4dd8d6ad7f51cc032fb1f734a2f5d4b4c6cfed85f89fe0a58c00a66fd66a2cad",
+      "wrapper": "traits_paper_inline_13.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-14",
+      "paper_lines": [
+        1698,
+        1705
+      ],
+      "listing_sha256": "f59dd3a5356c848d1478b32e99e84163eb8dd6cb9d5e28244e5e3e0ce59a0895",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_14.f90",
+      "sha256": "f59dd3a5356c848d1478b32e99e84163eb8dd6cb9d5e28244e5e3e0ce59a0895",
+      "wrapper": "traits_paper_inline_14.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-15",
+      "paper_lines": [
+        1767,
+        1771
+      ],
+      "listing_sha256": "c093165a2684e6aeb99d1f4437e301a14866430b89bd288f613c9fed2b1e1f58",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_15.f90",
+      "sha256": "c093165a2684e6aeb99d1f4437e301a14866430b89bd288f613c9fed2b1e1f58",
+      "wrapper": "traits_paper_inline_15.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-16",
+      "paper_lines": [
+        1776,
+        1780
+      ],
+      "listing_sha256": "2d783a4ac69534f3cd78c4ef5da836b389f31b2b42b409917e8971a62b281db6",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_16.f90",
+      "sha256": "2d783a4ac69534f3cd78c4ef5da836b389f31b2b42b409917e8971a62b281db6",
+      "wrapper": "traits_paper_inline_16.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-17",
+      "paper_lines": [
+        1809,
+        1813
+      ],
+      "listing_sha256": "aa3ada11e54f804117521fd498f1ce5d7f9b523bd39504dc8b5b0fba8a9b7392",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "blocked",
+      "blocked_by": "type-set kind wildcards: 'type-set kind wildcards are not implemented yet'",
+      "fixture": "inline_17.f90",
+      "sha256": "aa3ada11e54f804117521fd498f1ce5d7f9b523bd39504dc8b5b0fba8a9b7392",
+      "wrapper": "traits_paper_inline_17.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-18",
+      "paper_lines": [
+        1836,
+        1839
+      ],
+      "listing_sha256": "f76cf25393999119b44b320bffae0356dc7414f6db7e551b112cebe6b44b755b",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_18.f90",
+      "sha256": "f76cf25393999119b44b320bffae0356dc7414f6db7e551b112cebe6b44b755b",
+      "wrapper": "traits_paper_inline_18.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-19",
+      "paper_lines": [
+        1850,
+        1857
+      ],
+      "listing_sha256": "fd54157fb93158d1df9e83c00850b33f6a74a9b790138e9bbb75eedf7340f0a9",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_19.f90",
+      "sha256": "fd54157fb93158d1df9e83c00850b33f6a74a9b790138e9bbb75eedf7340f0a9",
+      "wrapper": "traits_paper_inline_19.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-20",
+      "paper_lines": [
+        1935,
+        1948
+      ],
+      "listing_sha256": "98d06eebfbbf1de24d9989613ed030f42ca38b740d91fe5f4039c9b6cbc4c1bb",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "blocked",
+      "blocked_by": "the intrinsic generics module: 'Module 'generics' modfile was not found'",
+      "fixture": "inline_20.f90",
+      "sha256": "98d06eebfbbf1de24d9989613ed030f42ca38b740d91fe5f4039c9b6cbc4c1bb",
+      "wrapper": "traits_paper_inline_20.f90",
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      }
+    },
+    {
+      "id": "inline-21",
+      "paper_lines": [
+        2026,
+        2028
+      ],
+      "listing_sha256": "34142aa3f4bd7bee73ac0bd1662674996dd7ae1034a33f03cf28aa47f19894d5",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_21.f90",
+      "sha256": "34142aa3f4bd7bee73ac0bd1662674996dd7ae1034a33f03cf28aa47f19894d5",
+      "wrapper": "traits_paper_inline_21.f90",
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0 with their kinds"
+      }
+    },
+    {
+      "id": "inline-22",
+      "paper_lines": [
+        2041,
+        2043
+      ],
+      "listing_sha256": "774b8454dddd9fb75026b32e907cb1a3cd4f89ef04cba80ef04b147c83b1ca98",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_22.f90",
+      "sha256": "774b8454dddd9fb75026b32e907cb1a3cd4f89ef04cba80ef04b147c83b1ca98",
+      "wrapper": "traits_paper_inline_22.f90",
+      "expected": {
+        "checks": "real(real64) 15.0 and its kind"
+      }
+    },
+    {
+      "id": "inline-23",
+      "paper_lines": [
+        2067,
+        2073
+      ],
+      "listing_sha256": "e5766b9afc78ca0619954ee740a80d914ea72d877c4c978ace6668574082f289",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_23.f90",
+      "sha256": "e5766b9afc78ca0619954ee740a80d914ea72d877c4c978ace6668574082f289",
+      "wrapper": "traits_paper_inline_23.f90",
+      "expected": {
+        "checks": "arr(k) == real(k) for k = 1..10; tmp == 10.0 of default kind"
+      }
+    },
+    {
+      "id": "inline-24",
+      "paper_lines": [
+        2077,
+        2079
+      ],
+      "listing_sha256": "2d22affa18332d9d4152a633476abbcf4c240a9ce69bb664239ec337aeddd632",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_24.f90",
+      "sha256": "2d22affa18332d9d4152a633476abbcf4c240a9ce69bb664239ec337aeddd632",
+      "wrapper": "traits_paper_inline_24.f90",
+      "expected": {
+        "checks": "size 10, default real kind, arr(k) == real(k)"
+      }
+    },
+    {
+      "id": "inline-25",
+      "paper_lines": [
+        2105,
+        2114
+      ],
+      "listing_sha256": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
+      "purpose": "executable",
+      "gate": "existing",
+      "status": "existing",
+      "fixture": "../traits_paper_functional/inline_25.f90",
+      "sha256": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
+      "wrapper": "traits_paper_manual_values.f90",
+      "accepted_by": "traits_paper_manual_values.f90 (RUN traits_paper_manual_values and CTest test_paper_functional_{normal,fast})"
+    },
+    {
+      "id": "inline-26",
+      "paper_lines": [
+        2126,
+        2129
+      ],
+      "listing_sha256": "95a99ff95a326c745bb0a28c135d76c772fc72dedafab391c4deea2ce75d8adf",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_26.f90",
+      "sha256": "95a99ff95a326c745bb0a28c135d76c772fc72dedafab391c4deea2ce75d8adf",
+      "wrapper": "traits_paper_inline_26.f90",
+      "context": [
+        "generic_sum.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0 with their kinds"
+      }
+    },
+    {
+      "id": "inline-27",
+      "paper_lines": [
+        2145,
+        2151
+      ],
+      "listing_sha256": "1f85fbe53a60809f3c00ac7d9b0ce772010a85dcc1c87e157edfd6affe357c19",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_27.f90",
+      "sha256": "1f85fbe53a60809f3c00ac7d9b0ce772010a85dcc1c87e157edfd6affe357c19",
+      "wrapper": "traits_paper_inline_27.f90",
+      "context": [
+        "generic_sum.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0"
+      }
+    },
+    {
+      "id": "inline-28",
+      "paper_lines": [
+        2158,
+        2178
+      ],
+      "listing_sha256": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
+      "purpose": "executable",
+      "gate": "existing",
+      "status": "existing",
+      "fixture": "../traits_paper_functional/inline_28.f90",
+      "sha256": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
+      "wrapper": "traits_paper_manual_values.f90",
+      "accepted_by": "traits_paper_manual_values.f90 (RUN traits_paper_manual_values and CTest test_paper_functional_{normal,fast})"
+    },
+    {
+      "id": "inline-29",
+      "paper_lines": [
+        2189,
+        2211
+      ],
+      "listing_sha256": "9508ac2af10a566b85bc95ccb6eb7b746673b36adc0a18bed7ee7ecc902cd747",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_29.f90",
+      "sha256": "f9bade28f35b5ed91aa1e808750f49aca5c5451f6011c6650c2baf5352bb1b9b",
+      "wrapper": "traits_paper_inline_29.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module simple_library\n   ...\n",
+          "fixture": "module simple_library\n   use traits_paper_inline_core, only: INumeric, ISum\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        }
+      ]
+    },
+    {
+      "id": "inline-30",
+      "paper_lines": [
+        2223,
+        2228
+      ],
+      "listing_sha256": "b19e147820003e6bf507c37d753fecc548e062096685b0191182d82fc4bcd756",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_30.f90",
+      "sha256": "b19e147820003e6bf507c37d753fecc548e062096685b0191182d82fc4bcd756",
+      "wrapper": "traits_paper_inline_30.f90",
+      "context": [
+        "core.f90",
+        "inline_29.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0 with their kinds"
+      }
+    },
+    {
+      "id": "inline-31",
+      "paper_lines": [
+        2231,
+        2239
+      ],
+      "listing_sha256": "c6c0731f8d73ab68a08d318b39b22018adbeaaa805a4f385a72f4ab486277103",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_31.f90",
+      "sha256": "c6c0731f8d73ab68a08d318b39b22018adbeaaa805a4f385a72f4ab486277103",
+      "wrapper": "traits_paper_inline_31.f90",
+      "context": [
+        "core.f90",
+        "inline_29.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0"
+      }
+    },
+    {
+      "id": "inline-32",
+      "paper_lines": [
+        2250,
+        2284
+      ],
+      "listing_sha256": "d577b0ba7e8ea6883791567ca0f1dab59fbc32bc3ff56052b3c78d29f1cba91c",
+      "purpose": "declaration",
+      "gate": "declaration",
+      "status": "ready",
+      "fixture": "inline_32.f90",
+      "sha256": "fc77a00cf75c42225bf63e1ad6029d8544cf1f61360115cd45500cc1668249e0",
+      "wrapper": "traits_paper_inline_32.f90",
+      "context": [
+        "core.f90"
+      ],
+      "expected": {
+        "result": "verified ASR and object; not executed"
+      },
+      "adaptations": [
+        {
+          "kind": "context completion",
+          "listing": "module pairwise_library\n   ...   \n",
+          "fixture": "module pairwise_library\n   use traits_paper_inline_core, only: INumeric, ISum\n   implicit none\n",
+          "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        }
+      ]
+    },
+    {
+      "id": "inline-33",
+      "paper_lines": [
+        2324,
+        2329
+      ],
+      "listing_sha256": "3b7dfa95708940c3906378673bf3b365d4066deb7bbcefc0790e48e7d2f78051",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_33.f90",
+      "sha256": "6dc407af69830ab6cdfb3b26c649103f3215115d6bf7f031779399b9609dd5c7",
+      "wrapper": "traits_paper_inline_33.f90",
+      "context": [
+        "core.f90",
+        "inline_29.f90",
+        "inline_32.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0 with their kinds"
+      },
+      "adaptations": [
+        {
+          "kind": "approved initialization",
+          "listing": "  type(PairwiseSum{SimpleSum}) :: pairwise\n\n",
+          "fixture": "  type(PairwiseSum{SimpleSum}) :: pairwise\n\n  pairwise = PairwiseSum(SimpleSum())\n",
+          "reason": "The listing calls methods of pairwise without defining it; the user approved initializing it with PairwiseSum(SimpleSum()) between the declaration and the calls."
+        }
+      ]
+    },
+    {
+      "id": "inline-34",
+      "paper_lines": [
+        2354,
+        2359
+      ],
+      "listing_sha256": "4d02d09b8bad5c4ee82510e271dc3701d71d47bb1df07c9d30aaaad42a01bf57",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_34.f90",
+      "sha256": "4d02d09b8bad5c4ee82510e271dc3701d71d47bb1df07c9d30aaaad42a01bf57",
+      "wrapper": "traits_paper_inline_34.f90",
+      "context": [
+        "core.f90",
+        "inline_29.f90",
+        "inline_32.f90"
+      ],
+      "expected": {
+        "checks": "integer 15 and real(real64) 15.0 with their kinds"
+      }
+    },
+    {
+      "id": "inline-35",
+      "paper_lines": [
+        2385,
+        2387
+      ],
+      "listing_sha256": "18ce4ff3c7ff8c027831f5fc81502e64b48b70cddd076af611b8e591bae9c3e3",
+      "purpose": "executable",
+      "gate": "run",
+      "status": "ready",
+      "fixture": "inline_35.f90",
+      "sha256": "18ce4ff3c7ff8c027831f5fc81502e64b48b70cddd076af611b8e591bae9c3e3",
+      "wrapper": "traits_paper_inline_35.f90",
+      "context": [
+        "core.f90",
+        "inline_29.f90",
+        "inline_32.f90"
+      ],
+      "expected": {
+        "checks": "pairwise%sum gives integer 15 and real(real64) 15.0, as inline-34"
+      }
+    }
+  ],
+  "excluded": [
+    {
+      "id": "inline-36",
+      "paper_lines": [
+        2889,
+        2898
+      ],
+      "listing_sha256": "2594e8db97647f02eda1c1dbaa2f9a78e393afa1e16cf7a16a682566042ae525",
+      "reason": "schematic union-type example of the Outlook chapter"
+    }
+  ],
+  "acceptance": {
+    "driver": "../traits_paper_inline.py",
+    "ctests": [
+      "test_paper_inline_normal",
+      "test_paper_inline_fast"
+    ],
+    "flags": [
+      "--no-color",
+      "--verify-all-passes"
+    ],
+    "modes": [
+      "normal",
+      "fast"
+    ]
+  }
+}

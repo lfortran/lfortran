@@ -4306,6 +4306,30 @@ RUN(NAME traits_protocol_separate_01_oracle LABELS gfortran ISOLATE_MODULES
         traits_protocol_separate_01_oracle_late.f90)
 RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
     INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+# The paper's self-checking inline listings; traits_paper_inline.py accounts
+# for all 35 (test_paper_inline_normal/fast).
+RUN(NAME traits_paper_inline_21 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_22 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_23 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_24 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_26 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_27 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_30 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_31 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_33 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_34 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_paper_inline_35 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_02 LABELS llvm llvm2 NO_STD_F23
