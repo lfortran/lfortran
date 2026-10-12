@@ -404,7 +404,7 @@ namespace LCompilers {
                 return ;
             }
 
-            llvm::Value* llvm_size = llvm_utils->CreateAlloca(*builder, index_type);
+            llvm::Value* llvm_size = llvm_utils->CreateAlloca(index_type);
             builder->CreateStore(prod, llvm_size);
             llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
@@ -448,7 +448,7 @@ namespace LCompilers {
             llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
             llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-            llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             llvm_utils->start_new_block(loophead);
             llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), source_rank);
@@ -1371,7 +1371,7 @@ namespace LCompilers {
                     llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
 
                 llvm::FunctionType* copy_fn_ty = llvm_utils->struct_copy_functype;
-                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                llvm::Value* ui = llvm_utils->CreateAlloca(i64_ty);
                 builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
                 llvm_utils->create_loop("reshape_class_deepcopy", [&]() {
                     return builder->CreateICmpSLT(
@@ -1464,14 +1464,14 @@ namespace LCompilers {
                         this->get_pointer_to_data(shape_type, shape));
                 }
                 this->set_rank(result_type, reshaped, n_dims);
-                llvm::Value* prod = llvm_utils->CreateAlloca(*builder, index_type);
+                llvm::Value* prod = llvm_utils->CreateAlloca(index_type);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), prod);
                 llvm::Value* dim_des_val = get_pointer_to_dimension_descriptor_array(result_type, reshaped);
                 llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
                 llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
                 llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
-                llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+                llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
                 // head
                 llvm_utils->start_new_block(loophead);
@@ -1543,7 +1543,7 @@ namespace LCompilers {
                     llvm::BasicBlock *order_loop_body = llvm::BasicBlock::Create(context, "reshape_order.body");
                     llvm::BasicBlock *order_loop_end = llvm::BasicBlock::Create(context, "reshape_order.end");
 
-                    llvm::Value* idx = llvm_utils->CreateAlloca(*builder, index_type);
+                    llvm::Value* idx = llvm_utils->CreateAlloca(index_type);
                     builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), idx);
 
                     llvm_utils->start_new_block(order_loop_head);
@@ -1640,7 +1640,7 @@ namespace LCompilers {
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
             // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
@@ -1706,7 +1706,7 @@ namespace LCompilers {
             llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
             // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateAlloca(*builder, llvm_utils->getIntType(4));
+            llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
             // head
             llvm_utils->start_new_block(loophead);
