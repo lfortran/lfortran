@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             klvna:
                                 (Function
@@ -42,7 +43,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -79,7 +80,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -91,13 +92,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     klvna~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -131,7 +133,7 @@
                                         (FunctionType
                                             [(Real 8)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -157,6 +159,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             nt:
                                 (Variable
@@ -181,6 +184,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rt:
                                 (Variable
@@ -205,6 +209,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rt0:
                                 (Variable
@@ -235,6 +240,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zo:
                                 (Variable
@@ -265,6 +271,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     klvnzo_
@@ -295,7 +302,7 @@
                             (FunctionType
                                 [(Real 8)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

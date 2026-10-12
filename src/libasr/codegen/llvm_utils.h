@@ -12,6 +12,7 @@
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
+#include <libasr/codegen/llvm_compat.h>
 #include <map>
 #include <set>
 #include <string>
@@ -204,6 +205,18 @@ class ASRToLLVMVisitor;
 
     namespace LLVM {
 
+        // The alignment that a load or store of `type` at `address` can
+        // claim when the address is not known to be as aligned as `type`:
+        // the alignment LLVM can prove for it. An address received from
+        // elsewhere, such as a dummy argument or a pointer, may be the
+        // address of a variable that EQUIVALENCE places at an offset the
+        // alignment of its type does not divide, so nothing more is claimed
+        // for it than what is known. Otherwise none, and the access claims
+        // the alignment of `type`.
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+            llvm::Value *address, const llvm::DataLayout &data_layout);
+        // A store that claims only the alignment its address is known to
+        // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         void set_memory_debug(bool state);
         bool use_memory_debug();
@@ -226,6 +239,81 @@ class ASRToLLVMVisitor;
         // Check if type is represented as a pointer to the backend type.
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
+
+        // A non-optional scalar integer, real or logical VALUE dummy
+        // argument is passed by value (the same convention as GFortran).
+        // VALUE dummies with the bind(c) ABI follow the C ABI and are
+        // lowered by the bind(c) specific code paths instead.
+        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || v.m_abi == ASR::abiType::BindC ||
+                    v.m_presence == ASR::presenceType::Optional ||
+                    !ASRUtils::is_arg_dummy(v.m_intent)) {
+                return false;
+            }
+            return ASR::is_a<ASR::Integer_t>(*v.m_type) ||
+                   ASR::is_a<ASR::UnsignedInteger_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Real_t>(*v.m_type) ||
+                   ASR::is_a<ASR::Logical_t>(*v.m_type);
+        }
+
+        // A scalar VALUE dummy of derived type of a procedure without the
+        // bind(c) ABI is passed by reference, and the callee copies the
+        // actual argument into a local variable (F2018 15.5.2.4). Each
+        // scalar class pointer component of the copy gets its own class
+        // wrapper, which the callee frees when it returns. (An optional
+        // VALUE dummy is made non-optional by an ASR pass.)
+        static inline bool is_struct_value_dummy_copied(const ASR::Variable_t& v) {
+            if (!v.m_value_attr || !ASRUtils::is_arg_dummy(v.m_intent) ||
+                    !ASR::is_a<ASR::StructType_t>(*v.m_type) ||
+                    ASRUtils::is_class_type(v.m_type)) {
+                return false;
+            }
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                v.m_parent_symtab->asr_owner);
+            return ASR::is_a<ASR::Function_t>(*owner) &&
+                ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(owner))->m_abi
+                    != ASR::abiType::BindC;
+        }
+
+        // A type(c_ptr) dummy argument that is intent(out), intent(inout),
+        // or of unspecified intent without VALUE is passed by reference
+        // (`void**`). So is an intent(in) TARGET dummy without VALUE of a
+        // non-bind(c) procedure, so that it is associated with the actual
+        // argument (F2018 15.5.2.4): c_loc of it is the address of the
+        // actual, and a pointer associated with it stays associated with the
+        // actual after the call. Any other type(c_ptr) dummy is passed by
+        // value (`void*`). The function signature, the callee and every call
+        // site must agree on this.
+        static inline bool is_cptr_dummy_passed_by_reference(const ASR::Variable_t& v) {
+            return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
+                (v.m_intent == ASR::intentType::Out ||
+                 v.m_intent == ASR::intentType::InOut ||
+                 (v.m_intent == ASR::intentType::Unspecified && !v.m_value_attr) ||
+                 (v.m_intent == ASR::intentType::In && !v.m_value_attr &&
+                  v.m_target_attr && v.m_abi != ASR::abiType::BindC));
+        }
+
+        static inline bool is_cptr_dummy_passed_by_value(const ASR::Variable_t& v) {
+            return ASR::is_a<ASR::CPtr_t>(*v.m_type) &&
+                ASRUtils::is_arg_dummy(v.m_intent) &&
+                !is_cptr_dummy_passed_by_reference(v);
+        }
+
+        // A type(c_ptr) dummy of a non-bind(c) procedure that is passed by
+        // value (VALUE, or intent(in) without TARGET) is copied into local
+        // storage on entry, so, like a local variable, it is held as a
+        // `void**`.
+        static inline bool is_cptr_dummy_in_local_storage(const ASR::Variable_t& v) {
+            return is_cptr_dummy_passed_by_value(v) &&
+                v.m_abi != ASR::abiType::BindC;
+        }
+
+        // Any other type(c_ptr) dummy passed by value is held as the
+        // `void*` itself.
+        static inline bool is_cptr_dummy_held_by_value(const ASR::Variable_t& v) {
+            return is_cptr_dummy_passed_by_value(v) &&
+                !is_cptr_dummy_in_local_storage(v);
+        }
 
         // Returns the terminator of `bb`, or nullptr when `bb` is not
         // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
@@ -749,6 +837,21 @@ class ASRToLLVMVisitor;
             // Returns a typed pointer (bitcast of malloc+memset result).
             llvm::Value* alloc_zeroed_type(llvm::Type* type);
 
+            // The data of a polymorphic pointer array descriptor is a
+            // {vptr, data*} class wrapper owned by the descriptor. It is
+            // always on the heap, so that whoever nullifies or finalizes the
+            // pointer frees it.
+            // Returns the wrapper of `desc` (a `desc_type*`, null if the
+            // pointer has no descriptor yet), or null if it has none.
+            llvm::Value* get_class_array_wrapper(llvm::Type* desc_type,
+                llvm::Value* desc, llvm::Type* wrapper_type);
+            // Returns `wrapper`, or a new zeroed heap wrapper if it is null.
+            llvm::Value* reuse_or_alloc_class_array_wrapper(
+                llvm::Value* wrapper, llvm::Type* wrapper_type);
+            // Returns the wrapper of `desc`, allocating one if it has none.
+            llvm::Value* get_or_alloc_class_array_wrapper(llvm::Type* desc_type,
+                llvm::Value* desc, llvm::Type* wrapper_type);
+
             // Extract vptr and data pointer from a ONE-wrapper {vptr, i8*}.
             // Also derives elem_size and copy_fn from the vptr.
             struct UpolyWrapperFields {
@@ -874,6 +977,23 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
+            // A scalar class pointer is a heap-allocated class wrapper
+            // {vptr, data*} owned by the pointer (freed by nullify and
+            // finalization). Make the class pointer stored at `dest` hold
+            // the contents of `src_wrapper` in its own wrapper, as pointer
+            // assignment does, or be null if `src_wrapper` is null.
+            void copy_class_pointer_wrapper(llvm::Value* src_wrapper, llvm::Value* dest,
+                llvm::Type* wrapper_type);
+
+            // Calls `fn` with the address of each scalar class pointer
+            // component stored in the object `ptr` of type `struct_sym`
+            // (including those of its parent and of its nested derived-type
+            // components that are neither allocatable nor pointers), and
+            // the type of its class wrapper. Returns whether there are any;
+            // with `ptr` null, only returns that.
+            bool visit_class_pointer_components(ASR::Struct_t* struct_sym, llvm::Value* ptr,
+                llvm::Module* module, const std::function<void(llvm::Value*, llvm::Type*)>& fn);
+
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);
 
 
@@ -885,8 +1005,6 @@ class ASRToLLVMVisitor;
             // The `if_block` and `else_block` must generate one or more blocks. In
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
-
-            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
             llvm::Value* to_i1(llvm::Value* cond) {
                 if (cond->getType()->isIntegerTy(1)) {
@@ -1081,6 +1199,16 @@ class ASRToLLVMVisitor;
 
             auto const llvm_var = get_llvm_var(v);
             auto* const struct_sym = get_struct_sym(v);
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                // A dummy argument is not finalized (F2018 7.5.6.3): only
+                // free the class wrappers that the procedure's copy owns.
+                llvm_utils_->visit_class_pointer_components(struct_sym, llvm_var,
+                    llvm_utils_->module, [&](llvm::Value* slot, llvm::Type* wrapper_type) {
+                        llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(
+                            wrapper_type->getPointerTo(), slot));
+                    });
+                return;
+            }
             call_final_of_allocatable_local(v, llvm_var, struct_sym);
             // An array temporary that an ASR pass made, such as the one that
             // holds an array constructor, has function results as its
@@ -1157,8 +1285,8 @@ class ASRToLLVMVisitor;
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path, except
-            // for an allocatable array component, which is deallocated (and
-            // so finalized) with the structure that it is a component of.
+            // for an allocatable component, which is deallocated (and so
+            // finalized) with the structure that it is a component of.
             if (call_final_subroutines_ && struct_sym != nullptr && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
                 ASR::ttype_t* v_type_past =
@@ -1172,6 +1300,12 @@ class ASRToLLVMVisitor;
                     if (!ASRUtils::is_allocatable(type)) {
                         call_final_procedure(select_final_procedure(struct_sym, 0),
                             ptr, v_type_past, struct_sym);
+                    } else if (in_struct
+                            && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
+                        check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                            call_final_procedure(select_final_procedure(struct_sym, 0),
+                                ptr, v_type_past, struct_sym);
+                        });
                     }
                 } else if (!ASRUtils::is_allocatable(type)) {
                     call_array_final_procedures(ptr, v_type_past, struct_sym,
@@ -1359,13 +1493,21 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_pointer(t), "Must be finalizable pointer.")
             auto const t_past = ASRUtils::type_get_past_pointer(t);
             switch (t_past->type) {
-                case ASR::Array: {    
-                    const bool upoly_descr_arr =   ASRUtils::is_unlimited_polymorphic_type(t_past) 
-                    && ASRUtils::is_array_physically_descriptor(t_past);
-                    if(upoly_descr_arr) {
-                        llvm::Value* const wrapper = builder_->CreateLoad(llvm_utils_->getClassType(struct_sym, true), 
-                                        llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0));
+                case ASR::Array: {
+                    // The data of a polymorphic pointer array descriptor is a
+                    // {vptr, data*} wrapper that the pointer owns.
+                    const bool class_descr_arr = ASRUtils::is_class_type(ASRUtils::extract_type(t_past))
+                        && ASRUtils::is_array_physically_descriptor(t_past);
+                    if(class_descr_arr) {
+                        llvm::Value* const data_ptr = llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0);
+                        llvm::Type* const wrapper_ptr_type = llvm_utils_->getClassType(struct_sym, true);
+                        llvm::Value* const wrapper = builder_->CreateLoad(wrapper_ptr_type, data_ptr);
                         llvm_utils_->lfortran_free_nocheck(wrapper);
+                        // A pointer local to a BLOCK or SELECT TYPE construct
+                        // is finalized each time the construct completes, so
+                        // leave it disassociated for the next execution.
+                        builder_->CreateStore(llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(wrapper_ptr_type)), data_ptr);
                     }
                     if(in_struct) { llvm_utils_->lfortran_free_nocheck(ptr); }
                 }
@@ -2465,6 +2607,14 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            // The storage of a common block outlives every scope that
+            // declares the block.
+            if (v->m_common_block != nullptr) {
+                return true;
+            }
+            if (LLVM::is_struct_value_dummy_copied(*v)) {
+                return false;
+            }
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
                 // Most non-local variables are not owned by this scope and must
@@ -2693,9 +2843,9 @@ class ASRToLLVMVisitor;
             switch(t_past->type){
                 case ASR::Array:{
                     const bool in_struct_descr_arr = in_struct && ASRUtils::is_array_physically_descriptor(t_past);
-                    const bool upoly_descr_array = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(t_past)) 
-                    && ASRUtils::is_array_physically_descriptor(t_past);
-                    return in_struct_descr_arr || upoly_descr_array;
+                    const bool class_descr_array = ASRUtils::is_class_type(ASRUtils::extract_type(t_past))
+                        && ASRUtils::is_array_physically_descriptor(t_past);
+                    return in_struct_descr_arr || class_descr_array;
                 }
                 case ASR::StructType:
                     return ASRUtils::is_class_type(t_past);
@@ -3249,7 +3399,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
-            // Copy dimension descriptors and rank from src to dest array descriptor.
+            // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
                 llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
                 llvm::Module* module);

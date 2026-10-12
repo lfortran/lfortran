@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -71,7 +73,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -83,13 +85,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f
                                     (FunctionType
                                         []
                                         (Complex 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -126,7 +129,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -138,6 +141,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             f~result:
                                                 (Variable
@@ -150,7 +154,7 @@
                                                     Default
                                                     (Complex 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -162,13 +166,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f~fpcast
                                     (FunctionType
                                         [(Complex 4)]
                                         (Complex 4)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -202,7 +207,7 @@
                                         (FunctionType
                                             [(Complex 4)]
                                             (Complex 4)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -228,6 +233,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     foo
@@ -237,7 +243,7 @@
                         (FunctionType
                             []
                             (Complex 4)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -274,7 +280,7 @@
                             (FunctionType
                                 [(Complex 4)]
                                 (Complex 4)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

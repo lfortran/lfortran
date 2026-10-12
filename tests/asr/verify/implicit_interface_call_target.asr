@@ -22,7 +22,7 @@
                       4
                     )
                     nil
-                    :BindC
+                    :Source
                     :Public
                     :Required
                     false
@@ -34,6 +34,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )
@@ -43,7 +44,7 @@
                 (Integer
                   4
                 )
-                :BindC
+                :Source
                 :ImplicitInterface
                 nil
                 false
@@ -90,6 +91,7 @@
               :NotMethod
               nil
               []
+              nil
             )
           }
         )

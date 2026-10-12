@@ -43,10 +43,18 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
         switch (a.second->type) {
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
-                if ( v->m_abi == ASR::abiType::BindC ) {
+                // A variable in a common block has no storage of its own to
+                // refer to; its block becomes External below.
+                if ( v->m_abi == ASR::abiType::BindC ||
+                        v->m_common_block != nullptr ) {
                     break;
                 }
                 v->m_abi = ASR::abiType::ExternalUndefined;
+                break;
+            }
+            case (ASR::symbolType::CommonBlock) : {
+                ASR::CommonBlock_t *c = ASR::down_cast<ASR::CommonBlock_t>(a.second);
+                c->m_role = ASR::common_block_roleType::External;
                 break;
             }
             case (ASR::symbolType::Enum) : {
@@ -58,14 +66,13 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
             case (ASR::symbolType::Function) : {
                 ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
                 ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
+                // An ImplicitInterface keeps its deftype: it is an
+                // interface-less external whose argument list is unknown, and
+                // must not look like a genuine zero-argument interface after
+                // a .mod round-trip.
                 if (v_func_type->m_abi != ASR::abiType::ExternalUndefined && v_func_type->m_abi != ASR::abiType::BindC) {
                     v_func_type->m_abi = ASR::abiType::ExternalUndefined;
-                } else if (v_func_type->m_abi == ASR::abiType::BindC
-                        && !ASRUtils::is_bare_implicit_interface(*v_func_type)) {
-                    // Do not overwrite ImplicitInterface: that is an
-                    // interface-less external whose argument list is unknown.
-                    // Forcing Interface would make it look like a genuine
-                    // zero-argument bind(c) interface after a .mod round-trip.
+                } else if (v_func_type->m_abi == ASR::abiType::BindC) {
                     v_func_type->m_deftype = ASR::deftypeType::Interface;
                 }
                 v->m_symtab->mark_all_variables_external(al);
@@ -76,6 +83,19 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 if ( !startswith(v->m_name, "lfortran_intrinsic") ) {
                     v->m_symtab->mark_all_variables_external(al);
                 }
+                break;
+            }
+            // What a program unit declares is referred to, as the code of
+            // the unit itself is, only through its views of common blocks.
+            case (ASR::symbolType::Program) : {
+                ASR::down_cast<ASR::Program_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
+                break;
+            }
+            case (ASR::symbolType::BlockData) : {
+                ASR::down_cast<ASR::BlockData_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
+                break;
             }
             default : {};
         }

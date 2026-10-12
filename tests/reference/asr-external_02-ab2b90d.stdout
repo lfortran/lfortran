@@ -23,7 +23,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -35,13 +35,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     calcfc
                                     (FunctionType
                                         []
                                         (Real 8)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -68,7 +69,7 @@
                         [(FunctionType
                             []
                             (Real 8)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -130,7 +131,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -142,13 +143,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     calcfc
                                     (FunctionType
                                         []
                                         (Real 8)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -185,7 +187,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -197,13 +199,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     calcfc~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -237,7 +240,7 @@
                                         (FunctionType
                                             [(Real 8)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -263,6 +266,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             con:
                                 (Variable
@@ -287,6 +291,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     cobylb
@@ -294,7 +299,7 @@
                         [(FunctionType
                             []
                             (Real 8)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -329,7 +334,7 @@
                             (FunctionType
                                 [(Real 8)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

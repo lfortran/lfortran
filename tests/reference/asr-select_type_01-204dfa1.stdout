@@ -55,6 +55,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     base
@@ -115,6 +116,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             bptr:
                                 (Variable
@@ -146,6 +148,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             child:
                                 (Struct
@@ -175,6 +178,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     child
@@ -225,6 +229,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             perform_select_type:
                                 (Function
@@ -261,6 +266,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             ~select_type_block_:
                                                 (Block

@@ -84,6 +84,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     circle
@@ -144,6 +145,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -173,6 +175,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     circle_area
@@ -276,6 +279,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -305,6 +309,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     circle_print
@@ -428,6 +433,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     main
@@ -534,6 +540,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     class_circle2

@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             driver:
                                 (Function
@@ -78,7 +80,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -121,7 +123,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -133,6 +135,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             driver~arg_1:
                                                 (Variable
@@ -151,7 +154,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -163,6 +166,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     driver~fpcast
@@ -182,7 +186,7 @@
                                             Global
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -230,7 +234,7 @@
                                                 Global
                                             )]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -256,6 +260,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -280,6 +285,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     implicit_interface5
@@ -345,7 +351,7 @@
                                     Global
                                 )]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

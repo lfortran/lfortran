@@ -51,6 +51,7 @@ set(SRC
     pass/where.cpp
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
+    pass/string_length_arguments.cpp
     pass/openmp.cpp
     pass/parallel_canonicalize.cpp
     pass/parallel_dispatch.cpp
@@ -199,7 +200,12 @@ if (WITH_LLVM)
     endif()
 endif()
 
-# Install the dwarf_convert.py and dat_convert.py
+# The driver also locates these scripts relative to the build-tree executable.
+if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+    configure_file(dwarf_convert.py dwarf_convert.py COPYONLY)
+    configure_file(dat_convert.py dat_convert.py COPYONLY)
+endif()
+
 install(
     FILES dwarf_convert.py dat_convert.py
     PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ

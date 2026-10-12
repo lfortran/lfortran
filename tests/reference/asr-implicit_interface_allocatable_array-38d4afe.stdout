@@ -38,6 +38,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r_t:
                                 (Variable
@@ -70,6 +71,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sub1:
                                 (Function
@@ -82,7 +84,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -119,7 +121,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -131,6 +133,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sub1~arg_1:
                                                 (Variable
@@ -149,7 +152,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -161,6 +164,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub1~fpcast
@@ -174,7 +178,7 @@
                                             Global
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -216,7 +220,7 @@
                                                 Global
                                             )]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -242,6 +246,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sub2:
                                 (Function
@@ -254,7 +259,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -291,7 +296,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -303,6 +308,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sub2~arg_1:
                                                 (Variable
@@ -321,7 +327,7 @@
                                                         Global
                                                     )
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -333,6 +339,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub2~fpcast
@@ -346,7 +353,7 @@
                                             Global
                                         )]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -388,7 +395,7 @@
                                                 Global
                                             )]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -414,6 +421,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     implicit_interface_allocatable_array
@@ -449,7 +457,7 @@
                                     Global
                                 )]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -499,7 +507,7 @@
                                     Global
                                 )]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

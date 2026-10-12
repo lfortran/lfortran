@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             numbers:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     array13

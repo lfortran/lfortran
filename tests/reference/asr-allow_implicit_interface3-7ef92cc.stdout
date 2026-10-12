@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lsame:
                                 (Function
@@ -47,7 +48,7 @@
                                                     Default
                                                     (Logical 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -59,13 +60,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     lsame
                                     (FunctionType
                                         []
                                         (Logical 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -100,9 +102,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -114,6 +116,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             lsame~arg_1:
                                                 (Variable
@@ -124,9 +127,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -138,6 +141,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             lsame~result:
                                                 (Variable
@@ -150,7 +154,7 @@
                                                     Default
                                                     (Logical 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -162,14 +166,15 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     lsame~fpcast
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (Logical 4)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -202,10 +207,10 @@
                                     Default
                                     (Pointer
                                         (FunctionType
-                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            [(String 1 () AssumedLength DescriptorString)
+                                            (String 1 () AssumedLength DescriptorString)]
                                             (Logical 4)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -231,6 +236,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             uplo:
                                 (Variable
@@ -255,6 +261,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     ssyr2
@@ -288,10 +295,10 @@
                             (Var 2 lsame)
                             2 lsame~fpcast
                             (FunctionType
-                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                [(String 1 () AssumedLength DescriptorString)
+                                (String 1 () AssumedLength DescriptorString)]
                                 (Logical 4)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -312,10 +319,10 @@
                             (Var 2 lsame)
                             2 lsame~fpcast
                             (FunctionType
-                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                [(String 1 () AssumedLength DescriptorString)
+                                (String 1 () AssumedLength DescriptorString)]
                                 (Logical 4)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

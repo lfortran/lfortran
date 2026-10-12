@@ -19,7 +19,7 @@
                                     (FunctionType
                                         []
                                         (String 1 () AssumedLength DescriptorString)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -44,6 +44,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             mess~fpcast:
                                 (Function
@@ -61,7 +62,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -73,6 +74,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             mess~result:
                                                 (Variable
@@ -85,7 +87,7 @@
                                                     Default
                                                     (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -97,13 +99,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     mess~fpcast
                                     (FunctionType
                                         [(Integer 4)]
                                         (String 1 () AssumedLength DescriptorString)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -137,7 +140,7 @@
                                         (FunctionType
                                             [(Integer 4)]
                                             (String 1 () AssumedLength DescriptorString)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -163,6 +166,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ~implicit_interface_mess_3:
                                 (Function
@@ -175,7 +179,7 @@
                                     (FunctionType
                                         []
                                         (String 1 () AssumedLength DescriptorString)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -202,7 +206,7 @@
                         [(FunctionType
                             []
                             (String 1 () AssumedLength DescriptorString)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -237,7 +241,7 @@
                             (FunctionType
                                 [(Integer 4)]
                                 (String 1 () AssumedLength DescriptorString)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

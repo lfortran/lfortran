@@ -8,7 +8,7 @@ description: >
   into AST-to-ASR, explicit ASR state and verification, or a focused ASR pass;
   keep backends small and mechanical. Covers correctness, reuse, tests, scope,
   and maintainability with concrete good and bad implementation patterns.
-compatibility: Requires git; use gh when reviewing a GitHub pull request.
+compatibility: Requires git; use gh or GitHub MCP tools when reviewing a GitHub pull request.
 ---
 
 # Review an LFortran Pull Request
@@ -22,6 +22,15 @@ for every backend change is:
 Read `AGENTS.md` first. Read [references/review-rules.md](references/review-rules.md)
 for the detailed principles. Consult [references/examples.md](references/examples.md)
 when a concrete comparison would help.
+
+When a review needs a local build or reproduction, use only the Pixi tasks
+in `AGENTS.md`: `pixi run -e llvm11 build`, then the selected configuration's
+test tasks with output saved to logs. Reference tests and updates require
+`llvm11`. Honor an explicitly supplied Pixi environment and
+keep the review checkout isolated from active fixers. Do not install a compiler
+merely to read a diff or duplicate dependency/CMake recipes in review prompts.
+Follow [AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi); never
+install dependencies outside Pixi.
 
 ## Gather the change
 
@@ -149,6 +158,8 @@ Ask whether the patch:
   shared helper;
 - mixes a bug fix with refactoring, formatting, generated-output churn, or an
   unrelated cleanup;
+- contains a merge of `main` in its commits (PR history must be linear; ask
+  for a rebase onto `main`);
 - adds comments that repeat the code or describe behavior not implemented; or
 - introduces unused, dead, or unreachable code.
 
@@ -181,8 +192,11 @@ Require a test that fails without the fix and passes with it.
   cause before accepting a skip or an upstream patch that disables coverage.
 - Build changes must track real inputs, quote paths, fail early when required
   artifacts are absent, and avoid committed binary or large generated blobs.
-- Any CI build or generation step that can fail must run on pull requests unless
-  it inherently requires main-only publishing credentials.
+- Apply `AGENTS.md`'s CI policy when reviewing coverage. Quick must retain the
+  internal regression modes and capability checks; Exhaustive should add
+  missing configurations without duplicating Quick. Application validation
+  runs only in Exhaustive (main or an explicit request), and publishing
+  requires main-only credentials.
 
 ## Account for pragmatic follow-ups
 

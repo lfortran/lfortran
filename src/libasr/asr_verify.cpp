@@ -53,9 +53,12 @@ public:
         symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
         if (undefined != nullptr || !is_a<Variable_t>(*sym)) return;
         const Variable_t *v = down_cast<Variable_t>(sym);
+        // A variable in a common block is in static storage, defined before
+        // the procedure is entered (Fortran 2023 10.1.11).
         if (v->m_parent_symtab == local.m_parent_symtab &&
                 v->m_intent == intentType::Local &&
                 v->m_storage != storage_typeType::Parameter &&
+                v->m_common_block == nullptr &&
                 !ASRUtils::is_entry_initialized_local(*v)) {
             undefined = v;
         }
@@ -110,6 +113,9 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
+    // See ASRVerifyOptions::string_length_arguments.
+    bool check_string_length_arguments = false;
+
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
@@ -267,6 +273,35 @@ public:
         current_symtab = parent_symtab;
     }
 
+    // A BLOCK DATA program unit only declares data: what it gives the
+    // program are the initial values of its common blocks.
+    void visit_BlockData(const BlockData_t &x) {
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+        require(x.m_symtab != nullptr,
+            "The BlockData::m_symtab cannot be nullptr");
+        require(x.m_symtab->parent == parent_symtab,
+            "The BlockData::m_symtab->parent is not the right parent");
+        require(ASRUtils::is_tu_scope(x.m_symtab->parent),
+            "The BlockData::m_symtab's parent must be TranslationUnit");
+        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
+            "BlockData::m_symtab->counter must be unique");
+        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
+            "The X::m_symtab::asr_owner must point to X");
+        require(x.m_name, "BlockData name is required");
+        verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
+            x.m_name, x.base.base.loc);
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        for (auto &a : x.m_symtab->get_scope()) {
+            require_id(!ASR::is_a<ASR::Function_t>(*a.second),
+                "asr.verify.block_data.no_procedure",
+                "BlockData '" + std::string(x.m_name) +
+                "' cannot contain the procedure '" + a.first + "'");
+            this->visit_symbol(*a.second);
+        }
+        current_symtab = parent_symtab;
+    }
+
     void visit_AssociateBlock(const AssociateBlock_t& x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
@@ -343,6 +378,115 @@ public:
                 std::string(ASRUtils::symbol_name(x.m_var_list[i])) +
                 "' must be a variable, not " +
                 ASRUtils::symbol_type_name(*x.m_var_list[i]));
+        }
+    }
+
+    // A common block view lays out storage that its variables share. Each
+    // variable it places is a local of the view's own scope that names the
+    // view as its common block, so that a backend finds the storage of a
+    // variable from the variable and the layout of the storage from the view
+    // alone. An association places its variable relative to one placed
+    // before it, so the layout is computed in one pass in this order.
+    void visit_CommonBlock(const CommonBlock_t &x) {
+        require(x.m_name != nullptr,
+            "CommonBlock::m_name cannot be nullptr");
+        std::string name = std::string(x.m_name);
+        std::string view = "CommonBlock '" + name + "'";
+        SymbolTable *symtab = x.m_parent_symtab;
+        require(symtab != nullptr,
+            view + "::m_parent_symtab cannot be nullptr");
+        require(symtab->get_symbol(name) == &x.base,
+            view + " is not the symbol of its own name in its parent symbol "
+            "table");
+        require(current_symtab == symtab,
+            view + " is not in the symbol table it records as its parent");
+        // The global scope of interactive evaluation is a scoping unit too.
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(&x.base);
+        require_id((owner != nullptr && (ASR::is_a<ASR::Program_t>(*owner) ||
+                ASR::is_a<ASR::Function_t>(*owner) ||
+                ASR::is_a<ASR::Module_t>(*owner) ||
+                ASR::is_a<ASR::BlockData_t>(*owner))) ||
+                (owner == nullptr && symtab->asr_owner != nullptr &&
+                    symtab->asr_owner->type == ASR::asrType::unit),
+            "asr.verify.common_block.owner",
+            view + " must belong to a program, a procedure, a module, a "
+            "block data program unit or the global scope");
+        require_id(x.m_link_name != nullptr && x.m_link_name[0] != '\0',
+            "asr.verify.common_block.link_name",
+            view + " must have a link name");
+        require_id(x.m_abi == ASR::abiType::Source ||
+                x.m_abi == ASR::abiType::BindC,
+            "asr.verify.common_block.abi",
+            view + " must have the Source or the BindC ABI");
+        require_id(x.m_storage == ASR::storage_typeType::Default ||
+                x.m_storage == ASR::storage_typeType::Save,
+            "asr.verify.common_block.storage",
+            view + " must have Default or Save storage");
+        require_id(x.n_members > 0,
+            "asr.verify.common_block.members",
+            view + " must have at least one member");
+        std::set<const ASR::symbol_t*> placed;
+        bool initialized = false;
+        auto check_placed = [&](ASR::symbol_t *sym, const std::string &what) {
+            require_id(sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym),
+                "asr.verify.common_block.member_is_variable",
+                view + " " + what + " must be a variable of the same scope" +
+                (sym ? ", not " + ASRUtils::symbol_type_name(*sym) : ""));
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            std::string v_name = std::string(v->m_name);
+            require_id(v->m_parent_symtab == symtab &&
+                    symtab->get_symbol(v_name) == sym,
+                "asr.verify.common_block.member_in_scope",
+                view + " " + what + " '" + v_name +
+                "' must be a variable of the same scope");
+            require_id(v->m_common_block == &x.base,
+                "asr.verify.common_block.back_link",
+                view + " " + what + " '" + v_name +
+                "' must name the view as its common block");
+            require_id(placed.insert(sym).second,
+                "asr.verify.common_block.unique",
+                view + " places '" + v_name + "' more than once");
+            initialized = initialized || v->m_symbolic_value != nullptr ||
+                v->m_value != nullptr;
+        };
+        for (size_t i = 0; i < x.n_members; i++) {
+            check_placed(x.m_members[i], "member");
+        }
+        for (size_t i = 0; i < x.n_associations; i++) {
+            const ASR::common_association_t &a = x.m_associations[i];
+            require_with_loc(a.m_designator != nullptr && a.m_anchor != nullptr,
+                view + " association must have a designator and an anchor",
+                a.loc);
+            int64_t element, character;
+            ASR::Variable_t *anchor = ASRUtils::get_storage_designator_offset(
+                a.m_anchor, element, character);
+            require_with_loc_id(anchor != nullptr &&
+                    placed.find(&anchor->base) != placed.end(),
+                "asr.verify.common_block.association_anchor",
+                view + " association anchor must designate a member or the "
+                "variable of an earlier association, with constant subscripts",
+                a.loc);
+            ASR::Variable_t *designated = ASRUtils::get_storage_designator_offset(
+                a.m_designator, element, character);
+            require_with_loc_id(designated != nullptr &&
+                    &designated->base == a.m_variable,
+                "asr.verify.common_block.association_designator",
+                view + " association designator must designate its variable, "
+                "with constant subscripts", a.loc);
+            check_placed(a.m_variable, "association");
+            visit_expr(*a.m_designator);
+            visit_expr(*a.m_anchor);
+        }
+        if (x.m_role == ASR::common_block_roleType::Tentative) {
+            require_id(!initialized,
+                "asr.verify.common_block.role",
+                view + " is Tentative, but one of its variables has an "
+                "initializer");
+        } else if (x.m_role == ASR::common_block_roleType::Initialized) {
+            require_id(initialized,
+                "asr.verify.common_block.role",
+                view + " is Initialized, but none of its variables has an "
+                "initializer");
         }
     }
 
@@ -847,6 +991,120 @@ public:
         }
     }
 
+    // The number of character dummies of `fn` that are passed with a hidden
+    // length (ASRUtils::is_string_dummy_with_hidden_length). Their hidden
+    // lengths are its last that many dummies.
+    static size_t count_hidden_string_lengths(const Function_t &fn) {
+        size_t n = 0;
+        for (size_t i = 0; i < fn.n_args; i++) {
+            if (ASRUtils::is_string_dummy_with_hidden_length(fn, fn.m_args[i])) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    // A template is only compiled once it is instantiated, and the
+    // string_length_arguments pass leaves it alone.
+    static bool is_in_template(SymbolTable *symtab) {
+        for (; symtab != nullptr; symtab = symtab->parent) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    (ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(owner)) ||
+                     ASR::is_a<ASR::Requirement_t>(*ASR::down_cast<ASR::symbol_t>(owner)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static bool is_hidden_string_length_type(ASR::ttype_t *t) {
+        return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+            ASR::down_cast<ASR::Integer_t>(t)->m_kind == 8;
+    }
+
+    // After the string_length_arguments pass, each character dummy passed
+    // with a hidden length has it: the n-th one, in the order of the
+    // dummies, is the n-th of the `integer(8), value, intent(in)` dummies
+    // that end the argument list.
+    void verify_hidden_string_lengths(const Function_t &x) {
+        size_t n_hidden = count_hidden_string_lengths(x);
+        if (n_hidden == 0 || is_in_template(x.m_symtab)) return;
+        std::string func_name = x.m_name;
+        require_id(x.n_args >= 2 * n_hidden,
+            "asr.verify.function.hidden_string_length_missing",
+            "Function '" + func_name + "' has " + std::to_string(n_hidden) +
+            " character dummies passed with a hidden length, but not as many "
+            "hidden length dummies");
+        size_t first_hidden = x.n_args - n_hidden;
+        size_t j = first_hidden;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASRUtils::is_string_dummy_with_hidden_length(x, x.m_args[i])) {
+                continue;
+            }
+            require_id(i < first_hidden,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': the hidden length dummies "
+                "must follow all character dummies");
+            ASR::symbol_t *hidden = ASR::is_a<ASR::Var_t>(*x.m_args[j])
+                ? ASR::down_cast<ASR::Var_t>(x.m_args[j])->m_v : nullptr;
+            ASR::Variable_t *hidden_var = hidden && ASR::is_a<ASR::Variable_t>(*hidden)
+                ? ASR::down_cast<ASR::Variable_t>(hidden) : nullptr;
+            require_with_loc_id(hidden_var != nullptr &&
+                    is_hidden_string_length_type(hidden_var->m_type) &&
+                    hidden_var->m_value_attr &&
+                    hidden_var->m_intent == ASR::intentType::In &&
+                    hidden_var->m_presence == ASR::presenceType::Required,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': dummy " + std::to_string(j + 1) +
+                " must be the hidden `integer(8), value, intent(in)` length of "
+                "character dummy " + std::to_string(i + 1),
+                x.m_args[i]->base.loc);
+            ASR::String_t *str = ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_args[i]));
+            require_with_loc_id(str->m_len_kind !=
+                    ASR::string_length_kindType::AssumedLength,
+                "asr.verify.function.hidden_string_length_missing",
+                "Function '" + func_name + "': assumed-length character dummy " +
+                std::to_string(i + 1) + " must take its length from its hidden "
+                "length dummy",
+                x.m_args[i]->base.loc);
+            j++;
+        }
+    }
+
+    // After the string_length_arguments pass, a call passes the hidden length
+    // of each character argument that has one.
+    template <typename T>
+    void verify_hidden_string_length_actuals(const T &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s && ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+            s = ASR::down_cast<ASR::StructMethodDeclaration_t>(s)->m_proc;
+        } else if (s && ASR::is_a<ASR::Variable_t>(*s)) {
+            s = ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+        }
+        if (s) s = ASRUtils::symbol_get_past_external(s);
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        size_t n_hidden = count_hidden_string_lengths(*fn);
+        if (n_hidden == 0 || is_in_template(current_symtab)) return;
+        require_id(x.n_args == fn->n_args,
+            "asr.verify.call.hidden_string_length_missing",
+            "Call to '" + std::string(fn->m_name) + "' must pass the hidden "
+            "length of each of its " + std::to_string(n_hidden) +
+            " character arguments");
+        for (size_t i = fn->n_args - n_hidden; i < x.n_args; i++) {
+            require_with_loc_id(x.m_args[i].m_value != nullptr &&
+                    is_hidden_string_length_type(
+                        ASRUtils::expr_type(x.m_args[i].m_value)),
+                "asr.verify.call.hidden_string_length_missing",
+                "Call to '" + std::string(fn->m_name) + "': argument " +
+                std::to_string(i + 1) + " must be the `integer(8)` length of "
+                "a character argument",
+                x.m_args[i].loc);
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -892,6 +1150,7 @@ public:
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
         verify_argument_memory_spaces(x);
+        if (check_string_length_arguments) verify_hidden_string_lengths(x);
         if (x.m_gpu) verify_gpu_kernel_layout(x);
 
         // Get the x parent symtab.
@@ -938,10 +1197,11 @@ public:
                 "asr.verify.function.implicit_interface_has_no_body",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
                 "so it must have no body");
-            require_id(function_type->m_abi == ASR::abiType::BindC,
-                "asr.verify.function.implicit_interface_is_bindc",
+            require_id(function_type->m_abi == ASR::abiType::Source
+                    || function_type->m_abi == ASR::abiType::ExternalUndefined,
+                "asr.verify.function.implicit_interface_is_source",
                 "Function '" + func_name + "' has deftype ImplicitInterface, "
-                "so its abi must be BindC");
+                "so its abi must be Source or ExternalUndefined");
         }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
@@ -1559,8 +1819,84 @@ public:
                 "Variable '" + std::string(x.m_name) +
                 "' has pass_attr=NoPass but self_argument is set.");
         }
+        if (x.m_common_block != nullptr) {
+            verify_common_block_variable(x);
+        }
 
         current_name = current_name_copy;
+    }
+
+    // A variable in a common block has no storage of its own: the block's
+    // view of its own scope places it, and nothing about the variable may
+    // ask for storage elsewhere or of a size known only at run time.
+    void verify_common_block_variable(const Variable_t &x) {
+        std::string var = "Variable '" + std::string(x.m_name) + "'";
+        require_id(ASR::is_a<ASR::CommonBlock_t>(*x.m_common_block),
+            "asr.verify.variable.common_block",
+            var + " names " + ASRUtils::symbol_type_name(*x.m_common_block) +
+            " as its common block");
+        ASR::CommonBlock_t *block =
+            ASR::down_cast<ASR::CommonBlock_t>(x.m_common_block);
+        require_id(block->m_parent_symtab == x.m_parent_symtab &&
+                x.m_parent_symtab->get_symbol(std::string(block->m_name)) ==
+                    x.m_common_block,
+            "asr.verify.variable.common_block",
+            var + " must be in a common block view of its own scope");
+        bool placed = false;
+        for (size_t i = 0; i < block->n_members && !placed; i++) {
+            placed = block->m_members[i] == &x.base;
+        }
+        for (size_t i = 0; i < block->n_associations && !placed; i++) {
+            placed = block->m_associations[i].m_variable == &x.base;
+        }
+        require_id(placed,
+            "asr.verify.variable.common_block",
+            var + " is not placed by the common block view it names");
+        require_id(x.m_intent == ASR::intentType::Local &&
+                (x.m_storage == ASR::storage_typeType::Default ||
+                 x.m_storage == ASR::storage_typeType::Save) &&
+                x.m_abi == ASR::abiType::Source &&
+                x.m_bindc_name == nullptr &&
+                x.n_codims == 0 &&
+                !ASRUtils::is_allocatable(x.m_type),
+            "asr.verify.variable.common_block_storage",
+            var + " is in a common block, so it cannot be a dummy argument, "
+            "a result, a named constant, a coarray, allocatable, "
+            "threadprivate or bound to a name of its own");
+        if (ASRUtils::is_pointer(x.m_type)) {
+            return;
+        }
+        require_id(!ASRUtils::is_array(x.m_type) ||
+                ASRUtils::is_fixed_size_array(x.m_type),
+            "asr.verify.variable.common_block_size",
+            var + " is in a common block, so its shape must be constant");
+        if (ASRUtils::is_character(*x.m_type)) {
+            int64_t length;
+            require_id(ASRUtils::extract_value(ASRUtils::expr_value(
+                    ASRUtils::get_string_type(x.m_type)->m_len), length),
+                "asr.verify.variable.common_block_size",
+                var + " is in a common block, so its length must be "
+                "constant");
+        }
+        ASR::ttype_t *element = ASRUtils::type_get_past_array(x.m_type);
+        if (ASR::is_a<ASR::StructType_t>(*element)) {
+            require_id(x.m_type_declaration != nullptr,
+                "asr.verify.variable.common_block_sequence",
+                var + " is in a common block, so its derived type must "
+                "be declared");
+            // An unresolved ExternalSymbol says nothing about the type yet.
+            ASR::symbol_t *decl = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_type_declaration)
+                : x.m_type_declaration;
+            require_id(ASR::is_a<ASR::ExternalSymbol_t>(*decl) ||
+                    (ASR::is_a<ASR::Struct_t>(*decl) &&
+                     (ASR::down_cast<ASR::Struct_t>(decl)->m_is_sequence ||
+                      ASR::down_cast<ASR::Struct_t>(decl)->m_abi ==
+                        ASR::abiType::BindC)),
+                "asr.verify.variable.common_block_sequence",
+                var + " is in a common block, so its derived type must "
+                "have the SEQUENCE or the BIND(C) attribute");
+        }
     }
 
     void visit_expr(const expr_t &b){
@@ -2902,6 +3238,7 @@ public:
         }
 
         verify_args(x);
+        if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
     }
 
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
@@ -3129,6 +3466,7 @@ public:
             }
         }
         verify_args(x);
+        if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
         visit_ttype(*x.m_type);
     }
 
@@ -3472,7 +3810,15 @@ public:
             if (struct_type->m_parent == nullptr) break;
             ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
                 struct_type->m_parent);
-            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+            if (parent == nullptr) {
+                // The parent is an external symbol that is not resolved
+                // yet (a module file is verified with check_external=false
+                // before fix_external_symbols runs), so the inherited
+                // members cannot be counted here; the check runs again
+                // once external symbols are resolved.
+                return;
+            }
+            if (!ASR::is_a<ASR::Struct_t>(*parent)) {
                 break;
             }
             struct_type = ASR::down_cast<ASR::Struct_t>(parent);
@@ -4055,6 +4401,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(options.check_external, diagnostics);
+    v.check_string_length_arguments = options.string_length_arguments;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

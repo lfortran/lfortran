@@ -106,6 +106,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             messpr:
                                 (Function
@@ -118,7 +119,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -150,7 +151,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -184,7 +185,7 @@
                                         (FunctionType
                                             []
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -210,6 +211,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     prini_main__lcompilers
@@ -238,7 +240,7 @@
                             (FunctionType
                                 []
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -261,7 +263,7 @@
                             (FunctionType
                                 []
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

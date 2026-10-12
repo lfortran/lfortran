@@ -13,10 +13,10 @@ define i32 @main(i32 %0, i8** %1) {
   %t2 = alloca i32, align 4
   store float* %t1, float** %p1, align 8
   %2 = load float*, float** %p1, align 8
-  store float 1.000000e+00, float* %2, align 4
+  store float 1.000000e+00, float* %2, align 1
   store i32* %t2, i32** %p2, align 8
   %3 = load i32*, i32** %p2, align 8
-  store i32 2, i32* %3, align 4
+  store i32 2, i32* %3, align 1
   store float* null, float** %p1, align 8
   store i32* null, i32** %p2, align 8
   br label %return

@@ -23,7 +23,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -35,13 +35,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub2
                                     (FunctionType
                                         []
                                         (Real 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -78,7 +79,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -90,13 +91,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sub2~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -130,7 +132,7 @@
                                         (FunctionType
                                             [(Real 4)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -156,6 +158,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -180,6 +183,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     f
@@ -187,7 +191,7 @@
                         [(FunctionType
                             []
                             (Real 4)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -222,7 +226,7 @@
                             (FunctionType
                                 [(Real 4)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

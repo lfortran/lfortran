@@ -32,6 +32,11 @@ None. An enumeration value is not evaluated.
 `len` and `len_kind` go together: `ExpressionLength` requires a `len`, and the
 other three leave it `nil`.
 
+The `string_length_arguments` pass turns an `AssumedLength` dummy of a
+procedure without BIND(C) into an `ExpressionLength` one whose `len` is the
+hidden length argument the actual's length is passed in (see
+[Function](../symbol_nodes/Function.md)).
+
 ## See Also
 
 [String](../type_nodes/String.md), [StringPhysicalCast](../expression_nodes/StringPhysicalCast.md), [StringLen](../expression_nodes/StringLen.md)

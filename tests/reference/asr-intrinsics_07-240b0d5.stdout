@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dp:
                                 (Variable
@@ -87,6 +89,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sp:
                                 (Variable
@@ -120,6 +123,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sp2:
                                 (Variable
@@ -153,6 +157,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_07

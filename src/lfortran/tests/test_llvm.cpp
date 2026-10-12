@@ -517,7 +517,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -559,7 +559,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [])}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -1997,6 +1997,71 @@ end program
     CHECK(e.evaluate2(cell).ok);
 }
 
+TEST_CASE("FortranEvaluator common block across cells") {
+    // The storage of a common block is created by the first cell that
+    // declares the block. A later cell's view of it, in a program, a module,
+    // a procedure or the global scope, refers to that storage: it does not
+    // get a copy of its own.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    CHECK(e.evaluate2(R"(program set_cells
+implicit none
+integer :: x, y
+common /cells_blk/ x, y
+x = 3
+y = 4
+end program set_cells
+)").ok);
+    CHECK(e.evaluate2(R"(module cells_mod
+implicit none
+integer :: a, b
+common /cells_blk/ a, b
+end module cells_mod
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("use cells_mod\na + b\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 7);
+
+    CHECK(e.evaluate2(R"(subroutine bump_cells()
+implicit none
+integer :: x, y
+common /cells_blk/ x, y
+x = x + 10
+end subroutine bump_cells
+)").ok);
+    CHECK(e.evaluate2("call bump_cells()\n").ok);
+    r = e.evaluate2("use cells_mod\na\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 13);
+
+    CHECK(e.evaluate2("integer :: g1, g2\ncommon /cells_blk/ g1, g2\n").ok);
+    r = e.evaluate2("g2\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 4);
+
+    // The storage an earlier cell created cannot grow, nor be given initial
+    // values.
+    CHECK(!e.evaluate2(R"(program grow_cells
+implicit none
+integer :: z(3)
+common /cells_blk/ z
+z = 0
+end program grow_cells
+)").ok);
+    CHECK(!e.evaluate2(R"(block data init_cells
+implicit none
+integer :: x, y
+common /cells_blk/ x, y
+data x /1/
+end block data init_cells
+)").ok);
+}
+
 TEST_CASE("FortranEvaluator call a procedure no earlier cell called") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -2649,3 +2714,109 @@ TEST_CASE("FortranEvaluator the calls the kernel makes") {
         CHECK(lm.files.back().in_filename == "some_file.f90");
     }
 }
+
+// These two tests hang on Windows since
+// https://github.com/lfortran/lfortran/pull/14350
+#if !defined(_WIN32)
+TEST_CASE("FortranEvaluator a SAVE class pointer across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Each cell is a separate LLVM module. Every one of them that associates
+    // or disassociates `gp` has to use the one static class wrapper of `gp`.
+    CHECK(e.evaluate2(R"(module mcp1
+implicit none
+type :: s
+    integer :: i = 0
+end type
+type(s), target :: x
+end module
+)").ok);
+    CHECK(e.evaluate2("use mcp1").ok);
+    CHECK(e.evaluate2("class(s), pointer :: gp => null()").ok);
+    CHECK(e.evaluate2("class(s), pointer, save :: gq").ok);
+    CHECK(e.evaluate2("x%i = 4").ok);
+    for (int k = 0; k < 2; k++) {
+        CHECK(e.evaluate2("gp => x").ok);
+        CHECK(e.evaluate2("gq => x").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("gp%i + gq%i");
+        CHECK(r.ok);
+        CHECK(r.result.i32 == 8);
+        CHECK(e.evaluate2("gp => null()").ok);
+        // A top-level `nullify(gq)` is taken for a function call (#13455).
+        CHECK(e.evaluate2("if (associated(gq)) nullify(gq)").ok);
+        r = e.evaluate2("associated(gp) .or. associated(gq)");
+        CHECK(r.ok);
+        CHECK(r.result.b == false);
+        CHECK(e.evaluate2("if (.not. associated(gp)) allocate(gp)").ok);
+        CHECK(e.evaluate2("gp%i = 9").ok);
+        r = e.evaluate2("gp%i");
+        CHECK(r.ok);
+        CHECK(r.result.i32 == 9);
+        CHECK(e.evaluate2("if (associated(gp)) deallocate(gp)").ok);
+        r = e.evaluate2("associated(gp)");
+        CHECK(r.ok);
+        CHECK(r.result.b == false);
+    }
+}
+
+TEST_CASE("FortranEvaluator a SAVE class pointer of a redefined module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The old and the new module `mcp2` each keep their own `p`, and so their
+    // own static class wrapper of it.
+    auto module_mcp2 = [](int i) {
+        return R"(module mcp2
+implicit none
+type :: s
+    integer :: i = 0
+end type
+class(s), pointer :: p => null()
+type(s), target :: x
+contains
+subroutine set()
+    x%i = )" + std::to_string(i) + R"(
+    p => x
+end subroutine
+integer function get()
+    get = -1
+    if (associated(p)) get = p%i
+end function
+end module
+)";
+    };
+    CHECK(e.evaluate2(module_mcp2(1)).ok);
+    CHECK(e.evaluate2(R"(integer function old_get()
+use mcp2, only: get
+old_get = get()
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(subroutine old_set()
+use mcp2, only: set
+call set()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2(module_mcp2(2)).ok);
+    CHECK(e.evaluate2(R"(integer function new_get()
+use mcp2, only: get
+new_get = get()
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(subroutine new_set()
+use mcp2, only: set
+call set()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call old_set()").ok);
+    CHECK(e.evaluate2("call new_set()").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_get()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("new_get()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+}
+#endif

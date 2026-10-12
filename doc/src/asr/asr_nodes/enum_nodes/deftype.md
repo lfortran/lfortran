@@ -73,8 +73,12 @@ A `Function` with `deftype = ImplicitInterface`:
 
 * has an empty `arg_types` and `n_args == 0`, which must be read as *unknown*,
   never as *none*;
-* has `abi = BindC`, so that every reference to the name reaches one link-time
-  symbol;
+* has `abi = Source`, like the interface of an external procedure declared in
+  an interface block: it is a Fortran procedure, reached with Fortran's
+  calling convention, never with `bind(c)`'s (a procedure with a binding label
+  must have an explicit interface, F2018 15.4.2.2). Once read from a module
+  file it is `ExternalUndefined`. The interface built at each reference (see
+  below) has `abi = Source` too;
 * has no body, and `n_body == 0`;
 * is **never the target of a call**. `asr_verify.cpp` rejects a `FunctionCall`
   or `SubroutineCall` whose `name` resolves to one;
@@ -118,7 +122,10 @@ A character, array or derived-type result goes through the same interface;
 when an ASR pass turns the result into an argument of `f~fpcast`, the casts to
 `f~fpcast` take its new signature. A character result whose length is an
 expression of the caller (`character(len=n), external :: f`) is assumed length
-in `f~fpcast`; the `FunctionCall` keeps the declared length.
+in `f~fpcast`; the `FunctionCall` keeps the declared length. A character
+dummy of `f~fpcast` is assumed length, `character(len=*)`, whatever the
+length of the actual: the procedure receives the length of each actual, also
+when references with actuals of different lengths share `f~fpcast`.
 
 A reference in a DO WHILE condition associates the temporary before each
 evaluation of the condition: the loop becomes `do while (.true.)` starting with

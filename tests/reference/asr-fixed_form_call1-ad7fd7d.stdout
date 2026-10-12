@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             m:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             prinf:
                                 (Function
@@ -90,7 +93,7 @@
                                     (FunctionType
                                         []
                                         ()
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -125,9 +128,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -139,6 +142,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             prinf~arg_1:
                                                 (Variable
@@ -151,7 +155,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -163,6 +167,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             prinf~arg_2:
                                                 (Variable
@@ -175,7 +180,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -187,15 +192,16 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     prinf~fpcast
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -229,11 +235,11 @@
                                     Default
                                     (Pointer
                                         (FunctionType
-                                            [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [(String 1 () AssumedLength DescriptorString)
                                             (Integer 4)
                                             (Integer 4)]
                                             ()
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -259,6 +265,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             w:
                                 (Variable
@@ -283,6 +290,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -307,6 +315,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -331,6 +340,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     idd_frm
@@ -365,11 +375,11 @@
                             (Var 2 prinf)
                             2 prinf~fpcast
                             (FunctionType
-                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                [(String 1 () AssumedLength DescriptorString)
                                 (Integer 4)
                                 (Integer 4)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -402,11 +412,11 @@
                             (Var 2 prinf)
                             2 prinf~fpcast
                             (FunctionType
-                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                [(String 1 () AssumedLength DescriptorString)
                                 (Integer 4)
                                 (Integer 4)]
                                 ()
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

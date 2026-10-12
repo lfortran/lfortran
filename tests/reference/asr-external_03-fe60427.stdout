@@ -23,7 +23,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -35,13 +35,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f
                                     (FunctionType
                                         []
                                         (Real 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -78,7 +79,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -90,6 +91,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             f~result:
                                                 (Variable
@@ -102,7 +104,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -114,13 +116,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         (Real 4)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -154,7 +157,7 @@
                                         (FunctionType
                                             [(Real 4)]
                                             (Real 4)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -180,6 +183,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -204,6 +208,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     a
@@ -211,7 +216,7 @@
                         [(FunctionType
                             []
                             (Real 4)
-                            BindC
+                            Source
                             ImplicitInterface
                             ()
                             .false.
@@ -246,7 +251,7 @@
                             (FunctionType
                                 [(Real 4)]
                                 (Real 4)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.
@@ -316,7 +321,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -328,13 +333,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f
                                     (FunctionType
                                         []
                                         (Real 4)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.

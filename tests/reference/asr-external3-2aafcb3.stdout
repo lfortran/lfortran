@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             bcorr:
                                 (Function
@@ -71,7 +73,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -83,13 +85,14 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     bcorr
                                     (FunctionType
                                         []
                                         (Real 8)
-                                        BindC
+                                        Source
                                         ImplicitInterface
                                         ()
                                         .false.
@@ -126,7 +129,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -138,6 +141,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             bcorr~arg_1:
                                                 (Variable
@@ -150,7 +154,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -162,6 +166,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             bcorr~result:
                                                 (Variable
@@ -174,7 +179,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    BindC
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -186,6 +191,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     bcorr~fpcast
@@ -193,7 +199,7 @@
                                         [(Real 4)
                                         (Real 4)]
                                         (Real 8)
-                                        BindC
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -229,7 +235,7 @@
                                             [(Real 4)
                                             (Real 4)]
                                             (Real 8)
-                                            BindC
+                                            Source
                                             Interface
                                             ()
                                             .false.
@@ -255,6 +261,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             brcmp1:
                                 (Variable
@@ -279,6 +286,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             exp:
                                 (Variable
@@ -303,6 +311,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     brcmp1
@@ -332,7 +341,7 @@
                                 [(Real 4)
                                 (Real 4)]
                                 (Real 8)
-                                BindC
+                                Source
                                 Interface
                                 ()
                                 .false.

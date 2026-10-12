@@ -54,6 +54,18 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
     target_link_options(lfortran PRIVATE "LINKER:--export-dynamic")
 endif()
 
+if (APPLE)
+    # At every launch dyld coalesces each exported weak symbol with the loaded
+    # dylibs. A Debug build exports ~66,000 weak C++ symbols (inline functions
+    # and template instantiations), so each lfortran invocation spent ~150 ms
+    # in dyld before main(). The JIT only needs the C symbols (runtime and
+    # Jupyter display functions), so do not export C++ symbols.
+    target_link_options(lfortran PRIVATE
+        "LINKER:-unexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/unexported_symbols.txt")
+    set_property(TARGET lfortran APPEND PROPERTY LINK_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/unexported_symbols.txt")
+endif()
+
 if (WITH_STACKTRACE AND APPLE AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
     # On macOS we have to call dsymutil to create the dSYM bundle so that the
     # stacktrace can find debugging information corresponding to the lfortran
