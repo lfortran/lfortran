@@ -4849,8 +4849,10 @@ public:
                             variable->m_type, current_scope);
             } else {
                 for(size_t i = 0; i < func->n_args; i++){ 
-                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(func->m_args[i]);
-                    if(var == variable){
+                    // Compare symbols: a dummy procedure argument is a Var
+                    // referring to a Function, not a Variable.
+                    if(ASR::is_a<ASR::Var_t>(*func->m_args[i]) &&
+                       ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v == sym_to_variable){
                         ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
                         func_type->m_arg_types[i] = replacer.replace_args_with_FunctionParam(
                                     variable->m_type, current_scope);
