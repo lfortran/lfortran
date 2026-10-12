@@ -5952,6 +5952,8 @@ RUN(NAME gpu_metal_432 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_433 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_434 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_439 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_440 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_436 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_437 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_438 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
