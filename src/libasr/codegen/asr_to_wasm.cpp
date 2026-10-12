@@ -1214,8 +1214,51 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return false;
     }
 
+    // A WASM module is not linked with other objects, so the procedure that
+    // an interface body for an external procedure declares is the external
+    // procedure of that name defined in this translation unit, if there is
+    // one. It is called instead, and no function is emitted for the
+    // interface body.
+    ASR::Function_t *get_external_procedure_definition(const ASR::Function_t &x) {
+        ASR::FunctionType_t *type = ASRUtils::get_FunctionType(x);
+        if (type->m_deftype != ASR::deftypeType::Interface || type->m_module ||
+                type->m_abi != ASR::abiType::Source) {
+            return nullptr;
+        }
+        SymbolTable *parent = x.m_symtab->parent;
+        if (parent->asr_owner && ASR::is_a<ASR::symbol_t>(*parent->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(parent->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) && ASRUtils::is_dummy_argument(
+                    *ASR::down_cast<ASR::Function_t>(owner), &x.base)) {
+                return nullptr;
+            }
+        }
+        ASR::symbol_t *def = ASRUtils::get_tu_symtab(parent)->get_symbol(x.m_name);
+        if (def == nullptr || !ASR::is_a<ASR::Function_t>(*def)) {
+            return nullptr;
+        }
+        ASR::Function_t *def_fn = ASR::down_cast<ASR::Function_t>(def);
+        if (ASRUtils::get_FunctionType(def_fn)->m_deftype !=
+                ASR::deftypeType::Implementation) {
+            return nullptr;
+        }
+        return def_fn;
+    }
+
+    ASR::Function_t *get_called_function(ASR::symbol_t *name) {
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(name));
+        if (ASR::Function_t *def = get_external_procedure_definition(*fn)) {
+            return def;
+        }
+        return fn;
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
+        if (get_external_procedure_definition(x)) {
             return;
         }
         declare_all_functions(*x.m_symtab);
@@ -2818,8 +2861,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return;
         }
 
-        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *fn = get_called_function(x.m_name);
 
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
@@ -2943,8 +2985,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *s = get_called_function(x.m_name);
 
         Vec<ASR::expr_t *> vars_passed_by_refs;
         vars_passed_by_refs.reserve(m_al, s->n_args);
