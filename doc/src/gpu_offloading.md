@@ -447,7 +447,7 @@ Which one is used is decided per array and per derived type:
   procedure would allocate itself: "the array passed for the allocatable
   dummy argument 'r' of 'f', on the device heap is not supported yet".)
 * A derived type with an allocatable array component, directly or in a
-  component, is a *heap type* of the translation unit when device code
+  component, is a *heap type* of a kernel when its device code
   creates a value of it that host-sized storage cannot hold: an array of
   such values (the result of an elemental constructor, `pair_t(a(:), b(:))`),
   a value held in a component or in an element of an allocatable component
@@ -459,7 +459,11 @@ Which one is used is decided per array and per derived type:
   a temporary, a function result, a dummy argument of a device procedure,
   an element of such an array -- is then on the heap, also one the host
   could have sized, so that a type has one representation in device code
-  (apart from the kernel arguments, see below).
+  (apart from the kernel arguments, see below). Every kernel has its own
+  copy of each derived type its device code holds, which is what the
+  decision is about; the host's type of an array argument is the kernel's
+  copy the launch passes it for. Two types of one name, from two modules,
+  are two types.
 
 #### The arenas
 
