@@ -11414,6 +11414,14 @@ static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
 // or a derived type is described through its elements or components.
 std::string get_format_type_code(ASR::ttype_t* type);
 
+// The component, of the derived type `declaration` or of its parent or nested
+// component types, that keeps an item of the type from default (not defined)
+// input/output: an allocatable or pointer component, or one whose type has no
+// default transfer, such as a polymorphic or procedure component. Without a
+// defined input/output procedure such an item cannot be transferred. nullptr
+// when every component can be transferred.
+ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration);
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

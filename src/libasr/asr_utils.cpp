@@ -8492,6 +8492,40 @@ bool sealed_dispatch_result_supported(const ASR::Function_t &procedure)
         ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type));
 }
 
+ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration)
+{
+    std::set<ASR::symbol_t*> searched;
+    std::function<ASR::symbol_t*(ASR::symbol_t*)> search =
+        [&](ASR::symbol_t *symbol) -> ASR::symbol_t* {
+            symbol = symbol ? symbol_get_past_external(symbol) : nullptr;
+            if (!symbol || !ASR::is_a<ASR::Struct_t>(*symbol) ||
+                    !searched.insert(symbol).second) return nullptr;
+            auto *structure = ASR::down_cast<ASR::Struct_t>(symbol);
+            if (auto *component = search(structure->m_parent)) return component;
+            for (size_t i = 0; i < structure->n_members; i++) {
+                ASR::symbol_t *member = structure->m_symtab->get_symbol(
+                    structure->m_members[i]);
+                if (!member) continue;
+                if (!ASR::is_a<ASR::Variable_t>(*member)) return member;
+                auto *variable = ASR::down_cast<ASR::Variable_t>(member);
+                if (is_allocatable(variable->m_type) || is_pointer(variable->m_type)) {
+                    return member;
+                }
+                ASR::ttype_t *element = type_get_past_array(variable->m_type);
+                if (ASR::is_a<ASR::StructType_t>(*element)) {
+                    if (is_class_type(element)) return member;
+                    if (auto *component = search(variable->m_type_declaration)) {
+                        return component;
+                    }
+                } else if (get_format_type_code(element).empty()) {
+                    return member;
+                }
+            }
+            return nullptr;
+        };
+    return search(declaration);
+}
+
 std::string get_format_type_code(ASR::ttype_t* type) {
     type = type_get_past_allocatable(type_get_past_pointer(type));
     switch (type->type) {

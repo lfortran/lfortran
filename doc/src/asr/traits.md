@@ -1025,6 +1025,17 @@ no evidence. A character type argument is the complete type, including its
 constant length: `Vector("John ")` is `Vector{character(len=5)}`, and
 `Vector{character(len=2)}` is another instance.
 
+An instance copies every procedure of its package, whether or not the
+program calls it. Default (not defined) input/output, in any of these copies,
+of a type that it cannot transfer, such as a derived type argument with an
+allocatable or pointer component (`ASRUtils::default_transfer_blocking_component`),
+is therefore diagnosed as not implemented yet where the instance is created,
+even when the procedure is never called. This is a temporary limitation:
+whether such a binding should only be rejected when it is used is a separate
+design decision, deferred until the remaining paper examples work. Instances
+of intrinsic types and of derived types whose components can be transferred
+print as usual (`traits_associated_04`).
+
 PAPER-D07 lets an implementation take its receiver with `intent(inout)`.
 Such a binding serves direct calls on concrete objects only, under the ordinary
 Fortran rules: the passed object of a type-bound call whose passed-object dummy

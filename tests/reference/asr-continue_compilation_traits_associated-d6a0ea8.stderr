@@ -119,3 +119,9 @@ semantic error: runtime trait views are read-only: 'count_bump' implements 'bump
     |
 268 |     call view_bump(c)
     |                    ^ 
+
+semantic error: default input/output of type(bag) in 'show' of the generic type instance shelf{bag} is not implemented yet: component 'a' of bag is allocatable
+   --> tests/errors/continue_compilation_traits_associated.f90:313:9
+    |
+313 |         type(Shelf{Bag}) :: bags
+    |         ^^^^^^^^^^^^^^^^ 

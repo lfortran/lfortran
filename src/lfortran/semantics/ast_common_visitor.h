@@ -28726,11 +28726,94 @@ public:
                             const_cast<ASR::symbol_t*>(&provided->base)));
                 }
             }
+            check_generic_instance_transfers(instance, copies);
         } catch (const SemanticAbort &) {
             current_scope = saved_scope;
             throw;
         }
         current_scope = saved_scope;
+    }
+
+    // An instance copies every procedure of its package, whether or not it
+    // is used, so default input/output of a type argument that default
+    // input/output cannot transfer (ASRUtils::default_transfer_blocking_component)
+    // in any of them is diagnosed where the instance is created. This is a
+    // temporary limitation: whether only used bindings should be checked is
+    // not decided yet.
+    void check_generic_instance_transfers(const ASR::Struct_t &instance,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &copies) {
+        class Transfers : public ASR::BaseWalkVisitor<Transfers> {
+        public:
+            ASR::expr_t *item = nullptr;
+            ASR::symbol_t *component = nullptr;
+
+            void check(ASR::expr_t *value) {
+                if (component || !value) return;
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    auto *loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    for (size_t i = 0; i < loop->n_values; i++) check(loop->m_values[i]);
+                    return;
+                }
+                ASR::ttype_t *type = ASRUtils::expr_type(value);
+                if (!type || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                    return;
+                }
+                component = ASRUtils::default_transfer_blocking_component(
+                    ASRUtils::get_struct_sym_from_struct_expr(value));
+                if (component) item = value;
+            }
+
+            void visit_StringFormat(const ASR::StringFormat_t &x) {
+                for (size_t i = 0; i < x.n_args; i++) check(x.m_args[i]);
+                ASR::BaseWalkVisitor<Transfers>::visit_StringFormat(x);
+            }
+
+            void visit_FileWrite(const ASR::FileWrite_t &x) {
+                if (!x.m_overloaded) {
+                    for (size_t i = 0; i < x.n_values; i++) check(x.m_values[i]);
+                }
+                ASR::BaseWalkVisitor<Transfers>::visit_FileWrite(x);
+            }
+
+            void visit_FileRead(const ASR::FileRead_t &x) {
+                if (!x.m_overloaded) {
+                    for (size_t i = 0; i < x.n_values; i++) check(x.m_values[i]);
+                }
+                ASR::BaseWalkVisitor<Transfers>::visit_FileRead(x);
+            }
+        };
+        // In the order of the package's procedure names, for a stable report.
+        std::map<std::string, std::pair<ASR::symbol_t*, ASR::symbol_t*>> procedures;
+        for (const auto &entry : copies) {
+            if (entry.second) {
+                procedures[ASRUtils::symbol_name(entry.first)] = entry;
+            }
+        }
+        for (const auto &named : procedures) {
+            const auto &entry = named.second;
+            Transfers transfers;
+            transfers.visit_symbol(*entry.second);
+            if (!transfers.component) continue;
+            auto *variable = ASR::is_a<ASR::Variable_t>(*transfers.component)
+                ? ASR::down_cast<ASR::Variable_t>(transfers.component) : nullptr;
+            std::string reason = variable && ASRUtils::is_allocatable(variable->m_type)
+                ? "is allocatable" : variable && ASRUtils::is_pointer(variable->m_type)
+                ? "is a pointer" : "has no default input/output";
+            ASR::symbol_t *item_type = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(transfers.item));
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(transfers.component);
+            auto spelling = [](ASR::symbol_t *type) {
+                return type && ASR::is_a<ASR::Struct_t>(*type)
+                    ? ASRUtils::generic_type_spelling(*ASR::down_cast<ASR::Struct_t>(type))
+                    : std::string(type ? ASRUtils::symbol_name(type) : "");
+            };
+            trait_call_error("default input/output of type(" + spelling(item_type) +
+                ") in '" + ASRUtils::symbol_name(entry.first) +
+                "' of the generic type instance " +
+                ASRUtils::generic_type_spelling(instance) + " is not implemented yet: "
+                "component '" + ASRUtils::symbol_name(transfers.component) + "' of " +
+                spelling(owner) + " " + reason, instance.base.base.loc);
+        }
     }
 
     void visit_BinOp(const AST::BinOp_t &x) {

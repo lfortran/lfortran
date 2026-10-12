@@ -269,3 +269,48 @@ program continue_compilation_traits_associated
     i = c%n + t%total
     print *, i
 end program continue_compilation_traits_associated
+
+! A09: an instance copies every procedure of its package, so default output of
+! a type argument with an allocatable component is not implemented yet, even
+! by a procedure the program never calls. An instance whose type argument can
+! be transferred gets no diagnostic.
+module cc_traits_associated_shelf
+    implicit none
+    private
+    type, public, sealed :: Shelf{U}
+        private
+        type(U), allocatable :: items(:)
+    contains
+        initial :: shelf_init
+        procedure, pass :: show
+    end type Shelf
+contains
+    function shelf_init(item) result(res)
+        type(U), intent(in) :: item
+        type(Shelf{U})      :: res
+        res%items = [item]
+    end function shelf_init
+
+    subroutine show(self)
+        type(Shelf{U}), intent(in) :: self
+        print *, self%items
+    end subroutine show
+end module cc_traits_associated_shelf
+
+module cc_traits_associated_shelf_user
+    use cc_traits_associated_shelf, only: Shelf
+    implicit none
+    type :: Bag
+        integer, allocatable :: a(:)
+    end type Bag
+    type :: Pair
+        integer :: a = 0
+        real    :: b(2) = 0
+    end type Pair
+contains
+    subroutine fill()
+        type(Shelf{Pair}) :: pairs
+        type(Shelf{Bag}) :: bags
+        pairs = Shelf(Pair(1, [2.0, 3.0]))
+    end subroutine fill
+end module cc_traits_associated_shelf_user
