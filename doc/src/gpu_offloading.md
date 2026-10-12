@@ -187,7 +187,10 @@ generates the device source. It never falls back to the CPU:
   the `allocate`, reallocation or move that gives it one, also when that
   shape is read from another such local, and when several of them give it
   the same shape, as shared lowering does when it allocates a temporary and
-  then reallocates it to the shape it already has. A rank-one allocatable
+  then reallocates it to the shape it already has. A reallocation by an
+  assignment gives the shape of the array the assigned value takes its
+  shape from: `r = 2*c(2:)` gives `r` the shape of `c(2:)`, also when `r`
+  is the result of a function. A rank-one allocatable
   local whose extent is only known where it is allocated -- inside a loop
   of the procedure, as the temporaries of `v(1:n(l)) * a(1:n(l), l-1)` in
   `do l = 2, m` -- points instead to the leading part of a buffer, which is
