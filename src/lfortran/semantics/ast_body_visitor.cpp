@@ -6347,6 +6347,13 @@ public:
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            is_Function = true;
+            if(x.m_items[i]->type == AST::decl_stmtType::Instantiate)
+                visit_decl_stmt(*x.m_items[i]);
+            is_Function = false;
+        }
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_items);
