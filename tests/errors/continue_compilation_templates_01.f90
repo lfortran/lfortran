@@ -2852,3 +2852,20 @@ contains
         print *, const_k
     end subroutine
 end module
+
+! A subscript of a named constant array that becomes constant only in the
+! instantiation is checked against the bounds of the array (#14765).
+module continue_compilation_templates_01_item_oob
+    implicit none
+    template item_oob_t {n}
+        deferred integer, parameter :: n
+        integer, parameter :: item_arr(2) = [n, 2*n]
+        type :: item_w
+            integer :: b(item_arr(n))  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+        end type
+    end template
+contains
+    subroutine use_item_oob()
+        instantiate item_oob_t {3}, only: item_w3 => item_w
+    end subroutine
+end module

@@ -3431,6 +3431,23 @@ public:
                 return is_named_constant_expr(
                     ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
             }
+            case ASR::exprType::ArrayItem: {
+                // An element of a named constant array
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+                if (!is_named_constant_expr(item->m_v)) {
+                    return false;
+                }
+                for (size_t i = 0; i < item->n_args; i++) {
+                    ASR::expr_t* parts[3] = {item->m_args[i].m_left,
+                        item->m_args[i].m_right, item->m_args[i].m_step};
+                    for (ASR::expr_t* part: parts) {
+                        if (part != nullptr && !is_named_constant_expr(part)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
             case ASR::exprType::IntrinsicElementalFunction: {
                 ASR::IntrinsicElementalFunction_t* func =
                     ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
