@@ -781,6 +781,29 @@ bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
     return is_iso_c_binding_type_symbol(scope, sym, "c_funptr");
 }
 
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
+{
+    if (sym == nullptr) {
+        return false;
+    }
+    SymbolTable *tu_scope = ASRUtils::get_tu_symtab(scope);
+    LCOMPILERS_ASSERT(tu_scope != nullptr);
+    ASR::symbol_t *mod = tu_scope->resolve_symbol("iso_fortran_env");
+    if (mod == nullptr) {
+        // iso_fortran_env is not loaded, so team_type cannot be in use
+        return false;
+    }
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*mod));
+    ASR::Module_t *iso_fortran_env = ASR::down_cast<ASR::Module_t>(mod);
+    if (!iso_fortran_env->m_intrinsic) {
+        return false;
+    }
+    ASR::symbol_t *expected = iso_fortran_env->m_symtab->resolve_symbol("team_type");
+    LCOMPILERS_ASSERT(expected != nullptr);
+    return ASRUtils::symbol_get_past_external(sym)
+        == ASRUtils::symbol_get_past_external(expected);
+}
+
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
         ASR::symbol_t* type_decl)
 {

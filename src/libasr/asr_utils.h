@@ -115,6 +115,7 @@ bool is_iso_c_binding_symbol(SymbolTable* scope, ASR::symbol_t* sym,
 bool is_iso_c_null_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
         ASR::symbol_t* type_decl);
 ASR::ttype_t* make_cptr_type(Allocator& al, const Location& loc,
