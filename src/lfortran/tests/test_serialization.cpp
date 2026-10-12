@@ -1,4 +1,6 @@
 #include <tests/doctest.h>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include <libasr/bwriter.h>
@@ -1039,6 +1041,35 @@ end module renamed_user
         ASR::down_cast<ASR::Module_t>(fallback_module)->m_symtab->get_symbol("inumeric"));
     REQUIRE(alone->n_dependencies == 1);
     CHECK(std::string(alone->m_dependencies[0]) == "lfortran_intrinsic_generics");
+
+    // An empty generics.mod, the placeholder that a submodule named generics
+    // leaves, is no module: the USE without a nature still falls back to the
+    // intrinsic module, and NON_INTRINSIC finds no module.
+    struct PlaceholderDir {
+        std::filesystem::path path = "test_serialization_generics_placeholder";
+        PlaceholderDir() {
+            std::filesystem::create_directories(path);
+            std::ofstream empty(path / "generics.mod");
+        }
+        ~PlaceholderDir() {
+            std::error_code ignored;
+            std::filesystem::remove_all(path, ignored);
+        }
+    } placeholder;
+    options.po.include_dirs.push_back(placeholder.path);
+    LCompilers::diag::Diagnostics placeholder_diagnostics;
+    auto past_placeholder = compile_use_alone(al, "use generics, only: INumeric", options,
+        placeholder_diagnostics);
+    INFO(placeholder_diagnostics.render2());
+    REQUIRE(past_placeholder.ok);
+    CHECK(module_depends_on(*past_placeholder.result, "alone", "lfortran_intrinsic_generics"));
+    LCompilers::diag::Diagnostics placeholder_errors;
+    auto rejected = compile_use_alone(al, "use, non_intrinsic :: generics, only: INumeric",
+        options, placeholder_errors);
+    CHECK_FALSE(rejected.ok);
+    REQUIRE(!placeholder_errors.diagnostics.empty());
+    CHECK(placeholder_errors.diagnostics.back().message ==
+        "Module 'generics' modfile was not found");
 }
 #endif
 

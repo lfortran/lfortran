@@ -1808,44 +1808,49 @@ static std::vector<std::filesystem::path> modfile_search_dirs(
     return mod_files_dirs;
 }
 
-bool modfile_exists(const std::string &msym, const LCompilers::PassOptions &pass_options) {
+// Reads into `modfile` the modfile of the module `msym`: the first readable,
+// non-empty `msym.mod` in the search directories. A file that cannot be read
+// counts as missing. An empty one, the placeholder written for a submodule, is
+// no module; `found_empty` tells whether there was one.
+static bool read_module_modfile(const std::string &msym,
+        const LCompilers::PassOptions &pass_options, std::string &modfile,
+        bool &found_empty) {
     std::filesystem::path filename {msym + ".mod"};
     for (auto &path : modfile_search_dirs(pass_options)) {
-        if (std::filesystem::is_regular_file(path / filename)) return true;
+        if (!read_file((path / filename).string(), modfile)) continue;
+        if (!modfile.empty()) return true;
+        found_empty = true;
     }
     return false;
+}
+
+bool modfile_exists(const std::string &msym, const LCompilers::PassOptions &pass_options) {
+    std::string modfile;
+    bool found_empty = false;
+    return read_module_modfile(msym, pass_options, modfile, found_empty);
 }
 
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm) {
-    std::filesystem::path filename {msym + ".mod"};
-    std::vector<std::filesystem::path> mod_files_dirs = modfile_search_dirs(pass_options);
-
+    std::string modfile;
     bool found_empty_mod = false;
-    for (auto path : mod_files_dirs) {
-        std::string modfile;
-        std::filesystem::path full_path = path / filename;
-        if (read_file(full_path.string(), modfile)) {
-            if (modfile.empty()) {
-                found_empty_mod = true;
-                continue;
+    if (read_module_modfile(msym, pass_options, modfile, found_empty_mod)) {
+        Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
+        if (res.ok) {
+            ASR::TranslationUnit_t* asr = res.result;
+            if (intrinsic) {
+                set_intrinsic(asr);
             }
-            Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
-            if (res.ok) {
-                ASR::TranslationUnit_t* asr = res.result;
-                if (intrinsic) {
-                    set_intrinsic(asr);
-                }
-                return asr;
-            } else {
-                return res.error;
-            }
+            return asr;
+        } else {
+            return res.error;
         }
     }
 
     if (found_empty_mod) {
+        std::vector<std::filesystem::path> mod_files_dirs = modfile_search_dirs(pass_options);
         std::string smod_suffix = "@" + msym + ".smod";
         for (auto &path : mod_files_dirs) {
             std::filesystem::path search_dir = path.empty() ? std::filesystem::path(".") : path;
