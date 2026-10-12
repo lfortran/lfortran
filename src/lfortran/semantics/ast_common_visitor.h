@@ -1397,8 +1397,10 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     result_type, value);
             return;
-        } else if( ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::type_get_past_allocatable_pointer(operand_type)) ) {
+        } else if( ASR::is_a<ASR::StructType_t>(*result_type) ||
+                   ASR::is_a<ASR::TypeParameter_t>(*result_type) ) {
+            // A deferred type of a template has no intrinsic negation either;
+            // only a user-defined `operator(-)` applies to it.
             ASR::expr_t* overloaded_uminus = nullptr;
             if( ASRUtils::use_overloaded_unary_minus(operand,
                 current_scope, asr, al,
@@ -1415,8 +1417,14 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                 overloaded_uminus = ASRUtils::EXPR(asr);
             }
             if (overloaded_uminus == nullptr) {
+                std::string msg = "No matching `operator(-)` found for this operand type";
+                if (ASR::is_a<ASR::TypeParameter_t>(*result_type)) {
+                    msg = "Operator `-` undefined for the type in the expression `-"
+                        + ASRUtils::type_to_str_fortran_expr(result_type, operand)
+                        + "`";
+                }
                 diag.add(diag::Diagnostic(
-                    "No matching `operator(-)` found for this operand type",
+                    msg,
                     Level::Error, Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();

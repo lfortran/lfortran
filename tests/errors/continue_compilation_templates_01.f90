@@ -2718,3 +2718,39 @@ module continue_compilation_templates_01_op_mismatch
         end subroutine
     end template
 end module
+
+! A unary `-` on a value of a deferred type needs a user-defined `operator(-)`
+! whose dummy has that deferred type (#13913).
+module continue_compilation_templates_01_unary_minus
+    implicit none
+contains
+    template subroutine unary_minus_s{t}(x)
+        deferred type :: t
+        type(t), intent(inout) :: x
+        integer :: y
+        y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t`
+    end subroutine
+end module
+
+module continue_compilation_templates_01_unary_minus_mismatch
+    implicit none
+    template unary_minus_mismatch_t {a_t, b_t, p}
+        deferred type :: a_t, b_t
+        deferred interface
+            function p(x)
+                type(a_t), intent(in) :: x
+                type(b_t) :: p
+            end function
+        end interface
+        interface operator(-)
+            module procedure p
+        end interface
+    contains
+        subroutine unary_minus_mismatch_s(x, y)
+            type(a_t), intent(in) :: x
+            type(b_t), intent(inout) :: y
+            y = -x
+            y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
+        end subroutine
+    end template
+end module
