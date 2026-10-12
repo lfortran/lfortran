@@ -70,11 +70,24 @@ bool runtime_sized_local(const ASR::Variable_t &var) {
 class VarReader : public ASR::BaseWalkVisitor<VarReader> {
 public:
     std::set<ASR::symbol_t*> symbols;
+    // Whether the extents call a function with side effects, which the
+    // callers cannot call in place of the routine.
+    bool side_effects = false;
 
     void visit_Var(const ASR::Var_t &x) { symbols.insert(x.m_v); }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                !ASRUtils::is_side_effect_free_function(
+                    *ASR::down_cast<ASR::Function_t>(callee))) {
+            side_effects = true;
+        }
+        ASR::BaseWalkVisitor<VarReader>::visit_FunctionCall(x);
+    }
 };
 
-std::set<ASR::symbol_t*> extent_reads(const ASR::Array_t &arr) {
+VarReader extent_reads(const ASR::Array_t &arr) {
     VarReader reader;
     for (size_t d = 0; d < arr.n_dims; d++) {
         if (arr.m_dims[d].m_start) reader.visit_expr(*arr.m_dims[d].m_start);
@@ -82,7 +95,7 @@ std::set<ASR::symbol_t*> extent_reads(const ASR::Array_t &arr) {
             reader.visit_expr(*arr.m_dims[d].m_length);
         }
     }
-    return reader.symbols;
+    return reader;
 }
 
 ASR::symbol_t* call_target(ASR::symbol_t *name) {
@@ -422,8 +435,17 @@ private:
                     local->m_name));
                 return false;
             }
-            for (ASR::symbol_t *read : extent_reads(
-                    *ASR::down_cast<ASR::Array_t>(local->m_type))) {
+            // The callers evaluate the extents instead of the routine, so
+            // a function the extents call must have no side effects.
+            VarReader reads = extent_reads(
+                *ASR::down_cast<ASR::Array_t>(local->m_type));
+            if (reads.side_effects) {
+                decline(fn, local->base.base.loc, GpuDecline(
+                    GpuDeclineReason::WorkspaceNotSizeableOnHost,
+                    local->m_name));
+                return false;
+            }
+            for (ASR::symbol_t *read : reads.symbols) {
                 if (dummies.count(read)) continue;
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(read);
                 if (ASR::is_a<ASR::Variable_t>(*s)) {

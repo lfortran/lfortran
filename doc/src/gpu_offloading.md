@@ -175,7 +175,9 @@ generates the device source. It never falls back to the CPU:
   assigned once) stands for what it is bound to, the extent of a section
   for the extents of its ranges, and a function without side effects is
   called with arguments of that kind (`allocate(a(maxval(n)))` with
-  `associate (n => self%nodes_)`). An extent that is evaluated after
+  `associate (n => self%nodes_)`). A function with side effects, an
+  `impure elemental` one included, is not called that way, as the callers
+  would call it instead of the procedure. An extent that is evaluated after
   entry -- of a local of a `block`, or of the array a call is given for
   its callee -- may not read a dummy argument the procedure can change
   before (`n = n + 4`), whose value the callers do not know. A procedure with such a local that

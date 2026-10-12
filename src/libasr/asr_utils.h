@@ -10784,7 +10784,7 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
 }
 
 // Whether calling the function `fn` has no effect but its result: it is
-// declared pure or elemental, or it reads its arguments only (all of them
+// pure (an elemental procedure is, unless it is impure), or it reads its arguments only (all of them
 // `intent(in)`), defines nothing but its own locals and result, and calls
 // only such functions -- as the routines shared lowering gives an
 // intrinsic, such as `maxval`, are written. Such a call can be evaluated
@@ -10792,7 +10792,7 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
 inline bool is_side_effect_free_function(ASR::Function_t &fn,
         std::set<ASR::Function_t*> &visiting) {
     ASR::FunctionType_t *type = get_FunctionType(fn);
-    if (type->m_pure || type->m_elemental) return true;
+    if (type->m_pure) return true;
     if (type->m_deftype != ASR::deftypeType::Implementation ||
             fn.m_return_var == nullptr || !visiting.insert(&fn).second) {
         return false;
