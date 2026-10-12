@@ -11275,8 +11275,7 @@ public:
 
             // Collect kind/len parameter names and identify which declaration
             // indices correspond to kind/len params vs regular members.
-            Vec<char*> kind_params;
-            kind_params.reserve(al, x.n_namelist);
+            std::vector<std::string> declared_kind_params;
             std::set<size_t> kind_len_decl_indices;
             for (size_t i = 0; i < x.n_items; i++) {
                 if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
@@ -11298,9 +11297,25 @@ public:
                 }
                 if (is_kind_attr) {
                     for (size_t j = 0; j < decl.n_syms; j++) {
-                        kind_params.push_back(al, s2c(al, to_lower(decl.m_syms[j].m_name)));
+                        declared_kind_params.push_back(to_lower(decl.m_syms[j].m_name));
                     }
                 }
+            }
+            // Positional type parameter values correspond to the order of
+            // the type parameter list, not to the order of the declarations.
+            Vec<char*> kind_params;
+            kind_params.reserve(al, x.n_namelist);
+            for (size_t i = 0; i < x.n_namelist; i++) {
+                std::string name = to_lower(x.m_namelist[i]);
+                auto it = std::find(declared_kind_params.begin(),
+                    declared_kind_params.end(), name);
+                if (it != declared_kind_params.end()) {
+                    kind_params.push_back(al, s2c(al, name));
+                    declared_kind_params.erase(it);
+                }
+            }
+            for (const std::string& name : declared_kind_params) {
+                kind_params.push_back(al, s2c(al, name));
             }
 
             // First pass: process only kind/len parameter declarations
