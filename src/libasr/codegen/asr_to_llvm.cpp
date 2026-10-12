@@ -29921,11 +29921,19 @@ public:
                         llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_args[i], ASRUtils::extract_type(source_array_type), module.get());
                         int rank = ASRUtils::extract_n_dims_from_ttype(source_array_type);
-                        // Create contiguous copy using the array descriptor utility
-                        tmp = arr_descr->create_contiguous_copy_from_descriptor(
-                            source_llvm_type, source_desc, elem_type, rank, module.get());
-                        // Track this heap allocation to free after function call
-                        contiguous_copies_to_free.push_back(tmp);
+                        if (ASRUtils::is_descriptorString(source_array_type)) {
+                            ASR::String_t* string_type = ASRUtils::get_string_type(source_array_type);
+                            tmp = arr_descr->create_contiguous_string_copy_from_descriptor(
+                                source_llvm_type, source_desc, string_type, rank, module.get());
+                            contiguous_copies_to_free.push_back(
+                                llvm_utils->get_string_data(string_type, tmp));
+                        } else {
+                            // Create contiguous copy using the array descriptor utility
+                            tmp = arr_descr->create_contiguous_copy_from_descriptor(
+                                source_llvm_type, source_desc, elem_type, rank, module.get());
+                            // Track this heap allocation to free after function call
+                            contiguous_copies_to_free.push_back(tmp);
+                        }
                     } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
