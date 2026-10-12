@@ -1012,8 +1012,13 @@ struct FixedFormRecursiveDescent {
                     yylval.string.n = cur-start-1;
                     stypes.push_back(yylval);
                     tokens.push_back(TK_FORMAT);
-                    next_line(cur);
-                    push_token_no_advance(cur-1, "\n");
+                    if (*cur == ';') {
+                        // Another statement follows on this line
+                        tokenize_line(cur);
+                    } else {
+                        next_line(cur);
+                        push_token_no_advance(cur-1, "\n");
+                    }
                 } else {
                     push_token_advance(cur, io_str);
                     tokenize_line(cur);
@@ -1092,7 +1097,7 @@ struct FixedFormRecursiveDescent {
         // tokenize / block_1 / a, b
         bool first_slash = true;
         int paren_depth = 0;
-        while(!next_is_eol(cur)) {
+        while(!next_is_eos(cur)) {
             if (*cur == '(') {
                 paren_depth++;
             } else if (*cur == ')') {
@@ -1114,7 +1119,7 @@ struct FixedFormRecursiveDescent {
             }
             cur++;
         }
-        if (next_is_eol(cur)) {
+        if (next_is_eos(cur)) {
             tokenize_until(cur);
             t.cur = cur;
         }
@@ -1125,7 +1130,7 @@ struct FixedFormRecursiveDescent {
         while(*cur == '/') {
             lex_common_block_part(cur);
             // handle an optional comma
-            if(*cur == '\n') {
+            if (next_is_eos(cur)) {
                 break;
             }
             push_token_no_advance(cur, "comma");
@@ -1134,9 +1139,7 @@ struct FixedFormRecursiveDescent {
                 t.cur = cur;
             }
         }
-        next_line(cur);
-        tokenize_until(cur);
-        LCOMPILERS_ASSERT(*(t.cur-1) == '\n');
+        tokenize_line(cur);
         return true;
     }
 
@@ -1192,11 +1195,11 @@ struct FixedFormRecursiveDescent {
         // by this check either, matching the pre-existing `type::` check's
         // scope.
         // A bare derived-type-def statement is exactly `TYPE type-name`
-        // with nothing else on the line, so require a NAME immediately
-        // after `type` followed immediately by end-of-line.
+        // with nothing else in the statement, so require a NAME immediately
+        // after `type` followed immediately by the end of the statement.
         if (next_is(cur, "type") && !next_is(cur, "type(")) {
             unsigned char *name_end = cur + 4;
-            if (try_name(name_end) && next_is_eol(name_end)) {
+            if (try_name(name_end) && next_is_eos(name_end)) {
                 lex_derived_type(cur);
                 return true;
             }
@@ -1475,7 +1478,8 @@ struct FixedFormRecursiveDescent {
 
     // Returns true if this is "end do" or equivalent, otherwise false
     // It will always consume the label.
-    // If true, it will consume the whole line. Otherwise it leaves it.
+    // If true, it will consume the terminal statement, up to and including
+    // the `;` or the new line that ends it. Otherwise it leaves it.
     bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
         LCOMPILERS_ASSERT(do_label != -1)
         if (*cur == '\0') {
