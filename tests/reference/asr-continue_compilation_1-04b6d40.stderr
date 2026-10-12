@@ -1094,6 +1094,24 @@ semantic error: intrinsic procedure 'min0' is not allowed in a procedure declara
 2398 |     procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
      |     ^^^^^^^^^^^^^^^ 
 
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    --> tests/errors/continue_compilation_1.f90:2405:5
+     |
+2405 |     procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+     |     ^^^^^^^^^^^^^^^ 
+
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    --> tests/errors/continue_compilation_1.f90:2406:5
+     |
+2406 |     procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+     |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    --> tests/errors/continue_compilation_1.f90:2407:5
+     |
+2407 |     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+     |     ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -2397,3 +2397,12 @@ subroutine unsupported_intrinsic_procedure_interface_error()
     procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
     procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
 end subroutine unsupported_intrinsic_procedure_interface_error
+
+! `procedure(real)`, `procedure(logical)` and `procedure(complex)` name a type
+! as the interface, not the intrinsic function of that name.
+subroutine type_spec_procedure_interface_error()
+    implicit none
+    procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+end subroutine type_spec_procedure_interface_error

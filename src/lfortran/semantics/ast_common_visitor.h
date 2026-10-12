@@ -13087,7 +13087,17 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
-            if (!sym_type->m_name && (!sym_type->m_attr
+            // `procedure(real)`, `procedure(logical)`, ... name a type, as
+            // `procedure(real(8))` does with its attribute (R1514), not the
+            // intrinsic function of that name.
+            std::string proc_iface_name = sym_type->m_name
+                ? to_lower(sym_type->m_name) : "";
+            bool is_type_name = proc_iface_name == "real"
+                || proc_iface_name == "integer" || proc_iface_name == "logical"
+                || proc_iface_name == "complex" || proc_iface_name == "character"
+                || proc_iface_name == "doubleprecision";
+            bool is_type_spec = sym_type->m_attr || is_type_name;
+            if ((!sym_type->m_name || is_type_name) && (!is_type_spec
                     || !compiler_options.implicit_interface)) {
                 if (compiler_options.implicit_interface) {
                     // procedure() with no explicit interface is completely
