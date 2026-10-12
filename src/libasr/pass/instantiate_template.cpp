@@ -1107,6 +1107,32 @@ static SymbolTable* instantiated_enclosing_scope(SymbolTable* old_scope,
     return new_scope;
 }
 
+class DeferredConstantFinder : public ASR::BaseWalkVisitor<DeferredConstantFinder>
+{
+public:
+    bool deferred = false;
+    bool non_constant = false;
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        if (v->m_storage != ASR::storage_typeType::Parameter) {
+            non_constant = true;
+        } else if (v->m_value == nullptr && v->m_symbolic_value == nullptr) {
+            deferred = true;
+        }
+    }
+};
+
+static bool depends_on_deferred_constant(ASR::expr_t *e) {
+    DeferredConstantFinder finder;
+    finder.visit_expr(*e);
+    return finder.deferred && !finder.non_constant;
+}
+
 class SymbolInstantiator : public ASR::BaseExprStmtDuplicator<SymbolInstantiator>
 {
 public:
@@ -1412,7 +1438,8 @@ public:
                 && is_in_template(template_scope->parent);
             if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
                     && !ASRUtils::is_value_constant(new_value)
-                    && !in_nested_template) {
+                    && !in_nested_template
+                    && !depends_on_deferred_constant(new_symbolic_value)) {
                 // The semantics accept only initializers that the operations
                 // above evaluate, so this is not expected; report it rather
                 // than leave the named constant without a value.

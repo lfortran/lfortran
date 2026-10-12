@@ -3937,6 +3937,7 @@ RUN(NAME template_proc_component_01 LABELS llvm)
 RUN(NAME template_proc_component_02 LABELS llvm)
 RUN(NAME template_submodule_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_deferred_const_nested_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
