@@ -6,6 +6,11 @@ finite intrinsic-numeric type sets on generic procedures. Existing requirements,
 templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
+The questions raised while implementing the Traits-for-Fortran proposal, the
+choices made for this prototype and the open questions for the proposal are
+recorded in
+[Traits proposal: decisions, ambiguities and open questions](traits-decisions.md).
+
 The LLVM backend also supports borrowed scalar runtime views and bounded scalar
 allocatable ownership, invariant allocatable dummy slots, and scalar allocatable
 function results, persistent nonowning scalar pointer views, and concrete
