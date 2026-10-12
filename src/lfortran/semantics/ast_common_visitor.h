@@ -2197,10 +2197,17 @@ public:
     // Components hidden while a component declaration of the derived type
     // being defined is analyzed (see HiddenDerivedTypeComponents)
     const std::map<std::string, ASR::symbol_t*> *hidden_derived_type_components = nullptr;
+    // A type parameter value of a component `type(b(...))` of a
+    // parameterized derived type: either a type parameter of the enclosing
+    // type, whose placeholder value is `value`, or the constant `value`.
+    struct PDTPendingArg {
+        bool is_param;
+        int64_t value;
+    };
     // Maps (PDT-template symtab ptr, member_var_name) ->
-    // (inner_PDT_name, sentinel_kind_arg_values).
+    // (inner_PDT_name, kind_arg_values).
     std::map<std::pair<SymbolTable*, std::string>,
-             std::pair<std::string, std::vector<int64_t>>> m_pdt_pending_members;
+             std::pair<std::string, std::vector<PDTPendingArg>>> m_pdt_pending_members;
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
@@ -9238,18 +9245,25 @@ public:
                                 // already validated. The variable itself is an
                                 // ordinary named constant of the template, so
                                 // there is nothing more to do here.
-                            } else if (sa->m_attr == AST::simple_attributeType::AttrKind) {
-                                // PDT kind parameter: treat as a Parameter variable
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrKind
+                                    || sa->m_attr == AST::simple_attributeType::AttrLen) {
+                                if (!is_derived_type) {
+                                    diag.add(Diagnostic(
+                                        std::string("the ")
+                                        + (sa->m_attr == AST::simple_attributeType::AttrKind
+                                            ? "kind" : "len")
+                                        + " attribute is only allowed in a derived type definition",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                                // PDT kind parameter: treat as a Parameter
+                                // variable. Only constant values of a length
+                                // parameter are supported, so each value
+                                // instantiates the type like a kind value does.
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
-                            } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
-                                diag.add(Diagnostic(
-                                    "LEN parameters in parameterized derived types are not supported yet",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -11288,6 +11302,7 @@ public:
             // Collect kind/len parameter names and identify which declaration
             // indices correspond to kind/len params vs regular members.
             std::vector<std::string> declared_kind_params;
+            std::set<std::string> len_params;
             std::set<size_t> kind_len_decl_indices;
             for (size_t i = 0; i < x.n_items; i++) {
                 if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
@@ -11307,14 +11322,21 @@ public:
                 if (is_kind_attr || is_len_attr) {
                     kind_len_decl_indices.insert(i);
                 }
-                if (is_kind_attr) {
+                if (is_kind_attr || is_len_attr) {
                     for (size_t j = 0; j < decl.n_syms; j++) {
-                        declared_kind_params.push_back(to_lower(decl.m_syms[j].m_name));
+                        std::string name = to_lower(decl.m_syms[j].m_name);
+                        declared_kind_params.push_back(name);
+                        if (is_len_attr) {
+                            len_params.insert(name);
+                        }
                     }
                 }
             }
             // Positional type parameter values correspond to the order of
             // the type parameter list, not to the order of the declarations.
+            // Length type parameters are recorded with the kind type
+            // parameters: only their constant values are supported, and each
+            // value instantiates the type like the value of a kind parameter.
             Vec<char*> kind_params;
             kind_params.reserve(al, x.n_namelist);
             for (size_t i = 0; i < x.n_namelist; i++) {
@@ -11405,6 +11427,33 @@ public:
                         is_derived_type = false;
                         parent_scope_pdt->erase_symbol(dt_name);
                         throw;
+                    }
+                }
+            }
+            // A length type parameter is not a constant expression, so it
+            // cannot be the kind of a component. Such a kind has the
+            // placeholder value of the parameter here.
+            for (size_t i = 0; i < data_member_names.size(); i++) {
+                ASR::symbol_t* member = current_scope->get_symbol(
+                    data_member_names[i]);
+                if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+                    continue;
+                }
+                int64_t kind = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::symbol_type(member));
+                for (size_t j = 0; j < kind_params.size(); j++) {
+                    if (kind == PDT_SENTINEL + (int64_t) j
+                            && len_params.count(kind_params[j]) > 0) {
+                        current_scope = parent_scope_pdt;
+                        is_derived_type = false;
+                        parent_scope_pdt->erase_symbol(dt_name);
+                        diag.add(diag::Diagnostic(
+                            "length type parameter '" + std::string(kind_params[j])
+                            + "' cannot be used as the kind of component '"
+                            + std::string(data_member_names[i]) + "'",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {member->base.loc})}));
+                        throw SemanticAbort();
                     }
                 }
             }
@@ -11970,7 +12019,13 @@ public:
         std::map<std::string, int64_t> kind_values;
         std::string monomorphized_name = pdt_name;
         for (size_t i = 0; i < kind_val_vec.size(); i++) {
-            monomorphized_name += "_" + std::to_string(kind_val_vec[i]);
+            // A length type parameter can be negative; keep the name an
+            // identifier.
+            std::string value = std::to_string(kind_val_vec[i]);
+            if (value[0] == '-') {
+                value[0] = 'm';
+            }
+            monomorphized_name += "_" + value;
         }
         for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
             std::string kp_name(pdt_struct->m_kind_params[i]);
@@ -12063,16 +12118,16 @@ public:
             auto pit = m_pdt_pending_members.find(key);
             if (pit == m_pdt_pending_members.end()) continue;
             const std::string& inner_name = pit->second.first;
-            const std::vector<int64_t>& sent_args = pit->second.second;
+            const std::vector<PDTPendingArg>& sent_args = pit->second.second;
             // Map each arg to its actual value:
             std::vector<int64_t> actual_inner;
-            for (int64_t s : sent_args) {
-                if (s >= PDT_SENTINEL) {
-                    auto sit = sentinel_to_actual.find(s);
+            for (const PDTPendingArg& arg : sent_args) {
+                if (arg.is_param) {
+                    auto sit = sentinel_to_actual.find(arg.value);
                     LCOMPILERS_ASSERT(sit != sentinel_to_actual.end());
                     actual_inner.push_back(sit->second);
                 } else {
-                    actual_inner.push_back(s);
+                    actual_inner.push_back(arg.value);
                 }
             }
             if (inner_name == pdt_name && actual_inner == kind_val_vec) {
@@ -12237,6 +12292,51 @@ public:
         return type;
     }
 
+    // The expression of the type parameter `param_name` of the parameterized
+    // derived type `pdt_name` given by `item`. Each value of a type
+    // parameter instantiates the type, so a deferred or assumed length type
+    // parameter is not supported yet.
+    ASR::expr_t* pdt_type_param_expr(const AST::kind_item_t& item,
+            const std::string& pdt_name, const std::string& param_name) {
+        if (item.m_type != AST::kind_item_typeType::Value) {
+            diag.add(Diagnostic(
+                std::string(item.m_type == AST::kind_item_typeType::Colon
+                    ? "deferred (':')" : "assumed ('*')")
+                + " value of type parameter '" + param_name
+                + "' of parameterized derived type '" + pdt_name
+                + "' is not supported yet",
+                Level::Error, Stage::Semantic, {Label("", {item.loc})}));
+            throw SemanticAbort();
+        }
+        LCOMPILERS_ASSERT(item.m_value != nullptr);
+        this->visit_expr(*item.m_value);
+        return ASRUtils::EXPR(tmp);
+    }
+
+    // The constant value `expr` of a type parameter. A length type parameter
+    // whose value is not a constant expression is not supported yet.
+    int64_t pdt_type_param_constant(ASR::expr_t* expr, const Location& loc,
+            const std::string& pdt_name, const std::string& param_name) {
+        ASR::expr_t* value = ASRUtils::expr_value(expr);
+        if (value == nullptr || !ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+            diag.add(Diagnostic(
+                "value of type parameter '" + param_name
+                + "' of parameterized derived type '" + pdt_name
+                + "' must be a constant integer expression"
+                + " (non-constant length type parameters are not supported yet)",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        return ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+    }
+
+    int64_t pdt_type_param_value(const AST::kind_item_t& item,
+            const std::string& pdt_name, const std::string& param_name) {
+        return pdt_type_param_constant(
+            pdt_type_param_expr(item, pdt_name, param_name), item.loc,
+            pdt_name, param_name);
+    }
+
     // Monomorphize a Parameterized Derived Type (PDT).
     // Parses kind arg values from the ASR pdt struct node, then delegates to
     // instantiate_pdt_by_values for the actual struct creation.
@@ -12319,26 +12419,22 @@ public:
         for (size_t i = 0; i < all_params.size(); i++) {
             const std::string& param_name = all_params[i].name;
             ASR::Struct_t* owner = all_params[i].owner;
-            int64_t kind_val = -1;
+            int64_t kind_val = 0;
+            bool has_value = false;
 
             // Check for keyword argument matching this parameter
             auto kw_it = keyword_arg_map.find(param_name);
             if (kw_it != keyword_arg_map.end()) {
-                size_t kw_idx = kw_it->second;
-                if (sym_type->m_kind[kw_idx].m_value) {
-                    this->visit_expr(*sym_type->m_kind[kw_idx].m_value);
-                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
-                        sym_type->m_kind[kw_idx].loc, diag);
-                }
-            } else if (i < n_positional && sym_type->m_kind[i].m_value) {
+                kind_val = pdt_type_param_value(sym_type->m_kind[kw_it->second],
+                    pdt_name, param_name);
+                has_value = true;
+            } else if (i < n_positional) {
                 // Positional argument at index i
-                this->visit_expr(*sym_type->m_kind[i].m_value);
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
-                    sym_type->m_kind[i].loc, diag);
+                kind_val = pdt_type_param_value(sym_type->m_kind[i],
+                    pdt_name, param_name);
+                has_value = true;
             }
-            if (kind_val < 0) {
+            if (!has_value) {
                 // Fall back to the owner template's default value
                 ASR::symbol_t* param_sym = owner->m_symtab->get_symbol(param_name);
                 if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
@@ -12346,9 +12442,10 @@ public:
                     if (pv->m_symbolic_value) {
                         kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
                             ASRUtils::expr_value(pv->m_symbolic_value))->m_n;
+                        has_value = true;
                     }
                 }
-                if (kind_val < 0) {
+                if (!has_value) {
                     diag.add(Diagnostic(
                         "Parameterized derived type '" + pdt_name +
                         "' parameter '" + param_name +
@@ -12800,31 +12897,48 @@ public:
                             //    type(b(k1)) :: x
                             // end type
                             if (is_derived_type) {
-                                std::vector<int64_t> sentinel_args;
+                                std::vector<PDTPendingArg> sentinel_args;
                                 bool has_sentinel = false;
                                 // Collect explicitly-specified kind args.
                                 for (size_t ki = 0; ki < sym_type->n_kind; ki++) {
-                                    this->visit_expr(*sym_type->m_kind[ki].m_value);
-                                    ASR::expr_t* ke = ASRUtils::EXPR(tmp);
-                                    int64_t kv = ASRUtils::extract_kind<SemanticAbort>(
-                                        ke, sym_type->m_kind[ki].loc, diag);
-                                    sentinel_args.push_back(kv);
-                                    if (kv >= PDT_SENTINEL) has_sentinel = true;
+                                    std::string kp_name = ki < pdt_st->n_kind_params
+                                        ? pdt_st->m_kind_params[ki] : "";
+                                    ASR::expr_t* ke = pdt_type_param_expr(
+                                        sym_type->m_kind[ki], derived_type_name, kp_name);
+                                    // A type parameter of the enclosing type
+                                    // only has its placeholder value here.
+                                    bool is_param = depends_on_pdt_kind_param(ke);
+                                    if (is_param && !ASR::is_a<ASR::Var_t>(*ke)) {
+                                        diag.add(Diagnostic(
+                                            "type parameter value of '" + derived_type_name +
+                                            "' that is an expression of type parameters of the"
+                                            " enclosing type is not supported yet",
+                                            Level::Error, Stage::Semantic, {
+                                                Label("", {sym_type->m_kind[ki].loc})
+                                            }));
+                                        throw SemanticAbort();
+                                    }
+                                    int64_t kv = pdt_type_param_constant(ke,
+                                        sym_type->m_kind[ki].loc, derived_type_name, kp_name);
+                                    sentinel_args.push_back({is_param, kv});
+                                    has_sentinel |= is_param;
                                 }
                                 // Fill defaults for any trailing kind params
                                 if (has_sentinel && sentinel_args.size() < pdt_st->n_kind_params) {
                                     for (size_t ki = sentinel_args.size(); ki < pdt_st->n_kind_params; ki++) {
                                         std::string kp_name(pdt_st->m_kind_params[ki]);
                                         ASR::symbol_t* kp_s = pdt_st->m_symtab->get_symbol(kp_name);
-                                        int64_t def_val = -1;
+                                        int64_t def_val = 0;
+                                        bool has_default = false;
                                         if (kp_s && ASR::is_a<ASR::Variable_t>(*kp_s)) {
                                             ASR::Variable_t* kp_v = ASR::down_cast<ASR::Variable_t>(kp_s);
                                             if (kp_v->m_symbolic_value) {
                                                 def_val = ASR::down_cast<ASR::IntegerConstant_t>(
                                                     ASRUtils::expr_value(kp_v->m_symbolic_value))->m_n;
+                                                has_default = true;
                                             }
                                         }
-                                        if (def_val < 0) {
+                                        if (!has_default) {
                                             diag.add(Diagnostic(
                                                 "Parameterized derived type '" + derived_type_name +
                                                 "' parameter '" + kp_name +
@@ -12834,7 +12948,7 @@ public:
                                                 }));
                                             throw SemanticAbort();
                                         }
-                                        sentinel_args.push_back(def_val);
+                                        sentinel_args.push_back({false, def_val});
                                     }
                                 }
                                 if (has_sentinel) {
@@ -13633,10 +13747,11 @@ public:
         std::vector<int64_t> kind_vals;
         bool deferred = false;
         for (size_t index : info.kind_indices) {
-            int64_t kind_val = ASRUtils::extract_kind<SemanticAbort>(
-                vals[index].m_value, vals[index].loc, diag);
+            int64_t kind_val = pdt_type_param_constant(vals[index].m_value,
+                vals[index].loc, ASRUtils::symbol_name(v),
+                ASRUtils::symbol_name(info.members[index]));
             kind_vals.push_back(kind_val);
-            deferred |= kind_val >= PDT_SENTINEL;
+            deferred |= depends_on_pdt_kind_param(vals[index].m_value);
         }
         // A component initializer can depend on the enclosing PDT's parameters.
         // Keep its constructor in the template until those parameters are bound.

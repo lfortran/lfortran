@@ -2452,3 +2452,35 @@ module cc1_pdt_component_mod
         integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
     end type cc1_pdt_component_t
 end module cc1_pdt_component_mod
+
+! Length type parameters of a parameterized derived type are supported only
+! with constant values.
+module cc1_pdt_len_mod
+    implicit none
+    type :: cc1_pdt_len_t(n)
+        integer, len :: n
+        integer :: a(n)
+    end type cc1_pdt_len_t
+    type :: cc1_pdt_len_kind_t(n)
+        integer, len :: n
+        real(n) :: x  ! {Error} length type parameter 'n' cannot be used as the kind of component 'x'
+    end type cc1_pdt_len_kind_t
+    type :: cc1_pdt_len_outer_t(m)
+        integer, len :: m
+        type(cc1_pdt_len_t(m + 1)) :: inner  ! {Error} type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
+    end type cc1_pdt_len_outer_t
+    type(cc1_pdt_len_t(:)), allocatable :: cc1_pdt_deferred  ! {Error} deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+contains
+    subroutine cc1_pdt_len_sub(v, m)
+        type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+        integer, intent(in) :: m
+        type(cc1_pdt_len_t(m)) :: w  ! {Error} value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+    end subroutine cc1_pdt_len_sub
+end module cc1_pdt_len_mod
+
+! The kind and len attributes only declare type parameters of a derived type.
+module cc1_pdt_param_attr_mod
+    implicit none
+    integer, kind :: cc1_kind_attr = 4  ! {Error} the kind attribute is only allowed in a derived type definition
+    integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
+end module cc1_pdt_param_attr_mod

@@ -2639,6 +2639,12 @@ RUN(NAME pdt_21 LABELS llvm)
 RUN(NAME pdt_22 LABELS gfortran llvm)
 RUN(NAME pdt_23 LABELS gfortran llvm)
 RUN(NAME pdt_24 LABELS gfortran llvm)
+RUN(NAME pdt_25 LABELS gfortran llvm)
+RUN(NAME pdt_26 LABELS gfortran llvm)
+# GFortran fails with an internal compiler error on a component of a
+# parameterized derived type with a length type parameter, and does not accept
+# `pdt(k)(...)` constructors, so this test is not labelled `gfortran`
+RUN(NAME pdt_27 LABELS llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

@@ -1130,6 +1130,58 @@ semantic error: Variable 'cc1_pdt_undefined_v' is not declared
 2388 |         integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
      |                        ^^^^^^^^^^^^^^^^^^^ 'cc1_pdt_undefined_v' is undeclared
 
+semantic error: length type parameter 'n' cannot be used as the kind of component 'x'
+    --> tests/errors/continue_compilation_1.f90:2402:20
+     |
+2402 |         real(n) :: x  ! {Error} length type parameter 'n' cannot be used as the kind of component 'x'
+     |                    ^ 
+
+semantic error: type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
+    --> tests/errors/continue_compilation_1.f90:2406:28
+     |
+2406 |         type(cc1_pdt_len_t(m + 1)) :: inner  ! {Error} type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
+     |                            ^^^^^ 
+
+semantic error: deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+    --> tests/errors/continue_compilation_1.f90:2408:24
+     |
+2408 |     type(cc1_pdt_len_t(:)), allocatable :: cc1_pdt_deferred  ! {Error} deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+     |                        ^ 
+
+semantic error: assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+    --> tests/errors/continue_compilation_1.f90:2411:28
+     |
+2411 |         type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+     |                            ^ 
+
+semantic error: value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+    --> tests/errors/continue_compilation_1.f90:2413:28
+     |
+2413 |         type(cc1_pdt_len_t(m)) :: w  ! {Error} value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+     |                            ^ 
+
+semantic error: Dummy argument 'v' not defined
+    --> tests/errors/continue_compilation_1.f90:2410:5 - 2414:34
+     |
+2410 |        subroutine cc1_pdt_len_sub(v, m)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2414 |        end subroutine cc1_pdt_len_sub
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the kind attribute is only allowed in a derived type definition
+    --> tests/errors/continue_compilation_1.f90:2420:5
+     |
+2420 |     integer, kind :: cc1_kind_attr = 4  ! {Error} the kind attribute is only allowed in a derived type definition
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the len attribute is only allowed in a derived type definition
+    --> tests/errors/continue_compilation_1.f90:2421:5
+     |
+2421 |     integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
