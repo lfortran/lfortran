@@ -256,10 +256,11 @@ specification action, that is, what the paper should say.
   - Intentionally invalid code must receive a located diagnostic.
 - **Implementation status.** At the time of writing, all eight programs,
   including `ocp.f90` (TD-16), and both module-only examples are accepted in
-  this branch. Most inline listings compile and run; inline-05, -06, -09 (an
-  `implements` statement without traits, and initializer requirements met by
-  existing bindings, TD-33), inline-12, -13 (TD-13), inline-17 (TD-17) and
-  inline-20 (TD-18) wait for compiler features.
+  this branch. Of the 35 core inline listings, recorded in
+  `integration_tests/traits_paper_inline/provenance.json`, 33 are accepted:
+  `traits_paper_inline.py` checks 31 in normal and fast modes, and
+  `traits_paper_manual_values.f90` accepts inline-25 and inline-28.
+  inline-17 (TD-17) and inline-20 (TD-18) wait for compiler features.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
   TD-32 are candidates for corrections of the paper.
 
@@ -515,11 +516,14 @@ specification action, that is, what the paper should say.
   - LFortran represents `initial ::` bindings and such interfaces alike, as one
     generic constructor interface of the type, but the rule is a decision about
     the language, not a side effect of that representation.
-- **Implementation status.** Being implemented together with the paper's rule
-  for existing initializers (inline-06, inline-09); not yet in this branch,
-  which considers only the `initial ::` procedures of the acknowledging
-  statement. The candidate implementation counts the constructor interfaces
-  declared in the program unit that declares the type.
+- **Implementation status.** Implemented, together with the paper's rule for
+  existing initializers (inline-06, inline-09). The specifics of a standard
+  constructor interface named like the type and declared in the program unit
+  that declares it, private ones included, implement a matching initializer
+  requirement when their result is exactly `type(MyType)`; an acknowledgement
+  in another module references them without modifying the type's module.
+  Nominal conformance is still required, and the implicit structure
+  constructor is not counted (OQ-05).
 - **Specification action.** List the procedures that can implement an
   initializer requirement: `initial ::` procedures, matching specifics of a
   standard constructor interface (this decision), and possibly the implicit
@@ -644,9 +648,13 @@ specification action, that is, what the paper should say.
   initializer bindings satisfy a later acknowledgement is explicit (see "Rules
   the paper already states"); which procedures can implement an initializer
   requirement is recorded in TD-33.
-- **Implementation status.** Being implemented; not yet in this branch, which
-  still rejects a trait object of a trait with an initializer requirement as a
-  generic-constraint-only trait.
+- **Implementation status.** Implemented: a trait whose only requirements
+  without a receiver are initializers declares trait objects (inline-12 and
+  inline-13). Its initializer requirements are checked when a conformance is
+  established and have no slot in the view, so a view of `ICastable` alone has
+  none and is inspected with `SELECT TYPE`. Views stay read-only (TD-10), and
+  traits with operator requirements or associated types stay generic
+  constraints only.
 - **Specification action.** State whether initializer requirements are part of
   a trait object's interface. If not, say that they are conformance-only. If
   they are, define how a value of the dynamic type is constructed through a
@@ -1151,8 +1159,8 @@ that they are not reopened as ambiguities.
 | Conformance is nominal: matching names and signatures alone do not make a type conform. Structural subtyping is only an Outlook idea. | `sect:implementing_traits`; lines 2703-2713; `sect:structural_subtyping` | Implemented |
 | Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) |
 | A child trait is a subtype of each of its parents. | lines 1150-1160 | Implemented |
-| `implements :: T`, without traits, binds initializers and methods to a type. | `sect:adding_methods` (lines 1241-1301), inline-05 | Being implemented |
-| Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented for methods; being implemented for initializers (TD-33) |
+| `implements :: T`, without traits, binds initializers and methods to a type. | `sect:adding_methods` (lines 1241-1301), inline-05 | Implemented for a derived type of the same program unit; other targets and binding forms are diagnosed as not implemented yet |
+| Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented (TD-33) |
 | An `implements` statement cannot target an abstract type and does not accept `deferred` bindings; the type attribute can be used with abstract types, which may leave obligations to their concrete descendants. | lines 1227-1236, 1597-1603 | Implemented |
 | `extends` precedes `implements` in a type definition. | line 1544 | Implemented |
 | A sealed type cannot be extended, and its passed-object dummies may use TYPE instead of CLASS. | lines 1505-1513 | Implemented |

@@ -169,7 +169,9 @@ the result of the initializer, does not prevent the view. Values are still
 constructed through the type, `MyType(n)`, or a generic `T(n)`. A generic
 binder constrained by such a trait is not erased through the view
 (`ASRUtils::trait_parameter_contract` is null for a trait with requirements
-without a receiver) and stays a static specialization. The predicates are
+without a receiver): it is a static specialization or, in a runtime generic
+message, is erased with its conformance's dictionary like any protocol binder
+(see "Open protocol runtime generic methods"). The predicates are
 `ASRUtils::trait_member_is_initializer`, `trait_has_operations` and
 `trait_runtime_view_admissible`; the verifier requires that a runtime contract
 belongs to an admissible trait and has one slot per message, none per
@@ -187,16 +189,18 @@ procedure that matches no requirement are diagnosed. An initializer
 requirement can also be bound to an initializer the type already has: the
 specifics of the generic that overloads its constructor in the unit that
 declares it, which are the `initial ::` bindings of its definition and of the
-implements statements, with or without traits, of that unit. Since these
-bindings are represented like an ordinary generic interface of the type's
-name, the procedures of such an interface in that unit count as well. Such a
+implements statements, with or without traits, of that unit. By the approved
+rule TD-33 of the [decisions record](traits-decisions.md), the specifics of a
+standard interface named like the type in that unit count as well. Such a
 procedure implements the requirement only if its result is exactly a
 nonpointer, nonallocatable scalar `type(MyType)` and its dummy arguments match
 the requirement's in type, kind, rank, intent, optionality and the value
 attribute; any other procedure of the interface, such as one returning
-another type or an allocatable result, remains an ordinary overload. The
-implicit structure constructor is never an initializer, and the type conforms
-only where an `implements` statement or attribute names the trait. This applies
+another type or an allocatable result, remains an ordinary overload. In this
+prototype the implicit structure constructor does not implement an
+initializer requirement; whether it can is an open question of the proposal
+(OQ-05). The type conforms only where an `implements` statement or attribute
+names the trait. This applies
 whether the type's `implements` attribute adopts the trait (paper inline-09)
 or a later implements statement acknowledges it, also an empty one in another
 module that only imports the type (paper inline-06). The same signature
@@ -1311,8 +1315,8 @@ The broader proposal is not yet implemented. In particular, pointer trait
 results, mutating generic or runtime trait calls, associated-type projections
 in generic code, unrestricted intrinsic capabilities,
 generic derived types beyond the boundaries described in their section, runtime
-views over operator requirements, runtime generic methods over initializer and
-operator requirements,
+views over operator requirements, runtime generic methods outside the erased
+subset of open protocols,
 and unrestricted generic-method signatures are separate implementation stages.
 Existing `:=` inferred assignment is a different extension and is not required
 to use static traits; in a generic body it also declares a variable of a type
