@@ -4503,6 +4503,11 @@ filename = "../integration_tests/gpu_decline_15.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_16.f90"
+gpu_offload_cuda = true
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 

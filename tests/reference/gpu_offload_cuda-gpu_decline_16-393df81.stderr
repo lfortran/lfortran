@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the array passed for the allocatable dummy argument 'r' of 'pick', on the device heap is not supported yet
+  --> tests/../integration_tests/gpu_decline_16.f90:21:1 - 23:6
+   |
+21 |    do concurrent (k = 1:2)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+23 |    end do
+   | ...^^^^^^ the array passed for the allocatable dummy argument 'r' of 'pick', on the device heap is not supported yet
