@@ -8,6 +8,7 @@
 
 #include <cctype>
 #include <deque>
+#include <functional>
 
 namespace LCompilers {
 
@@ -252,6 +253,14 @@ namespace LCompilers {
         }
         return global_scope;
     }
+
+    // Runs `instantiate` and marks every procedure it added to the
+    // translation unit's own scope Private. Such a procedure is a helper
+    // instantiated for calls in this translation unit only; another
+    // translation unit instantiates its own under the same name, so the
+    // helpers must not clash at link time.
+    void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
+        const std::function<void()> &instantiate);
 
 
         ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,

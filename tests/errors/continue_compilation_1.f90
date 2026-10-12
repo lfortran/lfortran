@@ -2309,6 +2309,77 @@ function common_object_result_error() result(r)
     r = 1
 end function common_object_result_error
 
+! A name made accessible by use association cannot be an equivalence object,
+! renamed or subscripted, whether or not its set is connected to a common
+! block (Fortran 2023 8.10.1.1). Each such set is diagnosed once.
+module cc1_equivalence_use_mod
+    implicit none
+    integer :: cc1_eu_cnt
+    integer :: cc1_eu_arr(3)
+end module cc1_equivalence_use_mod
+
+subroutine equivalence_use_associated_error()
+    use cc1_equivalence_use_mod, only: cc1_eu_cnt, cc1_eu_arr, cc1_eu_c => cc1_eu_cnt
+    implicit none
+    integer :: i, j, k, l
+    common /cc1_equivalence_use_blk/ l
+    equivalence (cc1_eu_cnt, i)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (j, cc1_eu_c)  ! {Error} 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_arr(2), k)  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    equivalence (cc1_eu_cnt, l)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+end subroutine equivalence_use_associated_error
+
+block data equivalence_use_associated_block_data_error
+    use cc1_equivalence_use_mod, only: cc1_eu_arr
+    implicit none
+    integer :: m
+    common /cc1_equivalence_use_bd_blk/ m
+    equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+end block data equivalence_use_associated_block_data_error
+
+! A function reference through a dummy procedure or a procedure pointer checks
+! its actual arguments against the interface of the procedure.
+module cc1_proc_variable_call_mod
+    implicit none
+    abstract interface
+        real function cc1_proc_variable_iface(a)
+            real, intent(in) :: a
+        end function cc1_proc_variable_iface
+    end interface
+contains
+    real function cc1_proc_variable_call(f, i)
+        procedure(cc1_proc_variable_iface) :: f
+        integer, intent(in) :: i
+        procedure(cc1_proc_variable_iface), pointer :: p
+        p => f
+        cc1_proc_variable_call = f(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+        cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    end function cc1_proc_variable_call
+end module cc1_proc_variable_call_mod
+
+! A function reference through a dummy procedure checks the number of its
+! actual arguments against the interface of the procedure.
+module cc1_proc_variable_count_mod
+    use cc1_proc_variable_call_mod, only: cc1_proc_variable_iface
+    implicit none
+contains
+    real function cc1_proc_variable_count(f)
+        procedure(cc1_proc_variable_iface) :: f
+        cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+        cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+    end function cc1_proc_variable_count
+end module cc1_proc_variable_count_mod
+
+subroutine block_derived_type_bound_procedure()
+    block
+        type :: bdtbp_t
+            integer :: a
+        contains
+            procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+        end type
+    end block
+end subroutine
+
 ! An elemental procedure without the IMPURE prefix is pure (Fortran 2018
 ! 15.8.1), so it cannot do output; an impure elemental one can.
 elemental integer function cc1_elemental_print_error(n)

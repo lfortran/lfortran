@@ -1030,6 +1030,36 @@ semantic error: function result 'r' cannot be in a common block
 2307 |     integer :: r
      |                ^ 
 
+semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2326:18
+     |
+2326 |     equivalence (cc1_eu_cnt, i)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2327:21
+     |
+2327 |     equivalence (j, cc1_eu_c)  ! {Error} 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                     ^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2328:18
+     |
+2328 |     equivalence (cc1_eu_arr(2), k)  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2329:18
+     |
+2329 |     equivalence (cc1_eu_cnt, l)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2337:21
+     |
+2337 |     equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                     ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3257,8 +3287,38 @@ semantic error: type mismatch in pointer assignment, the types must be compatibl
 2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
      |     ^^    ^^ type mismatch (integer(4) and character(len=5))
 
-semantic error: PRINT statement is not allowed inside a PURE procedure
-    --> tests/errors/continue_compilation_1.f90:2317:5
+semantic error: Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    --> tests/errors/continue_compilation_1.f90:2355:36
      |
-2317 |     print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
+2355 |         cc1_proc_variable_call = f(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+     |                                    ^ 
+
+semantic error: Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    --> tests/errors/continue_compilation_1.f90:2356:36
+     |
+2356 |         cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+     |                                    ^ 
+
+semantic error: More actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_1.f90:2368:37
+     |
+2368 |         cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+     |                                     ^^^^^^^^ 
+
+semantic error: Missing actual argument for argument 'a'
+    --> tests/errors/continue_compilation_1.f90:2369:35
+     |
+2369 |         cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+     |                                   ^^^ 
+
+semantic error: type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+    --> tests/errors/continue_compilation_1.f90:2378:13
+     |
+2378 |             procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: PRINT statement is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:2388:5
+     |
+2388 |     print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
      |     ^^^^^^^^^^ 

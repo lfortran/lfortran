@@ -514,7 +514,15 @@ namespace LCompilers {
             } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
                 ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::extract_type(asr_type));
-                if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
+                if (alloc_type != nullptr && ASRUtils::is_class_type(alloc_type)) {
+                    // The dynamic type is that of a polymorphic mold, known
+                    // only at run time: allocate ONE wrapper with NULL data,
+                    // and the caller sets its vptr and data from the mold.
+                    llvm::Type* const class_type = llvm_utils->getClassType(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)));
+                    llvm::Value* wrapper_ptr = llvm_utils->alloc_zeroed_type(class_type);
+                    builder->CreateStore(wrapper_ptr, ptr2firstptr);
+                } else if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
                         && !ASR::is_a<ASR::StructType_t>(*alloc_type)) {
                     // Unlimited polymorphic array with intrinsic type spec
                     // (e.g., allocate(integer :: arr(5)))

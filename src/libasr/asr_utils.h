@@ -180,6 +180,9 @@ bool is_finalizable_function_reference(ASR::expr_t* expr);
 // Whether `expr` or one of its subexpressions is such a reference.
 bool contains_finalizable_function_reference(ASR::expr_t* expr);
 
+// Whether `expr` or one of its subexpressions is a function reference.
+bool contains_function_reference(ASR::expr_t* expr);
+
 // Whether `x` contains no other statement and does not transfer control
 // elsewhere, so that it can be made the body of a BLOCK that is left only
 // by completing it (or by terminating the program).
@@ -6540,7 +6543,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                             ASRUtils::symbol_get_past_external(struct_t));
         LCOMPILERS_ASSERT(struct_t_module != nullptr);
 
-        if (ASR::is_a<ASR::Program_t>(*struct_t_module)) {
+        if (ASR::is_a<ASR::Program_t>(*struct_t_module) ||
+                ASR::is_a<ASR::Block_t>(*struct_t_module)) {
             return struct_member;
         }
 
