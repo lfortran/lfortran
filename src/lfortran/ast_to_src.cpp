@@ -881,6 +881,22 @@ public:
         s = r;
     }
 
+    void visit_OperatorProcedure(const OperatorProcedure_t &x) {
+        std::string r = syn(gr::String) + "procedure" + syn();
+        for (size_t i = 0; i < x.n_attr; i++) {
+            r += ", ";
+            visit_decl_attribute(*x.m_attr[i]);
+            r += s;
+        }
+        r += " :: operator(" + intrinsicop2str(x.m_op) + ") => ";
+        for (size_t i = 0; i < x.n_names; i++) {
+            if (i) r += ", ";
+            r += x.m_names[i];
+        }
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
+        s = r;
+    }
+
     void visit_Private(const Private_t &x) {
         std::string r;
         r += syn(gr::Type);
@@ -1130,6 +1146,34 @@ public:
             r += s;
         }
         s = r + "\n";
+    }
+
+    void visit_InterfaceInitial(const InterfaceInitial_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("initial");
+        r += syn();
+        r.append("(");
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i) r.append(", ");
+            this->visit_arg(x.m_args[i]);
+            r.append(s);
+        }
+        r.append(")");
+        r += x.m_trivia ? print_trivia_inside(*x.m_trivia) : "\n";
+        if (indent_unit) inc_indent();
+        r += format_items(x);
+        if (indent_unit) dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end initial");
+        r += syn();
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
+        s = r;
+    }
+
+    void visit_InterfaceOperator(const InterfaceOperator_t &x) {
+        this->visit_program_unit(*x.m_proc);
     }
 
     void visit_Trait(const Trait_t &x) {
@@ -1853,6 +1897,7 @@ public:
             ATTRTYPE(Save)
             ATTRTYPE(Sealed)
             ATTRTYPE(Sequence)
+            ATTRTYPE(Static)
             ATTRTYPE(Target)
             ATTRTYPE(Value)
             ATTRTYPE(Volatile)

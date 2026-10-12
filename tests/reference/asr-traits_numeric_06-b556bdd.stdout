@@ -4200,6 +4200,7 @@
                                                     IntrinsicTypeSet
                                                     [(Integer 4)
                                                     (Real 8)]
+                                                    []
                                                 ),
                                             advance:
                                                 (Function
@@ -5179,6 +5180,7 @@
                                                     IntrinsicTypeSet
                                                     [(Integer 4)
                                                     (Real 8)]
+                                                    []
                                                 ),
                                             inline_shift:
                                                 (Function
@@ -6435,6 +6437,7 @@
                                                     IntrinsicTypeSet
                                                     [(Integer 4)
                                                     (Real 8)]
+                                                    []
                                                 ),
                                             mean:
                                                 (Function

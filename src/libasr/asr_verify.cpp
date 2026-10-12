@@ -1001,7 +1001,37 @@ public:
             check(ASRUtils::get_FunctionType(*proc_fn)->m_deftype == ASR::deftypeType::Interface,
                 "asr.verify.trait_requirement.procedure_is_interface",
                 "A trait requirement procedure must be an interface procedure");
-            if (member) {
+            if (member && ASRUtils::trait_member_operation(member)) {
+                // An initializer or operator requirement has no receiver; the
+                // binder stands for `itself`.
+                ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
+                check(proc_fn->n_args == member_fn->n_args &&
+                        bool(proc_fn->m_return_var) == bool(member_fn->m_return_var),
+                    "asr.verify.trait_requirement.operation_signature",
+                    "An initializer or operator requirement has its member's arguments");
+                check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
+                    "asr.verify.trait_requirement.procedure_is_restriction",
+                    "A normalized trait requirement must be a restriction procedure");
+                auto same = [&](ASR::expr_t *required, ASR::expr_t *actual) {
+                    ASR::ttype_t *a = ASRUtils::expr_type(required);
+                    ASR::ttype_t *b = ASRUtils::expr_type(actual);
+                    if (!ASRUtils::contains_trait_itself(a)) {
+                        return ASRUtils::trait_types_equal(required, actual);
+                    }
+                    return ASRUtils::extract_n_dims_from_ttype(a) ==
+                            ASRUtils::extract_n_dims_from_ttype(b) &&
+                        ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(b));
+                };
+                for (size_t i = 0; i < proc_fn->n_args && i < member_fn->n_args; i++) {
+                    check(same(member_fn->m_args[i], proc_fn->m_args[i]),
+                        "asr.verify.trait_requirement.operation_signature",
+                        "An initializer or operator requirement has its member's argument types");
+                }
+                check(!member_fn->m_return_var || !proc_fn->m_return_var ||
+                        same(member_fn->m_return_var, proc_fn->m_return_var),
+                    "asr.verify.trait_requirement.operation_signature",
+                    "An initializer or operator requirement has its member's result type");
+            } else if (member) {
                 ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
                 check(proc_fn->n_args == member_fn->n_args + 1,
                     "asr.verify.trait_requirement.normalized_arg_count",
@@ -1185,6 +1215,13 @@ public:
             }
         }
         for (auto &a : x.m_symtab->get_scope()) {
+            if (ASRUtils::is_trait_type_declaration(*a.second)) {
+                require_id(x.m_kind == ASR::trait_kindType::UniversalTrait,
+                    "asr.verify.trait.itself_universal",
+                    "Only a universal trait declares its implementing type");
+                this->visit_symbol(*a.second);
+                continue;
+            }
             require_id(ASRUtils::trait_method_function(a.second) != nullptr,
                 "asr.verify.trait.member_is_function",
                 "Trait '" + std::string(x.m_name) + "' members must be abstract procedures");
@@ -1203,6 +1240,42 @@ public:
                 "Trait '" + std::string(x.m_name) +
                 "' members must not have a body");
             this->visit_symbol(*a.second);
+        }
+        require_id(x.n_operations == 0 || (x.m_operations &&
+                x.m_kind == ASR::trait_kindType::UniversalTrait),
+            "asr.verify.trait.operations_universal",
+            "Only a universal trait has initializer and operator requirements");
+        for (size_t i = 0; i < x.n_operations; i++) {
+            const auto &operation = x.m_operations[i];
+            ASR::Function_t *member = operation.m_member &&
+                ASR::is_a<ASR::Function_t>(*operation.m_member)
+                ? ASR::down_cast<ASR::Function_t>(operation.m_member) : nullptr;
+            require_id(member && operation.m_operation &&
+                    x.m_symtab->get_symbol(member->m_name) == operation.m_member,
+                "asr.verify.trait.operation_member",
+                "A trait operation must be a nongeneric member function of that trait");
+            for (size_t j = 0; j < i; j++) {
+                require_id(x.m_operations[j].m_member != operation.m_member,
+                    "asr.verify.trait.operation_unique",
+                    "A trait member has at most one operation");
+            }
+            bool conversion = ASR::is_a<ASR::TypeSetConversion_t>(*operation.m_operation);
+            require_id(member->m_return_var && (!conversion || (
+                    ASRUtils::contains_trait_itself(ASRUtils::expr_type(member->m_return_var)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(member->m_return_var)))),
+                "asr.verify.trait.operation_result",
+                "An initializer requirement returns the implementing type and an operator "
+                "requirement is a function");
+            if (!ASR::is_a<ASR::TypeSetConversion_t>(*operation.m_operation)) {
+                bool itself = false;
+                for (size_t j = 0; j < member->n_args; j++) {
+                    itself |= ASRUtils::contains_trait_itself(
+                        ASRUtils::expr_type(member->m_args[j]));
+                }
+                require_id(member->n_args == 2 && itself,
+                    "asr.verify.trait.operator_operands",
+                    "A binary operator requirement has two operands, one of them itself");
+            }
         }
         require(x.n_parents == 0 || x.m_parents != nullptr,
             "Trait parent references must be present");
@@ -1223,6 +1296,7 @@ public:
             }
             std::map<std::string, ASR::Function_t*> methods;
             for (ASR::symbol_t *member : hierarchy.members) {
+                if (ASRUtils::trait_member_operation(member)) continue;
                 auto *method = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(method->m_name, method);
                 if (!previous.second) {
@@ -1665,6 +1739,25 @@ public:
                     "A generic requirement's function must be a bodyless restriction");
             } else if (!message) {
                 function = ASR::down_cast<ASR::Function_t>(procedure);
+            }
+            if (ASRUtils::trait_member_operation(member)) {
+                // No receiver: the constraint's parameter stands for itself.
+                std::string binder = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::symbol_type(parameter))->m_param;
+                auto of_binder = [&](ASR::expr_t *value) {
+                    ASR::ttype_t *type = ASRUtils::extract_type(ASRUtils::expr_type(value));
+                    return !ASR::is_a<ASR::TypeParameter_t>(*type) ||
+                        std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ==
+                            binder;
+                };
+                bool binds = !function->m_return_var || of_binder(function->m_return_var);
+                for (size_t j = 0; j < function->n_args; j++) {
+                    binds = binds && of_binder(function->m_args[j]);
+                }
+                require_id(binds, "asr.verify.trait_constraint.operation_binder",
+                    "An initializer or operator requirement takes the constraint's "
+                    "parameter for itself");
+                continue;
             }
             ASR::expr_t *receiver = function->n_args ? function->m_args[0] : nullptr;
             require_id(receiver && ASR::is_a<ASR::Var_t>(*receiver) &&
@@ -2515,14 +2608,21 @@ public:
                 (!required_signature->m_elemental || actual_signature->m_elemental),
             "asr.verify.trait_witness.procedure_attributes",
             "A witness binding must preserve required pure and elemental attributes", loc);
-        size_t receiver = procedure->n_args;
+        // The subroutine_from_function pass lowers an aggregate result of a
+        // static binding's procedure to a trailing dummy argument.
+        size_t ordinary = required->n_args + (binding.m_is_nopass ? 0 : 1);
+        ASR::expr_t *lowered_result = !runtime && required->m_return_var &&
+            !procedure->m_return_var && procedure->n_args == ordinary + 1
+            ? procedure->m_args[ordinary] : nullptr;
+        size_t n_args = procedure->n_args - (lowered_result ? 1 : 0);
+        size_t receiver = n_args;
         if (!binding.m_is_nopass) {
-            for (size_t i = 0; i < procedure->n_args; i++) {
+            for (size_t i = 0; i < n_args; i++) {
                 auto *arg = ASRUtils::EXPR2VAR(procedure->m_args[i]);
                 if (binding.m_self_argument &&
                         std::string(arg->m_name) == binding.m_self_argument) receiver = i;
             }
-            require_with_loc_id(receiver < procedure->n_args,
+            require_with_loc_id(receiver < n_args,
                 "asr.verify.trait_witness.receiver",
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
@@ -2532,8 +2632,7 @@ public:
                 "A witness receiver must borrow its nominal implementing type "
                 "or a polymorphic ancestor read-only", loc);
         }
-        require_with_loc_id(procedure->n_args ==
-                required->n_args + (binding.m_is_nopass ? 0 : 1),
+        require_with_loc_id(n_args == ordinary,
             "asr.verify.trait_witness.binding_signature",
             "A witness binding must have the message's ordinary arguments", loc);
         std::map<symbol_t*, symbol_t*> parameters;
@@ -2542,18 +2641,19 @@ public:
         require_with_loc_id(generic_mismatch.empty(),
             "asr.verify.trait_binding.generic_contract",
             "A generic binding must preserve its universal contract: " + generic_mismatch, loc);
-        for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
+        for (size_t i = 0, j = 0; i < n_args; i++) {
             if (i == receiver) continue;
             parameters.emplace(
                 &ASRUtils::EXPR2VAR(required->m_args[j++])->base,
                 &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
         }
-        for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
+        for (size_t i = 0, j = 0; i < n_args; i++) {
             if (i == receiver) continue;
             auto *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
             auto *formal = ASRUtils::EXPR2VAR(required->m_args[j]);
-            require_with_loc_id(ASRUtils::trait_types_equal(
-                        required->m_args[j], procedure->m_args[i], parameters) &&
+            require_with_loc_id(ASRUtils::trait_implemented_types_equal(
+                        required->m_args[j], procedure->m_args[i], type_declaration,
+                        implementing_type, parameters) &&
                     actual->m_intent == formal->m_intent &&
                     actual->m_presence == formal->m_presence &&
                     actual->m_value_attr == formal->m_value_attr,
@@ -2561,9 +2661,14 @@ public:
                 "A witness binding must preserve ordinary argument types and association attributes", loc);
             j++;
         }
-        require_with_loc_id(bool(required->m_return_var) == bool(procedure->m_return_var) &&
-                (!required->m_return_var || ASRUtils::trait_types_equal(
-                    required->m_return_var, procedure->m_return_var, parameters)),
+        ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
+        require_with_loc_id(bool(required->m_return_var) == bool(result) &&
+                (!lowered_result || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
+                    intentType::Out || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
+                    intentType::InOut) &&
+                (!required->m_return_var || ASRUtils::trait_implemented_types_equal(
+                    required->m_return_var, result, type_declaration,
+                    implementing_type, parameters)),
             "asr.verify.trait_witness.binding_signature",
             "A witness binding must preserve its message's result", loc);
     }

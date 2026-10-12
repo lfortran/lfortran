@@ -2035,6 +2035,63 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*end_name*/ END_NAME_LOC(CE_END(ce)), \
         END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
+static inline std::string intrinsic_operator_spelling(intrinsicopType op) {
+    switch (op) {
+        case intrinsicopType::AND: return ".and.";
+        case intrinsicopType::OR: return ".or.";
+        case intrinsicopType::XOR: return ".xor.";
+        case intrinsicopType::EQV: return ".eqv.";
+        case intrinsicopType::NEQV: return ".neqv.";
+        case intrinsicopType::PLUS: return "+";
+        case intrinsicopType::MINUS: return "-";
+        case intrinsicopType::STAR: return "*";
+        case intrinsicopType::DIV: return "/";
+        case intrinsicopType::POW: return "**";
+        case intrinsicopType::NOT: return ".not.";
+        case intrinsicopType::EQ: return "==";
+        case intrinsicopType::NOTEQ: return "/=";
+        case intrinsicopType::LT: return "<";
+        case intrinsicopType::LTE: return "<=";
+        case intrinsicopType::GT: return ">";
+        case intrinsicopType::GTE: return ">=";
+        case intrinsicopType::CONCAT: return "//";
+    }
+    return "";
+}
+
+// A trait's operator requirement. The function is named as it is spelled,
+// `operator(op)`; END FUNCTION may repeat that name.
+static inline ast_t *TRAIT_OPERATOR2(Allocator &al, const Vec<ast_t*> &prefix,
+        intrinsicopType op, const Vec<ast_t*> &args, ast_t *return_var,
+        ast_t *trivia, const Vec<ast_t*> &decl_stmts, intrinsicopType end_op,
+        Location &l, LCompilers::diag::Diagnostics &diag) {
+    if (end_op != (intrinsicopType)-1 && end_op != op) {
+        diag.add(LCompilers::diag::Diagnostic(
+            "End function name does not match function name",
+            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser,
+            {LCompilers::diag::Label("", {l})}));
+    }
+    std::string name = "operator(" + intrinsic_operator_spelling(op) + ")";
+    Location *name_loc = al.make_new<Location>(l);
+    ast_t *function = FUNCTION2(al, l, LCompilers::s2c(al, name),
+        ARGS(al, args), args.size(),
+        prefix.size() ? VEC_CAST(prefix, decl_attribute) : nullptr, prefix.size(),
+        EXPR_OPT(return_var), nullptr, trivia_cast(trivia), decl_stmts,
+        nullptr, 0, nullptr, 0, name_loc, name_loc, 0, l, diag);
+    return make_InterfaceOperator_t(al, l, op, down_cast<program_unit_t>(function));
+}
+
+#define TRAIT_OPERATOR(prefix, op, args, return_var, trivia, decl_stmts, \
+        end_op, l) TRAIT_OPERATOR2(p.m_a, prefix, op, args, return_var, \
+        trivia, decl_stmts, end_op, l, p.diag)
+#define TRAIT_INITIAL(args, decl_stmts, trivia, l) make_InterfaceInitial_t( \
+        p.m_a, l, ARGS(p.m_a, args), args.size(), DECLS(decl_stmts), \
+        decl_stmts.size(), trivia_cast(trivia))
+#define OPERATOR_PROCEDURE(attr, op, names, trivia, l) \
+        make_OperatorProcedure_t(p.m_a, l, VEC_CAST(attr, decl_attribute), \
+        attr.size(), op, REDUCE_ARGS(p.m_a, names), names.size(), \
+        trivia_cast(trivia))
+
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, \
         bind, trivia, decl_stmts, end, l) \
     FUNCTION2(p.m_a, l, \

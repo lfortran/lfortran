@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    198 // shift/reduce conflicts
+%expect    200 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -389,6 +389,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_UNION_TYPE
 %token <string> KW_END_UNION_TYPE
 %token <string> KW_INITIAL
+%token <string> KW_END_INITIAL
+%token <string> KW_ENDINITIAL
+%token <string> KW_STATIC
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
@@ -419,6 +422,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> implements_decl
 %type <ast> implements_intrinsic_type
 %type <ast> implements_intrinsic_end
+%type <ast> trait_initial
+%type <ast> trait_operator
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
 %type <ast> derived_type_modifier
@@ -606,6 +611,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_item
 %type <vec_ast> trait_body finite_type_set
 %type <interface_op_type> operator_type
+%type <interface_op_type> end_function_operator
 %type <ast> write_arg
 %type <argstarkw> write_arg2
 %type <vec_argstarkw> write_arg_list
@@ -810,9 +816,40 @@ interface_body
 
 trait_body
     : trait_body interface_item { $$ = $1; LIST_ADD($$, $2); }
+    | trait_body trait_initial { $$ = $1; LIST_ADD($$, $2); }
+    | trait_body trait_operator { $$ = $1; LIST_ADD($$, $2); }
     | trait_body finite_type_set sep {
         $$ = $1; LIST_ADD($$, INTERFACE_TYPE_SET(p.m_a, $2, @2)); }
     | %empty { LIST_NEW($$); }
+    ;
+
+trait_initial
+    : KW_INITIAL "(" id_list_opt ")" sep decl_statements end_initial sep {
+            $$ = TRAIT_INITIAL($3, $6, TRIVIA($5, $8, @$), @$); }
+    ;
+
+end_initial
+    : KW_END_INITIAL
+    | KW_ENDINITIAL
+    ;
+
+trait_operator
+    : KW_FUNCTION KW_OPERATOR "(" operator_type ")" "(" id_list_opt ")"
+        result_opt sep decl_statements end_function_operator sep {
+            Vec<ast_t*> prefix; LIST_NEW(prefix);
+            $$ = TRAIT_OPERATOR(prefix, $4, $7, $9, TRIVIA($10, $13, @$),
+                $11, $12, @$); }
+    | fn_mod_plus KW_FUNCTION KW_OPERATOR "(" operator_type ")" "(" id_list_opt ")"
+        result_opt sep decl_statements end_function_operator sep {
+            $$ = TRAIT_OPERATOR($1, $5, $8, $10, TRIVIA($11, $14, @$),
+                $12, $13, @$); }
+    ;
+
+end_function_operator
+    : KW_END_FUNCTION { $$ = OPERATOR_INVALID(@$); }
+    | KW_ENDFUNCTION { $$ = OPERATOR_INVALID(@$); }
+    | KW_END_FUNCTION KW_OPERATOR "(" operator_type ")" { $$ = $4; }
+    | KW_ENDFUNCTION KW_OPERATOR "(" operator_type ")" { $$ = $4; }
     ;
 
 finite_type_set
@@ -1074,6 +1111,11 @@ procedure_decl
     | KW_INITIAL "::" id_list sep {
             $$ = make_InitialProcedure_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $3),
                 $3.size(), trivia_cast(TRIVIA_AFTER($4, @$))); }
+    | KW_PROCEDURE proc_modifiers KW_OPERATOR "(" operator_type ")" "=>" id_list sep {
+            $$ = OPERATOR_PROCEDURE($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
+    | KW_PROCEDURE proc_modifiers KW_OPERATOR "(" "/)" "=>" id_list sep {
+            $$ = OPERATOR_PROCEDURE($2, OPERATOR(DIV, @$), $7,
+                TRIVIA_AFTER($8, @$), @$); }
     ;
 
 access_spec_list
@@ -1126,6 +1168,7 @@ proc_modifier
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
     | KW_DEFERRED { $$ = SIMPLE_ATTR(Deferred, @$); }
     | KW_NON_OVERRIDABLE { $$ = SIMPLE_ATTR(NonDeferred, @$); }
+    | KW_STATIC { $$ = SIMPLE_ATTR(Static, @$); }
     ;
 
 
@@ -2964,6 +3007,9 @@ id
     | KW_INCLUDE { $$ = SYMBOL($1, @$); }
     | KW_INOUT { $$ = SYMBOL($1, @$); }
     | KW_INITIAL { $$ = SYMBOL($1, @$); }
+    | KW_END_INITIAL { $$ = SYMBOL($1, @$); }
+    | KW_ENDINITIAL { $$ = SYMBOL($1, @$); }
+    | KW_STATIC { $$ = SYMBOL($1, @$); }
     | KW_INQUIRE { $$ = SYMBOL($1, @$); }
     | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
     | KW_INTEGER { $$ = SYMBOL($1, @$); }

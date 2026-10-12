@@ -98,7 +98,10 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
-    | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types)
+    -- operations are the members, in declaration order, that have no receiver:
+    -- initializer (TypeSetConversion) and operator requirements. Every other
+    -- member is an ordinary message.
+    | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types, trait_operation* operations)
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
     | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots, bool anonymous)
@@ -443,5 +446,10 @@ type_set_witness
 
 type_set_requirement
     = (symbol procedure, type_set_operation operation, type_set_witness* witnesses)
+
+-- A receiver-less requirement of a universal trait: `member` is the trait's
+-- Function stating its signature, with `itself` for the implementing type.
+trait_operation
+    = (symbol member, type_set_operation operation)
 
 }

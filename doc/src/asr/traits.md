@@ -78,9 +78,74 @@ original functions directly, not receiver adapters or new virtual slots, so
 existing function-result ownership and finalization apply. AST printing retains
 the `initial ::` syntax. `initial` remains usable as an ordinary identifier.
 
-This first initializer slice covers bindings in derived-type definitions.
-Initializer requirements inside traits, retroactive initializer blocks and
-parameterized initializer bindings remain separate work.
+An `initial ::` binding in an `implements` statement for a type of the same
+module overloads the type's constructor in the same way. Parameterized
+initializer bindings remain separate work.
+
+## Initializer and operator requirements
+
+A trait can require an initializer and intrinsic operators of the type that
+implements it. `type(itself)` names that type in their signatures:
+
+```fortran
+abstract interface :: IReducible
+    initial(n)
+        integer, intent(in) :: n
+    end initial
+    elemental function operator(*)(lhs, rhs) result(res)
+        type(itself), intent(in) :: lhs, rhs
+        type(itself) :: res
+    end function operator(*)
+    elemental function operator(*)(lhs, rhs) result(res)
+        type(itself), intent(in) :: lhs
+        integer, intent(in) :: rhs
+        type(itself) :: res
+    end function operator(*)
+end interface IReducible
+```
+
+An initializer declares no result; its result is the implementing type. An
+operator requirement is a function of two operands, at least one of type
+`itself`, for `+`, `-`, `*`, `/`, `**` or a comparison. Requirements of one
+operator, or several initializers, can be overloaded with different
+signatures. Neither has a receiver. `type(itself)` in an ordinary message is
+not implemented yet.
+
+A derived type binds them in an `implements` statement of its module:
+`initial :: f` lists initializers, which also overload the constructor, and
+`procedure, static :: operator(*) => f, g` lists static operator procedures,
+which have no passed-object argument. Each requirement is bound to the one
+listed procedure whose signature matches it with `itself` replaced by the
+type, including PURE and ELEMENTAL; no match, several matches and an operator
+procedure that matches no requirement are diagnosed. An intrinsic type
+acknowledges its intrinsic conversion and operators, which cannot be
+redefined:
+
+```fortran
+implements (IReducible + IPrintable) :: real
+    procedure, pass :: output
+end implements real
+```
+
+The conformance owns one procedure per acknowledged requirement that applies
+the intrinsic conversion (`int`, `real` or `cmplx` with the type's kind) or
+operation, and its result must be the required type.
+
+In a generic body, `T(args)` calls the initializer requirement of `T`'s
+constraints that accepts the arguments, and an intrinsic operator with an
+operand of type `T` calls the operator requirement that accepts both operands,
+by type, kind and rank as generic resolution does; an elemental requirement
+also accepts conformable arrays. No implicit conversion applies, and no or
+several accepting requirements are diagnosed. Equal requirements of composed
+traits are one requirement. Specialization calls the bound procedures
+statically. Where a conformance is visible, its static operator bindings also
+apply to values of the type as defined operators, when no ordinary operator
+does.
+
+`traits_protocol_01` covers
+derived, `integer`, `real(real64)` and `real(real32)` implementations,
+overloads, forwarding, composed constraints and static operators on concrete
+values, with a standard-Fortran oracle.
 
 ## Intrinsic types and explicit provider imports
 
@@ -923,9 +988,9 @@ oracle checks the concrete computations through the default compilation pipeline
 
 The broader proposal is not yet implemented. In particular, pointer trait
 results, mutable receivers, associated types, unrestricted intrinsic capabilities,
-generic derived types beyond the boundaries described in their section, trait
-initializers, and unrestricted generic-method signatures are separate
-implementation stages. Existing `:=` inferred assignment is a
+generic derived types beyond the boundaries described in their section, runtime
+views and runtime generic methods over initializer and operator requirements,
+and unrestricted generic-method signatures are separate implementation stages. Existing `:=` inferred assignment is a
 different extension and is not required to use static traits.
 Forwarding that mixes concrete and deferred type arguments, or crosses nested
 or shadowed generic-binder scopes, is not implemented yet.

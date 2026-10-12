@@ -8775,6 +8775,7 @@
                                     IntrinsicTypeSet
                                     [(Integer 4)
                                     (Real 8)]
+                                    []
                                 ),
                             isum:
                                 (Trait
@@ -8968,6 +8969,7 @@
                                     []
                                     Public
                                     UniversalTrait
+                                    []
                                     []
                                 ),
                             real64:

@@ -4956,6 +4956,7 @@
                                     IntrinsicTypeSet
                                     [(Integer 4)
                                     (Real 8)]
+                                    []
                                 ),
                             real64:
                                 (ExternalSymbol
@@ -6563,6 +6564,7 @@
                                     Public
                                     IntrinsicTypeSet
                                     [(Integer 4)]
+                                    []
                                 )
                         })
                     traits_numeric_05_other_m

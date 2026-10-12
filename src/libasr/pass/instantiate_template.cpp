@@ -1342,7 +1342,7 @@ public:
         }
         ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(al,
             x->base.base.loc, al.make_new<SymbolTable>(target_scope), s2c(al, new_sym_name),
-            nullptr, 0, x->m_access, x->m_kind, members.p, members.size()));
+            nullptr, 0, x->m_access, x->m_kind, members.p, members.size(), nullptr, 0));
         target_scope->add_symbol(new_sym_name, result);
         return result;
     }

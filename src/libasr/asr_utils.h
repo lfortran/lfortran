@@ -10827,6 +10827,19 @@ struct TraitHierarchy {
 
 ASR::Function_t *trait_method_function(ASR::symbol_t *method);
 ASR::Template_t *trait_method_template(const ASR::Function_t &method);
+// The name a trait declares for the type that implements it.
+constexpr const char *trait_itself_name = "itself";
+// A trait's declaration of `itself`, which is not one of its members.
+bool is_trait_type_declaration(const ASR::symbol_t &symbol);
+bool contains_trait_itself(ASR::ttype_t *type);
+// The operation of an initializer or operator requirement, which has no
+// receiver, or nullptr for an ordinary message.
+ASR::type_set_operation_t *trait_member_operation(ASR::symbol_t *member);
+// The member as a source names it: `initial`, `operator(*)` or its name.
+std::string trait_member_display_name(ASR::symbol_t *member);
+std::string trait_operation_display_name(const ASR::type_set_operation_t &operation);
+bool same_trait_operation(const ASR::type_set_operation_t &left,
+    const ASR::type_set_operation_t &right);
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
 std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
@@ -10990,6 +11003,11 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset = 0,
     size_t right_offset = 0);
 
+// `actual` has the type of `required`, where `itself` in `required` is the
+// implementing type: `type_declaration` for a derived type, else `type`.
+bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
+    ASR::symbol_t *type_declaration, ASR::ttype_t *type,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters);
 bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters = {});
 

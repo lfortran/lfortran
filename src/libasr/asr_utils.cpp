@@ -5639,6 +5639,87 @@ ASR::Function_t *trait_method_function(ASR::symbol_t *method)
         ? ASR::down_cast<ASR::Function_t>(method) : nullptr;
 }
 
+bool is_trait_type_declaration(const ASR::symbol_t &symbol)
+{
+    if (!ASR::is_a<ASR::Variable_t>(symbol)) return false;
+    auto &variable = *ASR::down_cast<ASR::Variable_t>(&symbol);
+    return variable.m_type && ASR::is_a<ASR::TypeParameter_t>(*variable.m_type) &&
+        std::string(variable.m_name) == trait_itself_name &&
+        std::string(ASR::down_cast<ASR::TypeParameter_t>(variable.m_type)->m_param)
+            == trait_itself_name;
+}
+
+bool contains_trait_itself(ASR::ttype_t *type)
+{
+    if (!type) return false;
+    type = extract_type(type);
+    return ASR::is_a<ASR::TypeParameter_t>(*type) &&
+        std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param)
+            == trait_itself_name;
+}
+
+ASR::type_set_operation_t *trait_member_operation(ASR::symbol_t *member)
+{
+    member = symbol_get_past_external(member);
+    if (!member) return nullptr;
+    ASR::symbol_t *owner = get_asr_owner(member);
+    if (!owner || !ASR::is_a<ASR::Trait_t>(*owner)) return nullptr;
+    auto *trait = ASR::down_cast<ASR::Trait_t>(owner);
+    for (size_t i = 0; i < trait->n_operations; i++) {
+        if (symbol_get_past_external(trait->m_operations[i].m_member) == member) {
+            return trait->m_operations[i].m_operation;
+        }
+    }
+    return nullptr;
+}
+
+std::string trait_operation_display_name(const ASR::type_set_operation_t &operation)
+{
+    if (ASR::is_a<ASR::TypeSetConversion_t>(operation)) return "initializer";
+    if (ASR::is_a<ASR::TypeSetBinary_t>(operation)) {
+        switch (ASR::down_cast<ASR::TypeSetBinary_t>(&operation)->m_op) {
+            case ASR::binopType::Add: return "operator(+)";
+            case ASR::binopType::Sub: return "operator(-)";
+            case ASR::binopType::Mul: return "operator(*)";
+            case ASR::binopType::Div: return "operator(/)";
+            case ASR::binopType::Pow: return "operator(**)";
+            default: return "operator";
+        }
+    }
+    switch (ASR::down_cast<ASR::TypeSetComparison_t>(&operation)->m_op) {
+        case ASR::cmpopType::Eq: return "operator(==)";
+        case ASR::cmpopType::NotEq: return "operator(/=)";
+        case ASR::cmpopType::Lt: return "operator(<)";
+        case ASR::cmpopType::LtE: return "operator(<=)";
+        case ASR::cmpopType::Gt: return "operator(>)";
+        case ASR::cmpopType::GtE: return "operator(>=)";
+    }
+    return "operator";
+}
+
+std::string trait_member_display_name(ASR::symbol_t *member)
+{
+    if (auto *operation = trait_member_operation(member)) {
+        return trait_operation_display_name(*operation);
+    }
+    return symbol_name(symbol_get_past_external(member));
+}
+
+bool same_trait_operation(const ASR::type_set_operation_t &left,
+    const ASR::type_set_operation_t &right)
+{
+    if (left.type != right.type) return false;
+    if (ASR::is_a<ASR::TypeSetBinary_t>(left)) {
+        return ASR::down_cast<ASR::TypeSetBinary_t>(&left)->m_op ==
+            ASR::down_cast<ASR::TypeSetBinary_t>(&right)->m_op;
+    }
+    if (ASR::is_a<ASR::TypeSetComparison_t>(left)) {
+        return ASR::down_cast<ASR::TypeSetComparison_t>(&left)->m_op ==
+            ASR::down_cast<ASR::TypeSetComparison_t>(&right)->m_op;
+    }
+    return true;
+}
+
 ASR::Template_t *trait_method_template(const ASR::Function_t &method)
 {
     auto *owner = get_asr_owner(const_cast<ASR::symbol_t*>(&method.base));
@@ -5902,6 +5983,7 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
             }
             for (const auto &entry : current.m_symtab->get_scope()) {
                 ASR::symbol_t *member = entry.second;
+                if (member && is_trait_type_declaration(*member)) continue;
                 if (!member || !trait_method_function(member) ||
                         symbol_parent_symtab(member) != current.m_symtab) {
                     result.error = TraitHierarchyError::Member;
@@ -6718,6 +6800,27 @@ static bool trait_shapes_equal(ASR::ttype_t *left, ASR::ttype_t *right,
         if (!trait_length_equal(a[i].m_length, b[i].m_length, parameters)) return false;
     }
     return true;
+}
+
+bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
+    ASR::symbol_t *type_declaration, ASR::ttype_t *type,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    ASR::ttype_t *a = typed_expr_type(required), *b = typed_expr_type(actual);
+    if (!a || !b) return false;
+    if (!contains_trait_itself(a)) return trait_types_equal(required, actual, parameters);
+    if (is_pointer(a) != is_pointer(b) || is_allocatable(a) != is_allocatable(b) ||
+            !trait_shapes_equal(a, b, parameters)) {
+        return false;
+    }
+    b = extract_type(b);
+    type_declaration = symbol_get_past_external(type_declaration);
+    if (type_declaration) {
+        return ASR::is_a<ASR::StructType_t>(*b) && !is_class_type(b) &&
+            symbol_get_past_external(get_struct_sym_from_struct_expr(actual)) ==
+                type_declaration;
+    }
+    return type && b->type == type->type && types_equal(b, type, nullptr, nullptr);
 }
 
 bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,

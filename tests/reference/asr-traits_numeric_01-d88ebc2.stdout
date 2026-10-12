@@ -2933,6 +2933,7 @@
                                     IntrinsicTypeSet
                                     [(Integer 4)
                                     (Real 8)]
+                                    []
                                 ),
                             numeric_average:
                                 (Template

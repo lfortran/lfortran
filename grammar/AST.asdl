@@ -66,6 +66,11 @@ interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
     | InterfaceTypeSet(decl_attribute* member_types)
+-- A trait's initializer requirement, `initial(args) ... end initial`.
+    | InterfaceInitial(arg* args, decl_stmt* items, trivia? trivia)
+-- A trait's operator requirement, `function operator(op)(args) ... end
+-- function operator(op)`; `proc` is that function, named as spelled.
+    | InterfaceOperator(intrinsicop op, program_unit proc)
 
 import_modifier
     = ImportDefault
@@ -285,6 +290,8 @@ procedure_decl
     | FinalName(identifier name, trivia? trivia)
     | Private(trivia? trivia)
     | InitialProcedure(identifier* names, trivia? trivia)
+-- `procedure[, attr] :: operator(op) => names` in an implements statement.
+    | OperatorProcedure(decl_attribute* attr, intrinsicop op, identifier* names, trivia? trivia)
 
 decl_attribute
     = AttrBind(bind bind)
@@ -356,6 +363,7 @@ simple_attribute
     | AttrValue
     | AttrVolatile
     | AttrSealed
+    | AttrStatic
 
 attr_intent = In | Out | InOut
 

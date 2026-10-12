@@ -851,6 +851,7 @@
                                     Public
                                     IntrinsicTypeSet
                                     [(Integer 4)]
+                                    []
                                 ),
                             singleton_value:
                                 (Template
