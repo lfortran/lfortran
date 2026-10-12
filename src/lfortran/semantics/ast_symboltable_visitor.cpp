@@ -3574,14 +3574,16 @@ public:
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
-            if( current_scope->get_symbol(parent_sym_name) == nullptr ) {
+            // The parent type may be accessible by host association
+            // (F2018 19.5.1.4), so look it up in the enclosing scopes too.
+            parent_sym = current_scope->resolve_symbol(parent_sym_name);
+            if( parent_sym == nullptr ) {
                 diag.add(diag::Diagnostic(
                     parent_sym_name + " is not defined.",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            parent_sym = current_scope->get_symbol(parent_sym_name);
             // C1616: "The name of a deferred type shall not appear as a
             // parent-type-name in a type-attr-spec." (16.4.1.2), restated by
             // NOTE 1 there: "A deferred type cannot be extended, even if it has
@@ -3732,6 +3734,7 @@ public:
             struct_->n_member_functions = final_proc_names.size();
             ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
             struct_->m_struct_signature = struct_signature;
+            make_pdt_signature_scope_free(struct_);
 
             current_scope = parent_scope_pdt;
             return;
@@ -7197,82 +7200,7 @@ public:
     }
 
     void visit_Enum(const AST::Enum_t &x) {
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        std::string sym_name = "lcompilers__nameless_enum";
-        sym_name = parent_scope->get_unique_name(sym_name);
-        Vec<char *> m_members;
-        m_members.reserve(al, 4);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, compiler_options.po.default_integer_kind));
-
-        ASR::abiType abi_type = ASR::abiType::BindC;
-        if ( x.n_attr == 1 ) {
-            if ( AST::is_a<AST::AttrBind_t>(*x.m_attr[0]) ) {
-                AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(
-                    AST::down_cast<AST::AttrBind_t>(x.m_attr[0])->m_bind);
-                if (bind->n_args == 1 && AST::is_a<AST::Name_t>(*bind->m_args[0])) {
-                    AST::Name_t *name = AST::down_cast<AST::Name_t>(
-                        bind->m_args[0]);
-                    if (to_lower(std::string(name->m_id)) != "c") {
-                        diag.add(diag::Diagnostic(
-                            "Unsupported language in bind()",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
-                    }
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Language name must be specified in "
-                        "bind() as a plain text",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            } else {
-                diag.add(diag::Diagnostic(
-                    "Unsupported attribute type in enum, "
-                    "only bind() is allowed",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        } else {
-            diag.add(diag::Diagnostic(
-                "Only one attribute is allowed in enum",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-
-        enum_init_val = 0;
-        for ( size_t i = 0; i < x.n_items; i++ ) {
-            this->visit_decl_stmt(*x.m_items[i]);
-        }
-
-        for( auto sym: current_scope->get_scope() ) {
-            ASR::Variable_t* member_var = ASR::down_cast<
-                ASR::Variable_t>(sym.second);
-            m_members.push_back(al, member_var->m_name);
-        }
-
-        ASR::enumtypeType enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
-        ASRUtils::set_enum_value_type(enum_value_type, current_scope);
-
-        tmp = ASR::make_Enum_t(al, x.base.base.loc, current_scope,
-            s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
-            dflt_access, enum_value_type, type, nullptr);
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        // Expose all enumerators into the parent scope as ExternalSymbols pointing into the enumeration, which is the semantics of Fortran enums.
-        // That way `resolve_variable()` can resolve them automatically.
-        // In ASR->Fortran we do not create any Fortran code for these ExternalSymbols, since they are implicit. But in ASR we need to represent them explicitly.
-        for (auto it: current_scope->get_scope()) {
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
-            parent_scope->add_symbol(var->m_name, ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                        var->base.base.loc, parent_scope, s2c(al, var->m_name), it.second,
-                        s2c(al, sym_name), nullptr, 0, var->m_name, var->m_access)));
-        }
-        current_scope = parent_scope;
+        visit_EnumUtil(x);
     }
 
 };

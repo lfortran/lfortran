@@ -2644,3 +2644,30 @@ contains
         gen_dbl = 1
     end subroutine
 end module
+
+! A function reference through a dummy procedure with a deferred interface
+! checks its actual arguments against the deferred types.
+module continue_compilation_templates_01_proc_dummy
+    implicit none
+    template proc_dummy_t {foo_f, left_t, right_t, foo_t}
+        deferred type :: left_t, right_t, foo_t
+        deferred interface
+            function foo_f(left, right) result(foo)
+                type(left_t), intent(in) :: left
+                type(right_t), intent(in) :: right
+                type(foo_t) :: foo
+            end function
+        end interface
+    contains
+        function invoke_foo(foo, left, right) result(r)
+            procedure(foo_f) :: foo
+            type(left_t), intent(in) :: left
+            type(right_t), intent(in) :: right
+            type(foo_t) :: r
+            r = foo(left, right)
+            r = foo(right, right)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+            r = foo(left, left)  ! {Error} Type mismatch in argument `right`: expected `right_t` but got `left_t`.
+            r = foo(right, left)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+        end function
+    end template
+end module

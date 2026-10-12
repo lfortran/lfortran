@@ -1129,11 +1129,22 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             remove_original_statement = false;
         }
 
+        static bool is_allocatable_scalar_result_to_non_allocatable(
+                ASR::expr_t* value, ASR::expr_t* target) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+            return ASRUtils::is_allocatable(value_type) &&
+                !ASRUtils::is_array(value_type) &&
+                !ASRUtils::is_allocatable(target_type) &&
+                !ASRUtils::is_array(target_type);
+        }
+
         bool subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
             bool is_pointer_return = false;
             bool use_temp_var_for_return = false;
+            bool allocatable_result_to_non_allocatable = false;
             if (ASR::is_a<ASR::Assignment_t>(xx)) {
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 value = assignment->m_value;
@@ -1141,6 +1152,17 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 use_temp_var_for_return = (ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_value)) &&
                                             !ASRUtils::is_pointer(ASRUtils::expr_type(assignment->m_target)));
                 is_pointer_return = use_temp_var_for_return;
+                // An allocatable scalar result is returned through an
+                // allocatable dummy, which a target that is not allocatable
+                // cannot be associated with: return it into an allocatable
+                // temporary, assign that to the target and deallocate it,
+                // which finalizes the result (F2018 7.5.6.3 p5). An array
+                // result gets its temporary in the array_struct_temporary
+                // pass.
+                allocatable_result_to_non_allocatable =
+                    is_allocatable_scalar_result_to_non_allocatable(value, target);
+                use_temp_var_for_return = use_temp_var_for_return ||
+                    allocatable_result_to_non_allocatable;
                 {
                     ASR::ttype_t* target_type_ = ASRUtils::extract_type(
                         ASRUtils::expr_type(target));
@@ -1237,8 +1259,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASRUtils::is_class_type(value_unwrapped);
                 bool type_to_class_mismatch = ASRUtils::is_class_type(target_unwrapped) &&
                     !ASRUtils::is_class_type(value_unwrapped);
+                // The scalar temporary of an assignment receives the result,
+                // so it is allocatable or a pointer only when the result is.
+                // With the attributes of the target instead, the result of
+                // `p = f(p)` for a pointer `p` would be stored through a
+                // pointer that is never associated.
+                ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+                ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+                bool attribute_mismatch = ASR::is_a<ASR::Assignment_t>(xx) &&
+                    !ASRUtils::is_array(target_type) &&
+                    (ASRUtils::is_pointer(target_type) != ASRUtils::is_pointer(value_type) ||
+                     ASRUtils::is_allocatable(target_type) != ASRUtils::is_allocatable(value_type));
 
-                if (class_to_type_mismatch || type_to_class_mismatch) {
+                if (class_to_type_mismatch || type_to_class_mismatch ||
+                        allocatable_result_to_non_allocatable || attribute_mismatch) {
                     ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
@@ -1329,6 +1363,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
 
                 remove_original_statement = false;
+                if (allocatable_result_to_non_allocatable) {
+                    pass_result.push_back(al, &xx);
+                    Vec<ASR::expr_t*> to_be_deallocated;
+                    to_be_deallocated.reserve(al, 1);
+                    to_be_deallocated.push_back(al, target);
+                    pass_result.push_back(al, ASRUtils::STMT(
+                        ASR::make_ImplicitDeallocate_t(al, target->base.loc,
+                        to_be_deallocated.p, to_be_deallocated.size())));
+                    remove_original_statement = true;
+                }
             } else {
                 remove_original_statement = true;
             }

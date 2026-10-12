@@ -11,6 +11,22 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+        void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
+                const std::function<void()> &instantiate) {
+            std::set<std::string> existing_symbols;
+            for (auto &item: unit.m_symtab->get_scope()) {
+                existing_symbols.insert(item.first);
+            }
+            instantiate();
+            for (auto &item: unit.m_symtab->get_scope()) {
+                if (existing_symbols.find(item.first) == existing_symbols.end()
+                        && ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::down_cast<ASR::Function_t>(item.second)->m_access =
+                        ASR::accessType::Private;
+                }
+            }
+        }
+
         void get_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims) {
             ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(x_type));
