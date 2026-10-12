@@ -6980,7 +6980,8 @@ void visit_block_interface(Allocator &al, const AST::Interface_t &x,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm,
+        SetChar &module_dependencies)
 {
     SymbolTableVisitor v(al, block_scope, diagnostics, compiler_options,
                          implicit_mapping, external_procedures_mapping,
@@ -6994,6 +6995,11 @@ void visit_block_interface(Allocator &al, const AST::Interface_t &x,
     v.visit_Interface(x);
     v.add_generic_procedures();
     v.resolve_proc_pointer_placeholders();
+    // The modules used in the interface bodies are dependencies of the
+    // enclosing module, as for an interface block in its specification part.
+    for (size_t i = 0; i < v.current_module_dependencies.size(); i++) {
+        module_dependencies.push_back(al, v.current_module_dependencies[i]);
+    }
 }
 
 } // namespace LCompilers::LFortran

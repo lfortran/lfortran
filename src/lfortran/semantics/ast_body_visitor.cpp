@@ -32,7 +32,7 @@ void visit_block_interface(Allocator &al, const AST::Interface_t &x,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        LCompilers::LocationManager &lm);
+        LCompilers::LocationManager &lm, SetChar &module_dependencies);
 
 // `implicit_interface_procedures`: the procedure variables that calls through
 // an implicit interface are made through, mapped to the called procedure.
@@ -357,7 +357,8 @@ public:
                 implicit_mapping, external_procedures_mapping,
                 explicit_intrinsic_procedures_mapping, instantiate_types,
                 instantiate_symbols, entry_functions,
-                entry_function_arguments_mapping, data_structure, lm);
+                entry_function_arguments_mapping, data_structure, lm,
+                current_module_dependencies);
         }
     }
 
