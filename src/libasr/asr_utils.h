@@ -3593,6 +3593,12 @@ static inline bool is_const(ASR::expr_t *x) {
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member);
 
+// Whether the constant `value` of derived type names a procedure, as the
+// value of an associated procedure pointer component does. The procedure is
+// named by a symbol of the scope that wrote the constant, so the constant
+// cannot stand in for its named constant in another scope.
+bool struct_constant_names_procedure(ASR::expr_t* value);
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);

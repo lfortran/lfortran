@@ -14944,6 +14944,13 @@ public:
                             ASRUtils::get_fixed_size_of_array(val2->m_type)) {
                         arr_ref_val = ASRUtils::fetch_ArrayConstant_value(
                             al, val2, index);
+                        // Such an element names its target procedure, which
+                        // need not be accessible here, as after
+                        // `use m, only: table`, so it is read from the array
+                        // at run time instead.
+                        if (ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
+                            arr_ref_val = nullptr;
+                        }
                     }
                 }
             }
