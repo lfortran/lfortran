@@ -6540,6 +6540,52 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     }
 }
 
+// If the derived type of the component that the ExternalSymbol `e` refers to
+// is defined in a module, directly or in a procedure or block of it, names
+// that module in `e` and the path from it to the type (e.g. `[run, t]`) in its
+// scope names, so that deserialization does not resolve the type by a name
+// that something else may stand for in `e`'s scope, e.g. a module of the same
+// name or a dummy argument. Returns false, leaving `e` unchanged, if there is
+// no such module, or if an enclosing procedure is still being declared and so
+// has no symbol yet.
+static inline bool set_struct_member_owner_path(Allocator& al,
+        ASR::ExternalSymbol_t* e) {
+    ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(
+        ASRUtils::symbol_get_past_external(e->m_external));
+    std::vector<ASR::symbol_t*> path = {struct_t};
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_t);
+    while (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+        path.push_back(owner);
+        owner = ASRUtils::get_asr_owner(owner);
+    }
+    if (owner == nullptr) {
+        return false;
+    }
+    e->m_module_name = s2c(al, ASRUtils::symbol_name(owner));
+    e->n_scope_names = path.size();
+    e->m_scope_names = al.allocate<char*>(e->n_scope_names);
+    for (size_t i = 0; i < e->n_scope_names; i++) {
+        e->m_scope_names[i] = s2c(al,
+            ASRUtils::symbol_name(path[e->n_scope_names - 1 - i]));
+    }
+    return true;
+}
+
+// An ExternalSymbol `name` in `scope` for the component `struct_member`,
+// naming its type by a path from a module (set_struct_member_owner_path), or
+// otherwise by `struct_local_name`, the type's name in `scope`.
+static inline ASR::symbol_t* make_struct_member_external_symbol(Allocator& al,
+        const Location& loc, SymbolTable* scope, const std::string& name,
+        ASR::symbol_t* struct_member, const std::string& struct_local_name,
+        ASR::accessType access) {
+    struct_member = ASRUtils::symbol_get_past_external(struct_member);
+    ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+        loc, scope, s2c(al, name), struct_member, s2c(al, struct_local_name),
+        nullptr, 0, s2c(al, ASRUtils::symbol_name(struct_member)), access));
+    set_struct_member_owner_path(al, ASR::down_cast<ASR::ExternalSymbol_t>(e));
+    return e;
+}
+
 static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                                            ASR::symbol_t* struct_member,
                                                            SymbolTable* scope)
@@ -6597,34 +6643,9 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
     std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
     if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        std::string member_module_name = struct_external_symbol_name;
-        char** scope_names_arr = nullptr;
-        size_t n_scope_names = 0;
-
-        // Use the owning module's name as module_name and encode the struct
-        // name in scope_names. This avoids ambiguity during deserialization
-        // when a struct and a top-level module share the same name (the
-        // deserializer would otherwise find the Module instead of the Struct).
-        ASR::symbol_t* struct_t_actual = ASRUtils::symbol_get_past_external(struct_t);
-        ASR::symbol_t* struct_t_owner = ASRUtils::get_asr_owner(struct_t_actual);
-        if (struct_t_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_t_owner)) {
-            member_module_name = ASRUtils::symbol_name(struct_t_owner);
-            scope_names_arr = al.allocate<char*>(1);
-            scope_names_arr[0] = s2c(al, struct_t_name);
-            n_scope_names = 1;
-        }
-
-        ASR::symbol_t* struct_member_external_symbol = ASR::down_cast<ASR::symbol_t>(
-                                                        ASR::make_ExternalSymbol_t(al,
-                                                                                struct_member->base.loc,
-                                                                                scope,
-                                                                                s2c(al, struct_member_external_symbol_name),
-                                                                                ASRUtils::symbol_get_past_external(struct_member),
-                                                                                s2c(al, member_module_name),
-                                                                                scope_names_arr,
-                                                                                n_scope_names,
-                                                                                s2c(al, struct_member_name),
-                                                                                ASR::accessType::Public));
+        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
+            al, struct_member->base.loc, scope, struct_member_external_symbol_name,
+            struct_member, struct_external_symbol_name, ASR::accessType::Public);
         scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
     }
 

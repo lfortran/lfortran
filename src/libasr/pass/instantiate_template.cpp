@@ -1876,9 +1876,17 @@ public:
     }
 
     ASR::symbol_t* instantiate_ExternalSymbol(ASR::ExternalSymbol_t* x) {
-        std::string m_name = x->m_module_name;
-
-        if (symbol_subs.find(m_name) != symbol_subs.end()) {
+        // A component of a type defined in the template refers to the
+        // component of the type's instance. The type is identified by its
+        // symbol: `m_module_name` need not name it (see
+        // make_struct_member_external_symbol), and a type from elsewhere may
+        // share the name of a template entity.
+        ASR::symbol_t* x_owner = ASRUtils::get_asr_owner(
+            ASRUtils::symbol_get_past_external(x->m_external));
+        std::string m_name = x_owner != nullptr ? ASRUtils::symbol_name(x_owner) : "";
+        if (x_owner != nullptr && ASR::is_a<ASR::Struct_t>(*x_owner)
+                && is_in_template(ASRUtils::symbol_parent_symtab(x_owner))
+                && symbol_subs.find(m_name) != symbol_subs.end()) {
             std::string new_m_name = ASRUtils::symbol_name(symbol_subs[m_name]);
             std::string member_name = x->m_original_name;
             std::string new_e_name = "1_" + new_m_name + "_" + member_name;
@@ -1887,16 +1895,21 @@ public:
                 return target_scope->get_symbol(new_e_name);
             }
 
-            ASR::symbol_t* new_m_sym = target_scope->resolve_symbol(new_m_name);
-            ASR::symbol_t* member_sym = ASRUtils::symbol_symtab(new_m_sym)->resolve_symbol(member_name);
+            // The instance itself, not what its local name stands for in the
+            // new scope, e.g. a dummy argument of the same name.
+            ASR::symbol_t* new_m_sym = ASRUtils::symbol_get_past_external(symbol_subs[m_name]);
+            SymbolTable* new_m_symtab = ASRUtils::symbol_symtab(new_m_sym);
+            ASR::symbol_t* member_sym = new_m_symtab != nullptr
+                ? new_m_symtab->resolve_symbol(member_name) : nullptr;
+            if (member_sym != nullptr) {
+                ASR::symbol_t* e = ASRUtils::make_struct_member_external_symbol(al,
+                    x->base.base.loc, target_scope, new_e_name, member_sym, new_m_name,
+                    x->m_access);
+                target_scope->add_symbol(new_e_name, e);
+                symbol_subs[x->m_name] = e;
 
-            ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, x->base.base.loc, target_scope, s2c(al, new_e_name), member_sym,
-                s2c(al, new_m_name), nullptr, 0, s2c(al, member_name), x->m_access));
-            target_scope->add_symbol(new_e_name, e);
-            symbol_subs[x->m_name] = e;
-
-            return e;
+                return e;
+            }
         }
 
         ASRUtils::SymbolDuplicator d(al);
@@ -2248,6 +2261,22 @@ public:
             BodyInstantiator t_b(al, type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
             t_b.instantiate();
+        }
+
+        // A component import created while a procedure enclosing the
+        // instantiation was still being declared names its type by the local
+        // name; name it by its path now that the procedure exists.
+        for (auto const &sym_pair: new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::ExternalSymbol_t>(*sym_pair.second)) {
+                continue;
+            }
+            ASR::ExternalSymbol_t* e = ASR::down_cast<ASR::ExternalSymbol_t>(sym_pair.second);
+            ASR::symbol_t* e_owner = ASRUtils::get_asr_owner(
+                ASRUtils::symbol_get_past_external(e->m_external));
+            if (e->n_scope_names == 0 && e_owner != nullptr
+                    && ASR::is_a<ASR::Struct_t>(*e_owner)) {
+                ASRUtils::set_struct_member_owner_path(al, e);
+            }
         }
 
         // Procedures called in the declarations, such as the getter of a
