@@ -23171,7 +23171,13 @@ public:
                     ASRUtils::is_real(*t) || ASRUtils::is_complex(*t) ||
                     ASRUtils::is_character(*t) || ASRUtils::is_logical(*t);
             };
-            if (!has_intrinsic_type(left_type) || !has_intrinsic_type(right_type)) {
+            // A logical operand is accepted (as an extension) only when the
+            // other operand is numeric; two logical operands have no numeric
+            // type to be converted to.
+            bool both_logical = ASRUtils::is_logical(*left_type) &&
+                ASRUtils::is_logical(*right_type);
+            if (!has_intrinsic_type(left_type) || !has_intrinsic_type(right_type) ||
+                    both_logical) {
                 std::string op_str = "+";
                 switch (op) {
                     case (ASR::Add):
@@ -24695,7 +24701,7 @@ public:
 
     // Renders the types of the two arms of a conditional expression for a
     // diagnostic. type_to_str_with_kind spells out the kind for the numeric
-    // types but not for logical or character, where a kind mismatch would
+    // and logical types but not for character, where a kind mismatch would
     // otherwise print the same text on both sides.
     void conditional_arm_type_strs(ASR::expr_t *body, ASR::expr_t *orelse,
             std::string &body_str, std::string &orelse_str) {

@@ -253,3 +253,18 @@ subroutine cc3_derived_type_intrinsic_binop_error(c)
     print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
     print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
 end subroutine cc3_derived_type_intrinsic_binop_error
+
+! An intrinsic numeric operator with two logical operands is an error (#14735).
+subroutine cc3_logical_intrinsic_binop_error()
+    implicit none
+    logical :: a, b(2)
+    logical(8) :: c
+    a = .true.
+    b = .false.
+    c = .true.
+    print *, a + a  ! {Error} Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+    print *, a - b  ! {Error} Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+    print *, b * a  ! {Error} Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+    print *, a / c  ! {Error} Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+    print *, c ** a  ! {Error} Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+end subroutine cc3_logical_intrinsic_binop_error
