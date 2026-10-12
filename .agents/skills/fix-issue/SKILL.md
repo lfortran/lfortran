@@ -1,23 +1,18 @@
 ---
 name: fix-issue
 description: >
-  Fix LFortran issues end-to-end, singly or as a batch selected by a list,
-  GitHub search URL, or filters. Use automatically for requests to fix all
-  matching issues, resolve an issue, or send issue-fix PRs, including pasted
-  failures; the user need not name this skill. Expand
-  the complete selection, use fresh per-issue subagents and isolated Git
-  worktrees, and build with Pixi/LLVM 11. Run repro-issue, then create-mre and
-  fix-mre (targeted checks) until every original reproducer passes, run the
-  local suites once, then publish a draft at once and review locally with
-  pr-review while Quick checks CI runs. Publish independent fixes as separate
-  fork PRs; consolidate shared or dependent fixes into one PR with focused
-  commits.
-  Batch pushes and iterate on CI, review, and human feedback until green and
-  clean, then mark ready. Extended Exhaustive checks
-  are opt-in only when the user requests them.
-  Deduplicate and file additional pre-existing compiler bugs, including
-  discoveries from blocked jobs. Do not execute fixes for triage, plan-only
-  requests, or discussions of this workflow.
+  Fix LFortran issues end-to-end, singly or as a batch from a list, GitHub
+  search URL, or filters. Use automatically for requests to fix or resolve
+  issues or send issue-fix PRs, including pasted failures; the skill need not
+  be named. Expand the full selection; use fresh per-issue subagents, isolated
+  Git worktrees, and Pixi/LLVM 11. Run repro-issue, create-mre, and fix-mre
+  until every original reproducer passes, run the local suites once, publish
+  a draft fork PR, and review it with pr-review while Quick CI runs. Keep
+  independent fixes in separate PRs; group shared or dependent fixes into one
+  PR with focused commits. Iterate on CI, review, and feedback until green,
+  then mark ready. Exhaustive checks are opt-in. Deduplicate and file
+  additional pre-existing compiler bugs, even from blocked jobs. Not for
+  triage, plan-only requests, or discussions of this workflow.
 compatibility: >
   Requires git, GitHub access (authenticated gh or GitHub MCP tools), Pixi, the platform prerequisites in AGENTS.md,
   and a runtime that can spawn subagents. Provision the compiler build and

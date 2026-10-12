@@ -2671,3 +2671,50 @@ module continue_compilation_templates_01_proc_dummy
         end function
     end template
 end module
+
+! An operator from a deferred interface applies only if the deferred types of
+! its dummies match the deferred types of the operands (#14716).
+module continue_compilation_templates_01_op_mismatch
+    implicit none
+    template op_mismatch_t {a_t, b_t, p, q, r}
+        deferred type :: a_t, b_t
+        deferred interface
+            function p(x, y)
+                type(a_t), intent(in) :: x
+                type(b_t), intent(in) :: y
+                type(b_t) :: p
+            end function
+            function q(x, y)
+                type(a_t), intent(in) :: x
+                type(b_t), intent(in) :: y
+                logical :: q
+            end function
+            function r(x, y)
+                type(a_t), intent(in) :: x
+                type(b_t), intent(in) :: y
+                logical :: r
+            end function
+        end interface
+        interface operator(+)
+            module procedure p
+        end interface
+        interface operator(==)
+            module procedure q
+        end interface
+        interface operator(.and.)
+            module procedure r
+        end interface
+    contains
+        subroutine op_mismatch_s(x, y, l)
+            type(a_t), intent(in) :: x
+            type(b_t), intent(inout) :: y
+            logical, intent(out) :: l
+            y = x + y
+            l = x == y
+            l = x .and. y
+            y = y + x  ! {Error} Operator `+` undefined for the types in the expression `b_t + a_t`
+            l = y == x  ! {Error} Operator `==` undefined for the types in the expression `b_t == a_t`
+            l = y .and. x  ! {Error} Left operand must be LOGICAL or LOGICAL array
+        end subroutine
+    end template
+end module

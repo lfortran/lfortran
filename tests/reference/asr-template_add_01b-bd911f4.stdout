@@ -1048,7 +1048,7 @@
                                                             ()
                                                             (FunctionCall
                                                                 2 func_arg_int
-                                                                5 ~add
+                                                                ()
                                                                 [((Var 11 x))
                                                                 ((Var 11 y))]
                                                                 (Integer 4)
@@ -1205,7 +1205,7 @@
                                                                 ()
                                                                 (FunctionCall
                                                                     2 func_arg_int
-                                                                    5 ~add
+                                                                    ()
                                                                     [((Var 12 x))
                                                                     ((Var 12 y))]
                                                                     (Integer 4)
@@ -1219,7 +1219,7 @@
                                                             ()
                                                             (FunctionCall
                                                                 2 func_arg_int
-                                                                5 ~add
+                                                                ()
                                                                 [((OverloadedBinOp
                                                                     (Var 12 x)
                                                                     Add
@@ -1228,7 +1228,7 @@
                                                                     ()
                                                                     (FunctionCall
                                                                         2 func_arg_int
-                                                                        5 ~add
+                                                                        ()
                                                                         [((Var 12 x))
                                                                         ((Var 12 y))]
                                                                         (Integer 4)

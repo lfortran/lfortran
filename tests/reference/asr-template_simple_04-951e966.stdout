@@ -1332,7 +1332,7 @@
                                                                 ()
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic
-                                                                    10 ~add
+                                                                    ()
                                                                     [((Var 16 res))
                                                                     ((ArrayItem
                                                                         (Var 16 a)
@@ -1540,7 +1540,7 @@
                                                                 ()
                                                                 (FunctionCall
                                                                     13 ~add_intrinsic1
-                                                                    10 ~add
+                                                                    ()
                                                                     [((Var 18 res))
                                                                     ((ArrayItem
                                                                         (Var 18 a)
