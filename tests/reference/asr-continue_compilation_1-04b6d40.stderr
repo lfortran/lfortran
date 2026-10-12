@@ -1154,10 +1154,10 @@ semantic error: assumed ('*') value of type parameter 'n' of parameterized deriv
 2411 |         type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
      |                            ^ 
 
-semantic error: value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+semantic error: non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
     --> tests/errors/continue_compilation_1.f90:2413:28
      |
-2413 |         type(cc1_pdt_len_t(m)) :: w  ! {Error} value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+2413 |         type(cc1_pdt_len_t(m)) :: w  ! {Error} non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
      |                            ^ 
 
 semantic error: Dummy argument 'v' not defined
@@ -1181,6 +1181,24 @@ semantic error: the len attribute is only allowed in a derived type definition
      |
 2421 |     integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Parameter 'm' is a variable, which does not reduce to a constant expression
+    --> tests/errors/continue_compilation_1.f90:2455:35
+     |
+2455 |         type(cc1_pdt_kind_value_t(m)) :: y  ! {Error} Parameter 'm' is a variable, which does not reduce to a constant expression
+     |                                   ^ 
+
+semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+    --> tests/errors/continue_compilation_1.f90:2456:35
+     |
+2456 |         type(cc1_pdt_kind_value_t(3.5)) :: z  ! {Error} Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+     |                                   ^^^ 
+
+semantic error: value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
+    --> tests/errors/continue_compilation_1.f90:2457:34
+     |
+2457 |         type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
+     |                                  ^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33

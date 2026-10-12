@@ -12370,17 +12370,54 @@ public:
         return ASRUtils::EXPR(tmp);
     }
 
-    // The constant value `expr` of a type parameter. A length type parameter
-    // whose value is not a constant expression is not supported yet.
+    // Whether `name` is a length type parameter of the parameterized derived
+    // type `pdt`.
+    static bool is_pdt_len_param(const ASR::Struct_t* pdt,
+            const std::string& name) {
+        for (size_t i = 0; i < pdt->n_len_params; i++) {
+            if (name == pdt->m_len_params[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Whether `param` is a length type parameter of the type that declares
+    // it.
+    static bool is_pdt_len_param(ASR::symbol_t* param) {
+        param = ASRUtils::symbol_get_past_external(param);
+        ASR::asr_t* owner = ASRUtils::symbol_parent_symtab(param)->asr_owner;
+        if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner)) {
+            return false;
+        }
+        ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
+        return ASR::is_a<ASR::Struct_t>(*owner_sym) && is_pdt_len_param(
+            ASR::down_cast<ASR::Struct_t>(owner_sym), ASRUtils::symbol_name(param));
+    }
+
+    // The constant value `expr` of a type parameter. The value of a kind type
+    // parameter must be a constant expression; a length type parameter whose
+    // value is not a constant expression is not supported yet.
     int64_t pdt_type_param_constant(ASR::expr_t* expr, const Location& loc,
-            const std::string& pdt_name, const std::string& param_name) {
+            const std::string& pdt_name, const std::string& param_name,
+            bool is_len) {
+        if (!is_len) {
+            return ASRUtils::extract_kind<SemanticAbort>(expr, loc, diag);
+        }
+        if (!ASRUtils::is_integer(*ASRUtils::expr_type(expr))) {
+            diag.add(Diagnostic(
+                "value of length type parameter '" + param_name
+                + "' of parameterized derived type '" + pdt_name
+                + "' must be an integer",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         ASR::expr_t* value = ASRUtils::expr_value(expr);
         if (value == nullptr || !ASR::is_a<ASR::IntegerConstant_t>(*value)) {
             diag.add(Diagnostic(
-                "value of type parameter '" + param_name
+                "non-constant value of length type parameter '" + param_name
                 + "' of parameterized derived type '" + pdt_name
-                + "' must be a constant integer expression"
-                + " (non-constant length type parameters are not supported yet)",
+                + "' is not supported yet",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
@@ -12388,10 +12425,11 @@ public:
     }
 
     int64_t pdt_type_param_value(const AST::kind_item_t& item,
-            const std::string& pdt_name, const std::string& param_name) {
+            const std::string& pdt_name, const std::string& param_name,
+            bool is_len) {
         return pdt_type_param_constant(
             pdt_type_param_expr(item, pdt_name, param_name), item.loc,
-            pdt_name, param_name);
+            pdt_name, param_name, is_len);
     }
 
     // Monomorphize a Parameterized Derived Type (PDT).
@@ -12483,12 +12521,12 @@ public:
             auto kw_it = keyword_arg_map.find(param_name);
             if (kw_it != keyword_arg_map.end()) {
                 kind_val = pdt_type_param_value(sym_type->m_kind[kw_it->second],
-                    pdt_name, param_name);
+                    pdt_name, param_name, is_pdt_len_param(owner, param_name));
                 has_value = true;
             } else if (i < n_positional) {
                 // Positional argument at index i
                 kind_val = pdt_type_param_value(sym_type->m_kind[i],
-                    pdt_name, param_name);
+                    pdt_name, param_name, is_pdt_len_param(owner, param_name));
                 has_value = true;
             }
             if (!has_value) {
@@ -12976,7 +13014,8 @@ public:
                                         throw SemanticAbort();
                                     }
                                     int64_t kv = pdt_type_param_constant(ke,
-                                        sym_type->m_kind[ki].loc, derived_type_name, kp_name);
+                                        sym_type->m_kind[ki].loc, derived_type_name, kp_name,
+                                        is_pdt_len_param(pdt_st, kp_name));
                                     sentinel_args.push_back({is_param, kv});
                                     has_sentinel |= is_param;
                                 }
@@ -13806,7 +13845,8 @@ public:
         for (size_t index : info.kind_indices) {
             int64_t kind_val = pdt_type_param_constant(vals[index].m_value,
                 vals[index].loc, ASRUtils::symbol_name(v),
-                ASRUtils::symbol_name(info.members[index]));
+                ASRUtils::symbol_name(info.members[index]),
+                is_pdt_len_param(info.members[index]));
             kind_vals.push_back(kind_val);
             deferred |= depends_on_pdt_kind_param(vals[index].m_value);
         }

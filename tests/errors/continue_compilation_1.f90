@@ -2474,7 +2474,7 @@ contains
     subroutine cc1_pdt_len_sub(v, m)
         type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
         integer, intent(in) :: m
-        type(cc1_pdt_len_t(m)) :: w  ! {Error} value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' must be a constant integer expression (non-constant length type parameters are not supported yet)
+        type(cc1_pdt_len_t(m)) :: w  ! {Error} non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
     end subroutine cc1_pdt_len_sub
 end module cc1_pdt_len_mod
 
@@ -2501,3 +2501,23 @@ contains
         print *, extends_type_of(x, y)  ! {Error} `extends_type_of` with an argument of a parameterized derived type with length type parameters is not supported yet
     end subroutine cc1_pdt_len_ti_sub
 end module cc1_pdt_len_type_inquiry_mod
+
+! The value of a kind type parameter must be a constant integer expression.
+module cc1_pdt_kind_value_mod
+    implicit none
+    type :: cc1_pdt_kind_value_t(k)
+        integer, kind :: k
+        real(k) :: x
+    end type cc1_pdt_kind_value_t
+    type :: cc1_pdt_len_value_t(n)
+        integer, len :: n
+        integer :: a(n)
+    end type cc1_pdt_len_value_t
+contains
+    subroutine cc1_pdt_kind_value_sub(m)
+        integer, intent(in) :: m
+        type(cc1_pdt_kind_value_t(m)) :: y  ! {Error} Parameter 'm' is a variable, which does not reduce to a constant expression
+        type(cc1_pdt_kind_value_t(3.5)) :: z  ! {Error} Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+        type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
+    end subroutine cc1_pdt_kind_value_sub
+end module cc1_pdt_kind_value_mod
