@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_atomic_fetch_add_target_kind-b3896f5",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_atomic_fetch_add_target_kind.asr",
+    "infile_hash": "019437e7e7df3ac0a0910be475105ba9e8eb3e83a7ace69184e7b4d3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_atomic_fetch_add_target_kind-b3896f5.stderr",
+    "stderr_hash": "b8c173782c4aad8d150f2677ce607e3d1f9a7860546d8bf131aebda7",
+    "returncode": 2
+}
