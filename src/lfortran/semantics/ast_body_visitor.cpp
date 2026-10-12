@@ -21,6 +21,19 @@
 
 namespace LCompilers::LFortran {
 
+void visit_block_interface(Allocator &al, const AST::Interface_t &x,
+        SymbolTable *block_scope, diag::Diagnostics &diagnostics,
+        CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        LCompilers::LocationManager &lm);
+
 // `implicit_interface_procedures`: the procedure variables that calls through
 // an implicit interface are made through, mapped to the called procedure.
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
@@ -336,6 +349,16 @@ public:
             throw SemanticAbort();
         }
         visit_DerivedTypeUtil(x);
+    }
+
+    void visit_Interface(const AST::Interface_t& x) {
+        if( from_block ) {
+            visit_block_interface(al, x, current_scope, diag, compiler_options,
+                implicit_mapping, external_procedures_mapping,
+                explicit_intrinsic_procedures_mapping, instantiate_types,
+                instantiate_symbols, entry_functions,
+                entry_function_arguments_mapping, data_structure, lm);
+        }
     }
 
     void visit_Block(const AST::Block_t &x) {
