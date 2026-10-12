@@ -4453,6 +4453,55 @@ bool reads_valueless_parameter(ASR::expr_t* e) {
     return finder.found;
 }
 
+bool reads_variable_value(ASR::expr_t* e) {
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_expr(const ASR::expr_t &x) {
+                if (!ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(const_cast<ASR::expr_t*>(&x)))) {
+                    ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+                }
+            }
+            // An inquiry about a variable, e.g. `size(a)`, `kind(x)` or
+            // `len(s)`, does not read its value.
+            void visit_inquired(ASR::expr_t *arg) {
+                if (!ASR::is_a<ASR::Var_t>(*arg)) {
+                    visit_expr(*arg);
+                }
+            }
+            void visit_ArraySize(const ASR::ArraySize_t &x) {
+                visit_inquired(x.m_v);
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+                visit_inquired(x.m_v);
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_StringLen(const ASR::StringLen_t &x) {
+                visit_inquired(x.m_arg);
+            }
+            void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {
+            }
+            void visit_TypeInquiry(const ASR::TypeInquiry_t &/*x*/) {
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)
+                        && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                            != ASR::storage_typeType::Parameter) {
+                    found = true;
+                }
+            }
+    };
+    if (e == nullptr) {
+        return false;
+    }
+    Finder finder;
+    finder.visit_expr(*e);
+    return finder.found;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
     if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {

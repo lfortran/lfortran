@@ -10892,10 +10892,15 @@ public:
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
                                     ASRUtils::expr_type(init_expr))) ) {
+                            // A named constant or a component default
+                            // initializer of a template may use its deferred
+                            // constants, but not the value of a variable.
                             bool reads_deferred = in_template_definition
-                                && storage_type == ASR::storage_typeType::Parameter
+                                && (storage_type == ASR::storage_typeType::Parameter
+                                    || is_derived_type)
                                 && value == nullptr
-                                && ASRUtils::reads_valueless_parameter(init_expr);
+                                && ASRUtils::reads_valueless_parameter(init_expr)
+                                && !ASRUtils::reads_variable_value(init_expr);
                             if (is_pointer && !is_allocatable &&
                                     ASRUtils::is_pointer_association_initializer(
                                         init_expr)) {

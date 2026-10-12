@@ -1,7 +1,8 @@
 ! A scalar initializer of an array whose extents or value depend on a
 ! deferred constant of the template: a component default initializer, or a
 ! named constant. Each instantiation gets the array of the scalar value, as
-! for the same declaration outside a template.
+! for the same declaration outside a template. A component default
+! initializer can also be an expression of a deferred constant.
 
 module template_struct_default_01_m
     implicit none
@@ -21,6 +22,8 @@ module template_struct_default_01_m
             real :: s(n+1) = 1.5
             character(len=2) :: h(n) = 'ab'
             logical :: l(n) = .true.
+            integer :: k = 2*n + 1
+            integer :: g(n) = 2*n + 1
         end type
     contains
         integer function f() result(r)
@@ -37,7 +40,7 @@ program template_struct_default_01
     type(w3) :: s
     type(w2) :: t
 
-    print *, s%b, s%c, s%d, s%e, s%r, s%s, s%h, s%l
+    print *, s%b, s%c, s%d, s%e, s%r, s%s, s%h, s%l, s%k, s%g
     if (size(s%b) /= 3 .or. any(s%b /= 1)) error stop
     if (size(s%c) /= 3 .or. any(s%c /= 3)) error stop
     if (size(s%d) /= 3 .or. any(s%d /= 3)) error stop
@@ -46,12 +49,16 @@ program template_struct_default_01
     if (size(s%s) /= 4 .or. any(s%s /= 1.5)) error stop
     if (size(s%h) /= 3 .or. any(s%h /= 'ab')) error stop
     if (size(s%l) /= 3 .or. .not. all(s%l)) error stop
+    if (s%k /= 7) error stop
+    if (size(s%g) /= 3 .or. any(s%g /= 7)) error stop
 
-    print *, t%b, t%c, t%d, t%e
+    print *, t%b, t%c, t%d, t%e, t%k, t%g
     if (size(t%b) /= 2 .or. any(t%b /= 1)) error stop
     if (size(t%c) /= 2 .or. any(t%c /= 2)) error stop
     if (size(t%d) /= 3 .or. any(t%d /= 2)) error stop
     if (size(t%e) /= 4 .or. any(t%e /= 5)) error stop
+    if (t%k /= 5) error stop
+    if (size(t%g) /= 2 .or. any(t%g /= 5)) error stop
 
     print *, f3(), f2()
     if (f3() /= 12) error stop
