@@ -1278,9 +1278,10 @@ public:
 
     // The interface of a `procedure(iface) ::` entity in the instantiation.
     // A deferred interface of the template stands for its argument, and an
-    // interface declared next to the entity for its copy there. Any other
-    // interface is the same one, which make_Variable_t_util imports into the
-    // new scope when it is not visible from there.
+    // interface declared next to the entity or in the template's
+    // specification part for its copy there. Any other interface is the same
+    // one, which make_Variable_t_util imports into the new scope when it is
+    // not visible from there.
     ASR::symbol_t* instantiate_interface(ASR::Variable_t* x) {
         ASR::symbol_t* iface = x->m_type_declaration;
         if (iface == nullptr) {
@@ -1298,6 +1299,18 @@ public:
             // scope, so the copy of the interface may not exist yet.
             SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
                 ASRUtils::symbol_name(iface), iface, diagnostics);
+            return t.instantiate();
+        }
+        if (owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
+                && ASR::is_a<ASR::Function_t>(*definition)) {
+            // Not instantiated yet, e.g. not named by the ONLY list: instantiate
+            // it in the corresponding scope, like a derived type the entity
+            // uses (see substitute_type).
+            SymbolTable* scope = corresponding_target_scope(
+                ASRUtils::symbol_parent_symtab(definition));
+            std::string new_name = scope->get_unique_name("__asr_" + name, false);
+            SymbolInstantiator t(al, scope, type_subs, symbol_subs, new_name,
+                definition, diagnostics);
             return t.instantiate();
         }
         return iface;
