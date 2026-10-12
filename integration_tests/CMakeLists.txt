@@ -4379,6 +4379,9 @@ RUN(NAME traits_numeric_02_oracle LABELS gfortran llvm)
 RUN(NAME traits_kind_sets_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_kind_sets_01_contracts.f90 traits_kind_sets_01_providers.f90)
+RUN(NAME traits_kind_sets_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_kind_sets_01_contracts.f90 traits_kind_sets_01_providers.f90)
 RUN(NAME traits_generics_module_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_generics_module_01_sums.f90 traits_generics_module_01_ops.f90)
@@ -4388,6 +4391,10 @@ RUN(NAME traits_generics_module_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_generics_module_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_generics_module_03_plain.f90)
+RUN(NAME traits_generics_module_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_generics_module_01_sums.f90 traits_generics_module_01_ops.f90
+        traits_generics_module_03_plain.f90)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)

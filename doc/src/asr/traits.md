@@ -1205,7 +1205,9 @@ declarations for C interoperability but is not one of `REAL_KINDS`, so
 `real(*)` does not include it; it can still be written as an explicit member.
 Logical and character wildcards, like their explicit members, are not
 implemented. `traits_kind_sets_01` calls every member statically and through
-closed runtime slots of separately compiled modules.
+closed runtime slots of separately compiled modules, except `real(16)`, which
+`traits_kind_sets_02` calls: CI does not run it with LLVM 7 and 8, which
+miscompile `real(16)` operations.
 
 ### The intrinsic module `generics`
 
@@ -1251,8 +1253,10 @@ where a USE would access the intrinsic module instead of standing in for it,
 and an installation without the runtime module reports the intrinsic module
 `generics` as not found. `traits_generics_module_01` to `_03` cover separate
 compilation, renamed imports, a program's own module `generics` and the USE
-without a nature; `continue_compilation_traits_kind_sets_internal_name` covers
-a module of the program with the runtime module's name.
+without a nature, and `_04` the `real(16)` member through the same modules
+(not run with LLVM 7 and 8 either);
+`continue_compilation_traits_kind_sets_internal_name` covers a module of the
+program with the runtime module's name.
 
 ### Inline finite constraints
 

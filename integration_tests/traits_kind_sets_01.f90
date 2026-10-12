@@ -5,7 +5,8 @@
 ! INTEGER_KINDS and REAL_KINDS and the real kinds with a complex type. Every
 ! member is called, statically and through the closed runtime slots of the
 ! separately compiled contracts and providers, with checked values and kinds;
-! a generic over the same members written out gives the same results.
+! a generic over the same members written out gives the same results. The
+! real(real128) member is checked in traits_kind_sets_02.
 program traits_kind_sets_01
     use, intrinsic :: iso_fortran_env, only: int8, int16, int32, int64, &
         real32, real64, real128, integer_kinds, real_kinds
@@ -18,7 +19,6 @@ program traits_kind_sets_01
     integer(int64)  :: i8(2)
     real(real32)    :: r4(2)
     real(real64)    :: r8(2)
-    real(real128)   :: r16(3), tiny128
     complex(real32) :: c4(3)
     complex(real64) :: c8(2)
     type(Summer)    :: provider
@@ -34,9 +34,6 @@ program traits_kind_sets_01
     i8 = [huge(1_int64) - 5_int64, 2_int64]
     r4 = [0.5_real32, 0.25_real32]
     r8 = [1.5_real64, 2.25_real64]
-    ! 2**-100 is lost next to 1 in real64 but not in real128.
-    tiny128 = 2.0_real128**(-100)
-    r16 = [1.0_real128, tiny128, 0.0_real128]
     c4 = [(1.0_real32, 2.0_real32), (0.0_real32, 0.0_real32), (3.0_real32, -1.0_real32)]
     c8 = [(1.5_real64, 0.0_real64), (0.0_real64, -2.0_real64)]
 
@@ -46,8 +43,6 @@ program traits_kind_sets_01
     if (total(i8) /= huge(1_int64) - 3_int64 .or. kind(total(i8)) /= int64) error stop 13
     if (total(r4) /= 0.75_real32 .or. kind(total(r4)) /= real32) error stop 14
     if (total(r8) /= 3.75_real64 .or. kind(total(r8)) /= real64) error stop 15
-    if (total(r16) /= 1.0_real128 + tiny128 .or. total(r16) == 1.0_real128) error stop 16
-    if (kind(total(r16)) /= real128) error stop 17
     if (total(c4) /= (4.0_real32, 1.0_real32) .or. kind(total(c4)) /= real32) error stop 18
     if (total(c8) /= (1.5_real64, -2.0_real64) .or. kind(total(c8)) /= real64) error stop 19
     if (total{integer(int16)}(i2(2:3)) /= 500_int16) error stop 20
@@ -59,18 +54,17 @@ program traits_kind_sets_01
     if (total_explicit(i8) /= total(i8)) error stop 25
     if (total_explicit(r4) /= total(r4)) error stop 26
     if (total_explicit(r8) /= total(r8)) error stop 27
-    if (total_explicit(r16) /= total(r16)) error stop 28
     if (total_explicit(c4) /= total(c4)) error stop 29
     if (total_explicit{complex(real64)}(c8) /= total(c8)) error stop 30
 
-    call check_sums(provider, i1, i2, i4, i8, r4, r8, r16)
-    call check_counts(provider, i1, i2, i8, r4, r16, c4, c8)
-    call check_largest(provider, i1, i2, i8, r8, r16)
+    call check_sums(provider, i1, i2, i4, i8, r4, r8)
+    call check_counts(provider, i1, i2, i8, r4, c4, c8)
+    call check_largest(provider, i1, i2, i8, r8)
     print '(a)', 'traits_kind_sets_01: ok'
 
 contains
 
-    subroutine check_sums(summer, i1, i2, i4, i8, r4, r8, r16)
+    subroutine check_sums(summer, i1, i2, i4, i8, r4, r8)
         class(ISum),    intent(in) :: summer
         integer(int8),  intent(in) :: i1(:)
         integer(int16), intent(in) :: i2(:)
@@ -78,48 +72,40 @@ contains
         integer(int64), intent(in) :: i8(:)
         real(real32),   intent(in) :: r4(:)
         real(real64),   intent(in) :: r8(:)
-        real(real128),  intent(in) :: r16(:)
         if (summer%sum(i1) /= 5_int8 .or. kind(summer%sum(i1)) /= int8) error stop 40
         if (summer%sum(i2) /= 600_int16 .or. kind(summer%sum(i2)) /= int16) error stop 41
         if (summer%sum(i4(3:1:-1)) /= 6) error stop 42
         if (summer%sum{integer(int64)}(i8) /= huge(1_int64) - 3_int64) error stop 43
         if (summer%sum(r4) /= 0.75_real32 .or. kind(summer%sum(r4)) /= real32) error stop 44
         if (summer%sum(r8(2:2)) /= 2.25_real64) error stop 45
-        if (summer%sum{real(real128)}(r16) /= 1.0_real128 + r16(2)) error stop 46
-        if (kind(summer%sum(r16)) /= real128) error stop 47
     end subroutine check_sums
 
-    subroutine check_counts(counter, i1, i2, i8, r4, r16, c4, c8)
+    subroutine check_counts(counter, i1, i2, i8, r4, c4, c8)
         class(ICount),   intent(in) :: counter
         integer(int8),   intent(in) :: i1(:)
         integer(int16),  intent(in) :: i2(:)
         integer(int64),  intent(in) :: i8(:)
         real(real32),    intent(in) :: r4(:)
-        real(real128),   intent(in) :: r16(:)
         complex(real32), intent(in) :: c4(:)
         complex(real64), intent(in) :: c8(:)
         if (counter%nonzero(i1) /= 3) error stop 50
         if (counter%nonzero(i2(1:0)) /= 0) error stop 51
         if (counter%nonzero(i8) /= 2) error stop 52
         if (counter%nonzero(r4) /= 2) error stop 53
-        if (counter%nonzero(r16) /= 2) error stop 54
         if (counter%nonzero(c4) /= 2) error stop 55
         if (counter%nonzero{complex(real64)}(c8) /= 2) error stop 56
         if (counter%nonzero(c4(2:2)) /= 0) error stop 57
     end subroutine check_counts
 
-    subroutine check_largest(maximum, i1, i2, i8, r8, r16)
+    subroutine check_largest(maximum, i1, i2, i8, r8)
         class(IMax),    intent(in) :: maximum
         integer(int8),  intent(in) :: i1(:)
         integer(int16), intent(in) :: i2(:)
         integer(int64), intent(in) :: i8(:)
         real(real64),   intent(in) :: r8(:)
-        real(real128),  intent(in) :: r16(:)
         if (maximum%largest(i1) /= 7_int8 .or. kind(maximum%largest(i1)) /= int8) error stop 60
         if (maximum%largest(i2(3:1:-1)) /= 300_int16) error stop 61
         if (maximum%largest(i8) /= huge(1_int64) - 5_int64) error stop 62
         if (maximum%largest(r8) /= 2.25_real64) error stop 63
-        if (maximum%largest{real(real128)}(r16) /= 1.0_real128) error stop 64
-        if (maximum%largest(r16(2:3)) /= r16(2)) error stop 65
     end subroutine check_largest
 end program traits_kind_sets_01
