@@ -1431,6 +1431,7 @@ RUN(NAME procedure_pointer_28 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 # which the standard allows, so the following tests are llvm only
 RUN(NAME procedure_pointer_29 LABELS llvm)
 RUN(NAME procedure_pointer_30 LABELS llvm)
+RUN(NAME procedure_pointer_31 LABELS llvm)
 RUN(NAME procedure_pointer_32 LABELS llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
