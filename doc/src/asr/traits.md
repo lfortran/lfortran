@@ -721,6 +721,20 @@ arguments. Instances are not shared between program units yet: equal
 instances created by different units are different types, and the
 conformances of an instance are visible only in the unit that created it.
 
+An internal procedure of a main program cannot yet use through host
+association a variable of the program whose type is, or holds through
+components, arrays, pointers or allocatables, an instance that the main
+program creates: such a use is diagnosed as not implemented yet. An internal
+procedure reaches the program's variables by having them, and the program
+types they need, moved into a module, and an instance cannot be moved there
+yet without its procedure copies, initializers, conformances and runtime
+evidence. Passing the variable as an argument, declaring an instance in the
+internal procedure itself, and host association of an instance a module
+creates all work. Moving an instance with all of its entities, which makes
+it an instance of that module, is planned once the remaining paper examples
+are supported. `continue_compilation_traits_06` covers the diagnostic and
+`traits_generic_type_06` the uses that work.
+
 ## Inheritance and composed constraints
 
 A trait can inherit the requirements of other traits and add its own:

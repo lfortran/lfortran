@@ -8985,6 +8985,41 @@ end program gt_main
         }
         for (const auto &name : names) program->m_symtab->erase_symbol(name);
     };
+    SUBCASE("a type holds a program's instance through wrappers and program types") {
+        const LCompilers::Location &loc = instance->base.base.loc;
+        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, &instance->base, true);
+        CHECK(ASRUtils::program_generic_instance_in_type(type, &instance->base) == instance);
+        ASR::ttype_t *pointer = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+        CHECK(ASRUtils::program_generic_instance_in_type(pointer, &instance->base) == instance);
+        LCompilers::Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t deferred;
+        deferred.loc = loc;
+        deferred.m_start = nullptr;
+        deferred.m_length = nullptr;
+        dims.push_back(al, deferred);
+        ASR::ttype_t *allocatable = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+            ASRUtils::make_Array_t_util(al, loc, type, dims.p, dims.size())));
+        CHECK(ASRUtils::program_generic_instance_in_type(allocatable, &instance->base) ==
+            instance);
+        // A type of the program holds it through a component, also when the
+        // program's types refer to each other in a cycle.
+        ASR::symbol_t *plain = program->m_symtab->get_symbol("plain");
+        auto *component = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Struct_t>(plain)->m_symtab->get_symbol("n"));
+        ASR::ttype_t *plain_type = ASRUtils::make_StructType_t_util(al, loc, plain, true);
+        CHECK(ASRUtils::program_generic_instance_in_type(plain_type, plain) == nullptr);
+        component->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, plain_type));
+        component->m_type_declaration = plain;
+        CHECK(ASRUtils::program_generic_instance_in_type(plain_type, plain) == nullptr);
+        component->m_type = type;
+        component->m_type_declaration = &instance->base;
+        CHECK(ASRUtils::program_generic_instance_in_type(plain_type, plain) == instance);
+        // A module's type holds none.
+        ASR::symbol_t *simple_sum = simple->m_symtab->get_symbol("simplesum");
+        CHECK(ASRUtils::program_generic_instance_in_type(ASRUtils::make_StructType_t_util(
+            al, loc, simple_sum, true), simple_sum) == nullptr);
+    }
     SUBCASE("a definition records its package's binders") {
         parameters->n_parameters = 0;
         rejects("asr.verify.generic_type.definition_owner");

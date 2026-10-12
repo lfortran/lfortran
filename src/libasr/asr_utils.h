@@ -11061,6 +11061,11 @@ bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable
 // Whether a program-owned procedure copy (its method Template, if any)
 // references a variable of the program `program`.
 bool program_generic_instance_captures(ASR::symbol_t *procedure, SymbolTable *program);
+// The generic type instance a main program owns that a value of the type
+// `type`, declared by `declaration`, is or holds past arrays, pointers and
+// allocatables, through the parents and components of the program's
+// derived types; nullptr if there is none.
+ASR::Struct_t *program_generic_instance_in_type(ASR::ttype_t *type, ASR::symbol_t *declaration);
 
 const ASR::trait_binding_t *find_trait_binding(
     const ASR::TraitImplementation_t &implementation, ASR::symbol_t *member);

@@ -7797,6 +7797,51 @@ bool program_generic_instance_captures(ASR::symbol_t *procedure, SymbolTable *pr
     return captures_program_variable(procedure, program);
 }
 
+// The program-owned generic type instance that the derived type `symbol` is
+// or holds, through its parent or components of program types; `visited`
+// ends recursive types.
+static ASR::Struct_t *program_generic_instance_in_struct(ASR::symbol_t *symbol,
+    std::set<ASR::symbol_t*> &visited)
+{
+    symbol = symbol ? symbol_get_past_external(symbol) : nullptr;
+    if (!symbol || !ASR::is_a<ASR::Struct_t>(*symbol) || !visited.insert(symbol).second) {
+        return nullptr;
+    }
+    auto *structure = ASR::down_cast<ASR::Struct_t>(symbol);
+    SymbolTable *owner = structure->m_symtab->parent;
+    // A type of a module cannot hold an instance a program owns.
+    if (!owner || !owner->asr_owner || !ASR::is_a<ASR::symbol_t>(*owner->asr_owner) ||
+            !ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner->asr_owner))) {
+        return nullptr;
+    }
+    if (generic_type_instance(*structure)) return structure;
+    if (ASR::Struct_t *found = program_generic_instance_in_struct(structure->m_parent, visited)) {
+        return found;
+    }
+    for (size_t i = 0; i < structure->n_members; i++) {
+        ASR::symbol_t *member = structure->m_symtab->get_symbol(structure->m_members[i]);
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+        auto *component = ASR::down_cast<ASR::Variable_t>(member);
+        if (!ASR::is_a<ASR::StructType_t>(*type_get_past_array(
+                type_get_past_allocatable_pointer(component->m_type)))) continue;
+        if (ASR::Struct_t *found = program_generic_instance_in_struct(
+                component->m_type_declaration, visited)) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+ASR::Struct_t *program_generic_instance_in_type(ASR::ttype_t *type, ASR::symbol_t *declaration)
+{
+    if (!type || !declaration || !ASR::is_a<ASR::StructType_t>(*type_get_past_array(
+            type_get_past_allocatable_pointer(type)))) {
+        return nullptr;
+    }
+    std::set<ASR::symbol_t*> visited;
+    return program_generic_instance_in_struct(declaration, visited);
+}
+
 std::string generic_type_spelling(const ASR::Struct_t &x)
 {
     auto *instance = generic_type_instance(x);

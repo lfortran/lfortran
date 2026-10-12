@@ -20,6 +20,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/pass/nested_vars.h>
 
 namespace LCompilers::LFortran {
 
@@ -6354,12 +6355,43 @@ public:
         }
 
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
+        check_program_instance_host_association(*v);
 
         starting_m_body = nullptr;
         starting_n_body =  0;
         remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
+    }
+
+    // The nested_vars pass gives internal procedures the main program
+    // variables they use through host association by moving them, and the
+    // program types they need, into a module. A generic type instance the
+    // program creates cannot be moved there yet without its procedure copies
+    // and evidence, so the first such use of a variable whose type is or
+    // holds one is diagnosed.
+    void check_program_instance_host_association(const ASR::Program_t &program) {
+        bool instances = false;
+        for (const auto &entry : program.m_symtab->get_scope()) {
+            instances |= ASR::is_a<ASR::Struct_t>(*entry.second) &&
+                ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second));
+        }
+        if (!instances) return;
+        bool unsupported = false;
+        for (const auto &[symbol, loc] : host_associated_variables(al, program)) {
+            ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(symbol);
+            if (!ASR::is_a<ASR::Variable_t>(*variable)) continue;
+            auto *v = ASR::down_cast<ASR::Variable_t>(variable);
+            ASR::Struct_t *instance = ASRUtils::program_generic_instance_in_type(
+                v->m_type, v->m_type_declaration);
+            if (!instance) continue;
+            diag.add(Diagnostic("host association of the main program variable '" +
+                std::string(v->m_name) + "', whose type involves the generic type instance '" +
+                ASRUtils::generic_type_spelling(*instance) + "' that the program creates, "
+                "is not implemented yet", Level::Error, Stage::Semantic, {Label("", {loc})}));
+            unsupported = true;
+        }
+        if (unsupported) throw SemanticAbort();
     }
 
     void visit_Entry(const AST::Entry_t& /*x*/) {

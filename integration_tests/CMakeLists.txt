@@ -4140,6 +4140,8 @@ RUN(NAME traits_generic_type_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRAFILES traits_generic_type_04_lib.f90 traits_generic_type_04_owner.f90)
 RUN(NAME traits_generic_type_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_type_06 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_numeric_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
