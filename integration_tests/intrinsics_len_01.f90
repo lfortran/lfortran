@@ -36,6 +36,25 @@ contains
       character(len=len(a) + 1) :: r
       r = repeat("x", len(r))
    end function pad
+
+   subroutine len_array_ops(a, n)
+      character(len=*), intent(in) :: a(:)
+      integer, intent(in) :: n
+      integer :: u(3), v(3)
+      u = [1, 2, 3]
+      v = len(a) * u
+      if (any(v /= n * u)) error stop
+      v = u + len(a)
+      if (any(v /= n + u)) error stop
+      v = max(len(a), u)
+      if (any(v /= max(n, u))) error stop
+      v = 0
+      where (u < len(a)) v = 1
+      if (any(v /= merge(1, 0, u < n))) error stop
+      v = 0
+      v = v + len(a) * [1, 2, 3]
+      if (any(v /= n * u)) error stop
+   end subroutine len_array_ops
 end module intrinsics_len_01_mod
 
 program intrinsics_len_01
@@ -44,7 +63,9 @@ program intrinsics_len_01
    character(len=5) :: empty(0)
    character(len=3) :: full(4)
    character(len=6) :: grid(0, 3)
-   character(len=:), allocatable :: dal(:)
+   character(len=:), allocatable :: dal(:), d5(:)
+   character(len=2) :: one(1)
+   integer :: w(2)
    type(holder) :: h
    type(item) :: items(3)
 
@@ -69,6 +90,15 @@ program intrinsics_len_01
    if (len(items%s) /= 6) error stop
    if (len(items(1:2)%s) /= 6) error stop
    if (len(items(3:2)%s) /= 6) error stop
+
+   call len_array_ops(full, 3)
+   call len_array_ops(full(1:2), 3)
+   call len_array_ops(one, 2)
+   call len_array_ops(empty, 5)
+
+   allocate(character(len=4) :: d5(5))
+   w = len(d5) + [10, 20]
+   if (any(w /= [14, 24])) error stop
 
    print *, len_lb0(empty), len_1d(full), len_2d(grid), len(dal)
 end program intrinsics_len_01
