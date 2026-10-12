@@ -29550,11 +29550,11 @@ public:
                                 lbound = llvm::ConstantInt::get(target_type, 1);
                             }
                             if (length) {
-                                unsigned target_bit_width = target_type->getIntegerBitWidth();
-                                llvm::Value *ub = builder->CreateSub(
-                                    builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
-                                    llvm::ConstantInt::get(context, llvm::APInt(target_bit_width, 1)));
                                 llvm::Value *length_cast = builder->CreateSExtOrTrunc(length, target_type);
+                                llvm::Value *ub = builder->CreateSub(
+                                    builder->CreateAdd(length_cast,
+                                        builder->CreateSExtOrTrunc(lbound, target_type)),
+                                    llvm::ConstantInt::get(target_type, 1));
                                 llvm::Value *is_zero = builder->CreateICmpEQ(
                                     length_cast, llvm::ConstantInt::get(target_type, 0));
                                 ub = builder->CreateSelect(is_zero,
