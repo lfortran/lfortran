@@ -31,6 +31,21 @@ test suite. Its executable is `build/llvm11/src/bin/lfortran`; run it through
 On Windows the executable has the `.exe` extension. The native Windows task
 uses Release mode with compiler and runtime stacktraces disabled.
 
+After editing sources, rebuild incrementally:
+
+```bash
+pixi run -e llvm11 rebuild > build.log 2>&1
+```
+
+`rebuild` runs `cmake --build` and recompiles only what changed. `build`
+reconfigures CMake, which reruns `build0.sh`: it regenerates `asr.h`, `ast.h`,
+the parser and the other generated sources with new timestamps, so almost
+everything is recompiled. Use `build` for the first build, for new CMake
+options, and after editing a generator input (`src/libasr/ASR.asdl`,
+`grammar/AST.asdl`, `src/lfortran/parser/parser.yy`, the `.re` tokenizers,
+`src/libasr/wasm_instructions.txt`, the generator scripts or
+`src/server/generator/`); `rebuild` would compile stale generated sources.
+
 Select another environment explicitly to keep multiple configurations:
 
 ```bash

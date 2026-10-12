@@ -25,8 +25,8 @@ CI covers the other modes, backends, and platforms once the branch is pushed.
   `pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2'`**,
   which installs dependencies and builds `build/llvm11/src/bin/lfortran` like
   Quick's LLVM 11 compiler (Debug with assertions, compiled with `-O2`); the
-  flags persist in the CMake cache for later `pixi run -e llvm11 build`
-  rebuilds. Reuse the exact Pixi environment/build supplied by `fix-issue` or
+  flags persist in the CMake cache for later `build` and `rebuild` runs.
+  Reuse the exact Pixi environment/build supplied by `fix-issue` or
   the user.
   `AGENTS.md` owns setup details; do not duplicate dependency
   lists or CMake configuration recipes here.
@@ -112,8 +112,12 @@ you have not observed is a guess.
    and capture its fail-before log with the still-unfixed build (see
    **Confirm the test actually captures the bug**). Then rebuild:
    ```bash
-   CMAKE_BUILD_PARALLEL_LEVEL=<jobs> pixi run -e llvm11 build > build.log 2>&1
+   CMAKE_BUILD_PARALLEL_LEVEL=<jobs> pixi run -e llvm11 rebuild > build.log 2>&1
    ```
+   `rebuild` recompiles only what changed. If the fix edits a generator input
+   (`ASR.asdl`, `AST.asdl`, `parser.yy`, a `.re` tokenizer, or another input
+   listed in `AGENTS.md`), use `pixi run -e llvm11 build` instead, which
+   regenerates the sources but recompiles almost everything.
 3. Re-run the MRE to verify the fix:
    ```bash
    pixi run -e llvm11 bash run.sh
@@ -295,6 +299,8 @@ before handing it back; never claim automated review supplies human sign-off.
   the module files are stale — clean only the assigned build with
   `pixi run -e llvm11 clean`, then `pixi run -e llvm11 build`, and confirm
   the selected compiler path. Never clean another worker's build.
-- **Rebuild quickly**: reuse `pixi run -e llvm11 build` during iteration.
+- **Rebuild quickly**: use `pixi run -e llvm11 rebuild` during iteration;
+  `build` reruns the source generators and recompiles almost everything, so
+  use it only when a generator input changed (see `AGENTS.md`).
 - **Test naming**: Look at nearby tests in `CMakeLists.txt` for naming
   conventions. Usually it's `<feature>_<number>`.
