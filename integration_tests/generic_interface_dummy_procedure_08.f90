@@ -116,6 +116,8 @@ use generic_interface_dummy_procedure_08_mod
 implicit none
 real(4) :: out4
 real(8) :: out8
+procedure(fun_r8), pointer :: pf => null()
+procedure(sub_r8), pointer :: ps => null()
 
 call gen(fun_r8, out8)
 print *, out8
@@ -138,4 +140,19 @@ called = 0
 call gen_untyped(sub_int, 5)
 print *, called
 if (called /= 5) error stop 9
+
+! Procedure pointer actuals: a pointer to a function matches the typed
+! external dummy by result type, a pointer to a subroutine does not
+pf => fun_r8
+out8 = 0
+call gen(pf, out8)
+print *, out8
+if (abs(out8 - 2.0_8) > 1e-12_8) error stop 10
+if (gen_res(pf) /= 8) error stop 11
+
+ps => sub_r8
+called = 0
+call gen_sub(ps)
+print *, called
+if (called /= 1) error stop 12
 end program

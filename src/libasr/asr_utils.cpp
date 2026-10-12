@@ -3942,12 +3942,15 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
+                // A procedure pointer actual has the type
+                // Pointer(FunctionType); compare its target's signature.
+                ASR::ttype_t *arg1_proc = ASRUtils::type_get_past_pointer(arg1);
 
                 // A procedure declared `external` with no interface (e.g.
                 // `external :: f`) has an unknown signature, so it matches any
                 // explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
-                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1_proc) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1_proc);
                     if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
                         continue;
                     }
