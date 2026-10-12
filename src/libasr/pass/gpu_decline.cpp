@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -105,11 +107,24 @@ static std::string article(const std::string &word) {
     }
 }
 
+bool gpu_source_name(const std::string &name) {
+    return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
+        && !ASRUtils::is_compiler_generated_name(name);
+}
+
 // The routine an unsupported statement was found in, when it was reached
 // through a call rather than written in the loop body.
 static std::string in_routine(const GpuDecline &decline) {
-    if (decline.name.empty()) return "";
+    if (!gpu_source_name(decline.name)) return "";
     return " in '" + decline.name + "'";
+}
+
+// `what` followed by the quoted name, or `unnamed` for a name the program
+// did not write, such as that of a temporary.
+static std::string named(const std::string &what, const std::string &name,
+        const std::string &unnamed) {
+    if (!gpu_source_name(name)) return unnamed;
+    return what + " '" + name + "'";
 }
 
 std::string gpu_decline_message(const GpuDecline &decline) {
@@ -142,15 +157,15 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructElementGather:
             return "a derived-type element cannot be gathered for the gpu";
         case GpuDeclineReason::UnsizedLocalArray:
-            return "local array '" + decline.name +
-                "' has no extent the gpu can use";
+            return named("local array", decline.name, "a temporary array")
+                + " has no extent the gpu can use";
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
             return "an aliased assignment needs a run-time sized temporary";
         case GpuDeclineReason::UngatherableStridedSection:
             return "a strided section cannot be gathered for the gpu";
         case GpuDeclineReason::SectionLeadingExtentVaries:
-            return "the section of '" + decline.name + "' passed to a "
-                "procedure changes its extent between iterations in a "
+            return named("the section of", decline.name, "a section") +
+                " passed to a procedure changes its extent between iterations in a "
                 "dimension other than its last";
         case GpuDeclineReason::SectionCopyNotPlaceable: {
             std::string where, before;
@@ -181,8 +196,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                     where = "in this construct";
                     before = "the construct"; break;
             }
-            std::string what = "the section of '" + decline.name
-                + "' passed to a procedure " + where;
+            std::string what = named("the section of", decline.name,
+                "a section") + " passed to a procedure " + where;
             switch (decline.conflict) {
                 case GpuSectionConflict::ValueChanges:
                     return what + " is copied into a contiguous buffer "
@@ -202,35 +217,46 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::DeviceFunctionInlining:
             return "a device function cannot be inlined";
         case GpuDeclineReason::DeviceFunctionImplementation:
-            return "procedure '" + decline.name + "' has no device implementation";
+            return named("procedure", decline.name, "a procedure") +
+                " has no device implementation";
         case GpuDeclineReason::RecursiveDeviceFunction:
-            return "recursive device procedure '" + decline.name +
-                "' has no gpu lowering yet";
+            return named("recursive device procedure", decline.name,
+                "a recursive device procedure") + " has no gpu lowering yet";
         case GpuDeclineReason::FunctionResultAllocation:
-            return "the allocatable array result of '" + decline.name +
-                "' has no single allocation the gpu can use";
+            return named("the allocatable array result of", decline.name,
+                "the allocatable array result of a function") +
+                " has no single allocation the gpu can use";
         case GpuDeclineReason::NestedArraySection:
             return "a nested array section cannot be addressed on the gpu";
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
-            return "workspace '" + decline.name +
-                "' cannot be sized on the host";
+            return named("workspace", decline.name, "a temporary array") +
+                " cannot be sized on the host";
         case GpuDeclineReason::HeapArrayUse:
             return "the array " + decline.name + " on the device heap is not "
                 "supported yet";
         case GpuDeclineReason::StructComponentNotSizeable:
-            return "the allocatable component '" + decline.name +
+        {
+            // `value%component`: a temporary value is not named.
+            std::string component = decline.name;
+            size_t at = component.find('%');
+            if (at != std::string::npos &&
+                    !gpu_source_name(component.substr(0, at))) {
+                component = component.substr(at + 1);
+            }
+            return "the allocatable component '" + component +
                 "' of a derived-type value of device code cannot be sized "
                 "on the host";
+        }
 
         case GpuDeclineReason::LocalTypeWidth:
-            return "local '" + decline.name +
-                "' has no gpu type of the same width";
+            return named("local", decline.name, "a temporary") +
+                " has no gpu type of the same width";
         case GpuDeclineReason::SymbolTypeNotRepresentable:
-            return unsupported + type_name + ", the type of '" +
-                decline.name + "'";
+            return unsupported + type_name + named(", the type of",
+                decline.name, "");
         case GpuDeclineReason::WideTypeNotOnDevice:
-            return unsupported + type_name + ", used by '" +
-                decline.name + "'";
+            return unsupported + type_name + named(", used by",
+                decline.name, "");
 
         case GpuDeclineReason::StatementIo:
             return unsupported + "input or output" + in_routine(decline);
@@ -238,8 +264,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "a character stop code that is not a "
                 "constant" + in_routine(decline);
         case GpuDeclineReason::StoppingProcedureShared:
-            return unsupported + "procedure '" + decline.name + "', which "
-                "can stop, passed as an argument or shared with the host";
+            return unsupported + named("procedure", decline.name,
+                "a procedure") + ", which can stop, passed as an argument or shared with the host";
 
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +
@@ -288,7 +314,7 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::ArrayElementNotNumeric:
             return unsupported + "an array whose elements are not numbers";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
-            if (!decline.name.empty()) {
+            if (gpu_source_name(decline.name)) {
                 return unsupported + "the per-thread workspace for `" +
                     decline.name + "`, whose extent cannot be rebuilt on "
                     "the host";

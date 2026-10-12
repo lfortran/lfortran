@@ -4670,6 +4670,13 @@ filename = "../integration_tests/gpu_metal_438.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
+# A temporary of a device routine the host cannot size: the error does not
+# name it.
+[[test]]
+filename = "../integration_tests/gpu_metal_441.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
 # An impure elemental function is not pure: a run-time sized local of a
 # device routine whose extent calls one cannot be sized by the callers.
 [[test]]
