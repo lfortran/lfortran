@@ -7,6 +7,7 @@
 #include <libasr/pass/array_by_data.h>
 #include <libasr/asr_builder.h>
 
+#include <algorithm>
 #include <vector>
 #include <utility>
 #include <deque>
@@ -85,6 +86,94 @@ static void remap_block_calls(Vec<ASR::stmt_t*>& body,
 }
 
 /*
+A device procedure is transformed in place (see proc2inplace below), so a
+dummy it takes by data is taken that way from every caller, and addressed
+as contiguous. A caller that cannot redirect a call to a copy has no
+other way to hand such a dummy an array whose elements need not be
+adjacent: an array pointer, such as the name an earlier pass binds to a
+section it hands to a routine (`matmul(w(1:n, 1:m, l), x)`), or a dummy
+of a device procedure that keeps its descriptor. Such a dummy keeps its
+descriptor instead, and the device code generators hand it the strides
+of its actual argument. On the host a call with a pointer actual keeps
+calling the procedure that takes descriptors, as can_edit_call decides.
+*/
+class DeviceDescriptorDummies : public ASR::BaseWalkVisitor<DeviceDescriptorDummies>
+{
+    public:
+
+        // A device procedure and the index of an array dummy that keeps
+        // its descriptor.
+        std::set<std::pair<ASR::symbol_t*, size_t>> kept;
+
+        void collect(ASR::TranslationUnit_t &unit) {
+            do {
+                changed = false;
+                visit_TranslationUnit(unit);
+            } while( changed );
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            visit_call(x.m_name, x.m_args, x.n_args);
+            ASR::BaseWalkVisitor<DeviceDescriptorDummies>::visit_SubroutineCall(x);
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            visit_call(x.m_name, x.m_args, x.n_args);
+            ASR::BaseWalkVisitor<DeviceDescriptorDummies>::visit_FunctionCall(x);
+        }
+
+    private:
+
+        bool changed = false;
+
+        void visit_call(ASR::symbol_t *name, ASR::call_arg_t *args,
+                size_t n_args) {
+            ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(name);
+            if( !ASRUtils::runs_on_device(fn) ) {
+                return;
+            }
+            for( size_t i = 0; i < n_args; i++ ) {
+                if( args[i].m_value && may_be_strided(args[i].m_value) &&
+                    kept.insert({fn, i}).second ) {
+                    changed = true;
+                }
+            }
+        }
+
+        bool may_be_strided(ASR::expr_t *e) {
+            e = ASRUtils::get_past_array_physical_cast(e);
+            if( !ASR::is_a<ASR::Var_t>(*e) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(e)) ) {
+                return false;
+            }
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                return false;
+            }
+            if( ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(sym)->m_type) ) {
+                return true;
+            }
+            ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(sym)->asr_owner;
+            if( !owner || !ASR::is_a<ASR::symbol_t>(*owner) ) {
+                return false;
+            }
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
+            if( !ASRUtils::runs_on_device(owner_sym) ) {
+                return false;
+            }
+            ASR::Function_t *owner_fn = ASR::down_cast<ASR::Function_t>(owner_sym);
+            for( size_t i = 0; i < owner_fn->n_args; i++ ) {
+                if( ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v == sym ) {
+                    return kept.count({owner_sym, i}) > 0;
+                }
+            }
+            return false;
+        }
+};
+
+/*
 The following visitor converts function/subroutines (a.k.a procedures)
 with array arguments having empty dimensions to arrays having dimensional
 information available from function arguments. See example below,
@@ -127,6 +216,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         // launch statement, and a routine it calls is reachable from nowhere
         // but the device code.
         std::map< ASR::symbol_t*, InPlaceProcedure > proc2inplace;
+        // The array dummies of device procedures that keep their
+        // descriptor (see DeviceDescriptorDummies).
+        std::set<std::pair<ASR::symbol_t*, size_t>> device_descriptor_dummies;
 
         PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
@@ -340,6 +432,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         // inside the device code.
                         pass_array_by_data_functions.push_back(subrout);
                         if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                            arg_indices.erase(std::remove_if(arg_indices.begin(),
+                                arg_indices.end(), [&](size_t i) {
+                                    return device_descriptor_dummies.count(
+                                        {item.second, i}) > 0;
+                                }), arg_indices.end());
+                        }
+                        if( !arg_indices.empty() ) {
                             proc2inplace[item.second] = {arg_indices,
                                 subrout->m_args, subrout->n_args};
                             edit_procedure_args(subrout, arg_indices);
@@ -1893,6 +1992,11 @@ public:
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
     PassArrayByDataProcedureVisitor v(al, pass_options);
+    {
+        DeviceDescriptorDummies d;
+        d.collect(unit);
+        v.device_descriptor_dummies = d.kept;
+    }
     v.visit_TranslationUnit(unit);
     CallbackMismatchCleanup cleanup(v);
     cleanup.visit_TranslationUnit(unit);

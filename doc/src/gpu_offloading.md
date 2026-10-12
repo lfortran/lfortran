@@ -267,10 +267,13 @@ generates the device source. It never falls back to the CPU:
   to a section it hands to a routine -- is the address of the section's
   first element, its extents, and the strides of the dimensions of the
   array it ranges over, times its steps; so is a descriptor dummy of a
-  routine, such as those of the routines intrinsics are lowered to
-  (`matmul(w(1:n, 1:m, l), x)`), which every call hands the strides of its
-  actual argument. An assumed-shape dummy the shared passes turn into an
-  explicit-shape one is contiguous, so a section that is not contiguous is
+  routine, which every call hands the strides of its actual argument. An
+  assumed-shape dummy that some call hands such a name, or another
+  descriptor dummy, stays a descriptor dummy -- that of the routine
+  `matmul(w(1:n, 1:m, l), x)` is lowered to, or of a procedure of the
+  program handed `z` -- while the shared passes turn the others into
+  explicit-shape ones. An explicit-shape dummy is contiguous, so a section
+  that is not contiguous is
   gathered into a contiguous temporary before such a call and scattered
   back after it, by the kernel and by a routine the kernel calls alike;
   the temporary is a run-time sized local as above.
