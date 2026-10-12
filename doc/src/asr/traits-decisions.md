@@ -254,13 +254,12 @@ specification action, that is, what the paper should say.
     illustrative bodies, so they are verified and compiled to objects but not
     run, and no output is invented for them.
   - Intentionally invalid code must receive a located diagnostic.
-- **Implementation status.** At the time of writing, every program except
-  `ocp.f90`, and both module-only examples, are accepted in this branch.
-  `ocp.f90` works in development that is not yet integrated (TD-16). Most
-  inline listings compile and run; inline-05, -06, -09 (an `implements`
-  statement without traits, and initializer requirements met by existing
-  bindings, TD-33), inline-12, -13 (TD-13), inline-17 (TD-17) and inline-20
-  (TD-18) wait for compiler features.
+- **Implementation status.** At the time of writing, all eight programs,
+  including `ocp.f90` (TD-16), and both module-only examples are accepted in
+  this branch. Most inline listings compile and run; inline-05, -06, -09 (an
+  `implements` statement without traits, and initializer requirements met by
+  existing bindings, TD-33), inline-12, -13 (TD-13), inline-17 (TD-17) and
+  inline-20 (TD-18) wait for compiler features.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
   TD-32 are candidates for corrections of the paper.
 
@@ -695,7 +694,7 @@ specification action, that is, what the paper should say.
   argument and never instantiates a provider body. Adding a member to a type
   set changes the trait and requires recompiling its dependents, a cost the
   paper accepts for type sets (`sect:Go_encapsulated`). By contrast, `ocp.f90`
-  needs genuinely open dispatch, which is required and being implemented
+  needs genuinely open dispatch, which is required and is now implemented
   (TD-16); "later" in the chosen option refers only to the order of work.
 - **Implementation status.** Implemented; `mixed.f90` and `static.f90` are
   accepted.
@@ -706,8 +705,8 @@ specification action, that is, what the paper should say.
 #### TD-16: Open protocols at run time (`ocp.f90`), and static-only providers
 
 - **Status:** Approved prototype option (a policy for implementation limits).
-  Runtime dispatch for `ocp.f90` itself is required and is being implemented;
-  it is not deferred.
+  Runtime dispatch for `ocp.f90` itself is required and is implemented; it
+  was not deferred.
 - **Background.** In `ocp.f90` (`sect:ocp_conformance`), `INumeric` is a trait
   with the associated type `itself` (an initializer and operators), and
   `integer` and `real(real64)` acknowledge it with empty `implements`
@@ -721,7 +720,7 @@ specification action, that is, what the paper should say.
   prototype keeps that restriction. `class(ISum)` is a valid trait object of a
   universal trait; only the binder of its generic method is constrained by
   `INumeric`. Runtime dispatch through `class(ISum)`, and with it the complete
-  `ocp.f90`, are required for the prototype and are being implemented.
+  `ocp.f90`, are required for the prototype and are implemented.
 - **Implementation approach.** A provider's generic method is compiled once,
   and each call passes a table of the operations of `T`, so that types added
   later work without rebuilding the provider. This mechanism is LFortran's
@@ -737,11 +736,21 @@ specification action, that is, what the paper should say.
   where a runtime use of them is requested; their static uses must keep
   working. A limit of the runtime path never invalidates otherwise valid static
   code.
-- **Implementation status.** This branch still reports a "not implemented yet"
-  diagnostic at the `class(ISum)` trait objects of `ocp.f90`. The open runtime
-  path, which runs the complete `ocp.f90` and handles types added after the
-  provider's objects were frozen, is in development and not yet integrated;
-  the eligibility tracking for the chosen policy is in progress.
+- **Implementation status.** Implemented. `ocp.f90`, with its approved
+  `use intrinsics` (TD-07), runs for both choices in normal and fast modes,
+  and the original without that line is rejected with a located diagnostic.
+  Each algorithm library is compiled once, with one open entry per generic
+  method that takes the caller's table; `intrinsics` owns the tables of
+  `integer` and `real(real64)`. A separately compiled check freezes all five
+  library modules before compiling `main`, and another adds `Rational` and
+  `real(real32)` conformances in a later module, after the provider's objects
+  were frozen and hidden. The chosen policy is implemented: a provider whose
+  generic-method bodies use operations outside the supported runtime subset
+  stays statically usable, its module publishes no runtime entries for that
+  conformance, and only a requested runtime view of it is diagnosed, where the
+  view is formed. The remaining limits of the runtime path, such as array
+  values computed from erased values, are diagnosed as not implemented yet
+  and are temporary (see [traits](traits.md)).
 - **Specification action.** None for the rule itself. See OQ-14 on which
   separate-compilation properties are normative.
 
