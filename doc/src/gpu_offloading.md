@@ -317,7 +317,8 @@ generates the device source. It never falls back to the CPU:
     `if`, in several cases of a `select case`, or twice in an iteration), it
     allocates or checks the element the write picks, with the size the write
     gives it: the extents of the array assigned to the component, or those
-    of the `allocate` or array assignment in `f`, in terms of the actual
+    of the `allocate` or array assignment in `f` (in the body a submodule
+    gives it, for a separate module procedure), in terms of the actual
     arguments of the call. An element the loop does not write is left as it is. The
     limits of the loops are evaluated once, before this host code runs, and
     the launch reads the same values.
