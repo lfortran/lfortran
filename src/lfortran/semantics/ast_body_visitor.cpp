@@ -10869,6 +10869,12 @@ public:
                     diag.add(Diagnostic("the default clause expects one of shared, none, private or firstprivate", Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
+            } else if (clause_name == "hint" &&
+                    LCompilers::startswith(to_lower(x.m_construct_name), "critical")) {
+                // A hint only suggests how to implement the mutual exclusion
+                // and does not change what the program means, so it is
+                // not needed to lower the construct.
+                continue;
             } else {
                 diag.add(Diagnostic("The clause " + clause_name + " is not supported for parallel sections", Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
@@ -11023,10 +11029,37 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
-            } else if (to_lower(x.m_construct_name) == "critical") {
+            } else if (to_lower(x.m_construct_name) == "critical" ||
+                    LCompilers::startswith(to_lower(x.m_construct_name), "critical(")) {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
                 clauses = get_clauses(x);
+                std::string construct_name = to_lower(x.m_construct_name);
+                if (construct_name != "critical") {
+                    // `critical (name)`: critical constructs with the same
+                    // name exclude each other, and only them
+                    std::string name = construct_name.substr(
+                        std::string("critical(").size());
+                    if (!name.empty() && name.back() == ')') {
+                        name.pop_back();
+                    }
+                    name.erase(0, name.find_first_not_of(" \t"));
+                    LCompilers::rtrim(name);
+                    bool valid_name = !name.empty() && std::isalpha(
+                        static_cast<unsigned char>(name[0]));
+                    for (char c : name) {
+                        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+                            valid_name = false;
+                        }
+                    }
+                    if (!valid_name) {
+                        diag.add(Diagnostic("the name of a critical construct must be an identifier",
+                            Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                        ASR::make_OMPCriticalName_t(al, loc, s2c(al, name))));
+                }
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
