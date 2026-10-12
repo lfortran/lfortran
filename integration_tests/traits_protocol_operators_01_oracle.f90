@@ -1,6 +1,6 @@
-! Standard-Fortran oracle of traits_protocol_operators_01: the generic spread
-! written out for integer, real(real64) and Fixed, whose static operator
-! bindings become generic operator interfaces.
+! Standard-Fortran oracle of traits_protocol_operators_01: the generics spread
+! and halve written out for integer, real(real64) and Fixed, whose static
+! operator bindings become generic operator interfaces.
 module traits_protocol_operators_01_oracle_fixed_m
     implicit none
     private
@@ -64,7 +64,10 @@ program traits_protocol_operators_01_oracle
     f = Fixed(5) / Fixed(2)
     if (f%tenths /= 25) error stop 5
     if (.not. (Fixed(1) < Fixed(2))) error stop 6
-    print '(a)', 'traits_protocol_operators_01 checks: 6'
+    if (halve_integer(9) /= 4) error stop 7
+    f = halve_fixed(Fixed(5))
+    if (f%tenths /= 25) error stop 8
+    print '(a)', 'traits_protocol_operators_01 checks: 8'
 
 contains
 
@@ -93,6 +96,18 @@ contains
         end do
         r = (high - low) / real(2, real64)
     end function spread_real64
+
+    function halve_integer(x) result(r)
+        integer, intent(in) :: x
+        integer             :: r
+        r = x / 2
+    end function halve_integer
+
+    function halve_fixed(x) result(r)
+        type(Fixed), intent(in) :: x
+        type(Fixed)             :: r
+        r = x / Fixed(2)
+    end function halve_fixed
 
     function spread_fixed(x) result(r)
         type(Fixed), intent(in) :: x(:)

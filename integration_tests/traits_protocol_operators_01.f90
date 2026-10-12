@@ -1,11 +1,13 @@
 ! Operator requirements beyond the paper's: operator(-), operator(/) and a
 ! comparison operator(<) of itself, with an initializer, implemented by a
 ! derived type through static bindings and acknowledged by integer and
-! real(real64). spread{T} returns (max - min) / T(2) of its argument.
+! real(real64). spread{T} returns (max - min) / T(2) of its argument. IHalf
+! repeats IField's initializer and operator(/), so halve{IField + IHalf :: T}
+! has one requirement for each, bound alike by both conformances.
 module traits_protocol_operators_01_contracts_m
     implicit none
     private
-    public :: IField
+    public :: IField, IHalf
 
     abstract interface :: IField
         initial(n)
@@ -24,11 +26,21 @@ module traits_protocol_operators_01_contracts_m
             logical                  :: res
         endfunction
     end interface IField
+
+    abstract interface :: IHalf
+        initial(n)
+            integer, intent(in) :: n
+        end initial
+        function operator(/)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs, rhs
+            type(itself)             :: res
+        end function operator(/)
+    end interface IHalf
 end module traits_protocol_operators_01_contracts_m
 
 ! A decimal with one fractional digit, stored as tenths.
 module traits_protocol_operators_01_fixed_m
-    use traits_protocol_operators_01_contracts_m, only: IField
+    use traits_protocol_operators_01_contracts_m, only: IField, IHalf
     implicit none
     private
 
@@ -36,7 +48,7 @@ module traits_protocol_operators_01_fixed_m
         integer :: tenths = 0
     end type Fixed
 
-    implements IField :: Fixed
+    implements (IField + IHalf) :: Fixed
         initial :: from_integer
         procedure, static :: operator(-) => minus
         procedure, static :: operator(/) => divide
@@ -72,10 +84,10 @@ end module traits_protocol_operators_01_fixed_m
 
 module traits_protocol_operators_01_intrinsics_m
     use, intrinsic :: iso_fortran_env, only: real64
-    use traits_protocol_operators_01_contracts_m, only: IField
+    use traits_protocol_operators_01_contracts_m, only: IField, IHalf
     implicit none
 
-    implements IField :: integer
+    implements (IField + IHalf) :: integer
     end implements integer
 
     implements IField :: real(real64)
@@ -83,10 +95,10 @@ module traits_protocol_operators_01_intrinsics_m
 end module traits_protocol_operators_01_intrinsics_m
 
 module traits_protocol_operators_01_generic_m
-    use traits_protocol_operators_01_contracts_m, only: IField
+    use traits_protocol_operators_01_contracts_m, only: IField, IHalf
     implicit none
     private
-    public :: spread
+    public :: spread, halve
 
 contains
 
@@ -102,13 +114,19 @@ contains
         end do
         r = (high - low) / T(2)
     end function spread
+
+    function halve{IField + IHalf :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T)             :: r
+        r = x / T(2)
+    end function halve
 end module traits_protocol_operators_01_generic_m
 
 program traits_protocol_operators_01
     use, intrinsic :: iso_fortran_env, only: real64
     use traits_protocol_operators_01_fixed_m, only: Fixed
     use traits_protocol_operators_01_intrinsics_m
-    use traits_protocol_operators_01_generic_m, only: spread
+    use traits_protocol_operators_01_generic_m, only: spread, halve
     implicit none
     type(Fixed) :: f
 
@@ -120,5 +138,8 @@ program traits_protocol_operators_01
     f = Fixed(5) / Fixed(2)
     if (f%tenths /= 25) error stop 5
     if (.not. (Fixed(1) < Fixed(2))) error stop 6
-    print '(a)', 'traits_protocol_operators_01 checks: 6'
+    if (halve(9) /= 4) error stop 7
+    f = halve(Fixed(5))
+    if (f%tenths /= 25) error stop 8
+    print '(a)', 'traits_protocol_operators_01 checks: 8'
 end program traits_protocol_operators_01

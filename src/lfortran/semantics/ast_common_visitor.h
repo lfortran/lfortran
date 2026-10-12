@@ -12109,6 +12109,8 @@ public:
                         ASR::trait_kindType::IntrinsicTypeSet) {
                     trait_call_error("a type-set trait cannot be used as a runtime class", loc);
                 }
+                check_trait_runtime_view(*ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(v)), loc);
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 type_declaration = nullptr;
                 return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
@@ -23883,6 +23885,19 @@ public:
         return scope;
     }
 
+    // A trait whose requirements refer to the implementing type, the
+    // associated type `itself`, has no runtime view.
+    void check_trait_runtime_view(const ASR::Trait_t &trait, const Location &loc) {
+        for (auto *ancestor : checked_trait_hierarchy(trait, loc).traits) {
+            if (ancestor->n_operations || ancestor->m_symtab->get_symbol(
+                    ASRUtils::trait_itself_name)) {
+                trait_call_error("trait '" + std::string(trait.m_name) +
+                    "' has the associated type itself and can only be used as a "
+                    "generic constraint", loc);
+            }
+        }
+    }
+
     ASR::TraitRuntimeContract_t *runtime_trait_combination(
             char **names, size_t count, const Location &loc) {
         warn_traits_extension(loc);
@@ -23897,7 +23912,7 @@ public:
             if (trait->m_kind != ASR::trait_kindType::UniversalTrait) {
                 trait_call_error("a type-set trait cannot be used as a runtime class", loc);
             }
-            checked_trait_hierarchy(*trait, loc);
+            check_trait_runtime_view(*trait, loc);
             traits.push_back(symbol);
         }
         traits = ASRUtils::normalized_trait_requirements(traits);

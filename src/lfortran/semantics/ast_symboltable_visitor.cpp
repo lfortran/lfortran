@@ -4677,8 +4677,8 @@ public:
                     if (!previous || ASRUtils::get_asr_owner(other) !=
                             ASRUtils::get_asr_owner(member) ||
                             !ASRUtils::same_trait_operation(*previous, *operation)) continue;
-                    if (ASRUtils::trait_method_mismatch(*ASRUtils::trait_method_function(other),
-                            *method).difference == ASRUtils::TraitMethodDifference::None) {
+                    if (ASRUtils::trait_operation_signatures_equal(
+                            *ASRUtils::trait_method_function(other), *method)) {
                         trait_error("duplicate " + ASRUtils::trait_member_display_name(member)
                             + " requirement in trait '" + std::string(ASRUtils::symbol_name(
                                 ASRUtils::get_asr_owner(member))) + "'",
@@ -5116,10 +5116,9 @@ public:
                     for (const auto &previous : operations) {
                         if (ASRUtils::same_trait_operation(*operation,
                                 *ASRUtils::trait_member_operation(previous.first)) &&
-                                ASRUtils::trait_method_mismatch(
+                                ASRUtils::trait_operation_signatures_equal(
                                     *ASRUtils::trait_method_function(previous.first),
-                                    *method).difference ==
-                                ASRUtils::TraitMethodDifference::None) {
+                                    *method)) {
                             procedure = previous.second;
                         }
                     }
@@ -5708,6 +5707,24 @@ public:
         if (!operation_name.empty() && operation_name[0] == '~') {
             operation_name = operation_name.substr(1);
         }
+        // An equal requirement that another conformance of this unit
+        // acknowledges for the type is the same intrinsic operation.
+        auto *required = ASRUtils::trait_method_function(member);
+        for (const auto &entry : current_scope->get_scope()) {
+            if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
+            auto *previous = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            if (previous->m_type_declaration || !ASRUtils::types_equal(
+                    previous->m_implementing_type, type, nullptr, nullptr)) continue;
+            for (size_t i = 0; i < previous->n_bindings; i++) {
+                const auto &binding = previous->m_bindings[i];
+                auto *acknowledged = ASRUtils::trait_member_operation(binding.m_member);
+                if (acknowledged && ASRUtils::same_trait_operation(*acknowledged, operation) &&
+                        ASRUtils::trait_operation_signatures_equal(
+                            *ASRUtils::trait_method_function(binding.m_member), *required)) {
+                    return binding.m_procedure;
+                }
+            }
+        }
         std::string name = current_scope->get_unique_name(std::string(trait.m_name) +
             "{" + ASRUtils::get_type_code(type) + "}_" + operation_name);
         auto *procedure = implemented_trait_signature(member, type, nullptr,
@@ -5892,6 +5909,8 @@ public:
             }
             hierarchies.push_back(checked_trait_hierarchy(*trait, loc));
             for (ASR::symbol_t *member : hierarchies.back().members) {
+                // Initializer and operator requirements are bound by signature.
+                if (ASRUtils::trait_member_operation(member)) continue;
                 auto *method = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(method->m_name, method);
                 if (!previous.second) {

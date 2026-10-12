@@ -108,8 +108,10 @@ An initializer declares no result; its result is the implementing type. An
 operator requirement is a function of two operands, at least one of type
 `itself`, for `+`, `-`, `*`, `/`, `**` or a comparison. Requirements of one
 operator, or several initializers, can be overloaded with different
-signatures. Neither has a receiver. `type(itself)` in an ordinary message is
-not implemented yet.
+signatures; the same signature twice is diagnosed. Neither has a receiver.
+`type(itself)` in an ordinary message is not implemented yet. Like a trait
+with associated types, a trait that refers to `itself` is only a generic
+constraint, not a runtime `class(...)` view.
 
 A derived type binds them in an `implements` statement of its module:
 `initial :: f` lists initializers, which also overload the constructor, and
@@ -129,7 +131,8 @@ end implements real
 
 The conformance owns one procedure per acknowledged requirement that applies
 the intrinsic conversion (`int`, `real` or `cmplx` with the type's kind) or
-operation, and its result must be the required type.
+operation, and its result must be the required type; equal requirements that
+conformances of one unit acknowledge for a type share that procedure.
 
 In a generic body, `T(args)` calls the initializer requirement of `T`'s
 constraints that accepts the arguments, and an intrinsic operator with an

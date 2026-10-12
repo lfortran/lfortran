@@ -6823,6 +6823,37 @@ bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
     return type && b->type == type->type && types_equal(b, type, nullptr, nullptr);
 }
 
+bool trait_operation_signatures_equal(const ASR::Function_t &left,
+    const ASR::Function_t &right)
+{
+    auto same = [](ASR::expr_t *a, ASR::expr_t *b) {
+        ASR::ttype_t *a_type = typed_expr_type(a), *b_type = typed_expr_type(b);
+        if (!a_type || !b_type) return false;
+        if (contains_trait_itself(a_type) || contains_trait_itself(b_type)) {
+            return contains_trait_itself(a_type) && contains_trait_itself(b_type) &&
+                is_pointer(a_type) == is_pointer(b_type) &&
+                is_allocatable(a_type) == is_allocatable(b_type) &&
+                trait_shapes_equal(a_type, b_type, {});
+        }
+        return trait_types_equal(a, b);
+    };
+    if (left.n_args != right.n_args || bool(left.m_return_var) != bool(right.m_return_var)) {
+        return false;
+    }
+    for (size_t i = 0; i < left.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*left.m_args[i]) ||
+                !ASR::is_a<ASR::Var_t>(*right.m_args[i])) return false;
+        auto *a = EXPR2VAR(left.m_args[i]), *b = EXPR2VAR(right.m_args[i]);
+        if (!same(left.m_args[i], right.m_args[i]) || a->m_intent != b->m_intent ||
+                a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr) {
+            return false;
+        }
+    }
+    if (left.m_return_var && !same(left.m_return_var, right.m_return_var)) return false;
+    auto *a = get_FunctionType(left), *b = get_FunctionType(right);
+    return a->m_elemental == b->m_elemental && a->m_pure == b->m_pure;
+}
+
 bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
 {

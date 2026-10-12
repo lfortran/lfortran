@@ -10840,6 +10840,10 @@ std::string trait_member_display_name(ASR::symbol_t *member);
 std::string trait_operation_display_name(const ASR::type_set_operation_t &operation);
 bool same_trait_operation(const ASR::type_set_operation_t &left,
     const ASR::type_set_operation_t &right);
+// Whether two initializer or operator requirements have one signature, with
+// `itself` standing for the same implementing type in both.
+bool trait_operation_signatures_equal(const ASR::Function_t &left,
+    const ASR::Function_t &right);
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value);
 std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
