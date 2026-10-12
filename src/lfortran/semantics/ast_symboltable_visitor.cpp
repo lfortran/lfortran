@@ -6198,24 +6198,34 @@ public:
     // only-list names such a type after the type that uses it, e.g.
     // `only: o => outer, i => inner`, that instance must become the listed
     // local entity `i`, so that `type(i)` and the component of `o` are the
-    // same type.
+    // same type. The same holds for an abstract interface of the template
+    // that a `procedure(iface) ::` entity uses.
     void rename_dependency_instance(const std::string &generic_name,
             const std::string &new_sym_name,
             std::map<std::string, ASR::symbol_t*> &symbol_subs,
             const std::set<ASR::symbol_t*> &listed_instances) {
         auto dep = symbol_subs.find(generic_name);
-        if (dep == symbol_subs.end() || !ASR::is_a<ASR::Struct_t>(*dep->second)
+        if (dep == symbol_subs.end()
                 || listed_instances.find(dep->second) != listed_instances.end()
                 || current_scope->get_symbol(new_sym_name) != nullptr) {
             return;
         }
-        ASR::Struct_t *dep_struct = ASR::down_cast<ASR::Struct_t>(dep->second);
-        std::string dep_name = dep_struct->m_name;
+        char **dep_name_ptr = nullptr;
+        if (ASR::is_a<ASR::Struct_t>(*dep->second)) {
+            dep_name_ptr = &ASR::down_cast<ASR::Struct_t>(dep->second)->m_name;
+        } else if (ASR::is_a<ASR::Function_t>(*dep->second)
+                && ASRUtils::get_FunctionType(dep->second)->m_deftype
+                    == ASR::deftypeType::Interface) {
+            dep_name_ptr = &ASR::down_cast<ASR::Function_t>(dep->second)->m_name;
+        } else {
+            return;
+        }
+        std::string dep_name = *dep_name_ptr;
         if (current_scope->get_symbol(dep_name) != dep->second) {
             return;
         }
         current_scope->erase_symbol(dep_name);
-        dep_struct->m_name = s2c(al, new_sym_name);
+        *dep_name_ptr = s2c(al, new_sym_name);
         current_scope->add_symbol(new_sym_name, dep->second);
     }
 
@@ -6591,12 +6601,18 @@ public:
         size_t n_diagnostics = diag.diagnostics.size();
         std::map<std::string, ASR::symbol_t*> scope_before = current_scope->get_scope();
         if (x.n_symbols == 0) {
+            // An abstract interface that a procedure instantiated before it
+            // uses is already instantiated, under a generated name; that
+            // instance becomes the named one, as for derived types below.
+            std::set<ASR::symbol_t*> named_procedures;
             for (auto const &sym_pair: temp->m_symtab->get_scope()) {
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_symbol(al, current_scope, type_subs, symbol_subs, s_name, s,
-                        diag);
+                    rename_dependency_instance(s_name, s_name, symbol_subs,
+                        named_procedures);
+                    named_procedures.insert(instantiate_symbol(al, current_scope,
+                        type_subs, symbol_subs, s_name, s, diag));
                 }
             }
             // Every derived type of the template is an entity of the
