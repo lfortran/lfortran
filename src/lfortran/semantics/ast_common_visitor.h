@@ -24069,19 +24069,33 @@ public:
             (!block && variable.m_intent == ASR::intentType::Local);
     }
 
-    void check_trait_erased_storage(const SymbolTable &scope,
+    // Why a body cannot be erased: the diagnostic and the construct it
+    // names, and the generic procedure containing it once known.
+    struct TraitErasureObstacle {
+        std::string reason;
+        Location loc = Location();
+        std::string procedure;
+        // Whether `loc` is in a separately compiled module.
+        bool loaded = false;
+        explicit operator bool() const { return !reason.empty(); }
+    };
+
+    TraitErasureObstacle trait_erased_storage_obstacle(const SymbolTable &scope,
             const std::set<std::string> &dictionaries = {}, bool block = false) {
         for (const auto &entry : scope.get_scope()) {
+            TraitErasureObstacle nested;
             if (ASR::is_a<ASR::Block_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::Block_t>(entry.second)->m_symtab,
-                    dictionaries, true);
+                nested = trait_erased_storage_obstacle(
+                    *ASR::down_cast<ASR::Block_t>(entry.second)->m_symtab, dictionaries, true);
             } else if (ASR::is_a<ASR::AssociateBlock_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::AssociateBlock_t>(entry.second)->m_symtab,
+                nested = trait_erased_storage_obstacle(
+                    *ASR::down_cast<ASR::AssociateBlock_t>(entry.second)->m_symtab,
                     dictionaries, true);
             } else if (ASR::is_a<ASR::Function_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(entry.second)->m_symtab,
-                    dictionaries, block);
+                nested = trait_erased_storage_obstacle(
+                    *ASR::down_cast<ASR::Function_t>(entry.second)->m_symtab, dictionaries, block);
             }
+            if (nested) return nested;
             if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
             auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
             if (!ASRUtils::is_type_parameter(*ASRUtils::extract_type(variable->m_type))) continue;
@@ -24089,9 +24103,9 @@ public:
             if (ASR::is_a<ASR::TypeParameter_t>(*element) && dictionaries.count(
                     ASR::down_cast<ASR::TypeParameter_t>(element)->m_param)) {
                 if (!trait_dictionary_storage(*variable, dictionaries, block)) {
-                    trait_call_error("erased generic storage other than read-only scalar or "
+                    return {"erased generic storage other than read-only scalar or "
                         "assumed-shape dummies, scalar locals and a scalar result is not "
-                        "implemented yet", variable->base.base.loc);
+                        "implemented yet", variable->base.base.loc, ""};
                 }
                 continue;
             }
@@ -24101,25 +24115,42 @@ public:
                     variable->m_presence != ASR::presenceType::Required ||
                     variable->m_is_volatile || variable->n_codims ||
                     variable->m_symbolic_value || variable->m_value) {
-                trait_call_error("erased generic local storage, ownership, arrays and "
-                    "mutable arguments are not implemented yet", variable->base.base.loc);
+                return {"erased generic local storage, ownership, arrays and "
+                    "mutable arguments are not implemented yet", variable->base.base.loc, ""};
             }
         }
+        return {};
+    }
+
+    void check_trait_erased_storage(const SymbolTable &scope,
+            const std::set<std::string> &dictionaries = {}, bool block = false) {
+        if (auto obstacle = trait_erased_storage_obstacle(scope, dictionaries, block)) {
+            trait_call_error(obstacle.reason, obstacle.loc);
+        }
+    }
+
+    TraitErasureObstacle trait_erased_function_obstacle(const ASR::Function_t &function,
+            const std::set<std::string> &dictionaries) {
+        if (!dictionaries.empty()) {
+            for (const auto &entry : function.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                    return {"internal procedures of a runtime generic message with "
+                        "a protocol type parameter are not implemented yet",
+                        entry.second->base.loc, ""};
+                }
+            }
+        }
+        if (auto obstacle = trait_erased_storage_obstacle(*function.m_symtab, dictionaries)) {
+            return obstacle;
+        }
+        return trait_erased_uses_obstacle(function, dictionaries);
     }
 
     void check_trait_erased_storage(const ASR::Function_t &function,
             const std::set<std::string> &dictionaries = {}) {
-        if (!dictionaries.empty()) {
-            for (const auto &entry : function.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*entry.second)) {
-                    trait_call_error("internal procedures of a runtime generic message with "
-                        "a protocol type parameter are not implemented yet",
-                        entry.second->base.loc);
-                }
-            }
+        if (auto obstacle = trait_erased_function_obstacle(function, dictionaries)) {
+            trait_call_error(obstacle.reason, obstacle.loc);
         }
-        check_trait_erased_storage(*function.m_symtab, dictionaries);
-        check_trait_erased_uses(function, dictionaries);
     }
 
     // The values of a dictionary binder are bytes that only its dictionary
@@ -24130,9 +24161,9 @@ public:
     // procedures and messages whose dummies have a type parameter. Any
     // other use, such as an intrinsic, input/output, a dummy of another
     // type or a vector subscript, would need a typed copy.
-    void check_trait_erased_uses(const ASR::Function_t &function,
+    TraitErasureObstacle trait_erased_uses_obstacle(const ASR::Function_t &function,
             const std::set<std::string> &dictionaries) {
-        if (dictionaries.empty()) return;
+        if (dictionaries.empty()) return {};
         class Check : public ASR::BaseWalkVisitor<Check> {
         public:
             const std::set<std::string> &dictionaries;
@@ -24335,7 +24366,8 @@ public:
             }
         } check(dictionaries);
         for (size_t i = 0; i < function.n_body; i++) check.visit_stmt(*function.m_body[i]);
-        if (check.found) trait_call_error(check.reason, check.found->base.loc);
+        if (!check.found) return {};
+        return {check.reason, check.found->base.loc, ""};
     }
 
     std::set<std::string> trait_dictionary_binders(const ASR::Template_t &generic) {
@@ -24347,6 +24379,180 @@ public:
             }
         }
         return binders;
+    }
+
+    // Whether `scope` belongs to a module loaded from its modfile.
+    static bool trait_scope_loaded(SymbolTable *scope) {
+        for (; scope; scope = scope->parent) {
+            auto *owner = scope->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+                return ASR::down_cast<ASR::Module_t>(
+                    ASR::down_cast<ASR::symbol_t>(owner))->m_loaded_from_mod;
+            }
+        }
+        return false;
+    }
+
+    // A runtime generic message called with an erased binder receives the
+    // binder's dictionary, so it must require the binder's protocol.
+    TraitErasureObstacle trait_message_forwarding_obstacle(const ASR::Function_t &body,
+            const std::set<std::string> &dictionaries) {
+        class Collect : public ASR::BaseWalkVisitor<Collect> {
+        public:
+            std::vector<const ASR::TraitDeferredDictionary_t*> dictionaries;
+            void visit_TraitDeferredDictionary(const ASR::TraitDeferredDictionary_t &x) {
+                dictionaries.push_back(&x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+            void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+        } collect;
+        for (size_t i = 0; i < body.n_body; i++) collect.visit_stmt(*body.m_body[i]);
+        for (auto *deferred : collect.dictionaries) {
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(
+                ASRUtils::symbol_get_past_external(deferred->m_constraint));
+            auto *binder = ASRUtils::symbol_get_past_external(constraint->m_parameter);
+            std::string parameter = ASRUtils::symbol_name(binder);
+            if (!dictionaries.count(parameter)) continue;
+            std::string reason = trait_dictionary_forwarding_reason(parameter,
+                ASRUtils::trait_parameter_dictionary(binder),
+                ASRUtils::trait_dictionary_contract(deferred->m_type));
+            if (!reason.empty()) return {reason, deferred->base.base.loc, ""};
+        }
+        return {};
+    }
+
+    // Why the body of `generic` cannot be erased with dictionaries for its
+    // binders `dictionaries`, also in the generic procedures it forwards
+    // them to, or an empty obstacle: the checks that its erased
+    // instantiation makes, without diagnosing. The bodies of this
+    // translation unit exist once its body visitor has visited them; a
+    // separately compiled generic holds the specializations it forwards
+    // its binders to.
+    TraitErasureObstacle trait_generic_erasure_obstacle(ASR::Template_t &generic,
+            const std::set<std::string> &dictionaries,
+            std::set<std::pair<const ASR::Template_t*, std::set<std::string>>> &visited) {
+        if (dictionaries.empty() || !visited.insert({&generic, dictionaries}).second) return {};
+        auto *function = ASRUtils::trait_method_function(&generic.base);
+        bool loaded = trait_scope_loaded(generic.m_symtab);
+        std::vector<ASR::Function_t*> bodies = {function};
+        if (loaded) {
+            for (const auto &entry : generic.m_symtab->get_scope()) {
+                if (entry.second != &function->base && ASR::is_a<ASR::Function_t>(*entry.second) &&
+                        ASRUtils::get_FunctionType(entry.second)->m_deftype ==
+                            ASR::deftypeType::Implementation) {
+                    bodies.push_back(ASR::down_cast<ASR::Function_t>(entry.second));
+                }
+            }
+        }
+        for (auto *body : bodies) {
+            auto obstacle = trait_erased_function_obstacle(*body, dictionaries);
+            if (!obstacle) obstacle = trait_message_forwarding_obstacle(*body, dictionaries);
+            if (obstacle) {
+                obstacle.procedure = generic.m_name;
+                obstacle.loaded = loaded;
+                return obstacle;
+            }
+        }
+        if (loaded) return {};
+        for (const auto &source : trait_specializations) {
+            if (source.scope != generic.m_symtab) continue;
+            std::set<std::string> forwarded;
+            for (const auto &type : source.types) {
+                if (!type.second.first ||
+                        !ASR::is_a<ASR::TypeParameter_t>(*type.second.first)) continue;
+                auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(type.second.first);
+                if (!dictionaries.count(parameter->m_param)) continue;
+                std::string reason = trait_dictionary_forwarding_reason(parameter->m_param,
+                    ASRUtils::trait_parameter_dictionary(
+                        generic.m_symtab->get_symbol(parameter->m_param)),
+                    ASRUtils::trait_parameter_dictionary(
+                        source.generic->m_symtab->get_symbol(type.first)));
+                if (!reason.empty()) {
+                    return {reason, trait_call_site(*function, source.procedure),
+                        generic.m_name, false};
+                }
+                forwarded.insert(type.first);
+            }
+            if (auto obstacle = trait_generic_erasure_obstacle(*source.generic, forwarded,
+                    visited)) {
+                return obstacle;
+            }
+        }
+        return {};
+    }
+
+    // The generic procedure bound to `slot` whose binders a witness's
+    // erased entry takes with dictionaries, or nullptr.
+    ASR::Template_t *trait_witness_dictionary_generic(
+            const ASR::TraitImplementation_t &implementation, const ASR::trait_slot_t &slot) {
+        if (slot.n_type_arguments) return nullptr;
+        auto *binding = ASRUtils::find_trait_binding(implementation, slot.m_origins[0]);
+        auto *procedure = binding ? ASRUtils::trait_method_function(binding->m_procedure)
+            : nullptr;
+        auto *generic = procedure ? ASRUtils::trait_method_template(*procedure) : nullptr;
+        return generic && !trait_dictionary_binders(*generic).empty() ? generic : nullptr;
+    }
+
+    // A witness whose entries erase protocol binders exists only once the
+    // bodies of the generic procedures it binds are known to be erasable.
+    bool trait_witness_needs_erasable_bodies(const ASR::TraitImplementation_t &implementation,
+            const ASR::TraitRuntimeContract_t &contract) {
+        for (size_t i = 0; i < contract.n_slots; i++) {
+            if (trait_witness_dictionary_generic(implementation, contract.m_slots[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TraitErasureObstacle runtime_witness_body_obstacle(
+            const ASR::TraitImplementation_t &implementation,
+            const ASR::TraitRuntimeContract_t &contract) {
+        std::set<std::pair<const ASR::Template_t*, std::set<std::string>>> visited;
+        for (size_t i = 0; i < contract.n_slots; i++) {
+            auto *generic = trait_witness_dictionary_generic(implementation, contract.m_slots[i]);
+            if (!generic) continue;
+            if (auto obstacle = trait_generic_erasure_obstacle(*generic,
+                    trait_dictionary_binders(*generic), visited)) {
+                return obstacle;
+            }
+        }
+        return {};
+    }
+
+    // A runtime view of a conformance whose generic procedures cannot be
+    // erased is diagnosed where it is formed; the conformance itself stays
+    // valid static code.
+    [[noreturn]] void report_runtime_witness_obstacle(
+            const ASR::TraitImplementation_t &implementation,
+            const ASR::TraitRuntimeContract_t &contract, const TraitErasureObstacle &obstacle,
+            const Location &loc) {
+        ASR::ttype_t *type = implementation.m_implementing_type;
+        std::string shown = ASRUtils::type_to_str_fortran_symbol(type,
+            ASRUtils::symbol_get_past_external(implementation.m_type_declaration), true);
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+            shown = "type(" + shown + ")";
+        }
+        std::string reason = obstacle
+            ? "in generic procedure '" + obstacle.procedure + "', " + obstacle.reason
+            : "its module was compiled without it; recompile that module";
+        std::vector<Label> labels = {Label("", {loc})};
+        if (obstacle && !obstacle.loaded) {
+            labels.push_back(Label("not supported in runtime generic messages",
+                {obstacle.loc}, false));
+        }
+        diag.add(Diagnostic("the conformance of " + shown + " to trait '" +
+            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(contract.m_trait)) +
+            "' has no runtime witness: " + reason,
+            Level::Error, Stage::Semantic, labels));
+        throw SemanticAbort();
     }
 
     // Only a module owns the provider entries (member or erased) that a runtime
@@ -25059,15 +25265,21 @@ public:
     // An erased binder forwards its own dictionary, so the callee must
     // require that protocol. A parent protocol's dictionary of the same
     // conformance is not reachable from it yet.
-    void check_trait_dictionary_forwarding(SymbolTable *scope, const std::string &parameter,
-            ASR::TraitDictionaryContract_t *required, const Location &loc) {
-        auto *forwarded = trait_erased_dictionary_contract(scope, parameter);
-        if (!forwarded || !required || forwarded == required) return;
-        trait_call_error("forwarding protocol type parameter '" + parameter + "' of trait '" +
+    std::string trait_dictionary_forwarding_reason(const std::string &parameter,
+            ASR::TraitDictionaryContract_t *forwarded, ASR::TraitDictionaryContract_t *required) {
+        if (!forwarded || !required || forwarded == required) return "";
+        return "forwarding protocol type parameter '" + parameter + "' of trait '" +
             ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(forwarded->m_trait)) +
             "' where trait '" +
             ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(required->m_trait)) +
-            "' is required is not implemented yet in runtime generic messages", loc);
+            "' is required is not implemented yet in runtime generic messages";
+    }
+
+    void check_trait_dictionary_forwarding(SymbolTable *scope, const std::string &parameter,
+            ASR::TraitDictionaryContract_t *required, const Location &loc) {
+        std::string reason = trait_dictionary_forwarding_reason(parameter,
+            trait_erased_dictionary_contract(scope, parameter), required);
+        if (!reason.empty()) trait_call_error(reason, loc);
     }
 
     // Where `function`'s body calls `callee`, or the function itself.
@@ -25884,10 +26096,17 @@ public:
             mutating_trait_binding_error(*binding, *selected, "runtime trait views", loc);
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
+        if (!witness) witness = request_runtime_trait_witness(*selected, *contract, loc);
         if (!witness) {
             if (!runtime_trait_entries_ownable(*selected, *contract)) {
                 trait_call_error("runtime generic trait implementations outside module "
                     "scope are not implemented yet", loc);
+            }
+            if (trait_witness_needs_erasable_bodies(*selected, *contract)) {
+                auto obstacle = runtime_witness_body_obstacle(*selected, *contract);
+                if (obstacle || trait_scope_loaded(selected->m_parent_symtab)) {
+                    report_runtime_witness_obstacle(*selected, *contract, obstacle, loc);
+                }
             }
             trait_call_error("runtime dispatch for this trait implementation ABI "
                 "is not implemented yet", loc);
@@ -28417,7 +28636,7 @@ public:
 
     ASR::TraitWitness_t *create_runtime_trait_witness(
             ASR::TraitImplementation_t *implementation,
-            ASR::TraitRuntimeContract_t *contract) {
+            ASR::TraitRuntimeContract_t *contract, bool publish = false) {
         if (!contract) return nullptr;
         if (auto *existing = ASRUtils::trait_runtime_witness(*implementation, contract)) {
             return existing;
@@ -28425,6 +28644,13 @@ public:
         if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
         // A conformance that mutates a receiver serves direct calls only.
         if (runtime_trait_mutating_binding(*implementation, *contract)) return nullptr;
+        // Entries that erase protocol binders copy bodies that may be
+        // outside the erased subset; such a witness is published once its
+        // bodies are known (publish_runtime_trait_witnesses) or when a
+        // runtime view requests it (request_runtime_trait_witness).
+        if (!publish && trait_witness_needs_erasable_bodies(*implementation, *contract)) {
+            return nullptr;
+        }
         for (size_t i = 0; i < contract->n_slots; i++) {
             auto *binding = ASRUtils::find_trait_binding(
                 *implementation, contract->m_slots[i].m_origins[0]);
@@ -28486,13 +28712,118 @@ public:
         for (size_t i = 0; i < trait->n_parents; i++) {
             auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
             LCOMPILERS_ASSERT(parent_contract);
-            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract);
+            auto *parent_witness = create_runtime_trait_witness(implementation, parent_contract,
+                publish);
             LCOMPILERS_ASSERT(parent_witness);
             projections.push_back(al, &parent_witness->base);
         }
         witness->m_projections = projections.p;
         witness->n_projections = projections.size();
         return witness;
+    }
+
+    // Runtime views formed before all bodies of the translation unit exist;
+    // the bodies of their providers are checked again at its end.
+    struct RuntimeWitnessRequest {
+        ASR::TraitImplementation_t *implementation;
+        ASR::TraitRuntimeContract_t *contract;
+        Location loc;
+    };
+    std::vector<RuntimeWitnessRequest> runtime_witness_requests;
+    bool trait_bodies_complete = false;
+
+    // The witness of a conformance of this translation unit whose entries
+    // erase protocol binders, created when a runtime view first needs it,
+    // or nullptr for any other conformance.
+    ASR::TraitWitness_t *request_runtime_trait_witness(
+            ASR::TraitImplementation_t &implementation, ASR::TraitRuntimeContract_t &contract,
+            const Location &loc) {
+        if (trait_scope_loaded(implementation.m_parent_symtab) ||
+                !runtime_trait_entries_ownable(implementation, contract) ||
+                !trait_witness_needs_erasable_bodies(implementation, contract)) {
+            return nullptr;
+        }
+        if (auto obstacle = runtime_witness_body_obstacle(implementation, contract)) {
+            report_runtime_witness_obstacle(implementation, contract, obstacle, loc);
+        }
+        auto *saved_scope = current_scope;
+        current_scope = implementation.m_parent_symtab;
+        ASR::TraitWitness_t *witness = nullptr;
+        try {
+            witness = create_runtime_trait_witness(&implementation, &contract, true);
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
+        if (witness && !trait_bodies_complete) {
+            runtime_witness_requests.push_back({&implementation, &contract, loc});
+        }
+        return witness;
+    }
+
+    // Once all bodies of the translation unit exist, every runtime view
+    // requested earlier must have erasable provider bodies, and each other
+    // conformance of the unit whose witness erases protocol binders gets its
+    // witness and entries only if its bodies are erasable. Otherwise it stays
+    // static and publishes no witness, entries or adapters.
+    void publish_runtime_trait_witnesses(ASR::TranslationUnit_t &unit) {
+        trait_bodies_complete = true;
+        auto requests = std::move(runtime_witness_requests);
+        runtime_witness_requests.clear();
+        bool failed = false;
+        for (const auto &request : requests) {
+            auto obstacle = runtime_witness_body_obstacle(*request.implementation,
+                *request.contract);
+            if (!obstacle) continue;
+            try {
+                report_runtime_witness_obstacle(*request.implementation, *request.contract,
+                    obstacle, request.loc);
+            } catch (const SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
+                failed = true;
+            }
+        }
+        if (failed) throw SemanticAbort();
+        std::vector<ASR::TraitImplementation_t*> implementations;
+        for (const auto &unit_entry : unit.m_symtab->get_scope()) {
+            SymbolTable *scope = nullptr;
+            if (ASR::is_a<ASR::Module_t>(*unit_entry.second)) {
+                auto *module = ASR::down_cast<ASR::Module_t>(unit_entry.second);
+                if (!module->m_loaded_from_mod) scope = module->m_symtab;
+            } else if (ASR::is_a<ASR::Program_t>(*unit_entry.second)) {
+                scope = ASR::down_cast<ASR::Program_t>(unit_entry.second)->m_symtab;
+            }
+            if (!scope) continue;
+            for (const auto &entry : scope->get_scope()) {
+                if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) {
+                    implementations.push_back(
+                        ASR::down_cast<ASR::TraitImplementation_t>(entry.second));
+                }
+            }
+        }
+        auto *saved_scope = current_scope;
+        try {
+            for (auto *implementation : implementations) {
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(implementation->m_trait));
+                for (auto *provided : checked_trait_hierarchy(*trait,
+                        implementation->base.base.loc).traits) {
+                    auto *contract = ASRUtils::trait_runtime_contract(
+                        const_cast<ASR::symbol_t*>(&provided->base));
+                    if (!contract || ASRUtils::trait_runtime_witness(*implementation, contract) ||
+                            !runtime_trait_entries_ownable(*implementation, *contract) ||
+                            !trait_witness_needs_erasable_bodies(*implementation, *contract) ||
+                            runtime_witness_body_obstacle(*implementation, *contract)) continue;
+                    current_scope = implementation->m_parent_symtab;
+                    create_runtime_trait_witness(implementation, contract, true);
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
     }
 
     // ------------------------------------------------------------------

@@ -1,103 +1,142 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
-  --> tests/errors/continue_compilation_traits_ocp.f90:7:5 - 16:1
+  --> tests/errors/continue_compilation_traits_ocp.f90:9:5 - 18:1
    |
- 7 |        abstract interface :: INumeric
+ 9 |        abstract interface :: INumeric
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-16 |    
+18 |    
    | ...^ LFortran extension
 
-semantic error: erased generic storage other than read-only scalar or assumed-shape dummies, scalar locals and a scalar result is not implemented yet
-  --> tests/errors/continue_compilation_traits_ocp.f90:93:32
-   |
-93 |         type(T)             :: copy(size(x))
-   |                                ^^^^^^^^^^^^^ 
-
-semantic error: internal procedures of a runtime generic message with a protocol type parameter are not implemented yet
-   --> tests/errors/continue_compilation_traits_ocp.f90:228:9 - 230:33
-    |
-228 |            subroutine accumulate()
-    |            ^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-230 |            end subroutine accumulate
-    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: runtime views of trait 'ireduce' are not implemented yet: its generic message 'reduce' constrains type parameter 't' by trait 'iweigh', which has no runtime dictionaries because its requirement 'operator(*)' takes an array of type(itself)
-   --> tests/errors/continue_compilation_traits_ocp.f90:255:9
+   --> tests/errors/continue_compilation_traits_ocp.f90:257:9
     |
-255 |         class(IReduce), allocatable :: r
+257 |         class(IReduce), allocatable :: r
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: the conformance of type(bag) to trait 'inumeric' has no runtime dictionary: its component 'v' needs ownership the dictionary does not describe yet
-   --> tests/errors/continue_compilation_traits_ocp.f90:141:10
+   --> tests/errors/continue_compilation_traits_ocp.f90:143:10
     |
-141 |     rb = p%sum(b)
+143 |     rb = p%sum(b)
     |          ^^^^^^^^ 
 
 semantic error: the conformance of real(4) to trait 'inumeric' has no runtime dictionary: it is not declared in a module
-   --> tests/errors/continue_compilation_traits_ocp.f90:143:14
+   --> tests/errors/continue_compilation_traits_ocp.f90:145:14
     |
-143 |     print *, p%sum(r)
+145 |     print *, p%sum(r)
     |              ^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'inumeric' for generic type parameter 't'
-   --> tests/errors/continue_compilation_traits_ocp.f90:146:14
+   --> tests/errors/continue_compilation_traits_ocp.f90:148:14
     |
-146 |     print *, p%sum(k)
+148 |     print *, p%sum(k)
     |              ^^^^^^^^ 
 
 semantic error: a polymorphic actual argument for protocol type parameter 't' of a runtime generic message is not implemented yet
-   --> tests/errors/continue_compilation_traits_ocp.f90:328:13
+   --> tests/errors/continue_compilation_traits_ocp.f90:330:13
     |
-328 |         r = p%sum(c)
+330 |         r = p%sum(c)
     |             ^^^^^^^^ 
 
-semantic error: this use of a value of protocol type parameter 't' as a computed array is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:116:19
+semantic error: the conformance of type(buffered) to trait 'isum' has no runtime witness: in generic procedure 'buffered_sum', erased generic storage other than read-only scalar or assumed-shape dummies, scalar locals and a scalar result is not implemented yet
+   --> tests/errors/continue_compilation_traits_ocp.f90:348:13
     |
-116 |         s = first(x * x)
-    |                   ^^^^^ 
+348 |         s = Buffered()   ! E01
+    |             ^^^^^^^^^^ 
+    |
+ 95 |         type(T)             :: copy(size(x))
+    |                                ~~~~~~~~~~~~~ not supported in runtime generic messages
 
-semantic error: forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:298:13
+semantic error: the conformance of type(squarer) to trait 'isquares' has no runtime witness: in generic procedure 'first_square', this use of a value of protocol type parameter 't' as a computed array is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:349:13
     |
-298 |         s = self%inner%sum(x) * x(1)
-    |             ^^^^^^^^^^^^^^^^^ 
+349 |         q = Squarer()    ! E02
+    |             ^^^^^^^^^ 
+    |
+118 |         s = first(x * x)
+    |                   ~~~~~ not supported in runtime generic messages
 
-semantic error: forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:291:13
+semantic error: the conformance of type(gathered) to trait 'isum' has no runtime witness: in generic procedure 'gathered_sum', this use of a value of protocol type parameter 't' as an array with a vector subscript is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:350:13
     |
-291 |         s = simple_sum(x) * x(1)
-    |             ^^^^^^^^^^^^^ 
+350 |         s = Gathered()   ! E06
+    |             ^^^^^^^^^^ 
+    |
+185 |         s = simple_sum(x([1, 3]))
+    |                          ~~~~~~ not supported in runtime generic messages
 
-semantic error: this use of a value of protocol type parameter 't' as a section in a bound inquiry is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:209:22
+semantic error: the conformance of type(merged) to trait 'isum' has no runtime witness: in generic procedure 'merged_sum', this use of a value of protocol type parameter 't' as an intrinsic procedure result is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:351:13
     |
-209 |         s = x(ubound(x(2:), 1))
-    |                      ^^^^^ 
+351 |         s = Merged()     ! E07
+    |             ^^^^^^^^ 
+    |
+191 |         s = merge(x(1), x(2), size(x) > 1)
+    |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ not supported in runtime generic messages
 
-semantic error: this use of a value of protocol type parameter 't' as an array with a vector subscript is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:183:26
+semantic error: the conformance of type(shown) to trait 'isum' has no runtime witness: in generic procedure 'shown_sum', this use of a value of protocol type parameter 't' as an argument of a dummy without the type parameter is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:352:13
     |
-183 |         s = simple_sum(x([1, 3]))
-    |                          ^^^^^^ 
+352 |         s = Shown()      ! E08
+    |             ^^^^^^^ 
+    |
+198 |         call show(s)
+    |                   ~ not supported in runtime generic messages
 
-semantic error: this use of a value of protocol type parameter 't' as an intrinsic procedure result is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:189:13
+semantic error: the conformance of type(printed) to trait 'isum' has no runtime witness: in generic procedure 'printed_sum', this use of a value of protocol type parameter 't' as input/output is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:353:13
     |
-189 |         s = merge(x(1), x(2), size(x) > 1)
-    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+353 |         s = Printed()    ! E09
+    |             ^^^^^^^^^ 
+    |
+205 |         print *, s
+    |                  ~ not supported in runtime generic messages
 
-semantic error: this use of a value of protocol type parameter 't' as input/output is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:203:18
+semantic error: the conformance of type(bounded) to trait 'isum' has no runtime witness: in generic procedure 'bounded_sum', this use of a value of protocol type parameter 't' as a section in a bound inquiry is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:354:13
     |
-203 |         print *, s
-    |                  ^ 
+354 |         s = Bounded()    ! E10
+    |             ^^^^^^^^^ 
+    |
+211 |         s = x(ubound(x(2:), 1))
+    |                      ~~~~~ not supported in runtime generic messages
 
-semantic error: this use of a value of protocol type parameter 't' as an argument of a dummy without the type parameter is not implemented yet in runtime generic messages
-   --> tests/errors/continue_compilation_traits_ocp.f90:196:19
+semantic error: the conformance of type(nested) to trait 'isum' has no runtime witness: in generic procedure 'nested_sum', internal procedures of a runtime generic message with a protocol type parameter are not implemented yet
+   --> tests/errors/continue_compilation_traits_ocp.f90:355:13
     |
-196 |         call show(s)
-    |                   ^ 
+355 |         s = Nested()     ! E11
+    |             ^^^^^^^^ 
+    |
+230 |            subroutine accumulate()
+    |            ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+    |
+232 |            end subroutine accumulate
+    | ...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ not supported in runtime generic messages
+
+semantic error: the conformance of type(helped) to trait 'iscale' has no runtime witness: in generic procedure 'helped_scaled', forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:356:13
+    |
+356 |         f = Helped()     ! E13
+    |             ^^^^^^^^ 
+    |
+293 |         s = simple_sum(x) * x(1)
+    |             ~~~~~~~~~~~~~ not supported in runtime generic messages
+
+semantic error: the conformance of type(forwarded) to trait 'iscale' has no runtime witness: in generic procedure 'forwarded_scaled', forwarding protocol type parameter 't' of trait 'ifield' where trait 'inumeric' is required is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:357:13
+    |
+357 |         f = Forwarded()  ! E14
+    |             ^^^^^^^^^^^ 
+    |
+300 |         s = self%inner%sum(x) * x(1)
+    |             ~~~~~~~~~~~~~~~~~ not supported in runtime generic messages
+
+semantic error: the conformance of type(later) to trait 'isum' has no runtime witness: in generic procedure 'later_sum', this use of a value of protocol type parameter 't' as input/output is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:373:13
+    |
+373 |         s = Later()
+    |             ^^^^^^^ 
+    |
+379 |         print *, s
+    |                  ~ not supported in runtime generic messages

@@ -765,17 +765,28 @@ The body of a runtime generic message may only:
 - pass them to requirements, and to generic procedures and messages whose
   dummies have a type parameter.
 
-Any other use needs a typed copy and is diagnosed where the provider is
-defined: a vector subscript, an intrinsic procedure, input/output, a dummy
-of another type such as `class(*)`, an array constructor, an array computed
-by a call (such as an elemental requirement applied to arrays), and the
-bounds of a section. Internal procedures of such a body are not
+Any other use needs a typed copy, which runtime generic messages do not
+implement yet: a vector subscript, an intrinsic procedure, input/output, a
+dummy of another type such as `class(*)`, an array constructor, an array
+computed by a call (such as an elemental requirement applied to arrays),
+and the bounds of a section. Internal procedures of such a body are not
 implemented yet either. Values of other types are unrestricted, so scalar
 controls, intrinsics and output work as usual, and a client may pass any
-concrete array expression, including one with a vector subscript. As for a
-binder constrained by a runtime view, the check is made once for the
-provider, so a provider whose body is outside this subset is rejected even
-by a program that only calls it statically.
+concrete array expression, including one with a vector subscript.
+
+A conformance whose generic procedure is outside this subset, also through
+the generic procedures it forwards its binders to, stays valid static code:
+static calls, including `object%sum(x)` through its concrete type, work as
+before, and its module publishes no runtime witness, entries or adapters
+for it, while its dictionaries and its module's other conformances are
+unaffected. Forming its runtime view is diagnosed where the view is formed,
+with the construct its body cannot erase, both in its own translation unit
+and in a separately compiled client, which finds the construct in the
+provider's modfile. The module decides once all bodies of its translation
+unit exist; a runtime view formed earlier in the same translation unit
+creates the witness then, and its bodies are checked again at the end.
+Binders constrained by runtime views are still checked where their
+provider is defined.
 `--verify-all-passes` keeps these rules after every pass: erased values are
 never operands of intrinsics or input/output, arrays of them are descriptors
 held only by dummies or pointer associations, never constructors, results
@@ -789,7 +800,7 @@ allocatable result. A runtime view of a trait whose message is constrained
 by such a protocol is diagnosed with the reason. The dictionary of a binder
 is the one of the protocol constraining it, so forwarding the binder of a
 derived protocol (`IField`, extending `INumeric`) to a callee that requires
-a different protocol (`INumeric`) is not implemented yet; the same
+a different protocol (`INumeric`) is outside the erased subset too; the same
 forwarding is supported statically, where the conformance provides each
 protocol's dictionary. A binder constrained by several traits and a
 polymorphic actual argument for an erased dummy are not implemented yet

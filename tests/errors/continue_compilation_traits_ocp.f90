@@ -1,7 +1,9 @@
 ! Located diagnostics for the open runtime of protocol traits: a runtime
 ! generic message erases a binder constrained by a protocol, and each call
 ! passes the dictionary of its type argument's conformance. Each numbered
-! case is an independent violation; all other code is valid.
+! case is an independent violation; all other code is valid. A conformance
+! whose generic procedure cannot be erased stays valid static code: forming
+! its runtime view, in cc_traits_ocp_views, is the violation.
 module cc_traits_ocp_contracts
     implicit none
     abstract interface :: INumeric
@@ -328,3 +330,52 @@ contains
         r = p%sum(c)
     end function total
 end module cc_traits_ocp_polymorphic
+
+! E01, E02, E06-E11, E13, E14: runtime views of the conformances above.
+module cc_traits_ocp_views
+    use cc_traits_ocp_contracts, only: ISum, ISquares
+    use cc_traits_ocp_storage, only: Buffered
+    use cc_traits_ocp_elemental, only: Squarer
+    use cc_traits_ocp_uses, only: Gathered, Merged, Shown, Printed, Bounded
+    use cc_traits_ocp_internal, only: Nested
+    use cc_traits_ocp_field, only: IScale, Helped, Forwarded
+    implicit none
+contains
+    subroutine views()
+        class(ISum), allocatable     :: s
+        class(ISquares), allocatable :: q
+        class(IScale), allocatable   :: f
+        s = Buffered()   ! E01
+        q = Squarer()    ! E02
+        s = Gathered()   ! E06
+        s = Merged()     ! E07
+        s = Shown()      ! E08
+        s = Printed()    ! E09
+        s = Bounded()    ! E10
+        s = Nested()     ! E11
+        f = Helped()     ! E13
+        f = Forwarded()  ! E14
+    end subroutine views
+end module cc_traits_ocp_views
+
+! E16: a runtime view formed before the body of its generic procedure is
+! checked once all bodies exist.
+module cc_traits_ocp_forward
+    use cc_traits_ocp_contracts, only: INumeric, ISum
+    implicit none
+    type, sealed, implements(ISum) :: Later
+    contains
+        procedure, nopass :: sum => later_sum
+    end type Later
+contains
+    subroutine early_view(s)
+        class(ISum), allocatable, intent(out) :: s
+        s = Later()
+    end subroutine early_view
+    function later_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        s = x(1)
+        print *, s
+    end function later_sum
+end module cc_traits_ocp_forward

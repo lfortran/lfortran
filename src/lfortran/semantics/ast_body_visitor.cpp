@@ -526,6 +526,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        publish_runtime_trait_witnesses(*unit);
         queue_trait_erasures(*unit);
         instantiate_pending_bodies();
         finish_trait_lifecycle_effects(*unit);

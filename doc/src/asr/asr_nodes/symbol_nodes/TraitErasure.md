@@ -46,5 +46,14 @@ verifier checks the declared membership, the exact member signature and
 uniqueness; a witness slot of that member requires the provider's entry.
 Clients only select a member slot; they never create or instantiate entries.
 
+A generic whose binders are erased with the dictionaries of their protocols
+has an erasure only if its body, and the generic procedures it forwards
+those binders to, stay within the erased subset of runtime generic
+messages. Its module creates the erasure with the conformance's witness once
+all bodies of the translation unit exist, or earlier when a runtime view of
+the conformance is formed there and its bodies are checked again at the
+end. Otherwise the conformance is static only: its module has neither, and a
+runtime view of it is diagnosed where it is formed.
+
 See [traits](../../traits.md), [TraitWitness](TraitWitness.md), and
 [trait_erased_parameter](../helper_nodes/trait_erased_parameter.md).
