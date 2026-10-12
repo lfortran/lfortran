@@ -70,4 +70,21 @@ program implied_do_loops49
     write(line, '(*(1x,a))') (trim(s(i)), i=1,size(s)), 'z'
     print '(a)', trim(line)
     if (line /= ' ab cde z') error stop 12
+
+    ! Not conforming (the inner loop reuses the outer loop's variable) but
+    ! accepted, so it must compile. Only the first record is checked, as
+    ! the rest depends on the processor.
+    open(newunit=u, status='scratch', action='readwrite')
+    write(u, '(a,"|")') ((trim(s(i)), i=1,size(s)), i=1,2)
+    rewind(u)
+    read(u, '(a)') line
+    print '(a)', trim(line)
+    if (line /= 'ab|') error stop 13
+    rewind(u)
+    write(u, '(i0,1x,f3.1)') ((i, r(i), i=1,2), i=1,2)
+    rewind(u)
+    read(u, '(a)') line
+    print '(a)', trim(line)
+    if (line /= '1 1.0') error stop 14
+    close(u)
 end program

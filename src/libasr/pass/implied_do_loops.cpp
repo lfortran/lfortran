@@ -1215,6 +1215,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl,
                 Vec<ASR::expr_t*>& result, size_t max_items) {
+            // A nested loop that reuses an enclosing loop's variable (not
+            // conforming, but accepted) had its own variable substituted by
+            // the enclosing loop's value; leave it to the run-time loop.
+            if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+                return false;
+            }
             // The bounds only have to be integer compile-time constants,
             // e.g. `size(a)` of a fixed size array or a named constant.
             int64_t start_val = 0, end_val = 0, step_val = 1;
