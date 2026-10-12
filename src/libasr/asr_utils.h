@@ -672,6 +672,32 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
     }
 }
 
+// The kind type parameter values that this implementation supports for an
+// intrinsic numeric or logical type, in increasing order: the values of
+// ISO_FORTRAN_ENV's INTEGER_KINDS, REAL_KINDS and LOGICAL_KINDS, and for
+// complex the real kinds that also have a complex type. Other types have none.
+static inline const std::vector<int64_t> &supported_kinds(ASR::ttypeType type) {
+    static const std::vector<int64_t> integer_kinds = {1, 2, 4, 8};
+    static const std::vector<int64_t> logical_kinds = {1, 2, 4, 8};
+    static const std::vector<int64_t> real_kinds = {4, 8, 16};
+    static const std::vector<int64_t> complex_kinds = {4, 8};
+    static const std::vector<int64_t> none;
+    switch (type) {
+        case ASR::ttypeType::Integer: return integer_kinds;
+        case ASR::ttypeType::Logical: return logical_kinds;
+        case ASR::ttypeType::Real: return real_kinds;
+        case ASR::ttypeType::Complex: return complex_kinds;
+        default: return none;
+    }
+}
+
+static inline bool is_supported_kind(ASR::ttypeType type, int64_t kind) {
+    for (int64_t supported : supported_kinds(type)) {
+        if (supported == kind) return true;
+    }
+    return false;
+}
+
 // Kind-aware RealConstant constructor from a `double`. For kind 4/8 the value
 // is stored directly; for kind=16 the double is widened to binary128 and the
 // pointer-encoded payload is produced via make_RealConstant_r16. This is the

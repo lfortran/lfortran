@@ -11568,7 +11568,10 @@ public:
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 10 && a_kind != 16) {
+            // Kind 10 is C_LONG_DOUBLE, a kind for C interoperability only;
+            // it is not one of REAL_KINDS.
+            if (!is_derived_type && !ASRUtils::is_supported_kind(ASR::ttypeType::Real, a_kind)
+                    && a_kind != 10) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Real",
                     Level::Error, Stage::Semantic, {
@@ -11600,7 +11603,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && !ASRUtils::is_supported_kind(ASR::ttypeType::Integer, a_kind)) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Integer",
                     Level::Error, Stage::Semantic, {
@@ -11620,7 +11623,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLogical) {
-            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && !ASRUtils::is_supported_kind(ASR::ttypeType::Logical, a_kind)) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Logical",
                     Level::Error, Stage::Semantic, {
@@ -11636,7 +11639,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8) {
+            if (!is_derived_type && !ASRUtils::is_supported_kind(ASR::ttypeType::Complex, a_kind)) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
