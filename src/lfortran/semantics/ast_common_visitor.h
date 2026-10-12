@@ -2116,32 +2116,36 @@ public:
         {"dmod", {"mod", {"real8", "real8"}}},
     };
 
-    // The numeric specific intrinsic functions of Fortran 2018, Table 16.2,
-    // whose specific name is their generic name, with the types of their
-    // arguments; `intrinsic_mapping` has the other specific names.
-    std::map<std::string, std::vector<std::string>> generic_specific_intrinsic_args = {
-        {"abs", {"real4"}},
-        {"acos", {"real4"}},
-        {"aimag", {"complex4"}},
-        {"aint", {"real4"}},
-        {"anint", {"real4"}},
-        {"asin", {"real4"}},
-        {"atan", {"real4"}},
-        {"atan2", {"real4", "real4"}},
-        {"conjg", {"complex4"}},
-        {"cos", {"real4"}},
-        {"cosh", {"real4"}},
-        {"dim", {"real4", "real4"}},
-        {"dprod", {"real4", "real4"}},
-        {"exp", {"real4"}},
-        {"mod", {"int4", "int4"}},
-        {"nint", {"real4"}},
-        {"sign", {"real4", "real4"}},
-        {"sin", {"real4"}},
-        {"sinh", {"real4"}},
-        {"sqrt", {"real4"}},
-        {"tan", {"real4"}},
-        {"tanh", {"real4"}},
+    // The specific intrinsic functions of Fortran 2018, Table 16.2, that
+    // `intrinsic_mapping` does not have (most of them have their generic
+    // name), with their generic function and the types of their arguments.
+    std::map<std::string, std::pair<std::string, std::vector<std::string>>>
+            specific_intrinsic_interfaces = {
+        {"abs", {"abs", {"real4"}}},
+        {"acos", {"acos", {"real4"}}},
+        {"aimag", {"aimag", {"complex4"}}},
+        {"aint", {"aint", {"real4"}}},
+        {"anint", {"anint", {"real4"}}},
+        {"asin", {"asin", {"real4"}}},
+        {"atan", {"atan", {"real4"}}},
+        {"atan2", {"atan2", {"real4", "real4"}}},
+        {"conjg", {"conjg", {"complex4"}}},
+        {"cos", {"cos", {"real4"}}},
+        {"cosh", {"cosh", {"real4"}}},
+        {"dim", {"dim", {"real4", "real4"}}},
+        {"dprod", {"dprod", {"real4", "real4"}}},
+        {"exp", {"exp", {"real4"}}},
+        {"idnint", {"nint", {"real8"}}},
+        {"index", {"index", {"character", "character"}}},
+        {"len", {"len", {"character"}}},
+        {"mod", {"mod", {"int4", "int4"}}},
+        {"nint", {"nint", {"real4"}}},
+        {"sign", {"sign", {"real4", "real4"}}},
+        {"sin", {"sin", {"real4"}}},
+        {"sinh", {"sinh", {"real4"}}},
+        {"sqrt", {"sqrt", {"real4"}}},
+        {"tan", {"tan", {"real4"}}},
+        {"tanh", {"tanh", {"real4"}}},
     };
 
     ASR::asr_t *tmp;
@@ -6357,55 +6361,63 @@ public:
             return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
         } else if (type_name == "complex8") {
             return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8));
+        } else if (type_name == "character") {
+            return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASR::string_length_kindType::AssumedLength,
+                ASR::string_physical_typeType::DescriptorString));
         }
         return nullptr;
     }
 
     // Creates `iface_name` in `parent_scope`: the explicit interface of the
     // specific intrinsic function `name` (Fortran 2018, 15.4.3.6 and
-    // Table 16.2), an elemental function whose intent(in) arguments have the
-    // specific types and the dummy argument names of the intrinsic. Returns
-    // nullptr if `name` is not such a specific intrinsic function.
+    // Table 16.2), a function whose intent(in) arguments have the specific
+    // types and the dummy argument names of the intrinsic. It is elemental,
+    // except for the inquiry function `len`. Returns nullptr if `name` is
+    // not such a specific intrinsic function.
     ASR::symbol_t* create_specific_intrinsic_interface(const Location &loc,
             const std::string &name, const std::string &iface_name,
             SymbolTable *parent_scope) {
-        std::string generic_name = name;
-        std::vector<std::string> arg_type_names;
-        auto generic = generic_specific_intrinsic_args.find(name);
-        if (generic != generic_specific_intrinsic_args.end()) {
-            arg_type_names = generic->second;
-        } else {
-            auto specific = intrinsic_mapping.find(name);
+        auto specific = specific_intrinsic_interfaces.find(name);
+        if (specific == specific_intrinsic_interfaces.end()) {
+            specific = intrinsic_mapping.find(name);
             if (specific == intrinsic_mapping.end()) {
                 return nullptr;
             }
-            generic_name = specific->second.first;
-            arg_type_names = specific->second.second;
         }
-        // The specific names of `min` and `max` (`min0`, `amax1`, ...) take
-        // any number of arguments.
-        if (generic_name == "min" || generic_name == "max"
-                || name2signature.find(generic_name) == name2signature.end()
-                || !ASRUtils::IntrinsicElementalFunctionRegistry::
-                    is_intrinsic_function(generic_name)) {
-            return nullptr;
+        std::string generic_name = specific->second.first;
+        const std::vector<std::string> &arg_type_names = specific->second.second;
+        bool is_len = (generic_name == "len");
+        std::vector<std::string> dummy_names = {"string"};
+        size_t max_args = 1;
+        if (!is_len) {
+            // The specific names of `min` and `max` (`min0`, `amax1`, ...)
+            // take any number of arguments.
+            if (generic_name == "min" || generic_name == "max"
+                    || name2signature.find(generic_name) == name2signature.end()
+                    || !ASRUtils::IntrinsicElementalFunctionRegistry::
+                        is_intrinsic_function(generic_name)) {
+                return nullptr;
+            }
+            const IntrinsicSignature &signature = name2signature.at(generic_name);
+            dummy_names = signature.kwarg_names;
+            max_args = signature.max_args;
         }
-        const IntrinsicSignature &signature = name2signature.at(generic_name);
-        if (arg_type_names.size() > signature.kwarg_names.size()) {
+        if (arg_type_names.size() > dummy_names.size()) {
             return nullptr;
         }
         SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
         Vec<ASR::expr_t*> args;
         args.reserve(al, arg_type_names.size());
         Vec<ASR::expr_t*> call_args;
-        call_args.reserve(al, signature.max_args);
+        call_args.reserve(al, max_args);
         for (size_t i = 0; i < arg_type_names.size(); i++) {
             ASR::ttype_t *arg_type = specific_intrinsic_arg_type(
                 arg_type_names[i], loc);
             if (!arg_type) {
                 return nullptr;
             }
-            std::string arg_name = to_lower(signature.kwarg_names[i]);
+            std::string arg_name = to_lower(dummy_names[i]);
             ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, fn_scope,
                     s2c(al, arg_name), nullptr, 0, ASRUtils::intent_in,
@@ -6416,18 +6428,26 @@ public:
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
             call_args.push_back(al, args[i]);
         }
-        // The result has the type of the generic intrinsic applied to the
-        // specific arguments, with its optional arguments (`kind`) absent.
-        while (call_args.size() < (size_t) signature.max_args) {
-            call_args.push_back(al, nullptr);
+        ASR::ttype_t *return_type = nullptr;
+        if (is_len) {
+            return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        } else {
+            // The result has the type of the generic intrinsic applied to
+            // the specific arguments, with its optional arguments absent, as
+            // a reference to the generic intrinsic would have.
+            while (call_args.size() < max_args) {
+                call_args.push_back(al, nullptr);
+            }
+            fill_optional_args(generic_name, call_args, loc);
+            fill_optional_kind_arg(generic_name, call_args);
+            diag::Diagnostics call_diag;
+            ASR::asr_t *call = ASRUtils::IntrinsicElementalFunctionRegistry::
+                get_create_function(generic_name)(al, loc, call_args, call_diag);
+            if (!call || call_diag.has_error()) {
+                return nullptr;
+            }
+            return_type = ASRUtils::expr_type(ASRUtils::EXPR(call));
         }
-        diag::Diagnostics call_diag;
-        ASR::asr_t *call = ASRUtils::IntrinsicElementalFunctionRegistry::
-            get_create_function(generic_name)(al, loc, call_args, call_diag);
-        if (!call || call_diag.has_error()) {
-            return nullptr;
-        }
-        ASR::ttype_t *return_type = ASRUtils::expr_type(ASRUtils::EXPR(call));
         ASR::symbol_t *return_var = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, fn_scope,
                 s2c(al, name), nullptr, 0, ASRUtils::intent_return_var,
@@ -6441,7 +6461,7 @@ public:
                 nullptr, 0, ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface, nullptr,
-                /* m_elemental */ true, /* m_pure */ true, false, false, false,
+                /* m_elemental */ !is_len, /* m_pure */ true, false, false, false,
                 nullptr, 0, false, false, false));
         parent_scope->add_symbol(iface_name, iface);
         return iface;
@@ -13200,6 +13220,16 @@ public:
                     v = create_specific_intrinsic_interface(
                         sym_type->base.base.loc, func_name, iface_name,
                         current_scope->parent);
+                    if (!v && (is_intrinsic_registry_function(func_name)
+                            || is_intrinsic_registry_subroutine(func_name)
+                            || intrinsic_procedures.is_intrinsic(func_name))) {
+                        diag.add(Diagnostic("intrinsic procedure '" + func_name
+                                + "' is not allowed in a procedure declaration statement",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {sym_type->base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                 }
                 if( !v ) {
                     Location &attr_loc = sym_type->base.base.loc;
