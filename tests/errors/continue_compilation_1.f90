@@ -2443,3 +2443,12 @@ module cc1_pdt_name_mod
         integer, kind :: k
     end type cc1_pdt_name
 end module cc1_pdt_name_mod
+
+! An error in a component of a parameterized derived type.
+module cc1_pdt_component_mod
+    implicit none
+    type :: cc1_pdt_component_t(k)
+        integer, kind :: k
+        integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
+    end type cc1_pdt_component_t
+end module cc1_pdt_component_mod

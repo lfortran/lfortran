@@ -11392,6 +11392,9 @@ public:
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
+            // The preliminary Struct is incomplete when a component or a
+            // procedure of the type has an error, so it is removed: with
+            // --continue-compilation, the following units must not see it.
             // Second pass: process remaining (non-kind/len) declarations
             for (size_t i = 0; i < x.n_items; i++) {
                 if (kind_len_decl_indices.find(i) == kind_len_decl_indices.end()) {
@@ -11400,6 +11403,7 @@ public:
                     } catch (const SemanticAbort&) {
                         current_scope = parent_scope_pdt;
                         is_derived_type = false;
+                        parent_scope_pdt->erase_symbol(dt_name);
                         throw;
                     }
                 }
@@ -11410,6 +11414,7 @@ public:
                 } catch (const SemanticAbort&) {
                     current_scope = parent_scope_pdt;
                     is_derived_type = false;
+                    parent_scope_pdt->erase_symbol(dt_name);
                     throw;
                 }
             }

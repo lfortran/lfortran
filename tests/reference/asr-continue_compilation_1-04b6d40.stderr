@@ -1124,6 +1124,12 @@ semantic error: using the internal procedure 'tan', which is defined later, as a
 2428 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
+semantic error: Variable 'cc1_pdt_undefined_v' is not declared
+    --> tests/errors/continue_compilation_1.f90:2388:24
+     |
+2388 |         integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
+     |                        ^^^^^^^^^^^^^^^^^^^ 'cc1_pdt_undefined_v' is undeclared
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
