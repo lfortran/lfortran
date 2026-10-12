@@ -2,10 +2,15 @@ program realloc_lhs_27
 ! Intrinsic assignment to an allocated allocatable array reallocates it
 ! when the shape differs, even if the number of elements is the same
 implicit none
+type :: t
+    integer, allocatable :: x(:)
+end type
 integer, allocatable :: a(:,:), b(:,:)
 real, allocatable :: r(:,:)
 integer, allocatable :: c(:,:,:)
-integer :: k
+integer, allocatable :: z(:,:), w(:,:)
+type(t), allocatable :: s(:,:), u(:,:)
+integer :: i, j, k
 
 allocate(a(2,3))
 a = reshape([1, 2, 3, 4, 5, 6], [2, 3])
@@ -39,5 +44,32 @@ b = transpose(b)
 a = b
 if (any(lbound(a) /= [0, -1])) error stop
 if (a(1, 1) /= 60) error stop
+
+! Zero-size arrays with a different shape are reallocated too
+allocate(z(0,3), w(3,0))
+z = w
+if (any(shape(z) /= [3, 0])) error stop
+
+! Allocatable components are deep-copied and the shape is updated
+allocate(s(2,3), u(3,2))
+do j = 1, 3
+    do i = 1, 2
+        s(i,j)%x = [i, j]
+    end do
+end do
+do j = 1, 2
+    do i = 1, 3
+        u(i,j)%x = [100*i, j]
+    end do
+end do
+s = u
+if (any(shape(s) /= [3, 2])) error stop
+do j = 1, 2
+    do i = 1, 3
+        if (any(s(i,j)%x /= [100*i, j])) error stop
+    end do
+end do
+u(1,1)%x(1) = -1
+if (s(1,1)%x(1) /= 100) error stop
 print *, "ok"
 end program
