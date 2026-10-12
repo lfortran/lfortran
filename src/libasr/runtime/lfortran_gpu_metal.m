@@ -38,6 +38,10 @@ struct lfortran_gpu_kernel {
     size_t buffer_sizes[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
+    // A buffer only the device holds, created at the launch and kept until
+    // the kernel is released so that the host can read part of it back.
+    int arg_is_scratch[MAX_ARGS];
+    id<MTLBuffer> scratch_buffers[MAX_ARGS];
     int n_args;
 };
 
@@ -151,9 +155,34 @@ void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
         if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
+        k->scratch_buffers[i] = nil;
     }
     k->pipeline = nil;
     free(k);
+}
+
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size)
+{
+    if (!k || idx >= MAX_ARGS) return;
+    k->buffer_ptrs[idx] = NULL;
+    k->buffer_sizes[idx] = size;
+    k->arg_is_buffer[idx] = 1;
+    k->arg_is_scratch[idx] = 1;
+    if (idx >= k->n_args) k->n_args = idx + 1;
+}
+
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size)
+{
+    if (!k || idx >= MAX_ARGS || size == 0) return;
+    if (!k->arg_is_scratch[idx] || !k->scratch_buffers[idx]
+            || size > k->buffer_sizes[idx]) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
+            "%d of %zu bytes\n", idx, size);
+        exit(1);
+    }
+    memcpy(dst, [k->scratch_buffers[idx] contents], size);
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
@@ -204,6 +233,17 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 // and that the kernel does not touch: Metal has no buffer
                 // of no bytes.
                 [encoder setBuffer:nil offset:0 atIndex:i];
+            } else if (k->arg_is_scratch[i]) {
+                id<MTLBuffer> buffer = [ctx->device
+                    newBufferWithLength:k->buffer_sizes[i]
+                                options:MTLResourceStorageModeShared];
+                if (!buffer) {
+                    fprintf(stderr, "lfortran_gpu_launch: cannot allocate a "
+                        "device buffer of %zu bytes\n", k->buffer_sizes[i]);
+                    exit(1);
+                }
+                k->scratch_buffers[i] = buffer;
+                [encoder setBuffer:buffer offset:0 atIndex:i];
             } else if (k->arg_is_buffer[i]) {
                 // Copy host data into a Metal buffer
                 id<MTLBuffer> buffer = [ctx->device
@@ -249,7 +289,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 
         // Copy results back from Metal buffers to host memory
         for (int i = 0; i < k->n_args; i++) {
-            if (k->arg_is_buffer[i] && buffers[i]) {
+            if (k->arg_is_buffer[i] && !k->arg_is_scratch[i] && buffers[i]) {
                 memcpy(k->buffer_ptrs[i], [buffers[i] contents], k->buffer_sizes[i]);
             }
         }

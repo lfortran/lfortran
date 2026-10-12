@@ -133,6 +133,7 @@
                     )
                   ]
                   :component_fit (SymbolRef 1 "zero")
+                  :scratch []
                 )
                 (GpuSync)
               ]

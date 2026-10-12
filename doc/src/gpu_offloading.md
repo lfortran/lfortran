@@ -473,7 +473,13 @@ and a small `integer(4)` *heap state* buffer holding the next free element
 of every arena. They are arguments the offload passes add to the kernel in
 ASR, and a device procedure that allocates, or calls one that does, receives
 them as hidden dummy arguments, as it receives the hidden arguments of a
-`stop`. The host allocates them before the launch and frees them after it.
+`stop`. An arena is a buffer only the device holds (a `scratch` buffer of
+the `GpuKernelLaunch` in ASR): the runtime allocates it on the device for
+the launch, and the host neither allocates memory for it nor copies anything
+in. Only a launch whose kernel stores heap values into an argument, which
+the host copies out of the arenas after the launch (see below), reads the
+arenas back, and then only the elements the kernel took from each, the
+leading part the heap state counts.
 
 * Allocating `n` elements of an arena is a relaxed atomic add of `n` to the
   arena's next free element, which returns the old value (`GpuAtomicFetchAdd`

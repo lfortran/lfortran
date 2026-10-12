@@ -74,6 +74,14 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     void* ptr, size_t size);
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     const void* val, size_t size);
+// A buffer of `size` bytes only the device holds: nothing is copied in or
+// back, and the kernel object owns it until it is released.
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size);
+// Copies the leading `size` bytes of the scratch buffer `idx` into `dst`,
+// after the launch and before the kernel is released.
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size);
 
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3]);

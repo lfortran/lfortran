@@ -8,7 +8,8 @@ Launches a GPU kernel.
 
 ```text
 GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
-    call_arg* args, symbol? component_fit)
+    call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch)
+gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
 ### Arguments
@@ -20,6 +21,7 @@ GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
 | `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
+| `scratch` | the arguments that are buffers only the device holds (below). |
 
 ### Return values
 
@@ -60,6 +62,15 @@ A loop reaches GPU offload only after the unsupported-construct check in the
 lower is a compile-time error, whatever its reason, whether or not
 `--gpu-allow-cpu-fallback` is given, and also with `--show-gpu-kernel-source`.
 
+A `scratch` entry makes the argument `argument_index` a buffer of `size`
+elements of the kernel argument's element type that only the device holds,
+such as an arena of the device heap: the host allocates nothing for it and
+copies nothing in or out. The actual argument is an allocatable array of the
+launching procedure, not allocated before the launch. When `read_back` is
+present, the host allocates the actual with `read_back` elements after the
+launch, at most `size`, and copies the leading elements of the buffer into
+it; otherwise the actual stays unallocated.
+
 ## Examples
 
 ```clojure
@@ -87,6 +98,7 @@ lower is a compile-time error, whatever its reason, whether or not
     )
   ]
   :component_fit nil
+  :scratch []
 )
 ```
 
