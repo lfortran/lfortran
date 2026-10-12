@@ -46,6 +46,130 @@ CASES = {
         "summary": "traits_protocol_separate_01 checks: 75",
     },
 }
+# An LLVM name, quoted or not; LLVM spells a quote inside a quoted name \22.
+LLVM_NAME = r'(?:"[^"]*"|[-\w.$]+)'
+# What an optimizer may infer about how a function uses a pointer parameter,
+# such as nocapture or captures(none), readonly, nofree, align 8 or
+# dereferenceable(8); unlike byval or sret, none of it changes how the
+# pointer is passed.
+POINTER_ATTRIBUTE = (r"(?:align \d+|noalias|nocapture|nofree|nonnull|noundef|readnone|readonly|"
+                     r"writeonly|(?:captures|dereferenceable(?:_or_null)?|initializes)"
+                     r"\((?:[^()]|\([^()]*\))*\))")
+# A typed (i8*) or opaque (ptr) pointer parameter, depending on LLVM, and its name.
+POINTER_PARAMETER = re.compile(rf"(?:i8\*|ptr)(?: {POINTER_ATTRIBUTE})* %({LLVM_NAME})")
+BRACKETS = {"(": ")", "[": "]", "{": "}"}
+# The open_simple_sum entry with the parameters LLVM 11 (--fast), 19 and 20
+# (nocapture), 21 and 22 (captures(none)) and 23 (nofree) give it, with what
+# an optimizer may infer about its result and dictionary pointers, and with
+# nested commas and quoted names: check_open_entry accepts each of them.
+ENTRY = ("define void @__module_traits_protocol_separate_01_provider_m___trait_erasure_"
+         "open_simple_sum_kvCAxFyWx57YNac6PXATJp_entry")
+DICTIONARY = "%__dictionary_t_kvCAxFyWx57YNac6PXATJp"
+OPEN_ENTRIES = [
+    f"{ENTRY}(i8* %_trait_result, %array.1* nocapture readonly %x, i8* {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr nocapture readonly %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr readonly captures(none) %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr nofree readonly captures(none) %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr noalias writeonly align 8 captures(ret: address, provenance) "
+    f"initializes((0, 8), (16, 24)) %_trait_result, {{ i32, [2 x i64] }} %pair, ptr nofree "
+    f"noundef nonnull readonly align 8 captures(none) dereferenceable(24) {DICTIONARY}) {{",
+    f"{ENTRY}(i8* nocapture writeonly %_trait_result, void (i8*, i32)* %f, "
+    f"i8* nocapture readonly dereferenceable_or_null(16) {DICTIONARY}) {{",
+    'define void @"m(1)__trait_erasure_open_simple_sum_k_entry"(ptr %_trait_result, '
+    'ptr %"x, (y)", ptr %"__dictionary_t,1") {',
+]
+# A malformed or missing parameter; the result or the dictionary out of place,
+# of another type, passed otherwise or misnamed; no or two entries:
+# check_open_entry rejects each of them.
+WRONG_OPEN_ENTRIES = [
+    f"{ENTRY}(ptr %_trait_result, ptr readonly captures(none %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr readonly captures(none) %x) {{",
+    f"{ENTRY}(ptr %x, ptr %_trait_result, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr {DICTIONARY}, ptr %x) {{",
+    f"{ENTRY}(i8** %_trait_result, %array.1* %x, i8* {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr %x, i64 {DICTIONARY}) {{",
+    f"{ENTRY}(ptr sret(i8) %_trait_result, ptr %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr %x, ptr byval(i8) {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr %x, ptr %x__dictionary_t) {{",
+    f'{ENTRY}(ptr %_trait_result, i64 %"ptr {DICTIONARY}") {{',
+    f"{ENTRY}_1(ptr %_trait_result, ptr %x, ptr {DICTIONARY}) {{",
+    f"{ENTRY}(ptr %_trait_result, ptr %x, ptr {DICTIONARY}) {{\n" * 2,
+]
+
+
+def llvm_name(spelling):
+    """A name from its LLVM spelling, quoted or not."""
+    if not spelling.startswith('"'):
+        return spelling
+    return re.sub(r"\\([0-9A-Fa-f]{2})", lambda match: chr(int(match[1], 16)), spelling[1:-1])
+
+
+def llvm_parameters(llvm, function):
+    """The parameters of each function that LLVM IR defines with a name fully
+    matching the pattern `function`."""
+    return [parameter_list(llvm, head.end() - 1)
+            for head in re.finditer(rf"(?m)^define [^@\n]*@({LLVM_NAME})\(", llvm)
+            if re.fullmatch(function, llvm_name(head[1]))]
+
+
+def parameter_list(text, start):
+    """The parameters of the LLVM parameter list opened by text[start]. The
+    list ends at its balanced ')' on the same line and splits at its
+    top-level commas only, so neither attributes such as captures(none) or
+    initializes((0, 8), (16, 24)), function or aggregate types nor quoted
+    names end or split a parameter."""
+    closers, quoted, cuts = [], False, [start]
+    for index in range(start, len(text)):
+        char = text[index]
+        if quoted:
+            quoted = char != '"'
+        elif char == '"':
+            quoted = True
+        elif char in BRACKETS:
+            closers.append(BRACKETS[char])
+        elif char == "," and len(closers) == 1:
+            cuts.append(index)
+        elif char == "\n":
+            break
+        elif char in ")]}":
+            if closers.pop() != char:
+                break
+            if not closers:
+                cuts.append(index)
+                return [text[a + 1:b].strip() for a, b in zip(cuts, cuts[1:])]
+    raise AssertionError(("unbalanced parameter list", text[start:index + 1]))
+
+
+def pointer_named(parameter, name):
+    """Whether an LLVM parameter is a pointer whose name fully matches the
+    pattern `name`, whatever an optimizer inferred about it."""
+    match = POINTER_PARAMETER.fullmatch(parameter)
+    return match is not None and re.fullmatch(name, llvm_name(match[1])) is not None
+
+
+def check_open_entry(llvm, name):
+    """The provider defines one open entry of the generic message `name`; it
+    takes the caller's storage for the erased result first and the caller's
+    dictionary last, each as a pointer."""
+    entries = llvm_parameters(llvm, rf".*__trait_erasure_{name}.*_entry")
+    assert len(entries) == 1, (name, entries)
+    parameters = entries[0]
+    assert pointer_named(parameters[0], "_trait_result"), (name, "erased result storage",
+                                                           parameters)
+    assert pointer_named(parameters[-1], "__dictionary_.+"), (name, "dictionary", parameters)
+
+
+def check_open_entry_controls():
+    """check_open_entry accepts OPEN_ENTRIES and rejects WRONG_OPEN_ENTRIES,
+    whichever LLVM compiles the provider."""
+    for llvm in OPEN_ENTRIES:
+        check_open_entry(llvm, "open_simple_sum")
+    for llvm in WRONG_OPEN_ENTRIES:
+        try:
+            check_open_entry(llvm, "open_simple_sum")
+        except AssertionError:
+            continue
+        raise AssertionError(("accepted a wrong open entry", llvm))
 
 
 def main():
@@ -162,6 +286,7 @@ def main():
         check_frozen("before_clients")
 
     def protocol_flow():
+        check_open_entry_controls()
         # No numeric conformance is visible to the provider: it sees only the
         # open contract, so each generic message has one erased entry taking
         # the caller's INumeric dictionary.
@@ -178,15 +303,7 @@ def main():
         symbols = run("provider-symbols", ["nm", provider])
         for name in case["generics"]:
             assert "__instantiated_" + name not in semantic, "no specialized provider body"
-            entries = re.findall(rf"(?m)^define [^@\n]*?@[^(\n]*__trait_erasure_"
-                                 rf"{name}[^(\n]*_entry\(([^)]*)\)", llvm)
-            assert len(entries) == 1, (name, entries)
-            # Typed (i8*) or opaque (ptr) pointers, depending on LLVM.
-            parameters = [p.strip() for p in entries[0].split(",")]
-            assert re.match(r"(i8\*|ptr) ", parameters[0]), (name, "erased result storage",
-                                                             parameters)
-            assert re.match(r"(i8\*|ptr) %__dictionary_", parameters[-1]), (name, "dictionary",
-                                                                            parameters)
+            check_open_entry(llvm, name)
             assert len(re.findall(rf"(?m)^\S* *[Tt] \S*__trait_erasure_{name}\S*_entry$",
                                   symbols)) == 1, (name, symbols)
         assert not re.search(r"(?m)^define [^@\n]*?(i32|i64|float|double) @[^(\n]*__trait_erasure_",
