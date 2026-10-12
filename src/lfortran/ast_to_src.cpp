@@ -1440,12 +1440,24 @@ public:
                 }
             }
         } else {
+            size_t attr_start = 0;
+            if (x.n_attributes > 0 &&
+                    is_a<SimpleAttribute_t>(*x.m_attributes[0]) &&
+                    down_cast<SimpleAttribute_t>(x.m_attributes[0])->m_attr ==
+                        simple_attributeType::AttrDeferred) {
+                // `deferred` must be printed before the type
+                r += syn(gr::Type);
+                r.append("deferred");
+                r += syn();
+                r.append(" ");
+                attr_start = 1;
+            }
             if (x.m_vartype) {
                 visit_decl_attribute(*x.m_vartype);
                 r += s;
-                if (x.n_attributes > 0) r.append(", ");
+                if (x.n_attributes > attr_start) r.append(", ");
             }
-            for (size_t i=0; i<x.n_attributes; i++) {
+            for (size_t i=attr_start; i<x.n_attributes; i++) {
                 visit_decl_attribute(*x.m_attributes[i]);
                 r += s;
                 if (i < x.n_attributes-1) r.append(", ");
