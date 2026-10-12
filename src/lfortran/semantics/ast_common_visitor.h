@@ -3696,10 +3696,11 @@ public:
     // The signature of a parameterized derived type is shared by every scope
     // that uses the type, e.g. by a component `type(w(n)) :: x` of another
     // parameterized derived type before it is instantiated, so it cannot
-    // reference the kind parameters of the type: a component dimension that
-    // depends on a kind parameter is recorded there with the placeholder
-    // value it has in the template. Each instantiation builds its own
-    // signature from its components, whose dimensions are constant.
+    // reference the kind parameters of the type: a component dimension or
+    // character length that depends on a kind parameter is recorded there
+    // with the placeholder value it has in the template. Each instantiation
+    // builds its own signature from its components, whose dimensions and
+    // lengths are constant.
     void make_pdt_signature_scope_free(ASR::Struct_t* pdt) {
         if (pdt->n_kind_params == 0 || pdt->m_struct_signature == nullptr
                 || !ASR::is_a<ASR::StructType_t>(*pdt->m_struct_signature)) {
@@ -3714,7 +3715,19 @@ public:
         }
         for (size_t i = 0; i < member_types.size(); i++) {
             ASR::ttype_t* member_type = member_types[i];
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
+            if (ASR::is_a<ASR::String_t>(*element_type)) {
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(element_type);
+                if (depends_on_kind_param(pdt, str->m_len)) {
+                    ASR::expr_t* len = ASRUtils::expr_value(str->m_len);
+                    LCOMPILERS_ASSERT(len != nullptr);
+                    element_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                        element_type->base.loc, str->m_kind, len,
+                        str->m_len_kind, str->m_physical_type));
+                }
+            }
             if (!ASR::is_a<ASR::Array_t>(*member_type)) {
+                member_types.p[i] = element_type;
                 continue;
             }
             ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(member_type);
@@ -3724,7 +3737,7 @@ public:
                     || depends_on_kind_param(pdt, array->m_dims[j].m_start)
                     || depends_on_kind_param(pdt, array->m_dims[j].m_length);
             }
-            if (!kind_extent) {
+            if (!kind_extent && element_type == array->m_type) {
                 continue;
             }
             Vec<ASR::dimension_t> dims;
@@ -3742,7 +3755,7 @@ public:
                 dims.push_back(al, dim);
             }
             member_types.p[i] = ASRUtils::TYPE(ASR::make_Array_t(
-                al, member_type->base.loc, array->m_type, dims.p, dims.size(),
+                al, member_type->base.loc, element_type, dims.p, dims.size(),
                 array->m_physical_type, array->m_memory_space));
         }
         signature->m_data_member_types = member_types.p;
@@ -11834,6 +11847,19 @@ public:
                 visitor.al, x->base.base.loc, element, x->m_type);
             if (array) {
                 *this->current_expr = array;
+            }
+        }
+
+        // A component character length that depends on a kind parameter is
+        // constant in each instantiation.
+        void replace_String(ASR::String_t* x) {
+            Base::replace_String(x);
+            int64_t length = 0;
+            if (x->m_len && ASRUtils::extract_value(
+                    ASRUtils::expr_value(x->m_len), length)) {
+                x->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    visitor.al, x->m_len->base.loc, std::max<int64_t>(length, 0),
+                    ASRUtils::expr_type(x->m_len)));
             }
         }
 
@@ -26795,7 +26821,11 @@ public:
                         check_specification_expr(len_expr,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
-                        if (len_value) {
+                        // A length that depends on a type parameter of the
+                        // type being declared only has its placeholder value
+                        // here: keep the expression, each instantiation of
+                        // the type evaluates it.
+                        if (len_value && !depends_on_pdt_kind_param(len_expr)) {
                             str->m_len = len_value;
                         } else {
                             str->m_len = len_expr;
@@ -26871,7 +26901,11 @@ public:
                         check_specification_expr(len_expr,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
-                        if (len_value) {
+                        // A length that depends on a type parameter of the
+                        // type being declared only has its placeholder value
+                        // here: keep the expression, each instantiation of
+                        // the type evaluates it.
+                        if (len_value && !depends_on_pdt_kind_param(len_expr)) {
                             str->m_len = len_value;
                         } else {
                             str->m_len = len_expr;
