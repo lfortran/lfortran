@@ -1209,6 +1209,13 @@ closed runtime slots of separately compiled modules, except `real(16)`, which
 `traits_kind_sets_02` calls: CI does not run it with LLVM 7 and 8, which
 miscompile `real(16)` operations.
 
+These members are an implementation choice for the open question of what a
+wildcard denotes (TD-17 of the traits decisions), not an approved rule. They
+are this processor's `INTEGER_KINDS` and `REAL_KINDS`, the same on every
+target, and the complex kinds that LFortran implements: it has no
+`complex(16)`, so `complex(*)` lacks the complex type of `real(16)` that the
+proposal's "all complex types admitted by the language" would include.
+
 ### The intrinsic module `generics`
 
 The proposal's predefined constraints come from an intrinsic module:
@@ -1232,7 +1239,11 @@ operation trait of the same name of the OCP example. Every client names this
 one declaration, so generics constrained by it, under any local name and in
 separately compiled modules, forward to each other. The empty trait
 `IAnyType` is not provided: an empty trait is a nominal contract that a type
-adopts, while an unconstrained binder `{T}` already admits every type.
+adopts, while an unconstrained binder `{T}` already admits every type, the
+current rule for unconstrained type parameters (TD-19). The module's name and
+its contents, `INumeric` only, are a candidate catalog for the open question
+of the predefined traits (TD-18), not approved language; only the lookup
+below is standard Fortran.
 
 A USE accesses it by the ordinary rules for intrinsic modules (F2018 14.2.2):
 with the `INTRINSIC` module nature always, even when the program has a
