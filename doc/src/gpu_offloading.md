@@ -196,6 +196,10 @@ generates the device source. It never falls back to the CPU:
   loop index is bounded by the extent of its array in that dimension, as a
   section never has more elements there. The local itself keeps the exact
   extent of each allocation.
+* An associate name of a construct the loop is in, bound to an expression
+  (`associate (n => size(a))`), is the value the expression had when the
+  construct was entered, which the kernel is handed as a scalar: the
+  expression is not evaluated again, and what it reads is not handed over.
 * `present(x)` of an optional dummy argument of the procedure the loop is
   in is evaluated by the host before the launch, and the kernel reads the
   result like any other scalar of the host: the loop runs whether the

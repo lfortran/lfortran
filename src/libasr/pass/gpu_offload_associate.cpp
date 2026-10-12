@@ -70,11 +70,20 @@ void GpuOffloadVisitor::resolve_enclosing_associates(ParallelLoopNest &work,
                 if (is_a<ASR::Var_t>(*asgn->m_target)) {
                     ASR::symbol_t *sym =
                         down_cast<ASR::Var_t>(asgn->m_target)->m_v;
+                    // A name bound to an expression holds the value the
+                    // expression had when the construct was entered, and
+                    // that value is what the kernel is handed: writing the
+                    // expression into the loop instead would evaluate it
+                    // again, after what it reads may have changed, and
+                    // hand the kernel everything it reads -- `size(a)`
+                    // would copy all of `a` to the device at every
+                    // launch. Only a constant is written in.
                     if (is_a<ASR::Variable_t>(*sym) &&
                         down_cast<ASR::Variable_t>(sym)->m_parent_symtab
                             == ab->m_symtab &&
                         !ASRUtils::is_array(
                             down_cast<ASR::Variable_t>(sym)->m_type) &&
+                        ASRUtils::expr_value(asgn->m_value) != nullptr &&
                         assoc_map.find(sym) == assoc_map.end()) {
                         assoc_map[sym] = asgn->m_value;
                     }
