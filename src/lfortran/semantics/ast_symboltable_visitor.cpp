@@ -5033,6 +5033,29 @@ public:
                             trait_error("an operator requirement must be a function",
                                 item->base.loc);
                         }
+                        // As for a defined operator (F2018 15.4.3.4.2).
+                        for (size_t j = 0; j < function->n_args; j++) {
+                            ASR::symbol_t *dummy = ASR::is_a<ASR::Var_t>(*function->m_args[j])
+                                ? ASR::down_cast<ASR::Var_t>(function->m_args[j])->m_v : nullptr;
+                            if (!dummy || !ASR::is_a<ASR::Variable_t>(*dummy)) {
+                                trait_error("the operands of " +
+                                    ASRUtils::trait_operation_display_name(*operation) +
+                                    " must be data objects", item->base.loc);
+                            }
+                            auto *operand = ASR::down_cast<ASR::Variable_t>(dummy);
+                            std::string description = "operand '" + std::string(operand->m_name) +
+                                "' of " + ASRUtils::trait_operation_display_name(*operation);
+                            if (operand->m_presence == ASR::presenceType::Optional) {
+                                trait_error(description + " cannot be optional",
+                                    operand->base.base.loc);
+                            }
+                            if (operand->m_intent != ASR::intentType::In &&
+                                    !operand->m_value_attr) {
+                                trait_error(description +
+                                    " must have intent(in) or the value attribute",
+                                    operand->base.base.loc);
+                            }
+                        }
                     }
                     ASR::trait_operation_t entry;
                     entry.loc = item->base.loc;

@@ -23461,6 +23461,7 @@ public:
                 (actuals.empty() ? std::string("no arguments") : arguments),
                 x.base.base.loc);
         }
+        ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, matches[0], args);
         tmp = create_FunctionCall(x.base.base.loc, &matches[0]->base, args);
         return true;
     }

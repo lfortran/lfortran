@@ -474,3 +474,64 @@ contains
         res%n = lhs%n * rhs%n
     end function times_adopted
 end module cc_traits_protocols_adopted_operator
+
+! E26, E27, E28: the operands of an operator requirement are nonoptional
+! data objects with intent(in) or the value attribute, as for a defined
+! operator; a value operand is valid.
+module cc_traits_protocols_operands
+    implicit none
+    abstract interface :: IAccumulate
+        function operator(+)(lhs, rhs) result(res)
+            type(itself), intent(inout) :: lhs
+            type(itself), intent(in)    :: rhs
+            type(itself)                :: res
+        end function operator(+)
+    end interface IAccumulate
+    abstract interface :: IReset
+        function operator(-)(lhs, rhs) result(res)
+            type(itself), intent(in)  :: lhs
+            type(itself), intent(out) :: rhs
+            type(itself)              :: res
+        end function operator(-)
+    end interface IReset
+    abstract interface :: IDefault
+        function operator(*)(lhs, rhs) result(res)
+            type(itself), intent(in)      :: lhs
+            integer, intent(in), optional :: rhs
+            type(itself)                  :: res
+        end function operator(*)
+    end interface IDefault
+    abstract interface :: IByValue
+        function operator(*)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs
+            integer, value           :: rhs
+            type(itself)             :: res
+        end function operator(*)
+    end interface IByValue
+end module cc_traits_protocols_operands
+
+! E29, E30: an initializer argument that the initializer may modify needs a
+! definable actual argument; a definable one is valid.
+module cc_traits_protocols_initializer_actuals
+    implicit none
+    abstract interface :: ICount
+        initial(n)
+            integer, intent(inout) :: n
+        end initial
+    end interface ICount
+contains
+    function from_literal{ICount :: T}() result(r)
+        type(T) :: r
+        r = T(1)
+    end function from_literal
+    function from_input{ICount :: T}(k) result(r)
+        integer, intent(in) :: k
+        type(T)             :: r
+        r = T(k)
+    end function from_input
+    function from_counter{ICount :: T}(k) result(r)
+        integer, intent(inout) :: k
+        type(T)                :: r
+        r = T(k)
+    end function from_counter
+end module cc_traits_protocols_initializer_actuals

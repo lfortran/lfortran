@@ -162,6 +162,24 @@ semantic error: type 'adopted' does not bind operator(*) matching the requiremen
 469 |        end type Adopted
     | ...^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: operand 'lhs' of operator(+) must have intent(in) or the value attribute
+   --> tests/errors/continue_compilation_traits_protocols.f90:485:44
+    |
+485 |             type(itself), intent(inout) :: lhs
+    |                                            ^^^ 
+
+semantic error: operand 'rhs' of operator(-) must have intent(in) or the value attribute
+   --> tests/errors/continue_compilation_traits_protocols.f90:493:42
+    |
+493 |             type(itself), intent(out) :: rhs
+    |                                          ^^^ 
+
+semantic error: operand 'rhs' of operator(*) cannot be optional
+   --> tests/errors/continue_compilation_traits_protocols.f90:500:46
+    |
+500 |             integer, intent(in), optional :: rhs
+    |                                              ^^^ 
+
 semantic error: ambiguous operator(*) for operands of type t and integer(4): several requirements of the constraints accept them
    --> tests/errors/continue_compilation_traits_protocols.f90:348:13
     |
@@ -197,3 +215,15 @@ semantic error: no visible nominal implementation of trait 'iring' for generic t
     |
 398 |     i = twice(3)
     |         ^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_protocols.f90:525:15
+    |
+525 |         r = T(1)
+    |               ^ 
+
+semantic error: Argument `k` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_protocols.f90:530:15
+    |
+530 |         r = T(k)
+    |               ^ 
