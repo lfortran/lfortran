@@ -700,6 +700,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
+                        } else if (is_allocatable) {
+                            var_type = var_type_;
                         } else {
                             auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
                             var_type = pointer_var_type_;
