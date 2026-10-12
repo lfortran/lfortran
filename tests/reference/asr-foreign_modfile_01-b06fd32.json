@@ -1,0 +1,13 @@
+{
+    "basename": "asr-foreign_modfile_01-b06fd32",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/foreign_modfile_01.f90",
+    "infile_hash": "6d4aef12992ec31a34365623b55827063742fc1461193c2415d2e0db",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-foreign_modfile_01-b06fd32.stderr",
+    "stderr_hash": "24d080868cbef958ada5444dd9d2b0df86f18e7990d989a67428a644",
+    "returncode": 2
+}
