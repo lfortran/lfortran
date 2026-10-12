@@ -394,11 +394,18 @@ semantic error: ‘shape’ argument of ‘reshape’ intrinsic has negative ele
 302 |     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     |                                                     ^^^^ 
 
-semantic error: LEN parameters in parameterized derived types are not supported yet
-   --> tests/errors/continue_compilation_1.f90:305:9
+semantic error: Symbol is already declared in the same scope
+   --> tests/errors/continue_compilation_1.f90:304:5 - 307:13
     |
-305 |         integer, len :: n
-    |         ^^^^^^^^^^^^^^^^^ 
+304 |        type matrix(n)
+    |        ^^^^^^^^^^^^^^...
+...
+    |
+307 |        end type
+    | ...^^^^^^^^^^^^^ redeclaration
+    |
+228 |     integer, dimension(2, 3) :: matrix
+    |                                 ~~~~~~ original declaration
 
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
@@ -1124,86 +1131,99 @@ semantic error: using the internal procedure 'tan', which is defined later, as a
 2428 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
-semantic error: Variable 'cc1_pdt_undefined_v' is not declared
-    --> tests/errors/continue_compilation_1.f90:2388:24
+semantic error: Symbol is already declared in the same scope
+    --> tests/errors/continue_compilation_1.f90:2442:5 - 2444:26
      |
-2388 |         integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
+2442 |        type :: cc1_pdt_name(k)  ! {Error} Symbol is already declared in the same scope
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2444 |        end type cc1_pdt_name
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ redeclaration
+     |
+2441 |     integer :: cc1_pdt_name
+     |                ~~~~~~~~~~~~ original declaration
+
+semantic error: Variable 'cc1_pdt_undefined_v' is not declared
+    --> tests/errors/continue_compilation_1.f90:2452:24
+     |
+2452 |         integer :: x = cc1_pdt_undefined_v  ! {Error} Variable 'cc1_pdt_undefined_v' is not declared
      |                        ^^^^^^^^^^^^^^^^^^^ 'cc1_pdt_undefined_v' is undeclared
 
 semantic error: length type parameter 'n' cannot be used as the kind of component 'x'
-    --> tests/errors/continue_compilation_1.f90:2402:20
+    --> tests/errors/continue_compilation_1.f90:2466:20
      |
-2402 |         real(n) :: x  ! {Error} length type parameter 'n' cannot be used as the kind of component 'x'
+2466 |         real(n) :: x  ! {Error} length type parameter 'n' cannot be used as the kind of component 'x'
      |                    ^ 
 
 semantic error: type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2406:28
+    --> tests/errors/continue_compilation_1.f90:2470:28
      |
-2406 |         type(cc1_pdt_len_t(m + 1)) :: inner  ! {Error} type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
+2470 |         type(cc1_pdt_len_t(m + 1)) :: inner  ! {Error} type parameter value of 'cc1_pdt_len_t' that is an expression of type parameters of the enclosing type is not supported yet
      |                            ^^^^^ 
 
 semantic error: deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2408:24
+    --> tests/errors/continue_compilation_1.f90:2472:24
      |
-2408 |     type(cc1_pdt_len_t(:)), allocatable :: cc1_pdt_deferred  ! {Error} deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+2472 |     type(cc1_pdt_len_t(:)), allocatable :: cc1_pdt_deferred  ! {Error} deferred (':') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
      |                        ^ 
 
 semantic error: assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2411:28
+    --> tests/errors/continue_compilation_1.f90:2475:28
      |
-2411 |         type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+2475 |         type(cc1_pdt_len_t(*)), intent(in) :: v  ! {Error} assumed ('*') value of type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
      |                            ^ 
 
 semantic error: non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2413:28
+    --> tests/errors/continue_compilation_1.f90:2477:28
      |
-2413 |         type(cc1_pdt_len_t(m)) :: w  ! {Error} non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
+2477 |         type(cc1_pdt_len_t(m)) :: w  ! {Error} non-constant value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_t' is not supported yet
      |                            ^ 
 
 semantic error: Dummy argument 'v' not defined
-    --> tests/errors/continue_compilation_1.f90:2410:5 - 2414:34
+    --> tests/errors/continue_compilation_1.f90:2474:5 - 2478:34
      |
-2410 |        subroutine cc1_pdt_len_sub(v, m)
+2474 |        subroutine cc1_pdt_len_sub(v, m)
      |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
-2414 |        end subroutine cc1_pdt_len_sub
+2478 |        end subroutine cc1_pdt_len_sub
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: the kind attribute is only allowed in a derived type definition
-    --> tests/errors/continue_compilation_1.f90:2420:5
+    --> tests/errors/continue_compilation_1.f90:2484:5
      |
-2420 |     integer, kind :: cc1_kind_attr = 4  ! {Error} the kind attribute is only allowed in a derived type definition
+2484 |     integer, kind :: cc1_kind_attr = 4  ! {Error} the kind attribute is only allowed in a derived type definition
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: the len attribute is only allowed in a derived type definition
-    --> tests/errors/continue_compilation_1.f90:2421:5
+    --> tests/errors/continue_compilation_1.f90:2485:5
      |
-2421 |     integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
+2485 |     integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Parameter 'm' is a variable, which does not reduce to a constant expression
-    --> tests/errors/continue_compilation_1.f90:2455:35
+    --> tests/errors/continue_compilation_1.f90:2519:35
      |
-2455 |         type(cc1_pdt_kind_value_t(m)) :: y  ! {Error} Parameter 'm' is a variable, which does not reduce to a constant expression
+2519 |         type(cc1_pdt_kind_value_t(m)) :: y  ! {Error} Parameter 'm' is a variable, which does not reduce to a constant expression
      |                                   ^ 
 
 semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
-    --> tests/errors/continue_compilation_1.f90:2456:35
+    --> tests/errors/continue_compilation_1.f90:2520:35
      |
-2456 |         type(cc1_pdt_kind_value_t(3.5)) :: z  ! {Error} Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
+2520 |         type(cc1_pdt_kind_value_t(3.5)) :: z  ! {Error} Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters
      |                                   ^^^ 
 
 semantic error: value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
-    --> tests/errors/continue_compilation_1.f90:2457:34
+    --> tests/errors/continue_compilation_1.f90:2521:34
      |
-2457 |         type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
+2521 |         type(cc1_pdt_len_value_t(2.5)) :: w  ! {Error} value of length type parameter 'n' of parameterized derived type 'cc1_pdt_len_value_t' must be an integer
      |                                  ^^^ 
 
 semantic error: length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
-    --> tests/errors/continue_compilation_1.f90:2472:39
+    --> tests/errors/continue_compilation_1.f90:2536:39
      |
-2472 |         type(cc1_pdt_len_as_kind_in_t(p, 3)) :: c  ! {Error} length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
+2536 |         type(cc1_pdt_len_as_kind_in_t(p, 3)) :: c  ! {Error} length type parameter 'p' cannot be the value of kind type parameter 'k' of 'cc1_pdt_len_as_kind_in_t'
      |                                       ^ 
 
 semantic error: Restriction type mismatch with provided function argument
