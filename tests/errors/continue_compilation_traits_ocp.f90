@@ -298,3 +298,33 @@ contains
         s = self%inner%sum(x) * x(1)
     end function forwarded_scaled
 end module cc_traits_ocp_field
+
+module cc_traits_ocp_polymorphic
+    use cc_traits_ocp_contracts, only: INumeric, ISum
+    implicit none
+    type :: Count
+        integer :: n = 0
+    end type Count
+    implements INumeric :: Count
+        initial :: count_of
+        procedure, static :: operator(+) => count_add
+    end implements Count
+contains
+    function count_of(n) result(res)
+        integer, intent(in) :: n
+        type(Count)         :: res
+        res%n = n
+    end function count_of
+    function count_add(lhs, rhs) result(res)
+        type(Count), intent(in) :: lhs, rhs
+        type(Count)             :: res
+        res%n = lhs%n + rhs%n
+    end function count_add
+    function total(p, c) result(r)
+        class(ISum),  intent(in) :: p
+        class(Count), intent(in) :: c(:)
+        type(Count)              :: r
+        ! E15: a polymorphic actual argument for an erased dummy.
+        r = p%sum(c)
+    end function total
+end module cc_traits_ocp_polymorphic

@@ -48,6 +48,12 @@ semantic error: no visible nominal implementation of trait 'inumeric' for generi
 146 |     print *, p%sum(k)
     |              ^^^^^^^^ 
 
+semantic error: a polymorphic actual argument for protocol type parameter 't' of a runtime generic message is not implemented yet
+   --> tests/errors/continue_compilation_traits_ocp.f90:328:13
+    |
+328 |         r = p%sum(c)
+    |             ^^^^^^^^ 
+
 semantic error: this use of a value of protocol type parameter 't' as a computed array is not implemented yet in runtime generic messages
    --> tests/errors/continue_compilation_traits_ocp.f90:116:19
     |

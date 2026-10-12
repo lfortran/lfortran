@@ -791,8 +791,9 @@ is the one of the protocol constraining it, so forwarding the binder of a
 derived protocol (`IField`, extending `INumeric`) to a callee that requires
 a different protocol (`INumeric`) is not implemented yet; the same
 forwarding is supported statically, where the conformance provides each
-protocol's dictionary. A binder constrained by several traits is not
-implemented yet either.
+protocol's dictionary. A binder constrained by several traits and a
+polymorphic actual argument for an erased dummy are not implemented yet
+either.
 
 `traits_paper_ocp` runs the exact paper program, with its approved
 `use intrinsics`, for both choices in normal and fast modes and rejects the

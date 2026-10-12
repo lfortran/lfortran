@@ -26603,6 +26603,13 @@ public:
                             make_operator_proc_visible(&contract->base, "trait", current_scope),
                             nullptr))));
                 } else {
+                    // A dictionary describes one layout; a polymorphic
+                    // actual's dynamic type may have another.
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(actual.first))) {
+                        trait_call_error("a polymorphic actual argument for protocol type "
+                            "parameter '" + std::string(generic->m_args[i]) + "' of a runtime "
+                            "generic message is not implemented yet", loc);
+                    }
                     ASR::TraitImplementation_t *selected = nullptr;
                     for (const auto &conformance : conformances) {
                         if (ASRUtils::symbol_get_past_external(conformance.first->m_parameter) ==
