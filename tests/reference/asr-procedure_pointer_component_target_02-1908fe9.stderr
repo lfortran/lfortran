@@ -1,5 +1,0 @@
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-  --> tests/errors/procedure_pointer_component_target_02.f90:13:25
-   |
-13 |     type(pp) :: s1 = pp(f)
-   |                         ^ 

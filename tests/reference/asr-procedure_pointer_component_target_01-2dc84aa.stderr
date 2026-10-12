@@ -1,5 +1,0 @@
-semantic error: Variable 'nosuch' is not declared
-  --> tests/errors/procedure_pointer_component_target_01.f90:12:25
-   |
-12 |     type(pp) :: s1 = pp(nosuch)
-   |                         ^^^^^^ 'nosuch' is undeclared
