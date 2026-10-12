@@ -2206,6 +2206,18 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     }
 }
 
+// An operand of a deferred type (template type parameter) matches a dummy
+// of a deferred type only if both are the same deferred type.
+static bool deferred_type_operand_matches(ASR::ttype_t* operand,
+        ASR::ttype_t* dummy) {
+    if (!ASR::is_a<ASR::TypeParameter_t>(*operand) ||
+        !ASR::is_a<ASR::TypeParameter_t>(*dummy)) {
+        return true;
+    }
+    return std::string(ASR::down_cast<ASR::TypeParameter_t>(operand)->m_param) ==
+           std::string(ASR::down_cast<ASR::TypeParameter_t>(dummy)->m_param);
+}
+
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::binopType op, std::string& intrinsic_op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr,
@@ -2347,6 +2359,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3417,6 +3433,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3631,6 +3651,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2)
                                 && ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
