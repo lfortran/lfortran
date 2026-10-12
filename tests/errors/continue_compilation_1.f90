@@ -2400,7 +2400,7 @@ end module cc1_reduction_mask_mod
 ! derived type, is not supported yet with run-time bounds or step, with a
 ! nested loop that reuses the variable of an enclosing loop, with more than
 ! 256 iterations of bounds that are not all literals, with more than 1000
-! values, or in an unformatted transfer.
+! values of different derived types, or in an unformatted transfer.
 subroutine implied_do_mixed_derived_types_error(n)
     implicit none
     type :: cc1_idl_a
@@ -2429,6 +2429,7 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
     print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
     print '(*(i0,1x))', (x(1), y(1), i=1,500)
+    print '(*(i0,1x))', (x(1), k(1), i=1,501)
 end subroutine implied_do_mixed_derived_types_error
 
 ! A procedure pointer or a dummy procedure cannot have an elemental interface,

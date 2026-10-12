@@ -1938,9 +1938,10 @@ public:
 
     // An output implied-do loop with values of different types is written in
     // one data transfer only by expanding it at compile time, which needs
-    // constant bounds and steps, nested loops with their own variables, a
-    // limited number of values and, for bounds that are not all literals, a
-    // limited number of iterations (see `ASRUtils::expand_implied_do_loop`,
+    // constant bounds and steps, nested loops with their own variables, for
+    // values of two or more different derived types a limited number of
+    // values and, for bounds that are not all literals, a limited number of
+    // iterations (see `ASRUtils::expand_implied_do_loop`,
     // used by the `implied_do_loops` pass). Otherwise the values are written
     // a record per iteration, or through a temporary array that cannot hold
     // values of different derived types. An unformatted transfer cannot write
@@ -1991,7 +1992,7 @@ public:
                 case ASRUtils::ImpliedDoExpansionBlocker::TooManyValues:
                     what = "output of an implied-do loop with more than " +
                         std::to_string(ASRUtils::implied_do_loop_expansion_limit) +
-                        " " + values;
+                        " values of different derived types";
                     break;
             }
         }

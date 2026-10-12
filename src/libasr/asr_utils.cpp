@@ -6290,20 +6290,21 @@ static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
     return true;
 }
 
-// Whether a value of `idl` or of a loop nested in it is of derived type.
-static bool implied_do_loop_has_struct_value(ASR::ImpliedDoLoop_t* idl) {
+// Collects in `types` the derived types of the values of `idl` and of the
+// loops nested in it.
+static void implied_do_loop_derived_types(ASR::ImpliedDoLoop_t* idl,
+        std::set<ASR::symbol_t*> &types) {
     for (size_t i = 0; i < idl->n_values; i++) {
         ASR::expr_t* value = idl->m_values[i];
         if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
-            if (implied_do_loop_has_struct_value(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(value))) {
-                return true;
-            }
+            implied_do_loop_derived_types(
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(value), types);
         } else if (ASR::is_a<ASR::StructType_t>(*extract_type(expr_type(value)))) {
-            return true;
+            if (ASR::symbol_t* type = get_struct_sym_from_struct_expr(value)) {
+                types.insert(symbol_get_past_external(type));
+            }
         }
     }
-    return false;
 }
 
 // Appends the values of `idl` to `result`; `iterations` and `values` are the
@@ -6391,7 +6392,13 @@ ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
     uint64_t iterations = implied_do_loop_has_literal_bounds(idl)
         ? std::numeric_limits<uint64_t>::max()
         : implied_do_loop_folded_bounds_expansion_limit;
-    uint64_t values = implied_do_loop_has_struct_value(idl)
+    // Only a loop with values of two or more different derived types is
+    // limited. A loop with values of one derived type and of intrinsic types
+    // keeps the expansion that it had before loops over different derived
+    // types were expanded.
+    std::set<ASR::symbol_t*> derived_types;
+    implied_do_loop_derived_types(idl, derived_types);
+    uint64_t values = derived_types.size() > 1
         ? implied_do_loop_expansion_limit : std::numeric_limits<uint64_t>::max();
     return append_implied_do_loop_values(al, idl, result, iterations, values);
 }
