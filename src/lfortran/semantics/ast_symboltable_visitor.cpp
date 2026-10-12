@@ -604,6 +604,8 @@ public:
                 // Drop what the aborted program unit left pending.
                 generic_procedures.clear();
                 postponed_genericProcedure_calls_vec.clear();
+                // An aborted program unit can leave its scope current.
+                current_scope = global_scope;
             }
         }
         if (!global_declarations.empty()) {
@@ -1024,10 +1026,14 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = host_scope;
             }
             default_storage_save = current_storage_save;
         }
@@ -1342,10 +1348,14 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = host_scope;
             }
             default_storage_save = current_storage_save;
         }
@@ -1916,10 +1926,14 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+            SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = host_scope;
             }
             implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
@@ -2334,10 +2348,14 @@ public:
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = host_scope;
             }
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
@@ -2930,7 +2948,11 @@ public:
                 continue;
             }
             if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                visit_decl_stmt(*item);
+                try {
+                    visit_decl_stmt(*item);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             }
             is_Function = false;
         }
@@ -2938,7 +2960,11 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_common_declaration(x.m_items[i])) continue;
             is_Function = true;
-            visit_decl_stmt(*x.m_items[i]);
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
             is_Function = false;
         }
         complete_common_blocks(x.m_items, x.n_items);
@@ -2946,7 +2972,11 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (!is_equivalence_declaration(x.m_items[i])) continue;
             is_Function = true;
-            visit_decl_stmt(*x.m_items[i]);
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
             is_Function = false;
         }
         visit_later_interface_decls(later_interface_decls);
@@ -3287,10 +3317,14 @@ public:
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
+            SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // An abort in the declarations of a procedure leaves its scope
+                // current.
+                current_scope = host_scope;
             }
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
