@@ -1185,10 +1185,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         // Loops whose bounds are all integer literals have always been
         // expanded in full. Bounds that are only folded constants (a named
         // constant, `size()` of a fixed size array) are often large, and
-        // every expanded item costs compile time and code size, so such
-        // loops are expanded only up to this many items; larger ones keep
-        // the run-time loop.
-        static constexpr size_t max_folded_bounds_expansion = 256;
+        // every iteration costs compile time and code size, so such loops
+        // are expanded only up to this many iterations in total, nested
+        // loops included; larger ones keep the run-time loop.
+        static constexpr uint64_t max_folded_bounds_expansion = 256;
 
         static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
             if (!ASR::is_a<ASR::IntegerConstant_t>(*idl->m_start) ||
@@ -1208,13 +1208,14 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         }
 
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            size_t max_items = implied_do_loop_has_literal_bounds(idl)
-                ? std::numeric_limits<size_t>::max() : max_folded_bounds_expansion;
-            return expand_implied_do_loop_flat(idl, result, max_items);
+            uint64_t budget = implied_do_loop_has_literal_bounds(idl)
+                ? std::numeric_limits<uint64_t>::max() : max_folded_bounds_expansion;
+            return expand_implied_do_loop_flat(idl, result, budget);
         }
 
+        // `budget` is the number of iterations that may still be expanded.
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl,
-                Vec<ASR::expr_t*>& result, size_t max_items) {
+                Vec<ASR::expr_t*>& result, uint64_t& budget) {
             // A nested loop that reuses an enclosing loop's variable (not
             // conforming, but accepted) had its own variable substituted by
             // the enclosing loop's value; leave it to the run-time loop.
@@ -1238,11 +1239,25 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 return true;
             }
             
+            // The trip count is (end - start) / step + 1. It is computed in
+            // unsigned arithmetic, which cannot overflow here, and the loop
+            // runs on a counter, so bounds near huge() are safe.
+            uint64_t distance = step_val > 0
+                ? uint64_t(end_val) - uint64_t(start_val)
+                : uint64_t(start_val) - uint64_t(end_val);
+            uint64_t abs_step = step_val > 0
+                ? uint64_t(step_val) : uint64_t(0) - uint64_t(step_val);
+            uint64_t last_trip = distance / abs_step;
+            if (last_trip >= budget) {
+                return false;
+            }
+            budget -= last_trip + 1;
+
             ASR::symbol_t* loop_var_symbol = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
             
-            for (int64_t i = start_val; 
-                 (step_val > 0) ? (i <= end_val) : (i >= end_val); 
-                 i += step_val) {
+            for (uint64_t trip = 0; trip <= last_trip; trip++) {
+                // start + trip * step, which lies between start and end.
+                int64_t i = int64_t(uint64_t(start_val) + trip * uint64_t(step_val));
                 ASR::expr_t* loop_var_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, idl->base.base.loc, i, 
                     ASRUtils::expr_type(idl->m_var)));
@@ -1261,14 +1276,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
                         if (!expand_implied_do_loop_flat(
                                 ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
-                                result, max_items)) {
+                                result, budget)) {
                             return false;
                         }
                     } else {
                         result.push_back(al, substituted);
-                    }
-                    if (result.size() > max_items) {
-                        return false;
                     }
                 }
             }

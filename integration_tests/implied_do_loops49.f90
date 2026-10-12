@@ -6,7 +6,7 @@ program implied_do_loops49
     ! the outer loop's value, a run-time step is honoured, and a large
     ! constant trip count is not expanded item by item.
     implicit none
-    integer, parameter :: n = 3, m = 5000
+    integer, parameter :: n = 3, m = 5000, big = 1000000
     integer :: i, j, k, u, ios, st
     character(5) :: s(2) = ['ab   ', 'cde  ']
     character(5) :: names(n) = [character(5) :: 'five', 'six', 'seven']
@@ -87,4 +87,10 @@ program implied_do_loops49
     print '(a)', trim(line)
     if (line /= '1 1.0') error stop 14
     close(u)
+
+    ! An empty inner loop under a large constant outer bound must not be
+    ! expanded iteration by iteration.
+    write(line, *) ((trim(s(j)), j=1,0), i=1,big), 'end'
+    print '(a)', trim(line)
+    if (adjustl(line) /= 'end') error stop 15
 end program
