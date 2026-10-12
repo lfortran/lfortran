@@ -60,10 +60,10 @@ end type
 type(t) :: a(2)
 type(u) :: c(2)
 type(plain) :: b(2)
-integer :: i, n, out
+integer, parameter :: n = 2
+integer :: i, out
 character(80) :: line
 
-n = 2
 a(2)%a = 4
 c(2)%k = 8
 

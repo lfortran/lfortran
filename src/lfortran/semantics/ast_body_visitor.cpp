@@ -1916,6 +1916,83 @@ public:
         return true;
     }
 
+    // Whether the loop `idl`, or a loop nested in it, has values of different
+    // types (`has_tuple`) and whether one of its values is of derived type
+    // (`has_struct`).
+    void implied_do_value_kinds(ASR::ImpliedDoLoop_t* idl, bool &has_tuple,
+            bool &has_struct) {
+        if (ASR::is_a<ASR::Tuple_t>(*idl->m_type)) {
+            has_tuple = true;
+        }
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* value = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                implied_do_value_kinds(ASR::down_cast<ASR::ImpliedDoLoop_t>(value),
+                    has_tuple, has_struct);
+            } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    ASRUtils::expr_type(value)))) {
+                has_struct = true;
+            }
+        }
+    }
+
+    // An output implied-do loop with values of different types is written in
+    // one data transfer only by expanding it at compile time, which needs
+    // constant bounds and steps, nested loops with their own variables and,
+    // for bounds that are not all literals, a limited number of iterations
+    // (see `ASRUtils::expand_implied_do_loop`, used by the `implied_do_loops`
+    // pass). Otherwise the values are written a record per iteration, or
+    // through a temporary array that cannot hold values of different derived
+    // types. An unformatted transfer cannot write derived types from such a
+    // loop at all. Reject these forms for loops with values of derived type.
+    void check_mixed_derived_type_output_implied_do(ASR::expr_t* item,
+            bool unformatted) {
+        if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            return;
+        }
+        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+        bool has_tuple = false, has_struct = false;
+        implied_do_value_kinds(idl, has_tuple, has_struct);
+        if (!has_tuple || !has_struct) {
+            return;
+        }
+        std::string what;
+        if (unformatted) {
+            what = "unformatted output of an implied-do loop with values of "
+                "different types, including derived types,";
+        } else {
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, 16);
+            switch (ASRUtils::expand_implied_do_loop(al, idl, values).blocker) {
+                case ASRUtils::ImpliedDoExpansionBlocker::None:
+                    return;
+                case ASRUtils::ImpliedDoExpansionBlocker::RunTimeBounds:
+                    what = "output of an implied-do loop with values of "
+                        "different types, including derived types, and "
+                        "run-time bounds or step";
+                    break;
+                case ASRUtils::ImpliedDoExpansionBlocker::ReusedVariable:
+                    what = "output of an implied-do loop with values of "
+                        "different types, including derived types, and a "
+                        "nested implied-do loop that reuses the variable of an "
+                        "enclosing loop";
+                    break;
+                case ASRUtils::ImpliedDoExpansionBlocker::TooManyIterations:
+                    what = "output of an implied-do loop with values of "
+                        "different types, including derived types, bounds "
+                        "that are not all literals and more than " +
+                        std::to_string(ASRUtils::implied_do_loop_folded_bounds_expansion_limit) +
+                        " iterations";
+                    break;
+            }
+        }
+        diag.add(Diagnostic(what + " is not supported yet",
+            Level::Error, Stage::Semantic, {Label("", {item->base.loc})}));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
+
     // The derived type of the effective items of the output item `item` (the
     // item itself, or each element of an array item), or nullptr if they are
     // not of a derived type that can have a defined output procedure.
@@ -2954,6 +3031,12 @@ public:
             }
         }
         if (n_values > 0) {
+            if (_type == AST::decl_stmtType::Write && overloaded_stmt == nullptr) {
+                for (size_t i = 0; i < a_values_vec.size(); i++) {
+                    check_mixed_derived_type_output_implied_do(a_values_vec[i],
+                        !formatted);
+                }
+            }
             // If no overload found, expand any struct-typed values that are
             // not written by a defined output procedure into their member
             // components (recursively for nested structs).
@@ -3044,42 +3127,14 @@ public:
                             // Before: ImpliedDoLoop(values=[recs(i)], ...)
                             // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
                             ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
-                            // A value written by its defined output procedure
-                            // is kept as is.
                             Vec<ASR::expr_t*> idl_new_values;
                             idl_new_values.reserve(al, idl->n_values * 4);
-                            bool kept_dtio_value = false;
                             for (size_t iv = 0; iv < idl->n_values; iv++) {
-                                if (has_dtio_binding(idl->m_values[iv], dtio_bindings)) {
-                                    idl_new_values.push_back(al, idl->m_values[iv]);
-                                    kept_dtio_value = true;
-                                } else {
-                                    expand_struct_expr(idl->m_values[iv], idl_new_values);
-                                }
+                                expand_struct_expr(idl->m_values[iv], idl_new_values);
                             }
                             ASR::ttype_t* new_type = idl->m_type;
                             if (idl_new_values.size() > 0) {
                                 new_type = ASRUtils::expr_type(idl_new_values[0]);
-                            }
-                            if (kept_dtio_value) {
-                                // The values of different types form a tuple.
-                                Vec<ASR::ttype_t*> value_types;
-                                value_types.reserve(al, idl_new_values.size());
-                                bool unique_type = true;
-                                for (size_t iv = 0; iv < idl_new_values.size(); iv++) {
-                                    ASR::ttype_t* value_type = ASRUtils::type_get_past_allocatable(
-                                        ASRUtils::expr_type(idl_new_values[iv]));
-                                    value_types.push_back(al, value_type);
-                                    if (!ASRUtils::types_equal(value_type,
-                                            ASRUtils::expr_type(idl_new_values[0]),
-                                            idl_new_values[iv], idl_new_values[0])) {
-                                        unique_type = false;
-                                    }
-                                }
-                                if (!unique_type) {
-                                    new_type = ASRUtils::TYPE(ASR::make_Tuple_t(al,
-                                        idl->base.base.loc, value_types.p, value_types.size()));
-                                }
                             }
                             ASR::expr_t* new_idl = ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
                                 al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
@@ -9663,6 +9718,7 @@ public:
                     expr = ASRUtils::EXPR(array_cast);
                 }
             }
+            check_mixed_derived_type_output_implied_do(expr, false);
             body.push_back(al, expr);
         }
         // Each derived-type item that has a defined output procedure is
