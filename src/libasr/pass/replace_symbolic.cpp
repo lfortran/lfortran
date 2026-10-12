@@ -104,7 +104,8 @@ public:
             ));
     }
 
-    bool get_dt_iotype(const ASR::expr_t* fmt_expr, std::string &iotype) {
+    bool get_dt_iotype(const ASR::expr_t* fmt_expr, std::string &iotype,
+            std::vector<int64_t> &v_list) {
         if (!fmt_expr) {
             return false;
         }
@@ -112,30 +113,8 @@ public:
         if (!fmt_value || !ASR::is_a<ASR::StringConstant_t>(*fmt_value)) {
             return false;
         }
-
-        std::string fmt_str = ASR::down_cast<ASR::StringConstant_t>(fmt_value)->m_s;
-        if (fmt_str.size() >= 2 && fmt_str[0] == '(' && fmt_str.back() == ')') {
-            fmt_str = fmt_str.substr(1, fmt_str.size() - 2);
-        }
-        if (fmt_str.size() < 2) {
-            return false;
-        }
-        if (std::tolower(static_cast<unsigned char>(fmt_str[0])) != 'd' ||
-            std::tolower(static_cast<unsigned char>(fmt_str[1])) != 't') {
-            return false;
-        }
-
-        iotype = "DT";
-        if (fmt_str.size() > 2) {
-            std::string suffix = fmt_str.substr(2);
-            if (suffix.size() >= 2 &&
-                ((suffix[0] == '\'' && suffix.back() == '\'') ||
-                 (suffix[0] == '"' && suffix.back() == '"'))) {
-                suffix = suffix.substr(1, suffix.size() - 2);
-            }
-            iotype += suffix;
-        }
-        return true;
+        return ASRUtils::parse_dt_edit_descriptor(
+            ASR::down_cast<ASR::StringConstant_t>(fmt_value)->m_s, iotype, v_list);
     }
 
     ASR::symbol_t *create_bindc_function(const Location &loc,
@@ -858,7 +837,8 @@ public:
         }
 
         std::string iotype_str;
-        if (!get_dt_iotype(sf->m_fmt, iotype_str)) {
+        std::vector<int64_t> v_list;
+        if (!get_dt_iotype(sf->m_fmt, iotype_str, v_list)) {
             return;
         }
 
@@ -884,8 +864,8 @@ public:
                     s2c(al, iotype_str), iotype_type)));
         }
 
-        // Create an empty array for v_list argument
-        ASR::expr_t* empty_v_list = nullptr;
+        // Create the v_list argument from the v-list of the DT edit descriptor
+        ASR::expr_t* v_list_arr = nullptr;
         {
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
@@ -894,15 +874,20 @@ public:
             dim.m_start = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 1, int_type));
             dim.m_length = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+                ASR::make_IntegerConstant_t(al, loc,
+                    static_cast<int64_t>(v_list.size()), int_type));
             dims.push_back(al, dim);
 
             ASR::ttype_t* arr_type = ASRUtils::TYPE(
                 ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
                     ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             Vec<ASR::expr_t*> arr_args;
-            arr_args.reserve(al, 0);
-            empty_v_list = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+            arr_args.reserve(al, v_list.size());
+            for (int64_t v : v_list) {
+                arr_args.push_back(al, ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc, v, int_type)));
+            }
+            v_list_arr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
                 al, loc, arr_args.p, arr_args.n, arr_type,
                 ASR::arraystorageType::ColMajor));
         }
@@ -911,10 +896,10 @@ public:
             current_scope->get_unique_name("__libasr__created__var__array_constructor_");
         ASR::expr_t* v_list_tmp = PassUtils::create_auxiliary_variable(
             loc, v_list_tmp_name, al, current_scope,
-            ASRUtils::duplicate_type(al, ASRUtils::expr_type(empty_v_list)));
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(v_list_arr)));
         pass_result.push_back(al,
             ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, v_list_tmp, empty_v_list, nullptr, false, false)));
+                al, loc, v_list_tmp, v_list_arr, nullptr, false, false)));
         overload_args.push_back(al, v_list_tmp);
 
         // Create temporary variables for iostat and iomsg

@@ -86,6 +86,15 @@ inline std::string strip_genericprocedure_suffix(const std::string &sym_name) {
     return sym_name;
 }
 
+// Parse `fmt`, a format specification that consists of a single DT edit
+// descriptor, "(DT[char-literal-constant][(v-list)])", into the `iotype`
+// ("DT" followed by the value of the char-literal-constant) and `v_list`
+// arguments of a defined input/output procedure. Letters are not case
+// sensitive and blanks outside the char-literal-constant are ignored.
+// Returns false, leaving `iotype` and `v_list` unchanged, for any other format.
+bool parse_dt_edit_descriptor(const std::string &fmt, std::string &iotype,
+        std::vector<int64_t> &v_list);
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 

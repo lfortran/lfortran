@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <cctype>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -4456,6 +4457,87 @@ bool reads_valueless_parameter(ASR::expr_t* e) {
     Finder finder;
     finder.visit_expr(*e);
     return finder.found;
+}
+
+bool parse_dt_edit_descriptor(const std::string &fmt, std::string &iotype,
+        std::vector<int64_t> &v_list) {
+    size_t i = 0;
+    const size_t n = fmt.size();
+    auto skip_blanks = [&]() {
+        while (i < n && fmt[i] == ' ') {
+            i++;
+        }
+    };
+    auto accept = [&](char c) {
+        skip_blanks();
+        if (i < n && std::tolower(static_cast<unsigned char>(fmt[i])) == c) {
+            i++;
+            return true;
+        }
+        return false;
+    };
+    if (!accept('(') || !accept('d') || !accept('t')) {
+        return false;
+    }
+    std::string dt_iotype = "DT";
+    skip_blanks();
+    if (i < n && (fmt[i] == '\'' || fmt[i] == '"')) {
+        const char delimiter = fmt[i++];
+        while (true) {
+            if (i >= n) {
+                return false;
+            }
+            if (fmt[i] == delimiter) {
+                // A doubled delimiter stands for one delimiter character.
+                if (i + 1 < n && fmt[i + 1] == delimiter) {
+                    i++;
+                } else {
+                    i++;
+                    break;
+                }
+            }
+            dt_iotype += fmt[i++];
+        }
+    }
+    std::vector<int64_t> dt_v_list;
+    if (accept('(')) {
+        do {
+            skip_blanks();
+            bool negative = false;
+            if (i < n && (fmt[i] == '+' || fmt[i] == '-')) {
+                negative = (fmt[i] == '-');
+                i++;
+                skip_blanks();
+            }
+            const size_t digits_start = i;
+            int64_t value = 0;
+            while (i < n && std::isdigit(static_cast<unsigned char>(fmt[i]))) {
+                value = value * 10 + (fmt[i] - '0');
+                // The v_list dummy argument is a default integer array.
+                if (value > std::numeric_limits<int32_t>::max()) {
+                    return false;
+                }
+                i++;
+            }
+            if (i == digits_start) {
+                return false;
+            }
+            dt_v_list.push_back(negative ? -value : value);
+        } while (accept(','));
+        if (!accept(')')) {
+            return false;
+        }
+    }
+    if (!accept(')')) {
+        return false;
+    }
+    skip_blanks();
+    if (i != n) {
+        return false;
+    }
+    iotype = dt_iotype;
+    v_list = dt_v_list;
+    return true;
 }
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
