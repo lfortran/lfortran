@@ -3972,7 +3972,8 @@ public:
     }
 
     // `scalar` broadcast to the array component of type `type`, whose extents
-    // depend on a kind parameter; it is evaluated by each instantiation.
+    // depend on a kind parameter or, in a template, on a deferred constant;
+    // it is evaluated by each instantiation.
     ASR::expr_t* pdt_component_broadcast(ASR::expr_t* scalar, ASR::ttype_t* type) {
         const Location &loc = scalar->base.loc;
         ASR::dimension_t* dims = nullptr;
@@ -10609,10 +10610,14 @@ public:
                             which is equivalent to x(2) = [1,1]
                         */
                         // The number of elements of a component whose extents
-                        // depend on a kind parameter is only known when the
-                        // type is instantiated.
+                        // depend on a kind parameter, or in a template on a
+                        // deferred constant, is only known when the type is
+                        // instantiated.
                         bool pdt_kind_extent = has_pdt_kind_extent(type);
-                        int64_t size = pdt_kind_extent ? 0
+                        bool deferred_extent = pdt_kind_extent
+                            || (in_template_definition
+                                && ASRUtils::get_fixed_size_of_array(type) < 0);
+                        int64_t size = deferred_extent ? 0
                             : ASRUtils::get_fixed_size_of_array(type);
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
@@ -10642,7 +10647,7 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        if (pdt_kind_extent) {
+                        if (deferred_extent) {
                             init_expr = pdt_component_broadcast(tmp_init, type);
                             value = nullptr;
                         } else if (has_pdt_kind_placeholder(type)) {
@@ -11106,6 +11111,17 @@ public:
                                 throw SemanticAbort();
                             }
                         }
+                    }
+                    if (init_expr && in_template_definition && !is_compile_time
+                            && !is_pointer && ASRUtils::is_array(type)
+                            && !ASRUtils::is_array(ASRUtils::expr_type(init_expr))
+                            && !ASRUtils::is_struct(*ASRUtils::type_get_past_array(type))) {
+                        // A scalar initializer without a value yet, e.g. a
+                        // deferred constant of the template in
+                        // `integer :: b(3) = n`, initializes every element;
+                        // each instantiation evaluates it.
+                        init_expr = pdt_component_broadcast(init_expr, type);
+                        value = nullptr;
                     }
                     if (value != nullptr && has_pdt_kind_placeholder(type)
                             && ASRUtils::extract_kind_from_ttype_t(

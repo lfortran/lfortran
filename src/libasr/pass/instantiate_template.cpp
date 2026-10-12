@@ -1400,6 +1400,11 @@ public:
         size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
         ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
         ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        ASR::expr_t *new_array = broadcast_initializer(new_symbolic_value, new_type);
+        if (new_array) {
+            new_symbolic_value = new_array;
+            new_value = new_array;
+        }
         if (new_value == nullptr && new_symbolic_value
                 && x->m_storage == ASR::storage_typeType::Parameter) {
             new_value = ASRUtils::expr_value(new_symbolic_value);
@@ -1440,6 +1445,24 @@ public:
         v->n_dependencies = variable_dependencies_vec.size();
 
         return s;
+    }
+
+    // The frontend broadcasts a scalar initializer of an array whose extents
+    // or value depend on a deferred constant, e.g. `integer :: b(n) = 1`.
+    // In the instantiation it is the array constant of type `type`, as the
+    // frontend makes it for the same declaration outside a template.
+    ASR::expr_t* broadcast_initializer(ASR::expr_t* init, ASR::ttype_t* type) {
+        if (init == nullptr || !ASR::is_a<ASR::ArrayBroadcast_t>(*init)) {
+            return nullptr;
+        }
+        ASR::expr_t* element = ASRUtils::expr_value(
+            ASR::down_cast<ASR::ArrayBroadcast_t>(init)->m_array);
+        if (element == nullptr || ASRUtils::is_array(ASRUtils::expr_type(element))
+                || ASRUtils::is_struct(*ASRUtils::expr_type(element))) {
+            return nullptr;
+        }
+        return ASRUtils::broadcast_scalar_constant_to_array(al,
+            init->base.loc, element, type);
     }
 
     // Substituting a deferred constant can turn an expression of the
