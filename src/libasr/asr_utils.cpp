@@ -2228,16 +2228,17 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     }
 }
 
-// An operand of a deferred type (template type parameter) matches a dummy
-// of a deferred type only if both are the same deferred type.
-static bool deferred_type_operand_matches(ASR::ttype_t* operand,
-        ASR::ttype_t* dummy) {
-    if (!ASR::is_a<ASR::TypeParameter_t>(*operand) ||
-        !ASR::is_a<ASR::TypeParameter_t>(*dummy)) {
+// An operand matches a dummy of a defined operator only if their types are
+// equal, including the kind and the deferred type of a template. A
+// derived-type operand is checked against the dummy's type by the caller,
+// which also accepts an extension of it.
+static bool operand_matches_dummy(ASR::ttype_t* operand, ASR::expr_t* operand_expr,
+        ASR::ttype_t* dummy, ASR::expr_t* dummy_expr) {
+    if (ASR::is_a<ASR::StructType_t>(*operand) &&
+        ASR::is_a<ASR::StructType_t>(*dummy)) {
         return true;
     }
-    return std::string(ASR::down_cast<ASR::TypeParameter_t>(operand)->m_param) ==
-           std::string(ASR::down_cast<ASR::TypeParameter_t>(dummy)->m_param);
+    return check_equal_type(operand, dummy, operand_expr, dummy_expr);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -2381,8 +2382,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                            if (!operand_matches_dummy(left_type2, left, left_arg_type2, func->m_args[0]) ||
+                                !operand_matches_dummy(right_type2, right, right_arg_type2, func->m_args[1])) {
                                 break;
                             }
                             // Check StructType compatibility independently for each side
@@ -3459,8 +3460,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                            if (!operand_matches_dummy(left_type2, left, left_arg_type2, func->m_args[0]) ||
+                                !operand_matches_dummy(right_type2, right, right_arg_type2, func->m_args[1])) {
                                 break;
                             }
                             // Check StructType compatibility independently for each side
@@ -3677,8 +3678,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                            if (!operand_matches_dummy(left_type2, left, left_arg_type2, func->m_args[0]) ||
+                                !operand_matches_dummy(right_type2, right, right_arg_type2, func->m_args[1])) {
                                 break;
                             }
                             // Check StructType compatibility independently for each side
