@@ -151,7 +151,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
 
             node_duplicator.allow_procedure_calls = true;
-            SymbolTable* new_symtab = al.make_new<SymbolTable>(current_scope);
+            // The copy is declared beside the original, which is not in the
+            // scope being visited if it is declared in a BLOCK construct.
+            SymbolTable* parent_scope = x->m_symtab->parent;
+            SymbolTable* new_symtab = al.make_new<SymbolTable>(parent_scope);
             ASRUtils::SymbolDuplicator symbol_duplicator(al);
             // first duplicate the external symbols
             // so they can be referenced by derived_type
@@ -235,7 +238,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             // freshly translated AST will be rewritten by the call-site
             // replacer using existing proc2newproc state populated below
             // for newly inserted procedures only.
-            if (ASR::symbol_t* existing = current_scope->get_symbol(new_name)) {
+            if (ASR::symbol_t* existing = parent_scope->get_symbol(new_name)) {
                 // The specialisation is already there: either an earlier run
                 // of this pass in the same interactive session made it, or an
                 // earlier cell did (and the JIT already holds its definition).
@@ -260,7 +263,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     x_func_type->m_restrictions, x_func_type->n_restrictions, false, false, false);
                 new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
             }
-            current_scope->add_symbol(new_name, new_symbol);
+            parent_scope->add_symbol(new_name, new_symbol);
             proc2newproc[(ASR::symbol_t*) x] = std::make_pair(new_symbol, indices);
             newprocs.insert(new_symbol);
             return new_symbol;
