@@ -167,6 +167,8 @@ m2-bison = "==3.0.4"
 
 [feature.build.tasks]
 build = {cmd = 'bash ./build1.sh "$LFORTRAN_BUILD_DIR"', default-environment = "llvm11"}
+# Incremental: no reconfiguration, so generated sources are not rewritten.
+rebuild = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR"', default-environment = "llvm11"}
 start = {cmd = '"$LFORTRAN_BUILD_DIR/src/bin/lfortran"', default-environment = "llvm11"}
 clean = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR" --target clean', default-environment = "llvm11"}
 

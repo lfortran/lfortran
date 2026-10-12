@@ -14,11 +14,25 @@ Run from the assigned worktree's root, saving and inspecting logs:
 
 ```bash
 CMAKE_BUILD_PARALLEL_LEVEL=8 pixi run -e llvm11 build > build.log 2>&1
+CMAKE_BUILD_PARALLEL_LEVEL=8 pixi run -e llvm11 rebuild > build.log 2>&1
 pixi run -e llvm11 start --version
 pixi run -e llvm11 ctest -j8 > unit.log 2>&1
 pixi run -e llvm11 tests -j8 > reference.log 2>&1
 pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
 ```
+
+**Use `build` once, then `rebuild` after edits.** `build` configures CMake,
+which reruns `build0.sh` and rewrites every generated source (`asr.h`, `ast.h`,
+the parser, ...) with a new timestamp even when its content is unchanged, so
+Ninja then recompiles almost everything (a one-line edit can cost 15+ minutes).
+`rebuild` (`cmake --build`) recompiles only what changed. Run `build` again
+only for a new worktree, for new CMake options, or after editing a generator
+input: `src/libasr/ASR.asdl`, `grammar/AST.asdl`,
+`src/lfortran/parser/parser.yy`, `tokenizer.re`, `preprocessor.re`,
+`src/libasr/wasm_instructions.txt`, the generator scripts themselves
+(`asdl_cpp.py`, `wasm_instructions_visitor.py`,
+`intrinsic_func_registry_util_gen.py`) or `src/server/generator/`. `rebuild`
+does not regenerate these, so it would compile stale generated sources.
 
 Use the allocated job budget instead of `8` when sharing resources. `pixi run`
 installs the selected environment automatically. The compiler is
@@ -196,6 +210,7 @@ the same when the build system or dependencies change:
 
 ```bash
 pixi run -e llvm11 build
+pixi run -e llvm11 rebuild
 pixi run -e llvm11 start --version
 pixi run -e llvm11 ctest -j8 > unit.log 2>&1
 pixi run -e llvm11 tests -j8 > reference.log 2>&1
@@ -246,8 +261,9 @@ pixi run -e llvm11 start --version
 
 The extra flags build a Debug compiler (assertions on) with `-O2`, like
 Quick's LLVM 11 compiler, keeping `-g` for stack traces; they persist in the
-CMake cache, so later `pixi run -e llvm11 build` rebuilds keep them. While
-iterating, rerun reproducers and new tests directly (`fix-mre` targeted
+CMake cache, so later `build` and `rebuild` runs keep them. While iterating,
+rebuild with `pixi run -e llvm11 rebuild` (see above for when `build` is
+needed instead) and rerun reproducers and new tests directly (`fix-mre` targeted
 checks). Run the full suites below once, after the last fix, in the default
 mode only, and inspect their saved logs. Budget `<jobs>` across active
 workers instead of giving each worker all cores:
@@ -286,7 +302,8 @@ that is very expensive, the tests can run several minutes. Instead, run tests
 only once, redirect to a log file and then examine the log file.
 
 ## Quick Smoke Test
-- Default build: `pixi run -e llvm11 build` (LLVM enabled).
+- Default build: `pixi run -e llvm11 build` (LLVM enabled); after edits,
+  `pixi run -e llvm11 rebuild`.
 - AST/ASR: `pixi run -e llvm11 start --show-ast examples/expr2.f90`
 - Compile and run: `pixi run -e llvm11 start examples/expr2.f90`.
 - Keep an executable: `pixi run -e llvm11 start examples/expr2.f90 -o expr2`.
