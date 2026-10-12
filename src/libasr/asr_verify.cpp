@@ -2139,6 +2139,18 @@ public:
         return false;
     }
 
+    // Erased values are bytes only a dictionary describes: no intrinsic,
+    // input/output or typed temporary may take them as an operand.
+    void verify_trait_erased_operands(expr_t **values, size_t n_values, const char *what) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (!values[i]) continue;
+            require_with_loc_id(!ASRUtils::is_trait_erased(typed_expr_type(values[i])),
+                "asr.verify.trait_erased.operand",
+                std::string("An erased value cannot be an operand of ") + what,
+                values[i]->base.loc);
+        }
+    }
+
     void visit_TraitErasedType(const TraitErasedType_t &x) {
         if (_inside_template) return;
         auto *owner = ASRUtils::trait_erased_owner(current_symtab);
@@ -4698,6 +4710,17 @@ public:
                 "asr.verify.trait_results.local_storage",
                 "A retained-result store must be an initially empty local of an executable scope");
         }
+        // Erased values may only be copied between dictionary-sized scalars,
+        // so arrays of them are dummies or pointer associations, never
+        // value temporaries.
+        if (x.m_type && ASRUtils::is_trait_erased(x.m_type)) {
+            require_with_loc_id(!ASRUtils::is_allocatable(x.m_type) &&
+                    (!ASRUtils::is_array(x.m_type) || ASRUtils::is_arg_dummy(x.m_intent) ||
+                     ASRUtils::is_pointer(x.m_type)),
+                "asr.verify.trait_erased.storage",
+                "Erased values are stored only in scalars, dummies and pointer associations",
+                x.base.base.loc);
+        }
         if (x.m_type && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
             bool dummy = false;
             bool returned = false;
@@ -5913,6 +5936,11 @@ public:
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
+                require_with_loc_id(!actual_type || !ASRUtils::is_trait_erased(actual_type) ||
+                        ASRUtils::is_trait_erased(formal_type),
+                    "asr.verify.trait_erased.boundary",
+                    "An erased value can only be passed to an erased dummy",
+                    passed_arg_expr->base.loc);
                 if (actual_type && ASRUtils::is_trait_erased(formal_type)) {
                     require_with_loc_id(trait_erased_type_matches(*func, formal_type,
                             actual_type, x.m_args, x.n_args),
@@ -6741,6 +6769,7 @@ public:
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        verify_trait_erased_operands(x.m_args, x.n_args, "an intrinsic procedure");
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
             return ;
@@ -6756,6 +6785,11 @@ public:
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        // Only the shape of an erased array can be inquired.
+        if (x.m_arr_intrinsic_id !=
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape)) {
+            verify_trait_erased_operands(x.m_args, x.n_args, "an intrinsic procedure");
+        }
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
             return ;
@@ -6773,6 +6807,10 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        require_with_loc_id(!x.m_type || !ASRUtils::is_array(x.m_type) ||
+                !ASRUtils::is_trait_erased(x.m_type),
+            "asr.verify.trait_erased.temporary",
+            "Erased values have no array temporaries", x.base.base.loc);
         if (check_external) {
             auto *owner = ASRUtils::get_asr_owner(
                 ASRUtils::symbol_get_past_external(x.m_name));
@@ -6937,6 +6975,9 @@ public:
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
+        require_with_loc_id(!ASRUtils::is_trait_erased(x.m_type),
+            "asr.verify.trait_erased.temporary",
+            "Erased values have no array temporaries", x.base.base.loc);
         if (x.m_struct_var != nullptr) {
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
                 "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
@@ -6972,6 +7013,7 @@ public:
         require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
                 || x.m_fmt == nullptr,
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        verify_trait_erased_operands(x.m_args, x.n_args, "formatting");
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 
@@ -7504,6 +7546,10 @@ public:
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
+        require_id(!ASR::is_a<TraitErasedType_t>(*x.m_type) ||
+                x.m_physical_type == ASR::array_physical_typeType::DescriptorArray,
+            "asr.verify.trait_erased.array",
+            "An array of erased values is a descriptor of storage its dictionary describes");
         bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
         _inside_array_physical_cast_type = false;
         visit_ttype(*x.m_type);
@@ -7764,6 +7810,7 @@ public:
             verify_association_definable(output);
         }
         for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], true);
+        verify_trait_erased_operands(x.m_values, x.n_values, "input/output");
         if (x.m_nml && check_external) {
             auto *group = ASRUtils::symbol_get_past_external(x.m_nml);
             require(group && ASR::is_a<Namelist_t>(*group), "FileRead requires a namelist group");
@@ -7787,6 +7834,7 @@ public:
         auto *unit_type = typed_expr_type(x.m_unit);
         if (unit_type && ASRUtils::is_character(*unit_type)) verify_association_definable(x.m_unit);
         for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], false);
+        verify_trait_erased_operands(x.m_values, x.n_values, "input/output");
         BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
     }
 

@@ -24101,36 +24101,221 @@ public:
 
     void check_trait_erased_storage(const ASR::Function_t &function,
             const std::set<std::string> &dictionaries = {}) {
+        if (!dictionaries.empty()) {
+            for (const auto &entry : function.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                    trait_call_error("internal procedures of a runtime generic message with "
+                        "a protocol type parameter are not implemented yet",
+                        entry.second->base.loc);
+                }
+            }
+        }
         check_trait_erased_storage(*function.m_symtab, dictionaries);
-        check_trait_erased_values(function, dictionaries);
+        check_trait_erased_uses(function, dictionaries);
     }
 
-    // The arrays of a dictionary binder are designators of its dummies; an
-    // array value computed from them, such as an elemental requirement
-    // applied to arrays or an array constructor, would need storage that
-    // the dictionary does not describe yet.
-    void check_trait_erased_values(const ASR::Function_t &function,
+    // The values of a dictionary binder are bytes that only its dictionary
+    // describes, so a runtime generic message may only designate them in
+    // erased storage (whole variables, elements with scalar subscripts and
+    // sections with triplets), assign them between such storage, inquire
+    // the shape of their arrays, and pass them to requirements, generic
+    // procedures and messages whose dummies have a type parameter. Any
+    // other use, such as an intrinsic, input/output, a dummy of another
+    // type or a vector subscript, would need a typed copy.
+    void check_trait_erased_uses(const ASR::Function_t &function,
             const std::set<std::string> &dictionaries) {
         if (dictionaries.empty()) return;
         class Check : public ASR::BaseWalkVisitor<Check> {
         public:
             const std::set<std::string> &dictionaries;
             const ASR::expr_t *found = nullptr;
+            std::string reason;
+            // Whether the next visited expression may be an erased value,
+            // and what consumes it otherwise.
+            bool permitted = false;
+            const char *context = "an expression that needs a typed copy";
             explicit Check(const std::set<std::string> &dictionaries)
-                : dictionaries(dictionaries) {}
-            bool erased_array(ASR::ttype_t *type) {
-                if (found || !type || !ASRUtils::is_array(type)) return false;
-                auto *element = ASRUtils::extract_type(type);
-                return ASR::is_a<ASR::TypeParameter_t>(*element) && dictionaries.count(
-                    ASR::down_cast<ASR::TypeParameter_t>(element)->m_param);
+                : dictionaries(dictionaries) {
+                this->visit_compile_time_value = false;
+            }
+            const char *erased_parameter(ASR::ttype_t *type) {
+                auto *element = type ? ASRUtils::extract_type(type) : nullptr;
+                if (!element || !ASR::is_a<ASR::TypeParameter_t>(*element)) return nullptr;
+                auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(element)->m_param;
+                return dictionaries.count(parameter) ? parameter : nullptr;
+            }
+            const char *erased_parameter(const ASR::expr_t &x) {
+                return erased_parameter(ASRUtils::expr_type(const_cast<ASR::expr_t*>(&x)));
+            }
+            void reject(const ASR::expr_t &x, const char *parameter, const std::string &why) {
+                if (found) return;
+                found = &x;
+                reason = "this use of a value of protocol type parameter '" +
+                    std::string(parameter) + "' as " + why +
+                    " is not implemented yet in runtime generic messages";
+            }
+            void visit_with(const ASR::expr_t &x, bool permit, const char *consumer) {
+                permitted = permit;
+                context = consumer;
+                visit_expr(x);
+            }
+            void visit_expr(const ASR::expr_t &x) {
+                if (found) return;
+                bool allowed = permitted;
+                const char *consumer = context;
+                permitted = false;
+                context = "an expression that needs a typed copy";
+                if (const char *parameter = erased_parameter(x)) {
+                    if (!allowed) {
+                        reject(x, parameter, consumer);
+                        return;
+                    }
+                    switch (x.type) {
+                        case ASR::exprType::Var:
+                        case ASR::exprType::ArrayItem:
+                        case ASR::exprType::ArraySection:
+                        case ASR::exprType::ArrayPhysicalCast:
+                            break;
+                        case ASR::exprType::FunctionCall:
+                        case ASR::exprType::TraitFunctionCall:
+                            if (ASRUtils::is_array(ASRUtils::expr_type(
+                                    const_cast<ASR::expr_t*>(&x)))) {
+                                reject(x, parameter, "a computed array");
+                                return;
+                            }
+                            break;
+                        case ASR::exprType::IntrinsicElementalFunction:
+                        case ASR::exprType::IntrinsicArrayFunction:
+                        case ASR::exprType::IntrinsicImpureFunction:
+                            reject(x, parameter, "an intrinsic procedure result");
+                            return;
+                        case ASR::exprType::ArrayConstructor:
+                            reject(x, parameter, "an array constructor");
+                            return;
+                        default:
+                            reject(x, parameter, "an expression that needs a typed copy");
+                            return;
+                    }
+                }
+                ASR::BaseWalkVisitor<Check>::visit_expr(x);
+            }
+            void visit_indices(const ASR::expr_t &base, ASR::array_index_t *indices,
+                    size_t n_indices) {
+                const char *parameter = erased_parameter(base);
+                for (size_t i = 0; i < n_indices; i++) {
+                    auto &index = indices[i];
+                    if (parameter && index.m_right && !index.m_left && !index.m_step &&
+                            ASRUtils::is_array(ASRUtils::expr_type(index.m_right))) {
+                        reject(*index.m_right, parameter, "an array with a vector subscript");
+                        return;
+                    }
+                    if (index.m_left) visit_expr(*index.m_left);
+                    if (index.m_right) visit_expr(*index.m_right);
+                    if (index.m_step) visit_expr(*index.m_step);
+                }
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                visit_with(*x.m_v, true, "a designator");
+                visit_indices(*x.m_v, x.m_args, x.n_args);
+            }
+            void visit_ArraySection(const ASR::ArraySection_t &x) {
+                visit_with(*x.m_v, true, "a designator");
+                visit_indices(*x.m_v, x.m_args, x.n_args);
+            }
+            void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
+                visit_with(*x.m_arg, true, "a designator");
+            }
+            // Shape inquiries read only the descriptor of an erased array.
+            void visit_ArraySize(const ASR::ArraySize_t &x) {
+                visit_with(*x.m_v, true, "a shape inquiry");
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+                // The bounds of a section are inquired from a copy of it.
+                const char *parameter = erased_parameter(*x.m_v);
+                if (parameter && !ASR::is_a<ASR::Var_t>(
+                        *ASRUtils::get_past_array_physical_cast(x.m_v))) {
+                    reject(*x.m_v, parameter, "a section in a bound inquiry");
+                    return;
+                }
+                visit_with(*x.m_v, true, "a shape inquiry");
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_ArrayRank(const ASR::ArrayRank_t &x) {
+                visit_with(*x.m_v, true, "a shape inquiry");
+            }
+            void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+                bool shape = x.m_arr_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape);
+                for (size_t i = 0; i < x.n_args; i++) {
+                    visit_with(*x.m_args[i], shape && i == 0,
+                        shape ? "a shape inquiry" : "an intrinsic procedure argument");
+                }
+            }
+            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    visit_with(*x.m_args[i], false, "an intrinsic procedure argument");
+                }
+            }
+            // A dummy of a type parameter or an erased dummy receives the
+            // value with the binder's dictionary.
+            bool generic_dummy(ASR::symbol_t *callee, size_t i) {
+                callee = callee ? ASRUtils::symbol_get_past_external(callee) : nullptr;
+                if (callee && ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+                    callee = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
+                }
+                if (!callee || !ASR::is_a<ASR::Function_t>(*callee)) return false;
+                auto *procedure = ASR::down_cast<ASR::Function_t>(callee);
+                if (i >= procedure->n_args) return false;
+                auto *element = ASRUtils::extract_type(ASRUtils::expr_type(procedure->m_args[i]));
+                return element && (ASR::is_a<ASR::TypeParameter_t>(*element) ||
+                    ASR::is_a<ASR::TraitErasedType_t>(*element));
+            }
+            void visit_call_args(ASR::symbol_t *callee, ASR::call_arg_t *args, size_t n_args) {
+                for (size_t i = 0; i < n_args; i++) {
+                    if (!args[i].m_value) continue;
+                    visit_with(*args[i].m_value, generic_dummy(callee, i),
+                        "an argument of a dummy without the type parameter");
+                }
             }
             void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-                if (erased_array(x.m_type)) found = &x.base;
-                ASR::BaseWalkVisitor<Check>::visit_FunctionCall(x);
+                visit_call_args(x.m_name, x.m_args, x.n_args);
+                if (x.m_dt) visit_expr(*x.m_dt);
             }
-            void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
-                if (erased_array(x.m_type)) found = &x.base;
-                ASR::BaseWalkVisitor<Check>::visit_ArrayConstructor(x);
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                visit_call_args(x.m_name, x.m_args, x.n_args);
+                if (x.m_dt) visit_expr(*x.m_dt);
+            }
+            void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+                visit_call_args(x.m_name, x.m_args, x.n_args);
+            }
+            void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+                visit_call_args(x.m_name, x.m_args, x.n_args);
+            }
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                bool erased = erased_parameter(*x.m_target) != nullptr;
+                visit_with(*x.m_target, erased, "an assignment target");
+                visit_with(*x.m_value, erased, "an assigned value");
+            }
+            void visit_Print(const ASR::Print_t &x) {
+                visit_with(*x.m_text, false, "input/output");
+            }
+            void visit_StringFormat(const ASR::StringFormat_t &x) {
+                if (x.m_fmt) visit_expr(*x.m_fmt);
+                for (size_t i = 0; i < x.n_args; i++) {
+                    visit_with(*x.m_args[i], false, "input/output");
+                }
+            }
+            void visit_FileWrite(const ASR::FileWrite_t &x) {
+                for (size_t i = 0; i < x.n_values; i++) {
+                    visit_with(*x.m_values[i], false, "input/output");
+                }
+            }
+            void visit_FileRead(const ASR::FileRead_t &x) {
+                for (size_t i = 0; i < x.n_values; i++) {
+                    visit_with(*x.m_values[i], false, "input/output");
+                }
             }
             void visit_BlockCall(const ASR::BlockCall_t &x) {
                 auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
@@ -24142,11 +24327,7 @@ public:
             }
         } check(dictionaries);
         for (size_t i = 0; i < function.n_body; i++) check.visit_stmt(*function.m_body[i]);
-        if (check.found) {
-            trait_call_error("array values computed from values of a protocol type "
-                "parameter, such as an elemental requirement applied to arrays, are not "
-                "implemented yet in runtime generic messages", check.found->base.loc);
-        }
+        if (check.found) trait_call_error(check.reason, check.found->base.loc);
     }
 
     std::set<std::string> trait_dictionary_binders(const ASR::Template_t &generic) {

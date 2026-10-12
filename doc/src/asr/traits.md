@@ -754,9 +754,34 @@ components (without allocatable, pointer or finalized parts) have dictionaries,
 and dictionaries never modify a receiver. A conformance without a dictionary,
 for example of a type with an allocatable component or declared outside a
 module, keeps its static uses; its runtime use is diagnosed with the reason.
-Array values computed from erased values, such as an elemental requirement
-applied to arrays, other erased storage and a binder constrained by several
-traits are diagnosed as not implemented.
+
+The body of a runtime generic message may only:
+
+- designate erased values: whole variables, elements with scalar subscripts
+  and sections with triplets, including reversed and strided ones;
+- assign them between such storage;
+- inquire the shape of their arrays with `size`, `shape` and `rank`, and the
+  bounds of whole arrays with `lbound` and `ubound`;
+- pass them to requirements, and to generic procedures and messages whose
+  dummies have a type parameter.
+
+Any other use needs a typed copy and is diagnosed where the provider is
+defined: a vector subscript, an intrinsic procedure, input/output, a dummy
+of another type such as `class(*)`, an array constructor, an array computed
+by a call (such as an elemental requirement applied to arrays), and the
+bounds of a section. Internal procedures of such a body are not
+implemented yet either. Values of other types are unrestricted, so scalar
+controls, intrinsics and output work as usual, and a client may pass any
+concrete array expression, including one with a vector subscript. As for a
+binder constrained by a runtime view, the check is made once for the
+provider, so a provider whose body is outside this subset is rejected even
+by a program that only calls it statically.
+`--verify-all-passes` keeps these rules after every pass: erased values are
+never operands of intrinsics or input/output, arrays of them are descriptors
+held only by dummies or pointer associations, never constructors, results
+or allocated temporaries, and an erased actual meets only an erased dummy.
+
+A binder constrained by several traits is not implemented yet.
 
 `traits_paper_ocp` runs the exact paper program, with its approved
 `use intrinsics`, for both choices in normal and fast modes and rejects the

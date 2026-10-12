@@ -145,3 +145,88 @@ program continue_compilation_traits_ocp
     ! not use.
     print *, p%sum(k)
 end program continue_compilation_traits_ocp
+
+! E06-E10: a runtime generic message may only designate, assign, pass and
+! inquire the shape of erased values; each of these bodies needs more.
+module cc_traits_ocp_uses
+    use cc_traits_ocp_contracts, only: INumeric, ISum
+    use cc_traits_ocp_provider, only: simple_sum
+    implicit none
+    type, sealed, implements(ISum) :: Gathered
+    contains
+        procedure, nopass :: sum => gathered_sum
+    end type Gathered
+    type, sealed, implements(ISum) :: Merged
+    contains
+        procedure, nopass :: sum => merged_sum
+    end type Merged
+    type, sealed, implements(ISum) :: Shown
+    contains
+        procedure, nopass :: sum => shown_sum
+    end type Shown
+    type, sealed, implements(ISum) :: Printed
+    contains
+        procedure, nopass :: sum => printed_sum
+    end type Printed
+    type, sealed, implements(ISum) :: Bounded
+    contains
+        procedure, nopass :: sum => bounded_sum
+    end type Bounded
+contains
+    subroutine show(v)
+        class(*), intent(in) :: v
+    end subroutine show
+    function gathered_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        ! E06: a vector subscript gathers a copy of erased values.
+        s = simple_sum(x([1, 3]))
+    end function gathered_sum
+    function merged_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        ! E07: an intrinsic procedure computes an erased value.
+        s = merge(x(1), x(2), size(x) > 1)
+    end function merged_sum
+    function shown_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        s = x(1)
+        ! E08: an unlimited polymorphic dummy needs a typed value.
+        call show(s)
+    end function shown_sum
+    function printed_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        s = x(1)
+        ! E09: output of an erased value.
+        print *, s
+    end function printed_sum
+    function bounded_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        ! E10: the bounds of a section are inquired from a copy of it.
+        s = x(ubound(x(2:), 1))
+    end function bounded_sum
+end module cc_traits_ocp_uses
+
+module cc_traits_ocp_internal
+    use cc_traits_ocp_contracts, only: INumeric, ISum
+    implicit none
+    type, sealed, implements(ISum) :: Nested
+    contains
+        procedure, nopass :: sum => nested_sum
+    end type Nested
+contains
+    function nested_sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T)             :: s
+        s = T(0)
+        call accumulate()
+    contains
+        ! E11: an internal procedure of a dictionary-erased body.
+        subroutine accumulate()
+            s = s + x(1)
+        end subroutine accumulate
+    end function nested_sum
+end module cc_traits_ocp_internal

@@ -14,6 +14,16 @@ semantic error: erased generic storage other than read-only scalar or assumed-sh
 93 |         type(T)             :: copy(size(x))
    |                                ^^^^^^^^^^^^^ 
 
+semantic error: internal procedures of a runtime generic message with a protocol type parameter are not implemented yet
+   --> tests/errors/continue_compilation_traits_ocp.f90:228:9 - 230:33
+    |
+228 |            subroutine accumulate()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+230 |            end subroutine accumulate
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: the conformance of type(bag) to trait 'inumeric' has no runtime dictionary: its component 'v' needs ownership the dictionary does not describe yet
    --> tests/errors/continue_compilation_traits_ocp.f90:141:10
     |
@@ -32,8 +42,38 @@ semantic error: no visible nominal implementation of trait 'inumeric' for generi
 146 |     print *, p%sum(k)
     |              ^^^^^^^^ 
 
-semantic error: array values computed from values of a protocol type parameter, such as an elemental requirement applied to arrays, are not implemented yet in runtime generic messages
+semantic error: this use of a value of protocol type parameter 't' as a computed array is not implemented yet in runtime generic messages
    --> tests/errors/continue_compilation_traits_ocp.f90:116:19
     |
 116 |         s = first(x * x)
     |                   ^^^^^ 
+
+semantic error: this use of a value of protocol type parameter 't' as a section in a bound inquiry is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:209:22
+    |
+209 |         s = x(ubound(x(2:), 1))
+    |                      ^^^^^ 
+
+semantic error: this use of a value of protocol type parameter 't' as an array with a vector subscript is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:183:26
+    |
+183 |         s = simple_sum(x([1, 3]))
+    |                          ^^^^^^ 
+
+semantic error: this use of a value of protocol type parameter 't' as an intrinsic procedure result is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:189:13
+    |
+189 |         s = merge(x(1), x(2), size(x) > 1)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: this use of a value of protocol type parameter 't' as input/output is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:203:18
+    |
+203 |         print *, s
+    |                  ^ 
+
+semantic error: this use of a value of protocol type parameter 't' as an argument of a dummy without the type parameter is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:196:19
+    |
+196 |         call show(s)
+    |                   ^ 

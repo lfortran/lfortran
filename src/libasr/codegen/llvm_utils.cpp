@@ -694,6 +694,16 @@ namespace LCompilers {
         }
     }
 
+    // Erased values are bytes only a dictionary describes, so their arrays
+    // exist only as descriptors of existing storage.
+    static void check_trait_erased_array(const ASR::Array_t &array) {
+        if (ASR::is_a<ASR::TraitErasedType_t>(*array.m_type) &&
+                array.m_physical_type != ASR::array_physical_typeType::DescriptorArray) {
+            throw CodeGenError("an array of erased trait values must be a descriptor of "
+                "storage its dictionary describes");
+        }
+    }
+
     llvm::Type* LLVMUtils::get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module) {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(m_type_);
         llvm::Type* el_type = nullptr;
@@ -857,6 +867,7 @@ namespace LCompilers {
         switch (asr_type->type) {
             case ASR::ttypeType::Array: {
                 ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(asr_type);
+                check_trait_erased_array(*v_type);
                 switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
@@ -1591,6 +1602,7 @@ namespace LCompilers {
         switch (asr_type->type) {
             case ASR::ttypeType::Array: {
                 ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(asr_type);
+                check_trait_erased_array(*v_type);
                 m_dims = v_type->m_dims;
                 n_dims = v_type->n_dims;
                 a_kind = ASRUtils::extract_kind_from_ttype_t(v_type->m_type);

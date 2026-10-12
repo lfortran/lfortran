@@ -2238,6 +2238,21 @@ namespace Shape {
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args, int64_t,
             int index_kind) {
+        // A helper would not receive the dictionary that describes the
+        // elements of an erased array, so its shape is built in place from
+        // the extents of its descriptor, as lbound and ubound are.
+        if (ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::extract_type(arg_types[0]))) {
+            ASRBuilder b(al, loc);
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_types[0]);
+            Vec<ASR::expr_t*> extents;
+            extents.reserve(al, n_dims);
+            for (int i = 1; i <= n_dims; i++) {
+                extents.push_back(al, b.ArraySize(new_args[0].m_value, b.i32(i),
+                    ASRUtils::extract_type(return_type)));
+            }
+            return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                extents.p, extents.size(), return_type, ASR::arraystorageType::ColMajor));
+        }
         declare_basic_variables("_lcompilers_shape");
         bool is_arg_assumed_rank = new_args[0].m_value &&
             ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[0].m_value) &&

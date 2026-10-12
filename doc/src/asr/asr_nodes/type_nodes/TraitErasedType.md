@@ -23,6 +23,14 @@ implementation of a `TraitDictionaryValue`, the caller's erased type for a
 forwarded dictionary dummy, or the binder of a deferred dictionary. Types of
 different parameters are different even if their dictionaries agree.
 
+Only a dictionary knows how to copy or interpret erased values, so the
+verifier also requires that an array of erased values is a
+`DescriptorArray` held by a dummy or a pointer association (a pass may alias
+a section, never copy it), that no array constructor, function result or
+allocatable has an erased element type, that erased values are not operands
+of intrinsic functions, string formatting or input/output, and that an
+erased actual argument meets an erased dummy.
+
 In LLVM a scalar is passed by address and an array by a descriptor whose
 element type is a byte and whose offset and strides are in bytes, so sections,
 reversed strides and empty arrays need no element size. An erased result is
