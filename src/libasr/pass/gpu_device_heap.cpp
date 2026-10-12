@@ -735,8 +735,11 @@ public:
     HeapTypes(Allocator &al_, ASR::TranslationUnit_t &unit_)
         : al(al_), unit(unit_) {}
 
-    std::set<std::string> heap;
-    std::map<std::string, Image> images;
+    // Keyed by the derived type's symbol: two types of one name, from two
+    // modules, are two types. Each kernel has its own copy of every type
+    // its device code holds, the type the heap decisions are about.
+    std::set<ASR::Struct_t*> heap;
+    std::map<ASR::Struct_t*, Image> images;
     std::map<ASR::symbol_t*, Image*> by_symbol;
     // A component of a heap type the heap does not hold yet, or "".
     std::string unsupported;
@@ -767,13 +770,13 @@ public:
     }
 
     bool is_heap(ASR::Struct_t *st) {
-        return st != nullptr && heap.count(st->m_name) > 0;
+        return st != nullptr && heap.count(st) > 0;
     }
 
     // The image of a heap type, built the first time it is asked for.
     Image* image(ASR::Struct_t *st, std::function<size_t(ASR::ttype_t*,
             ASR::symbol_t*)> arena) {
-        auto found = images.find(st->m_name);
+        auto found = images.find(st);
         if (found != images.end()) {
             if (found->second.symbol == nullptr) {
                 unsupported = "of the type '" + std::string(st->m_name) +
@@ -782,7 +785,7 @@ public:
             }
             return &found->second;
         }
-        Image &img = images[st->m_name];
+        Image &img = images[st];
         img.source = st;
         const Location &loc = st->base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -813,7 +816,7 @@ public:
                     || (allocatable && !ASRUtils::is_array(v->m_type))) {
                 unsupported = "of the type '" + std::string(st->m_name) +
                     "', with the component '" + name + "',";
-                images.erase(st->m_name);
+                images.erase(st);
                 return nullptr;
             }
             if (allocatable) {
@@ -825,10 +828,10 @@ public:
                             std::string(st->m_name) + "', with the "
                             "allocatable component '" + name + "' of a type "
                             "without allocatable components,";
-                        images.erase(st->m_name);
+                        images.erase(st);
                         return nullptr;
                     }
-                    heap.insert(member_struct->m_name);
+                    heap.insert(member_struct);
                     im.image = image(member_struct, arena);
                     if (im.image == nullptr) return nullptr;
                     im.arena = arena(ASRUtils::make_StructType_t_util(al, loc,
@@ -847,7 +850,7 @@ public:
                 }
             } else if (member_struct != nullptr &&
                     holds_allocatable(member_struct)) {
-                heap.insert(member_struct->m_name);
+                heap.insert(member_struct);
                 im.kind = ImageMember::Kind::Image;
                 im.image = image(member_struct, arena);
                 if (im.image == nullptr) return nullptr;
@@ -872,7 +875,7 @@ public:
             ASRUtils::make_StructType_t_util(al, loc, sym, true);
         global->add_symbol(image_name, sym);
         // The map may have grown while the members were built.
-        Image &done = images[st->m_name];
+        Image &done = images[st];
         done.source = st;
         done.symbol = sym;
         done.members = members;
@@ -1861,10 +1864,10 @@ public:
     void rebase(ASR::StructInstanceMember_t *x) {
         if (stored_array(x->m_v) == nullptr) return;
         ASR::Struct_t *source = types.heap_source_of(x->m_v);
-        if (source == nullptr || types.images.count(source->m_name) == 0) {
+        if (source == nullptr || types.images.count(source) == 0) {
             return;
         }
-        x->m_v = copied_in(x->m_v, &types.images[source->m_name], source);
+        x->m_v = copied_in(x->m_v, &types.images[source], source);
     }
 
 private:
@@ -2850,11 +2853,9 @@ private:
     // The heap arrays of every procedure, which are locals of it.
     std::map<ASR::Function_t*, std::vector<ASR::Variable_t*>> heap_arrays;
     std::map<ASR::symbol_t*, Descriptor> locals;
-    // A derived type of each heap type's name.
-    std::map<std::string, ASR::Struct_t*> structs;
-    // The procedures each kernel reaches, for reporting a heap type the
-    // heap cannot hold at the loops that use it.
-    std::map<std::string, std::set<ASR::Function_t*>> type_kernels;
+    // The kernels that hold a value of each type, for reporting a heap
+    // type the heap cannot hold at the loops that use it.
+    std::map<ASR::Struct_t*, std::set<ASR::Function_t*>> type_kernels;
 
     void hand_arenas(ASR::Function_t &kernel, Image *img) {
         if (img == nullptr) return;
@@ -2917,6 +2918,25 @@ private:
         }
     }
 
+    // The argument of `kernel` its launch passes the host's variable
+    // `actual` for, or nullptr.
+    ASR::Variable_t* kernel_parameter(ASR::Function_t &kernel,
+            ASR::symbol_t *actual) {
+        auto launch = heap.launch_nodes.find(&kernel.base);
+        if (launch == heap.launch_nodes.end()) return nullptr;
+        for (size_t i = 0; i < kernel.n_args && i < launch->second->n_args;
+                i++) {
+            if (variable_of(launch->second->m_args[i].m_value) != actual) {
+                continue;
+            }
+            ASR::symbol_t *p = variable_of(kernel.m_args[i]);
+            if (p != nullptr && ASR::is_a<ASR::Variable_t>(*p)) {
+                return ASR::down_cast<ASR::Variable_t>(p);
+            }
+        }
+        return nullptr;
+    }
+
     bool is_dummy(ASR::Function_t &fn, ASR::symbol_t *s) {
         for (size_t i = 0; i < fn.n_args; i++) {
             if (variable_of(fn.m_args[i]) == s) return true;
@@ -2958,7 +2978,7 @@ private:
     void decide_heap_types() {
         std::map<ASR::Function_t*, std::set<ASR::symbol_t*>> kernel_unsized;
         for (ASR::Function_t *k : kernels) kernel_unsized[k] = unsizable(*k);
-        std::set<std::string> created;
+        std::set<ASR::Struct_t*> created;
         for (ASR::Function_t *fn : device_code()) {
             StorageAssociations storage;
             for (size_t i = 0; i < fn->n_body; i++) {
@@ -2985,11 +3005,10 @@ private:
                         continue;
                     }
                     if (ASRUtils::is_pointer(v->m_type)) continue;
-                    structs.emplace(st->m_name, st);
-                    created.insert(st->m_name);
-                    type_kernels[st->m_name].insert(kernel_of[fn]);
+                    created.insert(st);
+                    type_kernels[st].insert(kernel_of[fn]);
                     if (ASRUtils::is_array(v->m_type)) {
-                        types.heap.insert(st->m_name);
+                        types.heap.insert(st);
                         continue;
                     }
                     if (is_dummy(*fn, item.second)) continue;
@@ -3006,23 +3025,23 @@ private:
                         if (!array) {
                             if (types.holds_allocatable(struct_of(mv->m_type,
                                     mv->m_type_declaration))) {
-                                types.heap.insert(st->m_name);
+                                types.heap.insert(st);
                             }
                             continue;
                         }
                         if (struct_of(mv->m_type, mv->m_type_declaration)) {
-                            types.heap.insert(st->m_name);
+                            types.heap.insert(st);
                             continue;
                         }
                         auto s = stored.find(item.second);
                         if (s == stored.end() ||
                                 s->second.count(mv->m_name) == 0) {
-                            types.heap.insert(st->m_name);
+                            types.heap.insert(st);
                             continue;
                         }
                         if (is_kernel(*fn) && kernel_unsized[fn].count(
                                 s->second[mv->m_name])) {
-                            types.heap.insert(st->m_name);
+                            types.heap.insert(st);
                         }
                     }
                 }
@@ -3038,31 +3057,30 @@ private:
             for (size_t i = 0; i < f.second->n_body; i++) {
                 unsized.visit_stmt(*f.second->m_body[i]);
             }
+            ASR::symbol_t *k = ASRUtils::symbol_get_past_external(f.first);
+            if (!ASR::is_a<ASR::Function_t>(*k)) continue;
+            ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(k);
             for (ASR::symbol_t *array : unsized.arrays) {
-                if (!ASR::is_a<ASR::Variable_t>(*array)) continue;
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(array);
+                // The kernel's copy of the type of the host's array, the
+                // type of the kernel argument the launch passes it for.
+                ASR::Variable_t *v = kernel_parameter(*kernel, array);
+                if (v == nullptr) continue;
                 ASR::Struct_t *st = struct_of(v->m_type,
                     v->m_type_declaration);
                 if (!types.holds_allocatable(st)) continue;
-                structs.emplace(st->m_name, st);
-                created.insert(st->m_name);
-                types.heap.insert(st->m_name);
-                ASR::symbol_t *kernel = ASRUtils::symbol_get_past_external(
-                    f.first);
-                if (ASR::is_a<ASR::Function_t>(*kernel)) {
-                    type_kernels[st->m_name].insert(
-                        ASR::down_cast<ASR::Function_t>(kernel));
-                }
+                created.insert(st);
+                types.heap.insert(st);
+                type_kernels[st].insert(kernel);
             }
         }
         // A type holding a heap type in a component is one, and so is
         // every type a heap type holds.
         for (bool changed = true; changed;) {
             changed = false;
-            for (const std::string &name : created) {
-                if (types.heap.count(name)) continue;
+            for (ASR::Struct_t *st : created) {
+                if (types.heap.count(st)) continue;
                 std::vector<ASR::symbol_t*> members;
-                gpu_collect_data_members(structs[name], members);
+                gpu_collect_data_members(st, members);
                 for (ASR::symbol_t *m : members) {
                     if (m == nullptr || !ASR::is_a<ASR::Variable_t>(*m)) {
                         continue;
@@ -3071,7 +3089,7 @@ private:
                     ASR::Struct_t *ms = struct_of(mv->m_type,
                         mv->m_type_declaration);
                     if (types.is_heap(ms)) {
-                        types.heap.insert(name);
+                        types.heap.insert(st);
                         changed = true;
                         break;
                     }
@@ -3081,15 +3099,17 @@ private:
     }
 
     bool build_images() {
-        std::vector<std::string> names(types.heap.begin(), types.heap.end());
-        for (const std::string &name : names) {
-            auto st = structs.find(name);
-            if (st == structs.end()) continue;
+        std::vector<ASR::Struct_t*> heap_types(types.heap.begin(),
+            types.heap.end());
+        for (ASR::Struct_t *st : heap_types) {
+            // A type only a heap type holds gets its image with that one.
+            auto kernels_of_type = type_kernels.find(st);
+            if (kernels_of_type == type_kernels.end()) continue;
             auto arena = [&](ASR::ttype_t *t, ASR::symbol_t *decl) {
                 return heap.arena(t, decl);
             };
-            if (types.image(st->second, arena) == nullptr) {
-                for (ASR::Function_t *k : type_kernels[name]) {
+            if (types.image(st, arena) == nullptr) {
+                for (ASR::Function_t *k : kernels_of_type->second) {
                     heap.decline(k, k->base.base.loc, GpuDecline(
                         GpuDeclineReason::HeapArrayUse, "holding a value " +
                         types.unsupported));
@@ -3168,8 +3188,8 @@ private:
                     pointers.push_back(v);
                     continue;
                 }
-                Image *img = types.images.count(st->m_name)
-                    ? &types.images[st->m_name] : nullptr;
+                Image *img = types.images.count(st)
+                    ? &types.images[st] : nullptr;
                 if (img == nullptr) continue;
                 v->m_type = with_struct(al, v->m_type, types.image_type(img));
                 v->m_type_declaration = img->symbol;
