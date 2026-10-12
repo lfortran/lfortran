@@ -4662,6 +4662,14 @@ filename = "../integration_tests/gpu_metal_436.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
+# A local of a device routine whose extent calls a function of a module:
+# the kernel's copy of the routine calls the kernel's copy of the function,
+# which the host cannot call to size the array before the launch.
+[[test]]
+filename = "../integration_tests/gpu_metal_438.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

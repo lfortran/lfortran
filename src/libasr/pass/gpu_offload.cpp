@@ -14,6 +14,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -1005,6 +1006,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                             transitive_collector.visit_stmt(
                                 *fn_impl->m_body[i]);
                         }
+                        // A function the declaration of a local calls,
+                        // `real :: w(f(n))`, is called on entry.
+                        std::vector<SymbolTable*> scopes;
+                        gpu_routine_scopes(fn_impl->m_symtab, scopes);
+                        for (SymbolTable *scope : scopes) {
+                            for (auto &local : scope->get_scope()) {
+                                if (ASR::is_a<ASR::Variable_t>(
+                                        *local.second)) {
+                                    transitive_collector.visit_symbol(
+                                        *local.second);
+                                }
+                            }
+                        }
                     }
                 }
                 for (auto &[name, sym] : transitive_collector.functions) {
@@ -1700,6 +1714,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // left naming the original. Point every such extent at the
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
+            retarget_declaration_calls(func->m_symtab, *kernel_scope);
             // `sum(f(x))` in a routine becomes a loop, as in the loop body,
             // so that it needs no temporary for the array `f` returns. The
             // routine is the kernel's own copy: the host's is left as it is.
