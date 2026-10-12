@@ -2703,7 +2703,18 @@ class ASRToLLVMVisitor;
                         return false;
                     }
                 }
-                return true;
+                // A module variable lives until the program ends whether or
+                // not it has SAVE, so it is released at program exit like
+                // the module's other variables, below, except the class
+                // wrapper of a scalar class pointer with SAVE: that wrapper
+                // is static storage (get_static_class_wrapper in
+                // asr_to_llvm.cpp).
+                bool static_class_wrapper = ASRUtils::is_pointer(v->m_type)
+                    && !ASRUtils::is_array(v->m_type)
+                    && ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type));
+                if (!ASR::is_a<ASR::Module_t>(*owner) || static_class_wrapper) {
+                    return true;
+                }
             }
             // Module-scope non-allocatable, non-pointer string variables
             // (including arrays of strings) have their data in static global
