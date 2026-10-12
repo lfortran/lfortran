@@ -1796,19 +1796,32 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
     }
 }
 
+// The directories that modfiles are looked for in, in order.
+static std::vector<std::filesystem::path> modfile_search_dirs(
+        const LCompilers::PassOptions &pass_options) {
+    std::vector<std::filesystem::path> mod_files_dirs;
+    mod_files_dirs.push_back(std::filesystem::path(pass_options.runtime_library_dir));
+    mod_files_dirs.push_back(pass_options.mod_files_dir);
+    mod_files_dirs.insert(mod_files_dirs.end(),
+                          pass_options.include_dirs.begin(),
+                          pass_options.include_dirs.end());
+    return mod_files_dirs;
+}
+
+bool modfile_exists(const std::string &msym, const LCompilers::PassOptions &pass_options) {
+    std::filesystem::path filename {msym + ".mod"};
+    for (auto &path : modfile_search_dirs(pass_options)) {
+        if (std::filesystem::is_regular_file(path / filename)) return true;
+    }
+    return false;
+}
+
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm) {
-    std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
     std::filesystem::path filename {msym + ".mod"};
-    std::vector<std::filesystem::path> mod_files_dirs;
-
-    mod_files_dirs.push_back( runtime_library_dir );
-    mod_files_dirs.push_back( pass_options.mod_files_dir );
-    mod_files_dirs.insert(mod_files_dirs.end(),
-                          pass_options.include_dirs.begin(),
-                          pass_options.include_dirs.end());
+    std::vector<std::filesystem::path> mod_files_dirs = modfile_search_dirs(pass_options);
 
     bool found_empty_mod = false;
     for (auto path : mod_files_dirs) {
@@ -1868,14 +1881,7 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
                                                             LCompilers::PassOptions &pass_options,
                                                             LCompilers::LocationManager &lm) {
     std::vector<ASR::TranslationUnit_t*> submodules_collector;
-    std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
-    std::vector<std::filesystem::path> mod_files_dirs;
-
-    mod_files_dirs.push_back(runtime_library_dir);
-    mod_files_dirs.push_back(pass_options.mod_files_dir);
-    mod_files_dirs.insert(mod_files_dirs.end(),
-                          pass_options.include_dirs.begin(),
-                          pass_options.include_dirs.end());
+    std::vector<std::filesystem::path> mod_files_dirs = modfile_search_dirs(pass_options);
 
     std::string smod_prefix = parent_module_name + "@";
     for (auto &path : mod_files_dirs) {

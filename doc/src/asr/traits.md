@@ -1232,14 +1232,19 @@ separately compiled modules, forward to each other. The empty trait
 `IAnyType` is not provided: an empty trait is a nominal contract that a type
 adopts, while an unconstrained binder `{T}` already admits every type.
 
-Only a USE with the `INTRINSIC` module nature accesses the module. Without a
-nature, or with `NON_INTRINSIC`, `generics` remains a module of the program:
-a program's own module of that name keeps working and is never shadowed, and
-the intrinsic module is not a fallback for a missing one. A module that uses
-it records the intrinsic module as its dependency, so a client of its modfile
-loads it from the runtime without any provider of the program.
-`traits_generics_module_01` and `_02` cover separate compilation, renamed
-imports and a program's own module `generics`.
+A USE accesses it by the ordinary rules for intrinsic modules (F2018 14.2.2):
+with the `INTRINSIC` module nature always, even when the program has a
+`generics.mod` on the module search path; with `NON_INTRINSIC` never, so that
+USE needs a module of the program; and without a module nature only when no
+module of the program named `generics` is accessible, that is defined earlier
+in the same source or found as a modfile. A program's own module `generics`
+therefore keeps working and is never shadowed. A module that uses the
+intrinsic module records it under its runtime name as its dependency, so a
+client of its modfile loads the same module from the runtime without any
+provider of the program, and every use of it names one module and one
+`INumeric`. `traits_generics_module_01` to `_03` cover separate compilation,
+renamed imports, a program's own module `generics` and the USE without a
+nature.
 
 ### Inline finite constraints
 

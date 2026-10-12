@@ -3670,6 +3670,9 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm);
 
+// Whether find_and_load_module finds a modfile of the module `msym`.
+bool modfile_exists(const std::string &msym, const LCompilers::PassOptions &pass_options);
+
 Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodules(Allocator &al, const std::string &msym,
                                                             SymbolTable &symtab,
                                                             LCompilers::PassOptions &pass_options,

@@ -34294,11 +34294,29 @@ public:
         }
     }
 
+    // F2018 14.2.2: a nonintrinsic module is accessible to a USE statement at
+    // `loc` if this translation unit defines it before the statement, or
+    // another unit does and its modfile is found.
+    bool nonintrinsic_module_accessible(const std::string &name, const Location &loc) {
+        SymbolTable *tu_scope = current_scope->get_tu_scope();
+        ASR::symbol_t *symbol = tu_scope->resolve_symbol(name);
+        if (symbol && ASR::is_a<ASR::Module_t>(*symbol)) {
+            auto *module = ASR::down_cast<ASR::Module_t>(symbol);
+            if (module->m_loaded_from_mod || tu_scope->get_symbol(name) != symbol ||
+                    module->base.base.loc.first < loc.first) {
+                return true;
+            }
+        }
+        return ASRUtils::modfile_exists(name, compiler_options.po);
+    }
+
     // The module that the USE statement `x` accesses, by its name in the
     // translation unit, and whether it is loaded as an intrinsic module. The
-    // runtime module lfortran_intrinsic_generics provides the intrinsic module
-    // `generics` of the traits proposal only to a USE with the INTRINSIC
-    // module nature: without it, `generics` remains a module of the program.
+    // runtime module lfortran_intrinsic_generics is the intrinsic module
+    // `generics` of the traits proposal, which a USE accesses as F2018 14.2.2
+    // says: with the INTRINSIC module nature always, with NON_INTRINSIC never,
+    // and without a module nature only if no nonintrinsic module `generics`
+    // is accessible. ieee_arithmetic is its runtime module whatever the nature.
     struct UsedModule {
         std::string name;
         bool intrinsic;
@@ -34307,16 +34325,18 @@ public:
     UsedModule used_module(const AST::Use_t &x) {
         std::string name = to_lower(x.m_module);
         if (name == "ieee_arithmetic") return {"lfortran_intrinsic_" + name, false};
-        if (name == "generics") {
-            for (size_t i = 0; i < x.n_nature; i++) {
-                if (AST::is_a<AST::SimpleAttribute_t>(*x.m_nature[i]) &&
-                        AST::down_cast<AST::SimpleAttribute_t>(x.m_nature[i])->m_attr ==
-                            AST::simple_attributeType::AttrIntrinsic) {
-                    return {"lfortran_intrinsic_" + name, true};
-                }
+        if (name != "generics") return {name, false};
+        std::string runtime = "lfortran_intrinsic_" + name;
+        for (size_t i = 0; i < x.n_nature; i++) {
+            if (!AST::is_a<AST::SimpleAttribute_t>(*x.m_nature[i])) continue;
+            switch (AST::down_cast<AST::SimpleAttribute_t>(x.m_nature[i])->m_attr) {
+                case AST::simple_attributeType::AttrIntrinsic: return {runtime, true};
+                case AST::simple_attributeType::AttrNon_Intrinsic: return {name, false};
+                default: break;
             }
         }
-        return {name, false};
+        if (nonintrinsic_module_accessible(name, x.base.base.loc)) return {name, false};
+        return {runtime, true};
     }
 
     void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
