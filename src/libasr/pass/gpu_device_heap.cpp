@@ -1450,7 +1450,42 @@ public:
         before.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, loc,
             view, elements(h, b.Add(base, b.i32(1)),
                 b.Add(field(h, h.base, loc), count(h, loc)), loc))));
+        views[ASR::down_cast<ASR::Var_t>(view)->m_v] = h.name;
         return var(ASR::down_cast<ASR::Var_t>(view)->m_v, loc);
+    }
+
+    // The pointers `whole` binds, with the name of the heap array each one
+    // stands for.
+    std::map<ASR::symbol_t*, std::string> views;
+
+    // A heap array passed for an allocatable or pointer dummy argument,
+    // which the procedure could allocate, deallocate or associate: the
+    // procedure is handed a view of the array's elements, which has none of
+    // that, and does not take from the heap itself.
+    void check_actuals(ASR::symbol_t *name, ASR::expr_t *dt,
+            ASR::call_arg_t *args, size_t n_args) {
+        ASR::symbol_t *target = call_target(name);
+        if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) return;
+        ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
+        size_t offset = dt != nullptr && n_args + 1 == callee->n_args ? 1 : 0;
+        for (size_t i = 0; i < n_args && i + offset < callee->n_args; i++) {
+            if (args[i].m_value == nullptr) continue;
+            auto view = views.find(variable_of(args[i].m_value));
+            if (view == views.end()) continue;
+            ASR::symbol_t *d = variable_of(callee->m_args[i + offset]);
+            if (d == nullptr || !ASR::is_a<ASR::Variable_t>(*d) ||
+                    !ASRUtils::is_allocatable_or_pointer(
+                        ASR::down_cast<ASR::Variable_t>(d)->m_type)) {
+                continue;
+            }
+            // A temporary of the compiler, such as the result of a
+            // function, is not named.
+            std::string named = view->second.rfind("__", 0) == 0
+                ? "" : "'" + view->second + "', ";
+            unsupported = named + "passed for the allocatable dummy "
+                "argument '" + std::string(ASRUtils::symbol_name(d)) +
+                "' of '" + std::string(callee->m_name) + "',";
+        }
     }
 
     ASR::expr_t* as_int4(ASR::expr_t *e, const Location &loc) {
@@ -1721,6 +1756,7 @@ public:
 
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
         Base::replace_FunctionCall(x);
+        check_actuals(x->m_name, x->m_dt, x->m_args, x->n_args);
         unbind(x);
         ASR::symbol_t *target = call_target(x->m_name);
         if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) return;
@@ -1871,6 +1907,12 @@ public:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::CallReplacerOnExpressionsVisitor<HeapStatements>
+            ::visit_SubroutineCall(x);
+        replacer.check_actuals(x.m_name, x.m_dt, x.m_args, x.n_args);
     }
 };
 

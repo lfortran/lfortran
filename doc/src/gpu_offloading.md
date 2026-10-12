@@ -393,7 +393,10 @@ Which one is used is decided per array and per derived type:
   (the temporary: just before the call). An assignment of a whole heap array
   to another one that is not used afterwards (as the compiler's temporaries
   are) moves its descriptor instead of copying the elements. (Any other
-  array of an explicit shape the host cannot size is an error.)
+  array of an explicit shape the host cannot size is an error, and so is a
+  heap array passed for an allocatable or pointer dummy argument, which the
+  procedure would allocate itself: "the array passed for the allocatable
+  dummy argument 'r' of 'f', on the device heap is not supported yet".)
 * A derived type with an allocatable array component, directly or in a
   component, is a *heap type* of the translation unit when device code
   creates a value of it that host-sized storage cannot hold: an array of
