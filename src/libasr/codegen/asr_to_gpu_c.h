@@ -2740,7 +2740,7 @@ public:
         // Collect and emit struct definitions from all kernels once,
         // before any kernel code, to avoid redefinition errors when
         // multiple kernels reference the same struct type.
-        std::set<std::string> emitted_structs;
+        std::set<ASR::Struct_t*> emitted_structs;
         std::vector<ASR::Struct_t*> ordered_structs;
         for (auto &item : tu.m_symtab->get_scope()) {
             if (!ASRUtils::is_device_kernel(item.second)) continue;
@@ -2759,8 +2759,20 @@ public:
             collect_variable_structs(kf.m_symtab, emitted_structs,
                 ordered_structs);
         }
+        // Every kernel has its own copy of a derived type it holds. Copies
+        // of one type are one device struct; two types of one name, from
+        // two modules, are two, the second under a name of its own.
+        std::map<std::string, std::string> bodies;
         for (ASR::Struct_t *st : ordered_structs) {
-            emit_struct_def(st);
+            std::string body = struct_body(st);
+            std::string name = st->m_name;
+            for (int n = 1; bodies.count(name) && bodies[name] != body; n++) {
+                name = std::string(st->m_name) + "_" + std::to_string(n);
+            }
+            struct_c_names[st] = name;
+            if (bodies.count(name)) continue;
+            bodies[name] = body;
+            src << "struct " << name << " {\n" << body << "};\n\n";
         }
 
         emit_math_helpers();
@@ -2785,10 +2797,19 @@ public:
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                 var->m_type_declaration);
             if (ASR::is_a<ASR::Struct_t>(*s)) {
-                return ASR::down_cast<ASR::Struct_t>(s)->m_name;
+                return struct_c_name(ASR::down_cast<ASR::Struct_t>(s));
             }
         }
         return "unknown_struct";
+    }
+
+    // The device struct each derived type is emitted as.
+    std::map<ASR::Struct_t*, std::string> struct_c_names;
+
+    std::string struct_c_name(ASR::Struct_t *st) {
+        auto it = struct_c_names.find(st);
+        return it != struct_c_names.end() ? it->second
+            : std::string(st->m_name);
     }
 
     bool is_struct_type(ASR::ttype_t *type) {
@@ -2813,16 +2834,16 @@ public:
         return !gpu_decomposed_components(st).empty();
     }
 
-    // Emit a device struct definition for a Struct symbol
-    void emit_struct_def(ASR::Struct_t *st) {
-        src << "struct " << st->m_name << " {\n";
+    // The members of the device struct of a Struct symbol.
+    std::string struct_body(ASR::Struct_t *st) {
+        std::stringstream src;
         if (st->m_parent) {
             ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
                 st->m_parent);
             if (ASR::is_a<ASR::Struct_t>(*parent)) {
                 src << "    "
-                    << ASR::down_cast<ASR::Struct_t>(parent)->m_name << " "
-                    << gpu_parent_field << ";\n";
+                    << struct_c_name(ASR::down_cast<ASR::Struct_t>(parent))
+                    << " " << gpu_parent_field << ";\n";
             }
         }
         for (size_t i = 0; i < st->n_members; i++) {
@@ -2858,7 +2879,7 @@ public:
                 }
             }
         }
-        src << "};\n\n";
+        return src.str();
     }
 
     // Static Struct type an expression is read from. Only the forms that
@@ -2906,7 +2927,7 @@ public:
     // The derived types of the variables of a scope and of every scope it
     // contains, collected as collect_structs_ordered does.
     void collect_variable_structs(SymbolTable *scope,
-            std::set<std::string> &emitted,
+            std::set<ASR::Struct_t*> &emitted,
             std::vector<ASR::Struct_t*> &ordered) {
         for (auto &item : scope->get_scope()) {
             ASR::symbol_t *sym = item.second;
@@ -2935,10 +2956,9 @@ public:
 
     // Collect struct definitions in dependency order (nested structs first)
     void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
-            std::set<std::string> &emitted,
+            std::set<ASR::Struct_t*> &emitted,
             std::vector<ASR::Struct_t*> &ordered) {
-        std::string name = st->m_name;
-        if (emitted.count(name)) return;
+        if (!emitted.insert(st).second) return;
         // Emit dependencies first: the parent type is an inline field of
         // this one, so it must be defined before it.
         if (st->m_parent) {
@@ -2965,7 +2985,6 @@ public:
                 }
             }
         }
-        emitted.insert(name);
         ordered.push_back(st);
     }
 
