@@ -1937,6 +1937,7 @@ RUN(NAME intrinsics_484 LABELS gfortran llvm EXTRAFILES intrinsics_484b.f90) # c
 RUN(NAME intrinsics_485 LABELS gfortran llvm) # array intrinsics on allocatable/pointer arrays with lower bound not 1 (#14369)
 RUN(NAME intrinsics_486 LABELS gfortran llvm) # array intrinsic results are 1-based for explicit-shape arguments with lower bound not 1 (#14369)
 RUN(NAME intrinsics_487 LABELS gfortran llvm) # cshift with an array shift whose lower bounds are named constants or not 1 (#13720)
+RUN(NAME intrinsics_488 LABELS gfortran llvm) # dot_product of descriptor integer arrays and mixed real kinds (#13489)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
