@@ -343,15 +343,15 @@ semantic error: Type parameter 'g' is not specified in any requirements
 351 |           type(g) :: fst
     |           ^^^^^^^^^^^^^^ 
 
-semantic error: Symbol combine is not declared in semigroup's parameters
-   --> tests/errors/continue_compilation_templates_01.f90:369:5 - 378:1
+semantic error: 'combine' is not a deferred argument of 'semigroup'
+   --> tests/errors/continue_compilation_templates_01.f90:372:13 - 375:24
     |
-369 |        requirement semigroup {t}
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+372 |                elemental function combine(x, y) result(combined)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-378 |    
-    | ...^ 
+375 |                end function
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: requirement argument 'combine' has not been declared in requirement 'semigroup'
    --> tests/errors/continue_compilation_templates_01.f90:392:31
@@ -1452,6 +1452,36 @@ semantic error: the instantiation of template 'gen_t' defines 'gen_dbl', which i
      |
 2643 |         instantiate gen_t {integer, gen_iadd}  ! {Error} the instantiation of template 'gen_t' defines 'gen_dbl', which is already declared in this scope
      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: name the entities to instantiate in an only-list and rename this one, e.g. `only: gen_dbl_instance => gen_dbl`
+
+semantic error: 'g' is not a deferred argument of 'deferred_iface_name_t'
+    --> tests/errors/continue_compilation_templates_01.f90:2768:13 - 2770:24
+     |
+2768 |                integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_t'
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2770 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'p' is not a deferred argument of 'deferred_iface_call_t'
+    --> tests/errors/continue_compilation_templates_01.f90:2777:13 - 2779:24
+     |
+2777 |                function p(x)  ! {Error} 'p' is not a deferred argument of 'deferred_iface_call_t'
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2779 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'g' is not a deferred argument of 'deferred_iface_name_s'
+    --> tests/errors/continue_compilation_templates_01.f90:2788:13 - 2790:24
+     |
+2788 |                integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_s'
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2790 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
