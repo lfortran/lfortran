@@ -3398,6 +3398,13 @@ class ParallelRegionVisitor :
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
+            // A critical construct outside any parallel region is not in an
+            // outlined function, which imports omp_lib, so import it here
+            ASR::symbol_t* mod_sym = create_module(loc, "omp_lib");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+
             // Generate gomp_critical_start call
             Vec<ASR::call_arg_t> start_args;
             start_args.reserve(al, 0);
@@ -3423,6 +3430,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
+            remove_original_statement = true;
         }
 
         void visit_OMPAtomic(const ASR::OMPRegion_t &x) {
