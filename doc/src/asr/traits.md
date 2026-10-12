@@ -696,6 +696,78 @@ witnesses while reaching both members in both selection orders.
 Standard-Fortran oracles with matching check counts accompany the first two
 tests and the gate.
 
+### Open protocol runtime generic methods
+
+The paper's `ocp.f90` keeps the numeric domain open: `INumeric` is a nominal
+protocol whose requirements are an initializer and operators of
+`type(itself)`, and any module can add a conformance later.
+
+```fortran
+abstract interface :: INumeric
+    initial(n)
+        integer, intent(in) :: n
+    end initial
+    function operator(+)(lhs, rhs) result(res)
+        type(itself), intent(in) :: lhs, rhs
+        type(itself) :: res
+    end function operator(+)
+end interface INumeric
+
+abstract interface :: ISum
+    function sum{INumeric :: T}(x) result(s)
+        type(T), intent(in) :: x(:)
+        type(T) :: s
+    end function sum
+end interface ISum
+```
+
+Such a protocol is not a runtime view: its requirements have no receiver, so
+`class(INumeric)` is diagnosed. Instead, a binder of a runtime generic message
+constrained by exactly one protocol trait is erased, and every call passes the
+conformance dictionary of its type argument (design option C, per-call
+dictionaries). The protocol has a `TraitDictionaryContract` with one slot per
+requirement; the module that declares a conformance owns its
+`TraitDictionary`, holding the size and default initializer of the values and
+one adapter per slot that calls the conformance's binding, also the procedures
+an intrinsic type's acknowledgement synthesizes. Nothing about the type, its
+layout or its procedures is known to the provider.
+
+Each provider of the message has one `TraitErasure`: the same
+definition-time-checked body, instantiated by the shared engine with the binder
+replaced by `TraitErasedType` and a trailing dictionary dummy per erased binder.
+`T(0)`, `s + x(i)` and `/` call the dictionary's slots, recursion such as
+`self%sum(x(:m))` calls the entry with the same dictionary, and a generic
+procedure called from the body is instantiated once with the erased binder
+and receives the dictionary as well. A runtime call such as `av%average(xi)`
+passes the dictionary of the conformance selected for its binder where the
+call is checked: a `TraitDictionaryValue` for a concrete type, or the caller's
+dictionary when forwarded. Without a visible conformance the call is rejected,
+so the original paper file without `use intrinsics` is diagnosed: no
+conformance is discovered implicitly.
+
+Erased values are bytes the dictionary describes. Read-only scalar and
+assumed-shape dummies, scalar locals and a scalar result are supported;
+arrays keep their bounds, strides (in bytes), sections, reversed strides and
+empty extents, and a result is written to storage the caller provides. Values
+are copied bitwise, so only plain numeric, logical and derived types of such
+components (without allocatable, pointer or finalized parts) have dictionaries,
+and dictionaries never modify a receiver. A conformance without a dictionary,
+for example of a type with an allocatable component or declared outside a
+module, keeps its static uses; its runtime use is diagnosed with the reason.
+Array values computed from erased values, such as an elemental requirement
+applied to arrays, other erased storage and a binder constrained by several
+traits are diagnosed as not implemented.
+
+`traits_protocol_separate_01` freezes
+and hides a provider of `ISum` and `IAverager` before any derived or
+`real(real32)` conformance exists; `traits_runtime_numeric_separate_01.py
+--case protocol` then compiles a late module adding `Rational` and
+`real(real32)` with their own dictionaries and a driver, checks that the
+provider has one open entry per generic message and the clients no provider
+names, entries or bodies, and runs 75 checks over `integer`, `real(real64)`,
+`real(real32)` and `Rational` arrays, including empty arrays, recursive
+sections, a reversed strided section and forwarded type parameters.
+
 ## Generic derived types
 
 A derived type in a module can declare generic type parameters, each

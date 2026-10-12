@@ -724,6 +724,11 @@ namespace LCompilers {
                 el_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
+            case ASR::ttypeType::TraitErasedType: {
+                // Erased elements are addressed in bytes.
+                el_type = llvm::Type::getInt8Ty(context);
+                break;
+            }
             case ASR::ttypeType::StructType: {
                 if (expr) {
                     if (ASR::down_cast<ASR::StructType_t>(m_type)->m_is_cstruct) {
@@ -1052,6 +1057,11 @@ namespace LCompilers {
                 break;
             case (ASR::ttypeType::TraitOwnerList):
                 type = getTraitOwnerListType()->getPointerTo();
+                break;
+            case (ASR::ttypeType::TraitErasedType):
+            case (ASR::ttypeType::TraitDictionaryType):
+                // The address of erased storage and the dictionary table.
+                type = i8_ptr;
                 break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
@@ -1401,6 +1411,13 @@ namespace LCompilers {
                 case (ASR::ttypeType::StructType) :
                     throw CodeGenError("StructType return type not implemented yet");
                     break;
+                case (ASR::ttypeType::TraitErasedType) : {
+                    // An erased result is written to storage the caller
+                    // provides as a hidden first argument.
+                    std::vector<llvm::Type*> args = convert_args(x, module);
+                    args.insert(args.begin(), i8_ptr);
+                    return llvm::FunctionType::get(llvm::Type::getVoidTy(context), args, false);
+                }
                 case (ASR::ttypeType::Tuple) : {
                     ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(return_var_type0);
                     std::string type_code = ASRUtils::get_type_code(asr_tuple->m_type,
@@ -1672,6 +1689,12 @@ namespace LCompilers {
                 break;
             case (ASR::ttypeType::TraitOwnerList):
                 llvm_type = getTraitOwnerListType();
+                break;
+            case (ASR::ttypeType::TraitErasedType):
+                llvm_type = llvm::Type::getInt8Ty(context);
+                break;
+            case (ASR::ttypeType::TraitDictionaryType):
+                llvm_type = i8_ptr;
                 break;
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {

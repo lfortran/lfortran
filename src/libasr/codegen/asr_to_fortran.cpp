@@ -319,6 +319,13 @@ public:
             } case ASR::ttypeType::TraitOwnerList: {
                 r = "type(trait_result_storage)";
                 break;
+            } case ASR::ttypeType::TraitErasedType: {
+                r = "type(" + std::string(
+                    ASR::down_cast<ASR::TraitErasedType_t>(t)->m_parameter) + ")";
+                break;
+            } case ASR::ttypeType::TraitDictionaryType: {
+                r = "type(conformance_dictionary)";
+                break;
             } case ASR::ttypeType::CPtr: {
                 r = "type(c_ptr)";
                 break;
@@ -560,7 +567,9 @@ public:
                     is_a<ASR::TraitImplementation_t>(*item.second) ||
                     is_a<ASR::TraitRuntimeContract_t>(*item.second) ||
                     is_a<ASR::TraitWitness_t>(*item.second) ||
-                    is_a<ASR::TraitErasure_t>(*item.second)) {
+                    is_a<ASR::TraitErasure_t>(*item.second) ||
+                    is_a<ASR::TraitDictionaryContract_t>(*item.second) ||
+                    is_a<ASR::TraitDictionary_t>(*item.second)) {
                 visit_symbol(*item.second);
                 r += src;
                 r += "\n";
@@ -1135,6 +1144,39 @@ public:
         return r + "}";
     }
 
+    void visit_TraitDictionaryContract(const ASR::TraitDictionaryContract_t &x) {
+        std::string r = indent + "! conformance dictionary layout of " +
+            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_trait)) + "\n";
+        for (size_t i = 0; i < x.n_slots; i++) {
+            r += indent + "!   slot " + std::to_string(i) + ":";
+            for (size_t j = 0; j < x.m_slots[i].n_origins; j++) {
+                r += " " + std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(x.m_slots[i].m_origins[j])));
+            }
+            r += "\n";
+        }
+        src = r;
+    }
+
+    void visit_TraitDictionary(const ASR::TraitDictionary_t &x) {
+        src = indent + "! conformance dictionary " + x.m_name + " for " +
+            ASRUtils::symbol_name(x.m_implementation) + "\n";
+    }
+
+    void visit_TraitDictionaryValue(const ASR::TraitDictionaryValue_t &x) {
+        src = "trait_dictionary(" + std::string(ASRUtils::symbol_name(x.m_dictionary)) + ")";
+    }
+
+    void visit_TraitDeferredDictionary(const ASR::TraitDeferredDictionary_t &x) {
+        src = "trait_deferred_dictionary(" +
+            std::string(ASRUtils::symbol_name(x.m_constraint)) + ")";
+    }
+
+    void visit_TraitRecover(const ASR::TraitRecover_t &x) {
+        visit_expr(*x.m_value);
+        src = "trait_recover(" + src + ")";
+    }
+
     void visit_TraitWitness(const ASR::TraitWitness_t &x) {
         src = indent + "! selected runtime witness " + x.m_name + " for " +
             (x.m_implementation ? ASRUtils::symbol_name(x.m_implementation)
@@ -1222,12 +1264,13 @@ public:
 
     template <typename T>
     void print_trait_call(const T &x, bool subroutine) {
-        auto *contract = ASRUtils::trait_runtime_contract(
-            ASRUtils::expr_type(x.m_args[0].m_value));
+        size_t n_slots = 0;
+        auto *slots = ASRUtils::trait_call_slots(x.m_args[0].m_value, n_slots);
+        LCOMPILERS_ASSERT(slots && x.m_slot < (int64_t)n_slots);
         visit_expr(*x.m_args[0].m_value);
         std::string r = subroutine ? indent + "call " : "";
         r += src + "%" + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-            contract->m_slots[x.m_slot].m_origins[0])) + "(";
+            slots[x.m_slot].m_origins[0])) + "(";
         for (size_t i = 1; i < x.n_args; i++) {
             if (i > 1) r += ", ";
             visit_expr(*x.m_args[i].m_value);
@@ -1273,9 +1316,13 @@ public:
         if (ASR::is_a<ASR::TraitRuntimeContract_t>(*symbol) ||
                 ASR::is_a<ASR::TraitWitness_t>(*symbol) ||
                 ASR::is_a<ASR::TraitErasure_t>(*symbol) ||
+                ASR::is_a<ASR::TraitDictionaryContract_t>(*symbol) ||
+                ASR::is_a<ASR::TraitDictionary_t>(*symbol) ||
                 (owner && (ASR::is_a<ASR::TraitRuntimeContract_t>(*owner) ||
                            ASR::is_a<ASR::Trait_t>(*owner) ||
-                           ASR::is_a<ASR::TraitErasure_t>(*owner)))) return;
+                           ASR::is_a<ASR::TraitErasure_t>(*owner) ||
+                           ASR::is_a<ASR::TraitDictionaryContract_t>(*owner) ||
+                           ASR::is_a<ASR::TraitDictionary_t>(*owner)))) return;
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if (std::string(x.m_name).find('@') != std::string::npos ||
             std::string(x.m_original_name).find('@') != std::string::npos) {

@@ -2098,6 +2098,202 @@ public:
         return implementation;
     }
 
+    // An erased dummy or result of `formal` takes, at a call of `function`,
+    // the type its dictionary argument describes: the implementing type of a
+    // selected conformance, the caller's erased type of a forwarded
+    // dictionary dummy, or a still-deferred binder inside a template.
+    bool trait_erased_type_matches(const Function_t &function, ttype_t *formal,
+            ttype_t *actual, call_arg_t *args, size_t n_args) {
+        if (!formal || !actual || ASRUtils::extract_n_dims_from_ttype(formal) !=
+                ASRUtils::extract_n_dims_from_ttype(actual)) return false;
+        const char *parameter = ASRUtils::trait_erased_parameter(formal);
+        auto *element = ASRUtils::extract_type(actual);
+        for (size_t i = 0; parameter && i < function.n_args && i < n_args; i++) {
+            auto *dummy = ASRUtils::expr_to_variable_or_null(function.m_args[i]);
+            if (!dummy || !dummy->m_type || !ASR::is_a<TraitDictionaryType_t>(*dummy->m_type)) continue;
+            auto *dictionary = ASR::down_cast<TraitDictionaryType_t>(dummy->m_type);
+            if (!dictionary->m_parameter || std::string(parameter) != dictionary->m_parameter) continue;
+            auto *value = args[i].m_value;
+            if (!value) return false;
+            if (auto *concrete = ASRUtils::trait_dictionary_value_type(value)) {
+                return ASRUtils::types_equal(element, ASRUtils::extract_type(concrete),
+                    nullptr, nullptr);
+            }
+            if (ASR::is_a<TraitDeferredDictionary_t>(*value)) {
+                auto *constraint = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDeferredDictionary_t>(value)->m_constraint);
+                return constraint && ASR::is_a<TraitConstraint_t>(*constraint) &&
+                    ASR::is_a<TypeParameter_t>(*element) &&
+                    std::string(ASR::down_cast<TypeParameter_t>(element)->m_param) ==
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<TraitConstraint_t>(constraint)->m_parameter));
+            }
+            auto *forwarded = typed_expr_type(value);
+            if (!ASR::is_a<Var_t>(*value) || !forwarded ||
+                    !ASR::is_a<TraitDictionaryType_t>(*forwarded) ||
+                    !ASR::down_cast<TraitDictionaryType_t>(forwarded)->m_parameter) return false;
+            return ASR::is_a<TraitErasedType_t>(*element) &&
+                std::string(ASR::down_cast<TraitErasedType_t>(element)->m_parameter) ==
+                    ASR::down_cast<TraitDictionaryType_t>(forwarded)->m_parameter;
+        }
+        return false;
+    }
+
+    void visit_TraitErasedType(const TraitErasedType_t &x) {
+        if (_inside_template) return;
+        auto *owner = ASRUtils::trait_erased_owner(current_symtab);
+        require_id(x.m_parameter && owner &&
+                ASRUtils::trait_dictionary_dummy(*owner, x.m_parameter),
+            "asr.verify.trait_erased.dictionary",
+            "An erased value requires its procedure's dictionary dummy for its parameter");
+    }
+
+    void visit_TraitDictionaryType(const TraitDictionaryType_t &x) {
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_dictionary.contract_in_scope",
+            "A dictionary must reference a visible dictionary contract");
+        if (!check_external) return;
+        auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+        require_id(contract && ASR::is_a<TraitDictionaryContract_t>(*contract),
+            "asr.verify.trait_dictionary.contract",
+            "A dictionary type must reference a dictionary contract");
+    }
+
+    void visit_TraitDictionaryContract(const TraitDictionaryContract_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_dictionary_contract.scope",
+            "A dictionary contract must own a unique, correctly parented symbol table");
+        require_id(x.m_trait && symtab_in_scope(current_symtab, x.m_trait),
+            "asr.verify.trait_dictionary_contract.trait",
+            "A dictionary contract must reference its visible trait");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *trait = ASRUtils::symbol_get_past_external(x.m_trait);
+            require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait &&
+                    ASRUtils::symbol_parent_symtab(trait) == parent &&
+                    ASRUtils::trait_dictionary_contract(trait) == &x,
+                "asr.verify.trait_dictionary_contract.owner",
+                "A dictionary contract is the unique layout of a universal trait, "
+                "in the trait's scope");
+            for (size_t i = 0; i < x.n_slots; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_slots[i].m_procedure);
+                require_id(procedure && ASR::is_a<Function_t>(*procedure) &&
+                        ASRUtils::symbol_parent_symtab(procedure) == x.m_symtab &&
+                        x.m_slots[i].n_origins && x.m_slots[i].m_origins &&
+                        !x.m_slots[i].n_type_arguments,
+                    "asr.verify.trait_dictionary_contract.slot",
+                    "A dictionary slot is an interface of the contract with its origins");
+                auto *function = ASR::down_cast<Function_t>(procedure);
+                auto *first = function->n_args ? ASRUtils::expr_to_variable_or_null(
+                    function->m_args[0]) : nullptr;
+                require_id(first && first->m_type &&
+                        ASR::is_a<TraitDictionaryType_t>(*first->m_type) &&
+                        ASRUtils::symbol_get_past_external(ASR::down_cast<TraitDictionaryType_t>(
+                            first->m_type)->m_contract) == &x.base &&
+                        ASR::down_cast<TraitDictionaryType_t>(first->m_type)->m_parameter,
+                    "asr.verify.trait_dictionary_contract.dictionary",
+                    "A dictionary slot takes its own contract's dictionary first");
+            }
+        }
+        for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitDictionary(const TraitDictionary_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_dictionary.scope",
+            "A conformance dictionary must own a unique, correctly parented symbol table");
+        require_id(x.m_contract && x.m_implementation &&
+                symtab_in_scope(current_symtab, x.m_contract) &&
+                symtab_in_scope(current_symtab, x.m_implementation),
+            "asr.verify.trait_dictionary.fields",
+            "A conformance dictionary references its visible contract and conformance");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+            auto *implementation = ASRUtils::symbol_get_past_external(x.m_implementation);
+            require_id(contract && ASR::is_a<TraitDictionaryContract_t>(*contract) &&
+                    implementation && ASR::is_a<TraitImplementation_t>(*implementation) &&
+                    ASR::down_cast<TraitImplementation_t>(implementation)->m_parent_symtab == parent,
+                "asr.verify.trait_dictionary.owner",
+                "A conformance's dictionary belongs to the conformance's own scope");
+            auto *layout = ASR::down_cast<TraitDictionaryContract_t>(contract);
+            require_id(x.n_procedures == layout->n_slots && (!x.n_procedures || x.m_procedures),
+                "asr.verify.trait_dictionary.complete",
+                "A conformance dictionary has one adapter per contract slot");
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
+                auto *slot = ASRUtils::symbol_get_past_external(layout->m_slots[i].m_procedure);
+                require_id(procedure && ASR::is_a<Function_t>(*procedure) &&
+                        ASRUtils::symbol_parent_symtab(procedure) == x.m_symtab &&
+                        slot && ASR::is_a<Function_t>(*slot) &&
+                        ASR::down_cast<Function_t>(procedure)->n_args ==
+                            ASR::down_cast<Function_t>(slot)->n_args &&
+                        bool(ASR::down_cast<Function_t>(procedure)->m_return_var) ==
+                            bool(ASR::down_cast<Function_t>(slot)->m_return_var),
+                    "asr.verify.trait_dictionary.adapter",
+                    "A dictionary adapter implements its slot's interface");
+            }
+        }
+        for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitDictionaryValue(const TraitDictionaryValue_t &x) {
+        require_id(x.m_dictionary && symtab_in_scope(current_symtab, x.m_dictionary) &&
+                x.m_type && ASR::is_a<TraitDictionaryType_t>(*x.m_type),
+            "asr.verify.trait_dictionary_value.fields",
+            "A dictionary value references a visible conformance dictionary");
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *dictionary = ASRUtils::symbol_get_past_external(x.m_dictionary);
+        require_id(dictionary && ASR::is_a<TraitDictionary_t>(*dictionary) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDictionary_t>(dictionary)->m_contract) ==
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDictionaryType_t>(x.m_type)->m_contract),
+            "asr.verify.trait_dictionary_value.contract",
+            "A dictionary value has its dictionary's contract");
+    }
+
+    void visit_TraitDeferredDictionary(const TraitDeferredDictionary_t &x) {
+        require_id(_inside_template,
+            "asr.verify.trait_deferred_dictionary.scope",
+            "A deferred dictionary may exist only within a checked generic definition");
+        require_id(x.m_constraint && x.m_type && ASR::is_a<TraitDictionaryType_t>(*x.m_type),
+            "asr.verify.trait_deferred_dictionary.fields",
+            "A deferred dictionary names its binder's constraint and dictionary contract");
+        visit_ttype(*x.m_type);
+    }
+
+    void visit_TraitRecover(const TraitRecover_t &x) {
+        require_id(x.m_value && x.m_dictionary && x.m_type &&
+                ASR::is_a<TraitErasedType_t>(*typed_expr_type(x.m_value)),
+            "asr.verify.trait_recover.fields",
+            "Recovery reads a concrete value from erased storage");
+        bool adapter = false;
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner) ==
+                        ASRUtils::symbol_get_past_external(x.m_dictionary)) adapter = true;
+        }
+        require_id(adapter,
+            "asr.verify.trait_recover.adapter",
+            "Only a dictionary's own adapters may recover its concrete values");
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitRecover(x);
+    }
+
     void visit_TraitObjectType(const TraitObjectType_t &x) {
         require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
             "asr.verify.trait_view.contract_in_scope",
@@ -2348,6 +2544,18 @@ public:
                     "asr.verify.trait_erasure.parameter_fields",
                     "Erased binders require visible nominal type and operation evidence");
                 auto *binder = generic->m_symtab->get_symbol(generic->m_args[i]);
+                if (auto *dictionary = ASRUtils::trait_parameter_dictionary(binder)) {
+                    // A dictionary binder's requirements are calls through its
+                    // dictionary's slots, not operation wrappers.
+                    require_id(ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder &&
+                            ASRUtils::symbol_get_past_external(parameter.m_contract) ==
+                                &dictionary->base && !parameter.n_operations &&
+                            ASRUtils::trait_dictionary_dummy(*entry, generic->m_args[i]),
+                        "asr.verify.trait_erasure.parameter_identity",
+                        "A dictionary binder keeps its scope, its protocol's dictionary "
+                        "contract and the entry's dictionary dummy");
+                    continue;
+                }
                 auto *contract = ASRUtils::trait_parameter_contract(binder);
                 require_id(binder && contract &&
                         ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder &&
@@ -3159,6 +3367,18 @@ public:
 
     template <typename T>
     void verify_trait_call(const T &x) {
+        if (ASRUtils::is_trait_dictionary_call(x.m_args, x.n_args)) {
+            visit_ttype(*typed_expr_type(x.m_args[0].m_value));
+            if (!check_external) return;
+            size_t n_slots = 0;
+            auto *slots = ASRUtils::trait_call_slots(x.m_args[0].m_value, n_slots);
+            require_id(slots && x.m_slot >= 0 && (size_t)x.m_slot < n_slots &&
+                    ASRUtils::symbol_get_past_external(x.m_name) ==
+                        ASRUtils::symbol_get_past_external(slots[x.m_slot].m_procedure),
+                "asr.verify.trait_call.slot",
+                "A dictionary call must name the interface at its dictionary's slot");
+            return;
+        }
         require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
                 typed_expr_type(x.m_args[0].m_value) &&
                 ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)),
@@ -4916,7 +5136,9 @@ public:
                                   ASR::is_a<ASR::TraitRuntimeContract_t>(*asr_owner_sym) ||
                                   ((ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
                                     ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
-                                    ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym)) &&
+                                    ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitDictionaryContract_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitDictionary_t>(*asr_owner_sym)) &&
                                     (m || program) && x.n_scope_names > 0) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
@@ -4939,7 +5161,9 @@ public:
                     asr_owner_name = runtime_contract->m_name;
                 } else if (ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
                         ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
-                        ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym)) {
+                        ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitDictionaryContract_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitDictionary_t>(*asr_owner_sym)) {
                     asr_owner_name = ASRUtils::symbol_name(asr_owner_sym);
                 }
             } else {
@@ -5689,6 +5913,14 @@ public:
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
+                if (actual_type && ASRUtils::is_trait_erased(formal_type)) {
+                    require_with_loc_id(trait_erased_type_matches(*func, formal_type,
+                            actual_type, x.m_args, x.n_args),
+                        "asr.verify.trait_erased.argument",
+                        "An erased argument must have the type its dictionary argument describes",
+                        passed_arg_expr->base.loc);
+                    continue;
+                }
                 if (actual_type && (ASR::is_a<TraitObjectType_t>(
                         *ASRUtils::extract_type(formal_type)) ||
                         ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)))) {
@@ -5864,8 +6096,12 @@ public:
                         "(actual argument to INTENT = OUT/INOUT)",
                         passed_arg_expr->base.loc);
 
-                    if (ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
-                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+                    ASR::expr_t *defined_arg = passed_arg_expr;
+                    if (ASR::is_a<ASR::TraitRecover_t>(*defined_arg)) {
+                        defined_arg = ASR::down_cast<ASR::TraitRecover_t>(defined_arg)->m_value;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*defined_arg)) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(defined_arg)->m_v;
                         if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                             ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                             require_with_loc(
@@ -6644,6 +6880,12 @@ public:
                     "A trait function call must preserve its owning result type");
             }
             if (returned != nullptr && x.m_type != nullptr &&
+                    ASRUtils::is_trait_erased(returned)) {
+                require_id(trait_erased_type_matches(*fn_, returned, x.m_type,
+                        x.m_args, x.n_args),
+                    "asr.verify.trait_erased.result",
+                    "An erased result has the type its dictionary argument describes");
+            } else if (returned != nullptr && x.m_type != nullptr &&
                     !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                     !is_struct_like_type(returned) &&
                     !is_struct_like_type(x.m_type) &&

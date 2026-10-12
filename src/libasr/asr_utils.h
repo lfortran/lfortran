@@ -854,6 +854,8 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::TraitRuntimeContract: return "TraitRuntimeContract";
         case ASR::symbolType::TraitWitness: return "TraitWitness";
         case ASR::symbolType::TraitErasure: return "TraitErasure";
+        case ASR::symbolType::TraitDictionaryContract: return "TraitDictionaryContract";
+        case ASR::symbolType::TraitDictionary: return "TraitDictionary";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -1109,6 +1111,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
         case ASR::symbolType::TraitRuntimeContract:
         case ASR::symbolType::TraitWitness:
         case ASR::symbolType::TraitErasure:
+        case ASR::symbolType::TraitDictionaryContract:
+        case ASR::symbolType::TraitDictionary:
             return "! runtime trait evidence " + std::string(symbol_name(&s));
         case ASR::symbolType::AssociateBlock: {
             const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
@@ -1272,6 +1276,12 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitErasure: {
             return ASR::down_cast<ASR::TraitErasure_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitDictionaryContract: {
+            return ASR::down_cast<ASR::TraitDictionaryContract_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitDictionary: {
+            return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -1468,6 +1478,11 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         }
         case ASR::ttypeType::TraitOwnerList:
             return "retained trait results";
+        case ASR::ttypeType::TraitErasedType:
+            return "type(" + std::string(
+                ASR::down_cast<ASR::TraitErasedType_t>(t)->m_parameter) + ")";
+        case ASR::ttypeType::TraitDictionaryType:
+            return "conformance dictionary";
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
             return ASRUtils::symbol_name(enum_type->m_enum_type);
@@ -1747,8 +1762,13 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         case ASR::symbolType::TraitImplementation:
         case ASR::symbolType::TraitRuntimeContract:
         case ASR::symbolType::TraitErasure:
+        case ASR::symbolType::TraitDictionaryContract:
             // Runtime dependencies belong to the specialized procedures.
             return std::make_pair(nullptr, size_t(0));
+        case ASR::symbolType::TraitDictionary: {
+            auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(f);
+            return std::make_pair(dictionary->m_dependencies, dictionary->n_dependencies);
+        }
         case ASR::symbolType::TraitWitness: {
             auto *witness = ASR::down_cast<ASR::TraitWitness_t>(f);
             return std::make_pair(witness->m_dependencies, witness->n_dependencies);
@@ -1818,6 +1838,12 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitErasure: {
             return ASR::down_cast<ASR::TraitErasure_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::TraitDictionaryContract: {
+            return ASR::down_cast<ASR::TraitDictionaryContract_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::TraitDictionary: {
+            return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_symtab->parent;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
@@ -1897,6 +1923,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitErasure: {
             return ASR::down_cast<ASR::TraitErasure_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::TraitDictionaryContract: {
+            return ASR::down_cast<ASR::TraitDictionaryContract_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::TraitDictionary: {
+            return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_symtab;
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
@@ -2228,6 +2260,11 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::StringPhysicalCast: {
             ASR::StringPhysicalCast_t* cast = ASR::down_cast<ASR::StringPhysicalCast_t>(a_value);
             return is_modifiable_actual_argument_expr(cast->m_arg);
+        }
+        // The concrete view of erased storage is defined through its storage.
+        case ASR::exprType::TraitRecover: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitRecover_t>(a_value)->m_value);
         }
         case ASR::exprType::ComplexRe: {
             ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
@@ -2881,6 +2918,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         case ASR::ttypeType::TraitOwnerList:
             return "TraitOwnerList_" + std::string(symbol_name(
                 ASR::down_cast<ASR::TraitOwnerList_t>(t)->m_contract));
+        case ASR::ttypeType::TraitErasedType:
+            // Erased storage has one layout whatever dictionary describes it.
+            return "TraitErased";
+        case ASR::ttypeType::TraitDictionaryType:
+            return "TraitDictionary_" + std::string(symbol_name(
+                ASR::down_cast<ASR::TraitDictionaryType_t>(t)->m_contract));
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
             if ( expr != nullptr ) {
@@ -3909,6 +3952,8 @@ inline size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::StructType:
         case ASR::ttypeType::TraitObjectType:
         case ASR::ttypeType::TraitOwnerList:
+        case ASR::ttypeType::TraitErasedType:
+        case ASR::ttypeType::TraitDictionaryType:
         case ASR::ttypeType::EnumType:
         case ASR::ttypeType::UnionType:
         case ASR::ttypeType::List:
@@ -4599,7 +4644,9 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Enum_t>(*definition) &&
             !ASR::is_a<ASR::Union_t>(*definition) &&
             !ASR::is_a<ASR::Function_t>(*definition) &&
-            !ASR::is_a<ASR::TraitRuntimeContract_t>(*definition)) {
+            !ASR::is_a<ASR::TraitRuntimeContract_t>(*definition) &&
+            !ASR::is_a<ASR::TraitDictionaryContract_t>(*definition) &&
+            !ASR::is_a<ASR::TraitDictionary_t>(*definition)) {
         return type_declaration;
     }
 
@@ -4616,7 +4663,9 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
         if (s == owner) return definition;
     }
-    if (ASR::is_a<ASR::TraitRuntimeContract_t>(*definition)) {
+    if (ASR::is_a<ASR::TraitRuntimeContract_t>(*definition) ||
+            ASR::is_a<ASR::TraitDictionaryContract_t>(*definition) ||
+            ASR::is_a<ASR::TraitDictionary_t>(*definition)) {
         for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
             for (const auto &entry : s->get_scope()) {
                 if (symbol_get_past_external(entry.second) == definition) return entry.second;
@@ -4976,6 +5025,17 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 ASR::down_cast<ASR::TraitOwnerList_t>(t)->m_contract));
             break;
         }
+        case ASR::ttypeType::TraitErasedType: {
+            t_ = TYPE(ASR::make_TraitErasedType_t(al, t->base.loc,
+                ASR::down_cast<ASR::TraitErasedType_t>(t)->m_parameter));
+            break;
+        }
+        case ASR::ttypeType::TraitDictionaryType: {
+            auto *dictionary = ASR::down_cast<ASR::TraitDictionaryType_t>(t);
+            t_ = TYPE(ASR::make_TraitDictionaryType_t(al, t->base.loc,
+                dictionary->m_contract, dictionary->m_parameter));
+            break;
+        }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
@@ -5304,6 +5364,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
     switch (t->type) {
         case ASR::ttypeType::TraitObjectType:
         case ASR::ttypeType::TraitOwnerList:
+        case ASR::ttypeType::TraitErasedType:
+        case ASR::ttypeType::TraitDictionaryType:
             return duplicate_type(al, t);
         case ASR::ttypeType::Array: {
             return duplicate_type_without_dims(al, ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
@@ -5885,6 +5947,18 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
             && ASR::is_a<ASR::TraitOwnerList_t>(*b)
             && trait_contracts_equal(ASR::down_cast<ASR::TraitOwnerList_t>(a)->m_contract,
                 ASR::down_cast<ASR::TraitOwnerList_t>(b)->m_contract);
+    }
+    if (ASR::is_a<ASR::TraitErasedType_t>(*a) || ASR::is_a<ASR::TraitErasedType_t>(*b)) {
+        return ASR::is_a<ASR::TraitErasedType_t>(*a)
+            && ASR::is_a<ASR::TraitErasedType_t>(*b)
+            && std::string(ASR::down_cast<ASR::TraitErasedType_t>(a)->m_parameter)
+                == ASR::down_cast<ASR::TraitErasedType_t>(b)->m_parameter;
+    }
+    if (ASR::is_a<ASR::TraitDictionaryType_t>(*a) || ASR::is_a<ASR::TraitDictionaryType_t>(*b)) {
+        return ASR::is_a<ASR::TraitDictionaryType_t>(*a)
+            && ASR::is_a<ASR::TraitDictionaryType_t>(*b)
+            && symbol_get_past_external(ASR::down_cast<ASR::TraitDictionaryType_t>(a)->m_contract)
+                == symbol_get_past_external(ASR::down_cast<ASR::TraitDictionaryType_t>(b)->m_contract);
     }
     // If either argument is a polymorphic type, return true.
     if (ASRUtils::is_class_type(a)) {
@@ -7094,6 +7168,10 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
     ASR::asr_t* duplicate_TraitOwnerList(ASR::TraitOwnerList_t* x) {
         return ASR::make_TraitOwnerList_t(al, x->base.base.loc,
             import_type_declaration(al, x->m_contract, current_scope));
+    }
+    ASR::asr_t* duplicate_TraitDictionaryType(ASR::TraitDictionaryType_t* x) {
+        return ASR::make_TraitDictionaryType_t(al, x->base.base.loc,
+            import_type_declaration(al, x->m_contract, current_scope), x->m_parameter);
     }
 
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
@@ -9839,6 +9917,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             }
         }
         if( !ASRUtils::is_intrinsic_symbol(a_name_) &&
+            !ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
             !(ASRUtils::is_class_type(ASRUtils::type_get_past_array(arg_type)) ||
               ASRUtils::is_class_type(ASRUtils::type_get_past_array(orig_arg_type))) &&
             !(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
@@ -10936,6 +11015,41 @@ std::string trait_generic_correspondence(const ASR::Function_t &left,
 
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::symbol_t *trait);
 ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type);
+// The open conformance-dictionary layout of a protocol trait, if it has one.
+ASR::TraitDictionaryContract_t *trait_dictionary_contract(ASR::symbol_t *trait);
+ASR::TraitDictionaryContract_t *trait_dictionary_contract(ASR::ttype_t *dictionary_type);
+// The dictionary contract of a binder whose single normalized constraint is
+// a protocol trait; such a binder is erased with a per-call dictionary.
+ASR::TraitDictionaryContract_t *trait_parameter_dictionary(ASR::symbol_t *parameter);
+// The dictionary the conformance's owner created for it with `contract` (by
+// default its trait's), if any.
+ASR::TraitDictionary_t *trait_conformance_dictionary(
+    ASR::TraitImplementation_t &implementation,
+    ASR::TraitDictionaryContract_t *contract = nullptr);
+// The derived type declaration of a trait call's concrete result, taken from
+// the dictionary argument that describes the slot's erased result.
+ASR::symbol_t *trait_call_result_declaration(ASR::expr_t *call);
+// The slots of the runtime or dictionary contract that a trait call's first
+// argument (a view or a dictionary) dispatches through.
+ASR::trait_slot_t *trait_call_slots(ASR::expr_t *receiver, size_t &n_slots);
+bool is_trait_dictionary_call(ASR::call_arg_t *args, size_t n_args);
+// An erased value or an array of erased values, and its parameter.
+bool is_trait_erased(ASR::ttype_t *type);
+const char *trait_erased_parameter(ASR::ttype_t *type);
+// The dictionary dummy of `procedure` that describes erased values of
+// `parameter`, or nullptr.
+ASR::Variable_t *trait_dictionary_dummy(const ASR::Function_t &procedure,
+    const std::string &parameter);
+// The Function whose dictionary dummies describe the erased values used in
+// `scope` (the nearest enclosing Function, through BLOCK and ASSOCIATE).
+ASR::Function_t *trait_erased_owner(SymbolTable *scope);
+// The concrete type a dictionary value describes: the implementing type of
+// its conformance, or nullptr when it is forwarded (an erased dictionary).
+ASR::ttype_t *trait_dictionary_value_type(ASR::expr_t *dictionary);
+std::string trait_deferred_dictionary_key(const ASR::TraitDeferredDictionary_t &x);
+// The template-instantiation substitution key naming the binder whose
+// dictionary a requirement call of a dictionary binder passes.
+std::string trait_dictionary_binder_key(const std::string &requirement);
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,
     ASR::TraitRuntimeContract_t *contract = nullptr);
 std::vector<ASR::symbol_t*> normalized_trait_requirements(

@@ -87,6 +87,12 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 ASR::down_cast<ASR::TraitErasure_t>(a.second)->m_symtab->mark_all_variables_external(al);
                 break;
             }
+            case ASR::symbolType::TraitDictionary: {
+                auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(a.second);
+                dictionary->m_abi = ASR::abiType::ExternalUndefined;
+                dictionary->m_symtab->mark_all_variables_external(al);
+                break;
+            }
             default : {};
         }
     }

@@ -5114,6 +5114,7 @@ public:
                 ASR::trait_kindType::UniversalTrait &&
                 !ASRUtils::trait_has_associated_types(*ASR::down_cast<ASR::Trait_t>(trait))) {
             create_runtime_trait_contract(ASR::down_cast<ASR::Trait_t>(trait));
+            create_trait_dictionary_contract(ASR::down_cast<ASR::Trait_t>(trait));
         }
         tmp = &trait->base;
     }
@@ -6232,6 +6233,8 @@ public:
                 }
             }
             current_scope->add_symbol(name, implementation);
+            create_trait_dictionaries(
+                ASR::down_cast<ASR::TraitImplementation_t>(implementation));
             // A generic definition has no runtime evidence; its instances do.
             if (!structure || structure->m_is_abstract ||
                     ASRUtils::generic_type_definition_metadata(*structure)) continue;

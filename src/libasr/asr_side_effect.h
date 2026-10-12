@@ -388,6 +388,12 @@ void visit_trait_lifecycle_scopes(SymbolTable *scope, bool loaded, Visit &&visit
             case symbolType::TraitErasure:
                 inner = down_cast<TraitErasure_t>(symbol)->m_symtab;
                 break;
+            case symbolType::TraitDictionaryContract:
+                inner = down_cast<TraitDictionaryContract_t>(symbol)->m_symtab;
+                break;
+            case symbolType::TraitDictionary:
+                inner = down_cast<TraitDictionary_t>(symbol)->m_symtab;
+                break;
             case symbolType::Template:
                 inner = down_cast<Template_t>(symbol)->m_symtab;
                 break;

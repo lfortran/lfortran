@@ -4245,6 +4245,20 @@ RUN(NAME traits_associated_06_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_associated_07 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_associated_07_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_protocol_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_protocol_separate_01_contracts.f90
+        traits_protocol_separate_01_intrinsics.f90
+        traits_protocol_separate_01_provider.f90
+        traits_protocol_separate_01_late.f90)
+# LFortran calls a null procedure in the oracle's deferred NOPASS bindings
+# returning polymorphic allocatables of class arrays, a defect that predates
+# traits (0.67.0-247 fails the same way), so only GFortran runs it.
+RUN(NAME traits_protocol_separate_01_oracle LABELS gfortran ISOLATE_MODULES
+    EXTRAFILES traits_protocol_separate_01_oracle_contracts.f90
+        traits_protocol_separate_01_oracle_intrinsics.f90
+        traits_protocol_separate_01_oracle_provider.f90
+        traits_protocol_separate_01_oracle_late.f90)
 RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
     INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

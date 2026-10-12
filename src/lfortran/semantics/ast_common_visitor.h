@@ -12120,6 +12120,11 @@ public:
                 }
                 check_runtime_trait_without_associated_types(*trait, loc);
                 check_trait_runtime_view(*trait, loc);
+                if (ASRUtils::trait_dictionary_contract(ASRUtils::symbol_get_past_external(v))) {
+                    trait_call_error("trait '" + derived_type_name + "' requires an initializer "
+                        "or operators of type(itself), so it is not a runtime class; it can "
+                        "constrain a generic type parameter", loc);
+                }
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 type_declaration = nullptr;
                 return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
@@ -15728,6 +15733,9 @@ public:
                         ASRUtils::type_get_past_pointer(func_type->m_arg_types[i]));
 
                 if( ASR::is_a<ASR::FunctionType_t>(*arg_type) ) continue;
+                // An erased dummy accepts a value of the type its dictionary
+                // argument describes; the verifier checks that substitution.
+                if (ASRUtils::is_trait_erased(orig_arg_type)) continue;
 
                 bool is_compile_time = true;
                 size_t rhs_rank = ASRUtils::extract_n_dims_from_ttype(orig_arg_type);
@@ -24010,6 +24018,12 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
         for (size_t i = 0; i < generic.n_args; i++) {
             auto *parameter = generic.m_symtab->get_symbol(generic.m_args[i]);
+            // A protocol binder is erased to storage its per-call dictionary describes.
+            if (ASRUtils::trait_parameter_dictionary(parameter)) {
+                types[generic.m_args[i]] = {ASRUtils::TYPE(ASR::make_TraitErasedType_t(
+                    al, generic.base.base.loc, generic.m_args[i])), nullptr};
+                continue;
+            }
             auto *contract = ASRUtils::trait_parameter_contract(parameter);
             if (!contract) {
                 trait_call_error("erased generic parameters require one runtime-admissible "
@@ -24023,18 +24037,61 @@ public:
         return types;
     }
 
-    void check_trait_erased_storage(const SymbolTable &scope) {
+    // A dictionary binder's values have storage the dictionary describes:
+    // read-only scalar or assumed-shape array dummies, scalar locals and a
+    // scalar result. Other storage of an erased binder is not implemented.
+    bool trait_dictionary_storage(const ASR::Variable_t &variable,
+            const std::set<std::string> &dictionaries, bool block) {
+        auto *element = ASRUtils::type_get_past_array(variable.m_type);
+        if (!ASR::is_a<ASR::TypeParameter_t>(*element) ||
+                !dictionaries.count(ASR::down_cast<ASR::TypeParameter_t>(element)->m_param) ||
+                ASR::down_cast<ASR::TypeParameter_t>(element)->m_is_class ||
+                variable.m_value_attr || variable.m_target_attr || variable.m_is_volatile ||
+                variable.m_presence != ASR::presenceType::Required || variable.n_codims ||
+                variable.m_symbolic_value || variable.m_value ||
+                variable.m_storage != ASR::storage_typeType::Default) return false;
+        if (ASR::is_a<ASR::Array_t>(*variable.m_type)) {
+            auto *array = ASR::down_cast<ASR::Array_t>(variable.m_type);
+            if (variable.m_intent != ASR::intentType::In ||
+                    array->m_physical_type != ASR::array_physical_typeType::DescriptorArray ||
+                    variable.m_contiguous_attr) return false;
+            for (size_t i = 0; i < array->n_dims; i++) {
+                if (array->m_dims[i].m_length) return false;
+            }
+            return true;
+        }
+        if (!ASR::is_a<ASR::TypeParameter_t>(*variable.m_type)) return false;
+        return variable.m_intent == ASR::intentType::In ||
+            (!block && variable.m_intent == ASR::intentType::ReturnVar) ||
+            (!block && variable.m_intent == ASR::intentType::Local);
+    }
+
+    void check_trait_erased_storage(const SymbolTable &scope,
+            const std::set<std::string> &dictionaries = {}, bool block = false) {
         for (const auto &entry : scope.get_scope()) {
             if (ASR::is_a<ASR::Block_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::Block_t>(entry.second)->m_symtab);
+                check_trait_erased_storage(*ASR::down_cast<ASR::Block_t>(entry.second)->m_symtab,
+                    dictionaries, true);
             } else if (ASR::is_a<ASR::AssociateBlock_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::AssociateBlock_t>(entry.second)->m_symtab);
+                check_trait_erased_storage(*ASR::down_cast<ASR::AssociateBlock_t>(entry.second)->m_symtab,
+                    dictionaries, true);
             } else if (ASR::is_a<ASR::Function_t>(*entry.second)) {
-                check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(entry.second)->m_symtab);
+                check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(entry.second)->m_symtab,
+                    dictionaries, block);
             }
             if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
             auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
             if (!ASRUtils::is_type_parameter(*ASRUtils::extract_type(variable->m_type))) continue;
+            auto *element = ASRUtils::extract_type(variable->m_type);
+            if (ASR::is_a<ASR::TypeParameter_t>(*element) && dictionaries.count(
+                    ASR::down_cast<ASR::TypeParameter_t>(element)->m_param)) {
+                if (!trait_dictionary_storage(*variable, dictionaries, block)) {
+                    trait_call_error("erased generic storage other than read-only scalar or "
+                        "assumed-shape dummies, scalar locals and a scalar result is not "
+                        "implemented yet", variable->base.base.loc);
+                }
+                continue;
+            }
             if (!ASR::is_a<ASR::TypeParameter_t>(*variable->m_type) ||
                     variable->m_intent != ASR::intentType::In ||
                     variable->m_value_attr || variable->m_target_attr ||
@@ -24047,8 +24104,65 @@ public:
         }
     }
 
-    void check_trait_erased_storage(const ASR::Function_t &function) {
-        check_trait_erased_storage(*function.m_symtab);
+    void check_trait_erased_storage(const ASR::Function_t &function,
+            const std::set<std::string> &dictionaries = {}) {
+        check_trait_erased_storage(*function.m_symtab, dictionaries);
+        check_trait_erased_values(function, dictionaries);
+    }
+
+    // The arrays of a dictionary binder are designators of its dummies; an
+    // array value computed from them, such as an elemental requirement
+    // applied to arrays or an array constructor, would need storage that
+    // the dictionary does not describe yet.
+    void check_trait_erased_values(const ASR::Function_t &function,
+            const std::set<std::string> &dictionaries) {
+        if (dictionaries.empty()) return;
+        class Check : public ASR::BaseWalkVisitor<Check> {
+        public:
+            const std::set<std::string> &dictionaries;
+            const ASR::expr_t *found = nullptr;
+            explicit Check(const std::set<std::string> &dictionaries)
+                : dictionaries(dictionaries) {}
+            bool erased_array(ASR::ttype_t *type) {
+                if (found || !type || !ASRUtils::is_array(type)) return false;
+                auto *element = ASRUtils::extract_type(type);
+                return ASR::is_a<ASR::TypeParameter_t>(*element) && dictionaries.count(
+                    ASR::down_cast<ASR::TypeParameter_t>(element)->m_param);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                if (erased_array(x.m_type)) found = &x.base;
+                ASR::BaseWalkVisitor<Check>::visit_FunctionCall(x);
+            }
+            void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+                if (erased_array(x.m_type)) found = &x.base;
+                ASR::BaseWalkVisitor<Check>::visit_ArrayConstructor(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+            void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+        } check(dictionaries);
+        for (size_t i = 0; i < function.n_body; i++) check.visit_stmt(*function.m_body[i]);
+        if (check.found) {
+            trait_call_error("array values computed from values of a protocol type "
+                "parameter, such as an elemental requirement applied to arrays, are not "
+                "implemented yet in runtime generic messages", check.found->base.loc);
+        }
+    }
+
+    std::set<std::string> trait_dictionary_binders(const ASR::Template_t &generic) {
+        std::set<std::string> binders;
+        for (size_t i = 0; i < generic.n_args; i++) {
+            if (ASRUtils::trait_parameter_dictionary(
+                    generic.m_symtab->get_symbol(generic.m_args[i]))) {
+                binders.insert(generic.m_args[i]);
+            }
+        }
+        return binders;
     }
 
     // Only a module owns the provider entries (member or erased) that a runtime
@@ -24155,7 +24269,7 @@ public:
                 "scope are not implemented yet", loc);
         }
         auto *original = ASRUtils::trait_method_function(&generic.base);
-        check_trait_erased_storage(*original);
+        check_trait_erased_storage(*original, trait_dictionary_binders(generic));
         std::string name = provider_scope->get_unique_name(
             "__trait_erasure_" + std::string(generic.m_name));
         auto *scope = al.make_new<SymbolTable>(provider_scope);
@@ -24174,6 +24288,15 @@ public:
             parameter.m_member = nullptr;
             auto *binder = generic.m_symtab->get_symbol(generic.m_args[i]);
             parameter.m_parameter = make_operator_proc_visible(binder, "trait", scope);
+            // A dictionary binder's requirements are called through its
+            // dictionary's slots, so it needs no operation wrappers.
+            if (auto *dictionary = ASRUtils::trait_parameter_dictionary(binder)) {
+                parameter.m_contract = make_operator_proc_visible(&dictionary->base, "trait", scope);
+                parameter.m_operations = nullptr;
+                parameter.n_operations = 0;
+                parameters.push_back(al, parameter);
+                continue;
+            }
             auto *contract = ASRUtils::trait_parameter_contract(binder);
             parameter.m_contract = make_operator_proc_visible(&contract->base, "trait", scope);
             Vec<ASR::trait_erased_operation_t> operations;
@@ -24245,9 +24368,466 @@ public:
         }
         erasure->m_parameters = parameters.p;
         erasure->n_parameters = parameters.size();
+        bind_trait_dictionary_operations(generic, scope, symbols);
         erasure->m_procedure = instantiate_symbol(al, scope, types, symbols,
             name + "_entry", &original->base, diag);
         return erasure;
+    }
+
+    // ------------------------------------------------------------------
+    // Open conformance dictionaries
+    //
+    // A protocol trait has requirements without a receiver, such as an
+    // initializer or a static operator on type(itself). It is not a runtime
+    // view: a binder it constrains is erased with a per-call dictionary of
+    // its conformance, which the conformance's own module creates, holding
+    // the value layout and one adapter per requirement.
+    // ------------------------------------------------------------------
+
+    bool trait_is_protocol(const ASR::Trait_t &trait, const Location &loc) {
+        if (trait.m_kind != ASR::trait_kindType::UniversalTrait) return false;
+        for (auto *member : checked_trait_hierarchy(trait, loc).members) {
+            if (ASRUtils::trait_member_operation(member)) return true;
+        }
+        return false;
+    }
+
+    // Prepends `dummy` (or appends it with `append`) to the arguments of
+    // `procedure` and rebuilds its signature.
+    void add_trait_hidden_dummy(ASR::Function_t &procedure, ASR::symbol_t *dummy,
+            const Location &loc, bool append) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, procedure.n_args + 1);
+        if (!append) args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dummy)));
+        for (size_t i = 0; i < procedure.n_args; i++) args.push_back(al, procedure.m_args[i]);
+        if (append) args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dummy)));
+        procedure.m_args = args.p;
+        procedure.n_args = args.size();
+        auto *signature = ASRUtils::get_FunctionType(procedure);
+        procedure.m_function_signature = ASRUtils::TYPE(
+            ASRUtils::make_FunctionType_t_util(al, procedure.base.base.loc,
+                procedure.m_args, procedure.n_args, procedure.m_return_var,
+                signature, procedure.m_symtab));
+    }
+
+    ASR::symbol_t *make_trait_hidden_dummy(ASR::Function_t &procedure,
+            const std::string &base_name, ASR::ttype_t *type, const Location &loc) {
+        std::string name = procedure.m_symtab->get_unique_name(base_name);
+        auto *dummy = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
+            procedure.m_symtab, s2c(al, name), nullptr, 0, ASR::intentType::In,
+            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+            ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false));
+        procedure.m_symtab->add_symbol(name, dummy);
+        return dummy;
+    }
+
+    // The erased interface of one requirement: its dictionary, the erased
+    // receiver of a message, and its arguments with type(itself) erased.
+    ASR::symbol_t *trait_dictionary_slot(ASR::symbol_t *member,
+            ASR::TraitDictionaryContract_t &contract, SymbolTable *scope,
+            const Location &loc) {
+        auto *method = ASRUtils::trait_method_function(member);
+        if (ASRUtils::trait_method_template(*method)) {
+            trait_call_error("generic requirements of a trait with initializer or "
+                "static operator requirements are not implemented yet", loc);
+        }
+        const char *parameter = "itself";
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        types[parameter] = {ASRUtils::TYPE(ASR::make_TraitErasedType_t(al, loc,
+            s2c(al, parameter))), nullptr};
+        std::map<std::string, ASR::symbol_t*> symbols;
+        std::string requirement = method->m_name;
+        if (!requirement.empty() && requirement[0] == '~') requirement = requirement.substr(1);
+        std::string name = scope->get_unique_name("__trait_dictionary_" +
+            std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                contract.m_trait))) + "_" + requirement);
+        auto *slot = ASR::down_cast<ASR::Function_t>(instantiate_symbol(
+            al, scope, types, symbols, name, &method->base, diag));
+        slot->m_access = ASR::accessType::Private;
+        if (!ASRUtils::trait_member_operation(member)) {
+            add_trait_hidden_dummy(*slot, make_trait_hidden_dummy(*slot, "self",
+                ASRUtils::TYPE(ASR::make_TraitErasedType_t(al, loc, s2c(al, parameter))),
+                loc), loc, false);
+        }
+        add_trait_hidden_dummy(*slot, make_trait_hidden_dummy(*slot, "dictionary",
+            ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, loc,
+                make_operator_proc_visible(&contract.base, "trait", slot->m_symtab),
+                s2c(al, parameter))), loc), loc, false);
+        ASRUtils::get_FunctionType(slot)->m_is_restriction = false;
+        return &slot->base;
+    }
+
+    ASR::TraitDictionaryContract_t *create_trait_dictionary_contract(ASR::Trait_t *trait) {
+        const Location &loc = trait->base.base.loc;
+        if (!trait_is_protocol(*trait, loc)) return nullptr;
+        if (auto *existing = ASRUtils::trait_dictionary_contract(&trait->base)) return existing;
+        auto hierarchy = checked_trait_hierarchy(*trait, loc);
+        auto *parent = trait->m_symtab->parent;
+        auto *scope = al.make_new<SymbolTable>(parent);
+        std::string name = parent->get_unique_name(
+            "__trait_dictionary_contract_" + std::string(trait->m_name));
+        auto *contract = ASR::down_cast2<ASR::TraitDictionaryContract_t>(
+            ASR::make_TraitDictionaryContract_t(al, loc, scope, s2c(al, name),
+                &trait->base, nullptr, 0));
+        parent->add_symbol(name, &contract->base);
+        // One slot per canonical requirement, coalesced as the requirements
+        // of a constraint: messages by name, equal operations by signature.
+        std::map<ASR::symbol_t*, size_t> indices;
+        std::vector<std::vector<ASR::symbol_t*>> origins;
+        Vec<ASR::trait_slot_t> slots;
+        slots.reserve(al, hierarchy.members.size());
+        for (auto *member : hierarchy.members) {
+            auto *method = ASRUtils::trait_method_function(member);
+            auto *operation = ASRUtils::trait_member_operation(member);
+            size_t index = slots.size();
+            for (auto &known : indices) {
+                auto *known_method = ASRUtils::trait_method_function(known.first);
+                auto *known_operation = ASRUtils::trait_member_operation(known.first);
+                if (operation && known_operation) {
+                    if (ASRUtils::same_trait_operation(*operation, *known_operation) &&
+                            ASRUtils::trait_method_mismatch(*known_method, *method)
+                                .difference == ASRUtils::TraitMethodDifference::None) {
+                        index = known.second;
+                    }
+                } else if (!operation && !known_operation &&
+                        std::string(known_method->m_name) == method->m_name) {
+                    check_trait_method_compatibility(*known_method, *method, loc);
+                    index = known.second;
+                }
+            }
+            if (index == slots.size()) {
+                ASR::trait_slot_t slot;
+                slot.loc = method->base.base.loc;
+                slot.m_origins = nullptr;
+                slot.n_origins = 0;
+                slot.m_type_arguments = nullptr;
+                slot.n_type_arguments = 0;
+                slot.m_procedure = trait_dictionary_slot(member, *contract, scope, loc);
+                slots.push_back(al, slot);
+                origins.emplace_back();
+                indices[member] = index;
+            }
+            origins[index].push_back(reference_trait_member(member, scope, loc));
+        }
+        for (size_t i = 0; i < slots.size(); i++) {
+            Vec<ASR::symbol_t*> references;
+            references.reserve(al, origins[i].size());
+            for (auto *origin : origins[i]) references.push_back(al, origin);
+            slots.p[i].m_origins = references.p;
+            slots.p[i].n_origins = references.size();
+        }
+        contract->m_slots = slots.p;
+        contract->n_slots = slots.size();
+        return contract;
+    }
+
+    // Values a dictionary describes are copied bitwise: intrinsic numeric or
+    // logical scalars and derived types whose components are such values,
+    // fixed-size arrays of them or nested such types, without finalization.
+    bool trait_dictionary_layout(ASR::ttype_t *type, ASR::symbol_t *declaration,
+            std::string &reason) {
+        type = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+                ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)) {
+            return true;
+        }
+        declaration = ASRUtils::symbol_get_past_external(declaration);
+        if (!ASR::is_a<ASR::StructType_t>(*type) || ASRUtils::is_class_type(type) ||
+                !declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) {
+            reason = "its values are not plain numeric, logical or derived data";
+            return false;
+        }
+        auto *structure = ASR::down_cast<ASR::Struct_t>(declaration);
+        if (structure->m_is_abstract || ASRUtils::struct_needs_finalization(declaration)) {
+            reason = "its type is abstract or finalizable";
+            return false;
+        }
+        if (structure->m_parent &&
+                !trait_dictionary_layout(ASRUtils::symbol_type(structure->m_parent),
+                    structure->m_parent, reason)) return false;
+        for (size_t i = 0; i < structure->n_members; i++) {
+            auto *component = ASRUtils::symbol_get_past_external(
+                structure->m_symtab->get_symbol(structure->m_members[i]));
+            if (!component || !ASR::is_a<ASR::Variable_t>(*component)) continue;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(component);
+            if (ASRUtils::is_allocatable(variable->m_type) ||
+                    ASRUtils::is_pointer(variable->m_type) ||
+                    (ASRUtils::is_array(variable->m_type) &&
+                        !ASRUtils::is_fixed_size_array(variable->m_type))) {
+                reason = "its component '" + std::string(variable->m_name) +
+                    "' needs ownership the dictionary does not describe yet";
+                return false;
+            }
+            if (!trait_dictionary_layout(variable->m_type, variable->m_type_declaration,
+                    reason)) return false;
+        }
+        return true;
+    }
+
+    // The adapter of one dictionary slot: it recovers the concrete values
+    // the erased arguments address and calls the conformance's binding.
+    ASR::symbol_t *trait_dictionary_adapter(ASR::Function_t &slot,
+            ASR::TraitDictionary_t &dictionary, ASR::TraitImplementation_t &implementation,
+            const ASR::trait_binding_t &binding, bool receiver, size_t index,
+            const Location &loc) {
+        SymbolTable *scope = dictionary.m_symtab;
+        ASRUtils::SymbolDuplicator duplicator(al);
+        auto *copy = duplicator.duplicate_Function(&slot, scope);
+        if (!copy) trait_call_error("cannot construct the conformance dictionary adapter", loc);
+        auto *adapter = ASR::down_cast<ASR::Function_t>(copy);
+        adapter->m_name = s2c(al, scope->get_unique_name(
+            std::string(dictionary.m_name) + "_" + std::to_string(index)));
+        adapter->m_access = ASR::accessType::Private;
+        for (const auto &entry : adapter->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
+            variable->m_type = ASRUtils::import_trait_type(al, variable->m_type,
+                adapter->m_symtab);
+        }
+        auto *old_signature = ASRUtils::get_FunctionType(adapter);
+        adapter->m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
+            al, loc, adapter->m_args, adapter->n_args, adapter->m_return_var,
+            old_signature, adapter->m_symtab));
+        auto *signature = ASRUtils::get_FunctionType(adapter);
+        signature->m_deftype = ASR::deftypeType::Implementation;
+        signature->m_abi = ASR::abiType::Source;
+        signature->m_is_restriction = false;
+        ASR::ttype_t *concrete = implementation.m_implementing_type;
+        auto recover = [&](ASR::expr_t *erased) {
+            return ASRUtils::EXPR(ASR::make_TraitRecover_t(al, loc, erased,
+                &dictionary.base, ASRUtils::duplicate_type(al, concrete)));
+        };
+        auto pass = [&](ASR::expr_t *value) {
+            return ASRUtils::is_trait_erased(ASRUtils::expr_type(value)) ? recover(value) : value;
+        };
+        auto *procedure = ASRUtils::trait_method_function(binding.m_procedure);
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, procedure->n_args);
+        size_t j = receiver ? 2 : 1;
+        for (size_t i = 0; i < procedure->n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            bool is_receiver = receiver && !binding.m_is_nopass && binding.m_self_argument &&
+                std::string(ASRUtils::EXPR2VAR(procedure->m_args[i])->m_name) ==
+                    binding.m_self_argument;
+            if (is_receiver) {
+                arg.m_value = recover(adapter->m_args[1]);
+            } else {
+                LCOMPILERS_ASSERT(j < adapter->n_args);
+                arg.m_value = pass(adapter->m_args[j++]);
+            }
+            args.push_back(al, arg);
+        }
+        SetChar dependencies;
+        dependencies.reserve(al, 2);
+        ASR::symbol_t *callee = make_operator_proc_visible(binding.m_procedure, "trait",
+            adapter->m_symtab);
+        ADD_ASR_DEPENDENCIES(adapter->m_symtab, callee, dependencies);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 2);
+        if (adapter->m_return_var) {
+            ASR::expr_t *value = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
+                al, loc, callee, nullptr, args.p, args.size(),
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(procedure->m_return_var)),
+                nullptr, nullptr, adapter->m_symtab, dependencies,
+                compiler_options.implicit_argument_casting));
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, pass(adapter->m_return_var), value, nullptr, false, false)));
+        } else {
+            ASR::stmt_t *cast = nullptr;
+            ASR::stmt_t *call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                al, loc, callee, nullptr, args.p, args.size(), nullptr, &cast,
+                compiler_options.implicit_argument_casting, adapter->m_symtab, dependencies));
+            if (cast) body.push_back(al, cast);
+            body.push_back(al, call);
+        }
+        adapter->m_body = body.p;
+        adapter->n_body = body.size();
+        adapter->m_dependencies = dependencies.p;
+        adapter->n_dependencies = dependencies.size();
+        scope->add_symbol(adapter->m_name, copy);
+        return copy;
+    }
+
+    // Why the conformance cannot have a dictionary of `contract`, or "".
+    // Its module owns the dictionary, which copies values bitwise and, like
+    // every runtime view, never modifies a receiver.
+    std::string trait_dictionary_obstacle(ASR::TraitImplementation_t &implementation,
+            ASR::TraitDictionaryContract_t &contract) {
+        auto *owner = implementation.m_parent_symtab->asr_owner;
+        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return "it is not declared in a module";
+        }
+        std::string reason;
+        if (!trait_dictionary_layout(implementation.m_implementing_type,
+                implementation.m_type_declaration, reason)) return reason;
+        for (size_t i = 0; i < contract.n_slots; i++) {
+            auto *member = contract.m_slots[i].m_origins[0];
+            auto *binding = ASRUtils::find_trait_binding(implementation, member);
+            if (!binding) {
+                return "it does not bind '" + ASRUtils::trait_member_display_name(member) + "'";
+            }
+            if (binding->m_is_nopass || !binding->m_self_argument) continue;
+            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
+            for (size_t j = 0; procedure && j < procedure->n_args; j++) {
+                auto *self = ASRUtils::EXPR2VAR(procedure->m_args[j]);
+                if (std::string(self->m_name) == binding->m_self_argument &&
+                        self->m_intent != ASR::intentType::In) {
+                    return "its binding of '" + ASRUtils::trait_member_display_name(member) +
+                        "' may modify its receiver";
+                }
+            }
+        }
+        return "";
+    }
+
+    ASR::TraitDictionary_t *create_trait_dictionary(ASR::TraitImplementation_t *implementation,
+            ASR::TraitDictionaryContract_t *contract) {
+        if (!contract) return nullptr;
+        if (auto *existing = ASRUtils::trait_conformance_dictionary(*implementation, contract)) {
+            return existing;
+        }
+        if (!trait_dictionary_obstacle(*implementation, *contract).empty()) return nullptr;
+        const Location &loc = implementation->base.base.loc;
+        SymbolTable *parent = implementation->m_parent_symtab;
+        std::string suffix = ASRUtils::symbol_get_past_external(implementation->m_trait) ==
+                ASRUtils::symbol_get_past_external(contract->m_trait)
+            ? "" : "_" + std::string(ASRUtils::symbol_name(contract->m_trait));
+        std::string name = parent->get_unique_name(
+            std::string(implementation->m_name) + suffix + "_dictionary");
+        auto *scope = al.make_new<SymbolTable>(parent);
+        auto *dictionary = ASR::down_cast2<ASR::TraitDictionary_t>(ASR::make_TraitDictionary_t(
+            al, loc, scope, s2c(al, name),
+            make_operator_proc_visible(&contract->base, "trait", parent),
+            &implementation->base, nullptr, 0, nullptr, 0, ASR::abiType::Source));
+        parent->add_symbol(name, &dictionary->base);
+        Vec<ASR::symbol_t*> procedures;
+        Vec<char*> dependencies;
+        procedures.reserve(al, contract->n_slots);
+        dependencies.reserve(al, contract->n_slots);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *member = ASRUtils::symbol_get_past_external(contract->m_slots[i].m_origins[0]);
+            auto *binding = ASRUtils::find_trait_binding(*implementation, member);
+            auto *procedure = trait_dictionary_adapter(
+                *ASR::down_cast<ASR::Function_t>(contract->m_slots[i].m_procedure),
+                *dictionary, *implementation, *binding,
+                !ASRUtils::trait_member_operation(member), i, loc);
+            procedures.push_back(al, procedure);
+            dependencies.push_back(al, ASRUtils::symbol_name(procedure));
+        }
+        dictionary->m_procedures = procedures.p;
+        dictionary->n_procedures = procedures.size();
+        dictionary->m_dependencies = dependencies.p;
+        dictionary->n_dependencies = dependencies.size();
+        return dictionary;
+    }
+
+    // Every protocol trait the conformance provides gets the conformance's
+    // dictionary in the conformance's module.
+    void create_trait_dictionaries(ASR::TraitImplementation_t *implementation) {
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(implementation->m_trait));
+        for (auto *provided : checked_trait_hierarchy(*trait,
+                implementation->base.base.loc).traits) {
+            create_trait_dictionary(implementation, ASRUtils::trait_dictionary_contract(
+                const_cast<ASR::symbol_t*>(&provided->base)));
+        }
+    }
+
+    // The dictionary argument of a concrete erased binder: the dictionary of
+    // the conformance selected for it, owned by the conformance's module.
+    ASR::expr_t *trait_dictionary_argument(ASR::TraitDictionaryContract_t &contract,
+            ASR::TraitImplementation_t *implementation, ASR::ttype_t *type,
+            const Location &loc) {
+        auto *trait = ASRUtils::symbol_get_past_external(contract.m_trait);
+        if (!implementation) {
+            trait_call_error("no visible implementation of trait '" +
+                std::string(ASRUtils::symbol_name(trait)) + "' for " +
+                ASRUtils::type_to_str_fortran_symbol(type, nullptr, true), loc);
+        }
+        auto *dictionary = ASRUtils::trait_conformance_dictionary(*implementation, &contract);
+        if (!dictionary) {
+            std::string reason = trait_dictionary_obstacle(*implementation, contract);
+            if (reason.empty()) {
+                reason = "its module was compiled without it; recompile that module";
+            }
+            std::string shown = ASRUtils::type_to_str_fortran_symbol(type,
+                ASRUtils::symbol_get_past_external(implementation->m_type_declaration), true);
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                shown = "type(" + shown + ")";
+            }
+            trait_call_error("the conformance of " + shown + " to trait '" +
+                ASRUtils::symbol_name(trait) + "' has no runtime dictionary: " + reason, loc);
+        }
+        auto *reference = make_operator_proc_visible(&dictionary->base, "trait", current_scope);
+        ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+        return ASRUtils::EXPR(ASR::make_TraitDictionaryValue_t(al, loc, reference,
+            ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, loc,
+                make_operator_proc_visible(&contract.base, "trait", current_scope), nullptr))));
+    }
+
+    // The constraint of a forwarding caller's binder that provides `trait`.
+    ASR::TraitConstraint_t *trait_forwarded_constraint(ASR::symbol_t *binder,
+            ASR::symbol_t *trait, const Location &loc) {
+        binder = ASRUtils::symbol_get_past_external(binder);
+        trait = ASRUtils::symbol_get_past_external(trait);
+        ASR::TraitConstraint_t *selected = nullptr;
+        for (const auto &entry : ASRUtils::symbol_parent_symtab(binder)->get_scope()) {
+            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+            if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) continue;
+            auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                ASRUtils::symbol_get_past_external(constraint->m_trait)), loc);
+            for (auto *provided : hierarchy.traits) {
+                if (&provided->base == trait) selected = constraint;
+            }
+        }
+        return selected;
+    }
+
+    // Each requirement of a dictionary binder is called through the slot of
+    // its dictionary: `symbols` maps the requirement to the slot interface
+    // and to the binder whose dictionary the call passes.
+    // Binds the requirements of the erased dictionary binders of `generic`
+    // to their dictionary slots, recording them as evidence when asked.
+    void bind_trait_dictionary_operations(ASR::Template_t &generic, SymbolTable *scope,
+            std::map<std::string, ASR::symbol_t*> &symbols,
+            const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> *types =
+                nullptr,
+            std::vector<TraitEvidence> *evidence = nullptr) {
+        for (size_t i = 0; i < generic.n_args; i++) {
+            auto *binder = generic.m_symtab->get_symbol(generic.m_args[i]);
+            auto *contract = ASRUtils::trait_parameter_dictionary(binder);
+            if (!contract) continue;
+            if (types) {
+                auto type = types->find(generic.m_args[i]);
+                if (type == types->end() || !type->second.first ||
+                        !ASR::is_a<ASR::TraitErasedType_t>(*type->second.first)) continue;
+            }
+            for (auto *constraint : trait_constraints(&generic)) {
+                if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) continue;
+                for (size_t j = 0; j < constraint->n_requirements; j++) {
+                    auto &required = constraint->m_requirements[j];
+                    auto *requirement = ASRUtils::symbol_get_past_external(required.m_procedure);
+                    auto *member = ASRUtils::symbol_get_past_external(required.m_member);
+                    size_t slot = contract->n_slots;
+                    for (size_t k = 0; k < contract->n_slots; k++) {
+                        for (size_t m = 0; m < contract->m_slots[k].n_origins; m++) {
+                            if (ASRUtils::symbol_get_past_external(
+                                    contract->m_slots[k].m_origins[m]) == member) slot = k;
+                        }
+                    }
+                    LCOMPILERS_ASSERT(slot < contract->n_slots);
+                    std::string name = ASRUtils::symbol_name(requirement);
+                    symbols[name] = make_operator_proc_visible(
+                        contract->m_slots[slot].m_procedure, "trait", scope);
+                    symbols[ASRUtils::trait_dictionary_binder_key(name)] = binder;
+                    if (evidence) evidence->push_back({requirement, symbols[name], "", true});
+                }
+            }
+        }
     }
 
     std::vector<ASR::TraitImplementation_t*> visible_trait_implementations() {
@@ -25589,7 +26169,8 @@ public:
             ASR::Function_t *procedure, Vec<ASR::call_arg_t> &args,
             AST::decl_attribute_t **explicit_args, size_t n_explicit_args,
             const Location &loc, ASR::Function_t *runtime_signature = nullptr,
-            std::vector<ASR::ttype_t*> *closed_members = nullptr) {
+            std::vector<ASR::ttype_t*> *closed_members = nullptr,
+            ASR::ttype_t **runtime_result = nullptr) {
         if (!is_body_visitor) {
             for (auto *constraint : trait_constraints(generic)) {
                 auto *trait = ASR::down_cast<ASR::Trait_t>(
@@ -25664,9 +26245,14 @@ public:
                 }
                 return &runtime_signature->base;
             }
-            for (size_t i = 0; i < args.size(); i++) {
+            size_t n_message_args = args.size();
+            for (size_t i = 0; i < n_message_args; i++) {
                 auto *formal = ASRUtils::expr_type(procedure->m_args[i]);
                 if (!ASR::is_a<ASR::TypeParameter_t>(*formal)) continue;
+                // A dictionary binder's values are passed unchanged; its
+                // dictionary follows the message's arguments.
+                if (ASRUtils::trait_parameter_dictionary(generic->m_symtab->get_symbol(
+                        ASR::down_cast<ASR::TypeParameter_t>(formal)->m_param))) continue;
                 auto *target = ASRUtils::expr_type(runtime_signature->m_args[i + 1]);
                 auto &actual = types.at(ASR::down_cast<ASR::TypeParameter_t>(formal)->m_param);
                 if (ASR::is_a<ASR::TypeParameter_t>(*actual.first)) {
@@ -25690,6 +26276,44 @@ public:
                         ASRUtils::import_trait_type(al, target, current_scope)));
                 } else {
                     make_runtime_trait_view(args.p[i].m_value, target);
+                }
+            }
+            for (size_t i = 0; i < generic->n_args; i++) {
+                auto *binder = generic->m_symtab->get_symbol(generic->m_args[i]);
+                auto *contract = ASRUtils::trait_parameter_dictionary(binder);
+                if (!contract) continue;
+                auto &actual = types.at(generic->m_args[i]);
+                ASR::call_arg_t arg;
+                arg.loc = loc;
+                if (ASR::is_a<ASR::TypeParameter_t>(*actual.first)) {
+                    auto *constraint = trait_forwarded_constraint(actual.second,
+                        contract->m_trait, loc);
+                    LCOMPILERS_ASSERT(constraint);
+                    arg.m_value = ASRUtils::EXPR(ASR::make_TraitDeferredDictionary_t(al, loc,
+                        &constraint->base, ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, loc,
+                            make_operator_proc_visible(&contract->base, "trait", current_scope),
+                            nullptr))));
+                } else {
+                    ASR::TraitImplementation_t *selected = nullptr;
+                    for (const auto &conformance : conformances) {
+                        if (ASRUtils::symbol_get_past_external(conformance.first->m_parameter) ==
+                                binder && ASRUtils::symbol_get_past_external(
+                                    conformance.first->m_trait) ==
+                                ASRUtils::symbol_get_past_external(contract->m_trait)) {
+                            selected = conformance.second;
+                        }
+                    }
+                    arg.m_value = trait_dictionary_argument(*contract, selected, actual.first, loc);
+                }
+                args.push_back(al, arg);
+            }
+            if (runtime_result && procedure->m_return_var) {
+                auto *result = ASRUtils::expr_type(procedure->m_return_var);
+                *runtime_result = result;
+                if (ASR::is_a<ASR::TypeParameter_t>(*result) &&
+                        types.count(ASR::down_cast<ASR::TypeParameter_t>(result)->m_param)) {
+                    *runtime_result = ASRUtils::duplicate_type(al,
+                        types.at(ASR::down_cast<ASR::TypeParameter_t>(result)->m_param).first);
                 }
             }
             return &runtime_signature->base;
@@ -26209,11 +26833,13 @@ public:
         if (runtime_slot >= 0) {
             auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
             std::vector<ASR::ttype_t*> member_types;
+            ASR::ttype_t *open_result = nullptr;
             if (auto *method = ASRUtils::trait_method_template(*signature)) {
                 bool closed = contract->m_slots[runtime_slot].n_type_arguments > 0;
                 prepare_trait_procedure_call(method, signature, args,
                     explicit_args, n_explicit_args, loc,
-                    ASRUtils::trait_method_function(callee), closed ? &member_types : nullptr);
+                    ASRUtils::trait_method_function(callee), closed ? &member_types : nullptr,
+                    closed ? nullptr : &open_result);
             }
             if (!member_types.empty() && ASR::is_a<ASR::TypeParameter_t>(*member_types[0])) {
                 tmp = make_trait_deferred_call(*contract, runtime_slot, member_types,
@@ -26222,6 +26848,7 @@ public:
             }
             ASR::ttype_t *result = signature->m_return_var
                 ? ASRUtils::expr_type(signature->m_return_var) : nullptr;
+            if (open_result) result = open_result;
             if (!member_types.empty()) {
                 runtime_slot = ASRUtils::trait_member_slot(*contract, runtime_slot,
                     member_types.data(), member_types.size());
@@ -26792,6 +27419,10 @@ public:
                     evidence.push_back({requirement, operation.m_procedure, "", false});
                 }
             }
+            if (!member) {
+                bind_trait_dictionary_operations(*generic, erasure->m_symtab, symbols,
+                    nullptr, &evidence);
+            }
             trait_specializations.push_back(
                 {erasure->m_symtab, generic, types, evidence, erasure->m_procedure});
             queue_body_instantiation(types, symbols, {{erasure->m_procedure,
@@ -27171,6 +27802,8 @@ public:
                         symbols[ASRUtils::symbol_name(binding.requirement)] =
                             actual->second;
                     }
+                    // A forwarded erased binder keeps the caller's dictionary.
+                    bind_trait_dictionary_operations(*source.generic, target, symbols, &types);
                     ASR::symbol_t *specialization =
                         find_trait_specialization(target, source.generic, types, evidence);
                     if (!specialization) {
@@ -27212,16 +27845,91 @@ public:
         }
         for (const auto &selection : p.symbols) {
             if (ASR::is_a<ASR::Function_t>(*selection.second)) {
+                std::set<std::string> dictionaries;
+                bool erased = false;
                 for (const auto &type : p.type_subs) {
-                    if (ASR::is_a<ASR::TraitObjectType_t>(*type.second.first)) {
-                        check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(selection.second));
-                        break;
+                    if (ASR::is_a<ASR::TraitObjectType_t>(*type.second.first)) erased = true;
+                    if (ASR::is_a<ASR::TraitErasedType_t>(*type.second.first)) {
+                        erased = true;
+                        dictionaries.insert(type.first);
                     }
+                }
+                if (erased) {
+                    check_trait_erased_storage(*ASR::down_cast<ASR::Function_t>(selection.second),
+                        dictionaries);
                 }
                 bind_trait_pack_evidence(p, *ASR::down_cast<ASR::Function_t>(selection.second),
                     ASRUtils::symbol_parent_symtab(selection.first));
+                bind_trait_dictionary_evidence(p,
+                    *ASR::down_cast<ASR::Function_t>(selection.second),
+                    ASRUtils::symbol_parent_symtab(selection.first));
             }
         }
+    }
+
+    // A deferred dictionary of the body takes the dictionary of the
+    // conformance selected for its concrete binder where the specialization
+    // was checked, the forwarding caller's deferred dictionary, or the
+    // erased procedure's own dictionary dummy.
+    void bind_trait_dictionary_evidence(PendingBodyInstantiation &p,
+            ASR::Function_t &source, SymbolTable *target) {
+        class Collect : public ASR::BaseWalkVisitor<Collect> {
+        public:
+            std::vector<const ASR::TraitDeferredDictionary_t*> dictionaries;
+            void visit_TraitDeferredDictionary(const ASR::TraitDeferredDictionary_t &x) {
+                dictionaries.push_back(&x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+            void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+                auto *block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) this->visit_stmt(*block->m_body[i]);
+            }
+        } collect;
+        for (size_t i = 0; i < source.n_body; i++) collect.visit_stmt(*source.m_body[i]);
+        if (collect.dictionaries.empty()) return;
+        auto *saved_scope = current_scope;
+        current_scope = target;
+        try {
+            for (auto *deferred : collect.dictionaries) {
+                const Location &loc = deferred->base.base.loc;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(
+                    ASRUtils::symbol_get_past_external(deferred->m_constraint));
+                auto *binder = ASRUtils::symbol_get_past_external(constraint->m_parameter);
+                auto actual = p.type_subs.at(ASRUtils::symbol_name(binder));
+                auto *contract = ASRUtils::trait_dictionary_contract(deferred->m_type);
+                LCOMPILERS_ASSERT(contract);
+                ASR::symbol_t *evidence = nullptr;
+                if (ASR::is_a<ASR::TypeParameter_t>(*actual.first)) {
+                    evidence = &trait_forwarded_constraint(actual.second, contract->m_trait,
+                        loc)->base;
+                } else if (ASR::is_a<ASR::TraitErasedType_t>(*actual.first)) {
+                    evidence = binder;
+                } else {
+                    ASR::TraitImplementation_t *selected = nullptr;
+                    auto conformances = p.conformances.find(ASRUtils::symbol_name(binder));
+                    if (conformances != p.conformances.end()) {
+                        for (auto *implementation : conformances->second) {
+                            auto *trait = ASR::down_cast<ASR::Trait_t>(
+                                ASRUtils::symbol_get_past_external(implementation->m_trait));
+                            for (auto *provided : checked_trait_hierarchy(*trait, loc).traits) {
+                                if (&provided->base == ASRUtils::symbol_get_past_external(
+                                        contract->m_trait)) selected = implementation;
+                            }
+                        }
+                    }
+                    auto *value = trait_dictionary_argument(*contract, selected, actual.first, loc);
+                    evidence = ASR::down_cast<ASR::TraitDictionaryValue_t>(value)->m_dictionary;
+                }
+                p.symbol_subs[ASRUtils::trait_deferred_dictionary_key(*deferred)] = evidence;
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
     }
 
     void instantiate_pending_body(PendingBodyInstantiation &p) {
@@ -32234,7 +32942,9 @@ public:
             ASR::symbol_t *canonical = ASRUtils::symbol_get_past_external(item.second);
             if (canonical && (ASR::is_a<ASR::TraitRuntimeContract_t>(*canonical)
                     || ASR::is_a<ASR::TraitWitness_t>(*canonical)
-                    || ASR::is_a<ASR::TraitErasure_t>(*canonical))) continue;
+                    || ASR::is_a<ASR::TraitErasure_t>(*canonical)
+                    || ASR::is_a<ASR::TraitDictionaryContract_t>(*canonical)
+                    || ASR::is_a<ASR::TraitDictionary_t>(*canonical))) continue;
             if (canonical && (ASR::is_a<ASR::Trait_t>(*canonical)
                     || ASR::is_a<ASR::TraitImplementation_t>(*canonical))) {
                 if (to_submodule || trait_symbol_access(item.second) == ASR::accessType::Public) {

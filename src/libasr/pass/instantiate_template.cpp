@@ -1086,7 +1086,8 @@ static bool is_erased_binder_alias(ASR::symbol_t *symbol,
             variable->m_intent != ASR::intentType::In) return false;
     auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(variable->m_type);
     auto type = types.find(parameter->m_param);
-    if (type == types.end() || !ASR::is_a<ASR::TraitObjectType_t>(*type->second.first)) return false;
+    if (type == types.end() || (!ASR::is_a<ASR::TraitObjectType_t>(*type->second.first) &&
+            !ASR::is_a<ASR::TraitErasedType_t>(*type->second.first))) return false;
     auto *owner = ASRUtils::get_asr_owner(symbol);
     if (!owner || !ASR::is_a<ASR::Function_t>(*owner)) return false;
     auto *function = ASR::down_cast<ASR::Function_t>(owner);
@@ -1097,6 +1098,38 @@ static bool is_erased_binder_alias(ASR::symbol_t *symbol,
     }
     return !function->m_return_var ||
         &ASRUtils::EXPR2VAR(function->m_return_var)->base != symbol;
+}
+
+// The erased binders of a dictionary instantiation of a procedure of a
+// template: each erased parameter and its binder's dictionary contract, in
+// the template's binder order.
+static std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>>
+erased_dictionary_binders(ASR::symbol_t *procedure,
+        const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types) {
+    std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>> result;
+    ASR::symbol_t *owner = ASRUtils::get_asr_owner(procedure);
+    if (!owner || !ASR::is_a<ASR::Template_t>(*owner)) return result;
+    auto *generic = ASR::down_cast<ASR::Template_t>(owner);
+    for (size_t i = 0; i < generic->n_args; i++) {
+        auto found = types.find(generic->m_args[i]);
+        if (found == types.end() || !found->second.first ||
+                !ASR::is_a<ASR::TraitErasedType_t>(*found->second.first)) continue;
+        auto *contract = ASRUtils::trait_parameter_dictionary(
+            generic->m_symtab->get_symbol(generic->m_args[i]));
+        if (!contract) continue;
+        result.push_back({ASR::down_cast<ASR::TraitErasedType_t>(
+            found->second.first)->m_parameter, contract});
+    }
+    return result;
+}
+
+// A dictionary contract's slot interface, or nullptr.
+static ASR::Function_t *trait_dictionary_slot_interface(ASR::symbol_t *symbol) {
+    symbol = symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr;
+    if (!symbol || !ASR::is_a<ASR::Function_t>(*symbol)) return nullptr;
+    auto *owner = ASRUtils::get_asr_owner(symbol);
+    return owner && ASR::is_a<ASR::TraitDictionaryContract_t>(*owner)
+        ? ASR::down_cast<ASR::Function_t>(symbol) : nullptr;
 }
 
 // Collects the procedures called in a declaration.
@@ -1415,6 +1448,34 @@ public:
         target_scope->add_symbol(new_sym_name, f);
         symbol_subs[x->m_name] = f;
         ASR::Function_t &instance = *ASR::down_cast<ASR::Function_t>(f);
+        // Erased binders travel with trailing dictionary dummies, in binder order.
+        auto dictionaries = erased_dictionary_binders(&x->base, type_subs);
+        if (!dictionaries.empty()) {
+            Vec<ASR::expr_t*> with_dictionaries;
+            with_dictionaries.reserve(al, instance.n_args + dictionaries.size());
+            for (size_t i = 0; i < instance.n_args; i++) {
+                with_dictionaries.push_back(al, instance.m_args[i]);
+            }
+            for (auto &binder : dictionaries) {
+                std::string name = new_scope->get_unique_name("__dictionary_" + binder.first);
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al,
+                    x->base.base.loc, ASRUtils::import_type_declaration(al,
+                        &binder.second->base, new_scope), s2c(al, binder.first)));
+                ASR::symbol_t *dummy = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, x->base.base.loc, new_scope,
+                        s2c(al, name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                        ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
+                        ASR::accessType::Private, ASR::presenceType::Required, false));
+                new_scope->add_symbol(name, dummy);
+                with_dictionaries.push_back(al, ASRUtils::EXPR(
+                    ASR::make_Var_t(al, x->base.base.loc, dummy)));
+            }
+            instance.m_args = with_dictionaries.p;
+            instance.n_args = with_dictionaries.size();
+            instance.m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
+                al, instance.base.base.loc, instance.m_args, instance.n_args,
+                instance.m_return_var, ASRUtils::get_FunctionType(instance), instance.m_symtab));
+        }
         if (ASRUtils::get_FunctionType(instance)->m_pure &&
                 ASR::has_trait_lifecycle_effects(instance)) {
             report_error("this instantiation adds runtime trait component lifecycle "
@@ -2677,6 +2738,99 @@ public:
         return &call->base.base;
     }
 
+    // The dictionary dummy that describes erased parameter `parameter` in the
+    // procedure whose body is being instantiated.
+    ASR::expr_t *erased_dictionary(const std::string &parameter, const Location &loc) {
+        ASR::Function_t *owner = ASRUtils::trait_erased_owner(new_scope);
+        ASR::Variable_t *dummy = owner ? ASRUtils::trait_dictionary_dummy(*owner, parameter)
+            : nullptr;
+        LCOMPILERS_ASSERT(dummy);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, &dummy->base));
+    }
+
+    // The erased parameter of a dictionary binder, by the binder's name.
+    std::string erased_parameter(const std::string &binder) {
+        auto type = type_subs.find(binder);
+        LCOMPILERS_ASSERT(type != type_subs.end() && type->second.first &&
+            ASR::is_a<ASR::TraitErasedType_t>(*type->second.first));
+        return ASR::down_cast<ASR::TraitErasedType_t>(type->second.first)->m_parameter;
+    }
+
+    // A requirement of a dictionary binder is called through the slot of
+    // the binder's dictionary, which is passed first.
+    Vec<ASR::call_arg_t> dictionary_call_args(const std::string &requirement,
+            Vec<ASR::call_arg_t> &args, const Location &loc) {
+        auto binder = symbol_subs.find(ASRUtils::trait_dictionary_binder_key(requirement));
+        LCOMPILERS_ASSERT(binder != symbol_subs.end());
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, args.size() + 1);
+        call_args.push_back(al, ASR::call_arg_t{loc, erased_dictionary(
+            erased_parameter(ASRUtils::symbol_name(binder->second)), loc)});
+        for (size_t i = 0; i < args.size(); i++) call_args.push_back(al, args[i]);
+        return call_args;
+    }
+
+    size_t dictionary_slot(ASR::Function_t &interface) {
+        auto *contract = ASR::down_cast<ASR::TraitDictionaryContract_t>(
+            ASRUtils::get_asr_owner(&interface.base));
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            if (ASRUtils::symbol_get_past_external(contract->m_slots[i].m_procedure) ==
+                    &interface.base) return i;
+        }
+        LCOMPILERS_ASSERT(false);
+        return contract->n_slots;
+    }
+
+    // A call of a procedure with trailing dictionary dummies, made in an
+    // erased body, passes the caller's dictionaries of the same parameters.
+    void append_dictionary_actuals(ASR::symbol_t *callee, Vec<ASR::call_arg_t> &args,
+            const Location &loc) {
+        ASR::symbol_t *definition = ASRUtils::symbol_get_past_external(callee);
+        if (!definition || !ASR::is_a<ASR::Function_t>(*definition)) return;
+        auto *function = ASR::down_cast<ASR::Function_t>(definition);
+        if (args.size() >= function->n_args) return;
+        std::vector<std::string> parameters;
+        for (size_t i = args.size(); i < function->n_args; i++) {
+            auto *dummy = ASRUtils::get_variable_from_symbol(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v));
+            if (!dummy || !ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type) ||
+                    !ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type)->m_parameter) {
+                return;
+            }
+            parameters.push_back(ASR::down_cast<ASR::TraitDictionaryType_t>(
+                dummy->m_type)->m_parameter);
+        }
+        for (auto &parameter : parameters) {
+            args.push_back(al, ASR::call_arg_t{loc, erased_dictionary(parameter, loc)});
+        }
+    }
+
+    // The dictionary of a binder: the conformance's selected for a concrete
+    // type argument, the caller's still-deferred one when forwarded, or the
+    // erased procedure's own dummy.
+    ASR::asr_t *duplicate_TraitDeferredDictionary(ASR::TraitDeferredDictionary_t *x) {
+        auto selected = symbol_subs.find(ASRUtils::trait_deferred_dictionary_key(*x));
+        LCOMPILERS_ASSERT(selected != symbol_subs.end());
+        auto *type = ASRUtils::import_trait_type(al, x->m_type, new_scope);
+        auto *evidence = ASRUtils::symbol_get_past_external(selected->second);
+        if (ASR::is_a<ASR::TraitConstraint_t>(*evidence)) {
+            return ASR::make_TraitDeferredDictionary_t(al, x->base.base.loc,
+                selected->second, type);
+        }
+        if (ASR::is_a<ASR::TraitDictionary_t>(*evidence)) {
+            ASR::symbol_t *reference = selected->second;
+            if (!ASRUtils::is_visible_from(reference, new_scope)) {
+                reference = ASRUtils::import_type_declaration(al, evidence, new_scope);
+            }
+            return ASR::make_TraitDictionaryValue_t(al, x->base.base.loc, reference,
+                ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, x->base.base.loc,
+                    ASR::down_cast<ASR::TraitDictionaryType_t>(type)->m_contract, nullptr)));
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*evidence));
+        return &erased_dictionary(erased_parameter(ASRUtils::symbol_name(evidence)),
+            x->base.base.loc)->base;
+    }
+
     ASR::asr_t *duplicate_TraitSubroutineCall(ASR::TraitSubroutineCall_t *x) {
         auto *call = ASR::down_cast2<ASR::TraitSubroutineCall_t>(
             BaseExprStmtDuplicator<BodyInstantiator>::duplicate_TraitSubroutineCall(x));
@@ -2734,6 +2888,14 @@ public:
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
 
+            if (ASR::Function_t *interface = trait_dictionary_slot_interface(name)) {
+                Vec<ASR::call_arg_t> call_args = dictionary_call_args(call_name, args,
+                    x->base.base.loc);
+                return ASR::make_TraitFunctionCall_t(al, x->base.base.loc,
+                    instantiate_trait_callee(name), dictionary_slot(*interface),
+                    call_args.p, call_args.size(), type);
+            }
+
             if (ASRUtils::symbol_parent_symtab(name)->get_counter() != new_scope->get_counter()) {
                 std::string sym_name = ASRUtils::symbol_name(name);
                 ASR::symbol_t* scoped_sym = new_scope->resolve_symbol(sym_name);
@@ -2761,6 +2923,7 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        append_dictionary_actuals(name, args, x->base.base.loc);
         // A call made by its own name must keep naming the instantiated
         // procedure, not the template's.
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
@@ -2787,6 +2950,14 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            if (ASR::Function_t *interface = trait_dictionary_slot_interface(name)) {
+                Vec<ASR::call_arg_t> call_args = dictionary_call_args(call_name, args,
+                    x->base.base.loc);
+                return ASR::make_TraitSubroutineCall_t(al, x->base.base.loc,
+                    instantiate_trait_callee(name), dictionary_slot(*interface),
+                    call_args.p, call_args.size());
+            }
 
             // A sibling's import needs rebinding, but a visible procedure
             // argument must keep its identity even when its name is shadowed.
@@ -2830,6 +3001,7 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        append_dictionary_actuals(name, args, x->base.base.loc);
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
             ? name : instantiate_original_name(x->m_original_name);
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,

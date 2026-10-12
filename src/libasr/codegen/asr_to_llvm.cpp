@@ -9008,6 +9008,20 @@ public:
         llvm::Value *target_var = nullptr;
         ASR::Variable_t *v = down_cast<ASR::Variable_t>(var_sym);
         uint32_t h = get_hash((ASR::asr_t*)v);
+        if (ASR::is_a<ASR::TraitDictionaryType_t>(*v->m_type)) return;
+        if (ASR::is_a<ASR::TraitErasedType_t>(*v->m_type)) {
+            // A local lives in entry-block storage of the size its
+            // dictionary describes; the result is the caller's storage.
+            // Both start default-initialized.
+            const char *parameter = ASR::down_cast<ASR::TraitErasedType_t>(v->m_type)->m_parameter;
+            if (v->m_intent == intent_local) {
+                llvm_symtab[h] = trait_erased_storage(parameter, v->m_name);
+            } else if (v->m_intent != intent_return_var) {
+                return;
+            }
+            trait_erased_initialize(parameter, llvm_symtab[h]);
+            return;
+        }
         llvm::Type *type;
         int n_dims = 0, a_kind = 4;
         ASR::dimension_t* m_dims = nullptr;
@@ -9621,6 +9635,16 @@ public:
             llvm::Argument* sret = &*arg_it;
             sret->setName("_sret");
             current_sret_arg = sret;
+            ++arg_it;
+        }
+        // An erased result is the storage its caller provides.
+        if (x.m_return_var != nullptr &&
+                ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::expr_type(x.m_return_var)) &&
+                F.getReturnType()->isVoidTy() && F.arg_size() == x.n_args + 1) {
+            llvm::Argument* storage = &*arg_it;
+            storage->setName("_trait_result");
+            uint32_t h = get_hash((ASR::asr_t*)EXPR2VAR(x.m_return_var));
+            llvm_symtab[h] = storage;
             ++arg_it;
         }
 
@@ -10732,6 +10756,18 @@ public:
                 emit_trait_witness(*witness,
                     !prototype_only && witness->m_abi == ASR::abiType::Source);
             }
+            if (ASR::is_a<ASR::TraitDictionary_t>(*item.second) &&
+                    ASR::down_cast<ASR::TraitDictionary_t>(item.second)->m_abi ==
+                        ASR::abiType::Source) {
+                auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(item.second);
+                auto *saved_scope = current_scope;
+                current_scope = dictionary->m_symtab;
+                for (size_t i = 0; i < dictionary->n_procedures; i++) {
+                    instantiate_function(*ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(dictionary->m_procedures[i])));
+                }
+                current_scope = saved_scope;
+            }
             if (ASR::is_a<ASR::TraitErasure_t>(*item.second)) {
                 auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(item.second);
                 auto *saved_scope = current_scope;
@@ -10770,6 +10806,16 @@ public:
                 current_scope = witness->m_symtab;
                 visit_procedures(*witness);
                 current_scope = saved_scope;
+            }
+            for (const auto &item : x.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitDictionary_t>(*item.second)) continue;
+                auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(item.second);
+                if (dictionary->m_abi != ASR::abiType::Source) continue;
+                auto *saved_scope = current_scope;
+                current_scope = dictionary->m_symtab;
+                visit_procedures(*dictionary);
+                current_scope = saved_scope;
+                emit_trait_dictionary(*dictionary, true);
             }
         }
     }
@@ -13026,6 +13072,14 @@ public:
     void visit_Assignment(const ASR::Assignment_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        if (ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::expr_type(x.m_target))) {
+            assign_trait_erased(x.m_target, x.m_value);
+            return;
+        }
+        if (ASR::is_a<ASR::TraitRecover_t>(*x.m_target)) {
+            assign_trait_recovered(*ASR::down_cast<ASR::TraitRecover_t>(x.m_target), x.m_value);
+            return;
+        }
 
         if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
@@ -18344,7 +18398,9 @@ public:
     }
 
     inline void fetch_var(ASR::Variable_t* x) {
-        if (ASRUtils::is_trait_pointer(x->m_type)) {
+        if (ASRUtils::is_trait_pointer(x->m_type) ||
+                ASR::is_a<ASR::TraitErasedType_t>(*x->m_type) ||
+                ASR::is_a<ASR::TraitDictionaryType_t>(*x->m_type)) {
             uint32_t hash = get_hash((ASR::asr_t*)x);
             tmp = llvm_symtab.at(hash);
             return;
@@ -18366,6 +18422,7 @@ public:
                     case ASR::ttypeType::Complex:
                     case ASR::ttypeType::StructType:
                     case ASR::ttypeType::TraitObjectType:
+                    case ASR::ttypeType::TraitErasedType:
                     case ASR::ttypeType::String:
                     case ASR::ttypeType::Logical:
                     case ASR::ttypeType::CPtr:{
@@ -25170,6 +25227,13 @@ public:
             }
 
             if (x.m_args[i].m_value &&
+                    (ASRUtils::is_trait_erased(orig_arg->m_type) ||
+                     ASR::is_a<ASR::TraitDictionaryType_t>(*orig_arg->m_type))) {
+                args.push_back(trait_erased_argument(x.m_args[i].m_value, *orig_arg));
+                continue;
+            }
+
+            if (x.m_args[i].m_value &&
                     (ASR::is_a<ASR::TraitObjectType_t>(*expr_type(x.m_args[i].m_value))
                      || ASRUtils::is_trait_pointer(expr_type(x.m_args[i].m_value))
                      || ASR::is_a<ASR::TraitReceiver_t>(*x.m_args[i].m_value))) {
@@ -28628,10 +28692,317 @@ public:
         auto *procedure = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
         auto *function_type = llvm_utils->get_function_type(*procedure, module.get());
-        llvm::Value *entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-            llvm_utils->trait_method_address(args[0], x.m_slot));
+        llvm::Value *entry = nullptr;
+        if (ASRUtils::is_trait_dictionary_call(x.m_args, x.n_args)) {
+            // Dictionary slots follow its size and initializer entries.
+            entry = trait_dictionary_entry(args[0], x.m_slot + 2);
+        } else {
+            entry = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->trait_method_address(args[0], x.m_slot));
+        }
         entry = builder->CreateBitCast(entry, function_type->getPointerTo());
+        if (procedure->m_return_var &&
+                ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::expr_type(procedure->m_return_var))) {
+            tmp = call_with_trait_result(function_type, entry, args, result_type,
+                x.m_args, x.n_args, *procedure, trait_call_expression(x));
+            return;
+        }
         tmp = builder->CreateCall(function_type, entry, args);
+    }
+
+    ASR::expr_t *trait_call_expression(const ASR::TraitFunctionCall_t &x) {
+        return const_cast<ASR::expr_t*>(&x.base);
+    }
+
+    ASR::expr_t *trait_call_expression(const ASR::TraitSubroutineCall_t &) {
+        return nullptr;
+    }
+
+    // The dictionary dummy of the procedure being generated that describes
+    // erased values of `parameter`.
+    llvm::Value *trait_erased_dictionary(const std::string &parameter) {
+        auto *procedure = ASRUtils::trait_erased_owner(current_scope);
+        auto *dummy = procedure ? ASRUtils::trait_dictionary_dummy(*procedure, parameter)
+            : nullptr;
+        if (!dummy) {
+            throw CodeGenError("erased value of type(" + parameter + ") has no dictionary "
+                "in this procedure");
+        }
+        uint32_t h = get_hash((ASR::asr_t*)dummy);
+        return llvm_symtab.at(h);
+    }
+
+    llvm::Value *trait_dictionary_entry(llvm::Value *dictionary, size_t index) {
+        auto *table = builder->CreateBitCast(dictionary, llvm_utils->i8_ptr->getPointerTo());
+        return llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+            llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, table, index));
+    }
+
+    llvm::Value *trait_erased_size(const std::string &parameter) {
+        return builder->CreatePtrToInt(trait_dictionary_entry(
+            trait_erased_dictionary(parameter), 0), llvm::Type::getInt64Ty(context));
+    }
+
+    // Entry-block storage for one erased value of `parameter`, sized by the
+    // dictionary dummy, so that storage in a loop is not reallocated.
+    llvm::Value *trait_erased_storage(const std::string &parameter, const std::string &name) {
+        llvm::Value *dictionary = trait_erased_dictionary(parameter);
+        llvm::BasicBlock &entry = builder->GetInsertBlock()->getParent()->getEntryBlock();
+        llvm::IRBuilder<> entry_builder(context);
+        entry_builder.SetInsertPoint(&entry, entry.getFirstInsertionPt());
+        auto *table = entry_builder.CreateBitCast(dictionary, llvm_utils->i8_ptr->getPointerTo());
+        auto *size = entry_builder.CreatePtrToInt(
+            entry_builder.CreateLoad(llvm_utils->i8_ptr, table),
+            llvm::Type::getInt64Ty(context));
+        auto *storage = entry_builder.CreateAlloca(llvm::Type::getInt8Ty(context), size, name);
+        storage->setAlignment(llvm::Align(16));
+        return storage;
+    }
+
+    void trait_erased_initialize(const std::string &parameter, llvm::Value *storage) {
+        auto *initialize_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr}, false);
+        llvm::Value *initialize = trait_dictionary_entry(trait_erased_dictionary(parameter), 1);
+        llvm_utils->create_if_else(builder->CreateIsNotNull(initialize), [&]() {
+            builder->CreateCall(initialize_type,
+                builder->CreateBitCast(initialize, initialize_type->getPointerTo()),
+                {builder->CreateBitCast(storage, llvm_utils->i8_ptr)});
+        }, [](){});
+    }
+
+    llvm::Value *trait_erased_address(ASR::expr_t *value) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(value, false);
+        ptr_loads = saved_loads;
+        return builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+    }
+
+    // Values the dictionary describes are bitwise copies of their storage.
+    void assign_trait_erased(ASR::expr_t *target, ASR::expr_t *value) {
+        llvm::Value *source = trait_erased_address(value);
+        llvm::Value *destination = trait_erased_address(target);
+        builder->CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
+            trait_erased_size(ASRUtils::trait_erased_parameter(ASRUtils::expr_type(target))));
+    }
+
+    // A call whose callee returns an erased value writes it to storage the
+    // caller provides: the call's concrete type, or erased storage of the
+    // caller's parameter.
+    llvm::Value *call_with_trait_result(llvm::FunctionType *function_type,
+            llvm::Value *callee, std::vector<llvm::Value*> &args, ASR::ttype_t *result_type,
+            ASR::call_arg_t * /*call_args*/, size_t /*n_call_args*/,
+            const ASR::Function_t & /*procedure*/, ASR::expr_t *call) {
+        llvm::Value *storage = nullptr;
+        llvm::Type *concrete = nullptr;
+        if (ASR::is_a<ASR::TraitErasedType_t>(*result_type)) {
+            storage = trait_erased_storage(ASR::down_cast<ASR::TraitErasedType_t>(
+                result_type)->m_parameter, "trait_result");
+        } else if (ASR::is_a<ASR::StructType_t>(*result_type)) {
+            ASR::symbol_t *declaration = call
+                ? ASRUtils::get_struct_sym_from_struct_expr(call) : nullptr;
+            if (!declaration) {
+                throw CodeGenError("the derived type of an erased trait result is unknown");
+            }
+            concrete = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(declaration)), module.get());
+            storage = llvm_utils->CreateAlloca(concrete, nullptr, "trait_result");
+        } else {
+            concrete = llvm_utils->get_type_from_ttype_t_util(nullptr, result_type, module.get());
+            storage = llvm_utils->CreateAlloca(concrete, nullptr, "trait_result");
+        }
+        args.insert(args.begin(), builder->CreateBitCast(storage, llvm_utils->i8_ptr));
+        builder->CreateCall(function_type, callee, args);
+        if (!concrete) return storage;
+        if (ASR::is_a<ASR::StructType_t>(*result_type)) return storage;
+        return llvm_utils->CreateLoad2(concrete, storage);
+    }
+
+    // An erased dummy receives the address of a value of the type its
+    // dictionary describes; an erased array dummy a descriptor whose offset
+    // and strides are in bytes, so no element size is needed to address it.
+    llvm::Value *trait_erased_argument(ASR::expr_t *actual, ASR::Variable_t &dummy) {
+        ASR::ttype_t *actual_type = ASRUtils::expr_type(actual);
+        int n_dims = 0, a_kind = 4;
+        bool is_array_type = false;
+        auto *dummy_type = llvm_utils->get_arg_type_from_ttype_t(
+            ASRUtils::EXPR(ASR::make_Var_t(al, dummy.base.base.loc, &dummy.base)),
+            dummy.m_type, nullptr, ASR::abiType::Source, dummy.m_abi, dummy.m_storage,
+            dummy.m_value_attr, n_dims, a_kind, is_array_type, dummy.m_intent,
+            module.get(), false);
+        if (is_array_type) dummy_type = dummy_type->getPointerTo();
+        if (ASR::is_a<ASR::TraitDictionaryType_t>(*dummy.m_type) ||
+                !ASRUtils::is_array(dummy.m_type)) {
+            int64_t saved_loads = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(actual, false);
+            ptr_loads = saved_loads;
+            if (!tmp->getType()->isPointerTy()) {
+                llvm::Value *value = tmp;
+                tmp = llvm_utils->CreateAlloca(value->getType(), nullptr, "trait_erased_value");
+                builder->CreateStore(value, tmp);
+            }
+            return builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+        }
+        if (ASRUtils::extract_physical_type(actual_type) !=
+                ASR::array_physical_typeType::DescriptorArray) {
+            throw CodeGenError("an erased array argument must be passed by descriptor",
+                actual->base.loc);
+        }
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 2 - LLVM::is_llvm_pointer(*actual_type);
+        this->visit_expr_wrapper(actual, false);
+        ptr_loads = saved_loads;
+        llvm::Value *source = tmp;
+        llvm::Type *erased_type = llvm_utils->get_type_from_ttype_t_util(
+            ASRUtils::EXPR(ASR::make_Var_t(al, dummy.base.base.loc, &dummy.base)),
+            ASRUtils::type_get_past_allocatable_pointer(dummy.m_type), module.get());
+        if (ASRUtils::is_trait_erased(actual_type)) {
+            return builder->CreateBitCast(source, dummy_type);
+        }
+        llvm::Type *source_type = llvm_utils->get_type_from_ttype_t_util(actual,
+            ASRUtils::type_get_past_allocatable_pointer(actual_type), module.get());
+        llvm::Type *element_type = llvm_utils->get_el_type(actual,
+            ASRUtils::extract_type(actual_type), module.get());
+        uint64_t element_size = llvm::DataLayout(module->getDataLayout())
+            .getTypeAllocSize(element_type);
+        llvm::Value *target = arr_descr->create_descriptor_alloca(erased_type, "erased_array");
+        llvm::Value *data = llvm_utils->CreateLoad2(element_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(source_type, source));
+        builder->CreateStore(builder->CreateBitCast(data, llvm_utils->i8_ptr),
+            arr_descr->get_pointer_to_data(erased_type, target));
+        int rank = ASRUtils::extract_n_dims_from_ttype(actual_type);
+        arr_descr->reset_array_details(erased_type, target, source_type, source, rank);
+        llvm::Type *index_type = arr_descr->get_index_type();
+        llvm::Value *scale = llvm::ConstantInt::get(index_type, element_size);
+        builder->CreateStore(builder->CreateMul(
+                arr_descr->get_offset(source_type, source, true), scale),
+            arr_descr->get_offset(erased_type, target, false));
+        llvm::Value *dimensions = arr_descr->get_pointer_to_dimension_descriptor_array(
+            erased_type, target, true);
+        for (int i = 0; i < rank; i++) {
+            llvm::Value *dimension = arr_descr->get_pointer_to_dimension_descriptor(
+                dimensions, llvm::ConstantInt::get(context, llvm::APInt(32, i)));
+            builder->CreateStore(builder->CreateMul(arr_descr->get_stride(dimension, true),
+                scale), arr_descr->get_stride(dimension, false));
+        }
+        builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+            element_size), llvm_utils->create_gep2(erased_type, target, 1));
+        return builder->CreateBitCast(target, dummy_type);
+    }
+
+    llvm::Type *trait_recovered_type(const ASR::TraitRecover_t &x) {
+        if (ASR::is_a<ASR::StructType_t>(*x.m_type)) {
+            return llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(
+                        const_cast<ASR::expr_t*>(&x.base)))), module.get());
+        }
+        return llvm_utils->get_type_from_ttype_t_util(nullptr, x.m_type, module.get());
+    }
+
+    // The value of a dictionary adapter's concrete result is copied into
+    // the erased result storage; dictionary layouts are bitwise.
+    void assign_trait_recovered(const ASR::TraitRecover_t &target, ASR::expr_t *value) {
+        llvm::Type *concrete = trait_recovered_type(target);
+        llvm::Value *destination = builder->CreateBitCast(
+            trait_erased_address(target.m_value), concrete->getPointerTo());
+        bool aggregate = ASR::is_a<ASR::StructType_t>(*target.m_type);
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = aggregate ? 0 : 2;
+        this->visit_expr_wrapper(value, !aggregate);
+        ptr_loads = saved_loads;
+        if (!tmp->getType()->isPointerTy()) {
+            builder->CreateStore(tmp, destination);
+            return;
+        }
+        uint64_t size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(concrete);
+        builder->CreateMemCpy(builder->CreateBitCast(destination, llvm_utils->i8_ptr),
+            llvm::MaybeAlign(), builder->CreateBitCast(tmp, llvm_utils->i8_ptr),
+            llvm::MaybeAlign(), size);
+    }
+
+    void visit_TraitRecover(const ASR::TraitRecover_t &x) {
+        llvm::Value *storage = trait_erased_address(x.m_value);
+        llvm::Type *concrete = trait_recovered_type(x);
+        tmp = builder->CreateBitCast(storage, concrete->getPointerTo());
+        // Like a variable, a recovered scalar is an address only when the
+        // caller asked for one; derived types are always addressed.
+        if (ptr_loads > 0 && !ASR::is_a<ASR::StructType_t>(*x.m_type)) {
+            tmp = llvm_utils->CreateLoad2(concrete, tmp);
+        }
+    }
+
+    void visit_TraitDictionaryValue(const ASR::TraitDictionaryValue_t &x) {
+        auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(
+            ASRUtils::symbol_get_past_external(x.m_dictionary));
+        tmp = builder->CreateBitCast(emit_trait_dictionary(*dictionary, false),
+            llvm_utils->i8_ptr);
+    }
+
+    void visit_TraitDeferredDictionary(const ASR::TraitDeferredDictionary_t &x) {
+        throw CodeGenError("a deferred generic dictionary must be instantiated before "
+            "runtime trait lowering", x.base.base.loc);
+    }
+
+    // [size, default initializer or null, one adapter per contract slot].
+    llvm::GlobalVariable *emit_trait_dictionary(const ASR::TraitDictionary_t &x, bool define) {
+        if (x.m_abi == ASR::abiType::Source) {
+            auto *saved_scope = current_scope;
+            current_scope = x.m_symtab;
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                instantiate_function(*ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(x.m_procedures[i])));
+            }
+            current_scope = saved_scope;
+        }
+        std::string name = "__trait_dictionary_" + ASRUtils::nominal_symbol_name(&x.base);
+        auto *type = llvm::ArrayType::get(llvm_utils->i8_ptr, x.n_procedures + 2);
+        auto *table = module->getNamedGlobal(name);
+        if (!table) {
+            table = new llvm::GlobalVariable(*module, type, true,
+                llvm::GlobalValue::ExternalLinkage, nullptr, name);
+        }
+        if (define && !table->hasInitializer()) {
+            auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(
+                ASRUtils::symbol_get_past_external(x.m_implementation));
+            ASR::ttype_t *concrete = implementation->m_implementing_type;
+            ASR::symbol_t *declaration = ASRUtils::symbol_get_past_external(
+                implementation->m_type_declaration);
+            llvm::Type *value_type = declaration && ASR::is_a<ASR::Struct_t>(*declaration)
+                ? llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(declaration), module.get())
+                : llvm_utils->get_type_from_ttype_t_util(nullptr, concrete, module.get());
+            uint64_t size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(value_type);
+            std::vector<llvm::Constant*> entries;
+            entries.push_back(llvm::ConstantExpr::getIntToPtr(
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), size),
+                llvm_utils->i8_ptr));
+            if (declaration && ASR::is_a<ASR::Struct_t>(*declaration)) {
+                auto *initialize = llvm::Function::Create(llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false),
+                    llvm::GlobalValue::InternalLinkage, name + "_initialize", module.get());
+                auto saved_ip = builder->saveIP();
+                builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", initialize));
+                llvm::Value *storage = builder->CreateBitCast(&*initialize->arg_begin(),
+                    value_type->getPointerTo());
+                builder->CreateStore(llvm::Constant::getNullValue(value_type), storage);
+                allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(declaration),
+                    storage, concrete);
+                builder->CreateRetVoid();
+                builder->restoreIP(saved_ip);
+                entries.push_back(llvm::ConstantExpr::getBitCast(initialize, llvm_utils->i8_ptr));
+            } else {
+                entries.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+            }
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
+                uint32_t h = get_hash((ASR::asr_t*)procedure);
+                auto *function = llvm_symtab_fn.at(h);
+                entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+            }
+            table->setInitializer(llvm::ConstantArray::get(type, entries));
+        }
+        return table;
     }
 
     void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
@@ -28986,6 +29357,9 @@ public:
                 } else {
                     tmp = builder->CreateCall(fn, args);
                 }
+            } else if (ASR::is_a<ASR::TraitErasedType_t>(*return_var_type0)) {
+                tmp = call_with_trait_result(fn->getFunctionType(), fn, args, x.m_type,
+                    x.m_args, x.n_args, *s, const_cast<ASR::expr_t*>(&x.base));
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }

@@ -40,6 +40,7 @@ cmake -E copy \
     integration_tests/traits_runtime_generic_01*.f90 \
     integration_tests/traits_runtime_numeric_separate_01.py \
     integration_tests/traits_runtime_numeric_separate_01*.f90 \
+    integration_tests/traits_protocol_separate_01*.f90 \
     integration_tests/traits_runtime_inspection_state_01.f90 \
     integration_tests/traits_runtime_07*.f90 \
     integration_tests/traits_paper_functional.py \

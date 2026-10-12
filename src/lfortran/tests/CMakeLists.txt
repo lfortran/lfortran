@@ -350,6 +350,24 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     )
                 endif()
                 add_test(
+                    NAME test_runtime_trait_protocol_separate_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_numeric_separate_01.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                        --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                        --case protocol ${runtime_trait_flags}
+                )
+                if (mode STREQUAL "normal")
+                    add_test(
+                        NAME test_runtime_trait_protocol_separate_leaks
+                        COMMAND ${LFORTRAN_TEST_PYTHON}
+                            ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_numeric_separate_01.py
+                            --lfortran $<TARGET_FILE:lfortran>
+                            --work-dir ${CMAKE_BINARY_DIR}/tests/output
+                            --case protocol --detect-leaks
+                    )
+                endif()
+                add_test(
                     NAME test_runtime_trait_inspection_states_${mode}
                     COMMAND ${LFORTRAN_TEST_PYTHON}
                         ${CMAKE_SOURCE_DIR}/integration_tests/traits_runtime_result_02.py

@@ -15,6 +15,8 @@
 "symbol.TraitRuntimeContract" = "metadata"
 "symbol.TraitWitness" = "helper:module witness emission"
 "symbol.TraitErasure" = "helper:erased provider procedure emission"
+"symbol.TraitDictionaryContract" = "metadata"
+"symbol.TraitDictionary" = "helper:conformance dictionary emission"
 "symbol.Namelist" = "helper:formatted I/O"
 
 "struct_generic.GenericTypeDefinition" = "non-executable"
@@ -81,6 +83,8 @@
 "ttype.FunctionType" = "helper:LLVM type lowering"
 "ttype.TraitObjectType" = "helper:LLVM type lowering"
 "ttype.TraitOwnerList" = "helper:LLVM type lowering"
+"ttype.TraitErasedType" = "helper:LLVM type lowering"
+"ttype.TraitDictionaryType" = "helper:LLVM type lowering"
 
 "attribute.Attribute" = "metadata"
 "tbind.Bind" = "metadata"

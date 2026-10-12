@@ -2834,6 +2834,10 @@ class ASRToLLVMVisitor;
                 // An enumeration value is the integer it is stored as.
                 case ASR::EnumType:
                 case ASR::TraitObjectType:
+                // Only types with a bitwise layout have a conformance
+                // dictionary, so erased storage owns nothing to release.
+                case ASR::TraitErasedType:
+                case ASR::TraitDictionaryType:
                     return false;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);

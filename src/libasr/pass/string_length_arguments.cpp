@@ -198,7 +198,9 @@ void collect_procedures(SymbolTable *symtab,
             case ASR::symbolType::Trait:
             case ASR::symbolType::TraitRuntimeContract:
             case ASR::symbolType::TraitWitness:
-            case ASR::symbolType::TraitErasure: {
+            case ASR::symbolType::TraitErasure:
+            case ASR::symbolType::TraitDictionaryContract:
+            case ASR::symbolType::TraitDictionary: {
                 collect_procedures(ASRUtils::symbol_symtab(sym), procedures);
                 break;
             }

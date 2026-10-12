@@ -29,6 +29,9 @@ Cast
 TraitInspect
 TraitDeferredPack
 TraitDeferredCall
+TraitDictionaryValue
+TraitDeferredDictionary
+TraitRecover
 CLoc
 CoarrayRef
 CompilerOptions

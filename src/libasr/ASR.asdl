@@ -109,6 +109,13 @@ symbol
     -- One checked template body, instantiated with explicit borrowed-view
     -- types and operation substitutions rather than concrete types.
     | TraitErasure(symbol_table symtab, identifier name, symbol generic, symbol procedure, trait_erased_parameter* parameters)
+    -- The open conformance layout of a protocol trait (one with requirements
+    -- that take no receiver): one slot per canonical requirement, whose
+    -- procedure is the erased interface with the dictionary as first dummy.
+    | TraitDictionaryContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
+    -- The evidence of one conformance to a protocol trait, owned by the
+    -- conformance's scope: procedures[i] implements contract slot i.
+    | TraitDictionary(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -329,6 +336,14 @@ expr
     -- the first slot of the message's member family in args[0]'s contract.
     -- Template instantiation selects the member slot or forwards the call.
     | TraitDeferredCall(int family, ttype* type_arguments, call_arg* args, ttype type)
+    -- The selected conformance dictionary passed with erased arguments.
+    | TraitDictionaryValue(symbol dictionary, ttype type)
+    -- Template-only: the dictionary of a still-generic binder. Instantiation
+    -- selects the conformance's dictionary or forwards an erased one.
+    | TraitDeferredDictionary(symbol constraint, ttype type)
+    -- The concrete value stored in erased storage; only the dictionary's own
+    -- adapters may recover it.
+    | TraitRecover(expr value, symbol dictionary, ttype type)
 
 ttype
     = Integer(int kind)
@@ -354,6 +369,12 @@ ttype
     | TraitObjectType(symbol contract)
     -- Compiler-owned retained results; each element owns a separate header.
     | TraitOwnerList(symbol contract)
+    -- A value of the type described by the dictionary dummy for parameter in
+    -- the enclosing procedure, always handled through its storage address.
+    | TraitErasedType(identifier parameter)
+    -- A conformance dictionary laid out by a TraitDictionaryContract; a
+    -- dictionary dummy names the parameter its erased values use.
+    | TraitDictionaryType(symbol contract, identifier? parameter)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a

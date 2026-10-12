@@ -484,7 +484,8 @@ namespace LCompilers {
                         // Runtime witnesses and generic entries a program
                         // owns hold executable procedures.
                         if (ASR::is_a<ASR::TraitWitness_t>(*item.second) ||
-                                ASR::is_a<ASR::TraitErasure_t>(*item.second)) {
+                                ASR::is_a<ASR::TraitErasure_t>(*item.second) ||
+                                ASR::is_a<ASR::TraitDictionary_t>(*item.second)) {
                             self().visit_symbol(*item.second);
                         }
                     }
@@ -671,6 +672,20 @@ namespace LCompilers {
                     auto &witness = const_cast<ASR::TraitWitness_t&>(x);
                     witness.m_dependencies = dependencies.p;
                     witness.n_dependencies = dependencies.size();
+                }
+
+                void visit_TraitDictionary(const ASR::TraitDictionary_t &x) {
+                    for (const auto &entry : x.m_symtab->get_scope()) {
+                        visit_symbol(*entry.second);
+                    }
+                    Vec<char*> dependencies;
+                    dependencies.reserve(al, x.n_procedures);
+                    for (size_t i = 0; i < x.n_procedures; i++) {
+                        dependencies.push_back(al, ASRUtils::symbol_name(x.m_procedures[i]));
+                    }
+                    auto &dictionary = const_cast<ASR::TraitDictionary_t&>(x);
+                    dictionary.m_dependencies = dependencies.p;
+                    dictionary.n_dependencies = dependencies.size();
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {

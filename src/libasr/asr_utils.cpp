@@ -622,15 +622,27 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::TraitPack:
         case ASR::exprType::TraitBorrow:
         case ASR::exprType::TraitProject:
-        case ASR::exprType::TraitFunctionCall:
         case ASR::exprType::TraitDeferredPack:
         case ASR::exprType::TraitDeferredCall:
+        case ASR::exprType::TraitDictionaryValue:
+        case ASR::exprType::TraitDeferredDictionary:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
             return nullptr;
         }
+        case ASR::exprType::TraitFunctionCall: {
+            // A concrete result of an erased slot has the type its dictionary
+            // argument describes.
+            return trait_call_result_declaration(expression);
+        }
         case ASR::exprType::TraitReceiver: {
             return ASR::down_cast<ASR::TraitReceiver_t>(expression)->m_type_declaration;
+        }
+        case ASR::exprType::TraitRecover: {
+            auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(symbol_get_past_external(
+                ASR::down_cast<ASR::TraitRecover_t>(expression)->m_dictionary));
+            return ASR::down_cast<ASR::TraitImplementation_t>(symbol_get_past_external(
+                dictionary->m_implementation))->m_type_declaration;
         }
         case ASR::exprType::TraitInspect: {
             return ASR::down_cast<ASR::TraitInspect_t>(expression)->m_type_declaration;
@@ -5919,14 +5931,57 @@ ASR::TraitErasure_t *trait_erasure(ASR::Template_t &generic, SymbolTable *scope,
     return nullptr;
 }
 
+// Whether `erased` is the erased form of `generic` whose type parameter
+// declarations live in `method`: an erased value or array of its binder
+// `parameter` in place of the binder's values.
+static bool trait_dictionary_erased_type(ASR::ttype_t *generic_type,
+        ASR::ttype_t *erased_type, const ASR::Template_t &method)
+{
+    if (!generic_type || !erased_type || is_array(generic_type) != is_array(erased_type) ||
+            extract_n_dims_from_ttype(generic_type) != extract_n_dims_from_ttype(erased_type)) {
+        return false;
+    }
+    auto *element = type_get_past_array(generic_type);
+    auto *erased = type_get_past_array(erased_type);
+    if (!ASR::is_a<ASR::TypeParameter_t>(*element) || !ASR::is_a<ASR::TraitErasedType_t>(*erased)) {
+        return false;
+    }
+    std::string parameter = ASR::down_cast<ASR::TypeParameter_t>(element)->m_param;
+    auto *binder = method.m_symtab->get_symbol(parameter);
+    return binder && trait_parameter_dictionary(binder) &&
+        parameter == ASR::down_cast<ASR::TraitErasedType_t>(erased)->m_parameter;
+}
+
 bool trait_erased_signature_matches(const ASR::Function_t &generic,
         const ASR::Function_t &erased, size_t offset)
 {
-    if (!trait_method_template(generic) || erased.n_args != generic.n_args + offset ||
-            (generic.n_args && !generic.m_args) || !erased.m_args ||
+    auto *method = trait_method_template(generic);
+    if (!method || (generic.n_args && !generic.m_args) || !erased.m_args ||
             !generic.m_return_var || !erased.m_return_var) return false;
+    // Dictionary binders pass their dictionaries after the message's arguments.
+    std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>> dictionaries;
+    for (size_t i = 0; i < method->n_args; i++) {
+        auto *contract = trait_parameter_dictionary(method->m_symtab->get_symbol(method->m_args[i]));
+        if (contract) dictionaries.push_back({method->m_args[i], contract});
+    }
+    if (erased.n_args != generic.n_args + offset + dictionaries.size()) return false;
+    for (size_t i = 0; i < dictionaries.size(); i++) {
+        auto *expr = erased.m_args[offset + generic.n_args + i];
+        if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) return false;
+        auto *dummy = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v));
+        if (!dummy || !dummy->m_type || !ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type) ||
+                dummy->m_intent != ASR::intentType::In) return false;
+        auto *type = ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type);
+        if (!type->m_parameter || dictionaries[i].first != type->m_parameter ||
+                symbol_get_past_external(type->m_contract) != &dictionaries[i].second->base) {
+            return false;
+        }
+    }
     auto *result = typed_expr_type(generic.m_return_var);
-    if (!result || !ASR::is_a<ASR::Integer_t>(*result)) return false;
+    bool erased_result = result && trait_dictionary_erased_type(result,
+        typed_expr_type(erased.m_return_var), *method);
+    if (!result || (!ASR::is_a<ASR::Integer_t>(*result) && !erased_result)) return false;
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
     for (size_t i = 0; i < generic.n_args; i++) {
         if (!generic.m_args[i] || !erased.m_args[i + offset] ||
@@ -5944,6 +5999,10 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
         if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
                 a->m_value_attr != b->m_value_attr ||
                 std::string(a->m_name) != b->m_name) return false;
+        if (trait_dictionary_erased_type(a->m_type, b->m_type, *method)) {
+            if (a->m_intent != ASR::intentType::In) return false;
+            continue;
+        }
         auto *binder = trait_type_parameter(generic.m_args[i]);
         if (binder) {
             auto *contract = trait_parameter_contract(binder);
@@ -5957,7 +6016,8 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
             return false;
         }
     }
-    return trait_types_equal(generic.m_return_var, erased.m_return_var, arguments);
+    return erased_result ||
+        trait_types_equal(generic.m_return_var, erased.m_return_var, arguments);
 }
 
 std::string trait_deferred_pack_key(const ASR::TraitDeferredPack_t &pack)
@@ -6066,6 +6126,167 @@ ASR::TraitRuntimeContract_t *trait_runtime_contract(ASR::ttype_t *view_type)
 {
     return ASR::down_cast<ASR::TraitRuntimeContract_t>(symbol_get_past_external(
         ASR::down_cast<ASR::TraitObjectType_t>(extract_type(view_type))->m_contract));
+}
+
+ASR::TraitDictionaryContract_t *trait_dictionary_contract(ASR::symbol_t *trait)
+{
+    trait = symbol_get_past_external(trait);
+    if (!trait || !ASR::is_a<ASR::Trait_t>(*trait) ||
+            !ASR::down_cast<ASR::Trait_t>(trait)->m_symtab ||
+            !ASR::down_cast<ASR::Trait_t>(trait)->m_symtab->parent) return nullptr;
+    for (const auto &entry : symbol_parent_symtab(trait)->get_scope()) {
+        if (!ASR::is_a<ASR::TraitDictionaryContract_t>(*entry.second)) continue;
+        auto *contract = ASR::down_cast<ASR::TraitDictionaryContract_t>(entry.second);
+        if (symbol_get_past_external(contract->m_trait) == trait) return contract;
+    }
+    return nullptr;
+}
+
+ASR::TraitDictionaryContract_t *trait_dictionary_contract(ASR::ttype_t *dictionary_type)
+{
+    auto *type = type_get_past_array(dictionary_type);
+    if (!type || !ASR::is_a<ASR::TraitDictionaryType_t>(*type)) return nullptr;
+    auto *contract = symbol_get_past_external(
+        ASR::down_cast<ASR::TraitDictionaryType_t>(type)->m_contract);
+    return contract && ASR::is_a<ASR::TraitDictionaryContract_t>(*contract)
+        ? ASR::down_cast<ASR::TraitDictionaryContract_t>(contract) : nullptr;
+}
+
+ASR::TraitDictionaryContract_t *trait_parameter_dictionary(ASR::symbol_t *parameter)
+{
+    auto traits = trait_parameter_traits(parameter);
+    return traits.size() == 1 ? trait_dictionary_contract(traits[0]) : nullptr;
+}
+
+ASR::TraitDictionary_t *trait_conformance_dictionary(
+        ASR::TraitImplementation_t &implementation,
+        ASR::TraitDictionaryContract_t *contract)
+{
+    if (!contract) contract = trait_dictionary_contract(implementation.m_trait);
+    if (!contract) return nullptr;
+    for (const auto &entry : implementation.m_parent_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitDictionary_t>(*entry.second)) continue;
+        auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(entry.second);
+        if (symbol_get_past_external(dictionary->m_implementation) == &implementation.base &&
+                symbol_get_past_external(dictionary->m_contract) == &contract->base) {
+            return dictionary;
+        }
+    }
+    return nullptr;
+}
+
+ASR::symbol_t *trait_call_result_declaration(ASR::expr_t *call)
+{
+    if (!call || !ASR::is_a<ASR::TraitFunctionCall_t>(*call)) return nullptr;
+    auto *x = ASR::down_cast<ASR::TraitFunctionCall_t>(call);
+    auto *slot = get_function(x->m_name);
+    if (!slot || !slot->m_return_var) return nullptr;
+    const char *parameter = trait_erased_parameter(expr_type(slot->m_return_var));
+    if (!parameter) return nullptr;
+    for (size_t i = 0; i < slot->n_args && i < x->n_args; i++) {
+        auto *dummy = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(slot->m_args[i])->m_v));
+        if (!dummy || !ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type)) continue;
+        auto *type = ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type);
+        if (!type->m_parameter || std::string(type->m_parameter) != parameter) continue;
+        auto *actual = x->m_args[i].m_value;
+        if (!actual || !ASR::is_a<ASR::TraitDictionaryValue_t>(*actual)) return nullptr;
+        auto *dictionary = symbol_get_past_external(
+            ASR::down_cast<ASR::TraitDictionaryValue_t>(actual)->m_dictionary);
+        auto *implementation = symbol_get_past_external(
+            ASR::down_cast<ASR::TraitDictionary_t>(dictionary)->m_implementation);
+        return ASR::down_cast<ASR::TraitImplementation_t>(implementation)->m_type_declaration;
+    }
+    return nullptr;
+}
+
+ASR::trait_slot_t *trait_call_slots(ASR::expr_t *receiver, size_t &n_slots)
+{
+    n_slots = 0;
+    auto *type = receiver ? extract_type(expr_type(receiver)) : nullptr;
+    if (!type) return nullptr;
+    if (ASR::is_a<ASR::TraitDictionaryType_t>(*type)) {
+        auto *contract = trait_dictionary_contract(type);
+        if (!contract) return nullptr;
+        n_slots = contract->n_slots;
+        return contract->m_slots;
+    }
+    if (!ASR::is_a<ASR::TraitObjectType_t>(*type)) return nullptr;
+    auto *contract = symbol_get_past_external(ASR::down_cast<ASR::TraitObjectType_t>(type)->m_contract);
+    if (!contract || !ASR::is_a<ASR::TraitRuntimeContract_t>(*contract)) return nullptr;
+    n_slots = ASR::down_cast<ASR::TraitRuntimeContract_t>(contract)->n_slots;
+    return ASR::down_cast<ASR::TraitRuntimeContract_t>(contract)->m_slots;
+}
+
+bool is_trait_dictionary_call(ASR::call_arg_t *args, size_t n_args)
+{
+    return n_args && args && args[0].m_value && ASR::is_a<ASR::TraitDictionaryType_t>(
+        *extract_type(expr_type(args[0].m_value)));
+}
+
+bool is_trait_erased(ASR::ttype_t *type)
+{
+    type = type ? type_get_past_array(type_get_past_allocatable_pointer(type)) : nullptr;
+    return type && ASR::is_a<ASR::TraitErasedType_t>(*type);
+}
+
+const char *trait_erased_parameter(ASR::ttype_t *type)
+{
+    return is_trait_erased(type)
+        ? ASR::down_cast<ASR::TraitErasedType_t>(
+            type_get_past_array(type_get_past_allocatable_pointer(type)))->m_parameter
+        : nullptr;
+}
+
+ASR::Variable_t *trait_dictionary_dummy(const ASR::Function_t &procedure,
+        const std::string &parameter)
+{
+    for (size_t i = 0; i < procedure.n_args; i++) {
+        if (!procedure.m_args[i] || !ASR::is_a<ASR::Var_t>(*procedure.m_args[i])) continue;
+        auto *variable = get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(procedure.m_args[i])->m_v));
+        if (!variable || !variable->m_type ||
+                !ASR::is_a<ASR::TraitDictionaryType_t>(*variable->m_type)) continue;
+        auto *dictionary = ASR::down_cast<ASR::TraitDictionaryType_t>(variable->m_type);
+        if (dictionary->m_parameter && parameter == dictionary->m_parameter) return variable;
+    }
+    return nullptr;
+}
+
+ASR::Function_t *trait_erased_owner(SymbolTable *scope)
+{
+    for (; scope; scope = scope->parent) {
+        if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) return nullptr;
+        auto *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (ASR::is_a<ASR::Function_t>(*owner)) return ASR::down_cast<ASR::Function_t>(owner);
+        if (!ASR::is_a<ASR::Block_t>(*owner) && !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+ASR::ttype_t *trait_dictionary_value_type(ASR::expr_t *dictionary)
+{
+    if (!dictionary || !ASR::is_a<ASR::TraitDictionaryValue_t>(*dictionary)) return nullptr;
+    auto *symbol = symbol_get_past_external(
+        ASR::down_cast<ASR::TraitDictionaryValue_t>(dictionary)->m_dictionary);
+    if (!symbol || !ASR::is_a<ASR::TraitDictionary_t>(*symbol)) return nullptr;
+    auto *implementation = symbol_get_past_external(
+        ASR::down_cast<ASR::TraitDictionary_t>(symbol)->m_implementation);
+    return implementation && ASR::is_a<ASR::TraitImplementation_t>(*implementation)
+        ? ASR::down_cast<ASR::TraitImplementation_t>(implementation)->m_implementing_type
+        : nullptr;
+}
+
+std::string trait_deferred_dictionary_key(const ASR::TraitDeferredDictionary_t &x)
+{
+    return "dictionary:" + nominal_symbol_name(x.m_constraint);
+}
+
+std::string trait_dictionary_binder_key(const std::string &requirement)
+{
+    return "dictionary-binder:" + requirement;
 }
 
 std::vector<ASR::symbol_t*> normalized_trait_requirements(
@@ -6237,6 +6458,13 @@ ASR::ttype_t* import_trait_type(Allocator &al, ASR::ttype_t* type, SymbolTable* 
             return reference == view->m_contract ? type :
                 TYPE(ASR::make_TraitObjectType_t(al, type->base.loc, reference));
         }
+        case ASR::ttypeType::TraitDictionaryType: {
+            auto *dictionary = ASR::down_cast<ASR::TraitDictionaryType_t>(type);
+            auto *reference = import_type_declaration(al, dictionary->m_contract, scope);
+            return reference == dictionary->m_contract ? type :
+                TYPE(ASR::make_TraitDictionaryType_t(al, type->base.loc, reference,
+                    dictionary->m_parameter));
+        }
         case ASR::ttypeType::Allocatable: {
             auto *owner = ASR::down_cast<ASR::Allocatable_t>(type);
             auto *element = import_trait_type(al, owner->m_type, scope);
@@ -6393,17 +6621,43 @@ bool runtime_trait_method_supported(const ASR::Function_t &method)
         return true;
     }
     for (size_t i = 0; i < generic->n_args; i++) {
-        if (!trait_parameter_contract(generic->m_symtab->get_symbol(generic->m_args[i]))) {
+        auto *binder = generic->m_symtab->get_symbol(generic->m_args[i]);
+        if (!trait_parameter_contract(binder) && !trait_parameter_dictionary(binder)) {
             return false;
         }
     }
-    if (!ASR::is_a<ASR::Integer_t>(*expr_type(method.m_return_var))) return false;
+    // A binder erased with a conformance dictionary also admits read-only
+    // assumed-shape arrays of its type and a result of its type.
+    auto dictionary_binder = [&](ASR::ttype_t *type) {
+        if (!type || !ASR::is_a<ASR::TypeParameter_t>(*type)) return false;
+        auto *binder = generic->m_symtab->get_symbol(
+            ASR::down_cast<ASR::TypeParameter_t>(type)->m_param);
+        return binder && trait_parameter_dictionary(binder) != nullptr;
+    };
+    auto *result = expr_type(method.m_return_var);
+    if (!ASR::is_a<ASR::Integer_t>(*result) &&
+            !(dictionary_binder(result) &&
+                !ASR::down_cast<ASR::TypeParameter_t>(result)->m_is_class)) return false;
     for (size_t i = 0; i < method.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*method.m_args[i])) return false;
         auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
         auto *arg = ASR::down_cast<ASR::Variable_t>(symbol);
         auto *type = arg->m_type;
+        if (ASR::is_a<ASR::Array_t>(*type) &&
+                dictionary_binder(ASR::down_cast<ASR::Array_t>(type)->m_type)) {
+            auto *array = ASR::down_cast<ASR::Array_t>(type);
+            if (array->m_physical_type != ASR::array_physical_typeType::DescriptorArray ||
+                    ASR::down_cast<ASR::TypeParameter_t>(array->m_type)->m_is_class ||
+                    arg->m_intent != ASR::intentType::In ||
+                    arg->m_presence != ASR::presenceType::Required ||
+                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->m_contiguous_attr || arg->n_codims) return false;
+            for (size_t j = 0; j < array->n_dims; j++) {
+                if (array->m_dims[j].m_length) return false;
+            }
+            continue;
+        }
         if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
             if (arg->m_intent != ASR::intentType::In ||
                     arg->m_presence != ASR::presenceType::Required ||
@@ -7769,7 +8023,9 @@ ASR::symbol_t *nested_symbol_unit(ASR::symbol_t *symbol, std::vector<char*> &sco
     ASR::symbol_t *owner = get_asr_owner(symbol);
     while (owner && (ASR::is_a<ASR::Template_t>(*owner) || ASR::is_a<ASR::Trait_t>(*owner) ||
             ASR::is_a<ASR::TraitRuntimeContract_t>(*owner) ||
-            ASR::is_a<ASR::TraitWitness_t>(*owner) || ASR::is_a<ASR::TraitErasure_t>(*owner))) {
+            ASR::is_a<ASR::TraitWitness_t>(*owner) || ASR::is_a<ASR::TraitErasure_t>(*owner) ||
+            ASR::is_a<ASR::TraitDictionaryContract_t>(*owner) ||
+            ASR::is_a<ASR::TraitDictionary_t>(*owner))) {
         scopes.push_back(symbol_name(owner));
         owner = get_asr_owner(owner);
     }

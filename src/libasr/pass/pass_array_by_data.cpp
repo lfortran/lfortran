@@ -94,6 +94,8 @@ static bool names_runtime_trait_storage(const ASR::Function_t &x) {
         bool found = false;
         void visit_TraitObjectType(const ASR::TraitObjectType_t &) { found = true; }
         void visit_TraitOwnerList(const ASR::TraitOwnerList_t &) { found = true; }
+        void visit_TraitErasedType(const ASR::TraitErasedType_t &) { found = true; }
+        void visit_TraitDictionaryType(const ASR::TraitDictionaryType_t &) { found = true; }
     } finder;
     finder.visit_Function(x);
     return finder.found;
@@ -819,6 +821,24 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             } callees(not_to_be_erased);
             callees.visit_TraitWitness(x);
+        }
+
+        // A dictionary adapter likewise forwards the descriptors it received.
+        void visit_TraitDictionary(const ASR::TraitDictionary_t &x) {
+            class Callees : public ASR::BaseWalkVisitor<Callees> {
+            public:
+                std::set<ASR::symbol_t*> &kept;
+                explicit Callees(std::set<ASR::symbol_t*> &kept_) : kept(kept_) {}
+                void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                    kept.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::BaseWalkVisitor<Callees>::visit_FunctionCall(x);
+                }
+                void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                    kept.insert(ASRUtils::symbol_get_past_external(x.m_name));
+                    ASR::BaseWalkVisitor<Callees>::visit_SubroutineCall(x);
+                }
+            } callees(not_to_be_erased);
+            callees.visit_TraitDictionary(x);
         }
 
         // this is exactly the same as the one in EditProcedureReplacer
