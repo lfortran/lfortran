@@ -61,6 +61,11 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
 
     }
 
+    void replace_StringLen(ASR::StringLen_t* /*x*/) {
+        // LEN of a character array is a scalar inquiry, like SIZE; its
+        // array argument is not an elemental operand of the expression.
+    }
+
     void replace_Var(ASR::Var_t* x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_v)) ) {
             vars.push_back(al, current_expr);
@@ -557,6 +562,7 @@ public:
         void visit_ArraySize(const ASR::ArraySize_t&) {}
         void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
         void visit_ArrayBound(const ASR::ArrayBound_t&) {}
+        void visit_StringLen(const ASR::StringLen_t&) {}
 
         void visit_Var(const ASR::Var_t& x) {
             ASR::Var_t *xx = const_cast<ASR::Var_t*>(&x);

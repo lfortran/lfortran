@@ -1940,6 +1940,7 @@ RUN(NAME intrinsics_487 LABELS gfortran llvm) # cshift with an array shift whose
 RUN(NAME intrinsics_488 LABELS gfortran llvm) # dot_product of descriptor integer arrays and mixed real kinds (#13489)
 RUN(NAME intrinsics_489 LABELS gfortran llvm) 
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)

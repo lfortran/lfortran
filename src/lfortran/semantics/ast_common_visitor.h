@@ -17965,27 +17965,7 @@ public:
                 throw SemanticAbort();
             }
         }
-        if( ASRUtils::is_array(v_type) ) {
-            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(v)));
-            ASR::String_t* str = ASR::down_cast<ASR::String_t>(arr->m_type);
-            int64_t length;
-            len_compiletime = ASRUtils::extract_value(str->m_len, length) ? 
-            make_ConstantWithType(make_IntegerConstant_t, length, type, loc) : nullptr;
-            // TODO: If possible try to use m_len of `character(len=m_len)`
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(v_type);
-            Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
-            for( int i = 0; i < n_dims; i++ ) {
-                ASR::array_index_t index;
-                index.loc = loc;
-                index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag);
-                index.m_step = nullptr;
-                lbs.push_back(al, index);
-            }
-            v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
-                    ASRUtils::extract_type(v_type),
-                        ASR::arraystorageType::ColMajor, nullptr));
-        } else if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
+        if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
             ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
                 if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
                 // Simple case: plain array variable e.g. arr(i)
@@ -18010,6 +17990,10 @@ public:
             }
         }
 
+        // LEN of a character array is the length of its element type, which
+        // is defined even when the array has zero size. Keep the array as the
+        // StringLen argument rather than indexing its first element, which
+        // would be an out-of-bounds access for a zero-size array.
         { // Try to get expression's string length (if exist)
             ASR::ttype_t* base_t = ASRUtils::type_get_past_allocatable_pointer( v_type );
             base_t = ASRUtils::type_get_past_array(base_t);
