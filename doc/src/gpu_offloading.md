@@ -232,9 +232,12 @@ generates the device source. It never falls back to the CPU:
   the kernel and sized on the host; a procedure the value is passed to is
   handed the array as the component, as it is handed the device buffer of a
   component of a kernel argument. An assignment of the whole value copies
-  the component into that array. A component given several different
-  shapes, or a shape read from a value the procedure computes, is an error
-  ("the allocatable component ... cannot be sized on the host").
+  the component into that array. When a value of a type cannot be stored
+  this way -- a component given several different shapes, or a shape read
+  from a value the procedure computes, an array of values of the type, or
+  a value held in a component of another value -- every value of that type
+  device code creates is on the device heap instead (a *heap type*, see
+  [Allocating on the device](#allocating-on-the-device)).
 * A derived-type argument a procedure defines (`intent(out)` or
   `intent(inout)`) is passed by reference, to a value in the memory of the
   calling thread, as the procedure's locals are. An element of a kernel
@@ -531,9 +534,14 @@ host hands over, and it is never on the heap. Where it meets heap values:
   rank-one allocatable: `allocate(w(n(l)))` in `do l = 1, m`, or a local of
   higher rank, cannot be sized yet, even when the host could work out the
   largest value before the launch by going over the loop.
-* The device heap holds heap arrays of intrinsic types only: heap types
-  (derived-type values on the heap) and copy-out records are not
-  implemented yet, so a derived-type value that host-sized storage cannot
-  hold is still an error. A heap array of rank greater than one cannot be
-  passed whole, and a section of a heap array whose elements are not
-  contiguous is not lowered yet.
+* Copy-out records are not implemented yet: a heap value stored into a
+  kernel argument is an error. A heap array of rank greater than one cannot
+  be passed whole, a section of a heap array whose elements are not
+  contiguous is not lowered yet, and neither is an array of a heap type of
+  rank greater than one, a component of a heap type that is an array of
+  values of a heap type of a fixed size, an allocatable scalar, pointer or
+  polymorphic component of a heap type, an allocatable component of a heap
+  type in a value the host hands over, or an array of a heap type the host
+  hands over passed to a procedure. A value the host hands over is copied
+  into an image even when its allocatable component is not allocated (the
+  device sees it as allocated with no elements).
