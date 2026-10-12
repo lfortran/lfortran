@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90_fixed_form-doloop_22-117cffc",
+    "cmd": "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/doloop_22.f90",
+    "infile_hash": "48c12df09eca47c6b946395b7f36b51ff49e6f1c0c04197d306ec82e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90_fixed_form-doloop_22-117cffc.stdout",
+    "stdout_hash": "9e85bcce0a8856f9aea58e786facf520e9eb40621dea027a980748d4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

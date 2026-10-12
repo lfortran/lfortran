@@ -386,9 +386,13 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'endtype' { KW(ENDTYPE) }
 
             'end' whitespace 'do' {
-                if (enddo_newline_process) {
+                if (enddo_newline_process && enddo_insert_count > 1) {
                     KW(CONTINUE)
                 } else {
+                    // `<label> end do` that ends one `do <label>` loop is
+                    // its own END DO, not a CONTINUE followed by one
+                    enddo_newline_process = false;
+                    enddo_insert_count = 0;
                     KW(END_DO)
                 }
             }

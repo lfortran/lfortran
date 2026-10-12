@@ -54,7 +54,7 @@ area = result
 errsum = abserr
 iroff1 = 0
 iroff2 = 0
-do last = 3, limit
+do 60 last = 3, limit
     a1 = alist(maxerr)
     b1 = 0.5d+00*(alist(maxerr) + blist(maxerr))
     a2 = b1
@@ -94,11 +94,11 @@ do last = 3, limit
     elist(last) = error1
     50 call dqpsrt(limit, last, maxerr, errmax, elist, iord, nrmax)
     if (ier /= 0 .or. errsum <= errbnd) go to 70
-60 end do
+    60 continue
 70 result = 0.0d+00
-do k = 1, last
+do 80 k = 1, last
     result = result + rlist(k)
-80 end do
+    80 continue
 abserr = errsum
 999 return
 end subroutine dqawse

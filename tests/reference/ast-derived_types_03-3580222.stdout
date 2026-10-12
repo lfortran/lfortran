@@ -12,6 +12,7 @@
             0
             ()
             0
+            .false.
             nn
             1
             ndiag
@@ -96,6 +97,7 @@
             0
             ()
             0
+            .false.
             k
             1
             nz
@@ -104,6 +106,7 @@
                 0
                 ()
                 0
+                .false.
                 j
                 1
                 ny
@@ -112,6 +115,7 @@
                     0
                     ()
                     0
+                    .false.
                     i
                     1
                     ichunk
