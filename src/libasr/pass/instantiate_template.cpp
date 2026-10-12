@@ -1403,8 +1403,16 @@ public:
         if (new_value == nullptr && new_symbolic_value
                 && x->m_storage == ASR::storage_typeType::Parameter) {
             new_value = ASRUtils::expr_value(new_symbolic_value);
+            // In the copy of a nested template, an initializer that uses
+            // the nested template's own deferred constants gets its value
+            // only when that template is instantiated.
+            SymbolTable* template_scope = enclosing_template_scope(
+                x->m_parent_symtab);
+            bool in_nested_template = template_scope != nullptr
+                && is_in_template(template_scope->parent);
             if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
-                    && !ASRUtils::is_value_constant(new_value)) {
+                    && !ASRUtils::is_value_constant(new_value)
+                    && !in_nested_template) {
                 // The semantics accept only initializers that the operations
                 // above evaluate, so this is not expected; report it rather
                 // than leave the named constant without a value.
@@ -1844,6 +1852,7 @@ public:
             SymbolInstantiator t(al, new_scope, nested_type_subs, symbol_subs,
                 ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
                 diagnostics);
+            t.instantiates_own_scope = true;
             t.instantiate();
         }
 
@@ -1970,15 +1979,20 @@ public:
         return new_scope->resolve_symbol(x->m_name);
     }
 
-    static bool is_in_template(SymbolTable* scope) {
+    // The scope of the innermost template enclosing scope, if any.
+    static SymbolTable* enclosing_template_scope(SymbolTable* scope) {
         for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
             if (s->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
                     && ASR::is_a<ASR::Template_t>(
                         *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
-                return true;
+                return s;
             }
         }
-        return false;
+        return nullptr;
+    }
+
+    static bool is_in_template(SymbolTable* scope) {
+        return enclosing_template_scope(scope) != nullptr;
     }
 
     // A procedure declared outside the template, e.g. a module procedure,
@@ -2075,15 +2089,22 @@ public:
             return nullptr;
         }
         std::string name = ASRUtils::symbol_name(v);
+        SymbolTable* scope = corresponding_target_scope(
+            ASRUtils::symbol_parent_symtab(v));
+        if (is_in_template(ASRUtils::symbol_parent_symtab(v_owner))) {
+            // The copy of a nested template has all of its entities,
+            // including its deferred constants, under their own names.
+            SymbolInstantiator t(al, scope, type_subs, symbol_subs, name, v,
+                diagnostics);
+            t.instantiates_own_scope = true;
+            return t.instantiate();
+        }
         if (symbol_subs.find(name) != symbol_subs.end()) {
             return symbol_subs[name];
         }
         if (ASRUtils::is_template_arg(v_owner, name)) {
-            // A deferred constant of a nested template, left deferred
             return nullptr;
         }
-        SymbolTable* scope = corresponding_target_scope(
-            ASRUtils::symbol_parent_symtab(v));
         std::string new_name = scope->get_unique_name("__asr_" + name, false);
         SymbolInstantiator t(al, scope, type_subs, symbol_subs, new_name, v,
             diagnostics);
