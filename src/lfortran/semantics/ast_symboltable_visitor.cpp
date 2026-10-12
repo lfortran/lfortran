@@ -8025,6 +8025,7 @@ public:
         current_module_dependencies.push_back(al, msym_cc);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
+        check_used_module(x, used, t);
         SymbolTable *tu_symtab = current_scope->get_tu_scope();
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {

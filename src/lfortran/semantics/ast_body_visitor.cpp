@@ -6147,6 +6147,7 @@ public:
         current_module_dependencies.push_back(al, msym_cc);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
+        check_used_module(x, used, t);
         if (!t) {
             SymbolTable *tu_symtab = current_scope->get_tu_scope();
             std::set<std::string> loaded_submodules;

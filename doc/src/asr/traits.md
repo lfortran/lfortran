@@ -1237,14 +1237,21 @@ with the `INTRINSIC` module nature always, even when the program has a
 `generics.mod` on the module search path; with `NON_INTRINSIC` never, so that
 USE needs a module of the program; and without a module nature only when no
 module of the program named `generics` is accessible, that is defined earlier
-in the same source or found as a modfile. A program's own module `generics`
-therefore keeps working and is never shadowed. A module that uses the
-intrinsic module records it under its runtime name as its dependency, so a
-client of its modfile loads the same module from the runtime without any
-provider of the program, and every use of it names one module and one
-`INumeric`. `traits_generics_module_01` to `_03` cover separate compilation,
-renamed imports, a program's own module `generics` and the USE without a
-nature.
+in the same source or found as a modfile, a readable, non-empty
+`generics.mod` (the empty placeholder that a submodule named `generics`
+leaves is no module). A program's own module `generics` therefore keeps
+working and is never shadowed. A module that uses the intrinsic module
+records it under its runtime name, `lfortran_intrinsic_generics`, as its
+dependency, so a client of its modfile loads the same module from the runtime
+without any provider of the program, and every use of it names one module and
+one `INumeric`. The intrinsic module is always the runtime's: a module of the
+program named `lfortran_intrinsic_generics`, usable by that name, is reported
+where a USE would access the intrinsic module instead of standing in for it,
+and an installation without the runtime module reports the intrinsic module
+`generics` as not found. `traits_generics_module_01` to `_03` cover separate
+compilation, renamed imports, a program's own module `generics` and the USE
+without a nature; `continue_compilation_traits_kind_sets_internal_name` covers
+a module of the program with the runtime module's name.
 
 ### Inline finite constraints
 

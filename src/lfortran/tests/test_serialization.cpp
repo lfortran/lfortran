@@ -834,6 +834,23 @@ static bool module_depends_on(LCompilers::ASR::TranslationUnit_t &unit, const ch
     return false;
 }
 
+// What the local name `local` of the BLOCK of the procedure `name` of `unit`
+// stands for.
+static LCompilers::ASR::symbol_t *block_local(LCompilers::ASR::TranslationUnit_t &unit,
+        const char *name, const char *local) {
+    namespace ASR = LCompilers::ASR;
+    ASR::symbol_t *procedure = unit.m_symtab->get_symbol(name);
+    REQUIRE(procedure);
+    ASR::Block_t *block = nullptr;
+    for (const auto &entry : LCompilers::ASRUtils::symbol_symtab(procedure)->get_scope()) {
+        if (ASR::is_a<ASR::Block_t>(*entry.second)) {
+            block = ASR::down_cast<ASR::Block_t>(entry.second);
+        }
+    }
+    REQUIRE(block);
+    return LCompilers::ASRUtils::symbol_get_past_external(block->m_symtab->get_symbol(local));
+}
+
 // Compiles the module `alone`, whose one statement is `use`.
 static LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> compile_use_alone(
         Allocator &al, const std::string &use, LCompilers::CompilerOptions &options,
@@ -861,6 +878,16 @@ end module plain_user
 module own_user
 use, non_intrinsic :: generics, only: INumeric
 end module own_user
+subroutine plain_block()
+block
+use generics, only: INumeric
+end block
+end subroutine plain_block
+subroutine own_block()
+block
+use, non_intrinsic :: generics, only: INumeric
+end block
+end subroutine own_block
 )";
     Allocator al(1024 * 1024);
     LCompilers::CompilerOptions options;
@@ -879,11 +906,13 @@ end module own_user
     CHECK(LCompilers::asr_verify(unit, true, diagnostics));
 
     // Without a module nature, the accessible module of the program is used;
-    // with NON_INTRINSIC, always the program's own.
+    // with NON_INTRINSIC, always the program's own. So in a BLOCK.
     auto *own = unit_module(unit, "generics");
     CHECK_FALSE(own->m_intrinsic);
     CHECK(module_local(unit, "plain_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
     CHECK(module_local(unit, "own_user", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(block_local(unit, "plain_block", "inumeric") == own->m_symtab->get_symbol("inumeric"));
+    CHECK(block_local(unit, "own_block", "inumeric") == own->m_symtab->get_symbol("inumeric"));
     CHECK(module_depends_on(unit, "plain_user", "generics"));
     CHECK(module_depends_on(unit, "own_user", "generics"));
     CHECK_FALSE(unit.m_symtab->get_symbol("lfortran_intrinsic_generics"));
@@ -895,6 +924,26 @@ end module own_user
     CHECK_FALSE(rejected.ok);
     REQUIRE(!errors.diagnostics.empty());
     CHECK(errors.diagnostics.back().message == "Module 'generics' modfile was not found");
+}
+
+TEST_CASE("A USE of the intrinsic module generics needs the runtime's module") {
+    Allocator al(64 * 1024);
+    LCompilers::CompilerOptions options;
+    // No modfile is found in a directory that does not exist.
+    options.po.runtime_library_dir = "test_serialization_no_runtime";
+    options.po.mod_files_dir = "test_serialization_no_runtime";
+    for (const char *use : {"use, intrinsic :: generics, only: INumeric",
+            "use generics, only: INumeric"}) {
+        INFO(use);
+        LCompilers::diag::Diagnostics errors;
+        CHECK_FALSE(compile_use_alone(al, use, options, errors).ok);
+        REQUIRE(!errors.diagnostics.empty());
+        CHECK(errors.diagnostics.back().message == "intrinsic module 'generics' was not found");
+        REQUIRE(!errors.diagnostics.back().labels.empty());
+        REQUIRE(!errors.diagnostics.back().labels[0].spans.empty());
+        // The USE statement, after "module alone\n".
+        CHECK(errors.diagnostics.back().labels[0].spans[0].loc.first == 13);
+    }
 }
 
 // The standalone WASM unit-test image has no runtime modfiles: it does not
@@ -910,6 +959,11 @@ TEST_CASE("The intrinsic module generics follows the USE module nature") {
 module early_user
 use generics, only: INumeric
 end module early_user
+subroutine early_block()
+block
+use generics, only: INumeric
+end block
+end subroutine early_block
 module generics
 implicit none
 abstract interface :: INumeric
@@ -931,6 +985,11 @@ end module user_code
 module renamed_user
 use, intrinsic :: generics, only: Numeric => INumeric
 end module renamed_user
+subroutine intrinsic_block()
+block
+use, intrinsic :: generics, only: INumeric
+end block
+end subroutine intrinsic_block
 )";
     Allocator al(1024 * 1024);
     LCompilers::CompilerOptions options;
@@ -978,11 +1037,13 @@ end module renamed_user
     // INTRINSIC, renamed or not, reaches it whatever modules of the program
     // exist, and ONLY imports nothing else. Without a nature, it is used when
     // no module of the program is accessible: early_user precedes the
-    // program's generics.
+    // program's generics. So in a BLOCK.
     CHECK_FALSE(module("generics")->m_intrinsic);
     CHECK(imported("user_code", "inumeric") == numeric);
     CHECK(imported("renamed_user", "numeric") == numeric);
     CHECK(imported("early_user", "inumeric") == numeric);
+    CHECK(block_local(*unit, "early_block", "inumeric") == numeric);
+    CHECK(block_local(*unit, "intrinsic_block", "inumeric") == numeric);
     CHECK(depends("user_code", "lfortran_intrinsic_generics"));
     CHECK_FALSE(depends("user_code", "generics"));
     CHECK(depends("early_user", "lfortran_intrinsic_generics"));

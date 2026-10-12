@@ -34339,6 +34339,30 @@ public:
         return {runtime, true};
     }
 
+    // Checks the module that the USE statement `x` accesses, before anything
+    // is imported from it. `t` is the symbol of `used.name` in scope, or
+    // nullptr if the module is still to be loaded. An intrinsic module must be
+    // the one that the runtime installs: an entity of the program with the
+    // name of its runtime module does not stand in for it. Diagnostics name
+    // the module as the USE statement does.
+    void check_used_module(const AST::Use_t &x, const UsedModule &used, ASR::symbol_t *t) {
+        if (!used.intrinsic) return;
+        std::string written = to_lower(x.m_module);
+        std::string error;
+        if (t && !(ASR::is_a<ASR::Module_t>(*t) &&
+                ASR::down_cast<ASR::Module_t>(t)->m_intrinsic)) {
+            error = "intrinsic module '" + written + "' conflicts with '" + used.name +
+                "' of the program: LFortran provides the intrinsic module under that name";
+        } else if (!t && !ASRUtils::modfile_exists(used.name, compiler_options.po)) {
+            error = "intrinsic module '" + written + "' was not found";
+        } else {
+            return;
+        }
+        diag.add(diag::Diagnostic(error, diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {x.base.base.loc})}));
+        throw SemanticAbort();
+    }
+
     void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
         std::string msym = used_module(x).name;
         // Diagnostics name the module as the USE statement does.
