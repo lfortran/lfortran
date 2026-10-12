@@ -222,6 +222,15 @@ public:
         Location loc;
     };
     std::vector<TypeInitializer> pending_type_initializers;
+    // Implements statements whose initializers overload the constructor of
+    // a type of their unit. A statement can precede the type, so they are
+    // registered once the declarations of the unit are complete.
+    struct ImplementsInitializers {
+        SymbolTable *scope;
+        std::string type_name;
+        const AST::Implements_t *implements;
+    };
+    std::vector<ImplementsInitializers> pending_implements_initializers;
     // A procedure an implements statement binds to an initializer
     // (TypeSetConversion) or operator requirement.
     struct DeclaredTraitOperation {
@@ -4435,6 +4444,27 @@ public:
         }
     }
 
+    void register_implements_initializers() {
+        for (const auto &pending : pending_implements_initializers) {
+            ASR::symbol_t *type = pending.scope->get_symbol(pending.type_name);
+            if (!type || !ASR::is_a<ASR::Struct_t>(*type)) continue;
+            const AST::Implements_t &x = *pending.implements;
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                if (!AST::is_a<AST::InitialProcedure_t>(*x.m_procedures[i])) continue;
+                auto *initial = AST::down_cast<AST::InitialProcedure_t>(x.m_procedures[i]);
+                for (size_t j = 0; j < initial->n_names; j++) {
+                    std::string procedure = to_lower(initial->m_names[j]);
+                    pending_type_initializers.push_back({pending.scope,
+                        ASR::down_cast<ASR::Struct_t>(type)->m_symtab, pending.type_name,
+                        procedure, initial->base.base.loc});
+                    generic_procedures[pending.type_name].push_back(
+                        {procedure, initial->base.base.loc, pending.scope});
+                }
+            }
+        }
+        pending_implements_initializers.clear();
+    }
+
     void check_type_initializers() {
         std::map<SymbolTable*, std::set<ASR::symbol_t*>> seen;
         for (const auto &binding : pending_type_initializers) {
@@ -5330,23 +5360,8 @@ public:
         // its package.
         if (AST::is_a<AST::AttrType_t>(*x.m_implementing_type) &&
                 AST::down_cast<AST::AttrType_t>(x.m_implementing_type)->m_name) {
-            std::string type_name = to_lower(
-                AST::down_cast<AST::AttrType_t>(x.m_implementing_type)->m_name);
-            ASR::symbol_t *type = current_scope->get_symbol(type_name);
-            if (type && ASR::is_a<ASR::Struct_t>(*type)) {
-                for (size_t i = 0; i < x.n_procedures; i++) {
-                    if (!AST::is_a<AST::InitialProcedure_t>(*x.m_procedures[i])) continue;
-                    auto *initial = AST::down_cast<AST::InitialProcedure_t>(x.m_procedures[i]);
-                    for (size_t j = 0; j < initial->n_names; j++) {
-                        std::string procedure = to_lower(initial->m_names[j]);
-                        pending_type_initializers.push_back({current_scope,
-                            ASR::down_cast<ASR::Struct_t>(type)->m_symtab, type_name,
-                            procedure, initial->base.base.loc});
-                        generic_procedures[type_name].push_back(
-                            {procedure, initial->base.base.loc, current_scope});
-                    }
-                }
-            }
+            pending_implements_initializers.push_back({current_scope, to_lower(
+                AST::down_cast<AST::AttrType_t>(x.m_implementing_type)->m_name), &x});
         }
         pending_trait_implementations[current_scope].push_back(&x);
         tmp = nullptr;
@@ -6750,6 +6765,7 @@ public:
     }
 
     void add_generic_procedures() {
+        register_implements_initializers();
         check_type_initializers();
         // Interface blocks of the same name in different scopes declare
         // different generic interfaces: build one in each of those scopes.
