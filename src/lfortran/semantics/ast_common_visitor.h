@@ -2430,6 +2430,10 @@ public:
     // the masked body.
     Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
+    // The placeholders in `pending_proc_placeholders` that stand for a
+    // procedure given to a procedure pointer component before its
+    // definition, see `declare_forward_procedure_target()`.
+    std::set<ASR::symbol_t*> forward_procedure_targets;
 
     struct PendingProcPtrInit {
         std::string proc_name;
@@ -13633,6 +13637,7 @@ public:
             ASR::ttype_t* prev_variable_type = current_variable_type_;
             ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
             set_null_context_to_component(member, args[i].m_end->base.loc);
+            declare_forward_procedure_target(member, args[i].m_end);
             visit_expr_list(&args[i], 1, val);
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
@@ -13862,6 +13867,44 @@ public:
     // `integer(4)` or `real(8), dimension(2)`.
     std::string struct_component_type_to_str(ASR::Variable_t* member) {
         return fortran_type_to_str(member->m_type, member->m_type_declaration);
+    }
+
+    // A structure constructor in the specification part of a module may give
+    // a procedure pointer component a module procedure that the module
+    // defines only later, after `contains`, as in
+    // `type(t), parameter :: c = t(f)` (F2018 7.5.10: such a component value
+    // is an initial procedure target). If the name `value` of the component
+    // `member` is not declared yet, declare it as a placeholder procedure
+    // with the component's interface. The module refers to the procedure
+    // instead once its procedures are known, see
+    // `resolve_proc_pointer_placeholders()`, and reports a placeholder that
+    // no procedure replaced.
+    void declare_forward_procedure_target(ASR::symbol_t* member,
+            AST::expr_t* value) {
+        if (is_body_visitor || !in_module || !AST::is_a<AST::Name_t>(*value)
+                || member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)
+                || current_scope->parent == nullptr
+                || current_scope->parent->parent != nullptr) {
+            return;
+        }
+        ASR::FunctionType_t* iface = ASRUtils::get_procedure_pointer_component_type(
+            ASR::down_cast<ASR::Variable_t>(member));
+        std::string name = to_lower(AST::down_cast<AST::Name_t>(value)->m_id);
+        if (iface == nullptr || current_scope->resolve_symbol(name) != nullptr) {
+            return;
+        }
+        ASR::FunctionType_t* placeholder_type = ASR::down_cast<ASR::FunctionType_t>(
+            ASRUtils::duplicate_type(al, &iface->base));
+        placeholder_type->m_deftype = ASR::deftypeType::Interface;
+        SymbolTable* fn_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::symbol_t* placeholder = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Function_t(al, value->base.loc, fn_scope, s2c(al, name),
+                &placeholder_type->base, nullptr, 0, nullptr, 0, nullptr, 0,
+                nullptr, ASR::accessType::Public, false, false, nullptr,
+                nullptr, nullptr));
+        current_scope->add_symbol(name, placeholder);
+        pending_proc_placeholders.push_back({name, placeholder});
+        forward_procedure_targets.insert(placeholder);
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -26194,6 +26237,8 @@ public:
             ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
             set_null_context_to_component(constructor_arg_syms[idx],
                 kwargs[i].m_value->base.loc);
+            declare_forward_procedure_target(constructor_arg_syms[idx],
+                kwargs[i].m_value);
             this->visit_expr(*kwargs[i].m_value);
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
