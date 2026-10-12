@@ -1627,3 +1627,15 @@ semantic error: Left operand must be LOGICAL or LOGICAL array
      |
 2717 |             l = y .and. x  ! {Error} Left operand must be LOGICAL or LOGICAL array
      |                 ^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-t`
+    --> tests/errors/continue_compilation_templates_01.f90:2731:13
+     |
+2731 |         y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t`
+     |             ^^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-b_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2753:17
+     |
+2753 |             y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
+     |                 ^^ 

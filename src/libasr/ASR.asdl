@@ -339,6 +339,7 @@ omp_clause
   | OMPMap(map_type type, expr* vars)
   | OMPIndependent()
   | OMPTargetRequested()
+  | OMPCriticalName(identifier name)
 
 map_type 
     = To | From | ToFrom | Alloc | Release | Delete

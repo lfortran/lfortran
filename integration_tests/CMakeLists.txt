@@ -3907,6 +3907,7 @@ RUN(NAME template_defined_assignment_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_operator_mod_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_01_mod.f90)
 RUN(NAME template_operator_mod_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_02_mod.f90)
 RUN(NAME template_submodule_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_unary_minus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -5119,6 +5120,9 @@ RUN(NAME openmp_98 LABELS gfortran llvm_omp EXTRAFILES openmp_98b.f90 GFORTRAN_A
 RUN(NAME openmp_99 LABELS gfortran llvm_omp EXTRAFILES openmp_99_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_100 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_101 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_102 LABELS gfortran llvm_omp EXTRAFILES openmp_102b.f90 GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_103 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -5952,6 +5956,7 @@ RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_380 LABELS llvm metal cuda_cpu) # gfortran on CI lacks reduce clause
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
