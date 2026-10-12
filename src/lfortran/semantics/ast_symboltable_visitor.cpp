@@ -977,6 +977,9 @@ public:
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        // Every undefined procedure pointer component target is reported
+        // before compilation stops.
+        bool undefined_forward_target = false;
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             // Check the module's symbol table
             ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
@@ -985,6 +988,7 @@ public:
                 diag.semantic_error_label("Variable '" + name
                     + "' is not declared", {placeholder_sym->base.loc},
                     "'" + name + "' is undeclared");
+                undefined_forward_target = true;
             } else if (current_sym == placeholder_sym) {
                 diag.add(diag::Diagnostic(
                     "Interface '" + name + "' is referenced but not defined",
@@ -998,6 +1002,9 @@ public:
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
+        }
+        if (undefined_forward_target && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
     }
 

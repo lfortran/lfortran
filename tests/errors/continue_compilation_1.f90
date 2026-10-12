@@ -2423,6 +2423,23 @@ subroutine type_spec_procedure_interface_error()
     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
 end subroutine type_spec_procedure_interface_error
 
+! A procedure pointer component value in a module's specification part may
+! name a module procedure defined later, but the module must define it.
+module cc1_proc_component_undefined_target_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcut_iface()
+        end subroutine cc1_pcut_iface
+    end interface
+    type :: cc1_pcut_t
+        procedure(cc1_pcut_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
+contains
+    subroutine cc1_pcut_defined()
+    end subroutine cc1_pcut_defined
+end module cc1_proc_component_undefined_target_mod
+
 ! An internal procedure named like a specific intrinsic function that its host
 ! defines after it is used as the interface is not supported yet.
 subroutine later_internal_procedure_interface_error()

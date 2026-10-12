@@ -6412,3 +6412,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/character_35.f90"
 ast_f90 = true
+
+[[test]]
+filename = "errors/procedure_pointer_component_target_01.f90"
+asr = true

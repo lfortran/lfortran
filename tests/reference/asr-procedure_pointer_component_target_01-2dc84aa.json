@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_pointer_component_target_01-2dc84aa",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/procedure_pointer_component_target_01.f90",
+    "infile_hash": "4d78f41b2b67ed55ca4be41ce6f74e805dd09cb6084ab05d9bc29a4e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_pointer_component_target_01-2dc84aa.stderr",
+    "stderr_hash": "ebea94614ed04bef4cee19dfd062add2d85ae450006f11763494976f",
+    "returncode": 2
+}
