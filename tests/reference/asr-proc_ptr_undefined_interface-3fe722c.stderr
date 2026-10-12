@@ -1,0 +1,5 @@
+semantic error: Interface 'nosuch' is referenced but not defined
+ --> tests/errors/proc_ptr_undefined_interface.f90:3:5
+  |
+3 |     procedure(nosuch), pointer :: q => null()
+  |     ^^^^^^^^^^^^^^^^^ Referenced here

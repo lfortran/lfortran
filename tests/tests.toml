@@ -5551,6 +5551,14 @@ filename = "errors/duplicate_module_procedures.f90"
 asr = true
 
 [[test]]
+filename = "errors/proc_ptr_undefined_interface.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_deferred_interface_procedure.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
 
