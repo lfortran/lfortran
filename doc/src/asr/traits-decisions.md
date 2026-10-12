@@ -46,11 +46,13 @@ It is a living document. Last updated: 2026-10-12.
   2889-2898) is the schematic union-type example of the Outlook chapter and is
   out of scope.
 - **Public discussion.** Issue
-  [#2](https://github.com/difference-scheme/Traits-for-Fortran/issues/2),
-  "Clarify trait implementation visibility and separate compilation", and pull
-  request [#3](https://github.com/difference-scheme/Traits-for-Fortran/pull/3),
-  "Add trait examples and a restrictive conformance plan", of the proposal
-  repository.
+  [difference-scheme/Traits-for-Fortran#2](https://github.com/difference-scheme/Traits-for-Fortran/issues/2),
+  "Clarify trait implementation visibility and separate compilation", called
+  *the visibility issue* below, and pull request
+  [difference-scheme/Traits-for-Fortran#3](https://github.com/difference-scheme/Traits-for-Fortran/pull/3),
+  "Add trait examples and a restrictive conformance plan", called *the
+  restrictive-plan PR* below. Both are in the proposal repository, not in
+  LFortran's.
 - **People.** The *maintainer* is the LFortran developer who directed this
   prototype and answered the questions below. The *proposal author* is the
   author of `traits.tex`. The *implementers* prepared the questions and the
@@ -83,7 +85,9 @@ paper:
 - A receiver may be modified (`intent(inout)`) only by direct calls on concrete
   objects; generic trait calls and trait objects are read-only (TD-10).
 - Initializer requirements are checked as conformance obligations but are not
-  dispatched through trait objects (TD-13).
+  dispatched through trait objects (TD-13). Besides `initial ::` procedures, a
+  matching specific of a standard constructor interface named like the type
+  can implement them (TD-33).
 - Five listings are corrected in acceptance copies (four `END TYPE` errata and
   the SAXPY result), and missing context is completed (TD-29 to TD-31).
 - Several temporary limits are diagnosed rather than implemented (TD-24 to
@@ -133,6 +137,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-12 | Correct the type-closing statement of inline-08 | **Correct it in the acceptance copy only**; leave it as an unresolved paper error | TD-29 |
 | 2026-10-12 | Initializer requirements in runtime views | **Check initializer conformance; omit constructors from runtime dispatch slots**; a different runtime-view design | TD-13 |
 | 2026-10-12 | Static-only providers outside the runtime subset (`ocp.f90`) | **Preserve static use; diagnose only a requested runtime use**; reject such providers at definition time for now | TD-16 |
+| 2026-10-12 | Existing standard constructor interfaces (`interface MyType`) as implementations of initializer requirements | **Allow matching standard constructor interfaces as initializer implementations**; require an explicit `initial ::` binding | TD-33 |
 
 ### Instructions given without an option form
 
@@ -147,10 +152,12 @@ gating are listed separately in "Questions that do not affect the language".
 
 ## Entries
 
-Each entry has a stable identifier. The fields are: the question and why the
-paper does not settle it, the options presented, the choice, its rationale and
-consequences, the implementation status, and the specification action, that is,
-what the paper should say.
+Each entry has a stable identifier. Entries are grouped by topic, and
+identifiers are assigned in the order in which entries were added, so a later
+entry such as TD-33 can appear in an earlier group. The fields are: the
+question and why the paper does not settle it, the options presented, the
+choice, its rationale and consequences, the implementation status, and the
+specification action, that is, what the paper should say.
 
 ### A. Scope and validation
 
@@ -249,11 +256,11 @@ what the paper should say.
   - Intentionally invalid code must receive a located diagnostic.
 - **Implementation status.** At the time of writing, every program except
   `ocp.f90`, and both module-only examples, are accepted in this branch.
-  `ocp.f90` works in development that is not yet integrated. Most inline
-  listings compile and run; inline-05, -06, -09 (an `implements` statement
-  without traits, and initializer requirements met by existing bindings),
-  inline-12, -13 (TD-13), inline-17 (TD-17) and inline-20 (TD-18) wait for
-  compiler features.
+  `ocp.f90` works in development that is not yet integrated (TD-16). Most
+  inline listings compile and run; inline-05, -06, -09 (an `implements`
+  statement without traits, and initializer requirements met by existing
+  bindings, TD-33), inline-12, -13 (TD-13), inline-17 (TD-17) and inline-20
+  (TD-18) wait for compiler features.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
   TD-32 are candidates for corrections of the paper.
 
@@ -332,7 +339,8 @@ what the paper should say.
 #### TD-07: Visibility of retroactive conformances
 
 - **Status:** Approved semantic decision (a deliberate deviation from the
-  paper); open question upstream in issue #2.
+  paper); open question upstream in the visibility issue,
+  [difference-scheme/Traits-for-Fortran#2](https://github.com/difference-scheme/Traits-for-Fortran/issues/2).
 - **What the paper says.** `implements` statements for one type may be
   distributed among different modules and files (lines 1394-1400), and a type's
   conformance may be acknowledged "even from a different module" (lines
@@ -359,20 +367,20 @@ what the paper should say.
      importing other modules when compiling the main program, and asked for
      alternatives closer to existing Fortran, accepting a deviation from the
      paper.
-  3. The alternatives presented (also listed in issue #2) were: (1) explicit
-     `USE` of the module that provides the implementation; (2) a conformance as
-     a named, importable entity, selectable with `USE, ONLY`; (3) explicit
-     facade modules that re-export a chosen set of extensions, complementing
-     (1) or (2); (4) restricting where a conformance may be declared, to the
-     module of the trait or of the type; (5) no extension methods on intrinsic
-     types, using ordinary procedures or wrapper types instead. The
-     implementers recommended starting with (1), supporting facades, and
-     considering (2) for precise `ONLY` control. They withdrew the
-     same-compilation-unit discovery as a language rule: placing unrelated
+  3. The alternatives presented (also listed in the visibility issue) were:
+     (1) explicit `USE` of the module that provides the implementation; (2) a
+     conformance as a named, importable entity, selectable with `USE, ONLY`;
+     (3) explicit facade modules that re-export a chosen set of extensions,
+     complementing (1) or (2); (4) restricting where a conformance may be
+     declared, to the module of the trait or of the type; (5) no extension
+     methods on intrinsic types, using ordinary procedures or wrapper types
+     instead. The implementers recommended starting with (1), supporting
+     facades, and considering (2) for precise `ONLY` control. They withdrew
+     the same-compilation-unit discovery as a language rule: placing unrelated
      program units in one file must not change what they can see.
-  4. The maintainer asked for an issue in the proposal repository, filed as
-     issue #2 on 2026-10-09, and chose explicit provider `USE` to unblock the
-     example.
+  4. The maintainer asked for an issue in the proposal repository, filed on
+     2026-10-09 as the visibility issue, and chose explicit provider `USE` to
+     unblock the example.
 - **Choice.** Explicit provider `USE`: a client must `USE` the module that
   provides a retroactive conformance, directly or through a facade module that
   re-exports it. Combined and separate compilation have identical visibility.
@@ -389,8 +397,8 @@ what the paper should say.
   - Conflicting accessible implementations are diagnosed, and the conformance
     selected at an instantiation or at the formation of a trait object is
     preserved (TD-08).
-- **Upstream discussion after the choice.** In issue #2 the proposal author
-  agreed to require explicit module dependencies
+- **Upstream discussion after the choice.** In the visibility issue the
+  proposal author agreed to require explicit module dependencies
   ([comment](https://github.com/difference-scheme/Traits-for-Fortran/issues/2#issuecomment-6087519036)),
   then clarified that importing the abstraction (the trait `IPrintable`)
   explicitly is acceptable, but that programmers should not be forced to import
@@ -398,25 +406,27 @@ what the paper should say.
   ([comment](https://github.com/difference-scheme/Traits-for-Fortran/issues/2#issuecomment-6089672348)).
   A follow-up question there, two incompatible implementations of one trait for
   the same type in different modules of one program, led to Rust and Swift
-  comparisons and to the "most restrictive" plan of PR #3. PR #3 was merged on
-  2026-10-11 as examples and design documentation, leaving `traits.tex`
-  unchanged. Its plan makes conformances globally unique and owned by the
-  module that defines the trait or the type, discovered through explicit
-  dependencies, with private implementation procedures. The proposal author
-  called starting with stricter rules and relaxing them later sound, and kept
-  issue #2 open because no alternative design is settled. The prototype
-  currently implements explicit provider `USE`, not that plan.
+  comparisons and to the "most restrictive" plan of the restrictive-plan PR,
+  [difference-scheme/Traits-for-Fortran#3](https://github.com/difference-scheme/Traits-for-Fortran/pull/3).
+  That PR was merged on 2026-10-11 as examples and design documentation,
+  leaving `traits.tex` unchanged. Its plan makes conformances globally unique
+  and owned by the module that defines the trait or the type, discovered
+  through explicit dependencies, with private implementation procedures. The
+  proposal author called starting with stricter rules and relaxing them later
+  sound, and kept the visibility issue open because no alternative design is
+  settled. The prototype currently implements explicit provider `USE`, not
+  that plan.
 - **Implementation status.** Implemented for derived and intrinsic types.
 - **Specification action.** Choose a visibility model: explicit provider `USE`,
   importing the trait only (the author's stated preference, which then needs a
   rule telling a compiler where the implementation is under separate
-  compilation), an ownership rule with global uniqueness (PR #3), or named
-  conformances. In each case define: identical rules for combined and separate
-  compilation; scope, accessibility, host association, `ONLY`, renaming and
-  re-export of conformances; diagnostics for conflicting accessible
-  implementations instead of selection by import, file or link order; and
-  preservation of a selected implementation through generic instantiation and
-  trait objects.
+  compilation), an ownership rule with global uniqueness (the restrictive-plan
+  PR), or named conformances. In each case define: identical rules for
+  combined and separate compilation; scope, accessibility, host association,
+  `ONLY`, renaming and re-export of conformances; diagnostics for conflicting
+  accessible implementations instead of selection by import, file or link
+  order; and preservation of a selected implementation through generic
+  instantiation and trait objects.
 
 #### TD-08: Selecting among visible conformances
 
@@ -426,8 +436,8 @@ what the paper should say.
   ambiguities" (lines 1428-1440), but it gives no rule for two modules that
   both provide a conformance of one type to one trait. With scoped visibility,
   different scopes of one program can see different conformances (the example
-  of issue #2 does this with modules `plain_m` and `fancy_m`). The paper does
-  not say which conformance generic code and trait objects use.
+  in the visibility issue does this with modules `plain_m` and `fancy_m`). The
+  paper does not say which conformance generic code and trait objects use.
 - **Current rule.** A conformance is selected where a concrete type meets a
   constraint or a trait object is formed: at a generic call, at the use of a
   generic-type instance, or at a conversion to `class(Trait)`. The selection
@@ -445,8 +455,8 @@ what the paper should say.
     formed, even in a client that sees another conformance (TD-12).
 - **Implementation status.** Implemented.
 - **Specification action.** Either require globally unique conformances, which
-  makes selection trivial (PR #3), or specify these selection points and their
-  consequences for type identity.
+  makes selection trivial (the restrictive-plan PR), or specify these selection
+  points and their consequences for type identity.
 
 #### TD-09: Static operator bindings on concrete values
 
@@ -470,6 +480,52 @@ what the paper should say.
   statements define operators of the type, how their visibility follows the
   conformance's visibility (TD-07), whether `static` is allowed in a type
   definition, and how static procedures that are not operators are referenced.
+
+#### TD-33: Constructor interfaces as initializer implementations
+
+- **Status:** Approved semantic decision. It is a working rule for which
+  procedures implement an initializer requirement, not merely a consequence of
+  how the compiler stores constructors.
+- **What the paper says.** An `initial ::` declaration overloads the type's
+  structure constructor and is used to check conformance to traits with
+  initializer signatures (lines 1285-1295). Initializers that a type already
+  has satisfy a later acknowledgement of a trait, also from another module
+  (lines 1319-1338). For a cast `T(0)`, the initializer "could either be the
+  type's default 'structure constructor', or a user-provided initializer"
+  (lines 2045-2050).
+- **Why it is not tight.** Standard Fortran already lets a module overload a
+  type's constructor with a generic interface named like the type:
+  `interface MyType` with module procedures that return `type(MyType)`. The
+  paper does not say whether such an existing overload counts as an initializer
+  when a trait with initializer requirements is adopted or acknowledged, or
+  whether only procedures declared with `initial ::` do.
+- **Options presented (2026-10-12).** Allow matching standard constructor
+  interfaces as initializer implementations (chosen); or require an explicit
+  `initial ::` binding, keeping that distinction in the compiler's
+  representation.
+- **Choice.** A specific procedure of a standard constructor interface named
+  like the type implements an initializer requirement, like a procedure
+  declared with `initial ::`, when its result is exactly the type
+  (`type(MyType)`) and its signature matches the requirement.
+- **Consequences.**
+  - Nominal conformance is still required: the type must adopt or acknowledge
+    the trait explicitly. A matching constructor interface never makes a type
+    conform by itself.
+  - The implicit structure constructor is not covered by this decision;
+    whether it can satisfy an initializer requirement remains open (OQ-05).
+  - LFortran represents `initial ::` bindings and such interfaces alike, as one
+    generic constructor interface of the type, but the rule is a decision about
+    the language, not a side effect of that representation.
+- **Implementation status.** Being implemented together with the paper's rule
+  for existing initializers (inline-06, inline-09); not yet in this branch,
+  which considers only the `initial ::` procedures of the acknowledging
+  statement. The candidate implementation counts the constructor interfaces
+  declared in the program unit that declares the type.
+- **Specification action.** List the procedures that can implement an
+  initializer requirement: `initial ::` procedures, matching specifics of a
+  standard constructor interface (this decision), and possibly the implicit
+  structure constructor (OQ-05). Also say whether constructor overloads
+  declared outside the type's own program unit count.
 
 ### C. Receivers and trait objects
 
@@ -587,7 +643,8 @@ what the paper should say.
   types usable as trait objects; the paper restricts those to generic
   constraints (lines 1977-1992). The paper's separate rule that existing
   initializer bindings satisfy a later acknowledgement is explicit (see "Rules
-  the paper already states").
+  the paper already states"); which procedures can implement an initializer
+  requirement is recorded in TD-33.
 - **Implementation status.** Being implemented; not yet in this branch, which
   still rejects a trait object of a trait with an initializer requirement as a
   generic-constraint-only trait.
@@ -595,10 +652,12 @@ what the paper should say.
   a trait object's interface. If not, say that they are conformance-only. If
   they are, define how a value of the dynamic type is constructed through a
   trait object. Also confirm that an initializer requirement alone does not
-  make a trait one with associated types. Related: the paper says the default
-  structure constructor could serve as the initializer for a cast `T(0)` (lines
-  2045-2050), while for a derived type the prototype satisfies an initializer
-  requirement only with a procedure bound by `initial`.
+  make a trait one with associated types. Related: which procedures implement
+  an initializer requirement of a derived type. Procedures bound with
+  `initial ::` do, and by the approved rule of TD-33 so do matching specifics
+  of a standard constructor interface named like the type. Whether the
+  implicit structure constructor can, as the paper suggests for a cast `T(0)`
+  (lines 2045-2050), is still open (OQ-05).
 
 #### TD-14: Lifetime of trait-object function results
 
@@ -636,35 +695,53 @@ what the paper should say.
   argument and never instantiates a provider body. Adding a member to a type
   set changes the trait and requires recompiling its dependents, a cost the
   paper accepts for type sets (`sect:Go_encapsulated`). By contrast, `ocp.f90`
-  needs genuinely open dispatch (TD-16).
+  needs genuinely open dispatch, which is required and being implemented
+  (TD-16); "later" in the chosen option refers only to the order of work.
 - **Implementation status.** Implemented; `mixed.f90` and `static.f90` are
   accepted.
 - **Specification action.** State the dispatch semantics of generic methods on
   trait objects (static type argument, dynamic provider) explicitly, and leave
   the mechanism to processors.
 
-#### TD-16: Open protocols at run time, and static-only providers
+#### TD-16: Open protocols at run time (`ocp.f90`), and static-only providers
 
 - **Status:** Approved prototype option (a policy for implementation limits).
+  Runtime dispatch for `ocp.f90` itself is required and is being implemented;
+  it is not deferred.
 - **Background.** In `ocp.f90` (`sect:ocp_conformance`), `INumeric` is a trait
   with the associated type `itself` (an initializer and operators), and
   `integer` and `real(real64)` acknowledge it with empty `implements`
-  statements. The paper says that adding a module that implements `INumeric`
-  for a new type is sufficient, and that no pre-existing code needs to be
-  modified (lines 2686-2699). The prototype therefore compiles a provider's
-  generic method once and passes, with each call, a table of the operations of
-  `T`, so that types added later work without rebuilding the provider.
-- **Question (2026-10-12).** Some valid providers use operations outside the
-  subset that this runtime path supports. The candidate implementation rejected
-  them where they were defined, even when they were used only statically.
+  statements. `ISum` is a universal trait whose generic method
+  `sum{INumeric :: T}` has its binder constrained by that `INumeric`, and the
+  program calls it through `class(ISum)` trait objects. The paper says that
+  adding a module that implements `INumeric` for a new type is sufficient, and
+  that no pre-existing code needs to be modified (lines 2686-2699).
+- **Two different trait objects.** `class(INumeric)` is invalid: a trait with
+  associated types is a generic constraint only (lines 1977-1992), and the
+  prototype keeps that restriction. `class(ISum)` is a valid trait object of a
+  universal trait; only the binder of its generic method is constrained by
+  `INumeric`. Runtime dispatch through `class(ISum)`, and with it the complete
+  `ocp.f90`, are required for the prototype and are being implemented.
+- **Implementation approach.** A provider's generic method is compiled once,
+  and each call passes a table of the operations of `T`, so that types added
+  later work without rebuilding the provider. This mechanism is LFortran's
+  choice, not a proposed requirement (OQ-14).
+- **Question (2026-10-12).** Some valid providers have generic-method bodies
+  that use operations outside the subset this runtime path supports so far.
+  The candidate implementation rejected such providers where they were
+  defined, even when they were used only statically.
 - **Options presented.** Preserve static-only use and diagnose only an
   attempted runtime use (chosen); or reject such providers at definition time
   for now.
-- **Consequences.** A limit of the runtime path must not invalidate otherwise
-  valid static code; the diagnostic appears where runtime use is requested.
-- **Implementation status.** The open runtime path, including types added after
-  the provider's objects were frozen, works in development that is not yet in
-  this branch; the eligibility tracking for this choice is in progress.
+- **Consequences.** Only these additional body shapes are diagnosed, and only
+  where a runtime use of them is requested; their static uses must keep
+  working. A limit of the runtime path never invalidates otherwise valid static
+  code.
+- **Implementation status.** This branch still reports a "not implemented yet"
+  diagnostic at the `class(ISum)` trait objects of `ocp.f90`. The open runtime
+  path, which runs the complete `ocp.f90` and handles types added after the
+  provider's objects were frozen, is in development and not yet integrated;
+  the eligibility tracking for the chosen policy is in progress.
 - **Specification action.** None for the rule itself. See OQ-14 on which
   separate-compilation properties are normative.
 
@@ -868,8 +945,9 @@ what the paper should say.
   header must repeat the list exactly, may rename binders, may omit the list or
   may state stronger constraints (conditional conformance); whether method
   binders may shadow the type's parameters, or initializers have parameters of
-  their own; and whether a procedure that uses the type's parameters may be
-  called by name, imported, or bound to two generic types.
+  their own; whether a procedure that uses the type's parameters may be called
+  by name, imported, or bound to two generic types; and whether a procedure
+  that does not use them may be bound to a generic type.
 - **Options presented (2026-10-10).** For the header: exact repetition for now
   (chosen), supporting renamed binders with equivalent constraints, or also
   inferring an omitted list. For binder scopes: no method shadowing and no
@@ -879,13 +957,16 @@ what the paper should say.
   between types. The implementers noted that the rules cover the paper examples
   without committing to permanent restrictions, and that the alternatives would
   be diagnosed, not given different meanings.
-- **Consequences.** These limits are diagnosed. Procedures that do not use the
-  type's parameters keep normal Fortran behavior. In addition, an `implements`
-  statement for a generic type must be in the type's module.
+- **Consequences.** These limits are diagnosed. A procedure that does not use
+  the type's parameters is not owned by the generic type: it remains an
+  ordinary module procedure with normal Fortran behavior, which can be called
+  by name and imported. Binding such a procedure to a generic type, however, is
+  a separate limit and is diagnosed as not implemented yet. In addition, an
+  `implements` statement for a generic type must be in the type's module.
 - **Implementation status.** Implemented with diagnostics.
 - **Specification action.** Specify each point, conditional conformance in
-  particular, and whether a generic type can conform retroactively in another
-  module.
+  particular, binding procedures that do not use the type's parameters, and
+  whether a generic type can conform retroactively in another module.
 
 #### TD-25: Identity and ownership of generic instances
 
@@ -1062,7 +1143,7 @@ that they are not reopened as ambiguities.
 | Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) |
 | A child trait is a subtype of each of its parents. | lines 1150-1160 | Implemented |
 | `implements :: T`, without traits, binds initializers and methods to a type. | `sect:adding_methods` (lines 1241-1301), inline-05 | Being implemented |
-| Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented for methods; being implemented for initializers |
+| Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented for methods; being implemented for initializers (TD-33) |
 | An `implements` statement cannot target an abstract type and does not accept `deferred` bindings; the type attribute can be used with abstract types, which may leave obligations to their concrete descendants. | lines 1227-1236, 1597-1603 | Implemented |
 | `extends` precedes `implements` in a type definition. | line 1544 | Implemented |
 | A sealed type cannot be extended, and its passed-object dummies may use TYPE instead of CLASS. | lines 1505-1513 | Implemented |
@@ -1090,7 +1171,7 @@ names the entries with the details.
 | OQ-02 | The exact rule for an implementation matching a message: attributes, dummy names for keyword arguments, more general implementations. | TD-06 |
 | OQ-03 | Composition: identity of requirements, overloads across parents, agreement of intrinsic acknowledgements. Overloaded requirements that coincide after substituting `itself`, such as `operator(*)` with `(itself, itself)` and `(itself, integer)` when the implementing type is `integer`. How an elemental and a non-elemental requirement that both accept a call are resolved (standard generic resolution prefers the non-elemental one; the prototype currently reports an ambiguity). | TD-05 |
 | OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers. | TD-10 |
-| OQ-05 | Initializer requirements and trait objects; whether a default structure constructor can satisfy an initializer requirement. | TD-13 |
+| OQ-05 | Initializer requirements and trait objects. Which procedures implement an initializer requirement: `initial ::` procedures and matching standard constructor interfaces are approved for the prototype (TD-33); whether the implicit structure constructor can is open. | TD-13, TD-33 |
 | OQ-06 | Trait objects: conversions and combinations; `SELECT TYPE`, including dynamic conformance queries; arrays of trait objects (homogeneous like `CLASS` arrays or not); pointer components and results. | TD-11, TD-12 |
 | OQ-07 | Associated types: inference, one type per conformance, constraints on associated types, projection syntax, use as generic constraints. | TD-20 |
 | OQ-08 | Type sets: the exact common operations and their result types, mixed-mode operations, intrinsic procedures, identity of inline type sets, composition with `+`. | TD-23 |
@@ -1098,7 +1179,7 @@ names the entries with the details.
 | OQ-10 | Name, contents and definitions of the intrinsic `generics` module. | TD-18 |
 | OQ-11 | `IAnyType` and the operations of unconstrained parameters; when unused bindings of generic types are checked; defined input/output in generic code. | TD-19, TD-27 |
 | OQ-12 | Generic methods: whether implementations may have weaker constraints; overloaded generic messages that differ only in their generic parameter lists (a commented-out paragraph of the paper source, lines 1737-1742, would allow them). | TD-23 |
-| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, retroactive conformance from other modules, instance identity across program units, extension and overriding. | TD-24, TD-25 |
+| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, binding of procedures that do not use the parameters, retroactive conformance from other modules, instance identity across program units, extension and overriding. | TD-24, TD-25 |
 | OQ-14 | Which separate-compilation properties are normative. For example: must adding a conformance for a new type work without recompiling a separately compiled generic provider (the OCP discussion, lines 2686-2699, only says no code needs to be modified), and must a constraint by a child trait forward to a callee constrained by its parent in separately compiled code? Dispatch tables, member entries and other mechanisms should remain processor details. | TD-15, TD-16 |
 | OQ-15 | Scope, lifetime and redeclaration of `:=` declarations, including loops and conditional code. | TD-22 |
 | OQ-16 | Whether kind and length type parameters are part of type arguments, and whether assumed or deferred lengths are allowed. | TD-21 |
