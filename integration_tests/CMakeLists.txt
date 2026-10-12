@@ -4239,6 +4239,9 @@ RUN(NAME traits_associated_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
 RUN(NAME traits_associated_05_oracle LABELS gfortran llvm ISOLATE_MODULES
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME traits_associated_06 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_associated_06_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_paper_manual_values LABELS llvm NO_STD_F23 ISOLATE_MODULES
     INCLUDE_PATH . EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_procedure_value_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

@@ -3418,7 +3418,7 @@ public:
     // The hidden length dummy of each character dummy of `fn` that has one,
     // by the character dummy's position, once string_length_arguments has
     // appended them.
-    static std::map<size_t, symbol_t*> hidden_string_lengths(const Function_t &fn) {
+    std::map<size_t, symbol_t*> hidden_string_lengths(const Function_t &fn) const {
         std::map<size_t, symbol_t*> lengths;
         size_t n_explicit = explicit_argument_count(fn);
         for (size_t i = 0, k = n_explicit; i < n_explicit && n_explicit < fn.n_args; i++) {
@@ -3432,24 +3432,14 @@ public:
         return lengths;
     }
 
-    // The arguments of `fn` before the hidden character lengths that the
-    // string_length_arguments pass appends: one `integer(8), value,
-    // intent(in)` dummy per character dummy passed with a hidden length. The
-    // verification after a pass does not know whether it has run.
-    static size_t explicit_argument_count(const Function_t &fn) {
-        size_t n_hidden = count_hidden_string_lengths(fn);
-        if (n_hidden == 0 || fn.n_args < 2 * n_hidden) return fn.n_args;
-        for (size_t i = fn.n_args - n_hidden; i < fn.n_args; i++) {
-            auto *hidden = ASR::is_a<ASR::Var_t>(*fn.m_args[i])
-                ? ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
-                    fn.m_args[i])->m_v) : nullptr;
-            auto *variable = hidden && ASR::is_a<ASR::Variable_t>(*hidden)
-                ? ASR::down_cast<ASR::Variable_t>(hidden) : nullptr;
-            if (!variable || !is_hidden_string_length_type(variable->m_type) ||
-                    !variable->m_value_attr ||
-                    variable->m_intent != ASR::intentType::In) return fn.n_args;
-        }
-        return fn.n_args - n_hidden;
+    // The arguments of `fn` before its hidden character lengths: all of them
+    // before the string_length_arguments pass has run, after it all but the
+    // one it appends for each character dummy passed with a hidden length
+    // (ASRVerifyOptions::string_length_arguments says which).
+    size_t explicit_argument_count(const Function_t &fn) const {
+        size_t n_hidden = check_string_length_arguments
+            ? count_hidden_string_lengths(fn) : 0;
+        return n_hidden <= fn.n_args ? fn.n_args - n_hidden : fn.n_args;
     }
 
     static bool is_hidden_string_length_type(ASR::ttype_t *t) {

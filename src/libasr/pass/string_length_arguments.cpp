@@ -1,12 +1,9 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
-#include <libasr/exception.h>
 #include <libasr/asr_utils.h>
-#include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/string_length_arguments.h>
 
-#include <iostream>
 #include <map>
 #include <set>
 #include <vector>
@@ -62,9 +59,10 @@ is moved to a temporary before the statement, to be evaluated only once.
 The pass runs after the other lowering passes, so that every call is in place,
 and after the .mod files are written, so they keep the argument lists as
 declared: every translation unit applies it to the procedures it reads from
-them. When the passes are verified, the pass verifies its own result with
-ASRVerifyOptions::string_length_arguments set, which requires every such dummy
-to have its hidden length and every call to pass it.
+them. When the passes are verified, the pass manager verifies the result of
+this pass and of every later one with ASRVerifyOptions::string_length_arguments
+set, which requires every such dummy to have its hidden length and every call
+to pass it, and tells the verifier which arguments are hidden lengths.
 
 The LLVM and C code generators pass character dummies as this pass lays them
 out, so it is required for them, like the other lowering passes.
@@ -604,32 +602,10 @@ public:
     }
 };
 
-// The verification after each pass does not know which passes have run, so
-// this pass checks the invariant it establishes itself, whenever the passes
-// are verified.
-void verify_hidden_string_lengths(const ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
-    bool verify = pass_options.verify_all_passes;
-#if defined(WITH_LFORTRAN_ASSERT)
-    verify = true;
-#endif
-    if (!verify) return;
-    diag::Diagnostics local_diagnostics;
-    diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
-        ? *pass_options.diagnostics : local_diagnostics;
-    ASRVerifyOptions verify_options;
-    verify_options.string_length_arguments = true;
-    if (!asr_verify(unit, verify_options, diagnostics)) {
-        std::cerr << diagnostics.render2();
-        throw LCompilersException("pass=string_length_arguments",
-            LFORTRAN_ASR_PASS_VERIFY_FAILED);
-    }
-}
-
 } // namespace
 
 void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
+        const LCompilers::PassOptions &/*pass_options*/) {
     // In interactive mode each cell is a TranslationUnit chained to copies of
     // the earlier cells (see FortranEvaluator::snapshot_cell_scope), which no
     // pass has seen. Their procedures were compiled with hidden lengths, so
@@ -672,7 +648,6 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     a.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
-    verify_hidden_string_lengths(unit, pass_options);
 }
 
 } // namespace LCompilers

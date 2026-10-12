@@ -1148,6 +1148,13 @@ Erased operation wrappers forward the hidden lengths as part of the selected
 calling convention; impure calls in character actuals are evaluated once.
 `traits_runtime_character_01` checks these paths across module compilation,
 including static and erased generic forwarding and side-effecting substrings.
+The verifier compares a binding with its message by their explicit arguments:
+all of them before the pass, and all but the hidden lengths after it, which the
+pass manager tells it by verifying that pass and every later one with
+`ASRVerifyOptions::string_length_arguments` set. A binding of an associated
+type bound to a character type has a hidden length that its message lacks, and
+a trailing explicit `integer(8), value, intent(in)` dummy is never taken for one
+(`traits_associated_06`).
 
 Bare borrowed view dummies require explicit `intent(in)` and cannot be pointer,
 allocatable, optional, or VALUE. A separate `intent(in) :: object` statement

@@ -10,9 +10,12 @@ namespace LCompilers {
         // modfile is being deserialized, where they are not yet resolved.
         bool check_external = true;
         bool require_main_program = false;
-        // Set once the string_length_arguments pass has run: every character
-        // dummy that ASRUtils::is_string_dummy_with_hidden_length() selects
-        // must then have its hidden length dummy, and every call must pass it.
+        // Set once the string_length_arguments pass has run, as the pass
+        // manager does for the verification after it and every later pass:
+        // every character dummy that ASRUtils::is_string_dummy_with_hidden_length()
+        // selects must then have its hidden length dummy, and every call must
+        // pass it. Only then are those trailing dummies hidden lengths rather
+        // than explicit arguments.
         bool string_length_arguments = false;
     };
 
