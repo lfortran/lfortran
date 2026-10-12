@@ -72,6 +72,16 @@ semantic error: trait receivers require intent(in) or intent(inout) without poin
 180 |        end type Reset
     | ...^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: associated type 'element' of trait 'iecho' cannot be bound to t, a type parameter of the generic procedure 'mirror_echo': it is one type for each implementation
+   --> tests/errors/continue_compilation_traits_associated.f90:443:5 - 445:19
+    |
+443 |        implements IEcho :: Mirror
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+445 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: a character generic type argument requires a constant length
    --> tests/errors/continue_compilation_traits_associated.f90:168:24
     |

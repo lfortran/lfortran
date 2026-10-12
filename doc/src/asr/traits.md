@@ -1017,7 +1017,13 @@ no message uses cannot be inferred and is diagnosed. A trait with associated
 types is a generic constraint only (paper `sect:restrictions`): it has no
 runtime contract, and `class(IAppendable)` is diagnosed. Using such a trait as
 the constraint of a generic procedure or type, extending it, and generic
-messages that use an associated type are not implemented yet.
+messages with a dummy argument of an associated type are not implemented yet.
+A generic message may have a result of an associated type, which each binding
+must give the implementation's one type, such as `real(8)` or
+`character(len=5)`: a binding that returns a type parameter of its own generic
+procedure, another type at each call, is diagnosed, since an associated type is
+one type for each implementation. A type parameter of a generic type's package,
+`U` of `Vector{U}`, is fixed for each instance and binds it as above.
 
 An unconstrained generic type parameter, `Vector{U}`, admits any type (the
 paper's empty trait `IAnyType`): it has no constraint and its instances record

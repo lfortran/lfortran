@@ -419,3 +419,35 @@ contains
         type(Loader{Coordinates}) :: places
     end subroutine load_all
 end module cc_traits_associated_loader_user
+
+! A14: an associated type is one type for each implementation, so the binding
+! of a generic message cannot give it a type parameter of its own generic
+! procedure, another type at each call.
+module cc_traits_associated_echo
+    implicit none
+    abstract interface :: IKeyed
+        function key() result(k)
+            integer :: k
+        end function key
+    end interface IKeyed
+    abstract interface :: IEcho
+        type :: Element
+        function echo{IKeyed :: T}(item) result(r)
+            type(T), intent(in) :: item
+            type(Element) :: r
+        end function echo
+    end interface IEcho
+    type :: Mirror
+        integer :: unused = 0
+    end type Mirror
+    implements IEcho :: Mirror
+        procedure, pass(self) :: echo => mirror_echo
+    end implements
+contains
+    function mirror_echo{IKeyed :: T}(item, self) result(r)
+        type(T), intent(in) :: item
+        class(Mirror), intent(in) :: self
+        type(T) :: r
+        r = item
+    end function mirror_echo
+end module cc_traits_associated_echo

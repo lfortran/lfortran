@@ -5485,6 +5485,15 @@ public:
             TraitAssociatedInference &associated, const Location &loc) {
         ASR::symbol_t *declaration = ASRUtils::trait_associated_type(required);
         if (!declaration) return ASRUtils::trait_types_equal(required, actual, parameters);
+        auto *procedure = ASRUtils::trait_method_function(binding.m_procedure);
+        if (procedure && ASRUtils::trait_method_binder_type(*procedure, actual)) {
+            auto *trait = ASR::down_cast<ASR::Trait_t>(ASRUtils::get_asr_owner(declaration));
+            trait_error("associated type '" + std::string(ASRUtils::symbol_name(declaration))
+                + "' of trait '" + trait->m_name + "' cannot be bound to " +
+                ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(actual), actual) +
+                ", a type parameter of the generic procedure '" + procedure->m_name +
+                "': it is one type for each implementation", loc);
+        }
         auto previous = associated.types.find(declaration);
         bool bound = previous != associated.types.end();
         auto earlier = bound ? previous->second

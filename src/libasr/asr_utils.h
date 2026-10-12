@@ -11053,6 +11053,12 @@ bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
     ASR::symbol_t *type_declaration, ASR::ttype_t *type,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
     TraitAssociatedTypes *associated = nullptr);
+// Whether the type of `value`, a dummy or the result of `procedure`, involves
+// a type parameter of `procedure`'s own generic method, and so is another type
+// at each call. An associated type is one type for each conformance and cannot
+// be bound to it (a type parameter of a generic type's package, fixed for each
+// instance, is not one).
+bool trait_method_binder_type(const ASR::Function_t &procedure, ASR::expr_t *value);
 
 // Whether a binding implements its message with an INTENT(INOUT) passed-object
 // receiver (PAPER-D07). Such a binding serves direct calls on concrete

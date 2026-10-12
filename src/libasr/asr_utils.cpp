@@ -6973,6 +6973,36 @@ std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *va
     return {element, declaration ? symbol_get_past_external(declaration) : nullptr};
 }
 
+bool trait_method_binder_type(const ASR::Function_t &procedure, ASR::expr_t *value)
+{
+    ASR::Template_t *method = trait_method_template(procedure);
+    if (!method) return false;
+    std::function<bool(ASR::ttype_t*, ASR::symbol_t*)> uses_binder =
+        [&](ASR::ttype_t *type, ASR::symbol_t *declaration) {
+            type = type ? extract_type(type) : nullptr;
+            if (!type) return false;
+            if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
+                const char *name = ASR::down_cast<ASR::TypeParameter_t>(type)->m_param;
+                for (size_t i = 0; name && i < method->n_args; i++) {
+                    if (std::string(method->m_args[i]) == name) return true;
+                }
+                return false;
+            }
+            // An instance of a generic type whose type arguments involve one.
+            declaration = declaration ? symbol_get_past_external(declaration) : nullptr;
+            if (!ASR::is_a<ASR::StructType_t>(*type) || !declaration ||
+                    !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
+            auto *metadata = generic_type_instance(*ASR::down_cast<ASR::Struct_t>(declaration));
+            for (size_t i = 0; metadata && i < metadata->n_arguments; i++) {
+                if (uses_binder(metadata->m_arguments[i].m_type,
+                        metadata->m_arguments[i].m_type_declaration)) return true;
+            }
+            return false;
+        };
+    auto actual = trait_associated_actual(value);
+    return uses_binder(actual.first, actual.second);
+}
+
 bool trait_binding_mutates_receiver(const ASR::trait_binding_t &binding)
 {
     if (binding.m_is_nopass) return false;

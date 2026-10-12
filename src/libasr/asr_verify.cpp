@@ -2715,6 +2715,11 @@ public:
             if (i == receiver) continue;
             auto *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
             auto *formal = ASRUtils::EXPR2VAR(required->m_args[j]);
+            require_with_loc_id(!ASRUtils::trait_associated_type(required->m_args[j]) ||
+                    !ASRUtils::trait_method_binder_type(*procedure, procedure->m_args[i]),
+                "asr.verify.trait_witness.associated_type",
+                "An associated type must be one type for each conformance, not a type "
+                "parameter of its binding's generic procedure", loc);
             require_with_loc_id(ASRUtils::trait_implemented_types_equal(
                         required->m_args[j], procedure->m_args[i], type_declaration,
                         implementing_type, parameters, associated) &&
@@ -2725,6 +2730,12 @@ public:
                 "A witness binding must preserve ordinary argument types and association attributes", loc);
             j++;
         }
+        require_with_loc_id(!required->m_return_var || !result ||
+                !ASRUtils::trait_associated_type(required->m_return_var) ||
+                !ASRUtils::trait_method_binder_type(*procedure, result),
+            "asr.verify.trait_witness.associated_type",
+            "An associated type must be one type for each conformance, not a type "
+            "parameter of its binding's generic procedure", loc);
         require_with_loc_id(bool(required->m_return_var) == bool(result) &&
                 (!lowered_result || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
                     intentType::Out || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
