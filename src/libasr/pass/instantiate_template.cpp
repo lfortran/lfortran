@@ -1346,11 +1346,6 @@ public:
             new_value = ASRUtils::expr_value(new_value);
         }
 
-        SetChar variable_dependencies_vec;
-        variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
-            new_symbolic_value, new_value, x->m_name);
-
         ASR::symbol_t* type_decl = nullptr;
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
@@ -1366,7 +1361,24 @@ public:
             type_decl = type_subs[param->m_param].second;
         } else if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(new_type))) {
             type_decl = instantiate_interface(x);
+            // The procedure type is that of the interface, as for
+            // `procedure(iface) ::` outside a template, so it refers to the
+            // instantiated types rather than to the template's parameters.
+            ASR::symbol_t* iface = type_decl
+                ? ASRUtils::symbol_get_past_external(type_decl) : nullptr;
+            if (iface && ASR::is_a<ASR::Function_t>(*iface)) {
+                new_type = ASR::down_cast<ASR::Function_t>(iface)->m_function_signature;
+                if (ASR::is_a<ASR::Pointer_t>(*x->m_type)) {
+                    new_type = ASRUtils::make_Pointer_t_util(al,
+                        x->m_type->base.loc, new_type);
+                }
+            }
         }
+
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
+            new_symbolic_value, new_value, x->m_name);
 
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
