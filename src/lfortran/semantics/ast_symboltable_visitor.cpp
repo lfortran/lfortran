@@ -2143,6 +2143,8 @@ public:
         if (subroutine_has_alternate_returns) {
             current_procedure_args.push_back("__lfortran_alt_ret");
         }
+        std::string current_procedure_result_copy = current_procedure_result;
+        current_procedure_result.clear();
         // Restored on exit: the enclosing procedure (the host of an internal
         // procedure or of an interface body) keeps its own ABI.
         ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
@@ -2551,6 +2553,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
 
         // print_implicit_dictionary(implicit_dictionary);
@@ -2759,6 +2762,15 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
+        }
+        std::string current_procedure_result_copy = current_procedure_result;
+        if (x.m_return_var == nullptr) {
+            current_procedure_result = sym_name;
+        } else if (AST::is_a<AST::Name_t>(*x.m_return_var)) {
+            current_procedure_result = to_lower(
+                AST::down_cast<AST::Name_t>(x.m_return_var)->m_id);
+        } else {
+            current_procedure_result.clear();
         }
 
         // Determine the ABI (Source or BindC for now). Restored on exit: the
@@ -3424,6 +3436,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
