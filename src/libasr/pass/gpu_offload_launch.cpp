@@ -196,12 +196,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // The components the kernel writes are made ready from the loop as the
     // source wrote it, which the rewrites above left untouched, and before
     // any element is gathered into a copy.
+    // The launch names the block that does it, which the device heap
+    // later reads and changes.
+    ASR::symbol_t *component_fit = nullptr;
     {
         ParallelLoopNest source;
         if (parallel_loop_nest(region, source)) {
-            for (ASR::stmt_t *stmt : build_component_fit(source, starts, ends,
-                    loc)) {
-                launch_stmts.push_back(al, stmt);
+            component_fit = build_component_fit(source, starts, ends, loc);
+            if (component_fit != nullptr) {
+                launch_stmts.push_back(al, ASRUtils::STMT(
+                    ASR::make_BlockCall_t(al, loc, -1, component_fit)));
             }
         }
     }
@@ -310,7 +314,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             grid_size, block_size_const,
-            plan.call_args.p, plan.call_args.n)));
+            plan.call_args.p, plan.call_args.n, component_fit)));
 
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuSync_t(al, loc)));

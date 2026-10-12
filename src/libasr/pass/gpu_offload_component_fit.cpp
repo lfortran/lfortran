@@ -1824,13 +1824,13 @@ public:
           realloc(realloc), checks(checks),
           loop(loop), starts(starts), ends(ends) {}
 
-    std::vector<ASR::stmt_t*> build(const Location &loc) {
-        if (!realloc && !checks) return {};
+    ASR::symbol_t* build(const Location &loc) {
+        if (!realloc && !checks) return nullptr;
         LCOMPILERS_ASSERT(starts.size() == loop.n_heads() &&
             ends.size() == loop.n_heads());
         analyse();
         slice(loop.body, loop.n_body, true, true);
-        if (written.empty()) return {};
+        if (written.empty()) return nullptr;
 
         block_scope = al.make_new<SymbolTable>(scope);
         std::vector<ASR::stmt_t*> stmts;
@@ -1859,7 +1859,7 @@ public:
             }
             stmts.insert(stmts.end(), body.begin(), body.end());
         }
-        if (stmts.empty()) return {};
+        if (stmts.empty()) return nullptr;
 
         Vec<ASR::stmt_t*> block_body;
         block_body.from_pointer_n_copy(al, stmts.data(), stmts.size());
@@ -1869,7 +1869,7 @@ public:
         block_scope->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         scope->add_symbol(name, block_sym);
-        return {ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym))};
+        return block_sym;
     }
 };
 
@@ -1883,8 +1883,9 @@ public:
 // allocates the component to the size the write gives it (with
 // --realloc-lhs-arrays) or, with bounds checking, checks that it has that
 // size. What the replay cannot evaluate before the loop runs it does not
-// guess; see doc/src/gpu_offloading.md.
-std::vector<ASR::stmt_t*> GpuOffloadVisitor::build_component_fit(
+// guess; see doc/src/gpu_offloading.md. Returns the block that does it, which
+// the launch names, or nullptr when there is nothing to do.
+ASR::symbol_t* GpuOffloadVisitor::build_component_fit(
         const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
         const std::vector<ASR::expr_t*> &ends, const Location &loc) {
     GpuComponentFit fit(al, current_scope, implementations,

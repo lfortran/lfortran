@@ -258,6 +258,7 @@
                 )
               )
             ]
+            :component_fit nil
           )
           (GpuSync)
         ]

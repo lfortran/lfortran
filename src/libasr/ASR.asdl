@@ -113,7 +113,7 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
-    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
+    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args, symbol? component_fit)
     | GpuSync()
 
 expr
