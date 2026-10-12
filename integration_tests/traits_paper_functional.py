@@ -44,7 +44,7 @@ INLINE_HASHES = {
     "inline_25.f90": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
     "inline_28.f90": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
 }
-LEAK_REPORT = r"(?:-+ Memory Leak Report -+\s+-+\s+NO LEAKS FOUND\s*)?"
+LEAK_REPORT = r"(?:\s*-+ Memory Leak Report -+\s+-+\s+NO LEAKS FOUND\s*)?"
 
 
 def check_overloading(output):
