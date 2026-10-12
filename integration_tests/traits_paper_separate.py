@@ -39,6 +39,7 @@ import traits_paper_functional as paper  # noqa: E402
 SPLIT_HASHES = {
     "static": "80415aaa04a5a4dc36d1ad0464bc628a29459d2d3b0afa46e855ffd3870aef62",
     "overloading": "169bf3b284a278ff59bfe5bbcb5e0cadb1fa725f20935978f4b5bb09e1b15c42",
+    "vector": "37ae6618a4f171d718a7df43f72abca9995f0169da199c5e91256e009d059737",
 }
 # Every library unit of a split has a role; see the module docstring.
 ROLES = {
@@ -46,6 +47,7 @@ ROLES = {
                "pairwise_library": "package", "averager_library": "package"},
     "overloading": {"basic_interfaces": "provider", "my_type": "provider",
                     "real_type": "provider"},
+    "vector": {"traits": "provider", "vector_library": "package"},
 }
 # The units, symbols, symbol references and imports of an ASR dump, and the
 # definitions of LLVM IR. Compiler-made names, such as those of generic type
@@ -152,13 +154,27 @@ def generic_instance(node):
     head = re.match(r"\(GenericTypeInstance\s+\d+ (\S+)\s+\[", block)
     require(head is not None, "a generic type instance names no definition")
     arguments, position = [], head.end()
-    # Each argument is (type declaration [evidence]).
+    # Each argument is (type declaration [evidence]); an intrinsic type has
+    # no declaration and is spelled from its type.
     while argument := re.compile(r"\s*,?\s*\(").match(block, position):
-        declaration = ASR_REFERENCE.match(block, node_end(block, argument.end()))
+        type_end = node_end(block, argument.end())
+        declaration = ASR_REFERENCE.match(block, type_end)
         require(declaration is not None, "a generic type argument has no declaration")
-        arguments.append(declaration[1])
+        arguments.append(declaration[1] or
+                         intrinsic_spelling(block[argument.end():type_end]))
         position = node_end(block, argument.end() - 1)
     return head[1], arguments, asr_symbols(node)
+
+
+def intrinsic_spelling(node):
+    """The Fortran spelling of an intrinsic type argument's ASR type."""
+    simple = re.fullmatch(r"\((Integer|Real|Complex|Logical) (\d+)\)", node)
+    if simple:
+        return f"{simple[1].lower()}({simple[2]})"
+    string = re.fullmatch(r"\(String 1 \(IntegerConstant (\d+) \(Integer \d+\) Decimal\)"
+                          r" ExpressionLength DescriptorString\)", node)
+    require(string is not None, f"unexpected intrinsic type argument {node}")
+    return f"character(len={string[1]})"
 
 
 def spelling(scopes, name):
@@ -331,7 +347,85 @@ def check_overloading(logs):
             "no runtime evidence or dispatch")
 
 
-STRUCTURE = {"static": check_static, "overloading": check_overloading}
+VECTOR_INSTANCES = sorted([
+    "vector_library::vector{real(8)}",
+    "vector_library::vector{logical(4)}",
+    "vector_library::vector{character(len=5)}",
+])
+# The nodes of runtime trait evidence, views and dispatch.
+RUNTIME_TRAIT_NODES = ("(TraitWitness", "(TraitErasure", "(TraitRuntimeContract",
+                       "(TraitObjectType", "(TraitPack", "(TraitFunctionCall",
+                       "(TraitSubroutineCall", "(TraitDeferredCall")
+
+
+def check_vector(logs):
+    """Associated types: main owns the three instances of the generic type
+    and their conformances to IAppendable, each inferring Element from an
+    append that mutates its receiver for direct calls; the package holds
+    the definition only, and no unit holds runtime trait evidence, views or
+    dispatch, as IAppendable has an associated type."""
+    units = asr_units(logs["test_vector-asr"])
+    require(set(units) >= {"test_vector", "traits", "vector_library"},
+            f"the ASR of test_vector lacks a unit: {sorted(units)}")
+    for name, text in units.items():
+        instances = text.count("(GenericTypeInstance")
+        require(instances == (3 if name == "test_vector" else 0),
+                f"{name} has {instances} generic type instances")
+        runtime = [node for node in RUNTIME_TRAIT_NODES if node in text]
+        require(not runtime, f"{name} holds runtime trait nodes {runtime}")
+    require(units["vector_library"].count("(GenericTypeDefinition") == 1,
+            "vector_library must hold the generic definition of vector")
+    traits = asr_symbols(asr_symbols(units["traits"])["iappendable"])
+    require(re.match(r"\(Variable\s+\d+\s+element\s[\s\S]*?\(TypeParameter\s+element\s",
+                     traits.get("element", "")) is not None and "append" in traits,
+            "iappendable must declare the associated type element and the message append")
+    main = units["test_vector"]
+    symbols = asr_symbols(main)
+    instances = {name: spelling([symbols], name) for name, node in symbols.items()
+                 if node.startswith("(Struct") and generic_instance(node)}
+    require(sorted(instances.values()) == VECTOR_INSTANCES,
+            f"test_vector must own the instances {VECTOR_INSTANCES}, "
+            f"not {sorted(instances.values())}")
+    conformances = [node for node in symbols.values()
+                    if node.startswith("(TraitImplementation")]
+    require(len(conformances) == 3, "test_vector must own one conformance per instance")
+    for instance in instances:
+        conformance = next((node for node in conformances
+                            if re.search(rf"\s\d+ {re.escape(instance)}\s", node)), None)
+        require(conformance is not None, f"no conformance of {instance} to iappendable")
+        append = f"{instance}_append"
+        require(re.search(rf"\[\(\d+ \S+\s+\d+ {re.escape(append)}\s+self\s", conformance)
+                is not None, f"the conformance of {instance} must bind append to {append}")
+        receiver = asr_symbols(symbols[append]).get("self", "")
+        require(re.match(r"\(Variable\s+\d+\s+self\s+\[\]\s+InOut\s", receiver) is not None,
+                f"{append} must mutate its receiver (intent(inout))")
+    definitions = [llvm_name(a or b) for a, b in LLVM_DEFINITION.findall(logs["test_vector-llvm"])]
+    procedures = [f"{instance}_{method}" for instance in instances
+                  for method in ("init", "append", "printout")]
+    missing = [name for name in procedures if name not in definitions]
+    require(not missing, f"test_vector does not define {missing}")
+    require(not [name for name in definitions if "trait_witness" in name or
+                 "trait_erasure" in name or "trait_lifecycle" in name],
+            "test_vector must define no runtime trait evidence")
+    objects = nm_definitions(logs["library-symbols"])
+    for library in ("traits.o", "vector_library.o"):
+        require(library in objects or library in logs["library-symbols"],
+                f"the archive has no {library}")
+        require(not objects.get(library), f"{library} must define no symbols, not "
+                                          f"{objects.get(library)}")
+    main_symbols = [name for names in nm_definitions(logs["test_vector-symbols"]).values()
+                    for name in names]
+    for name in procedures:
+        require(any(symbol.endswith(name) for symbol in main_symbols),
+                f"test_vector.o does not define {name}")
+    return ("test_vector owns the instances " + ", ".join(VECTOR_INSTANCES) +
+            ", their procedures and their conformances to iappendable, whose append "
+            "mutates its receiver; vector_library holds the definition only; no unit "
+            "holds runtime trait evidence, views or dispatch")
+
+
+STRUCTURE = {"static": check_static, "overloading": check_overloading,
+             "vector": check_vector}
 
 
 def units_of(content, split):
@@ -434,7 +528,8 @@ def main():
             / f"paper-separate-{name}-{args.mode}-{os.getpid()}-{time.time_ns()}")
     work.mkdir(parents=True)
     environment = {**os.environ, "TMPDIR": str(work), "TMP": str(work), "TEMP": str(work)}
-    flags = ["--no-color", "--verify-all-passes", "--separate-compilation"]
+    flags = ["--no-color", "--verify-all-passes", "--separate-compilation",
+             *paper.COMPILE_FLAGS.get(name, [])]
     if args.mode == "fast":
         flags.append("--fast")
     records, frozen = [], {}

@@ -4214,9 +4214,19 @@ RUN(NAME traits_protocol_operands_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULE
 RUN(NAME traits_infer_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_infer_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_paper_vector FILE traits_paper_associated/vector
+    LABELS llvm NO_STD_F23 ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_paper_vector_oracle FILE traits_paper_associated/vector_oracle
+    LABELS gfortran llvm ISOLATE_MODULES TEST_DRIVER traits_paper_functional.py
+    EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME traits_associated_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
 RUN(NAME traits_associated_01_oracle LABELS gfortran llvm ISOLATE_MODULES
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME traits_associated_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
+RUN(NAME traits_associated_02_oracle LABELS gfortran llvm ISOLATE_MODULES
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME traits_associated_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)

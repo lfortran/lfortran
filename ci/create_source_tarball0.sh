@@ -64,6 +64,8 @@ cmake -E copy_directory integration_tests/traits_paper_static \
     $dest/integration_tests/traits_paper_static
 cmake -E copy_directory integration_tests/traits_paper_protocols \
     $dest/integration_tests/traits_paper_protocols
+cmake -E copy_directory integration_tests/traits_paper_associated \
+    $dest/integration_tests/traits_paper_associated
 
 # Create the tarball
 cmake -E make_directory dist

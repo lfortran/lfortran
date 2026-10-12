@@ -1,7 +1,7 @@
 """Compile the paper programs and check their documented results.
 
-Averaging programs are checked for both interactive choices; overloading
-runs once. Standard-Fortran oracles of the paper programs are checked
+Averaging programs are checked for both interactive choices; overloading and
+vector run once. Standard-Fortran oracles of the paper programs are checked
 like the programs they model.
 """
 
@@ -9,6 +9,7 @@ import argparse
 from decimal import Decimal
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -22,11 +23,13 @@ SOURCE_HASHES = {
     "mixed": "6f9515b4230468ee7f179395713a2b90ed1759e91ce26dd69c884c9115c0516a",
     "static": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
     "overloading": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+    "vector": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
 }
 SOURCE_DIRECTORIES = {
     "mixed": "traits_paper_dynamic",
     "static": "traits_paper_static",
     "overloading": "traits_paper_protocols",
+    "vector": "traits_paper_associated",
 }
 # Explicit provider imports: the fixture is the original paper file plus one
 # USE line after the anchor line. The original, which contains the provider
@@ -39,12 +42,18 @@ PROVIDER_IMPORTS = {
 ORACLE_HASHES = {
     "static_oracle": "8dd669518a6849e7d2c72cea4e2ce55be053f24b3f035a0ed119053b751d994b",
     "overloading_oracle": "5f361d44de40fa5381e418af774821ffac900de3ec54bde5136e02a369b3a958",
+    "vector_oracle": "ce00fc818858df104299695f019b64040d01c925fdf2e862a7c318a697376c2a",
 }
+# Standard semantics a program needs beyond the default options: vector
+# appends with `elements = [elements, item]`, which reallocates the
+# allocatable on assignment (Fortran 2003), LFortran's --realloc-lhs-arrays.
+COMPILE_FLAGS = {"vector": ["--realloc-lhs-arrays"]}
 INLINE_HASHES = {
     "inline_25.f90": "53af21a4684d3995fe2d5d14a412f13b183cfa48801f2e0170a963bf76ea6cc8",
     "inline_28.f90": "787574712d4127623f9912f2173397e20d7b5865ddfcfd27cdf01cb01d993fee",
 }
-LEAK_REPORT = r"(?:\s*-+ Memory Leak Report -+\s+-+\s+NO LEAKS FOUND\s*)?"
+# With --detect-leaks the runtime prints its report after a blank line.
+LEAK_REPORT = r"(?:\n?-+ Memory Leak Report -+\s+-+\s+NO LEAKS FOUND\s*)?"
 
 
 def check_overloading(output):
@@ -53,10 +62,8 @@ def check_overloading(output):
     return "I am: 13824 (MyType) and 13824.0 (real)"
 
 
-OUTPUT_CHECKS = {"overloading": check_overloading}
-
-
 def example_of(name):
+    """The paper program a fixture or its standard-Fortran oracle models."""
     return name[:-len("_oracle")] if name in ORACLE_HASHES else name
 
 
@@ -67,6 +74,43 @@ def check_provider_import(name, content):
             or hashlib.sha256(original).hexdigest() != original_hash):
         raise RuntimeError(f"{name} must be the original paper file plus one provider USE")
     return original
+
+
+def list_directed(records, count, convert):
+    """Read count list-directed values, also as r*c repeats, from records."""
+    values = []
+    while records and len(values) < count:
+        for token in re.split(r"[\s,]+", records.pop(0).strip()):
+            if token:
+                repeat, star, constant = token.rpartition("*")
+                values += [convert(constant)] * (int(repeat) if star else 1)
+    return values
+
+
+def check_vector(output):
+    """The three list-directed rows of vector: real(8) 0 1.5 2.2, logical
+    T F T and the character(len=5) values 'John ', 'Mary ', 'Anne ', which
+    list-directed output writes without separators."""
+    records = re.sub(LEAK_REPORT + r"\Z", "", output).splitlines()
+    try:
+        reals = list_directed(records, 3, lambda t: float(t.upper().replace("D", "E")))
+        logicals = list_directed(records, 3, {"T": True, "F": False}.__getitem__)
+    except (KeyError, ValueError):
+        reals = logicals = []
+    # A processor may start each record with a blank. Each value keeps its
+    # five characters, the trailing blank of the last one included.
+    text = "".join(record[1:] if record.startswith(" ") else record for record in records)
+    if (len(reals) != 3 or logicals != [True, False, True]
+            or not all(math.isclose(value, expected, rel_tol=0, abs_tol=1e-12)
+                       for value, expected in zip(reals, (0.0, 1.5, 2.2)))
+            or not text.startswith("John Mary Anne ")
+            or text[len("John Mary Anne "):].strip(" ")):
+        raise RuntimeError("vector: expected rows 0 1.5 2.2, T F T and "
+                           f"'John Mary Anne ':\n{output}")
+    return "real(8) 0 1.5 2.2, logical T F T, character(len=5) John Mary Anne"
+
+
+OUTPUT_CHECKS = {"overloading": check_overloading, "vector": check_vector}
 
 
 def main():
@@ -106,7 +150,8 @@ def main():
         modules = private / "modules"
         modules.mkdir()
         executable = private / source.stem
-        flags = ["--no-color", "--verify-all-passes"]
+        flags = ["--no-color", "--verify-all-passes",
+                 *COMPILE_FLAGS.get(example_of(source.stem), [])]
         if args.fast:
             flags.append("--fast")
         run(source.stem + "-compile",
@@ -155,8 +200,7 @@ def main():
             output = run(f"{name}-key{key}", [executable], private, f"{key}\n")
             match = re.search(
                 r"Choose an averaging method:\s*([+-]?\d+)\s+([+-]?\d+\.\d+)\s*"
-                r"(?:-+ Memory Leak Report -+\s+"
-                r"-+\s+NO LEAKS FOUND\s*)?\Z",
+                + LEAK_REPORT + r"\Z",
                 output)
             if not match or int(match[1]) != 3 or Decimal(match[2]) != Decimal("3.0"):
                 raise RuntimeError(f"{name}, choice {key}: expected 3 and 3.0:\n{output}")

@@ -1038,10 +1038,15 @@ binding's passed-object dummy (`ASRUtils::trait_binding_mutates_receiver`), and
 the verifier admits `intent(inout)` receivers only outside runtime witnesses and
 rejects mutating evidence of generic type arguments.
 
-`traits_associated_01` checks associated types and unconstrained storage,
-`traits_associated_03` direct mutation through a universal trait next to its
-read-only views and generic calls, and `continue_compilation_traits_associated`
-the diagnostics.
+The exact paper `vector.f90` (`traits_paper_vector`, its oracle and the
+`test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
+CTests) needs Fortran 2003 reallocation on assignment for
+`elements = [elements, item]`, which LFortran's default mode leaves to
+`--realloc-lhs-arrays`. `traits_associated_01` checks associated types and
+unconstrained storage, `traits_associated_02` mutating appends through
+variables, an `intent(inout)` dummy and a nested instance, `traits_associated_03`
+direct mutation through a universal trait next to its read-only views and
+generic calls, and `continue_compilation_traits_associated` the diagnostics.
 
 ## Current boundaries
 

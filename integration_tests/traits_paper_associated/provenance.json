@@ -1,0 +1,46 @@
+{
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21"
+  },
+  "fixtures": [
+    {
+      "corpus_id": "vector",
+      "source_path": "Code/Fortran/vector.f90",
+      "file": "vector.f90",
+      "original_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+      "sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+      "listing": "complete file in sect:associated_types_usage, plus lines 5-11 in sect:tats",
+      "expected": {
+        "stdin_choices": [],
+        "rows": [
+          "real(8): 0.0 1.5 2.2 (list-directed, |error| <= 1e-12)",
+          "logical: T F T",
+          "character(len=5): 'John Mary Anne ' (values not separated)"
+        ]
+      },
+      "oracle": {
+        "file": "vector_oracle.f90",
+        "sha256": "ce00fc818858df104299695f019b64040d01c925fdf2e862a7c318a697376c2a",
+        "kind": "standard-Fortran oracle (gfortran and llvm labels); not trait syntax"
+      }
+    }
+  ],
+  "preservation": "Byte-for-byte copies of the companion files, including module names, whitespace, trailing blanks and comments. The only change is one explicit provider USE line where a fixture lists an adaptation; removing that line reproduces the original sha256. No other boilerplate, erratum or simplification is applied.",
+  "acceptance": {
+    "driver": "traits_paper_functional.py",
+    "modes": [
+      "normal",
+      "fast"
+    ],
+    "flags": [
+      "--no-color",
+      "--verify-all-passes",
+      "--realloc-lhs-arrays"
+    ],
+    "flags_note": "vector.f90 appends with elements = [elements, item], which reallocates the allocatable on assignment (Fortran 2003); --realloc-lhs-arrays requests that standard semantics from LFortran, whose default mode does not reallocate. No source change."
+  },
+  "status": "registered: integration test traits_paper_vector and CTests test_paper_functional_{normal,fast}; CTests test_paper_separate_vector_{normal,fast} for frozen separate compilation along vector_split.json; the standard-Fortran model vector_oracle.f90 is traits_paper_vector_oracle"
+}
