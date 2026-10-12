@@ -990,8 +990,10 @@ The broader proposal is not yet implemented. In particular, pointer trait
 results, mutable receivers, associated types, unrestricted intrinsic capabilities,
 generic derived types beyond the boundaries described in their section, runtime
 views and runtime generic methods over initializer and operator requirements,
-and unrestricted generic-method signatures are separate implementation stages. Existing `:=` inferred assignment is a
-different extension and is not required to use static traits.
+and unrestricted generic-method signatures are separate implementation stages.
+Existing `:=` inferred assignment is a different extension and is not required
+to use static traits; in a generic body it also declares a variable of a type
+parameter from a value of that type (`traits_infer_01`).
 Forwarding that mixes concrete and deferred type arguments, or crosses nested
 or shadowed generic-binder scopes, is not implemented yet.
 

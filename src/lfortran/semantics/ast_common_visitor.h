@@ -20856,6 +20856,11 @@ public:
                     str_type->m_len_kind, str_type->m_physical_type));
         } else if (ASR::is_a<ASR::StructType_t>(*inferred_type)) {
             return inferred_type;
+        } else if (ASR::is_a<ASR::TypeParameter_t>(*inferred_type) &&
+                declared_trait_parameter(ASR::down_cast<ASR::TypeParameter_t>(
+                    inferred_type)->m_param, current_scope)) {
+            // A value of a generic type parameter, in its generic body.
+            return ASRUtils::duplicate_type(al, inferred_type);
         }
         diag.add(Diagnostic(
             "Type inference does not support this type",
