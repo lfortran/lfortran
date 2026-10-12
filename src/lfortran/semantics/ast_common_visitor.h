@@ -24259,7 +24259,7 @@ public:
                     trait_call_error("ambiguous visible implementations of trait '"
                         + std::string(ASRUtils::symbol_name(
                             ASRUtils::get_asr_owner(conflict)))
-                        + "' for method '" + ASRUtils::symbol_name(conflict)
+                        + "' for method '" + ASRUtils::trait_member_display_name(conflict)
                         + "': procedure and receiver bindings must agree", loc);
                 }
             }
@@ -24942,8 +24942,7 @@ public:
                             if (!binding) continue;
                             if (agreed && !ASRUtils::trait_bindings_equal(*agreed, *binding)) {
                                 trait_call_error("conflicting implementations of combined trait method '"
-                                    + std::string(ASRUtils::symbol_name(
-                                        ASRUtils::symbol_get_past_external(origin)))
+                                    + ASRUtils::trait_member_display_name(origin)
                                     + "': procedure and receiver bindings must agree", loc);
                             }
                             agreed = binding;
@@ -25280,8 +25279,7 @@ public:
                 previous.binding && ASRUtils::trait_bindings_equal(*previous.binding, *binding);
             if (!agrees) {
                 trait_call_error("conflicting implementations of composed trait method '"
-                    + std::string(ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(requirement.m_member)))
+                    + ASRUtils::trait_member_display_name(requirement.m_member)
                     + "' for generic type parameter '"
                     + trait_binder_display_name(*generic,
                         ASRUtils::symbol_name(constraint->m_parameter))

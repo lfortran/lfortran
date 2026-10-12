@@ -535,3 +535,186 @@ contains
         r = T(k)
     end function from_counter
 end module cc_traits_protocols_initializer_actuals
+
+module cc_traits_protocols_conflict_contracts
+    implicit none
+    abstract interface :: IAdd
+        function operator(+)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs, rhs
+            type(itself)             :: res
+        end function operator(+)
+    end interface IAdd
+    abstract interface, extends(IAdd) :: ILeft
+        function left() result(c)
+            integer :: c
+        end function left
+    end interface ILeft
+    abstract interface, extends(IAdd) :: IRight
+        function right() result(c)
+            integer :: c
+        end function right
+    end interface IRight
+    abstract interface :: IHalf
+        function operator(/)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs
+            integer,      intent(in) :: rhs
+            type(itself)             :: res
+        end function operator(/)
+    end interface IHalf
+    abstract interface :: IHalve
+        function operator(/)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs
+            integer,      intent(in) :: rhs
+            type(itself)             :: res
+        end function operator(/)
+    end interface IHalve
+contains
+    function twice{IAdd :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T)             :: r
+        r = x + x
+    end function twice
+    function half{IHalf + IHalve :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T)             :: r
+        r = x / 2
+    end function half
+end module cc_traits_protocols_conflict_contracts
+
+! E31: two conformances of a type bind the operator(+) that both traits
+! inherit to different procedures.
+module cc_traits_protocols_inherited_conflict
+    use cc_traits_protocols_conflict_contracts, only: ILeft, IRight
+    implicit none
+    type, sealed :: Pair
+        integer :: n = 0
+    end type Pair
+    implements ILeft :: Pair
+        procedure, static :: operator(+) => pair_add_left
+        procedure :: left => pair_left
+    end implements Pair
+    implements IRight :: Pair
+        procedure, static :: operator(+) => pair_add_right
+        procedure :: right => pair_right
+    end implements Pair
+contains
+    function pair_add_left(lhs, rhs) result(res)
+        type(Pair), intent(in) :: lhs, rhs
+        type(Pair)             :: res
+        res%n = lhs%n + rhs%n
+    end function pair_add_left
+    function pair_add_right(lhs, rhs) result(res)
+        type(Pair), intent(in) :: lhs, rhs
+        type(Pair)             :: res
+        res%n = rhs%n + lhs%n
+    end function pair_add_right
+    function pair_left(self) result(c)
+        type(Pair), intent(in) :: self
+        integer                :: c
+        c = self%n
+    end function pair_left
+    function pair_right(self) result(c)
+        type(Pair), intent(in) :: self
+        integer                :: c
+        c = -self%n
+    end function pair_right
+end module cc_traits_protocols_inherited_conflict
+
+module cc_traits_protocols_visible_type
+    implicit none
+    type, sealed :: Coord
+        integer :: n = 0
+    end type Coord
+end module cc_traits_protocols_visible_type
+
+module cc_traits_protocols_visible_left
+    use cc_traits_protocols_conflict_contracts, only: ILeft
+    use cc_traits_protocols_visible_type, only: Coord
+    implicit none
+    implements ILeft :: Coord
+        procedure, static :: operator(+) => coord_add_left
+        procedure :: left => coord_left
+    end implements Coord
+contains
+    function coord_add_left(lhs, rhs) result(res)
+        type(Coord), intent(in) :: lhs, rhs
+        type(Coord)             :: res
+        res%n = lhs%n + rhs%n
+    end function coord_add_left
+    function coord_left(self) result(c)
+        type(Coord), intent(in) :: self
+        integer                 :: c
+        c = self%n
+    end function coord_left
+end module cc_traits_protocols_visible_left
+
+module cc_traits_protocols_visible_right
+    use cc_traits_protocols_conflict_contracts, only: IRight
+    use cc_traits_protocols_visible_type, only: Coord
+    implicit none
+    implements IRight :: Coord
+        procedure, static :: operator(+) => coord_add_right
+        procedure :: right => coord_right
+    end implements Coord
+contains
+    function coord_add_right(lhs, rhs) result(res)
+        type(Coord), intent(in) :: lhs, rhs
+        type(Coord)             :: res
+        res%n = rhs%n + lhs%n
+    end function coord_add_right
+    function coord_right(self) result(c)
+        type(Coord), intent(in) :: self
+        integer                 :: c
+        c = -self%n
+    end function coord_right
+end module cc_traits_protocols_visible_right
+
+! E32: conformances visible together bind the operator(+) that both traits
+! inherit to different procedures.
+module cc_traits_protocols_visible_use
+    use cc_traits_protocols_conflict_contracts, only: twice
+    use cc_traits_protocols_visible_type, only: Coord
+    use cc_traits_protocols_visible_left
+    use cc_traits_protocols_visible_right
+    implicit none
+contains
+    function doubled(x) result(r)
+        type(Coord), intent(in) :: x
+        type(Coord)             :: r
+        r = twice(x)
+    end function doubled
+end module cc_traits_protocols_visible_use
+
+! E33: the equal operator(/) requirements of a composed constraint are bound
+! to different procedures.
+module cc_traits_protocols_composed_conflict
+    use cc_traits_protocols_conflict_contracts, only: IHalf, IHalve, half
+    implicit none
+    type, sealed :: Ratio
+        integer :: n = 0
+    end type Ratio
+    implements IHalf :: Ratio
+        procedure, static :: operator(/) => ratio_div_floor
+    end implements Ratio
+    implements IHalve :: Ratio
+        procedure, static :: operator(/) => ratio_div_ceiling
+    end implements Ratio
+contains
+    function ratio_div_floor(lhs, rhs) result(res)
+        type(Ratio), intent(in) :: lhs
+        integer,     intent(in) :: rhs
+        type(Ratio)             :: res
+        res%n = lhs%n / rhs
+    end function ratio_div_floor
+    function ratio_div_ceiling(lhs, rhs) result(res)
+        type(Ratio), intent(in) :: lhs
+        integer,     intent(in) :: rhs
+        type(Ratio)             :: res
+        res%n = (lhs%n + rhs - 1) / rhs
+    end function ratio_div_ceiling
+    function halved(x) result(r)
+        type(Ratio), intent(in) :: x
+        type(Ratio)             :: r
+        r = half(x)
+    end function halved
+end module cc_traits_protocols_composed_conflict

@@ -180,6 +180,16 @@ semantic error: operand 'rhs' of operator(*) cannot be optional
 500 |             integer, intent(in), optional :: rhs
     |                                              ^^^ 
 
+semantic error: conflicting implementations of inherited trait method 'operator(+)': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:596:5 - 599:24
+    |
+596 |        implements IRight :: Pair
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+599 |        end implements Pair
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: ambiguous operator(*) for operands of type t and integer(4): several requirements of the constraints accept them
    --> tests/errors/continue_compilation_traits_protocols.f90:348:13
     |
@@ -227,3 +237,15 @@ semantic error: Argument `k` with intent(in) passed to a dummy argument with mod
     |
 530 |         r = T(k)
     |               ^ 
+
+semantic error: ambiguous visible implementations of trait 'iadd' for method 'operator(+)': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:684:13
+    |
+684 |         r = twice(x)
+    |             ^^^^^^^^ 
+
+semantic error: conflicting implementations of composed trait method 'operator(/)' for generic type parameter 't': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:718:13
+    |
+718 |         r = half(x)
+    |             ^^^^^^^ 

@@ -6079,7 +6079,7 @@ public:
                     *previous, *ASR::down_cast<ASR::TraitImplementation_t>(implementation));
                 if (conflict) {
                     trait_error("conflicting implementations of inherited trait method '"
-                        + std::string(ASRUtils::symbol_name(conflict))
+                        + ASRUtils::trait_member_display_name(conflict)
                         + "': procedure and receiver bindings must agree",
                         loc);
                 }
