@@ -271,7 +271,12 @@ generates the device source. It never falls back to the CPU:
   the temporary is a run-time sized local as above.
 * A derived-type value reaches the kernel as a copy of the host's bytes,
   laid out by the device exactly as the host lays it out. An allocatable
-  array component is handed over in device buffers of its own. An
+  array component is handed over in device buffers of its own. So is one
+  of a component that is a derived-type value itself (`self%input_map_%slope_`):
+  the component (`self%input_map_`) becomes an argument of its own of every
+  kernel and device procedure that uses it, read or passed on to a
+  procedure, and every call and launch passes it beside the value it is a
+  component of (`gpu_struct_component_args.cpp`), at any depth. An
   allocatable scalar component, a `character(len=:), allocatable` one
   included, is carried as the host's bytes (the address of the value, and
   its length for a character), which the device keeps in place and copies
