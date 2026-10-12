@@ -5802,6 +5802,29 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
         return trait_type_parameter(ASR::down_cast<ASR::ArrayPhysicalCast_t>(value)->m_arg);
     }
+    if (ASR::is_a<ASR::ArrayConstructor_t>(*value) || ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+        // The binder of the elements, which all have the constructor's type.
+        auto *type = typed_expr_type(value);
+        type = type ? extract_type(type) : nullptr;
+        if (!type || !ASR::is_a<ASR::TypeParameter_t>(*type)) return nullptr;
+        std::string name = ASR::down_cast<ASR::TypeParameter_t>(type)->m_param;
+        ASR::expr_t **elements = nullptr;
+        size_t n_elements = 0;
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+            auto *constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            elements = constructor->m_args;
+            n_elements = constructor->n_args;
+        } else {
+            auto *loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+            elements = loop->m_values;
+            n_elements = loop->n_values;
+        }
+        for (size_t i = 0; i < n_elements; i++) {
+            auto *binder = trait_type_parameter(elements[i]);
+            if (binder && name == symbol_name(binder)) return binder;
+        }
+        return nullptr;
+    }
     if (ASR::is_a<ASR::TraitDeferredCall_t>(*value)) {
         // Its binder-typed result was inferred from an argument of that binder.
         auto *call = ASR::down_cast<ASR::TraitDeferredCall_t>(value);
