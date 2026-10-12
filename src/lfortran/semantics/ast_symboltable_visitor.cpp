@@ -4474,10 +4474,16 @@ public:
 
             // Resolve AST node + set it in the holder.
             bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
-            visit_expr(*funcCall);
-            *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
-            // Invoke the call to the CheckFunc
-            if( CheckFunc ) CheckFunc(*expr_holder);
+            try {
+                visit_expr(*funcCall);
+                *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+                // Invoke the call to the CheckFunc
+                if( CheckFunc ) CheckFunc(*expr_holder);
+            } catch (SemanticAbort &) {
+                current_scope = current_scope_copy;
+                in_Subroutine = in_subroutine_or_function_copy;
+                throw;
+            }
             in_Subroutine = in_subroutine_or_function_copy;
 
             LCOMPILERS_ASSERT(

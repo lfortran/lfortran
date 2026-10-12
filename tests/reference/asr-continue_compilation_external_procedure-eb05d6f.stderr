@@ -1,0 +1,17 @@
+semantic error: Function 'gen' not found (not user defined nor intrinsic)
+  --> tests/errors/continue_compilation_external_procedure.f90:15:18
+   |
+15 |     integer :: a(gen(r, n))  ! {Error} no specific procedure of `gen` matches
+   |                  ^^^^^^^^^ 
+
+semantic error: Subroutine already defined defined_twice
+  --> tests/errors/continue_compilation_external_procedure.f90:45:18
+   |
+45 |     integer :: a(gen(n))
+   |                  ^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+  --> tests/errors/continue_compilation_external_procedure.f90:22:5
+   |
+22 |     k = "abc"  ! {Error} still reported: the bound above is not left in scope
+   |     ^   ^^^^^ type mismatch (integer and string)
