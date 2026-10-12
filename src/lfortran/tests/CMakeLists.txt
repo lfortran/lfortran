@@ -220,6 +220,16 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
+        # Several interactive evaluator tests in test_llvm.cpp hang or fail
+        # on Windows, so the prompt is driven on the other platforms only.
+        if (NOT WIN32)
+            add_test(
+                NAME test_repl
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"

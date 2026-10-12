@@ -282,9 +282,10 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "input";
-        // `input` is only used for error rendering
-        std::ofstream out("input");
-        out << input;
+        // The text is only quoted by the error rendering, which takes it from
+        // here; writing it to a file would clobber any `input` in the user's
+        // directory.
+        fl.source = input;
         lm.files.push_back(fl);
         lm.init_simple(input);
         lm.file_ends.push_back(input.size());
@@ -2552,8 +2553,7 @@ namespace wasm {
                         { \
                             LCompilers::LocationManager::FileLocations fl; \
                             fl.in_filename = "input"; \
-                            std::ofstream out("input"); \
-                            out << input; \
+                            fl.source = input; \
                             lm.files.push_back(fl); \
                             lm.file_ends.push_back(strlen(input)); \
                         }
