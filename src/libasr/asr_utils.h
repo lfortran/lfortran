@@ -7205,34 +7205,70 @@ class SymbolDuplicator {
     // after the declaration, the copy of the declaration still reads the
     // original, so point it at the copy once the whole scope is copied. A
     // symbol the destination already had is not a copy, and is left alone.
+    // The same holds for a declaration of a scope nested in the copy (a
+    // BLOCK, ASSOCIATE or contained procedure) that reads a variable of an
+    // enclosing copied scope, such as the extent `n` of `real :: w(n)` in a
+    // BLOCK of a routine with the dummy argument `n`.
     void fixup_local_symbol_references(SymbolTable *new_scope,
             SymbolTable *orig_scope, const std::set<std::string> &existing) {
+        std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
+        fixup_symbol_references_in_scope(new_scope, orig_scope, existing,
+            copied_scopes);
+    }
+
+    void fixup_symbol_references_in_scope(SymbolTable *new_scope,
+            SymbolTable *orig_scope, const std::set<std::string> &existing,
+            std::vector<std::pair<SymbolTable*, SymbolTable*>> &copied_scopes) {
         class Retarget : public ASR::BaseWalkVisitor<Retarget> {
         public:
-            SymbolTable *orig_scope, *new_scope;
+            const std::vector<std::pair<SymbolTable*, SymbolTable*>> &scopes;
             const std::set<std::string> &existing;
-            Retarget(SymbolTable *orig, SymbolTable *copy,
+            Retarget(const std::vector<std::pair<SymbolTable*,
+                    SymbolTable*>> &scopes,
                     const std::set<std::string> &existing)
-                : orig_scope(orig), new_scope(copy), existing(existing) {}
+                : scopes(scopes), existing(existing) {}
             void visit_Var(const ASR::Var_t &x) {
-                if (ASRUtils::symbol_parent_symtab(x.m_v) != orig_scope) {
+                SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_v);
+                for (size_t i = 0; i < scopes.size(); i++) {
+                    if (parent != scopes[i].first) continue;
+                    std::string name = ASRUtils::symbol_name(x.m_v);
+                    // Only the outermost copy has symbols that are not
+                    // copies.
+                    if (i == 0 && existing.count(name)) return;
+                    ASR::symbol_t *copy = scopes[i].second->get_symbol(name);
+                    if (copy != nullptr) {
+                        const_cast<ASR::Var_t&>(x).m_v = copy;
+                    }
                     return;
-                }
-                std::string name = ASRUtils::symbol_name(x.m_v);
-                if (existing.count(name)) return;
-                ASR::symbol_t *copy = new_scope->get_symbol(name);
-                if (copy != nullptr) {
-                    const_cast<ASR::Var_t&>(x).m_v = copy;
                 }
             }
         };
-        Retarget retarget(orig_scope, new_scope, existing);
+        copied_scopes.push_back({orig_scope, new_scope});
+        Retarget retarget(copied_scopes, existing);
+        bool outermost = copied_scopes.size() == 1;
         for (auto &item : new_scope->get_scope()) {
-            if (existing.count(item.first) == 0 &&
-                    ASR::is_a<ASR::Variable_t>(*item.second)) {
+            if (outermost && existing.count(item.first)) continue;
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 retarget.visit_symbol(*item.second);
+                continue;
+            }
+            if (!ASR::is_a<ASR::Block_t>(*item.second) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*item.second) &&
+                    !ASR::is_a<ASR::Function_t>(*item.second)) {
+                continue;
+            }
+            ASR::symbol_t *orig_sym = orig_scope->get_symbol(item.first);
+            if (orig_sym == nullptr || orig_sym->type != item.second->type) {
+                continue;
+            }
+            SymbolTable *orig_nested = ASRUtils::symbol_symtab(orig_sym);
+            SymbolTable *new_nested = ASRUtils::symbol_symtab(item.second);
+            if (orig_nested != nullptr && orig_nested != new_nested) {
+                fixup_symbol_references_in_scope(new_nested, orig_nested,
+                    existing, copied_scopes);
             }
         }
+        copied_scopes.pop_back();
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
