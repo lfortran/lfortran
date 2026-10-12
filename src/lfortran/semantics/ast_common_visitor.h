@@ -6919,6 +6919,14 @@ public:
             }
 
         }
+        if (!is_lhs_length_constant && is_rhs_length_constant
+                && lhs_type->m_len_kind == ASR::ExpressionLength) {
+            // The length depends on a deferred constant of a template, so
+            // the value is padded or truncated when it is instantiated.
+            // Until then the named constant has no value, which keeps its
+            // uses from being folded with the unadjusted initializer.
+            value = nullptr;
+        }
         if(!is_rhs_length_constant){
                 diag.add(Diagnostic(
                 "The RHS character len must be known at compile time",

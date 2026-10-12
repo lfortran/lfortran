@@ -1427,6 +1427,21 @@ public:
         if (new_value && ASRUtils::expr_value(new_value)) {
             new_value = ASRUtils::expr_value(new_value);
         }
+        // A character length that uses a deferred constant is known only
+        // now, so the value is padded or truncated to it here, as the
+        // semantics do for `character(len=3), parameter :: c = 'abcdef'`.
+        int64_t new_len = 0;
+        if (new_value && ASRUtils::is_character(*new_type)
+                && ASRUtils::is_character(*ASRUtils::expr_type(new_value))
+                && ASRUtils::get_string_type(new_type)->m_len
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    ASRUtils::get_string_type(new_type)->m_len), new_len)) {
+            ASR::expr_t* adjusted = ASRUtils::conform_character_constant_length(
+                new_value, new_len, new_value->base.loc, al);
+            if (adjusted) {
+                new_value = adjusted;
+            }
+        }
 
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
@@ -2253,6 +2268,20 @@ public:
                 }
                 return ttype;
             }
+            case (ASR::ttypeType::String) : {
+                // The length, e.g. `character(len=n)`, may refer to a
+                // deferred constant, or to another entity of the template
+                // such as a dummy argument or a named constant of the same
+                // procedure. A constant length is folded, as the frontend
+                // does for the same declaration outside a template.
+                ASR::String_t *s = ASR::down_cast<ASR::String_t>(ttype);
+                ASR::expr_t *len = duplicate_expr(s->m_len);
+                if (len && ASRUtils::expr_value(len)) {
+                    len = ASRUtils::expr_value(len);
+                }
+                return ASRUtils::TYPE(ASR::make_String_t(al, ttype->base.loc,
+                    s->m_kind, len, s->m_len_kind, s->m_physical_type));
+            }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
                 ASR::ttype_t *t = substitute_type(expr, a->m_type);
@@ -2907,18 +2936,26 @@ public:
         return &substitute_type(nullptr, &x->base)->base;
     }
 
-    // A bound of an expression's type may refer to a named constant local
-    // to the instantiated procedure, e.g. `k` in `integer, parameter ::
-    // k = n; integer :: x(k)`, which has a value once the deferred constant
-    // `n` is substituted. Use that value, as the frontend does for the same
-    // declaration outside a template, so that the type does not depend on
-    // a symbol of the procedure's scope (passes copy expression types into
-    // new functions, e.g. the helpers of array intrinsics).
+    // A bound or a character length of an expression's type may refer to a
+    // named constant local to the instantiated procedure, e.g. `k` in
+    // `integer, parameter :: k = n; integer :: x(k)`, which has a value once
+    // the deferred constant `n` is substituted. Use that value, as the
+    // frontend does for the same declaration outside a template, so that
+    // the type does not depend on a symbol of the procedure's scope (passes
+    // copy expression types into new functions, e.g. the helpers of array
+    // intrinsics).
     ASR::expr_t* fold_dimension(ASR::expr_t* dim) {
         if (dim && ASRUtils::expr_value(dim)) {
             return ASRUtils::expr_value(dim);
         }
         return dim;
+    }
+
+    ASR::asr_t* duplicate_String(ASR::String_t* x) {
+        ASR::String_t* s = ASR::down_cast<ASR::String_t>(
+            ASRUtils::TYPE(BaseExprStmtDuplicator::duplicate_String(x)));
+        s->m_len = fold_dimension(s->m_len);
+        return &s->base.base;
     }
 
     ASR::asr_t* duplicate_Array(ASR::Array_t* x) {
@@ -2962,6 +2999,9 @@ public:
                         al, s->base.base.loc, sym, s->m_is_cstruct);
                 }
                 return ttype;
+            }
+            case (ASR::ttypeType::String) : {
+                return duplicate_ttype(ttype);
             }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
