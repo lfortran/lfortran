@@ -134,3 +134,27 @@ contains
         print *, total(x)
     end subroutine sum_reals
 end module cc_traits_kind_sets_own_numeric
+
+! Two uses of the program's own module generics, with and without a nature.
+module cc_traits_kind_sets_two_uses
+    use generics, only: INumeric
+    use, non_intrinsic :: generics, only: origin
+    implicit none
+end module cc_traits_kind_sets_two_uses
+
+! E11: one scoping unit cannot access both the program's module generics and
+! the intrinsic module generics.
+module cc_traits_kind_sets_both_natures
+    use generics, only: Mine => INumeric
+    use, intrinsic :: generics, only: Theirs => INumeric
+    implicit none
+end module cc_traits_kind_sets_both_natures
+
+! E12: nor can a BLOCK.
+subroutine cc_traits_kind_sets_block_natures()
+    implicit none
+    block
+        use, non_intrinsic :: generics, only: Mine => INumeric
+        use, intrinsic :: generics, only: Theirs => INumeric
+    end block
+end subroutine cc_traits_kind_sets_block_natures

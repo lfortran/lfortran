@@ -1240,7 +1240,8 @@ module of the program named `generics` is accessible, that is defined earlier
 in the same source or found as a modfile, a readable, non-empty
 `generics.mod` (the empty placeholder that a submodule named `generics`
 leaves is no module). A program's own module `generics` therefore keeps
-working and is never shadowed. A module that uses the intrinsic module
+working and is never shadowed, but one scoping unit cannot access both it and
+the intrinsic module. A module that uses the intrinsic module
 records it under its runtime name, `lfortran_intrinsic_generics`, as its
 dependency, so a client of its modfile loads the same module from the runtime
 without any provider of the program, and every use of it names one module and

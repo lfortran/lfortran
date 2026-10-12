@@ -2174,6 +2174,9 @@ public:
     // import may be safely erased when a later `use ..., only: new => name`
     // renames it (see import_use_symbols).
     std::set<std::pair<SymbolTable*, std::string>> modules_imported_all;
+    // The module that the USE statements of a scope access by each module
+    // name (see check_used_module).
+    std::map<std::pair<SymbolTable*, std::string>, std::string> used_module_names;
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
@@ -34341,15 +34344,21 @@ public:
 
     // Checks the module that the USE statement `x` accesses, before anything
     // is imported from it. `t` is the symbol of `used.name` in scope, or
-    // nullptr if the module is still to be loaded. An intrinsic module must be
-    // the one that the runtime installs: an entity of the program with the
-    // name of its runtime module does not stand in for it. Diagnostics name
-    // the module as the USE statement does.
+    // nullptr if the module is still to be loaded. A scoping unit cannot
+    // access both the intrinsic and a nonintrinsic module of one name (F2018
+    // 14.2.2). An intrinsic module must be the one that the runtime installs:
+    // an entity of the program with the name of its runtime module does not
+    // stand in for it. Diagnostics name the module as the USE statement does.
     void check_used_module(const AST::Use_t &x, const UsedModule &used, ASR::symbol_t *t) {
-        if (!used.intrinsic) return;
         std::string written = to_lower(x.m_module);
+        auto access = used_module_names.insert({{current_scope, written}, used.name});
         std::string error;
-        if (t && !(ASR::is_a<ASR::Module_t>(*t) &&
+        if (!access.second && access.first->second != used.name) {
+            error = "a scoping unit cannot access both the intrinsic and a "
+                "nonintrinsic module '" + written + "'";
+        } else if (!used.intrinsic) {
+            return;
+        } else if (t && !(ASR::is_a<ASR::Module_t>(*t) &&
                 ASR::down_cast<ASR::Module_t>(t)->m_intrinsic)) {
             error = "intrinsic module '" + written + "' conflicts with '" + used.name +
                 "' of the program: LFortran provides the intrinsic module under that name";

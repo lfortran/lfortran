@@ -60,6 +60,12 @@ semantic error: The symbol 'origin' not found in the module 'generics'
 112 |     use, intrinsic :: generics, only: origin
     |                                       ^^^^^^ 
 
+semantic error: a scoping unit cannot access both the intrinsic and a nonintrinsic module 'generics'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:149:5
+    |
+149 |     use, intrinsic :: generics, only: Theirs => INumeric
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: operator '<' is not available for type-set member complex(4)
   --> tests/errors/continue_compilation_traits_kind_sets.f90:67:13
    |
@@ -77,3 +83,9 @@ semantic error: real(8) is not a member of type-set trait 'inumeric'
     |
 134 |         print *, total(x)
     |                  ^^^^^^^^ 
+
+semantic error: a scoping unit cannot access both the intrinsic and a nonintrinsic module 'generics'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:158:9
+    |
+158 |         use, intrinsic :: generics, only: Theirs => INumeric
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
