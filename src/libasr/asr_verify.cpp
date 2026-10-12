@@ -2689,7 +2689,10 @@ public:
                 "asr.verify.trait_witness.receiver",
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
-            require_with_loc_id(self->m_intent == intentType::In &&
+            // An INTENT(INOUT) receiver serves direct concrete calls only
+            // (PAPER-D07); runtime evidence borrows read-only.
+            require_with_loc_id((self->m_intent == intentType::In ||
+                        (!runtime && self->m_intent == intentType::InOut)) &&
                     ASRUtils::trait_receiver_type_matches(*self, type_declaration, implementing_type),
                 "asr.verify.trait_witness.receiver_type",
                 "A witness receiver must borrow its nominal implementing type "
@@ -4204,6 +4207,15 @@ public:
                     "asr.verify.generic_type.instance_evidence",
                     "A generic type argument's evidence must be a visible conformance of "
                     "the argument to its constraint's trait");
+                if (!implementation) continue;
+                for (size_t k = 0; k < constraints[j]->n_requirements; k++) {
+                    auto *binding = ASRUtils::find_trait_binding(*implementation,
+                        constraints[j]->m_requirements[k].m_member);
+                    require_id(!binding || !ASRUtils::trait_binding_mutates_receiver(*binding),
+                        "asr.verify.generic_type.readonly_evidence",
+                        "Generic trait calls are read-only: a constraint's evidence cannot "
+                        "bind a message to a procedure with an intent(inout) receiver");
+                }
             }
         }
         bool members = x.n_members == definition->n_members;

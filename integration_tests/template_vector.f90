@@ -18,7 +18,7 @@ module template_vector_m
     contains
 
         subroutine push_back(this, item)
-            class(Vector), intent(in) :: this
+            class(Vector), intent(inout) :: this
             type(T), intent(in) :: item
 
             integer :: new_size

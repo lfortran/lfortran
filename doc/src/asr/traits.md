@@ -248,7 +248,8 @@ end function
 It permits an exact `TYPE(Box)` passed-object dummy instead of requiring
 `CLASS(Box)`. A sealed type may itself extend a nonsealed type, but it cannot
 also be abstract. Ordinary visibility and binding/override rules still apply.
-Trait receivers remain read-only.
+Trait receivers are read-only unless a binding mutates its receiver for direct
+calls only (see "Associated types and receiver effects").
 Calling a nonpolymorphic sealed receiver through scalar `CLASS(Box)` storage
 uses an explicit `ClassToStruct` receiver in ASR. The call retains the original
 payload rather than passing a polymorphic wrapper to a concrete procedure.
@@ -991,7 +992,7 @@ See `traits_numeric_06.f90` for means and self-recursion,
 `traits_numeric_09.f90` for singleton/shadowing controls, and
 `traits_numeric_10.f90` and its modules for separate compilation.
 
-## Associated types
+## Associated types and receiver effects
 
 A trait can declare an associated type, a placeholder that each implementation
 infers from the bindings of the messages that use it (paper sections
@@ -1024,15 +1025,30 @@ no evidence. A character type argument is the complete type, including its
 constant length: `Vector("John ")` is `Vector{character(len=5)}`, and
 `Vector{character(len=2)}` is another instance.
 
-`traits_associated_01` checks associated types and unconstrained storage, and
-`continue_compilation_traits_associated` the diagnostics.
+PAPER-D07 lets an implementation take its receiver with `intent(inout)`.
+Such a binding serves direct calls on concrete objects only, under the ordinary
+Fortran rules: the passed object of a type-bound call whose passed-object dummy
+has `intent(out)` or `intent(inout)` must be definable, so an `intent(in)` dummy,
+a part of one, a named constant or an associate name of a constant selector is
+diagnosed. Generic trait calls and runtime views stay read-only: selecting a
+mutating binding for a constraint's requirement, or forming a runtime view of a
+conformance with one, is diagnosed. Pointer and allocatable receivers remain
+unsupported. The effect is not new ASR state: it is the intent of the
+binding's passed-object dummy (`ASRUtils::trait_binding_mutates_receiver`), and
+the verifier admits `intent(inout)` receivers only outside runtime witnesses and
+rejects mutating evidence of generic type arguments.
+
+`traits_associated_01` checks associated types and unconstrained storage,
+`traits_associated_03` direct mutation through a universal trait next to its
+read-only views and generic calls, and `continue_compilation_traits_associated`
+the diagnostics.
 
 ## Current boundaries
 
 The static implementation covers module-scoped trait declarations, inheritance
 and composition, ordinary function/subroutine signatures, read-only scalar
-receivers with `intent(in)`, declared associated types, named `pass`, and
-`nopass`.
+receivers with `intent(in)` (and `intent(inout)` receivers for direct concrete
+calls), declared associated types, named `pass`, and `nopass`.
 Traits are enabled by default and produce a portability warning. GFortran does
 not accept this extension; separate standard-Fortran oracle tests cover the
 equivalent concrete computations.
@@ -1044,8 +1060,8 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-results, mutable receivers, associated-type projections in generic code,
-unrestricted intrinsic capabilities,
+results, mutating generic or runtime trait calls, associated-type projections
+in generic code, unrestricted intrinsic capabilities,
 generic derived types beyond the boundaries described in their section, runtime
 views and runtime generic methods over initializer and operator requirements,
 and unrestricted generic-method signatures are separate implementation stages.
@@ -1093,8 +1109,9 @@ empty sections reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
 apply. BIND(C) contracts
 or implementations remain available statically but do not provide runtime
-dispatch in this slice. Receivers are read-only by default;
-future explicit per-message mutation effects have no settled syntax yet.
+dispatch in this slice. Runtime views are read-only: a conformance that
+implements a slot with an `intent(inout)` receiver has no runtime witness, and
+forming such a view is diagnosed (PAPER-D07).
 Named non-first PASS and NOPASS are supported. NOPASS still dynamically
 selects the implementation from the witness.
 Dynamic calls obey the contract's PURE attribute: a PURE consumer cannot call

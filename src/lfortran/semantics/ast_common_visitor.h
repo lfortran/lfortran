@@ -24436,6 +24436,98 @@ public:
         return &adapter->base;
     }
 
+    // An associate name of a constant selector or of a procedure is not
+    // definable (see BodyVisitor::visit_AssociateBlock).
+    std::set<ASR::symbol_t*> non_definable_associate_variables;
+
+    bool selector_has_constant_or_non_definable_base(ASR::expr_t* expr) {
+        ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
+        if (!base_sym) {
+            return false;
+        }
+        if (non_definable_associate_variables.find(base_sym) !=
+                non_definable_associate_variables.end()) {
+            return true;
+        }
+        ASR::symbol_t* resolved_sym = ASRUtils::symbol_get_past_external(base_sym);
+        if (resolved_sym != base_sym &&
+                non_definable_associate_variables.find(resolved_sym) !=
+                    non_definable_associate_variables.end()) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Variable_t>(*resolved_sym)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(resolved_sym);
+            return v->m_storage == ASR::storage_typeType::Parameter;
+        }
+        return false;
+    }
+
+    // The actual `object` of an INTENT(OUT) or INTENT(INOUT) dummy, such as
+    // the passed object of a type-bound call, is in a variable definition
+    // context: it must be definable. The target of a pointer is definable
+    // even when the pointer is not.
+    void check_definable_actual(ASR::expr_t *object) {
+        bool through_pointer = false;
+        for (ASR::expr_t *part = object; part; ) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*part)) {
+                auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(part);
+                through_pointer |= ASRUtils::is_pointer(ASRUtils::symbol_type(member->m_m));
+                part = member->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*part)) {
+                part = ASR::down_cast<ASR::ArrayItem_t>(part)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*part)) {
+                part = ASR::down_cast<ASR::ArraySection_t>(part)->m_v;
+            } else {
+                through_pointer |= ASRUtils::is_pointer(ASRUtils::expr_type(part));
+                part = nullptr;
+            }
+        }
+        ASR::symbol_t *base = extract_assignment_base_symbol(object);
+        ASR::symbol_t *variable = base ? ASRUtils::symbol_get_past_external(base) : nullptr;
+        if (!through_pointer && variable && ASR::is_a<ASR::Variable_t>(*variable) &&
+                ASR::down_cast<ASR::Variable_t>(variable)->m_intent == ASR::intentType::In) {
+            diag.add(diag::Diagnostic("Argument `" +
+                std::string(ASRUtils::symbol_name(variable)) +
+                "` with intent(in) passed to a dummy argument with modifying intent",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("", {object->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_modifiable_actual_argument_expr(object) ||
+                selector_has_constant_or_non_definable_base(object)) {
+            diag.add(diag::Diagnostic("Non-variable expression in variable definition "
+                "context (actual argument to INTENT = OUT/INOUT)",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("", {object->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    // The passed object of a type-bound call of `procedure` (a binding or a
+    // procedure) whose passed-object dummy has INTENT(OUT) or INTENT(INOUT).
+    // This keeps a mutating trait binding (PAPER-D07) to definable objects.
+    void check_passed_object_definable(ASR::symbol_t *procedure, ASR::expr_t *object) {
+        if (!procedure || !object || ASRUtils::get_class_proc_nopass_val(procedure)) return;
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(procedure);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*target)) {
+            target = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(target)->m_proc);
+        }
+        if (!target || !ASR::is_a<ASR::Function_t>(*target)) return;
+        auto *function = ASR::down_cast<ASR::Function_t>(target);
+        size_t index = ASRUtils::get_pass_arg_index(procedure);
+        if (index >= function->n_args || !ASR::is_a<ASR::Var_t>(*function->m_args[index])) {
+            return;
+        }
+        ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(function->m_args[index])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*dummy)) return;
+        auto intent = ASR::down_cast<ASR::Variable_t>(dummy)->m_intent;
+        if (intent == ASR::intentType::Out || intent == ASR::intentType::InOut) {
+            check_definable_actual(object);
+        }
+    }
+
     ASR::symbol_t* extract_assignment_base_symbol(ASR::expr_t* expr) {
         switch (expr->type) {
             case ASR::exprType::Var:
@@ -24889,6 +24981,9 @@ public:
                 + (ASR::is_a<ASR::Struct_t>(*type) ? ASRUtils::generic_type_spelling(
                     *ASR::down_cast<ASR::Struct_t>(type)) : ASRUtils::symbol_name(type))
                 + "'", loc);
+        }
+        if (auto *binding = runtime_trait_mutating_binding(*selected, *contract)) {
+            mutating_trait_binding_error(*binding, *selected, "runtime trait views", loc);
         }
         auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
         if (!witness) {
@@ -25415,6 +25510,10 @@ public:
                     const auto *binding =
                         ASRUtils::find_trait_binding(*implementation, requirement.m_member);
                     LCOMPILERS_ASSERT(binding);
+                    if (ASRUtils::trait_binding_mutates_receiver(*binding)) {
+                        mutating_trait_binding_error(*binding, *implementation,
+                            "generic trait calls", loc);
+                    }
                     bind_requirement(constraint, requirement, binding, nullptr);
                 }
             }
@@ -26181,6 +26280,10 @@ public:
                             == concrete_binding->m_self_argument
                         : i == pass_index) {
                     arg.m_value = receiver;
+                    auto intent = ASRUtils::EXPR2VAR(implementation->m_args[i])->m_intent;
+                    if (intent == ASR::intentType::Out || intent == ASR::intentType::InOut) {
+                        check_definable_actual(receiver);
+                    }
                 } else {
                     arg = args[j++];
                 }
@@ -27233,6 +27336,37 @@ public:
         pending_body_instantiations.clear();
     }
 
+    // The binding of a slot of `contract` with which `implementation` mutates
+    // its receiver, or nullptr: runtime views are read-only (PAPER-D07).
+    const ASR::trait_binding_t *runtime_trait_mutating_binding(
+            const ASR::TraitImplementation_t &implementation,
+            const ASR::TraitRuntimeContract_t &contract) {
+        for (size_t i = 0; i < contract.n_slots; i++) {
+            for (size_t j = 0; j < contract.m_slots[i].n_origins; j++) {
+                auto *binding = ASRUtils::find_trait_binding(implementation,
+                    contract.m_slots[i].m_origins[j]);
+                if (binding && ASRUtils::trait_binding_mutates_receiver(*binding)) {
+                    return binding;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // A mutating binding cannot serve a read-only trait path (a runtime view
+    // or a generic trait call); `path` names that path.
+    [[noreturn]] void mutating_trait_binding_error(const ASR::trait_binding_t &binding,
+            const ASR::TraitImplementation_t &implementation, const std::string &path,
+            const Location &loc) {
+        trait_call_error(path + " are read-only: '" +
+            std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                binding.m_procedure))) + "' implements '" +
+            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(binding.m_member)) +
+            "' of trait '" + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                implementation.m_trait)) + "' with an intent(inout) receiver, which "
+            "only direct calls on a concrete object may use", loc);
+    }
+
     ASR::TraitWitness_t *create_runtime_trait_witness(
             ASR::TraitImplementation_t *implementation,
             ASR::TraitRuntimeContract_t *contract) {
@@ -27241,6 +27375,8 @@ public:
             return existing;
         }
         if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
+        // A conformance that mutates a receiver serves direct calls only.
+        if (runtime_trait_mutating_binding(*implementation, *contract)) return nullptr;
         for (size_t i = 0; i < contract->n_slots; i++) {
             auto *binding = ASRUtils::find_trait_binding(
                 *implementation, contract->m_slots[i].m_origins[0]);
@@ -27526,6 +27662,16 @@ public:
                 }
             }
             selections.push_back({trait, selected});
+            if (!selected) continue;
+            for (size_t j = 0; j < constraint->n_requirements; j++) {
+                if (ASRUtils::trait_requirement_specialization(*constraint, j)) continue;
+                auto *binding = ASRUtils::find_trait_binding(*selected,
+                    constraint->m_requirements[j].m_member);
+                if (binding && ASRUtils::trait_binding_mutates_receiver(*binding)) {
+                    mutating_trait_binding_error(*binding, *selected, "generic trait calls",
+                        loc);
+                }
+            }
         }
         if (may_wait && !selections.empty() && std::all_of(selections.begin(),
                 selections.end(), [](const auto &selection) { return !selection.second; })) {

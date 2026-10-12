@@ -11045,6 +11045,11 @@ bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
     TraitAssociatedTypes *associated = nullptr);
 
+// Whether a binding implements its message with an INTENT(INOUT) passed-object
+// receiver (PAPER-D07). Such a binding serves direct calls on concrete
+// objects only: runtime views and generic trait calls are read-only.
+bool trait_binding_mutates_receiver(const ASR::trait_binding_t &binding);
+
 bool trait_bindings_equal(const ASR::trait_binding_t &left,
     const ASR::trait_binding_t &right);
 

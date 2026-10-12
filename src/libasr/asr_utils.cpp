@@ -6924,6 +6924,21 @@ std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *va
     return {element, declaration ? symbol_get_past_external(declaration) : nullptr};
 }
 
+bool trait_binding_mutates_receiver(const ASR::trait_binding_t &binding)
+{
+    if (binding.m_is_nopass) return false;
+    auto *procedure = trait_method_function(binding.m_procedure);
+    if (!procedure) return false;
+    for (size_t i = 0; i < procedure->n_args; i++) {
+        auto *receiver = ASRUtils::EXPR2VAR(procedure->m_args[i]);
+        if (binding.m_self_argument ? std::string(receiver->m_name) == binding.m_self_argument
+                : i == 0) {
+            return receiver->m_intent == ASR::intentType::InOut;
+        }
+    }
+    return false;
+}
+
 static bool trait_types_equal_impl(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
     TraitAssociatedTypes *associated)

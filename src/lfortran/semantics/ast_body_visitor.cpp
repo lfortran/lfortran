@@ -195,7 +195,6 @@ public:
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
-    std::set<ASR::symbol_t*> non_definable_associate_variables;
     bool is_first_section=false;
     int program_count = 0;
 
@@ -221,27 +220,6 @@ public:
             data_structure, lm
         ), asr{unit}, from_block{false} {}
 
-    bool selector_has_constant_or_non_definable_base(ASR::expr_t* expr) {
-        ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
-        if (!base_sym) {
-            return false;
-        }
-        if (non_definable_associate_variables.find(base_sym) !=
-                non_definable_associate_variables.end()) {
-            return true;
-        }
-        ASR::symbol_t* resolved_sym = ASRUtils::symbol_get_past_external(base_sym);
-        if (resolved_sym != base_sym &&
-                non_definable_associate_variables.find(resolved_sym) !=
-                    non_definable_associate_variables.end()) {
-            return true;
-        }
-        if (ASR::is_a<ASR::Variable_t>(*resolved_sym)) {
-            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(resolved_sym);
-            return v->m_storage == ASR::storage_typeType::Parameter;
-        }
-        return false;
-    }
 
     void add_assignment_to_constant_variable_error(const Location& assignment_loc,
             const Location& constant_loc, const std::string& constant_label) {
@@ -9857,6 +9835,7 @@ public:
         }
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
+        check_passed_object_definable(final_sym, v_expr);
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);

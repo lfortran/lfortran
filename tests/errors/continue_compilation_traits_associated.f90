@@ -1,6 +1,7 @@
 ! Located diagnostics for traits with declared associated types (paper
-! sect:tats). Each numbered case is an independent violation; all other code
-! is valid.
+! sect:tats) and for implementations that mutate their receiver (PAPER-D07:
+! direct concrete calls only). Each numbered case is an independent
+! violation; all other code is valid.
 module cc_traits_associated_contracts
     implicit none
     abstract interface :: IPeek
@@ -21,6 +22,11 @@ module cc_traits_associated_contracts
             type(Element), intent(in) :: item
         end subroutine append
     end interface IAppendable
+
+    abstract interface :: ICounter
+        subroutine bump()
+        end subroutine bump
+    end interface ICounter
 end module cc_traits_associated_contracts
 
 ! A01: an associated type no message uses cannot be inferred.
@@ -152,13 +158,103 @@ contains
     end subroutine wrap
 end module cc_traits_associated_box_user
 
+! M01: a receiver must be intent(in) or intent(inout).
+module cc_traits_associated_out_receiver
+    use cc_traits_associated_contracts, only: ICounter
+    implicit none
+    type, sealed, implements(ICounter) :: Reset
+        integer :: n = 0
+    contains
+        procedure, pass :: bump => reset_bump
+    end type Reset
+contains
+    subroutine reset_bump(self)
+        type(Reset), intent(out) :: self
+        self%n = 1
+    end subroutine reset_bump
+end module cc_traits_associated_out_receiver
+
+module cc_traits_associated_counter
+    use cc_traits_associated_contracts, only: ICounter, IAppendable
+    implicit none
+    type, sealed, implements(ICounter) :: Count
+        integer :: n = 0
+    contains
+        procedure, pass :: bump => count_bump
+    end type Count
+
+    type, sealed, implements(IAppendable) :: Tally
+        integer :: total = 0
+    contains
+        procedure, pass :: append => tally_append
+    end type Tally
+contains
+    subroutine count_bump(self)
+        type(Count), intent(inout) :: self
+        self%n = self%n + 1
+    end subroutine count_bump
+
+    subroutine tally_append(self, item)
+        type(Tally), intent(inout) :: self
+        integer,     intent(in)    :: item
+        self%total = self%total + item
+    end subroutine tally_append
+end module cc_traits_associated_counter
+
+module cc_traits_associated_readonly
+    use cc_traits_associated_contracts, only: ICounter
+    use cc_traits_associated_counter, only: Count, Tally
+    implicit none
+contains
+    ! M02: a direct call cannot mutate an intent(in) receiver.
+    subroutine bump_in(c)
+        type(Count), intent(in) :: c
+        call c%bump()
+    end subroutine bump_in
+
+    ! M03: nor a component of one.
+    subroutine append_in(t)
+        type(Tally), intent(in) :: t(2)
+        call t(1)%append(4)
+    end subroutine append_in
+
+    subroutine generic_bump{ICounter :: T}(x)
+        type(T), intent(in) :: x
+        call x%bump()
+    end subroutine generic_bump
+
+    subroutine view_bump(x)
+        class(ICounter), intent(in) :: x
+        call x%bump()
+    end subroutine view_bump
+end module cc_traits_associated_readonly
+
 program continue_compilation_traits_associated
     use cc_traits_associated_peek_counter, only: Counter
+    use cc_traits_associated_counter, only: Count, Tally
+    use cc_traits_associated_readonly, only: generic_bump, view_bump
     implicit none
     type(Counter) :: k
+    type(Count) :: c
+    type(Tally) :: t
+    type(Tally), parameter :: frozen = Tally(3)
     integer :: i
     k = Counter(1)
     ! A06: Element of Counter is integer, not logical.
     i = k%count_after(.true.)
+    ! Direct calls on concrete variables mutate them.
+    call c%bump()
+    call t%append(2)
+    ! M04: a named constant is not definable.
+    call frozen%append(1)
+    ! M05: nor is an associate name of a constant selector.
+    associate (fixed => Tally(5))
+        call fixed%append(1)
+    end associate
+    ! M06: a generic trait call is read-only.
+    call generic_bump(c)
+    ! M07: a runtime view is read-only.
+    call view_bump(c)
+    i = c%n + t%total
     print *, i
 end program continue_compilation_traits_associated

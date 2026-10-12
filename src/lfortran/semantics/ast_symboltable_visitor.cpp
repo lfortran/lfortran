@@ -5536,10 +5536,14 @@ public:
             if (!ASRUtils::trait_receiver_type_matches(*self, expected_type, intrinsic_type)) {
                 trait_error("passed-object argument must have the implementing type", loc);
             }
-            if (self->m_intent != ASR::intentType::In
+            // An INTENT(INOUT) receiver serves direct calls on concrete
+            // objects only; runtime views and generic trait calls stay
+            // read-only (PAPER-D07).
+            if ((self->m_intent != ASR::intentType::In &&
+                        self->m_intent != ASR::intentType::InOut)
                     || ASRUtils::is_pointer(self->m_type)
                     || ASRUtils::is_allocatable(self->m_type)) {
-                trait_error("trait receivers currently require intent(in) "
+                trait_error("trait receivers require intent(in) or intent(inout) "
                     "without pointer or allocatable", loc);
             }
         }

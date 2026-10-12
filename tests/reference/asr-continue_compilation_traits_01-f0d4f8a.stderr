@@ -776,16 +776,6 @@ semantic error: argument 'n' does not match trait method 'value': expected integ
 3989 |        end type
      | ...^^^^^^^^^^^^^ 
 
-semantic error: trait receivers currently require intent(in) without pointer or allocatable
-    --> tests/errors/continue_compilation_traits_01.f90:4003:5 - 4007:13
-     |
-4003 |        type, sealed, implements(I) :: T
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-4007 |        end type
-     | ...^^^^^^^^^^^^^ 
-
 semantic error: passed-object argument must have the implementing type
     --> tests/errors/continue_compilation_traits_01.f90:4025:5 - 4027:19
      |
@@ -822,16 +812,6 @@ semantic error: passed-object argument must have the implementing type
 ...
      |
 4162 |        end implements real(8)
-     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: trait receivers currently require intent(in) without pointer or allocatable
-    --> tests/errors/continue_compilation_traits_01.f90:4172:5 - 4174:27
-     |
-4172 |        implements IValue :: integer
-     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-     |
-4174 |        end implements integer
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: duplicate implementation of trait 'iempty'
