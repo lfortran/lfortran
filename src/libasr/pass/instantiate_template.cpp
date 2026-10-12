@@ -1383,7 +1383,9 @@ public:
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
             x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), x->m_intent, new_symbolic_value, new_value, x->m_storage,
-            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
+            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
+            x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
+            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
         target_scope->add_symbol(x->m_name, s);
 
         return s;
