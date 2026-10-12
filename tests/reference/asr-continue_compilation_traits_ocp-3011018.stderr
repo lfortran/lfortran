@@ -1,0 +1,39 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_ocp.f90:7:5 - 16:1
+   |
+ 7 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+16 |    
+   | ...^ LFortran extension
+
+semantic error: erased generic storage other than read-only scalar or assumed-shape dummies, scalar locals and a scalar result is not implemented yet
+  --> tests/errors/continue_compilation_traits_ocp.f90:93:32
+   |
+93 |         type(T)             :: copy(size(x))
+   |                                ^^^^^^^^^^^^^ 
+
+semantic error: the conformance of type(bag) to trait 'inumeric' has no runtime dictionary: its component 'v' needs ownership the dictionary does not describe yet
+   --> tests/errors/continue_compilation_traits_ocp.f90:141:10
+    |
+141 |     rb = p%sum(b)
+    |          ^^^^^^^^ 
+
+semantic error: the conformance of real(4) to trait 'inumeric' has no runtime dictionary: it is not declared in a module
+   --> tests/errors/continue_compilation_traits_ocp.f90:143:14
+    |
+143 |     print *, p%sum(r)
+    |              ^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'inumeric' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_ocp.f90:146:14
+    |
+146 |     print *, p%sum(k)
+    |              ^^^^^^^^ 
+
+semantic error: array values computed from values of a protocol type parameter, such as an elemental requirement applied to arrays, are not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:116:19
+    |
+116 |         s = first(x * x)
+    |                   ^^^^^ 
