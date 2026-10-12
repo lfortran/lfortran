@@ -57,5 +57,24 @@
       y = 1.0
       where (y > 0.5); y = 2.0; end where
       if (abs(sum(y) - 6.0) > 1e-6) error stop 15
+      k = 0
+      if (n == 1) then; k = 1; else if (n == 3) then; k = 7; end if
+      if (k /= 7) error stop 16
+      y = 1.0; y(2) = 0.0
+      where (y > 0.5); y = 2.0
+      elsewhere; y = 3.0
+      end where
+      if (abs(sum(y) - 7.0) > 1e-6) error stop 17
+      where (y > 2.5)
+      y = 4.0
+      elsewhere; y = 1.0; end where; y(1) = 5.0
+      if (abs(sum(y) - 10.0) > 1e-6) error stop 18
+      k = 0
+      do 30 i = 1, n
+   30 continue;; k = k + 1
+      if (k /= 1) error stop 19
+      ;
+      ;;k = k + 1
+      if (k /= 2) error stop 20
       print *, 'ok;', s; print *, k
       end program
