@@ -1105,6 +1105,7 @@ public:
         std::vector<std::string> saved_external_procedures = external_procedures;
         external_procedures.clear();
         generic_procedures.clear();
+        assgn_proc_names_locations.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         
@@ -1255,6 +1256,11 @@ public:
         pending_proc_placeholders.clear();
         try {
             add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+        try {
+            add_assignment_procedures();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
