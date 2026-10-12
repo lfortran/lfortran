@@ -45,6 +45,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             tokenizer_ptr:
                                 (Variable
@@ -83,6 +84,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_table:
                                 (ExternalSymbol
@@ -185,6 +187,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -216,6 +219,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     parse_select
@@ -307,6 +311,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_table
@@ -384,6 +389,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_tokenizer

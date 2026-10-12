@@ -97,9 +97,10 @@ namespace LCompilers::LFortran {
 
         ~RedirectStdout() {
             fflush(stdout);
-            read(out_pipe[0], buffer, MAX_LEN);
+            auto n = read(out_pipe[0], buffer, MAX_LEN);
             dup2(saved_stdout, stdout_fileno);
-            _out = std::string(&buffer[1]);
+            // The first byte is the "X" written by the constructor.
+            _out = n > 1 ? std::string(&buffer[1], n - 1) : std::string();
         }
     private:
         std::string &_out;

@@ -1022,14 +1022,24 @@ bool set_allocation_size(
                 ASR::down_cast<ASR::StructInstanceMember_t>(value);
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(struct_instance_member_t->m_type);
             allocate_dims.reserve(al, n_dims);
+            // A component of a scalar is a whole array, so the temporary
+            // keeps its bounds (F2018 10.2.1.3: an allocatable variable
+            // allocated by intrinsic assignment takes the bounds of the
+            // expression).
+            bool is_whole_array = true;
             if( ASRUtils::is_array(ASRUtils::expr_type(struct_instance_member_t->m_v)) ) {
                 value = struct_instance_member_t->m_v;
+                is_whole_array = false;
             }
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             for( size_t i = 0; i < n_dims; i++ ) {
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = int32_one;
+                if( is_whole_array ) {
+                    allocate_dim.m_start = PassUtils::get_bound(
+                        expr_duplicator.duplicate_expr(value), i + 1, "lbound", al);
+                }
                 allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
                     al, loc, expr_duplicator.duplicate_expr(
                         ASRUtils::get_past_array_physical_cast(value)),
@@ -1627,6 +1637,26 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
     return false;
 }
 
+// Whether `rhs` can refer to the storage of `lhs`: it names an array of
+// `lhs`, or an array pointer, which includes an array associate name such as
+// `q` in `select type (q => u)`.
+bool can_rhs_refer_to_lhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
+    if (is_common_symbol_present_in_lhs_and_rhs(al, lhs, rhs)) {
+        return true;
+    }
+    Vec<ASR::expr_t*> rhs_vars;
+    rhs_vars.reserve(al, 1);
+    ArrayVarCollector rhs_collector(al, rhs_vars);
+    rhs_collector.visit_expr(*rhs);
+    for( size_t i = 0; i < rhs_vars.size(); i++ ) {
+        ASR::symbol_t* sym = extract_symbol(rhs_vars[i]);
+        if( sym && ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -2102,6 +2132,33 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     xx.m_value = array_var_temporary;
                 }
             }
+        }
+        // F2018 10.2.1.3: the expression is evaluated before an allocated
+        // polymorphic variable of another shape or dynamic type is
+        // deallocated (array_op inserts the deallocation). A value that
+        // array_op would evaluate element by element after that
+        // deallocation, and that names the variable or an array pointer
+        // (such as an associate name), is evaluated into a temporary first,
+        // e.g. `v = g(v)` with an elemental `g`, `u = int(q) + 1` inside
+        // `select type (q => u)`, or `v = v(2:3)`. The result of a call to a
+        // non-elemental function is already a temporary.
+        ASR::ttype_t* target_type = ASRUtils::expr_type(xx.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(xx.m_value);
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(xx.m_value);
+        if ((realloc_lhs || xx.m_realloc_lhs ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) &&
+            ASRUtils::is_array(target_type) &&
+            ASRUtils::is_allocatable(target_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+            ASRUtils::is_array(value_type) &&
+            !ASR::is_a<ASR::Var_t>(*value) &&
+            !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
+              !ASRUtils::is_elemental(
+                  ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) &&
+            can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value)) {
+            xx.m_value = create_and_allocate_temporary_variable_for_array(
+                value, "_assignment_", al, current_body, current_scope,
+                exprs_with_target);
         }
         // Handle struct-type RHS that aliases the LHS, e.g.:
         //   chain2%next = chain2
@@ -3608,6 +3665,12 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
+        if (x.m_common_block != nullptr) {
+            // The initial value of a variable in a common block is the
+            // initial value of the block's static storage, which the view
+            // of the block gives.
+            return;
+        }
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
@@ -4062,6 +4125,8 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
+            // A variable in a common block keeps its static initial value.
+            x.m_common_block == nullptr &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&

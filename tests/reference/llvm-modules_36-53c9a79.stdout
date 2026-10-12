@@ -33,14 +33,14 @@ target datalayout = "..."
 @_Type_Info_fpm_run_settings = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* inttoptr (i64 64 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_build_settings to i8*) }, align 8
 @_VTable_fpm_run_settings = linkonce_odr unnamed_addr constant { [6 x i8*] } { [6 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_no_final_for_UPoly to i8*)] }, align 8
 
-define i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
+define internal i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %__1_i = alloca i32, align 4
   %__do_loop_end = alloca i32, align 4
   %_lcompilers_Any_4_1_0 = alloca i32, align 4
   store i32 0, i32* %_lcompilers_Any_4_1_0, align 4
-  %1 = load i32, i32* %__1mask, align 4
+  %1 = load i32, i32* %__1mask, align 1
   %2 = add i32 %1, 1
   %3 = sub i32 %2, 1
   store i32 %3, i32* %__do_loop_end, align 4
@@ -60,7 +60,7 @@ loop.body:                                        ; preds = %loop.head
   store i32 %9, i32* %__1_i, align 4
   %10 = load i32, i32* %_lcompilers_Any_4_1_0, align 4
   %11 = load i32, i32* %__1_i, align 4
-  %12 = load i32, i32* %__1mask, align 4
+  %12 = load i32, i32* %__1mask, align 1
   %13 = sext i32 %11 to i64
   %14 = sub i64 %13, 1
   %15 = mul i64 1, %14
@@ -106,7 +106,7 @@ then:                                             ; preds = %loop.body
 ifcont:                                           ; preds = %loop.body
   %39 = mul i64 1, %17
   %40 = getelementptr inbounds i32, i32* %mask, i64 %16
-  %41 = load i32, i32* %40, align 4
+  %41 = load i32, i32* %40, align 1
   %42 = or i32 %10, %41
   store i32 %42, i32* %_lcompilers_Any_4_1_0, align 4
   br label %loop.head
@@ -318,12 +318,12 @@ ifcont14:                                         ; preds = %loop.end
   store i32 %82, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
   %83 = load i32, i32* %__libasr_created__intrinsic_array_function_Any1, align 4
   %84 = load i32, i32* %toomany, align 4
-  %85 = load i32, i32* %test, align 4
+  %85 = load i32, i32* %test, align 1
   %86 = xor i32 %85, 1
   %87 = and i32 %84, %86
   %88 = load i32, i32* %toomany, align 4
   %89 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %90 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %89, align 8
+  %90 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %89, align 1
   %91 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %90, i32 0, i32 3
   %92 = getelementptr %string_descriptor, %string_descriptor* %91, i32 0, i32 0
   %93 = load i8*, i8** %92, align 8
@@ -334,10 +334,10 @@ ifcont14:                                         ; preds = %loop.end
   %98 = and i32 %88, %97
   %99 = or i32 %87, %98
   %100 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %101 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %100, align 8
+  %101 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %100, align 1
   %102 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %101, i32 0, i32 0
   %103 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %102, i32 0, i32 0
-  %104 = load i32, i32* %103, align 4
+  %104 = load i32, i32* %103, align 1
   %105 = xor i32 %104, 1
   %106 = and i32 %99, %105
   %107 = or i32 %83, %106
@@ -433,12 +433,12 @@ entry:
   %2 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_build_settings.3*
   %3 = bitcast i8* %1 to %modules_36_fpm_main_01.fpm_build_settings.3*
   %4 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %2, i32 0, i32 0
-  %5 = load i32, i32* %4, align 4
+  %5 = load i32, i32* %4, align 1
   %6 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %3, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store i32 %5, i32* %6, align 4
+  store i32 %5, i32* %6, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -454,7 +454,7 @@ entry:
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
   store i8* %2, i8** %0, align 8
-  %3 = load i8*, i8** %0, align 8
+  %3 = load i8*, i8** %0, align 1
   %4 = bitcast i8* %3 to %modules_36_fpm_main_01.fpm_build_settings.3_class*
   %5 = bitcast %modules_36_fpm_main_01.fpm_build_settings.3_class* %4 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_fpm_build_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
@@ -465,7 +465,7 @@ entry:
   %9 = bitcast i8* %8 to %modules_36_fpm_main_01.fpm_build_settings.3*
   store %modules_36_fpm_main_01.fpm_build_settings.3* %9, %modules_36_fpm_main_01.fpm_build_settings.3** %6, align 8
   %10 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %9, i32 0, i32 0
-  store i32 0, i32* %10, align 4
+  store i32 0, i32* %10, align 1
   ret void
 }
 
@@ -497,7 +497,7 @@ then:                                             ; preds = %entry
   %7 = getelementptr %string_descriptor, %string_descriptor* %5, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
   %9 = getelementptr %string_descriptor, %string_descriptor* %6, i32 0, i32 0
-  %10 = load i8*, i8** %9, align 8
+  %10 = load i8*, i8** %9, align 1
   %11 = icmp eq i8* %10, null
   br i1 %11, label %then1, label %else
 
@@ -511,7 +511,7 @@ else:                                             ; preds = %then
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then1
-  %14 = load i8*, i8** %9, align 8
+  %14 = load i8*, i8** %9, align 1
   call void @llvm.memmove.p0i8.p0i8.i64(i8* %14, i8* %8, i64 10, i1 false)
   %15 = getelementptr %string_descriptor, %string_descriptor* %6, i32 0, i32 1
   store i64 5, i64* %15, align 8
@@ -556,12 +556,12 @@ else8:                                            ; preds = %ifcont6
 
 ifcont9:                                          ; preds = %else8, %then7
   %28 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %3, i32 0, i32 4
-  %29 = load i32, i32* %28, align 4
+  %29 = load i32, i32* %28, align 1
   %30 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %4, i32 0, i32 4
   br i1 true, label %then10, label %else11
 
 then10:                                           ; preds = %ifcont9
-  store i32 %29, i32* %30, align 4
+  store i32 %29, i32* %30, align 1
   br label %ifcont12
 
 else11:                                           ; preds = %ifcont9
@@ -571,12 +571,12 @@ ifcont12:                                         ; preds = %else11, %then10
   %31 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %3, i32 0, i32 0
   %32 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %4, i32 0, i32 0
   %33 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %31, i32 0, i32 0
-  %34 = load i32, i32* %33, align 4
+  %34 = load i32, i32* %33, align 1
   %35 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %32, i32 0, i32 0
   br i1 true, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
-  store i32 %34, i32* %35, align 4
+  store i32 %34, i32* %35, align 1
   br label %ifcont15
 
 else14:                                           ; preds = %ifcont12
@@ -592,7 +592,7 @@ entry:
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
   store i8* %2, i8** %0, align 8
-  %3 = load i8*, i8** %0, align 8
+  %3 = load i8*, i8** %0, align 1
   %4 = bitcast i8* %3 to %modules_36_fpm_main_01.fpm_run_settings.4_class*
   %5 = bitcast %modules_36_fpm_main_01.fpm_run_settings.4_class* %4 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [6 x i8*] }, { [6 x i8*] }* @_VTable_fpm_run_settings, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
@@ -629,7 +629,7 @@ entry:
   store i8* %25, i8** %23, align 8
   %26 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %9, i32 0, i32 0
   %27 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %26, i32 0, i32 0
-  store i32 0, i32* %27, align 4
+  store i32 0, i32* %27, align 1
   ret void
 }
 
@@ -648,7 +648,7 @@ entry:
 "Finalize_struct_fpm_run_settings's_name_member": ; preds = %entry
   %2 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 1
   %3 = getelementptr %string_descriptor, %string_descriptor* %2, i32 0, i32 0
-  %4 = load i8*, i8** %3, align 8
+  %4 = load i8*, i8** %3, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %4)
   %5 = ptrtoint %string_descriptor* %2 to i64
   %6 = icmp ne i64 %5, 0
@@ -666,14 +666,14 @@ ifcont:                                           ; preds = %else, %then
 "Finalize_struct_fpm_run_settings's_args_member": ; preds = %ifcont
   %7 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 2
   %8 = getelementptr %string_descriptor, %string_descriptor* %7, i32 0, i32 0
-  %9 = load i8*, i8** %8, align 8
+  %9 = load i8*, i8** %8, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %9)
   br label %"Finalize_struct_fpm_run_settings's_runner_member"
 
 "Finalize_struct_fpm_run_settings's_runner_member": ; preds = %"Finalize_struct_fpm_run_settings's_args_member"
   %10 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 3
   %11 = getelementptr %string_descriptor, %string_descriptor* %10, i32 0, i32 0
-  %12 = load i8*, i8** %11, align 8
+  %12 = load i8*, i8** %11, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %12)
   ret void
 }
@@ -695,7 +695,7 @@ entry:
 "Finalize_struct_fpm_run_settings's_name_member": ; preds = %entry
   %2 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 1
   %3 = getelementptr %string_descriptor, %string_descriptor* %2, i32 0, i32 0
-  %4 = load i8*, i8** %3, align 8
+  %4 = load i8*, i8** %3, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %4)
   %5 = ptrtoint %string_descriptor* %2 to i64
   %6 = icmp ne i64 %5, 0
@@ -713,14 +713,14 @@ ifcont:                                           ; preds = %else, %then
 "Finalize_struct_fpm_run_settings's_args_member": ; preds = %ifcont
   %7 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 2
   %8 = getelementptr %string_descriptor, %string_descriptor* %7, i32 0, i32 0
-  %9 = load i8*, i8** %8, align 8
+  %9 = load i8*, i8** %8, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %9)
   br label %"Finalize_struct_fpm_run_settings's_runner_member"
 
 "Finalize_struct_fpm_run_settings's_runner_member": ; preds = %"Finalize_struct_fpm_run_settings's_args_member"
   %10 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %0, i32 0, i32 3
   %11 = getelementptr %string_descriptor, %string_descriptor* %10, i32 0, i32 0
-  %12 = load i8*, i8** %11, align 8
+  %12 = load i8*, i8** %11, align 1
   call void @_lfortran_free_alloc(i8* %1, i8* %12)
   ret void
 }

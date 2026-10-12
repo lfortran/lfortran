@@ -42,6 +42,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s:
                                 (Variable
@@ -72,6 +73,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     types_14

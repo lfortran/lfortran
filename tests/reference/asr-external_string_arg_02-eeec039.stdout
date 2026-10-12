@@ -67,6 +67,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             check~arg_1:
                                                 (Variable
@@ -91,6 +92,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     check~fpcast
@@ -160,6 +162,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -190,6 +193,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     external_string_arg_02

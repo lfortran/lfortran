@@ -503,16 +503,16 @@ semantic error: Pointer array 'y' must have a deferred shape or assumed rank
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:729:20
+   --> tests/errors/continue_compilation_1.f90:730:49
     |
-729 |         integer :: arr(n:10)
-    |                    ^^^^^^^^^ 
+730 |         common /common_nonconstant_lower_bound/ arr
+    |                                                 ^^^ 
 
 semantic error: COMMON block array bounds must be constant expressions
-   --> tests/errors/continue_compilation_1.f90:736:20
+   --> tests/errors/continue_compilation_1.f90:737:49
     |
-736 |         integer :: arr(1:n)
-    |                    ^^^^^^^^ 
+737 |         common /common_nonconstant_upper_bound/ arr
+    |                                                 ^^^ 
 
 semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
    --> tests/errors/continue_compilation_1.f90:748:37
@@ -544,17 +544,11 @@ semantic error: equivalence array bounds and subscripts must be constant
 935 |         equivalence (a(i), b(1))  ! {Error} equivalence array bounds and subscripts must be constant
     |                      ^^^^ unsupported equivalence
 
-semantic error: equivalence between a common block variable and this array element is not implemented
-   --> tests/errors/continue_compilation_1.f90:942:9
+semantic error: EQUIVALENCE cannot extend common block /equivalence_common_scalar/ before its first storage unit
+   --> tests/errors/continue_compilation_1.f90:942:26
     |
-942 |         equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
-
-semantic error: equivalence between a common block variable and this array element is not implemented
-   --> tests/errors/continue_compilation_1.f90:949:9
-    |
-949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+942 |         equivalence (cs, arr(2))  ! {Error} EQUIVALENCE cannot extend common block /equivalence_common_scalar/ before its first storage unit
+    |                          ^^^^^^ 
 
 semantic error: a conditional expression is not allowed in a constant expression
     --> tests/errors/continue_compilation_1.f90:1103:36
@@ -659,10 +653,10 @@ semantic error: 'binding_outside_module_proc' must be a module procedure or an e
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: equivalence between two common block variables is not allowed
-    --> tests/errors/continue_compilation_1.f90:1228:22
+    --> tests/errors/continue_compilation_1.f90:1228:30
      |
 1228 |         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
-     |                      ^^^^^^ both variables are in a common block
+     |                              ^^^^^^ both variables are in a common block
 
 semantic error: type mismatch in initialization: `type(init_mismatch_a_t)` cannot be assigned to `type(init_mismatch_b_t)`
     --> tests/errors/continue_compilation_1.f90:1243:51
@@ -933,6 +927,138 @@ semantic error: Intent attribute can only be applied to procedure arguments
      |
 2141 |     intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
      |     ^^^^^^^^^^ 
+
+semantic error: symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
+    --> tests/errors/continue_compilation_1.f90:2198:32
+     |
+2198 |     namelist /nml_before_decl/ v  ! {Error} symbol 'v' in namelist 'nml_before_decl' must be declared before the namelist statement
+     |                                ^ 
+
+semantic error: symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+    --> tests/errors/continue_compilation_1.f90:2203:34
+     |
+2203 |     namelist /nml_before_decl_2/ w  ! {Error} symbol 'w' in namelist 'nml_before_decl_2' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+     |                                  ^ 
+
+semantic error: dummy argument 'd' cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2212:28
+     |
+2212 |     common /cc1_dummy_blk/ d  ! {Error} dummy argument 'd' cannot be in a common block
+     |                            ^ 
+
+semantic error: named constant 'k' cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2218:32
+     |
+2218 |     common /cc1_parameter_blk/ k  ! {Error} named constant 'k' cannot be in a common block
+     |                                ^ 
+
+semantic error: allocatable variable 'a' cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2224:34
+     |
+2224 |     common /cc1_allocatable_blk/ a  ! {Error} allocatable variable 'a' cannot be in a common block
+     |                                  ^ 
+
+semantic error: coarray 'c' cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2230:30
+     |
+2230 |     common /cc1_coarray_blk/ c  ! {Error} coarray 'c' cannot be in a common block
+     |                              ^ 
+
+semantic error: variable 'b' with the BIND attribute cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2237:28
+     |
+2237 |     common /cc1_bindc_blk/ b  ! {Error} variable 'b' with the BIND attribute cannot be in a common block
+     |                            ^ 
+
+semantic error: variable 'x' is already in a common block
+    --> tests/errors/continue_compilation_1.f90:2244:28
+     |
+2244 |     common /cc1_twice_blk/ x  ! {Error} variable 'x' is already in a common block
+     |                            ^ 
+
+semantic error: variable 'y' is already in a common block
+    --> tests/errors/continue_compilation_1.f90:2246:30
+     |
+2246 |     common /cc1_another_blk/ y  ! {Error} variable 'y' is already in a common block
+     |                              ^ 
+
+semantic error: character length of 's' in a common block must be a constant expression
+    --> tests/errors/continue_compilation_1.f90:2253:31
+     |
+2253 |     common /cc1_char_len_blk/ s  ! {Error} character length of 's' in a common block must be a constant expression
+     |                               ^ 
+
+semantic error: derived type variable 'v' in a common block must have the SEQUENCE or the BIND(C) attribute
+    --> tests/errors/continue_compilation_1.f90:2262:34
+     |
+2262 |     common /cc1_nonsequence_blk/ v  ! {Error} derived type variable 'v' in a common block must have the SEQUENCE or the BIND(C) attribute
+     |                                  ^ 
+
+semantic error: common block /cc1_save_absent_blk/ is not declared by a COMMON statement of this scoping unit
+    --> tests/errors/continue_compilation_1.f90:2268:10
+     |
+2268 |     save /cc1_save_absent_blk/  ! {Error} common block /cc1_save_absent_blk/ is not declared by a COMMON statement of this scoping unit
+     |          ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: common block /cc1_bind_absent_blk/ is not declared by a COMMON statement of this scoping unit
+    --> tests/errors/continue_compilation_1.f90:2273:16
+     |
+2273 |     bind(c) :: /cc1_bind_absent_blk/  ! {Error} common block /cc1_bind_absent_blk/ is not declared by a COMMON statement of this scoping unit
+     |                ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: EQUIVALENCE cannot extend common block /cc1_origin_blk/ before its first storage unit
+    --> tests/errors/continue_compilation_1.f90:2282:18
+     |
+2282 |     equivalence (a(2), x)  ! {Error} EQUIVALENCE cannot extend common block /cc1_origin_blk/ before its first storage unit
+     |                  ^^^^ 
+
+semantic error: a pointer or an allocatable variable cannot be an equivalence object
+    --> tests/errors/continue_compilation_1.f90:2292:18
+     |
+2292 |     equivalence (p, x)  ! {Error} a pointer or an allocatable variable cannot be an equivalence object
+     |                  ^ not allowed in EQUIVALENCE
+
+semantic error: a pointer or an allocatable variable cannot be an equivalence object
+    --> tests/errors/continue_compilation_1.f90:2300:18
+     |
+2300 |     equivalence (a, x)  ! {Error} a pointer or an allocatable variable cannot be an equivalence object
+     |                  ^ not allowed in EQUIVALENCE
+
+semantic error: function result 'r' cannot be in a common block
+    --> tests/errors/continue_compilation_1.f90:2307:16
+     |
+2307 |     integer :: r
+     |                ^ 
+
+semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2326:18
+     |
+2326 |     equivalence (cc1_eu_cnt, i)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2327:21
+     |
+2327 |     equivalence (j, cc1_eu_c)  ! {Error} 'cc1_eu_c' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                     ^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2328:18
+     |
+2328 |     equivalence (cc1_eu_arr(2), k)  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2329:18
+     |
+2329 |     equivalence (cc1_eu_cnt, l)  ! {Error} 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                  ^^^^^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+    --> tests/errors/continue_compilation_1.f90:2337:21
+     |
+2337 |     equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
+     |                     ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -3112,3 +3238,81 @@ semantic error: Cannot assign to an intent(in) variable `nz`
      |
 2148 |     nz = 5  ! {Error} Cannot assign to an intent(in) variable `nz`
      |     ^^ 
+
+semantic error: reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+    --> tests/errors/continue_compilation_1.f90:2154:42
+     |
+2154 |     print *, reshape([1, 2], [2, 2], pad=[integer::])  ! {Error} reshape accepts `pad` array of size zero only if `source` array size is greater than or equal to size specified by `shape` array
+     |                                          ^^^^^^^^^^^ `pad` has size zero, but `shape` specifies size of 4 which exceeds the `source` array size of 2
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2170:5
+     |
+2170 |     p => y  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and type(patm_o))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2171:5
+     |
+2171 |     ip => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (integer(4) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2172:5
+     |
+2172 |     p => q  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^    ^ type mismatch (type(patm_s) and class(*))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2173:5
+     |
+2173 |     ip => null(p)  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^^^^^^ type mismatch (integer(4) and derived type)
+
+semantic error: interface mismatch in procedure pointer assignment
+    --> tests/errors/continue_compilation_1.f90:2187:5
+     |
+2187 |     fp => paim_g  ! {Error} interface mismatch in procedure pointer assignment
+     |     ^^    ^^^^^^ incompatible interfaces (procedure(paim_iface) and procedure(paim_g))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2188:5
+     |
+2188 |     fp => r  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^ type mismatch (procedure(paim_iface) and real(4))
+
+semantic error: type mismatch in pointer assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:2189:5
+     |
+2189 |     ip => cs  ! {Error} type mismatch in pointer assignment, the types must be compatible
+     |     ^^    ^^ type mismatch (integer(4) and character(len=5))
+
+semantic error: Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    --> tests/errors/continue_compilation_1.f90:2355:36
+     |
+2355 |         cc1_proc_variable_call = f(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+     |                                    ^ 
+
+semantic error: Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    --> tests/errors/continue_compilation_1.f90:2356:36
+     |
+2356 |         cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+     |                                    ^ 
+
+semantic error: More actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_1.f90:2368:37
+     |
+2368 |         cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+     |                                     ^^^^^^^^ 
+
+semantic error: Missing actual argument for argument 'a'
+    --> tests/errors/continue_compilation_1.f90:2369:35
+     |
+2369 |         cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+     |                                   ^^^ 
+
+semantic error: type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+    --> tests/errors/continue_compilation_1.f90:2378:13
+     |
+2378 |             procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

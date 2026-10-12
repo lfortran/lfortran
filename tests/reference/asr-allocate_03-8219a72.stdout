@@ -42,6 +42,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -83,6 +84,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f
@@ -186,6 +188,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -222,6 +225,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     g
@@ -441,6 +445,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     h
@@ -597,6 +602,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             stat:
                                 (Variable
@@ -621,6 +627,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     allocate_03

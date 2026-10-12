@@ -30,7 +30,7 @@ define float @foo.__module_dflt_intent_f(float* %x) {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %f = alloca float, align 4
-  %1 = load float, float* %x, align 4
+  %1 = load float, float* %x, align 1
   %2 = fmul float 2.000000e+00, %1
   store float %2, float* %f, align 4
   %3 = alloca i64, align 8

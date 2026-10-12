@@ -156,15 +156,15 @@ ifcont:                                           ; preds = %else, %then
   %54 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %53, i32 0, i32 0
   %55 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %54, i32 0
   %56 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 0
-  %57 = load i64, i64* %56, align 8
+  %57 = load i64, i64* %56, align 1
   %58 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 2
-  %59 = load i64, i64* %58, align 8
+  %59 = load i64, i64* %58, align 1
   %60 = icmp eq i64 %59, 1
   %61 = and i1 true, %60
   %62 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 0
-  %63 = load i64, i64* %62, align 8
+  %63 = load i64, i64* %62, align 1
   %64 = getelementptr %dimension_descriptor, %dimension_descriptor* %55, i32 0, i32 1
-  %65 = load i64, i64* %64, align 8
+  %65 = load i64, i64* %64, align 1
   %66 = add i64 %65, %63
   %67 = sub i64 %66, 1
   %68 = sub i64 %67, %57
@@ -176,7 +176,7 @@ ifcont:                                           ; preds = %else, %then
 
 check_data:                                       ; preds = %ifcont
   %73 = getelementptr %array.1, %array.1* %52, i32 0, i32 0
-  %74 = load double*, double** %73, align 8
+  %74 = load double*, double** %73, align 1
   %75 = ptrtoint double* %74 to i64
   %76 = icmp ne i64 %75, 0
   br label %merge_allocated
@@ -196,7 +196,7 @@ then2:                                            ; preds = %merge_allocated
 
 check_data3:                                      ; preds = %then2
   %83 = getelementptr %array.1, %array.1* %80, i32 0, i32 0
-  %84 = load double*, double** %83, align 8
+  %84 = load double*, double** %83, align 1
   %85 = ptrtoint double* %84 to i64
   %86 = icmp ne i64 %85, 0
   br label %merge_allocated4
@@ -207,7 +207,7 @@ merge_allocated4:                                 ; preds = %check_data3, %then2
 
 then6:                                            ; preds = %merge_allocated4
   %87 = getelementptr %array.1, %array.1* %80, i32 0, i32 0
-  %88 = load double*, double** %87, align 8
+  %88 = load double*, double** %87, align 1
   %89 = bitcast double* %88 to i8*
   call void @_lfortran_free_alloc(i8* %0, i8* %89)
   %90 = getelementptr %array.1, %array.1* %80, i32 0, i32 0
@@ -225,7 +225,7 @@ ifcont8:                                          ; preds = %else7, %then6
 
 check_data9:                                      ; preds = %ifcont8
   %94 = getelementptr %array.1, %array.1* %91, i32 0, i32 0
-  %95 = load double*, double** %94, align 8
+  %95 = load double*, double** %94, align 1
   %96 = ptrtoint double* %95 to i64
   %97 = icmp ne i64 %96, 0
   br label %merge_allocated10
@@ -271,12 +271,12 @@ ifcont13:                                         ; preds = %merge_allocated10
   %117 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %116, i32 0
   %118 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %116, i32 0
   %119 = getelementptr %dimension_descriptor, %dimension_descriptor* %118, i32 0, i32 1
-  %120 = load i64, i64* %119, align 8
+  %120 = load i64, i64* %119, align 1
   %121 = icmp eq i64 %120, 0
   %122 = getelementptr %dimension_descriptor, %dimension_descriptor* %117, i32 0, i32 0
-  %123 = load i64, i64* %122, align 8
+  %123 = load i64, i64* %122, align 1
   %124 = getelementptr %dimension_descriptor, %dimension_descriptor* %117, i32 0, i32 1
-  %125 = load i64, i64* %124, align 8
+  %125 = load i64, i64* %124, align 1
   %126 = add i64 %125, %123
   %127 = sub i64 %126, 1
   %128 = select i1 %121, i64 0, i64 %127
@@ -311,12 +311,12 @@ ifcont13:                                         ; preds = %merge_allocated10
   %151 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %150, i32 0
   %152 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %150, i32 0
   %153 = getelementptr %dimension_descriptor, %dimension_descriptor* %152, i32 0, i32 1
-  %154 = load i64, i64* %153, align 8
+  %154 = load i64, i64* %153, align 1
   %155 = icmp eq i64 %154, 0
   %156 = getelementptr %dimension_descriptor, %dimension_descriptor* %151, i32 0, i32 0
-  %157 = load i64, i64* %156, align 8
+  %157 = load i64, i64* %156, align 1
   %158 = getelementptr %dimension_descriptor, %dimension_descriptor* %151, i32 0, i32 1
-  %159 = load i64, i64* %158, align 8
+  %159 = load i64, i64* %158, align 1
   %160 = add i64 %159, %157
   %161 = sub i64 %160, 1
   %162 = select i1 %155, i64 0, i64 %161
@@ -328,10 +328,10 @@ ifcont13:                                         ; preds = %merge_allocated10
   %167 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %166, i32 0
   %168 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %166, i32 0
   %169 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 1
-  %170 = load i64, i64* %169, align 8
+  %170 = load i64, i64* %169, align 1
   %171 = icmp eq i64 %170, 0
   %172 = getelementptr %dimension_descriptor, %dimension_descriptor* %167, i32 0, i32 0
-  %173 = load i64, i64* %172, align 8
+  %173 = load i64, i64* %172, align 1
   %174 = select i1 %171, i64 1, i64 %173
   %175 = trunc i64 %174 to i32
   %176 = sub i32 %175, 1
@@ -355,9 +355,9 @@ loop.body:                                        ; preds = %loop.head
   %186 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %185, i32 0, i32 0
   %187 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %186, i32 0
   %188 = getelementptr %dimension_descriptor, %dimension_descriptor* %187, i32 0, i32 0
-  %189 = load i64, i64* %188, align 8
+  %189 = load i64, i64* %188, align 1
   %190 = getelementptr %dimension_descriptor, %dimension_descriptor* %187, i32 0, i32 1
-  %191 = load i64, i64* %190, align 8
+  %191 = load i64, i64* %190, align 1
   %192 = sext i32 %183 to i64
   %193 = sub i64 %192, %189
   %194 = add i64 %189, %191
@@ -399,14 +399,14 @@ then14:                                           ; preds = %loop.body
 
 ifcont15:                                         ; preds = %loop.body
   %215 = getelementptr %dimension_descriptor, %dimension_descriptor* %187, i32 0, i32 2
-  %216 = load i64, i64* %215, align 8
+  %216 = load i64, i64* %215, align 1
   %217 = mul i64 %216, %193
   %218 = add i64 0, %217
   %219 = getelementptr %array.1, %array.1* %184, i32 0, i32 7
-  %220 = load i64, i64* %219, align 8
+  %220 = load i64, i64* %219, align 1
   %221 = add i64 %218, %220
   %222 = getelementptr %array.1, %array.1* %184, i32 0, i32 0
-  %223 = load double*, double** %222, align 8
+  %223 = load double*, double** %222, align 1
   %224 = getelementptr inbounds double, double* %223, i64 %221
   %225 = load i32, i32* %__lcompilers_i_0, align 4
   %226 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b, align 8
@@ -414,9 +414,9 @@ ifcont15:                                         ; preds = %loop.body
   %228 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %227, i32 0, i32 0
   %229 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %228, i32 0
   %230 = getelementptr %dimension_descriptor, %dimension_descriptor* %229, i32 0, i32 0
-  %231 = load i64, i64* %230, align 8
+  %231 = load i64, i64* %230, align 1
   %232 = getelementptr %dimension_descriptor, %dimension_descriptor* %229, i32 0, i32 1
-  %233 = load i64, i64* %232, align 8
+  %233 = load i64, i64* %232, align 1
   %234 = sext i32 %225 to i64
   %235 = sub i64 %234, %231
   %236 = add i64 %231, %233
@@ -458,17 +458,17 @@ then16:                                           ; preds = %ifcont15
 
 ifcont17:                                         ; preds = %ifcont15
   %257 = getelementptr %dimension_descriptor, %dimension_descriptor* %229, i32 0, i32 2
-  %258 = load i64, i64* %257, align 8
+  %258 = load i64, i64* %257, align 1
   %259 = mul i64 %258, %235
   %260 = add i64 0, %259
   %261 = getelementptr %array.1, %array.1* %226, i32 0, i32 7
-  %262 = load i64, i64* %261, align 8
+  %262 = load i64, i64* %261, align 1
   %263 = add i64 %260, %262
   %264 = getelementptr %array.1, %array.1* %226, i32 0, i32 0
-  %265 = load double*, double** %264, align 8
+  %265 = load double*, double** %264, align 1
   %266 = getelementptr inbounds double, double* %265, i64 %263
-  %267 = load double, double* %266, align 8
-  store double %267, double* %224, align 8
+  %267 = load double, double* %266, align 1
+  store double %267, double* %224, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
@@ -512,7 +512,7 @@ ifcont22:                                         ; preds = %else21, %then19
   %288 = trunc i32 %271 to i8
   store i8 %288, i8* %287, align 1
   %289 = getelementptr %array.1, %array.1* %268, i32 0, i32 7
-  %290 = load i64, i64* %289, align 8
+  %290 = load i64, i64* %289, align 1
   %291 = getelementptr %array.1, %array.1* %277, i32 0, i32 7
   store i64 %290, i64* %291, align 8
   br label %ifcont23
@@ -520,9 +520,9 @@ ifcont22:                                         ; preds = %else21, %then19
 ifcont23:                                         ; preds = %ifcont22, %loop.end
   %292 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b1, align 8
   %293 = getelementptr %array.1, %array.1* %292, i32 0, i32 0
-  %294 = load double*, double** %293, align 8
+  %294 = load double*, double** %293, align 1
   %295 = getelementptr %array.1, %array.1* %292, i32 0, i32 7
-  %296 = load i64, i64* %295, align 8
+  %296 = load i64, i64* %295, align 1
   %297 = getelementptr inbounds double, double* %294, i64 %296
   call void @b(double* %297)
   %298 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b, align 8
@@ -530,15 +530,15 @@ ifcont23:                                         ; preds = %ifcont22, %loop.end
   %300 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %299, i32 0, i32 0
   %301 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %300, i32 0
   %302 = getelementptr %dimension_descriptor, %dimension_descriptor* %301, i32 0, i32 0
-  %303 = load i64, i64* %302, align 8
+  %303 = load i64, i64* %302, align 1
   %304 = getelementptr %dimension_descriptor, %dimension_descriptor* %301, i32 0, i32 2
-  %305 = load i64, i64* %304, align 8
+  %305 = load i64, i64* %304, align 1
   %306 = icmp eq i64 %305, 1
   %307 = and i1 true, %306
   %308 = getelementptr %dimension_descriptor, %dimension_descriptor* %301, i32 0, i32 0
-  %309 = load i64, i64* %308, align 8
+  %309 = load i64, i64* %308, align 1
   %310 = getelementptr %dimension_descriptor, %dimension_descriptor* %301, i32 0, i32 1
-  %311 = load i64, i64* %310, align 8
+  %311 = load i64, i64* %310, align 1
   %312 = add i64 %311, %309
   %313 = sub i64 %312, 1
   %314 = sub i64 %313, %303
@@ -550,7 +550,7 @@ ifcont23:                                         ; preds = %ifcont22, %loop.end
 
 check_data24:                                     ; preds = %ifcont23
   %319 = getelementptr %array.1, %array.1* %298, i32 0, i32 0
-  %320 = load double*, double** %319, align 8
+  %320 = load double*, double** %319, align 1
   %321 = ptrtoint double* %320 to i64
   %322 = icmp ne i64 %321, 0
   br label %merge_allocated25
@@ -569,12 +569,12 @@ then27:                                           ; preds = %merge_allocated25
   %329 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %328, i32 0
   %330 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %328, i32 0
   %331 = getelementptr %dimension_descriptor, %dimension_descriptor* %330, i32 0, i32 1
-  %332 = load i64, i64* %331, align 8
+  %332 = load i64, i64* %331, align 1
   %333 = icmp eq i64 %332, 0
   %334 = getelementptr %dimension_descriptor, %dimension_descriptor* %329, i32 0, i32 0
-  %335 = load i64, i64* %334, align 8
+  %335 = load i64, i64* %334, align 1
   %336 = getelementptr %dimension_descriptor, %dimension_descriptor* %329, i32 0, i32 1
-  %337 = load i64, i64* %336, align 8
+  %337 = load i64, i64* %336, align 1
   %338 = add i64 %337, %335
   %339 = sub i64 %338, 1
   %340 = select i1 %333, i64 0, i64 %339
@@ -586,10 +586,10 @@ then27:                                           ; preds = %merge_allocated25
   %345 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %344, i32 0
   %346 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %344, i32 0
   %347 = getelementptr %dimension_descriptor, %dimension_descriptor* %346, i32 0, i32 1
-  %348 = load i64, i64* %347, align 8
+  %348 = load i64, i64* %347, align 1
   %349 = icmp eq i64 %348, 0
   %350 = getelementptr %dimension_descriptor, %dimension_descriptor* %345, i32 0, i32 0
-  %351 = load i64, i64* %350, align 8
+  %351 = load i64, i64* %350, align 1
   %352 = select i1 %349, i64 1, i64 %351
   %353 = trunc i64 %352 to i32
   %354 = sub i32 %353, 1
@@ -613,9 +613,9 @@ loop.body29:                                      ; preds = %loop.head28
   %364 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %363, i32 0, i32 0
   %365 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %364, i32 0
   %366 = getelementptr %dimension_descriptor, %dimension_descriptor* %365, i32 0, i32 0
-  %367 = load i64, i64* %366, align 8
+  %367 = load i64, i64* %366, align 1
   %368 = getelementptr %dimension_descriptor, %dimension_descriptor* %365, i32 0, i32 1
-  %369 = load i64, i64* %368, align 8
+  %369 = load i64, i64* %368, align 1
   %370 = sext i32 %361 to i64
   %371 = sub i64 %370, %367
   %372 = add i64 %367, %369
@@ -657,14 +657,14 @@ then30:                                           ; preds = %loop.body29
 
 ifcont31:                                         ; preds = %loop.body29
   %393 = getelementptr %dimension_descriptor, %dimension_descriptor* %365, i32 0, i32 2
-  %394 = load i64, i64* %393, align 8
+  %394 = load i64, i64* %393, align 1
   %395 = mul i64 %394, %371
   %396 = add i64 0, %395
   %397 = getelementptr %array.1, %array.1* %362, i32 0, i32 7
-  %398 = load i64, i64* %397, align 8
+  %398 = load i64, i64* %397, align 1
   %399 = add i64 %396, %398
   %400 = getelementptr %array.1, %array.1* %362, i32 0, i32 0
-  %401 = load double*, double** %400, align 8
+  %401 = load double*, double** %400, align 1
   %402 = getelementptr inbounds double, double* %401, i64 %399
   %403 = load i32, i32* %__lcompilers_i_0, align 4
   %404 = load %array.1*, %array.1** %__libasr_created__subroutine_call_b1, align 8
@@ -672,9 +672,9 @@ ifcont31:                                         ; preds = %loop.body29
   %406 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %405, i32 0, i32 0
   %407 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %406, i32 0
   %408 = getelementptr %dimension_descriptor, %dimension_descriptor* %407, i32 0, i32 0
-  %409 = load i64, i64* %408, align 8
+  %409 = load i64, i64* %408, align 1
   %410 = getelementptr %dimension_descriptor, %dimension_descriptor* %407, i32 0, i32 1
-  %411 = load i64, i64* %410, align 8
+  %411 = load i64, i64* %410, align 1
   %412 = sext i32 %403 to i64
   %413 = sub i64 %412, %409
   %414 = add i64 %409, %411
@@ -716,17 +716,17 @@ then32:                                           ; preds = %ifcont31
 
 ifcont33:                                         ; preds = %ifcont31
   %435 = getelementptr %dimension_descriptor, %dimension_descriptor* %407, i32 0, i32 2
-  %436 = load i64, i64* %435, align 8
+  %436 = load i64, i64* %435, align 1
   %437 = mul i64 %436, %413
   %438 = add i64 0, %437
   %439 = getelementptr %array.1, %array.1* %404, i32 0, i32 7
-  %440 = load i64, i64* %439, align 8
+  %440 = load i64, i64* %439, align 1
   %441 = add i64 %438, %440
   %442 = getelementptr %array.1, %array.1* %404, i32 0, i32 0
-  %443 = load double*, double** %442, align 8
+  %443 = load double*, double** %442, align 1
   %444 = getelementptr inbounds double, double* %443, i64 %441
-  %445 = load double, double* %444, align 8
-  store double %445, double* %402, align 8
+  %445 = load double, double* %444, align 1
+  store double %445, double* %402, align 1
   br label %loop.head28
 
 loop.end34:                                       ; preds = %loop.head28
@@ -741,15 +741,15 @@ ifcont36:                                         ; preds = %else35, %loop.end34
   %448 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %447, i32 0, i32 0
   %449 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %448, i32 0
   %450 = getelementptr %dimension_descriptor, %dimension_descriptor* %449, i32 0, i32 0
-  %451 = load i64, i64* %450, align 8
+  %451 = load i64, i64* %450, align 1
   %452 = getelementptr %dimension_descriptor, %dimension_descriptor* %449, i32 0, i32 2
-  %453 = load i64, i64* %452, align 8
+  %453 = load i64, i64* %452, align 1
   %454 = icmp eq i64 %453, 1
   %455 = and i1 true, %454
   %456 = getelementptr %dimension_descriptor, %dimension_descriptor* %449, i32 0, i32 0
-  %457 = load i64, i64* %456, align 8
+  %457 = load i64, i64* %456, align 1
   %458 = getelementptr %dimension_descriptor, %dimension_descriptor* %449, i32 0, i32 1
-  %459 = load i64, i64* %458, align 8
+  %459 = load i64, i64* %458, align 1
   %460 = add i64 %459, %457
   %461 = sub i64 %460, 1
   %462 = sub i64 %461, %451
@@ -761,7 +761,7 @@ ifcont36:                                         ; preds = %else35, %loop.end34
 
 check_data37:                                     ; preds = %ifcont36
   %467 = getelementptr %array.1, %array.1* %446, i32 0, i32 0
-  %468 = load double*, double** %467, align 8
+  %468 = load double*, double** %467, align 1
   %469 = ptrtoint double* %468 to i64
   %470 = icmp ne i64 %469, 0
   br label %merge_allocated38
@@ -786,7 +786,7 @@ else41:                                           ; preds = %merge_allocated38
 
 check_data42:                                     ; preds = %else41
   %478 = getelementptr %array.1, %array.1* %475, i32 0, i32 0
-  %479 = load double*, double** %478, align 8
+  %479 = load double*, double** %478, align 1
   %480 = ptrtoint double* %479 to i64
   %481 = icmp ne i64 %480, 0
   br label %merge_allocated43
@@ -797,7 +797,7 @@ merge_allocated43:                                ; preds = %check_data42, %else
 
 then45:                                           ; preds = %merge_allocated43
   %482 = getelementptr %array.1, %array.1* %475, i32 0, i32 0
-  %483 = load double*, double** %482, align 8
+  %483 = load double*, double** %482, align 1
   %484 = bitcast double* %483 to i8*
   call void @_lfortran_free_alloc(i8* %0, i8* %484)
   %485 = getelementptr %array.1, %array.1* %475, i32 0, i32 0
@@ -826,9 +826,9 @@ FINALIZE_SYMTABLE_a:                              ; preds = %return
 define void @b(double* %con) {
 .entry:
   %0 = getelementptr inbounds double, double* %con, i64 3
-  store double -4.830000e+00, double* %0, align 8
+  store double -4.830000e+00, double* %0, align 1
   %1 = getelementptr inbounds double, double* %con, i64 2
-  store double 3.140000e+00, double* %1, align 8
+  store double 3.140000e+00, double* %1, align 1
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
