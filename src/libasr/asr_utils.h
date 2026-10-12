@@ -4420,6 +4420,14 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
 // `implied_do_loops` pass keeps the run-time loop for larger ones.
 constexpr uint64_t implied_do_loop_folded_bounds_expansion_limit = 256;
 
+// The largest number of values into which an output implied-do loop with
+// values of derived type is expanded at compile time. All expanded values
+// are passed to one runtime call, each struct value through its own
+// temporary, so compile time grows faster than linearly with their number:
+// 1000 values compile in about half a second, 4000 in about 10 seconds and
+// 8000 in over a minute. Real output lists are far shorter.
+constexpr uint64_t implied_do_loop_expansion_limit = 1000;
+
 // What keeps an output implied-do loop from being expanded at compile time
 // into the list of its values.
 enum class ImpliedDoExpansionBlocker {
@@ -4434,6 +4442,10 @@ enum class ImpliedDoExpansionBlocker {
     // `implied_do_loop_folded_bounds_expansion_limit` iterations, those of
     // its nested loops included.
     TooManyIterations,
+    // The loop has values of derived type and more than
+    // `implied_do_loop_expansion_limit` values, those of its nested loops
+    // included.
+    TooManyValues,
 };
 
 struct ImpliedDoExpansion {

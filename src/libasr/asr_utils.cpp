@@ -6290,11 +6290,27 @@ static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
     return true;
 }
 
-// Appends the values of `idl` to `result`; `iterations` is the number of
-// iterations that may still be expanded.
+// Whether a value of `idl` or of a loop nested in it is of derived type.
+static bool implied_do_loop_has_struct_value(ASR::ImpliedDoLoop_t* idl) {
+    for (size_t i = 0; i < idl->n_values; i++) {
+        ASR::expr_t* value = idl->m_values[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+            if (implied_do_loop_has_struct_value(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(value))) {
+                return true;
+            }
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(expr_type(value)))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Appends the values of `idl` to `result`; `iterations` and `values` are the
+// numbers of iterations and of values that may still be expanded.
 static ImpliedDoExpansion append_implied_do_loop_values(Allocator &al,
         ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result,
-        uint64_t &iterations) {
+        uint64_t &iterations, uint64_t &values) {
     // A nested loop that reuses an enclosing loop's variable had its own
     // variable substituted by the enclosing loop's value.
     if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) {
@@ -6353,11 +6369,15 @@ static ImpliedDoExpansion append_implied_do_loop_values(Allocator &al,
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
                 ImpliedDoExpansion nested = append_implied_do_loop_values(al,
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
-                    result, iterations);
+                    result, iterations, values);
                 if (nested.blocker != ImpliedDoExpansionBlocker::None) {
                     return nested;
                 }
             } else {
+                if (values == 0) {
+                    return {ImpliedDoExpansionBlocker::TooManyValues, nullptr};
+                }
+                values--;
                 result.push_back(al, substituted);
             }
         }
@@ -6371,7 +6391,9 @@ ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
     uint64_t iterations = implied_do_loop_has_literal_bounds(idl)
         ? std::numeric_limits<uint64_t>::max()
         : implied_do_loop_folded_bounds_expansion_limit;
-    return append_implied_do_loop_values(al, idl, result, iterations);
+    uint64_t values = implied_do_loop_has_struct_value(idl)
+        ? implied_do_loop_expansion_limit : std::numeric_limits<uint64_t>::max();
+    return append_implied_do_loop_values(al, idl, result, iterations, values);
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
