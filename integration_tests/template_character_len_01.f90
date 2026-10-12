@@ -1,8 +1,8 @@
 ! Character lengths in a template given by a deferred constant, an
 ! expression of it, another dummy argument of the procedure, or a local
 ! named constant of the procedure. They refer to the instantiation's
-! entities. The value of a named constant of such a length is padded or
-! truncated to it.
+! entities, also in the length of a concatenation. The value of a named
+! constant of such a length is padded or truncated to it.
 
 module template_character_len_01_m
     implicit none
@@ -25,6 +25,9 @@ module template_character_len_01_m
             u = s
             r = len(s) + len(t) + len(u)
             if (t /= s) error stop
+            if (len(t // u) /= k + n) error stop
+            if (len(u // 'q') /= n + 1) error stop
+            if (t // u // 'q' /= 'xy    xy q') error stop
         end function
 
         subroutine pc()
@@ -38,6 +41,10 @@ module template_character_len_01_m
             if (d /= 'ab ') error stop
             if (a(2) /= 'ghi') error stop
             if (b(1) /= 'x  ') error stop
+            if (len(d // 'x') /= n + 1) error stop
+            if (d // 'x' /= 'ab x') error stop
+            if (a(2) // '|' /= 'ghi|') error stop
+            if (len(a(1) // b(2)) /= 2*n) error stop
         end subroutine
     end template
 
