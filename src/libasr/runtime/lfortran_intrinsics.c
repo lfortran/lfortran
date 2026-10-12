@@ -14372,8 +14372,9 @@ LFORTRAN_API int32_t _lfortran_get_command_length() {
     return total_length;
 }
 
-LFORTRAN_API int32_t _lfortran_get_command_status() {
-    return 1;
+LFORTRAN_API int32_t _lfortran_get_command_status(int32_t command_len, int32_t length) {
+    if (command_len < length) return -1;
+    return 0;
 }
 
 // << Command line arguments << ------------------------------------------------
