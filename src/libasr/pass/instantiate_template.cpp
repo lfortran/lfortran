@@ -2008,10 +2008,23 @@ public:
 
         ASR::expr_t* m_alignment = duplicate_expr(x->m_alignment);
 
+        // A type extending another type of the template extends its instance,
+        // and any other parent is named from the scope of the instance, under
+        // a name that cannot clash with that scope's entities if it is not
+        // visible there.
+        ASR::symbol_t* parent = x->m_parent;
+        if (parent != nullptr) {
+            ASR::symbol_t* new_parent = instantiate_struct_dependency(
+                ASRUtils::symbol_get_past_external(parent));
+            parent = new_parent != nullptr ? new_parent
+                : ASRUtils::import_symbol(al, parent, target_scope,
+                    ASR::accessType::Private, "1_");
+        }
+
         ASR::asr_t* result = ASR::make_Struct_t(al, x->base.base.loc,
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
-            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0);
+            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, parent, nullptr, 0);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -2415,6 +2428,34 @@ public:
         return scope;
     }
 
+    // The instance of the derived type `struct_sym`, or nullptr if this
+    // instantiation has none. A type declared in a procedure of the template
+    // is instantiated in the corresponding instantiated procedure. An ONLY
+    // list need not name the types that the listed entities use, such as a
+    // type's parent type, so a type of the template without an instance yet
+    // is instantiated in the corresponding template scope, shared by all
+    // entities of this instantiation.
+    ASR::symbol_t* instantiate_struct_dependency(ASR::symbol_t* struct_sym) {
+        if (is_procedure_local_type(struct_sym)) {
+            return instantiate_local_type(struct_sym);
+        }
+        std::string struct_name = ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym);
+        if (symbol_subs.find(struct_name) == symbol_subs.end()
+                && owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)) {
+            SymbolTable* struct_scope = corresponding_target_scope(
+                ASRUtils::symbol_parent_symtab(struct_sym));
+            std::string name = struct_scope->get_unique_name("__asr_" + struct_name, false);
+            SymbolInstantiator t(al, struct_scope, type_subs, symbol_subs, name, struct_sym,
+                diagnostics);
+            t.instantiate();
+        }
+        if (symbol_subs.find(struct_name) != symbol_subs.end()) {
+            return symbol_subs[struct_name];
+        }
+        return nullptr;
+    }
+
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
         switch (ttype->type) {
             case (ASR::ttypeType::TypeParameter) : {
@@ -2436,28 +2477,10 @@ public:
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(expr));
-                std::string struct_name = ASRUtils::symbol_name(struct_sym);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym);
-                if (is_procedure_local_type(struct_sym)) {
-                    return ASRUtils::make_StructType_t_util(al, ttype->base.loc,
-                        instantiate_local_type(struct_sym), s->m_is_cstruct);
-                }
-                if (symbol_subs.find(struct_name) == symbol_subs.end()
-                        && owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)) {
-                    // An ONLY list need not name a procedure's local types.
-                    // Instantiate the dependency in the corresponding template
-                    // scope, shared by all procedures of this instantiation.
-                    SymbolTable* struct_scope = corresponding_target_scope(
-                        ASRUtils::symbol_parent_symtab(struct_sym));
-                    std::string name = struct_scope->get_unique_name("__asr_" + struct_name, false);
-                    SymbolInstantiator t(al, struct_scope, type_subs, symbol_subs, name, struct_sym,
-                        diagnostics);
-                    t.instantiate();
-                }
-                if (symbol_subs.find(struct_name) != symbol_subs.end()) {
-                    ASR::symbol_t *sym = symbol_subs[struct_name];
+                ASR::symbol_t* new_struct_sym = instantiate_struct_dependency(struct_sym);
+                if (new_struct_sym != nullptr) {
                     return ASRUtils::make_StructType_t_util(
-                        al, ttype->base.loc, sym, s->m_is_cstruct);
+                        al, ttype->base.loc, new_struct_sym, s->m_is_cstruct);
                 }
                 return ttype;
             }
@@ -2743,6 +2766,18 @@ public:
 
     void instantiate_Struct(ASR::Struct_t* x) {
         ASR::Struct_t* new_s = ASR::down_cast<ASR::Struct_t>(new_sym);
+
+        // The instance of a parent type of the template gets the bodies of its
+        // bound procedures as well. Any other parent is merely referenced.
+        if (x->m_parent != nullptr) {
+            ASR::symbol_t* new_parent = ASRUtils::symbol_get_past_external(new_s->m_parent);
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(x->m_parent);
+            if (new_parent != parent) {
+                BodyInstantiator t(al, type_subs, symbol_subs, new_parent, parent,
+                    instantiated_bodies);
+                t.instantiate();
+            }
+        }
 
         for (auto const &sym_pair: new_s->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
