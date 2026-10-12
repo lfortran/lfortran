@@ -18,6 +18,7 @@ type(x) :: a(2)
 type(w) :: b(2)
 type(base) :: p(2)
 type(child) :: c(2)
+integer, parameter :: m = 2
 integer :: i, u, k1, k2, a1, a2, a3, a4
 real :: v1, v2, r1, r2
 character(80) :: line
@@ -62,5 +63,20 @@ write(line, '(*(i0,1x,i0,1x,f3.1,1x))') (p(i), c(i), i=1,2)
 if (trim(line) /= '1 1 2.5 3 4 5.5') error stop 9
 write(line, '(*(i0,1x,f3.1,1x))') (i, real(i), i=1,2)
 if (trim(line) /= '1 1.0 2 2.0') error stop 10
+
+write(line, '(*(f3.1,1x,i0,1x))') (a(i), b(i), i=1,m)
+if (trim(line) /= '1.5 7 2.5 8') error stop 11
+write(line, '(*(f3.1,1x,i0,1x))') (a(i), b(i), i=m,1,-1)
+if (trim(line) /= '2.5 8 1.5 7') error stop 12
+open(newunit=u, status='scratch', action='readwrite', form='formatted')
+write(u, '(*(f3.1,1x,i0,1x))') (a(i), b(i), i=1,m)
+write(u, *) (a(i), b(i), i=m,1,-1)
+rewind(u)
+read(u, '(a)') line
+if (trim(line) /= '1.5 7 2.5 8') error stop 13
+read(u, *) v1, k1, v2, k2
+if (abs(v1 - 2.5) > 1e-6 .or. k1 /= 8) error stop 14
+if (abs(v2 - 1.5) > 1e-6 .or. k2 /= 7) error stop 15
+close(u)
 print *, 'ok'
 end program
