@@ -216,6 +216,45 @@ public:
             defined_op_procs.swap(v.defined_op_procs);
         }
     };
+    // Gives a requirement or a template its own state while it is visited: a
+    // new symbol table nested in the current scope, and empty lists of
+    // pending operator (intrinsic and defined) and assignment interfaces. The
+    // enclosing unit's scope, procedure arguments, pending interfaces, default
+    // accessibility and `is_template` are restored on the way out, including
+    // when a diagnostic aborts the visit. Without it a requirement or a
+    // template rejected under --continue-compilation leaves the rest of the
+    // enclosing module to be added to its discarded symbol table, or the
+    // module loses its operator interfaces.
+    struct TemplateLocalStateScope {
+        SymbolTableVisitor &v;
+        SymbolTable *enclosing;
+        std::vector<std::string> enclosing_procedure_args;
+        OperatorProcedureScope operator_procedures;
+        std::vector<std::pair<std::string, Location>>
+            enclosing_assgn_proc_names_locations;
+        ASR::accessType enclosing_dflt_access;
+        bool enclosing_is_template;
+
+        TemplateLocalStateScope(SymbolTableVisitor &v_) : v(v_),
+                enclosing(v_.current_scope),
+                enclosing_procedure_args(v_.current_procedure_args),
+                operator_procedures(v_),
+                enclosing_dflt_access(v_.dflt_access),
+                enclosing_is_template(v_.is_template) {
+            v.current_scope = v.al.make_new<SymbolTable>(enclosing);
+            enclosing_assgn_proc_names_locations.swap(
+                v.assgn_proc_names_locations);
+        }
+
+        ~TemplateLocalStateScope() {
+            v.current_scope = enclosing;
+            v.current_procedure_args.swap(enclosing_procedure_args);
+            v.assgn_proc_names_locations.swap(
+                enclosing_assgn_proc_names_locations);
+            v.dflt_access = enclosing_dflt_access;
+            v.is_template = enclosing_is_template;
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     // The specific procedures of the operator interface blocks, by operator,
@@ -2685,6 +2724,10 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        // Restored on exit, as in visit_Subroutine, so that a templated
+        // function does not leave the template context set for the program
+        // units that follow it.
+        bool is_template_copy = is_template;
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -3473,6 +3516,7 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        is_template = is_template_copy;
         is_global_save_enabled = is_global_save_enabled_copy;
         explicit_save_symbols = explicit_save_symbols_copy;
         // A templated function is complete; `parent_scope` is the Template
@@ -5670,7 +5714,7 @@ public:
             requirement_args, true);
 
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        TemplateLocalStateScope requirement_state(*this);
 
         SetChar args;
         args.reserve(al, x.n_namelist);
@@ -5698,8 +5742,6 @@ public:
             args.push_back(al, s2c(al, arg));
             current_procedure_args.push_back(arg);
         }
-
-        OperatorProcedureScope operator_procedure_scope(*this);
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -5793,9 +5835,6 @@ public:
             reqs.p, reqs.size());
 
         parent_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(req));
-
-        current_scope = parent_scope;
-        current_procedure_args.clear();
     }
 
     void visit_Require(const AST::Require_t &x) {
@@ -6034,7 +6073,6 @@ public:
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        is_template = true;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
         TemplateDefinitionScope template_definition_scope(*this, true);
         std::string template_name = to_lower(std::string(x.m_name));
@@ -6043,9 +6081,9 @@ public:
             template_args.push_back(to_lower(x.m_namelist[i]));
         }
         DeferredArgScope deferred_arg_scope(*this, template_name, template_args, true);
-        ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        TemplateLocalStateScope template_state(*this);
+        is_template = true;
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         // The type-bound procedures and generic bindings of the derived types
         // declared in the template are added in the template's scope; those
@@ -6053,17 +6091,11 @@ public:
         ClassProcedureScope class_procedure_scope(*this);
         GenericClassProcedureScope generic_class_procedure_scope(*this);
 
-        std::vector<std::string> current_procedure_args_copy = current_procedure_args;
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             deferred_args.push_back(to_lower(x.m_namelist[i]));
             current_procedure_args.push_back(deferred_args.back());
         }
-
-        OperatorProcedureScope operator_procedure_scope(*this);
-        std::vector<std::pair<std::string, Location>> ext_assgn_proc_names_locations
-            = assgn_proc_names_locations;
-        assgn_proc_names_locations.clear();
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -6136,8 +6168,6 @@ public:
             if (!compiler_options.continue_compilation) throw;
         }
 
-        assgn_proc_names_locations = ext_assgn_proc_names_locations;
-
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
             current_scope, s2c(al, template_name), args.p, args.size(), reqs.p, reqs.size());
 
@@ -6145,12 +6175,9 @@ public:
         SymbolTable *template_scope = current_scope;
         current_scope = parent_scope;
 
-        dflt_access = dflt_access_copy;
-        current_procedure_args = current_procedure_args_copy;
-        is_template = false;
         // The specification part of the template itself, checked once the
-        // enclosing context has been restored so that an abort here leaves the
-        // visitor in the same state as a clean return.
+        // template is complete; `template_state` restores the enclosing
+        // context on either exit.
         check_no_save_in_template(template_scope);
     }
 

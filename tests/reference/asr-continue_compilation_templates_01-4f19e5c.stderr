@@ -1082,11 +1082,11 @@ semantic error: Intent attribute can only be applied to procedure arguments
 1887 |         type(t), intent(in) :: x, y
      |                  ^^^^^^^^^^ 
 
-semantic error: Type parameter 't' is not specified in any requirements
+semantic error: Derived type `t` is not defined
     --> tests/errors/continue_compilation_templates_01.f90:1888:9
      |
 1888 |         type(t) :: res
-     |         ^^^^^^^^^^^^^^ 
+     |         ^^^^^^^ Type used here is not defined in any scope
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1896:26
@@ -1100,11 +1100,11 @@ semantic error: Intent attribute can only be applied to procedure arguments
 1897 |         type(t), intent(in) :: x, y
      |                  ^^^^^^^^^^ 
 
-semantic error: Type parameter 't' is not specified in any requirements
+semantic error: Derived type `t` is not defined
     --> tests/errors/continue_compilation_templates_01.f90:1898:9
      |
 1898 |         type(t) :: res
-     |         ^^^^^^^^^^^^^^ 
+     |         ^^^^^^^ Type used here is not defined in any scope
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1913:26
