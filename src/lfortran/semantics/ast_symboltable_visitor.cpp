@@ -513,8 +513,16 @@ public:
             }
             try {
                 visit_ast(*x.m_items[i]);
+                if (t == AST::astType::program_unit) {
+                    // An external procedure has no host to build its generic interfaces.
+                    add_generic_procedures();
+                    evaluate_postponed_calls_to_genericProcedure();
+                }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // Drop what the aborted program unit left pending.
+                generic_procedures.clear();
+                postponed_genericProcedure_calls_vec.clear();
             }
         }
         if (!global_declarations.empty()) {
@@ -4466,10 +4474,16 @@ public:
 
             // Resolve AST node + set it in the holder.
             bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
-            visit_expr(*funcCall);
-            *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
-            // Invoke the call to the CheckFunc
-            if( CheckFunc ) CheckFunc(*expr_holder);
+            try {
+                visit_expr(*funcCall);
+                *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+                // Invoke the call to the CheckFunc
+                if( CheckFunc ) CheckFunc(*expr_holder);
+            } catch (SemanticAbort &) {
+                current_scope = current_scope_copy;
+                in_Subroutine = in_subroutine_or_function_copy;
+                throw;
+            }
             in_Subroutine = in_subroutine_or_function_copy;
 
             LCOMPILERS_ASSERT(
