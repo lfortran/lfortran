@@ -313,10 +313,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // A `reduce` accumulator is live after the loop by definition, whether
+    // or not anything the scan above found reads it: an intent(out) dummy
+    // at the end of a procedure, or a loop nested in another construct,
+    // leaves no later statement in the body it scans. It is never a
+    // kernel local.
+    std::set<std::string> reduction_names;
+    for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
+
     std::set<std::string> local_scalar_names;
     for (auto &name : assigned_vars) {
         if (loop_var_set.count(name)) continue;
         if (all_reduction_targets.count(name)) continue;
+        if (reduction_names.count(name)) continue;
         if (post_loop_vars.count(name) && !inner_loop_vars.count(name)) continue;
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
@@ -357,8 +366,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::ttype_t *int4_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
         std::vector<std::string> liveout_names;
-        std::set<std::string> reduction_names;
-        for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
         for (auto &name : assigned_vars) {
             if (loop_var_set.count(name)) continue;
             if (local_scalar_names.count(name)) continue;

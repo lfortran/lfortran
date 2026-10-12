@@ -3891,6 +3891,8 @@ RUN(NAME template_inline_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_internal_host_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_associate_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_procedure_dummy_01 LABELS llvm)
+RUN(NAME template_procedure_dummy_02 LABELS llvm)
+RUN(NAME template_procedure_dummy_03 LABELS llvm)
 RUN(NAME template_generic_deferred_proc_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_generic_deferred_proc_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_generic_deferred_proc_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3905,6 +3907,8 @@ RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_defined_assignment_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_operator_mod_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_01_mod.f90)
+RUN(NAME template_operator_mod_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_02_mod.f90)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -5117,6 +5121,9 @@ RUN(NAME openmp_98 LABELS gfortran llvm_omp EXTRAFILES openmp_98b.f90 GFORTRAN_A
 RUN(NAME openmp_99 LABELS gfortran llvm_omp EXTRAFILES openmp_99_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_100 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_101 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_102 LABELS gfortran llvm_omp EXTRAFILES openmp_102b.f90 GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_103 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -5950,7 +5957,7 @@ RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_380 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_380 LABELS llvm metal cuda_cpu) # gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_381 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_382 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_383 LABELS gfortran llvm metal cuda_cpu)
@@ -6016,6 +6023,7 @@ RUN(NAME gpu_metal_443 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_444 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_445 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_446 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_447 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_436 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_437 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_438 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml

@@ -3393,16 +3393,67 @@ class ParallelRegionVisitor :
             nested_lowered_body.push_back(b.If(condition, single_body_s, {}));
         }
 
+        // The lock of the critical constructs named `name`. Every critical
+        // construct of that name in the program must use the same lock, so
+        // it is a global variable under the name other compilers give it,
+        // with common linkage, which the linker merges across object files.
+        ASR::expr_t* get_critical_name_lock(const Location &loc, const std::string &name) {
+            SymbolTable* global_scope = current_scope;
+            while (global_scope->parent != nullptr) {
+                global_scope = global_scope->parent;
+            }
+            // The leading underscores keep the name apart from any Fortran
+            // name in the global scope
+            std::string lock_name = "__lcompilers_omp_critical_" + name;
+            ASR::symbol_t* lock_sym = global_scope->get_symbol(lock_name);
+            if (lock_sym == nullptr) {
+                lock_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                    al, loc, global_scope, s2c(al, lock_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPointer)),
+                    nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false, false, false,
+                    s2c(al, ".gomp_critical_user_" + name)));
+                global_scope->add_symbol(lock_name, lock_sym);
+            }
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, lock_sym));
+        }
+
         void visit_OMPCritical(const ASR::OMPRegion_t &x) {
             nested_lowered_body = {};
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
+            // A critical construct outside any parallel region is not in an
+            // outlined function, which imports omp_lib, so import it here
+            ASR::symbol_t* mod_sym = create_module(loc, "omp_lib");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+
+            // An unnamed critical construct uses the one global lock of the
+            // runtime. A named one uses the lock of its name, which the
+            // runtime keeps in a zero-initialized pointer-sized variable.
+            ASR::expr_t* lock = nullptr;
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                if (ASR::is_a<ASR::OMPCriticalName_t>(*x.m_clauses[i])) {
+                    lock = get_critical_name_lock(loc, ASR::down_cast<
+                        ASR::OMPCriticalName_t>(x.m_clauses[i])->m_name);
+                }
+            }
+            Vec<ASR::call_arg_t> lock_args;
+            lock_args.reserve(al, 1);
+            if (lock != nullptr) {
+                ASR::call_arg_t lock_arg;
+                lock_arg.loc = loc;
+                lock_arg.m_value = lock;
+                lock_args.push_back(al, lock_arg);
+            }
+
             // Generate gomp_critical_start call
-            Vec<ASR::call_arg_t> start_args;
-            start_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
+                current_scope->get_symbol(lock ? "gomp_critical_name_start" : "gomp_critical_start"),
+                nullptr, lock_args.p, lock_args.n, nullptr, false)));
 
             // Process the critical section body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
@@ -3417,12 +3468,12 @@ class ParallelRegionVisitor :
             }
 
             // Generate gomp_critical_end call
-            Vec<ASR::call_arg_t> end_args;
-            end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr, false)));
+                current_scope->get_symbol(lock ? "gomp_critical_name_end" : "gomp_critical_end"),
+                nullptr, lock_args.p, lock_args.n, nullptr, false)));
 
             clauses_heirarchial[nesting_lvl].clear();
+            remove_original_statement = true;
         }
 
         void visit_OMPAtomic(const ASR::OMPRegion_t &x) {

@@ -1,75 +1,71 @@
-! An array assignment whose value reads its own target only element by
-! element, at the very same section, needs no temporary: `b(1:n(l),l) =
-! b(1:n(l),l) - eta`. The two sections are spelled with a subscript read
-! from another array, `n(l)`, and with an associate name for a component.
-! They were not recognised as the same section, so the assignment was taken
-! to need a run-time sized temporary and the loop was not offloaded.
-module gpu_metal_380_m
+! A `reduce` accumulator is live after the loop even when nothing after the
+! loop in the same body reads it: an intent(out) dummy at the end of a
+! subroutine, or a loop nested in another construct.
+module gpu_metal_380_mod
 implicit none
-
-type :: net_t
-    integer, allocatable :: n(:)
-    real, allocatable :: w(:,:,:), b(:,:)
-end type
-
 contains
 
-    subroutine adjust(net, eta, m)
-        type(net_t), intent(inout) :: net
-        real, intent(in) :: eta
-        integer, intent(in) :: m
-        integer :: l
-        associate(w => net%w, b => net%b, n => net%n)
-            do concurrent (l = 1:ubound(n,1))
-                b(1:n(l),l) = b(1:n(l),l)/m
-                b(1:n(l),l) = b(1:n(l),l) - eta*b(1:n(l),l)
-                w(1:n(l),1:n(l-1),l) = w(1:n(l),1:n(l-1),l) - eta
-            end do
-        end associate
-    end subroutine
+subroutine dot(n, x, y, s)
+integer, intent(in) :: n
+real, intent(in) :: x(n), y(n)
+real, intent(out) :: s
+integer :: i
+s = 0.0
+do concurrent (i = 1:n) reduce(+:s)
+    s = s + x(i)*y(i)
+end do
+end subroutine
 
-    ! The same section inside a serial loop of the body.
-    subroutine accumulate(n, d, r)
-        integer, intent(in) :: n(0:)
-        real, intent(in) :: d(:,:)
-        real, intent(inout) :: r(:,:,:)
-        integer :: k, l
-        do concurrent (k = 1:size(r,3))
-            do l = 1, ubound(n,1)
-                r(1:n(l),l,k) = r(1:n(l),l,k) + d(1:n(l),l)*k
-            end do
-        end do
-    end subroutine
+subroutine amax(n, x, m)
+integer, intent(in) :: n
+real, intent(in) :: x(n)
+real, intent(inout) :: m
+integer :: i
+do concurrent (i = 1:n) reduce(max:m)
+    m = max(m, abs(x(i)))
+end do
+end subroutine
+
+integer function count_pos(n, x) result(c)
+integer, intent(in) :: n
+real, intent(in) :: x(n)
+integer :: i
+c = 0
+do concurrent (i = 1:n) reduce(+:c)
+    if (x(i) > 0.0) c = c + 1
+end do
+end function
 
 end module
 
 program gpu_metal_380
-use gpu_metal_380_m
+use gpu_metal_380_mod, only: dot, amax, count_pos
 implicit none
-type(net_t) :: net
-real :: d(3,2), r(3,2,4)
-integer :: k, l
+integer, parameter :: n = 1000
+real :: x(n), y(n), s, m, totals(3)
+integer :: i, k
 
-allocate(net%n(0:2))
-net%n = [3, 2, 3]
-allocate(net%w(3,3,2), net%b(3,2))
-net%w = 2.0
-net%b = 4.0
-call adjust(net, 0.5, 2)
-do l = 1, 2
-    if (any(abs(net%b(1:net%n(l),l) - 1.0) > 1.0e-6)) error stop 1
-    if (any(abs(net%w(1:net%n(l),1:net%n(l-1),l) - 1.5) > 1.0e-6)) error stop 2
-end do
-if (abs(net%b(3,1) - 4.0) > 1.0e-6) error stop 3
-if (any(abs(net%w(3,:,1) - 2.0) > 1.0e-6)) error stop 4
+x = 1.0
+y = 2.0
+call dot(n, x, y, s)
+print *, s
+if (abs(s - 2000.0) > 1e-3) error stop 1
 
-d = 1.0
-r = 0.0
-call accumulate(net%n, d, r)
-do k = 1, 4
-    if (any(abs(r(1:2,1,k) - k) > 1.0e-6)) error stop 5
-    if (abs(r(3,1,k)) > 1.0e-6) error stop 6
-    if (any(abs(r(1:3,2,k) - k) > 1.0e-6)) error stop 7
+x(7) = -5.0
+m = 0.0
+call amax(n, x, m)
+print *, m
+if (abs(m - 5.0) > 1e-6) error stop 2
+
+if (count_pos(n, x) /= n - 1) error stop 3
+
+do k = 1, 3
+    s = real(k)
+    do concurrent (i = 1:n) reduce(+:s)
+        s = s + y(i)
+    end do
+    totals(k) = s
 end do
-print *, "ok"
+print *, totals
+if (any(abs(totals - [2001.0, 2002.0, 2003.0]) > 1e-3)) error stop 4
 end program
