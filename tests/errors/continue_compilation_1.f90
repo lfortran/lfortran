@@ -2337,6 +2337,39 @@ block data equivalence_use_associated_block_data_error
     equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
 end block data equivalence_use_associated_block_data_error
 
+! A function reference through a dummy procedure or a procedure pointer checks
+! its actual arguments against the interface of the procedure.
+module cc1_proc_variable_call_mod
+    implicit none
+    abstract interface
+        real function cc1_proc_variable_iface(a)
+            real, intent(in) :: a
+        end function cc1_proc_variable_iface
+    end interface
+contains
+    real function cc1_proc_variable_call(f, i)
+        procedure(cc1_proc_variable_iface) :: f
+        integer, intent(in) :: i
+        procedure(cc1_proc_variable_iface), pointer :: p
+        p => f
+        cc1_proc_variable_call = f(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+        cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    end function cc1_proc_variable_call
+end module cc1_proc_variable_call_mod
+
+! A function reference through a dummy procedure checks the number of its
+! actual arguments against the interface of the procedure.
+module cc1_proc_variable_count_mod
+    use cc1_proc_variable_call_mod, only: cc1_proc_variable_iface
+    implicit none
+contains
+    real function cc1_proc_variable_count(f)
+        procedure(cc1_proc_variable_iface) :: f
+        cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+        cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+    end function cc1_proc_variable_count
+end module cc1_proc_variable_count_mod
+
 module pointer_allocatable_polymorphism_m
     implicit none
     type :: papm_s

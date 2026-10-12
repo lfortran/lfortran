@@ -2960,10 +2960,16 @@ public:
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);
         body.push_back(al, b.Assignment( return_var_expr, b.Var(end_sym) ));
 
+        // A getter of an external procedure lives in the translation unit's
+        // scope, and every translation unit that needs one creates its own
+        // copy, so it must not be exported. A getter of a module procedure
+        // stays public, so that a USE of the module can import it.
+        ASR::accessType access = ASRUtils::is_tu_scope(parent_scope)
+            ? ASR::accessType::Private : ASR::accessType::Public;
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc,
                                 current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, body.p, body.n,
                                 return_var_expr, ASR::abiType::Source,
-                                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                                access, ASR::deftypeType::Implementation,
                                 nullptr, false, true, false, false, false, nullptr, 0, false, false, true, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
@@ -3588,6 +3594,168 @@ public:
         throw SemanticAbort();
     }
 
+    // True when `e` references a kind parameter of the parameterized derived
+    // type whose components are being declared. Such an expression only has
+    // the placeholder value of the kind parameter here, so it must be kept to
+    // be evaluated by each instantiation of the type.
+    bool depends_on_pdt_kind_param(ASR::expr_t* e) {
+        if (!is_derived_type || e == nullptr || current_scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+            return false;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+        if (!ASR::is_a<ASR::Struct_t>(*owner)) {
+            return false;
+        }
+        return depends_on_kind_param(ASR::down_cast<ASR::Struct_t>(owner), e);
+    }
+
+    // True when `e` references a kind parameter of the parameterized derived
+    // type `pdt`.
+    bool depends_on_kind_param(ASR::Struct_t* pdt, ASR::expr_t* e) {
+        if (e == nullptr || pdt->n_kind_params == 0) {
+            return false;
+        }
+        SetChar identifiers;
+        identifiers.reserve(al, 1);
+        ASRUtils::CollectIdentifiersFromASRExpression collector(al, identifiers);
+        collector.visit_expr(*e);
+        for (size_t i = 0; i < identifiers.size(); i++) {
+            for (size_t j = 0; j < pdt->n_kind_params; j++) {
+                if (std::string(identifiers[i]) == pdt->m_kind_params[j]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // The extent `end - start + 1` of a component dimension whose bounds
+    // depend on a kind parameter, kept as an expression of the bounds.
+    ASR::expr_t* pdt_component_extent(ASR::expr_t* start, ASR::expr_t* end) {
+        int64_t start_int = 0;
+        if (start == nullptr || (!depends_on_pdt_kind_param(start)
+                && ASRUtils::extract_value(ASRUtils::expr_value(start), start_int)
+                && start_int == 1)) {
+            return end;
+        }
+        const Location &loc = end->base.loc;
+        ASR::ttype_t* type = ASRUtils::expr_type(end);
+        auto make_binop = [&](ASR::expr_t* left, ASR::binopType op,
+                ASR::expr_t* right) {
+            ASR::expr_t* left_value = ASRUtils::expr_value(left);
+            ASR::expr_t* right_value = ASRUtils::expr_value(right);
+            ASR::expr_t* value = left_value && right_value
+                ? visit_BinOp_helper(left_value, right_value, op, loc, type)
+                : nullptr;
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left, op,
+                right, type, value));
+        };
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, type));
+        return make_binop(make_binop(end, ASR::binopType::Sub, start),
+            ASR::binopType::Add, one);
+    }
+
+    // The signature of a parameterized derived type is shared by every scope
+    // that uses the type, e.g. by a component `type(w(n)) :: x` of another
+    // parameterized derived type before it is instantiated, so it cannot
+    // reference the kind parameters of the type: a component dimension that
+    // depends on a kind parameter is recorded there with the placeholder
+    // value it has in the template. Each instantiation builds its own
+    // signature from its components, whose dimensions are constant.
+    void make_pdt_signature_scope_free(ASR::Struct_t* pdt) {
+        if (pdt->n_kind_params == 0 || pdt->m_struct_signature == nullptr
+                || !ASR::is_a<ASR::StructType_t>(*pdt->m_struct_signature)) {
+            return;
+        }
+        ASR::StructType_t* signature = ASR::down_cast<ASR::StructType_t>(
+            pdt->m_struct_signature);
+        Vec<ASR::ttype_t*> member_types;
+        member_types.reserve(al, signature->n_data_member_types);
+        for (size_t i = 0; i < signature->n_data_member_types; i++) {
+            member_types.push_back(al, signature->m_data_member_types[i]);
+        }
+        for (size_t i = 0; i < member_types.size(); i++) {
+            ASR::ttype_t* member_type = member_types[i];
+            if (!ASR::is_a<ASR::Array_t>(*member_type)) {
+                continue;
+            }
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(member_type);
+            bool kind_extent = false;
+            for (size_t j = 0; j < array->n_dims; j++) {
+                kind_extent = kind_extent
+                    || depends_on_kind_param(pdt, array->m_dims[j].m_start)
+                    || depends_on_kind_param(pdt, array->m_dims[j].m_length);
+            }
+            if (!kind_extent) {
+                continue;
+            }
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, array->n_dims);
+            for (size_t j = 0; j < array->n_dims; j++) {
+                ASR::dimension_t dim = array->m_dims[j];
+                if (dim.m_start) {
+                    dim.m_start = ASRUtils::expr_value(dim.m_start);
+                }
+                if (dim.m_length) {
+                    dim.m_length = ASRUtils::expr_value(dim.m_length);
+                }
+                LCOMPILERS_ASSERT(!depends_on_kind_param(pdt, dim.m_start)
+                    && !depends_on_kind_param(pdt, dim.m_length));
+                dims.push_back(al, dim);
+            }
+            member_types.p[i] = ASRUtils::TYPE(ASR::make_Array_t(
+                al, member_type->base.loc, array->m_type, dims.p, dims.size(),
+                array->m_physical_type, array->m_memory_space));
+        }
+        signature->m_data_member_types = member_types.p;
+    }
+
+    bool has_pdt_kind_extent(ASR::ttype_t* type) {
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            if (depends_on_pdt_kind_param(dims[i].m_start)
+                    || depends_on_pdt_kind_param(dims[i].m_length)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // `scalar` broadcast to the array component of type `type`, whose extents
+    // depend on a kind parameter; it is evaluated by each instantiation.
+    ASR::expr_t* pdt_component_broadcast(ASR::expr_t* scalar, ASR::ttype_t* type) {
+        const Location &loc = scalar->base.loc;
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        Vec<ASR::expr_t*> lengths;
+        lengths.reserve(al, n_dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            lengths.push_back(al, dims[i].m_length);
+        }
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::dimension_t> shape_dims;
+        shape_dims.reserve(al, 1);
+        ASR::dimension_t shape_dim;
+        shape_dim.loc = loc;
+        shape_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type));
+        shape_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            n_dims, int_type));
+        shape_dims.push_back(al, shape_dim);
+        ASR::ttype_t* shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            int_type, shape_dims.p, shape_dims.size(),
+            ASR::array_physical_typeType::FixedSizeArray,
+            ASR::memory_spaceType::Global));
+        ASR::expr_t* shape = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(al, loc,
+            lengths.p, lengths.size(), shape_type, nullptr,
+            ASR::arraystorageType::ColMajor, nullptr));
+        return ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, scalar, shape,
+            ASRUtils::duplicate_type(al, type), nullptr));
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type, bool is_argument, char* var_name) {  
@@ -3623,7 +3791,8 @@ public:
                     check_specification_expr(dim.m_start,
                         RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(dim.m_start);
-                    if (is_derived_type) {
+                    if (is_derived_type
+                            && !depends_on_pdt_kind_param(dim.m_start)) {
                         ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
                         if (start_value != nullptr) {
                             dim.m_start = start_value;
@@ -3647,7 +3816,9 @@ public:
                     check_specification_expr(end,
                         RestrictedExprContext::ArrayBound);
                     dimension_attribute_error_check(end);
-                    if (is_derived_type) {
+                    bool pdt_kind_bound = depends_on_pdt_kind_param(end)
+                        || (dim.m_start && depends_on_pdt_kind_param(dim.m_start));
+                    if (is_derived_type && !pdt_kind_bound) {
                         ASR::expr_t* end_value = ASRUtils::expr_value(end);
                         if (end_value != nullptr) {
                             end = end_value;
@@ -3666,9 +3837,13 @@ public:
                     } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
                         end = convert_integer_binop_to_function_call(end, is_argument);
                     }
-                    dim.m_length = ASRUtils::compute_length_from_start_end(al, dim.m_start,
-                                        end);
-                    if (is_derived_type) {
+                    if (pdt_kind_bound) {
+                        dim.m_length = pdt_component_extent(dim.m_start, end);
+                    } else {
+                        dim.m_length = ASRUtils::compute_length_from_start_end(al,
+                            dim.m_start, end);
+                    }
+                    if (is_derived_type && !pdt_kind_bound) {
                         ASR::expr_t* length_value = ASRUtils::expr_value(dim.m_length);
                         if (length_value != nullptr) {
                             dim.m_length = length_value;
@@ -9973,7 +10148,12 @@ public:
                             Case: integer :: x(2) = 1
                             which is equivalent to x(2) = [1,1]
                         */
-                        int64_t size = ASRUtils::get_fixed_size_of_array(type);
+                        // The number of elements of a component whose extents
+                        // depend on a kind parameter is only known when the
+                        // type is instantiated.
+                        bool pdt_kind_extent = has_pdt_kind_extent(type);
+                        int64_t size = pdt_kind_extent ? 0
+                            : ASRUtils::get_fixed_size_of_array(type);
                         Vec<ASR::expr_t*> args;
                         args.reserve(al, size);
                         LCOMPILERS_ASSERT(tmp_init != nullptr)
@@ -10002,7 +10182,10 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        if (has_pdt_kind_placeholder(type)) {
+                        if (pdt_kind_extent) {
+                            init_expr = pdt_component_broadcast(tmp_init, type);
+                            value = nullptr;
+                        } else if (has_pdt_kind_placeholder(type)) {
                             // The element kind is still the placeholder of a
                             // kind parameter of the parameterized derived type
                             // being declared, so the elements cannot be packed
@@ -10664,8 +10847,83 @@ public:
 
     }
 
-    void visit_Enum(const AST::Enum_t &/*x*/) {
+    void visit_EnumUtil(const AST::Enum_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        std::string sym_name = "lcompilers__nameless_enum";
+        sym_name = parent_scope->get_unique_name(sym_name);
+        Vec<char *> m_members;
+        m_members.reserve(al, 4);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x.base.base.loc, compiler_options.po.default_integer_kind));
 
+        ASR::abiType abi_type = ASR::abiType::BindC;
+        if ( x.n_attr == 1 ) {
+            if ( AST::is_a<AST::AttrBind_t>(*x.m_attr[0]) ) {
+                AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(
+                    AST::down_cast<AST::AttrBind_t>(x.m_attr[0])->m_bind);
+                if (bind->n_args == 1 && AST::is_a<AST::Name_t>(*bind->m_args[0])) {
+                    AST::Name_t *name = AST::down_cast<AST::Name_t>(
+                        bind->m_args[0]);
+                    if (to_lower(std::string(name->m_id)) != "c") {
+                        diag.add(diag::Diagnostic(
+                            "Unsupported language in bind()",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "Language name must be specified in "
+                        "bind() as a plain text",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            } else {
+                diag.add(diag::Diagnostic(
+                    "Unsupported attribute type in enum, "
+                    "only bind() is allowed",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        } else {
+            diag.add(diag::Diagnostic(
+                "Only one attribute is allowed in enum",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        enum_init_val = 0;
+        for ( size_t i = 0; i < x.n_items; i++ ) {
+            this->visit_decl_stmt(*x.m_items[i]);
+        }
+
+        for( auto sym: current_scope->get_scope() ) {
+            ASR::Variable_t* member_var = ASR::down_cast<
+                ASR::Variable_t>(sym.second);
+            m_members.push_back(al, member_var->m_name);
+        }
+
+        ASR::enumtypeType enum_value_type = ASR::enumtypeType::IntegerConsecutiveFromZero;
+        ASRUtils::set_enum_value_type(enum_value_type, current_scope);
+
+        tmp = ASR::make_Enum_t(al, x.base.base.loc, current_scope,
+            s2c(al, sym_name), nullptr, 0, m_members.p, m_members.n, abi_type,
+            dflt_access, enum_value_type, type, nullptr);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        // Expose all enumerators into the parent scope as ExternalSymbols pointing into the enumeration, which is the semantics of Fortran enums.
+        // That way `resolve_variable()` can resolve them automatically.
+        // In ASR->Fortran we do not create any Fortran code for these ExternalSymbols, since they are implicit. But in ASR we need to represent them explicitly.
+        for (auto it: current_scope->get_scope()) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it.second);
+            parent_scope->add_symbol(var->m_name, ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                        var->base.base.loc, parent_scope, s2c(al, var->m_name), it.second,
+                        s2c(al, sym_name), nullptr, 0, var->m_name, var->m_access)));
+        }
+        current_scope = parent_scope;
     }
 
     void visit_Union(const AST::Union_t &/*x*/) {
@@ -10799,6 +11057,77 @@ public:
                 ImplicitCastRules::set_converted_value(visitor.al, x->base.base.loc,
                     &arg, ASRUtils::expr_type(arg), x->m_type, visitor.diag);
                 *this->current_expr = arg;
+            }
+        }
+
+        // The values of expressions of a kind parameter were computed with
+        // its placeholder value in the template, so they are recomputed with
+        // the actual kind value.
+        void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+            Base::replace_IntegerBinOp(x);
+            ASR::expr_t* left_value = ASRUtils::expr_value(x->m_left);
+            ASR::expr_t* right_value = ASRUtils::expr_value(x->m_right);
+            if (left_value && right_value) {
+                x->m_value = visitor.visit_BinOp_helper(left_value, right_value,
+                    x->m_op, x->base.base.loc, x->m_type);
+            }
+        }
+
+        void replace_IntegerUnaryMinus(ASR::IntegerUnaryMinus_t* x) {
+            Base::replace_IntegerUnaryMinus(x);
+            int64_t arg_value = 0;
+            if (ASRUtils::extract_value(ASRUtils::expr_value(x->m_arg), arg_value)) {
+                x->m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(visitor.al,
+                    x->base.base.loc, -arg_value, x->m_type));
+            }
+        }
+
+        void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+            Base::replace_IntrinsicElementalFunction(x);
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(visitor.al, x->n_args);
+            for (size_t i = 0; i < x->n_args; i++) {
+                arg_values.push_back(visitor.al, ASRUtils::expr_value(x->m_args[i]));
+            }
+            ASRUtils::eval_intrinsic_function eval = ASRUtils::
+                IntrinsicElementalFunctionRegistry::get_eval_function(x->m_intrinsic_id);
+            if (eval && ASRUtils::all_args_evaluated(arg_values)) {
+                x->m_value = eval(visitor.al, x->base.base.loc, x->m_type,
+                    arg_values, visitor.diag);
+            }
+        }
+
+        void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+            Base::replace_ArrayBroadcast(x);
+            ASR::expr_t* element = ASRUtils::expr_value(x->m_array);
+            if (element == nullptr || ASRUtils::is_array(ASRUtils::expr_type(element))
+                    || ASRUtils::is_struct(*ASRUtils::expr_type(element))) {
+                return;
+            }
+            ASR::expr_t* array = ASRUtils::broadcast_scalar_constant_to_array(
+                visitor.al, x->base.base.loc, element, x->m_type);
+            if (array) {
+                *this->current_expr = array;
+            }
+        }
+
+        // A component dimension that depends on a kind parameter is constant
+        // in each instantiation.
+        void replace_Array(ASR::Array_t* x) {
+            Base::replace_Array(x);
+            for (size_t i = 0; i < x->n_dims; i++) {
+                ASR::expr_t* start = x->m_dims[i].m_start
+                    ? ASRUtils::expr_value(x->m_dims[i].m_start) : nullptr;
+                if (start) {
+                    x->m_dims[i].m_start = start;
+                }
+                int64_t length = 0;
+                if (x->m_dims[i].m_length && ASRUtils::extract_value(
+                        ASRUtils::expr_value(x->m_dims[i].m_length), length)) {
+                    x->m_dims[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        visitor.al, x->m_dims[i].loc, std::max<int64_t>(length, 0),
+                        ASRUtils::expr_type(x->m_dims[i].m_length)));
+                }
             }
         }
 
@@ -10984,14 +11313,20 @@ public:
             if (!ASR::is_a<ASR::Variable_t>(*item.second)
                     || kind_values.find(item.first) != kind_values.end()) continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
+            initializer_replacer.replace_ttype(var->m_type);
             initializer_replacer.current_expr = &var->m_symbolic_value;
             initializer_replacer.replace_expr(var->m_symbolic_value);
             initializer_replacer.current_expr = &var->m_value;
             initializer_replacer.replace_expr(var->m_value);
-            if (var->m_value == nullptr && var->m_symbolic_value != nullptr) {
+            ASR::expr_t* symbolic_value = var->m_symbolic_value
+                ? ASRUtils::expr_value(var->m_symbolic_value) : nullptr;
+            if (symbolic_value && (var->m_value == nullptr
+                    || ASRUtils::is_value_constant(var->m_value))) {
                 // Initializers that could not be evaluated against the
-                // placeholder kind of the template are evaluated here.
-                var->m_value = ASRUtils::expr_value(var->m_symbolic_value);
+                // placeholder kind of the template, or were evaluated with
+                // the placeholder value of a kind parameter, are evaluated
+                // here.
+                var->m_value = symbolic_value;
             }
         }
         current_scope = saved_scope;
@@ -15549,10 +15884,17 @@ public:
         }
     }
 
+    // `v` is a Function, or a procedure variable (dummy procedure or
+    // procedure pointer) whose explicit interface declares the dummy arguments.
     void validate_create_function_arguments(Vec<ASR::call_arg_t>& args, ASR::symbol_t *v){
-        ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
+        ASR::Function_t* func = ASRUtils::get_function(v);
+        if (func == nullptr) {
+            // A procedure variable without an explicit interface.
+            return;
+        }
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(v);
+        // Callers diagnose more actual than formal arguments first.
+        LCOMPILERS_ASSERT(args.size() <= func_type->n_arg_types);
 
         // Currently present function is supporting only integer arguments
         // After implementing present below if condition should be removed
@@ -16000,6 +16342,21 @@ public:
         }
     }
 
+    // Diagnoses a function reference to `func` with more actual than formal
+    // arguments or with a required argument missing.
+    void validate_function_call_argument_count(const Location &loc,
+                Vec<ASR::call_arg_t>& args, ASR::Function_t* func) {
+        if (args.size() > func->n_args) {
+            const Location args_loc { ASRUtils::get_vec_loc(args) };
+            diag.add(diag::Diagnostic(
+                    "More actual than formal arguments in procedure call",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args_loc})}));
+            throw SemanticAbort();
+        }
+        validate_missing_required_arguments(loc, args, func);
+    }
+
     ASR::asr_t* create_Function(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
@@ -16046,15 +16403,7 @@ public:
             }
         }
         
-        if (args.size() > func->n_args) {
-            const Location args_loc { ASRUtils::get_vec_loc(args) };
-            diag.add(diag::Diagnostic(
-                    "More actual than formal arguments in procedure call",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {args_loc})}));
-            throw SemanticAbort();
-        }
-        validate_missing_required_arguments(loc, args, func);
+        validate_function_call_argument_count(loc, args, func);
 
         ASR::ttype_t *return_type = nullptr;
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
@@ -16164,6 +16513,11 @@ public:
                 call_args, n_call_args, return_type, nullptr, dt, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
         } else {
+            ASR::Function_t* interface_func = ASRUtils::get_function(v);
+            if (interface_func != nullptr) {
+                validate_function_call_argument_count(loc, args, interface_func);
+            }
+            validate_create_function_arguments(args, v);
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
                 args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);

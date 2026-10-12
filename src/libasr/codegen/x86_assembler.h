@@ -672,8 +672,9 @@ data_phdr:
     }
 
     // Saves the generated machine code into a binary file
-    void save_binary(const std::string &filename);
-    void save_binary64(const std::string &filename);
+    // Return false if the executable could not be written.
+    bool save_binary(const std::string &filename);
+    bool save_binary64(const std::string &filename);
 
     void asm_pop_r64(X64Reg r64) {
         X86Reg r32 = X86Reg(r64 & 7);

@@ -409,7 +409,7 @@
                     (Var 19 errmsg_alloc)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -465,7 +465,7 @@
                     [(Var 9 stat)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -628,7 +628,7 @@
                     (Var 20 stat)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -738,7 +738,7 @@
                     (Var 11 stop_code_char)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -852,7 +852,7 @@
                     (Var 10 errmsg_alloc)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -1024,7 +1024,7 @@
                     (Var 15 this_image)]
                     []
                     ()
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -2153,7 +2153,7 @@
                         .false.
                     )]
                     (Var 18 result)
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
@@ -2216,7 +2216,7 @@
                         .false.
                     )]
                     (Var 14 lcompilers_prif_this_image)
-                    Public
+                    Private
                     .false.
                     .false.
                     ()
