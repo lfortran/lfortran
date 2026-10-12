@@ -1639,7 +1639,15 @@ public:
                     // local_alloc_arrays) are also thread-space.
                     // VLA workspaces backed by device buffers stay
                     // device.
-                    if (!kernel_arg_vars.count(val_sym)) {
+                    // A pointer bound to a pointer points where that
+                    // one does.
+                    if (ASR::is_a<ASR::Variable_t>(*val_sym) &&
+                            ASRUtils::is_pointer(ASR::down_cast<
+                                ASR::Variable_t>(val_sym)->m_type)) {
+                        if (ptr_to_local_alloc.count(val_sym)) {
+                            ptr_to_local_alloc.insert(tgt_sym);
+                        }
+                    } else if (!kernel_arg_vars.count(val_sym)) {
                         if (!vla_workspace_vars.count(val_sym) &&
                                 (local_alloc_arrays.count(val_sym) ||
                                 alloc_array_sizes.count(val) ||

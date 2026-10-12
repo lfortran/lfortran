@@ -401,8 +401,15 @@ Which one is used is decided per array and per derived type:
   over the kernel's parameters and its thread index, as a workspace needs,
   is a *heap array*: its `allocate` reads a value the device computes, such
   as a count the iteration works out (`allocate(w(count(x(:, i) > 0.5)))`).
-  It is allocated where the `allocate` is. (An array of an explicit shape
-  is sized where its scope starts; one the host cannot size is an error.)
+  It is allocated where the `allocate` is. An array whose extents read the
+  shape of a heap array or of a component of a heap value -- an
+  explicit-shape local or function result such as
+  `real :: r(size(self%values_))`, or the temporary the compiler makes for
+  such a result -- is a heap array too, allocated where its scope starts
+  (the temporary: just before the call). An assignment of a whole heap array
+  to another one that is not used afterwards (as the compiler's temporaries
+  are) moves its descriptor instead of copying the elements. (Any other
+  array of an explicit shape the host cannot size is an error.)
 * A derived type with an allocatable array component, directly or in a
   component, is a *heap type* of the translation unit when device code
   creates a value of it that host-sized storage cannot hold: an array of
@@ -478,7 +485,9 @@ them as hidden dummy arguments, as it receives the hidden arguments of a
   with every allocatable component unallocated.
 * A value of an image type is passed to a procedure as any derived-type
   value is: by reference to a dummy the procedure defines, by value
-  otherwise.
+  otherwise. A type-bound procedure called on an image is called directly,
+  the binding of its declared type: a heap type is never polymorphic in
+  device code.
 
 #### Heap values and kernel arguments
 
