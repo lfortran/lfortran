@@ -3266,33 +3266,44 @@ public:
         llvm::Type* index_type = arr_descr->get_index_type();
         unsigned index_bit_width = index_type->getIntegerBitWidth();
         int index_kind = index_bit_width / 8;
-        llvm::Value* size = llvm::ConstantInt::get(
-            index_type, llvm::APInt(index_bit_width, 1));
+        std::vector<llvm::Value*> new_extents;
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.m_args[0].n_dims; i++ ) {
             ptr_loads = 2 - !LLVM::is_llvm_pointer(*
                 ASRUtils::expr_type(x.m_args[0].m_dims[i].m_length));
             this->visit_expr_wrapper(x.m_args[0].m_dims[i].m_length, true);
-            tmp = builder->CreateSExtOrTrunc(tmp, index_type);
-            size = builder->CreateMul(size, tmp);
+            new_extents.push_back(builder->CreateSExtOrTrunc(tmp, index_type));
         }
         ptr_loads = ptr_loads_copy;
-        llvm::Value* arg_array_size = nullptr;
-        // Avoid touching the descriptor if the array is not allocated
+        // F2018 10.2.1.3: an allocated variable is reallocated when its
+        // shape differs from the shape of the expression, also when both
+        // have the same number of elements, e.g. `a = transpose(a)`.
+        // Avoid touching the descriptor if the array is not allocated.
+        llvm::Value* shape_differs = nullptr;
         {
-            llvm::Type* index_type = arr_descr->get_index_type();
-            llvm::Value* size_var = llvm_utils->CreateAlloca(index_type, nullptr, "arg_array_size_tmp");
-            builder->CreateStore(llvm::ConstantInt::get(index_type, 0), size_var);
+            llvm::Value* shape_differs_var = llvm_utils->CreateAlloca(
+                llvm::Type::getInt1Ty(context), nullptr, "realloc_shape_differs");
+            builder->CreateStore(llvm::ConstantInt::getFalse(context), shape_differs_var);
             llvm_utils->create_if_else(is_allocated, [&]() {
-                visit_ArraySizeUtil(x.m_args[0].m_a,
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, index_kind)));
-                builder->CreateStore(tmp, size_var);
+                ASR::ttype_t* size_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, x.base.base.loc, index_kind));
+                ASR::ttype_t* dim_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, x.base.base.loc, 4));
+                llvm::Value* differs = llvm::ConstantInt::getFalse(context);
+                for( size_t i = 0; i < new_extents.size(); i++ ) {
+                    ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, i + 1, dim_type));
+                    visit_ArraySizeUtil(x.m_args[0].m_a, size_type, dim);
+                    differs = builder->CreateOr(differs, builder->CreateICmpNE(
+                        new_extents[i], builder->CreateSExtOrTrunc(tmp, index_type)));
+                }
+                builder->CreateStore(differs, shape_differs_var);
             }, [](){});
-            arg_array_size = llvm_utils->CreateLoad2(index_type, size_var);
+            shape_differs = llvm_utils->CreateLoad2(
+                llvm::Type::getInt1Ty(context), shape_differs_var);
         }
         llvm::Value* realloc_condition = builder->CreateOr(
-            builder->CreateNot(is_allocated), builder->CreateAnd(
-                is_allocated, builder->CreateICmpNE(size, arg_array_size)));
+            builder->CreateNot(is_allocated), shape_differs);
         // Add more condition if it's array of characters (check lengths)
         if(ASRUtils::is_character(*expr_type(x.m_args[0].m_a))){
             llvm::Value* current_str_len = get_string_length(x.m_args[0].m_a);
