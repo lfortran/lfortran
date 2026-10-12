@@ -300,3 +300,16 @@ contains
         print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
     end subroutine
 end module
+
+subroutine upoly_type_name_14739(d)
+    implicit none
+    class(*), intent(in) :: d
+    if (d) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved class(*) instead
+    print *, d == 1  ! {Error} Operands of comparison operator '==' are not comparable: class(*) == integer
+end subroutine
+
+subroutine assumed_type_name_14739(x)
+    implicit none
+    type(*), intent(in) :: x
+    if (x) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved type(*) instead
+end subroutine

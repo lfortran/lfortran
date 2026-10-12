@@ -915,7 +915,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             ASR::ttype_t *base_type = ASRUtils::extract_type(v->m_type);
             std::string res = type_to_str_fortran_symbol(base_type, v->m_type_declaration, true);
-            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+            if (ASR::is_a<ASR::StructType_t>(*base_type) &&
+                    !ASR::down_cast<ASR::StructType_t>(base_type)->m_is_unlimited_polymorphic) {
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(base_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
@@ -1405,6 +1406,13 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
+            if (ASR::down_cast<ASR::StructType_t>(t)->m_is_unlimited_polymorphic) {
+                if (struct_sym != nullptr && std::string(ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(struct_sym))) == "~assumed_type") {
+                    return "type(*)";
+                }
+                return "class(*)";
+            }
             if (struct_sym == nullptr) {
                 return "derived_type";
             }
