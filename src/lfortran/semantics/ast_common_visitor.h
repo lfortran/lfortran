@@ -2116,6 +2116,34 @@ public:
         {"dmod", {"mod", {"real8", "real8"}}},
     };
 
+    // The numeric specific intrinsic functions of Fortran 2018, Table 16.2,
+    // whose specific name is their generic name, with the types of their
+    // arguments; `intrinsic_mapping` has the other specific names.
+    std::map<std::string, std::vector<std::string>> generic_specific_intrinsic_args = {
+        {"abs", {"real4"}},
+        {"acos", {"real4"}},
+        {"aimag", {"complex4"}},
+        {"aint", {"real4"}},
+        {"anint", {"real4"}},
+        {"asin", {"real4"}},
+        {"atan", {"real4"}},
+        {"atan2", {"real4", "real4"}},
+        {"conjg", {"complex4"}},
+        {"cos", {"real4"}},
+        {"cosh", {"real4"}},
+        {"dim", {"real4", "real4"}},
+        {"dprod", {"real4", "real4"}},
+        {"exp", {"real4"}},
+        {"mod", {"int4", "int4"}},
+        {"nint", {"real4"}},
+        {"sign", {"real4", "real4"}},
+        {"sin", {"real4"}},
+        {"sinh", {"real4"}},
+        {"sqrt", {"real4"}},
+        {"tan", {"real4"}},
+        {"tanh", {"real4"}},
+    };
+
     ASR::asr_t *tmp;
     std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
@@ -6306,6 +6334,108 @@ public:
             = ASR::deftypeType::Interface;
         current_scope->add_symbol(sym, proc);
         return true;
+    }
+
+    ASR::ttype_t* specific_intrinsic_arg_type(const std::string &type_name,
+            const Location &loc) {
+        if (type_name == "int4") {
+            return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        } else if (type_name == "real4") {
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+        } else if (type_name == "real8") {
+            return ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+        } else if (type_name == "complex4") {
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4));
+        } else if (type_name == "complex8") {
+            return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8));
+        }
+        return nullptr;
+    }
+
+    // Creates `iface_name` in `parent_scope`: the explicit interface of the
+    // specific intrinsic function `name` (Fortran 2018, 15.4.3.6 and
+    // Table 16.2), an elemental function whose intent(in) arguments have the
+    // specific types and the dummy argument names of the intrinsic. Returns
+    // nullptr if `name` is not such a specific intrinsic function.
+    ASR::symbol_t* create_specific_intrinsic_interface(const Location &loc,
+            const std::string &name, const std::string &iface_name,
+            SymbolTable *parent_scope) {
+        std::string generic_name = name;
+        std::vector<std::string> arg_type_names;
+        auto generic = generic_specific_intrinsic_args.find(name);
+        if (generic != generic_specific_intrinsic_args.end()) {
+            arg_type_names = generic->second;
+        } else {
+            auto specific = intrinsic_mapping.find(name);
+            if (specific == intrinsic_mapping.end()) {
+                return nullptr;
+            }
+            generic_name = specific->second.first;
+            arg_type_names = specific->second.second;
+        }
+        // The specific names of `min` and `max` (`min0`, `amax1`, ...) take
+        // any number of arguments.
+        if (generic_name == "min" || generic_name == "max"
+                || name2signature.find(generic_name) == name2signature.end()
+                || !ASRUtils::IntrinsicElementalFunctionRegistry::
+                    is_intrinsic_function(generic_name)) {
+            return nullptr;
+        }
+        const IntrinsicSignature &signature = name2signature.at(generic_name);
+        if (arg_type_names.size() > signature.kwarg_names.size()) {
+            return nullptr;
+        }
+        SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, arg_type_names.size());
+        Vec<ASR::expr_t*> call_args;
+        call_args.reserve(al, signature.max_args);
+        for (size_t i = 0; i < arg_type_names.size(); i++) {
+            ASR::ttype_t *arg_type = specific_intrinsic_arg_type(
+                arg_type_names[i], loc);
+            if (!arg_type) {
+                return nullptr;
+            }
+            std::string arg_name = to_lower(signature.kwarg_names[i]);
+            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, fn_scope,
+                    s2c(al, arg_name), nullptr, 0, ASRUtils::intent_in,
+                    nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                    nullptr, ASR::abiType::Source, ASR::Public,
+                    ASR::presenceType::Required, false));
+            fn_scope->add_symbol(arg_name, arg);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+            call_args.push_back(al, args[i]);
+        }
+        // The result has the type of the generic intrinsic applied to the
+        // specific arguments, with its optional arguments (`kind`) absent.
+        while (call_args.size() < (size_t) signature.max_args) {
+            call_args.push_back(al, nullptr);
+        }
+        diag::Diagnostics call_diag;
+        ASR::asr_t *call = ASRUtils::IntrinsicElementalFunctionRegistry::
+            get_create_function(generic_name)(al, loc, call_args, call_diag);
+        if (!call || call_diag.has_error()) {
+            return nullptr;
+        }
+        ASR::ttype_t *return_type = ASRUtils::expr_type(ASRUtils::EXPR(call));
+        ASR::symbol_t *return_var = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, fn_scope,
+                s2c(al, name), nullptr, 0, ASRUtils::intent_return_var,
+                nullptr, nullptr, ASR::storage_typeType::Default, return_type,
+                nullptr, ASR::abiType::Source, ASR::Public,
+                ASR::presenceType::Required, false));
+        fn_scope->add_symbol(name, return_var);
+        ASR::symbol_t *iface = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, loc, fn_scope,
+                s2c(al, iface_name), nullptr, 0, args.p, args.size(),
+                nullptr, 0, ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface, nullptr,
+                /* m_elemental */ true, /* m_pure */ true, false, false, false,
+                nullptr, 0, false, false, false));
+        parent_scope->add_symbol(iface_name, iface);
+        return iface;
     }
 
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
@@ -13028,6 +13158,20 @@ public:
                 type_declaration = existing;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+                // A procedure of a module may be defined after it is used as
+                // an interface, so there a specific intrinsic function is
+                // only used if it has the INTRINSIC attribute.
+                if (!v && (!in_module
+                        || std::find(explicit_intrinsic_procedures.begin(),
+                            explicit_intrinsic_procedures.end(), func_name)
+                            != explicit_intrinsic_procedures.end()
+                        || check_is_explicit_intrinsic(func_name))) {
+                    std::string iface_name = current_scope->parent->get_unique_name(
+                        "__" + sym + "_iface_" + func_name, false);
+                    v = create_specific_intrinsic_interface(
+                        sym_type->base.base.loc, func_name, iface_name,
+                        current_scope->parent);
+                }
                 if( !v ) {
                     Location &attr_loc = sym_type->base.base.loc;
                     ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
