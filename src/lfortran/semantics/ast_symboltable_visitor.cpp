@@ -4938,15 +4938,21 @@ public:
         }
     }
 
+    // The key of the derived type `dt_name` in class_deferred_procedures.
+    // visit_DerivedTypeProc qualifies it with the module being visited, which
+    // is also the module of a type declared in one of its procedures.
+    static std::string class_deferred_procedures_key(const std::string &dt_name,
+            ASR::Struct_t *clss) {
+        ASR::Module_t *mod = ASRUtils::get_sym_module0(&clss->base);
+        if (mod) {
+            return std::string(mod->m_name) + "_" + dt_name;
+        }
+        return dt_name;
+    }
+
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
-        std::string proc = clss->m_name;
-        // Use module-qualified name
-        ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
-        if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
-            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
-            proc = std::string(mod->m_name) + "_" + proc;
-        }
+        std::string proc = class_deferred_procedures_key(clss->m_name, clss);
         if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
             return true;
         }
@@ -5143,13 +5149,8 @@ public:
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
-                std::string new_dt_name = proc.first;
-                // Use module-qualified name
-                ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
-                if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
-                    ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
-                    new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
-                } 
+                std::string new_dt_name = class_deferred_procedures_key(
+                    proc.first, clss);
                 bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
