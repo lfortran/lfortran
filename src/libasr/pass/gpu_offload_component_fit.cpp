@@ -1590,15 +1590,16 @@ class GpuComponentFit {
             } else if (checks) {
                 fit = check_fits(write.loc, component, extents);
             }
-        } else if (checks && write.shape.always) {
-            if (realloc) {
-                fit.push_back(require_allocated(write.loc, component,
-                    designator_name(&write.element->base) + "%" +
-                        ASRUtils::symbol_name(write.component)));
-            } else {
-                fit.push_back(debug_check(write.loc, component,
-                    duplicate(al, component)));
-            }
+        } else if (write.shape.always && realloc) {
+            // Not a check bounds checking makes: the size cannot be told
+            // here whatever the options, and gpu_device_heap reads this
+            // requirement to store the value from the device heap instead.
+            fit.push_back(require_allocated(write.loc, component,
+                designator_name(&write.element->base) + "%" +
+                    ASRUtils::symbol_name(write.component)));
+        } else if (write.shape.always && checks) {
+            fit.push_back(debug_check(write.loc, component,
+                duplicate(al, component)));
         }
         if (fit.empty()) return;
         fits++;
