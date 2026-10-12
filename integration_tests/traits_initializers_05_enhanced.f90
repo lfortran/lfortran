@@ -10,3 +10,15 @@ module traits_initializers_05_enhanced
     end implements Thing
 
 end module traits_initializers_05_enhanced
+
+! Acknowledges the traits for the loaded Iface, whose initializers are the
+! private procedures of its standard constructor interface.
+module traits_initializers_05_iface_enhanced
+    use traits_initializers_05_contracts, only: IConstructable, IValued
+    use traits_initializers_05_iface, only: Iface
+    implicit none
+
+    implements (IConstructable + IValued) :: Iface
+    end implements Iface
+
+end module traits_initializers_05_iface_enhanced

@@ -66,6 +66,68 @@ semantic error: type 'unconstructed' does not bind an initializer matching the r
 211 |        end implements Unconstructed
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: result type does not match trait method 'initializer': expected wrapped, got wrapped allocatable
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:273:5 - 274:27
+    |
+273 |        implements IConstructable :: Wrapped
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+274 |        end implements Wrapped
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'initializer': expected labelled, got payload
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:300:5 - 301:28
+    |
+300 |        implements IConstructable :: Labelled
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+301 |        end implements Labelled
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'plain' does not bind an initializer matching the requirement of trait 'iconstructable'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:318:5 - 319:25
+    |
+318 |        implements IConstructable :: Plain
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+319 |        end implements Plain
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings in an implements statement without traits are not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:355:9
+    |
+355 |         procedure, static :: operator(+) => summed_plus
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an implements statement without traits for an intrinsic type is not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:368:19
+    |
+368 |     implements :: real(8)
+    |                   ^^^^^^^ 
+
+semantic error: an implements statement without traits for a generic type is not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:386:5 - 388:26
+    |
+386 |        implements :: Holder{IPrintable :: T}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+388 |        end implements Holder
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an implements block cannot target an abstract type
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:404:5 - 406:25
+    |
+404 |        implements :: Shape
+    |        ^^^^^^^^^^^^^^^^^^^...
+...
+    |
+406 |        end implements Shape
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_binding_completion.f90:60:9
    |
@@ -89,3 +151,9 @@ semantic error: method 'initial' is not provided by the declared runtime trait
     |
 255 |         call obj%initial(3)
     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:343:13
+    |
+343 |         u = make{Unacknowledged}(3)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ 

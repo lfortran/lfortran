@@ -255,3 +255,158 @@ contains
         call obj%initial(3)
     end subroutine use_views
 end module cc_traits_binding_completion_view_use
+
+! E11: a procedure of the constructor interface of a type implements an
+! initializer requirement only with exactly a type(Wrapped) result, not an
+! allocatable one.
+module cc_traits_binding_completion_allocatable_result
+    use cc_traits_binding_completion_contracts, only: IConstructable
+    implicit none
+    type :: Wrapped
+        integer :: n = 0
+    end type Wrapped
+
+    interface Wrapped
+        module procedure wrapped_from_integer
+    end interface Wrapped
+
+    implements IConstructable :: Wrapped
+    end implements Wrapped
+contains
+    function wrapped_from_integer(n) result(res)
+        integer, intent(in)        :: n
+        type(Wrapped), allocatable :: res
+        allocate(res)
+        res%n = n
+    end function wrapped_from_integer
+end module cc_traits_binding_completion_allocatable_result
+
+! E12: nor with a result of another type.
+module cc_traits_binding_completion_other_result
+    use cc_traits_binding_completion_contracts, only: IConstructable
+    implicit none
+    type :: Payload
+        integer :: n = 0
+    end type Payload
+
+    type :: Labelled
+        integer :: n = 0
+    end type Labelled
+
+    interface Labelled
+        module procedure payload_from_integer
+    end interface Labelled
+
+    implements IConstructable :: Labelled
+    end implements Labelled
+contains
+    function payload_from_integer(n) result(res)
+        integer, intent(in) :: n
+        type(Payload)       :: res
+        res%n = n
+    end function payload_from_integer
+end module cc_traits_binding_completion_other_result
+
+! E13: the structure constructor of a type is not an initializer.
+module cc_traits_binding_completion_structure_constructor
+    use cc_traits_binding_completion_contracts, only: IConstructable
+    implicit none
+    type, sealed :: Plain
+        integer :: n = 0
+    end type Plain
+
+    implements IConstructable :: Plain
+    end implements Plain
+end module cc_traits_binding_completion_structure_constructor
+
+! E14: a matching constructor interface does not make a type conform to
+! IConstructable without an implements statement or attribute.
+module cc_traits_binding_completion_unacknowledged
+    use cc_traits_binding_completion_contracts, only: make
+    implicit none
+    type :: Unacknowledged
+        integer :: n = 0
+    end type Unacknowledged
+
+    interface Unacknowledged
+        module procedure unacknowledged_from_integer
+    end interface Unacknowledged
+contains
+    function unacknowledged_from_integer(n) result(res)
+        integer, intent(in)  :: n
+        type(Unacknowledged) :: res
+        res%n = n
+    end function unacknowledged_from_integer
+
+    subroutine construct()
+        type(Unacknowledged) :: u
+        u = make{Unacknowledged}(3)
+    end subroutine construct
+end module cc_traits_binding_completion_unacknowledged
+
+! E15: an operator binding without traits implements no requirement.
+module cc_traits_binding_completion_operator
+    implicit none
+    type, sealed :: Summed
+        integer :: n = 0
+    end type Summed
+
+    implements :: Summed
+        procedure, static :: operator(+) => summed_plus
+    end implements Summed
+contains
+    function summed_plus(lhs, rhs) result(res)
+        type(Summed), intent(in) :: lhs, rhs
+        type(Summed)             :: res
+        res%n = lhs%n + rhs%n
+    end function summed_plus
+end module cc_traits_binding_completion_operator
+
+! E16: binding procedures to an intrinsic type without traits.
+module cc_traits_binding_completion_intrinsic
+    implicit none
+    implements :: real(8)
+        procedure, pass :: show => show_real
+    end implements real(8)
+contains
+    subroutine show_real(self)
+        real(8), intent(in) :: self
+        print *, self
+    end subroutine show_real
+end module cc_traits_binding_completion_intrinsic
+
+! E17: binding procedures to a generic type without traits.
+module cc_traits_binding_completion_generic
+    use cc_traits_binding_completion_contracts, only: IPrintable
+    implicit none
+    type :: Holder{IPrintable :: T}
+        type(T) :: item
+    end type Holder
+
+    implements :: Holder{IPrintable :: T}
+        initial :: holder_from_item
+    end implements Holder
+contains
+    function holder_from_item(item) result(res)
+        type(T), intent(in) :: item
+        type(Holder{T})     :: res
+        res%item = item
+    end function holder_from_item
+end module cc_traits_binding_completion_generic
+
+! E18: an implements statement cannot target an abstract type.
+module cc_traits_binding_completion_abstract
+    implicit none
+    type, abstract :: Shape
+        real :: area = 0.0
+    end type Shape
+
+    implements :: Shape
+        procedure, pass :: show => show_shape
+    end implements Shape
+contains
+    subroutine show_shape(self)
+        class(Shape), intent(in) :: self
+        print *, self%area
+    end subroutine show_shape
+end module cc_traits_binding_completion_abstract

@@ -114,12 +114,12 @@ own bindings. The statement may precede or follow the type, and
 a name the type already binds is diagnosed. It acknowledges no trait: a type
 that has every procedure a trait requires still conforms to it only where an
 `implements` statement or attribute names the trait. `pass`, named `pass`,
-`nopass` and `public` bindings are supported. A deferred binding is
-diagnosed; static and operator bindings, other binding forms, intrinsic and
-generic types, and types of other units are not implemented yet in a
-statement without traits. `traits_implements_bindings_01` checks the
-bindings at run time, and `continue_compilation_traits_binding_completion`
-the diagnostics.
+`nopass` and `public` bindings are supported. A deferred binding and an
+abstract type are diagnosed; static and operator bindings, other binding
+forms, intrinsic and generic types, and types of other units are not
+implemented yet in a statement without traits. `traits_implements_bindings_01`
+checks the bindings at run time, and
+`continue_compilation_traits_binding_completion` the diagnostics.
 
 ## Initializer and operator requirements
 
@@ -189,7 +189,14 @@ specifics of the generic that overloads its constructor in the unit that
 declares it, which are the `initial ::` bindings of its definition and of the
 implements statements, with or without traits, of that unit. Since these
 bindings are represented like an ordinary generic interface of the type's
-name, the procedures of such an interface in that unit count as well. This applies
+name, the procedures of such an interface in that unit count as well. Such a
+procedure implements the requirement only if its result is exactly a
+nonpointer, nonallocatable scalar `type(MyType)` and its dummy arguments match
+the requirement's in type, kind, rank, intent, optionality and the value
+attribute; any other procedure of the interface, such as one returning
+another type or an allocatable result, remains an ordinary overload. The
+implicit structure constructor is never an initializer, and the type conforms
+only where an `implements` statement or attribute names the trait. This applies
 whether the type's `implements` attribute adopts the trait (paper inline-09)
 or a later implements statement acknowledges it, also an empty one in another
 module that only imports the type (paper inline-06). The same signature
@@ -197,7 +204,10 @@ comparison selects the initializer, so a concrete `MyType(args)` and a generic
 `T(args)` call the same function; the conformance references it where it is
 defined, so a private initializer stays private and a loaded module is not
 modified. `traits_initializers_04` and the separately compiled
-`traits_initializers_05` check both forms. Operator bindings and the
+`traits_initializers_05` check both forms and a constructor interface with
+private procedures; `continue_compilation_traits_binding_completion` checks a
+non-exact result, the structure constructor and a missing acknowledgement.
+Operator bindings and the
 `static` attribute are only valid in an `implements` statement: in a type
 definition, `generic :: operator(*) => f` binds a type-bound operator and
 NOPASS a procedure without a passed object. An intrinsic type acknowledges its
