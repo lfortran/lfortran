@@ -3907,6 +3907,7 @@ RUN(NAME template_defined_assignment_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_operator_mod_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_01_mod.f90)
 RUN(NAME template_operator_mod_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_operator_mod_02_mod.f90)
 RUN(NAME template_proc_component_01 LABELS llvm)
+RUN(NAME template_proc_component_02 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

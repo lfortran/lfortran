@@ -1318,34 +1318,6 @@ public:
         ASR::ttype_t *new_type = substitute_type(var_expr, x->m_type);
         new_type = fix_substituted_array_physical_type(x, new_type);
 
-        // The initializer of a named constant may refer to the template's
-        // deferred constants, so it goes through the same substitution as
-        // the type; its compile-time value is then taken from the result.
-        // An initializer that uses a deferred constant has no value in the
-        // template, and gets one here once the constant is substituted.
-        size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
-        ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
-        ASR::expr_t *new_value = duplicate_expr(x->m_value);
-        if (new_value == nullptr && new_symbolic_value
-                && x->m_storage == ASR::storage_typeType::Parameter) {
-            new_value = ASRUtils::expr_value(new_symbolic_value);
-            if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
-                    && !ASRUtils::is_value_constant(new_value)) {
-                // The semantics accept only initializers that the operations
-                // above evaluate, so this is not expected; report it rather
-                // than leave the named constant without a value.
-                diagnostics->add(diag::Diagnostic(
-                    "initialization of named constant `" + std::string(x->m_name)
-                    + "` does not reduce to a compile time constant in this"
-                    " instantiation",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x->m_symbolic_value->base.loc})}));
-            }
-        }
-        if (new_value && ASRUtils::expr_value(new_value)) {
-            new_value = ASRUtils::expr_value(new_value);
-        }
-
         ASR::symbol_t* type_decl = nullptr;
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
@@ -1375,18 +1347,54 @@ public:
             }
         }
 
+        // The initializer can refer to the variable itself, e.g. the mold of
+        // `=> null()`, so the variable is added before it is instantiated.
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+            x->base.base.loc, target_scope, s2c(al, x->m_name), nullptr, 0,
+            x->m_intent, nullptr, nullptr, x->m_storage,
+            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
+            x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
+            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
+        target_scope->add_symbol(x->m_name, s);
+
+        // The initializer of a named constant may refer to the template's
+        // deferred constants, so it goes through the same substitution as
+        // the type; its compile-time value is then taken from the result.
+        // An initializer that uses a deferred constant has no value in the
+        // template, and gets one here once the constant is substituted.
+        size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
+        ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
+        ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        if (new_value == nullptr && new_symbolic_value
+                && x->m_storage == ASR::storage_typeType::Parameter) {
+            new_value = ASRUtils::expr_value(new_symbolic_value);
+            if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
+                    && !ASRUtils::is_value_constant(new_value)) {
+                // The semantics accept only initializers that the operations
+                // above evaluate, so this is not expected; report it rather
+                // than leave the named constant without a value.
+                diagnostics->add(diag::Diagnostic(
+                    "initialization of named constant `" + std::string(x->m_name)
+                    + "` does not reduce to a compile time constant in this"
+                    " instantiation",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x->m_symbolic_value->base.loc})}));
+            }
+        }
+        if (new_value && ASRUtils::expr_value(new_value)) {
+            new_value = ASRUtils::expr_value(new_value);
+        }
+
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
             new_symbolic_value, new_value, x->m_name);
 
-        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
-            x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), x->m_intent, new_symbolic_value, new_value, x->m_storage,
-            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
-            x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
-            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
-        target_scope->add_symbol(x->m_name, s);
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+        v->m_symbolic_value = new_symbolic_value;
+        v->m_value = new_value;
+        v->m_dependencies = variable_dependencies_vec.p;
+        v->n_dependencies = variable_dependencies_vec.size();
 
         return s;
     }
