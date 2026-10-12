@@ -20,7 +20,10 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 100
+    # Exhaustive's macOS job takes about an hour: it runs the Fiats test
+    # suite offloaded to Metal, whose training tests take ~40 minutes on the
+    # runner's virtual GPU.
+    timeout-minutes: ${{ contains(matrix.os, 'macos') && 130 || 100 }}
     strategy:
       fail-fast: false
       matrix:
