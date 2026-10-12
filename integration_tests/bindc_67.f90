@@ -39,6 +39,7 @@ program bindc_67
     call bindc_67_ptr_alloc(p)
     if (.not. associated(p)) error stop 5
     if (lbound(p, 1) /= 5 .or. p(6) /= 8) error stop 6
+    deallocate(p)
 
     ierr = bindc_67_alloc_fn(b)
     if (ierr /= 0 .or. .not. allocated(b)) error stop 7
