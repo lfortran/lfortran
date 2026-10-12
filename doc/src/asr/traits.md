@@ -163,7 +163,19 @@ A derived type binds them in an `implements` statement of its module:
 which have no passed-object argument. Each requirement is bound to the one
 listed procedure whose signature matches it with `itself` replaced by the
 type, including PURE and ELEMENTAL; no match, several matches and an operator
-procedure that matches no requirement are diagnosed. Operator bindings and the
+procedure that matches no requirement are diagnosed. An initializer
+requirement can also be bound to an initializer the type already has: the
+specifics of the generic that overloads its constructor in the unit that
+declares it, which are the `initial ::` bindings of its definition and of the
+implements statements, with or without traits, of that unit. This applies
+whether the type's `implements` attribute adopts the trait (paper inline-09)
+or a later implements statement acknowledges it, also an empty one in another
+module that only imports the type (paper inline-06). The same signature
+comparison selects the initializer, so a concrete `MyType(args)` and a generic
+`T(args)` call the same function; the conformance references it where it is
+defined, so a private initializer stays private and a loaded module is not
+modified. `traits_initializers_04` and the separately compiled
+`traits_initializers_05` check both forms. Operator bindings and the
 `static` attribute are only valid in an `implements` statement: in a type
 definition, `generic :: operator(*) => f` binds a type-bound operator and
 NOPASS a procedure without a passed object. An intrinsic type acknowledges its

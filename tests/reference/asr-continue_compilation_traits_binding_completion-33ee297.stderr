@@ -36,6 +36,26 @@ semantic error: an implements statement cannot declare deferred bindings
 136 |         procedure(open_output), deferred, pass :: output
     |                                 ^^^^^^^^ 
 
+semantic error: ambiguous bindings of initializer required by trait 'iconstructable': procedures 'from_count' and 'from_total' both match
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:155:5 - 156:27
+    |
+155 |        implements IConstructable :: Counted
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+156 |        end implements Counted
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'n' does not match trait method 'initializer': expected integer(4), got integer(8)
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:176:5 - 180:18
+    |
+176 |        type, sealed, implements(IConstructable) :: Wide
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+180 |        end type Wide
+    | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
   --> tests/errors/continue_compilation_traits_binding_completion.f90:60:9
    |

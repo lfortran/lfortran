@@ -6154,9 +6154,10 @@ public:
     }
 
     // The procedure bound to an initializer or operator requirement: the
-    // single declared procedure whose signature matches the member's with
-    // `itself` the implementing type, or for an intrinsic type, which cannot
-    // redefine them, its intrinsic initializer or operation.
+    // single declared procedure, or for an initializer also the single
+    // initializer the type already binds, whose signature matches the
+    // member's with `itself` the implementing type, or for an intrinsic type,
+    // which cannot redefine them, its intrinsic initializer or operation.
     ASR::trait_binding_t bind_trait_operation(ASR::symbol_t *member,
             const ASR::type_set_operation_t &operation, ASR::ttype_t *type,
             ASR::symbol_t *type_symbol, const ASR::Trait_t &trait,
@@ -6179,6 +6180,26 @@ public:
                     candidates.push_back(&entry);
                 }
             }
+        }
+        // The initializers the type's unit already bound to a nongeneric type
+        // implement an initializer requirement too, whether this conformance is
+        // acknowledged by the type's definition or by a later implements
+        // statement, also of another unit.
+        std::vector<DeclaredTraitOperation> bound_initializers;
+        auto *structure = type_symbol ? ASRUtils::symbol_get_past_external(type_symbol) : nullptr;
+        if (structure && ASR::is_a<ASR::TypeSetConversion_t>(operation) &&
+                !ASRUtils::generic_type_definition_metadata(
+                    *ASR::down_cast<ASR::Struct_t>(structure))) {
+            for (ASR::symbol_t *initializer : type_initializers(structure)) {
+                if (std::none_of(candidates.begin(), candidates.end(),
+                        [&](DeclaredTraitOperation *candidate) {
+                            return candidate->procedure == initializer;
+                        })) {
+                    bound_initializers.push_back({const_cast<ASR::type_set_operation_t*>(
+                        &operation), initializer, loc, false});
+                }
+            }
+            for (auto &entry : bound_initializers) candidates.push_back(&entry);
         }
         if (!type_symbol) {
             for (auto *candidate : candidates) {

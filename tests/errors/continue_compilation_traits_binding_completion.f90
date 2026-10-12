@@ -136,3 +136,52 @@ module cc_traits_binding_completion_deferred
         procedure(open_output), deferred, pass :: output
     end implements Open
 end module cc_traits_binding_completion_deferred
+
+! E06: two initializers the type already binds implement the initializer
+! requirement that a later statement acknowledges.
+module cc_traits_binding_completion_ambiguous
+    use cc_traits_binding_completion_contracts, only: IConstructable
+    implicit none
+    type, sealed :: Counted
+        integer :: n = 0
+    contains
+        initial :: from_count
+    end type Counted
+
+    implements :: Counted
+        initial :: from_total
+    end implements Counted
+
+    implements IConstructable :: Counted
+    end implements Counted
+contains
+    function from_count(n) result(res)
+        integer, intent(in) :: n
+        type(Counted)       :: res
+        res%n = n
+    end function from_count
+
+    function from_total(n) result(res)
+        integer, intent(in) :: n
+        type(Counted)       :: res
+        res%n = -n
+    end function from_total
+end module cc_traits_binding_completion_ambiguous
+
+! E07: the initializer the type binds takes integer(8), not the integer(4)
+! that the adopted trait requires.
+module cc_traits_binding_completion_incompatible
+    use cc_traits_binding_completion_contracts, only: IConstructable
+    implicit none
+    type, sealed, implements(IConstructable) :: Wide
+        integer(8) :: n = 0
+    contains
+        initial :: from_wide
+    end type Wide
+contains
+    function from_wide(n) result(res)
+        integer(8), intent(in) :: n
+        type(Wide)             :: res
+        res%n = n
+    end function from_wide
+end module cc_traits_binding_completion_incompatible

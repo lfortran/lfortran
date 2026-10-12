@@ -4187,6 +4187,10 @@ public:
                 "asr.verify.struct.concrete_trait_obligations",
                 "A concrete type must provide complete evidence for every adopted trait");
             for (auto *member : hierarchy.members) {
+                // An initializer or operator requirement has no receiver and is
+                // bound by signature, not by a type-bound name; the conformance
+                // that proves the obligation binds each of them.
+                if (ASRUtils::trait_member_operation(member)) continue;
                 auto *required = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(required->m_name, required);
                 require_id(previous.second || ASRUtils::trait_method_mismatch(

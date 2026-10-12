@@ -29445,16 +29445,42 @@ public:
         return instance;
     }
 
+    // The generic that overloads the constructor of the derived type `type`
+    // with its initializers, in the unit that declares the type: the
+    // `initial ::` bindings of its definition and of implements statements
+    // there, as an ordinary generic interface of the type's name.
+    static ASR::symbol_t *type_initializer_generic(ASR::symbol_t *type) {
+        ASR::symbol_t *structure = ASRUtils::symbol_get_past_external(type);
+        ASR::symbol_t *initializers = ASRUtils::symbol_parent_symtab(structure)->get_symbol(
+            "~" + std::string(ASRUtils::symbol_name(structure)));
+        return initializers && ASR::is_a<ASR::GenericProcedure_t>(*initializers)
+            ? initializers : nullptr;
+    }
+
+    // The procedures of the initializer generic of the derived type `type`.
+    static std::vector<ASR::symbol_t*> type_initializers(ASR::symbol_t *type) {
+        std::vector<ASR::symbol_t*> result;
+        ASR::symbol_t *generic = type_initializer_generic(type);
+        if (!generic) return result;
+        auto *initializers = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+        for (size_t i = 0; i < initializers->n_procs; i++) {
+            ASR::symbol_t *procedure = ASRUtils::symbol_get_past_external(
+                initializers->m_procs[i]);
+            if (ASRUtils::trait_method_function(procedure) &&
+                    std::find(result.begin(), result.end(), procedure) == result.end()) {
+                result.push_back(procedure);
+            }
+        }
+        return result;
+    }
+
     // What a constructor call of the generic type `type` (an instance, or a
     // definition in its package) calls first: the initializer generic that
     // belongs to the type, else the type itself for its structure
     // constructor.
     static ASR::symbol_t *generic_type_constructor_target(ASR::symbol_t *type) {
-        ASR::symbol_t *structure = ASRUtils::symbol_get_past_external(type);
-        ASR::symbol_t *initializers = ASRUtils::symbol_parent_symtab(structure)->get_symbol(
-            "~" + std::string(ASRUtils::symbol_name(structure)));
-        return initializers && ASR::is_a<ASR::GenericProcedure_t>(*initializers)
-            ? initializers : type;
+        ASR::symbol_t *initializers = type_initializer_generic(type);
+        return initializers ? initializers : type;
     }
 
     // Binds the parameters of a generic type from the actual arguments of a
