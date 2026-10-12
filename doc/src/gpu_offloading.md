@@ -323,7 +323,8 @@ generates the device source. It never falls back to the CPU:
     limits of the loops are evaluated once, before this host code runs, and
     the launch reads the same values.
   * The host does not guess what it cannot work out before the loop runs:
-    * The size. It may come from a call, from a value the loop itself writes
+    * The size. It may come from a call (also one whose result `f`
+      assigns whole, `r = g(x)`), from a value the loop itself writes
       (`s(i) = ...` earlier in the iteration, so the value before the loop
       would be a wrong size), from a bound or an element of a dummy array
       of `f`, or from a dummy argument `f` changes (`n = n + 1` before
