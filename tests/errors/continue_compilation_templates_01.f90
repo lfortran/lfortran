@@ -2778,6 +2778,11 @@ module continue_compilation_templates_01_deferred_iface_name
                 type(a_t) :: x, p
             end function
         end interface
+    contains
+        function deferred_iface_call_g(x)
+            type(a_t) :: x, deferred_iface_call_g
+            deferred_iface_call_g = p(x)  ! {Error} Function 'p' not found
+        end function
     end template
 contains
     template subroutine deferred_iface_name_s{f}(x)

@@ -1474,13 +1474,13 @@ semantic error: 'p' is not a deferred argument of 'deferred_iface_call_t'
      | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'g' is not a deferred argument of 'deferred_iface_name_s'
-    --> tests/errors/continue_compilation_templates_01.f90:2788:13 - 2790:24
+    --> tests/errors/continue_compilation_templates_01.f90:2793:13 - 2795:24
      |
-2788 |                integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_s'
+2793 |                integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_s'
      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
-2790 |                end function
+2795 |                end function
      | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
@@ -1669,3 +1669,9 @@ semantic error: Operator `-` undefined for the type in the expression `-b_t`
      |
 2753 |             y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
      |                 ^^ 
+
+semantic error: Function 'p' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_templates_01.f90:2784:37
+     |
+2784 |             deferred_iface_call_g = p(x)  ! {Error} Function 'p' not found
+     |                                     ^^^^ 
