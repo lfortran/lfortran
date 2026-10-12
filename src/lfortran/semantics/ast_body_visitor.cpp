@@ -7534,6 +7534,15 @@ public:
                     }));
                 throw SemanticAbort();
             }
+            if (ASRUtils::is_unlimited_polymorphic_to_specific_type(target_type, value_type)) {
+                diag.semantic_error_label(
+                    "Type mismatch in assignment, the types must be compatible",
+                    {target->base.loc, value->base.loc},
+                    "type mismatch (" + ASRUtils::type_to_str_fortran_expr(target_type, target)
+                        + " and " + ASRUtils::type_to_str_fortran_expr(value_type, value) + ")"
+                );
+                throw SemanticAbort();
+            }
             check_ArrayAssignmentCompatibility(target, value, x);
         }
 
@@ -9198,7 +9207,8 @@ public:
                             }
                         }
                         // Check if types are equal
-                        if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
+                        if (!skip_check && (ASRUtils::is_unlimited_polymorphic_to_specific_type(param_type, passed_type) ||
+                                !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset]))) {
                             std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
                             std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
                             diag.add(diag::Diagnostic(

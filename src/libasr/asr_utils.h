@@ -6449,6 +6449,16 @@ inline bool can_pass_class_argument(ASR::expr_t* param_expr, ASR::expr_t* passed
     return check_class_assignment_compatibility(param_expr, passed_arg);
 }
 
+// An unlimited polymorphic value is type compatible only with an unlimited
+// polymorphic variable or dummy argument, although `types_equal` accepts it
+// on either side.
+inline bool is_unlimited_polymorphic_to_specific_type(ASR::ttype_t* variable_type,
+        ASR::ttype_t* value_type) {
+    return is_unlimited_polymorphic_type(value_type) &&
+        !is_unlimited_polymorphic_type(variable_type) &&
+        !is_type_parameter(*type_get_past_allocatable_pointer(variable_type));
+}
+
 static inline bool is_elemental(ASR::symbol_t* x) {
     ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {

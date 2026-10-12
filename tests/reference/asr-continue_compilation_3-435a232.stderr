@@ -636,3 +636,39 @@ semantic error: Expected logical expression in if statement, but recieved type(*
     |
 314 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved type(*) instead
     |         ^ type(*) expression, expected logical
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:345:5
+    |
+345 |     i = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (integer and class(*))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:346:5
+    |
+346 |     c = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (string and class(*))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:347:5
+    |
+347 |     a = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (t_14738 and class(*))
+
+semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
+   --> tests/errors/continue_compilation_3.f90:349:16
+    |
+349 |     call g_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
+    |                ^ 
+
+semantic error: Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
+   --> tests/errors/continue_compilation_3.f90:350:14
+    |
+350 |     call g_t(d)  ! {Error} Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
+    |              ^ 
+
+semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+   --> tests/errors/continue_compilation_3.f90:351:20
+    |
+351 |     print *, f_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+    |                    ^ 
