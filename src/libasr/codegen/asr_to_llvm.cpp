@@ -16226,6 +16226,13 @@ public:
         start_new_block(blockstart);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = block->m_symtab;
+        // Declare the external procedures that the BLOCK declares, e.g. with
+        // a procedure declaration statement.
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                instantiate_function(*ASR::down_cast<ASR::Function_t>(item.second));
+            }
+        }
 
         // Save stack pointer to reclaim alloca space at block exit.
         // Block-scoped variables (descriptors, temporaries, loop vars)

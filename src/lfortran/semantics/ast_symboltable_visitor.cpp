@@ -208,12 +208,20 @@ public:
         SymbolTable *scope;
         AST::program_unit_t **procedures;
         size_t n_procedures;
+        // Whether these are the module procedures of a module or submodule,
+        // and then its specification part.
+        bool is_module;
+        AST::decl_stmt_t **module_items;
+        size_t n_module_items;
 
         ContainedProcedureScope(SymbolTableVisitor &v_,
-                AST::program_unit_t **procedures_, size_t n_procedures_)
+                AST::program_unit_t **procedures_, size_t n_procedures_,
+                bool is_module_=false, AST::decl_stmt_t **module_items_=nullptr,
+                size_t n_module_items_=0)
             : v(v_), enclosing(v_.contained_procedure_scope),
               scope(v_.current_scope), procedures(procedures_),
-              n_procedures(n_procedures_) {
+              n_procedures(n_procedures_), is_module(is_module_),
+              module_items(module_items_), n_module_items(n_module_items_) {
             v.contained_procedure_scope = this;
         }
 
@@ -237,7 +245,93 @@ public:
             return nullptr;
         }
 
+        // Whether an interface body of the module's specification part
+        // declares the procedure `name`.
+        bool has_interface_body(const std::string &name) {
+            return interface_body_declares(module_items, 0, n_module_items, name);
+        }
+
     };
+
+    // Whether an interface body in `items[start:n_items]`, a part of a
+    // specification part, declares the procedure `name`.
+    static bool interface_body_declares(AST::decl_stmt_t **items, size_t start,
+            size_t n_items, const std::string &name) {
+        for (size_t i = start; i < n_items; i++) {
+            if (!AST::is_a<AST::Interface_t>(*items[i])) continue;
+            AST::Interface_t *interface = AST::down_cast<AST::Interface_t>(items[i]);
+            for (size_t j = 0; j < interface->n_items; j++) {
+                if (!AST::is_a<AST::InterfaceProc_t>(*interface->m_items[j])) {
+                    continue;
+                }
+                AST::program_unit_t *p = AST::down_cast<AST::InterfaceProc_t>(
+                    interface->m_items[j])->m_proc;
+                if ((AST::is_a<AST::Function_t>(*p)
+                        && to_lower(AST::down_cast<AST::Function_t>(p)->m_name) == name)
+                        || (AST::is_a<AST::Subroutine_t>(*p)
+                        && to_lower(AST::down_cast<AST::Subroutine_t>(p)->m_name) == name)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Whether `items[i]`, a statement of the specification part `items` of
+    // a function or subroutine, is a procedure declaration statement whose
+    // interface is declared after it: by an interface body later in the
+    // specification part or, if `contained` is given, by one of the internal
+    // procedures `contained`. Such a statement is visited only once its
+    // interface is defined.
+    static bool has_interface_declared_later(AST::decl_stmt_t **items,
+            size_t i, size_t n_items, ContainedProcedureScope *contained) {
+        if (!AST::is_a<AST::Declaration_t>(*items[i])) return false;
+        AST::Declaration_t *decl = AST::down_cast<AST::Declaration_t>(items[i]);
+        if (!decl->m_vartype || !AST::is_a<AST::AttrType_t>(*decl->m_vartype)) {
+            return false;
+        }
+        AST::AttrType_t *type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
+        if (type->m_type != AST::decl_typeType::TypeProcedure || !type->m_name) {
+            return false;
+        }
+        std::string name = to_lower(type->m_name);
+        return interface_body_declares(items, i + 1, n_items, name)
+            || (contained && contained->find(name));
+    }
+
+    void visit_later_interface_decls(const Vec<AST::decl_stmt_t*> &decls) {
+        for (AST::decl_stmt_t *decl : decls) {
+            is_Function = true;
+            try {
+                visit_decl_stmt(*decl);
+            } catch (SemanticAbort &e) {
+                is_Function = false;
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            is_Function = false;
+        }
+    }
+
+    // A module procedure, or a procedure of an interface body in the
+    // module's specification part, is not defined until its turn comes, so
+    // until then its name must not be taken to be an intrinsic procedure.
+    // Neither is an internal procedure that its host defines later, except
+    // in an interface body, which does not access its host. Every other
+    // name that the scoping units being visited do not declare can be.
+    ProcedureDeclaredLater procedure_declared_later(const std::string &name) {
+        for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                procedures; procedures = procedures->enclosing) {
+            if (procedures->scope->get_symbol(name)) continue;
+            if (procedures->is_module) {
+                if (procedures->find(name) || procedures->has_interface_body(name)) {
+                    return ProcedureDeclaredLater::InModule;
+                }
+            } else if (!is_interface && procedures->find(name)) {
+                return ProcedureDeclaredLater::InHost;
+            }
+        }
+        return ProcedureDeclaredLater::No;
+    }
 
     struct PendingInstantiationRestriction {
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
@@ -639,7 +733,8 @@ public:
         assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            true, x.m_items, x.n_items);
         // Isolate this module's externals from a previous program unit, and
         // restore that unit's list when the module ends so a later sibling
         // does not inherit them.
@@ -2020,6 +2115,7 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        Vec<AST::decl_stmt_t*> later_interface_decls; later_interface_decls.reserve(al, 0);
         // The COMMON statements below are visited only after the other
         // declarations, so what they place in a common block is collected
         // here, while an array bound or a character length of this
@@ -2064,6 +2160,12 @@ public:
                         continue;
                     }
                 }
+            }
+            if (has_interface_declared_later(x.m_items, i, x.n_items,
+                    &contained_procedures)) {
+                later_interface_decls.push_back(al, item);
+                is_Function = false;
+                continue;
             }
             if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 try {
@@ -2113,6 +2215,7 @@ public:
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
+        visit_later_interface_decls(later_interface_decls);
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         bool has_alternate_returns = false;
@@ -2635,6 +2738,7 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        Vec<AST::decl_stmt_t*> later_interface_decls; later_interface_decls.reserve(al, 0);
         // The COMMON statements below are visited only after the other
         // declarations, so what they place in a common block is collected
         // here, while an array bound or a character length of this
@@ -2679,6 +2783,14 @@ public:
                     }
                 }
             }
+            // The internal procedures are visited only after the dummy
+            // arguments are complete, so here only a later interface body
+            // can be waited for.
+            if (has_interface_declared_later(x.m_items, i, x.n_items, nullptr)) {
+                later_interface_decls.push_back(al, item);
+                is_Function = false;
+                continue;
+            }
             if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 visit_decl_stmt(*item);
             }
@@ -2699,6 +2811,7 @@ public:
             visit_decl_stmt(*x.m_items[i]);
             is_Function = false;
         }
+        visit_later_interface_decls(later_interface_decls);
         process_simd_variables();
 
         // Convert and check arguments
