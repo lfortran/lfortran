@@ -781,6 +781,29 @@ bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
     return is_iso_c_binding_type_symbol(scope, sym, "c_funptr");
 }
 
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
+{
+    if (sym == nullptr) {
+        return false;
+    }
+    SymbolTable *tu_scope = ASRUtils::get_tu_symtab(scope);
+    LCOMPILERS_ASSERT(tu_scope != nullptr);
+    ASR::symbol_t *mod = tu_scope->resolve_symbol("iso_fortran_env");
+    if (mod == nullptr) {
+        // iso_fortran_env is not loaded, so team_type cannot be in use
+        return false;
+    }
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*mod));
+    ASR::Module_t *iso_fortran_env = ASR::down_cast<ASR::Module_t>(mod);
+    if (!iso_fortran_env->m_intrinsic) {
+        return false;
+    }
+    ASR::symbol_t *expected = iso_fortran_env->m_symtab->resolve_symbol("team_type");
+    LCOMPILERS_ASSERT(expected != nullptr);
+    return ASRUtils::symbol_get_past_external(sym)
+        == ASRUtils::symbol_get_past_external(expected);
+}
+
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
         ASR::symbol_t* type_decl)
 {
@@ -2183,6 +2206,18 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     }
 }
 
+// An operand of a deferred type (template type parameter) matches a dummy
+// of a deferred type only if both are the same deferred type.
+static bool deferred_type_operand_matches(ASR::ttype_t* operand,
+        ASR::ttype_t* dummy) {
+    if (!ASR::is_a<ASR::TypeParameter_t>(*operand) ||
+        !ASR::is_a<ASR::TypeParameter_t>(*dummy)) {
+        return true;
+    }
+    return std::string(ASR::down_cast<ASR::TypeParameter_t>(operand)->m_param) ==
+           std::string(ASR::down_cast<ASR::TypeParameter_t>(dummy)->m_param);
+}
+
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::binopType op, std::string& intrinsic_op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr,
@@ -2324,6 +2359,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -2603,6 +2642,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else {
+            return false;
         }
     }
 
@@ -3394,6 +3435,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3608,6 +3653,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2)
                                 && ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3942,13 +3991,32 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
+                // A procedure pointer actual has the type
+                // Pointer(FunctionType); compare its target's signature.
+                ASR::ttype_t *arg1_proc = ASRUtils::type_get_past_pointer(arg1);
 
                 // A procedure declared `external` with no interface (e.g.
                 // `external :: f`) has an unknown signature, so it matches any
                 // explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
-                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1_proc) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1_proc);
                     if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
+                        continue;
+                    }
+                    // A formal procedure with an implicit interface (e.g.
+                    // `external :: f` or `real(8), external :: f`) has no
+                    // argument list to compare. Only its result type may be
+                    // known: a typed formal is a function, so the actual must
+                    // be a function with the same result type.
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if (ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
+                        ASR::ttype_t* actual_result = arg1_func_type->m_return_var_type;
+                        ASR::ttype_t* formal_result = arg2_func_type->m_return_var_type;
+                        if (formal_result && (actual_result == nullptr ||
+                                !types_equal(actual_result, formal_result,
+                                    nullptr, nullptr, true))) {
+                            return false;
+                        }
                         continue;
                     }
                 }

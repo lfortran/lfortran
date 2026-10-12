@@ -1609,3 +1609,33 @@ semantic error: Type mismatch in argument `left`: expected `left_t` but got `rig
      |
 2670 |             r = foo(right, left)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
      |                     ^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `b_t + a_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2715:17
+     |
+2715 |             y = y + x  ! {Error} Operator `+` undefined for the types in the expression `b_t + a_t`
+     |                 ^^^^^ 
+
+semantic error: Operator `==` undefined for the types in the expression `b_t == a_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2716:17
+     |
+2716 |             l = y == x  ! {Error} Operator `==` undefined for the types in the expression `b_t == a_t`
+     |                 ^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+    --> tests/errors/continue_compilation_templates_01.f90:2717:17
+     |
+2717 |             l = y .and. x  ! {Error} Left operand must be LOGICAL or LOGICAL array
+     |                 ^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-t`
+    --> tests/errors/continue_compilation_templates_01.f90:2731:13
+     |
+2731 |         y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t`
+     |             ^^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-b_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2753:17
+     |
+2753 |             y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
+     |                 ^^ 

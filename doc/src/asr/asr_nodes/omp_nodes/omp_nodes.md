@@ -18,6 +18,7 @@ map_type
 omp_clauses
 omp_region_type
 OMPCollapse
+OMPCriticalName
 OMPDevice
 OMPFirstPrivate
 OMPIf
