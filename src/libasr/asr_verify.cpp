@@ -3199,6 +3199,32 @@ public:
                 ASR::is_a<ASR::Block_t>(*x.m_component_fit),
             "asr.verify.gpu_kernel_launch.component_fit_is_block",
             "GpuKernelLaunch::m_component_fit must be a Block");
+        for (size_t i = 0; i < x.n_scratch; i++) {
+            const ASR::gpu_scratch_buffer_t &scratch = x.m_scratch[i];
+            bool in_range = scratch.m_argument_index >= 0 &&
+                (size_t)scratch.m_argument_index < x.n_args;
+            require_id(in_range,
+                "asr.verify.gpu_kernel_launch.scratch_argument",
+                "a GpuKernelLaunch scratch buffer must name an argument of "
+                "the launch");
+            if (!in_range) continue;
+            ASR::expr_t *actual =
+                x.m_args[scratch.m_argument_index].m_value;
+            require_id(actual != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*actual) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(actual)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(actual)),
+                "asr.verify.gpu_kernel_launch.scratch_actual",
+                "the actual argument of a GpuKernelLaunch scratch buffer "
+                "must be an allocatable array variable");
+            require_id(ASRUtils::is_integer(*ASRUtils::expr_type(
+                    scratch.m_size)) && (scratch.m_read_back == nullptr ||
+                    ASRUtils::is_integer(*ASRUtils::expr_type(
+                        scratch.m_read_back))),
+                "asr.verify.gpu_kernel_launch.scratch_size",
+                "the size and read-back count of a GpuKernelLaunch scratch "
+                "buffer must be integers");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 

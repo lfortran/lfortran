@@ -4151,12 +4151,18 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
     std::vector<ASR::stmt_t*> after;
     std::vector<ASR::stmt_t*> release;
     std::vector<ASR::expr_t*> arena_args;
+    Vec<ASR::gpu_scratch_buffer_t> scratch_buffers;
+    scratch_buffers.reserve(al, 4);
 
     auto found = heap.symbols.find(kernel);
     if (found != heap.symbols.end()) {
         HeapSymbols &kernel_symbols = found->second;
         ASR::ttype_t *int4 = int_type(al, loc);
         ASR::ttype_t *int_8 = int_type(al, loc, 8);
+        ASR::expr_t *state = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_heap_state", false),
+            ASRUtils::symbol_type(kernel_symbols.state),
+            ASR::intentType::Local);
         // The heap is split evenly between the arenas of the launch.
         ASR::expr_t *bytes = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_heap_bytes", false), int_8,
@@ -4201,23 +4207,26 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
                 element_bytes);
             elements = b.Min(elements, b.i64(2147483647));
             before.push_back(b.Assignment(capacity, b.i2i_t(elements, int4)));
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t d;
-            d.loc = loc;
-            d.m_start = b.i32(1);
-            d.m_length = capacity;
-            dims.push_back(al, d);
-            before.push_back(b.Allocate(array, dims.p, dims.n));
+            // Only the device holds the arena: the host allocates nothing
+            // for it and copies nothing in. The images a kernel stores into
+            // an argument are copied out of the arenas after the launch, so
+            // then the host reads back the elements the kernel took, the
+            // leading part of the arena, into the array.
+            ASR::gpu_scratch_buffer_t scratch;
+            scratch.loc = loc;
+            scratch.m_argument_index = launch.n_args + extra_args.size();
+            scratch.m_size = capacity;
+            scratch.m_read_back = nullptr;
+            if (!heap.records[kernel].empty()) {
+                scratch.m_read_back = b.Min(b.ArrayItem_01(state,
+                    {b.i32(a.first + 1)}), capacity);
+                release.push_back(b.Deallocate(array));
+            }
+            scratch_buffers.push_back(al, scratch);
             extra_args.push_back(array);
             extra_args.push_back(capacity);
             arena_args.push_back(array);
-            release.push_back(b.Deallocate(array));
         }
-        ASR::expr_t *state = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_heap_state", false),
-            ASRUtils::symbol_type(kernel_symbols.state),
-            ASR::intentType::Local);
         for (size_t k = 0; k < heap.arenas.size(); k++) {
             before.push_back(b.Assignment(
                 b.ArrayItem_01(state, {b.i32(k + 1)}), b.i32(0)));
@@ -4417,6 +4426,8 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
     }
     launch.m_args = args.p;
     launch.n_args = args.n;
+    launch.m_scratch = scratch_buffers.p;
+    launch.n_scratch = scratch_buffers.n;
     pass_result.reserve(al, before.size() + 1);
     for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
     pass_result.push_back(al, &launch.base);

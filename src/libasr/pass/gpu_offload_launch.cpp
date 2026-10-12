@@ -314,7 +314,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             grid_size, block_size_const,
-            plan.call_args.p, plan.call_args.n, component_fit)));
+            plan.call_args.p, plan.call_args.n, component_fit, nullptr,
+            0)));
 
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuSync_t(al, loc)));

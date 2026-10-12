@@ -52,6 +52,8 @@ struct lfortran_gpu_kernel {
     size_t buffer_sizes[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
+    // A buffer only the device holds: nothing is copied in or back.
+    int arg_is_scratch[MAX_ARGS];
     int n_args;
 };
 
@@ -148,6 +150,45 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     k->buffer_device_ptrs[idx] = d_ptr;
 }
 
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size)
+{
+    if (!k || idx >= MAX_ARGS) return;
+    k->buffer_host_ptrs[idx] = NULL;
+    k->buffer_sizes[idx] = size;
+    k->arg_is_buffer[idx] = 1;
+    k->arg_is_scratch[idx] = 1;
+    if (idx >= k->n_args) k->n_args = idx + 1;
+    void *d_ptr = NULL;
+    if (size > 0) {
+        cudaError_t err = cudaMalloc(&d_ptr, size);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "lfortran_gpu_set_scratch_arg: cudaMalloc "
+                "failed: %s\n", cudaGetErrorString(err));
+            exit(1);
+        }
+    }
+    k->buffer_device_ptrs[idx] = d_ptr;
+}
+
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size)
+{
+    if (!k || idx >= MAX_ARGS || size == 0) return;
+    if (!k->arg_is_scratch[idx] || size > k->buffer_sizes[idx]) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
+            "%d of %zu bytes\n", idx, size);
+        exit(1);
+    }
+    cudaError_t err = cudaMemcpy(dst, k->buffer_device_ptrs[idx], size,
+        cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: cudaMemcpy D2H "
+            "failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+}
+
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     const void* val, size_t size)
 {
@@ -202,7 +243,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 
     // Copy device → host for all buffer args
     for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && k->buffer_device_ptrs[i]) {
+        if (k->arg_is_buffer[i] && !k->arg_is_scratch[i]
+                && k->buffer_device_ptrs[i]) {
             err = cudaMemcpy(k->buffer_host_ptrs[i],
                 k->buffer_device_ptrs[i],
                 k->buffer_sizes[i],

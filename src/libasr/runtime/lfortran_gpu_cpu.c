@@ -70,6 +70,8 @@ struct lfortran_gpu_kernel {
     size_t buffer_sizes[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
+    // A buffer only the device holds, which the kernel object owns.
+    int arg_is_scratch[MAX_ARGS];
     int n_args;
 };
 
@@ -120,8 +122,41 @@ void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
         if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
+        if (k->arg_is_scratch[i]) free(k->buffer_device_ptrs[i]);
     }
     free(k);
+}
+
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size)
+{
+    if (!k || idx >= MAX_ARGS) return;
+    void *ptr = NULL;
+    if (size > 0) {
+        ptr = malloc(size);
+        if (!ptr) {
+            fprintf(stderr, "lfortran_gpu_set_scratch_arg: cannot allocate "
+                "%zu bytes\n", size);
+            exit(1);
+        }
+    }
+    k->buffer_device_ptrs[idx] = ptr;
+    k->buffer_sizes[idx] = size;
+    k->arg_is_buffer[idx] = 1;
+    k->arg_is_scratch[idx] = 1;
+    if (idx >= k->n_args) k->n_args = idx + 1;
+}
+
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size)
+{
+    if (!k || idx >= MAX_ARGS || size == 0) return;
+    if (!k->arg_is_scratch[idx] || size > k->buffer_sizes[idx]) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
+            "%d of %zu bytes\n", idx, size);
+        exit(1);
+    }
+    memcpy(dst, k->buffer_device_ptrs[idx], size);
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
