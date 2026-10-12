@@ -7990,3 +7990,8 @@ options = "--std=f23"
 [[test]]
 filename = "read_real16_long_token_error_01.f90"
 run = true
+
+[[test]]
+filename = "errors/foreign_modfile_01.f90"
+asr = true
+options = "-I tests/errors/foreign_modfile_01"
