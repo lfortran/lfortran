@@ -1183,20 +1183,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         };
         
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            ASR::expr_t* start = idl->m_start;
-            ASR::expr_t* end = idl->m_end;
-            ASR::expr_t* step = idl->m_increment;
-            
-            if (!ASR::is_a<ASR::IntegerConstant_t>(*start) ||
-                !ASR::is_a<ASR::IntegerConstant_t>(*end)) {
+            // The bounds only have to be known at compile time, e.g.
+            // `size(a)` of a fixed size array or a named constant.
+            int64_t start_val = 0, end_val = 0, step_val = 1;
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(idl->m_start), start_val) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(idl->m_end), end_val)) {
                 return false;
             }
-            
-            int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
-            int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end)->m_n;
-            int64_t step_val = 1;
-            if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
-                step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+            if (idl->m_increment &&
+                !ASRUtils::extract_value(ASRUtils::expr_value(idl->m_increment), step_val)) {
+                return false;
             }
             
             if (step_val == 0 || (step_val > 0 && start_val > end_val) || 
