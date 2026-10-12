@@ -6053,6 +6053,7 @@ public:
         ClassProcedureScope class_procedure_scope(*this);
         GenericClassProcedureScope generic_class_procedure_scope(*this);
 
+        std::vector<std::string> current_procedure_args_copy = current_procedure_args;
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
             deferred_args.push_back(to_lower(x.m_namelist[i]));
@@ -6092,6 +6093,9 @@ public:
             }
         }
 
+        // The deferred arguments are not dummy arguments of the template's
+        // procedures, whose entities of the same name are local.
+        current_procedure_args.clear();
         for (size_t i=0; i<x.n_contains; i++) {
             SymbolTable *template_scope = current_scope;
             try {
@@ -6142,6 +6146,7 @@ public:
         current_scope = parent_scope;
 
         dflt_access = dflt_access_copy;
+        current_procedure_args = current_procedure_args_copy;
         is_template = false;
         // The specification part of the template itself, checked once the
         // enclosing context has been restored so that an abort here leaves the

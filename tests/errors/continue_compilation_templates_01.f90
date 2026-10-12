@@ -2869,3 +2869,18 @@ contains
         instantiate item_oob_t {3}, only: item_w3 => item_w
     end subroutine
 end module
+
+! template_save_shadow_1
+! C1610: a local of a template procedure named like a deferred constant hides
+! it, and is a local like any other, so it cannot have the SAVE attribute.
+module template_save_shadow_1_m
+    implicit none
+    template save_shadow_tmpl {n}
+        deferred integer, parameter :: n
+    contains
+        integer function f() result(r)
+            integer, save :: n = 7  ! {Error} variable 'n' in a template or templated procedure cannot have the save attribute
+            r = n
+        end function
+    end template
+end module
