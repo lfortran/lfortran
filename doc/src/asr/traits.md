@@ -724,7 +724,9 @@ conformances of an instance are visible only in the unit that created it.
 An internal procedure of a main program cannot yet use through host
 association a variable of the program whose type is, or holds through
 components, arrays, pointers or allocatables, an instance that the main
-program creates: such a use is diagnosed as not implemented yet. An internal
+program creates: such a use is diagnosed as not implemented yet, which
+rejects the main program as a whole; with `--continue-compilation` the
+program units after it are still analyzed. An internal
 procedure reaches the program's variables by having them, and the program
 types they need, moved into a module, and an instance cannot be moved there
 yet without its procedure copies, initializers, conformances and runtime

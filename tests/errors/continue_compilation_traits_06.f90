@@ -161,3 +161,30 @@ contains
         r = m%average([1, 2, 3])
     end function c4
 end program gt_host_program
+
+! T1-T3: the units after the program are still analyzed, each in its own
+! scope. T1: an external function named like an internal procedure of the
+! program.
+integer function h1(n) result(r)
+    implicit none
+    integer, intent(in) :: n
+    real :: q
+    q = 1.5
+    r = n + int(q) + undefined_after_program
+end function h1
+
+! T2: a module.
+module gt_host_after
+    implicit none
+contains
+    integer function g(n) result(r)
+        integer, intent(in) :: n
+        r = n + undefined_in_module
+    end function g
+end module gt_host_after
+
+! T3: an external subroutine named like an entity the program uses.
+subroutine simplesum()
+    implicit none
+    print *, undefined_in_subroutine
+end subroutine simplesum

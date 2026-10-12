@@ -49,3 +49,21 @@ semantic error: host association of the main program variable 'ap', whose type i
     |
 142 |         r = merge(1, 0, associated(ap))
     |                                    ^^ 
+
+semantic error: Variable 'undefined_after_program' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:173:22
+    |
+173 |     r = n + int(q) + undefined_after_program
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_after_program' is undeclared
+
+semantic error: Variable 'undefined_in_module' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:182:17
+    |
+182 |         r = n + undefined_in_module
+    |                 ^^^^^^^^^^^^^^^^^^^ 'undefined_in_module' is undeclared
+
+semantic error: Variable 'undefined_in_subroutine' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:189:14
+    |
+189 |     print *, undefined_in_subroutine
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_in_subroutine' is undeclared

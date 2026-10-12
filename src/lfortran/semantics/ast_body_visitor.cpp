@@ -6355,13 +6355,21 @@ public:
         }
 
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
-        check_program_instance_host_association(*v);
+        bool unsupported = diagnose_program_instance_host_association(*v);
 
         starting_m_body = nullptr;
         starting_n_body =  0;
         remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
+        if (unsupported) {
+            // Abort only after leaving the program, and leave the program out
+            // of the translation unit as the symbol table visitor leaves out a
+            // unit it rejects: with --continue-compilation the units after it
+            // are then analyzed in their own scope and no pass sees it.
+            current_scope->erase_symbol(to_lower(x.m_name));
+            throw SemanticAbort();
+        }
     }
 
     // The nested_vars pass gives internal procedures the main program
@@ -6369,14 +6377,14 @@ public:
     // program types they need, into a module. A generic type instance the
     // program creates cannot be moved there yet without its procedure copies
     // and evidence, so the first such use of a variable whose type is or
-    // holds one is diagnosed.
-    void check_program_instance_host_association(const ASR::Program_t &program) {
+    // holds one is diagnosed; returns whether any was.
+    bool diagnose_program_instance_host_association(const ASR::Program_t &program) {
         bool instances = false;
         for (const auto &entry : program.m_symtab->get_scope()) {
             instances |= ASR::is_a<ASR::Struct_t>(*entry.second) &&
                 ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second));
         }
-        if (!instances) return;
+        if (!instances) return false;
         bool unsupported = false;
         for (const auto &[symbol, loc] : host_associated_variables(al, program)) {
             ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(symbol);
@@ -6391,7 +6399,7 @@ public:
                 "is not implemented yet", Level::Error, Stage::Semantic, {Label("", {loc})}));
             unsupported = true;
         }
-        if (unsupported) throw SemanticAbort();
+        return unsupported;
     }
 
     void visit_Entry(const AST::Entry_t& /*x*/) {
