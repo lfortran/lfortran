@@ -2388,3 +2388,12 @@ subroutine elemental_procedure_interface_error(f)
     procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
 end subroutine elemental_procedure_interface_error
+
+! Only specific intrinsic functions listed in Table 16.2 can be used as the
+! interface in a procedure declaration statement.
+subroutine unsupported_intrinsic_procedure_interface_error()
+    implicit none
+    intrinsic :: floor, min0
+    procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
+    procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
+end subroutine unsupported_intrinsic_procedure_interface_error
