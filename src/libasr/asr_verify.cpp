@@ -1129,6 +1129,12 @@ public:
         return hierarchy;
     }
 
+    static bool constant_length_character(ASR::ttype_t *type) {
+        int64_t length;
+        return ASR::is_a<ASR::String_t>(*type) &&
+            ASRUtils::constant_string_length(type, length) && length >= 0;
+    }
+
     static bool type_set_concrete_kind(ASR::ttype_t *type) {
         if (!type || !(ASR::is_a<ASR::Integer_t>(*type) ||
                 ASR::is_a<ASR::Real_t>(*type) ||
@@ -1220,6 +1226,21 @@ public:
                     "asr.verify.trait.itself_universal",
                     "Only a universal trait declares its implementing type");
                 this->visit_symbol(*a.second);
+                continue;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*a.second)) {
+                // An associated type, `type :: Element`, of a universal trait.
+                auto *declaration = ASR::down_cast<ASR::Variable_t>(a.second);
+                require_id(x.m_kind == ASR::trait_kindType::UniversalTrait &&
+                        declaration->m_type &&
+                        ASR::is_a<ASR::TypeParameter_t>(*declaration->m_type) &&
+                        std::string(ASR::down_cast<ASR::TypeParameter_t>(
+                            declaration->m_type)->m_param) == a.first &&
+                        !declaration->m_type_declaration && !declaration->m_symbolic_value &&
+                        !declaration->m_value,
+                    "asr.verify.trait.associated_type",
+                    "A variable of trait '" + std::string(x.m_name) + "' must declare an "
+                    "associated type: a type parameter of its own name");
                 continue;
             }
             require_id(ASRUtils::trait_method_function(a.second) != nullptr,
@@ -1624,6 +1645,9 @@ public:
                 ASR::trait_kindType::IntrinsicTypeSet || x.n_intrinsic_requirements == 0,
             "asr.verify.trait_constraint.intrinsic_category",
             "Only a type-set constraint can have intrinsic requirements");
+        require_id(!ASRUtils::trait_has_associated_types(*ASR::down_cast<ASR::Trait_t>(trait)),
+            "asr.verify.trait_constraint.associated_types",
+            "A generic constraint by a trait with associated types is not supported");
         if (ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
                 ASR::trait_kindType::IntrinsicTypeSet) {
             verify_type_set_requirements(x, *ASR::down_cast<ASR::Trait_t>(trait));
@@ -1907,8 +1931,11 @@ public:
         }
         require(bound_members.size() == trait_members.size(),
             "TraitImplementation bindings must cover each trait member exactly once");
+        // Every binding infers the same type for each associated type.
+        ASRUtils::TraitAssociatedTypes associated;
         for (size_t i = 0; i < x.n_bindings; i++) {
-            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false, x.m_implementing_type);
+            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false,
+                x.m_implementing_type, &associated);
         }
     }
 
@@ -2161,6 +2188,11 @@ public:
                     ASRUtils::symbol_parent_symtab(trait_symbol) == parent,
                 "asr.verify.trait_contract.nominal_owner",
                 "A runtime contract belongs to its universal trait's defining scope");
+            require_id(!ASRUtils::trait_has_associated_types(
+                    *ASR::down_cast<Trait_t>(trait_symbol)),
+                "asr.verify.trait_contract.associated_types",
+                "A trait with associated types is a generic constraint only and has no "
+                "runtime contract");
             for (const auto &entry : parent->get_scope()) {
                 if (entry.second == &x.base ||
                         !ASR::is_a<TraitRuntimeContract_t>(*entry.second)) continue;
@@ -2610,7 +2642,10 @@ public:
     }
 
     void verify_trait_binding(symbol_t *type_declaration,
-            const trait_binding_t &binding, bool runtime, ttype_t *implementing_type = nullptr) {
+            const trait_binding_t &binding, bool runtime, ttype_t *implementing_type = nullptr,
+            ASRUtils::TraitAssociatedTypes *associated = nullptr) {
+        ASRUtils::TraitAssociatedTypes unbound;
+        if (!associated) associated = &unbound;
         const Location &loc = binding.loc;
         auto *required = verify_runtime_trait_procedure(binding.m_member, loc,
             "asr.verify.trait_binding.member_is_function");
@@ -2630,21 +2665,27 @@ public:
                 (!required_signature->m_elemental || actual_signature->m_elemental),
             "asr.verify.trait_witness.procedure_attributes",
             "A witness binding must preserve required pure and elemental attributes", loc);
-        // The subroutine_from_function pass lowers an aggregate result of a
-        // static binding's procedure to a trailing dummy argument.
-        size_t ordinary = required->n_args + (binding.m_is_nopass ? 0 : 1);
+        // Hidden character lengths follow the explicit arguments; an
+        // associated type bound to a character type gives the binding one
+        // that its message does not have.
+        size_t n_procedure = explicit_argument_count(*procedure);
+        size_t n_required = explicit_argument_count(*required);
+        size_t ordinary = n_required + (binding.m_is_nopass ? 0 : 1);
+        // subroutine_from_function makes an aggregate result of a static
+        // binding's procedure its last explicit argument, while the message
+        // keeps its result, of type `itself` or an associated type.
         ASR::expr_t *lowered_result = !runtime && required->m_return_var &&
-            !procedure->m_return_var && procedure->n_args == ordinary + 1
-            ? procedure->m_args[ordinary] : nullptr;
-        size_t n_args = procedure->n_args - (lowered_result ? 1 : 0);
-        size_t receiver = n_args;
+            !procedure->m_return_var && n_procedure == ordinary + 1
+            ? procedure->m_args[--n_procedure] : nullptr;
+        ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
+        size_t receiver = n_procedure;
         if (!binding.m_is_nopass) {
-            for (size_t i = 0; i < n_args; i++) {
+            for (size_t i = 0; i < n_procedure; i++) {
                 auto *arg = ASRUtils::EXPR2VAR(procedure->m_args[i]);
                 if (binding.m_self_argument &&
                         std::string(arg->m_name) == binding.m_self_argument) receiver = i;
             }
-            require_with_loc_id(receiver < n_args,
+            require_with_loc_id(receiver < n_procedure,
                 "asr.verify.trait_witness.receiver",
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
@@ -2654,7 +2695,7 @@ public:
                 "A witness receiver must borrow its nominal implementing type "
                 "or a polymorphic ancestor read-only", loc);
         }
-        require_with_loc_id(n_args == ordinary,
+        require_with_loc_id(n_procedure == ordinary,
             "asr.verify.trait_witness.binding_signature",
             "A witness binding must have the message's ordinary arguments", loc);
         std::map<symbol_t*, symbol_t*> parameters;
@@ -2663,19 +2704,28 @@ public:
         require_with_loc_id(generic_mismatch.empty(),
             "asr.verify.trait_binding.generic_contract",
             "A generic binding must preserve its universal contract: " + generic_mismatch, loc);
-        for (size_t i = 0, j = 0; i < n_args; i++) {
+        if (n_procedure != ordinary) return;
+        auto required_lengths = hidden_string_lengths(*required);
+        auto procedure_lengths = hidden_string_lengths(*procedure);
+        for (size_t i = 0, j = 0; i < n_procedure; i++) {
             if (i == receiver) continue;
             parameters.emplace(
-                &ASRUtils::EXPR2VAR(required->m_args[j++])->base,
+                &ASRUtils::EXPR2VAR(required->m_args[j])->base,
                 &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
+            // An assumed length is the corresponding hidden length.
+            auto a = required_lengths.find(j), b = procedure_lengths.find(i);
+            if (a != required_lengths.end() && b != procedure_lengths.end()) {
+                parameters.emplace(a->second, b->second);
+            }
+            j++;
         }
-        for (size_t i = 0, j = 0; i < n_args; i++) {
+        for (size_t i = 0, j = 0; i < n_procedure; i++) {
             if (i == receiver) continue;
             auto *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
             auto *formal = ASRUtils::EXPR2VAR(required->m_args[j]);
             require_with_loc_id(ASRUtils::trait_implemented_types_equal(
                         required->m_args[j], procedure->m_args[i], type_declaration,
-                        implementing_type, parameters) &&
+                        implementing_type, parameters, associated) &&
                     actual->m_intent == formal->m_intent &&
                     actual->m_presence == formal->m_presence &&
                     actual->m_value_attr == formal->m_value_attr,
@@ -2683,14 +2733,13 @@ public:
                 "A witness binding must preserve ordinary argument types and association attributes", loc);
             j++;
         }
-        ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
         require_with_loc_id(bool(required->m_return_var) == bool(result) &&
                 (!lowered_result || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
                     intentType::Out || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
                     intentType::InOut) &&
                 (!required->m_return_var || ASRUtils::trait_implemented_types_equal(
                     required->m_return_var, result, type_declaration,
-                    implementing_type, parameters)),
+                    implementing_type, parameters, associated)),
             "asr.verify.trait_witness.binding_signature",
             "A witness binding must preserve its message's result", loc);
     }
@@ -3372,6 +3421,43 @@ public:
             }
         }
         return false;
+    }
+
+    // The hidden length dummy of each character dummy of `fn` that has one,
+    // by the character dummy's position, once string_length_arguments has
+    // appended them.
+    static std::map<size_t, symbol_t*> hidden_string_lengths(const Function_t &fn) {
+        std::map<size_t, symbol_t*> lengths;
+        size_t n_explicit = explicit_argument_count(fn);
+        for (size_t i = 0, k = n_explicit; i < n_explicit && n_explicit < fn.n_args; i++) {
+            if (!ASRUtils::is_string_dummy_with_hidden_length(fn, fn.m_args[i])) continue;
+            if (k < fn.n_args && ASR::is_a<ASR::Var_t>(*fn.m_args[k])) {
+                lengths[i] = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn.m_args[k])->m_v);
+            }
+            k++;
+        }
+        return lengths;
+    }
+
+    // The arguments of `fn` before the hidden character lengths that the
+    // string_length_arguments pass appends: one `integer(8), value,
+    // intent(in)` dummy per character dummy passed with a hidden length. The
+    // verification after a pass does not know whether it has run.
+    static size_t explicit_argument_count(const Function_t &fn) {
+        size_t n_hidden = count_hidden_string_lengths(fn);
+        if (n_hidden == 0 || fn.n_args < 2 * n_hidden) return fn.n_args;
+        for (size_t i = fn.n_args - n_hidden; i < fn.n_args; i++) {
+            auto *hidden = ASR::is_a<ASR::Var_t>(*fn.m_args[i])
+                ? ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
+                    fn.m_args[i])->m_v) : nullptr;
+            auto *variable = hidden && ASR::is_a<ASR::Variable_t>(*hidden)
+                ? ASR::down_cast<ASR::Variable_t>(hidden) : nullptr;
+            if (!variable || !is_hidden_string_length_type(variable->m_type) ||
+                    !variable->m_value_attr ||
+                    variable->m_intent != ASR::intentType::In) return fn.n_args;
+        }
+        return fn.n_args - n_hidden;
     }
 
     static bool is_hidden_string_length_type(ASR::ttype_t *t) {
@@ -4070,10 +4156,12 @@ public:
                         symtab_in_scope(x.m_symtab, argument.m_type_declaration) &&
                         declaration && ASR::is_a<Struct_t>(*declaration) &&
                         !ASRUtils::is_class_type(type)
-                    : !argument.m_type_declaration && type_set_concrete_kind(type)),
+                    : !argument.m_type_declaration && (type_set_concrete_kind(type) ||
+                        constant_length_character(type))),
                 "asr.verify.generic_type.instance_arguments",
-                "A generic type argument must be a concrete scalar intrinsic type or a "
-                "visible nonpolymorphic derived type");
+                "A generic type argument must be a concrete scalar intrinsic type, "
+                "character of a constant length included, or a visible nonpolymorphic "
+                "derived type");
             ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
             auto constraints = universal_constraints(*package, binder);
             if (argument.n_evidence == 0 && !constraints.empty()) {

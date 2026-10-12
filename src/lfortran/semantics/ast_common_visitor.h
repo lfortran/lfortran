@@ -12104,13 +12104,13 @@ public:
             check_generic_type_reference(v, derived_type_name, loc);
             if (v && ASRUtils::symbol_get_past_external(v)
                     && ASR::is_a<ASR::Trait_t>(*ASRUtils::symbol_get_past_external(v))) {
-                if (ASR::down_cast<ASR::Trait_t>(
-                        ASRUtils::symbol_get_past_external(v))->m_kind ==
-                        ASR::trait_kindType::IntrinsicTypeSet) {
+                auto *trait = ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(v));
+                if (trait->m_kind == ASR::trait_kindType::IntrinsicTypeSet) {
                     trait_call_error("a type-set trait cannot be used as a runtime class", loc);
                 }
-                check_trait_runtime_view(*ASR::down_cast<ASR::Trait_t>(
-                    ASRUtils::symbol_get_past_external(v)), loc);
+                check_runtime_trait_without_associated_types(*trait, loc);
+                check_trait_runtime_view(*trait, loc);
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 type_declaration = nullptr;
                 return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
@@ -23880,6 +23880,16 @@ public:
             ASRUtils::symbol_name(type_symbol), scope, loc, true);
     }
 
+    // A trait with associated types (paper: a TAT) is a generic constraint
+    // only: a runtime view could not type the arguments of its messages.
+    void check_runtime_trait_without_associated_types(const ASR::Trait_t &trait,
+            const Location &loc) {
+        if (ASRUtils::trait_has_associated_types(trait)) {
+            trait_call_error("trait '" + std::string(trait.m_name) + "' has associated "
+                "types and can only be used as a generic constraint", loc);
+        }
+    }
+
     SymbolTable *runtime_trait_storage_scope() {
         auto *scope = current_scope;
         while (scope->parent && scope->parent->parent) scope = scope->parent;
@@ -23913,6 +23923,7 @@ public:
             if (trait->m_kind != ASR::trait_kindType::UniversalTrait) {
                 trait_call_error("a type-set trait cannot be used as a runtime class", loc);
             }
+            check_runtime_trait_without_associated_types(*trait, loc);
             check_trait_runtime_view(*trait, loc);
             traits.push_back(symbol);
         }
@@ -27401,7 +27412,8 @@ public:
                 return {type, declaration};
             }
             if (!ASR::is_a<ASR::Integer_t>(*element) && !ASR::is_a<ASR::Real_t>(*element) &&
-                    !ASR::is_a<ASR::Complex_t>(*element) && !ASR::is_a<ASR::Logical_t>(*element)) {
+                    !ASR::is_a<ASR::Complex_t>(*element) && !ASR::is_a<ASR::Logical_t>(*element) &&
+                    !ASR::is_a<ASR::String_t>(*element)) {
                 trait_call_error("this generic type argument is not implemented yet", loc);
             }
             return {type, nullptr};
@@ -27701,9 +27713,33 @@ public:
     // program that uses it: an equal instance it already has, else a new one.
     // The evidence of an argument that is an instance this unit has not
     // completed yet is recorded when this instance is completed.
+    // A character type argument is the complete type: its kind and constant
+    // length (`Vector("John ")` is `Vector{character(len=5)}`). Other lengths
+    // are not type arguments in this prototype.
+    ASR::ttype_t *generic_character_argument(ASR::ttype_t *type, const Location &loc) {
+        int64_t length;
+        if (!ASRUtils::constant_string_length(type, length)) {
+            trait_call_error("a character generic type argument requires a constant "
+                "length", loc);
+        }
+        auto *string = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type));
+        auto *length_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, string->m_kind,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, length, length_type,
+                ASR::integerbozType::Decimal)),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+    }
+
     ASR::symbol_t *instantiate_generic_type(ASR::Template_t &package,
-            const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &arguments,
+            const std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> &given_arguments,
             const Location &loc) {
+        std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> arguments = given_arguments;
+        for (auto &argument : arguments) {
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(argument.first))) {
+                argument.first = generic_character_argument(argument.first, loc);
+            }
+        }
         ASR::Struct_t *definition = ASRUtils::generic_type_definition(package);
         SymbolTable *owner = generic_instance_unit_scope(current_scope);
         if (owner == generic_instance_unit_scope(package.m_symtab)) {

@@ -1176,6 +1176,16 @@ public:
         this->visit_program_unit(*x.m_proc);
     }
 
+    void visit_InterfaceAssociatedType(const InterfaceAssociatedType_t &x) {
+        std::string r = indent;
+        r += syn(gr::Type);
+        r += "type";
+        r += syn();
+        r += " :: ";
+        r.append(x.m_name);
+        s = r + "\n";
+    }
+
     void visit_Trait(const Trait_t &x) {
         std::string r = indent;
         r += syn(gr::UnitHeader);
@@ -2116,7 +2126,7 @@ public:
             visit_decl_attribute(*x.m_member_types[i]);
             r += s;
         }
-        r += " :: ";
+        if (x.n_traits || x.n_member_types) r += " :: ";
         r.append(x.m_name);
         s = r;
     }

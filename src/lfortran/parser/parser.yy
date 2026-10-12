@@ -442,6 +442,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <trait_parameter> trait_parameter
 %type <vec_trait_parameter> trait_parameter_block_opt
 %type <vec_trait_parameter> trait_parameter_list
+%type <trait_parameter> generic_type_parameter
+%type <vec_trait_parameter> generic_type_parameter_list
 %type <vec_ast> trait_name_list
 %type <vec_ast> trait_name_spec
 %type <vec_ast> procedure_list_opt
@@ -610,6 +612,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> interface_body
 %type <ast> interface_item
 %type <vec_ast> trait_body finite_type_set
+%type <ast> associated_type
 %type <interface_op_type> operator_type
 %type <interface_op_type> end_function_operator
 %type <ast> write_arg
@@ -742,7 +745,7 @@ implements_decl
         end_implements id_opt sep {
             $$ = IMPLEMENTS(p.m_a, $2, $4, $6, $8, TRIVIA($5, $9, @$), @$,
                 p.diag); }
-    | KW_IMPLEMENTS trait_name_spec "::" id "{" trait_parameter_list "}" sep
+    | KW_IMPLEMENTS trait_name_spec "::" id "{" generic_type_parameter_list "}" sep
         procedure_list_opt end_implements id_opt sep {
             $$ = IMPLEMENTS_GENERIC(p.m_a, $2, $4, $6, $9, $11,
                 TRIVIA($8, $12, @$), @$, p.diag); }
@@ -820,6 +823,7 @@ trait_body
     | trait_body trait_operator { $$ = $1; LIST_ADD($$, $2); }
     | trait_body finite_type_set sep {
         $$ = $1; LIST_ADD($$, INTERFACE_TYPE_SET(p.m_a, $2, @2)); }
+    | trait_body associated_type sep { $$ = $1; LIST_ADD($$, $2); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -863,6 +867,11 @@ end_function_operator
     | KW_ENDFUNCTION KW_OPERATOR "(" "/)" { $$ = OPERATOR(DIV, @$); }
     ;
 
+associated_type
+    : KW_TYPE "::" id {
+        $$ = make_InterfaceAssociatedType_t(p.m_a, @$, name2char($3)); }
+    ;
+
 finite_type_set
     : intrinsic_type_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     | finite_type_set "|" intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
@@ -899,6 +908,20 @@ trait_parameter
         $$ = TRAIT_TYPE_PARAMETER(p.m_a, $3, $1, @$); }
     ;
 
+// A generic type parameter may omit its constraint (`Vector{U}`): it is then
+// unconstrained, as if constrained by the empty trait IAnyType.
+generic_type_parameter
+    : trait_parameter { $$ = $1; }
+    | id { Vec<ast_t*> traits; LIST_NEW(traits);
+        $$ = TRAIT_PARAMETER(p.m_a, $1, traits, @$); }
+    ;
+
+generic_type_parameter_list
+    : generic_type_parameter_list "," generic_type_parameter {
+        $$ = $1; PLIST_ADD($$, $3); }
+    | generic_type_parameter { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
 trait_parameter_list
     : trait_parameter_list "," trait_parameter { $$ = $1; PLIST_ADD($$, $3); }
     | trait_parameter { LIST_NEW($$); PLIST_ADD($$, $1); }
@@ -931,7 +954,7 @@ derived_type_decl
     | KW_TYPE derived_type_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
-    | KW_TYPE derived_type_modifiers id "{" trait_parameter_list "}" sep
+    | KW_TYPE derived_type_modifiers id "{" generic_type_parameter_list "}" sep
         var_decl_star derived_type_contains_opt end_type sep {
             $$ = TRAIT_DERIVED_TYPE(p.m_a, DERIVED_TYPE($2, $3,
                 TRIVIA($7, $11, @$), $8, $9, @$), $5, @$); }

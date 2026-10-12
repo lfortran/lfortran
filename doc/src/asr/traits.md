@@ -564,7 +564,8 @@ The current erased subset deliberately excludes:
   ancestor constraints retain their nominal meaning. This does **not** limit
   combinations of the algorithm's runtime view.
 - Generic messages inside another generic type parameter's constraint,
-  associated types, mutable-message syntax and unrestricted generic results.
+  constraints by traits with associated types, mutable-message syntax and
+  unrestricted generic results.
 - Finite intrinsic type sets as a replacement for the universal nominal domain.
   Binders constrained only by type sets use closed member slots instead (see
   below); a message mixing both kinds of binder is not implemented.
@@ -990,11 +991,48 @@ See `traits_numeric_06.f90` for means and self-recursion,
 `traits_numeric_09.f90` for singleton/shadowing controls, and
 `traits_numeric_10.f90` and its modules for separate compilation.
 
+## Associated types
+
+A trait can declare an associated type, a placeholder that each implementation
+infers from the bindings of the messages that use it (paper sections
+`sect:tats` and `sect:associated_types_usage`):
+
+```fortran
+abstract interface :: IAppendable
+    type :: Element
+    subroutine append(item)
+        type(Element), intent(in) :: item
+    end subroutine append
+end interface IAppendable
+```
+
+`type :: Element` declares a type parameter of the trait's scope. A conformance
+binds it to the type of the corresponding dummy argument or result of its
+binding, at its first use, and every other use must agree: `Vector{U}` binds
+`Element` to `U`, so each instance binds it to its own type argument, and a
+binding of `integer` and another of `real` for the same associated type is
+diagnosed. A character binding needs a constant length. An associated type that
+no message uses cannot be inferred and is diagnosed. A trait with associated
+types is a generic constraint only (paper `sect:restrictions`): it has no
+runtime contract, and `class(IAppendable)` is diagnosed. Using such a trait as
+the constraint of a generic procedure or type, extending it, and generic
+messages that use an associated type are not implemented yet.
+
+An unconstrained generic type parameter, `Vector{U}`, admits any type (the
+paper's empty trait `IAnyType`): it has no constraint and its instances record
+no evidence. A character type argument is the complete type, including its
+constant length: `Vector("John ")` is `Vector{character(len=5)}`, and
+`Vector{character(len=2)}` is another instance.
+
+`traits_associated_01` checks associated types and unconstrained storage, and
+`continue_compilation_traits_associated` the diagnostics.
+
 ## Current boundaries
 
 The static implementation covers module-scoped trait declarations, inheritance
 and composition, ordinary function/subroutine signatures, read-only scalar
-receivers with `intent(in)`, named `pass`, and `nopass`.
+receivers with `intent(in)`, declared associated types, named `pass`, and
+`nopass`.
 Traits are enabled by default and produce a portability warning. GFortran does
 not accept this extension; separate standard-Fortran oracle tests cover the
 equivalent concrete computations.
@@ -1006,7 +1044,8 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-results, mutable receivers, associated types, unrestricted intrinsic capabilities,
+results, mutable receivers, associated-type projections in generic code,
+unrestricted intrinsic capabilities,
 generic derived types beyond the boundaries described in their section, runtime
 views and runtime generic methods over initializer and operator requirements,
 and unrestricted generic-method signatures are separate implementation stages.

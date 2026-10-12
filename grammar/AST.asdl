@@ -71,6 +71,8 @@ interface_item
 -- A trait's operator requirement, `function operator(op)(args) ... end
 -- function operator(op)`; `proc` is that function, named as spelled.
     | InterfaceOperator(intrinsicop op, program_unit proc)
+-- A trait's associated type, `type :: Element`, inferred per implementation.
+    | InterfaceAssociatedType(identifier name)
 
 import_modifier
     = ImportDefault
@@ -433,6 +435,8 @@ argstar = (expr? value)
 -- Null for `arg` means, it's a star
 arg = (identifier? arg)
 
+-- A parameter with neither traits nor member types is unconstrained, as if
+-- constrained by the empty trait (IAnyType).
 trait_parameter = (identifier name, identifier* traits, decl_attribute* member_types)
 
 

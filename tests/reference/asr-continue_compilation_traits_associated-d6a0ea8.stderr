@@ -1,0 +1,69 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_associated.f90:6:5 - 17:1
+   |
+ 6 |        abstract interface :: IPeek
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |    
+   | ...^ LFortran extension
+
+semantic error: associated type 'thing' of trait 'iunused' is not used by any of its methods, so it cannot be inferred
+  --> tests/errors/continue_compilation_traits_associated.f90:30:9
+   |
+30 |         type :: Thing
+   |         ^^^^^^^^^^^^^ 
+
+semantic error: trait 'ipeek' has associated types and can only be used as a generic constraint
+  --> tests/errors/continue_compilation_traits_associated.f90:42:9
+   |
+42 |         class(IPeek), intent(in) :: x
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+  --> tests/errors/continue_compilation_traits_associated.f90:41:5 - 43:28
+   |
+41 |        subroutine show_peek(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+43 |        end subroutine show_peek
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: associated type 'element' of trait 'ipeek' is bound to integer(4) by 'count_after' and to real(4) by 'first_or'
+  --> tests/errors/continue_compilation_traits_associated.f90:50:5 - 55:19
+   |
+50 |        type, sealed, implements(IPeek) :: Mixed
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+55 |        end type Mixed
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: associated type 'element' cannot be inferred as a character type without a constant length from 'text_append'
+  --> tests/errors/continue_compilation_traits_associated.f90:75:5 - 79:18
+   |
+75 |        type, sealed, implements(IAppendable) :: Text
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+79 |        end type Text
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: traits with associated types as generic constraints are not implemented yet
+  --> tests/errors/continue_compilation_traits_associated.f90:93:25
+   |
+93 |     function peek_count{IPeek :: T}(x) result(n)
+   |                         ^^^^^^^^^^ 
+
+semantic error: a character generic type argument requires a constant length
+   --> tests/errors/continue_compilation_traits_associated.f90:151:24
+    |
+151 |         print *, size([Box(s)])
+    |                        ^^^^^^ 
+
+semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical`.
+   --> tests/errors/continue_compilation_traits_associated.f90:162:23
+    |
+162 |     i = k%count_after(.true.)
+    |                       ^^^^^^ 

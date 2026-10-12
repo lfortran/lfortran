@@ -5983,7 +5983,8 @@ TraitHierarchy trait_hierarchy(const ASR::Trait_t &trait, bool check_external)
             }
             for (const auto &entry : current.m_symtab->get_scope()) {
                 ASR::symbol_t *member = entry.second;
-                if (member && is_trait_type_declaration(*member)) continue;
+                // An associated type is declared by the trait, not a member.
+                if (member && ASR::is_a<ASR::Variable_t>(*member)) continue;
                 if (!member || !trait_method_function(member) ||
                         symbol_parent_symtab(member) != current.m_symtab) {
                     result.error = TraitHierarchyError::Member;
@@ -6804,11 +6805,15 @@ static bool trait_shapes_equal(ASR::ttype_t *left, ASR::ttype_t *right,
 
 bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
     ASR::symbol_t *type_declaration, ASR::ttype_t *type,
-    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
+    TraitAssociatedTypes *associated)
 {
     ASR::ttype_t *a = typed_expr_type(required), *b = typed_expr_type(actual);
     if (!a || !b) return false;
-    if (!contains_trait_itself(a)) return trait_types_equal(required, actual, parameters);
+    if (!contains_trait_itself(a)) {
+        return associated ? trait_types_equal(required, actual, parameters, *associated)
+            : trait_types_equal(required, actual, parameters);
+    }
     if (is_pointer(a) != is_pointer(b) || is_allocatable(a) != is_allocatable(b) ||
             !trait_shapes_equal(a, b, parameters)) {
         return false;
@@ -6854,8 +6859,74 @@ bool trait_operation_signatures_equal(const ASR::Function_t &left,
     return a->m_elemental == b->m_elemental && a->m_pure == b->m_pure;
 }
 
-bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
-    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+ASR::symbol_t *trait_associated_type(ASR::expr_t *value)
+{
+    auto *type = value ? typed_expr_type(value) : nullptr;
+    if (!type || !ASR::is_a<ASR::Var_t>(*value) ||
+            !ASR::is_a<ASR::TypeParameter_t>(*extract_type(type))) return nullptr;
+    std::string name = ASR::down_cast<ASR::TypeParameter_t>(extract_type(type))->m_param;
+    auto *variable = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(value)->m_v);
+    for (SymbolTable *scope = variable ? symbol_parent_symtab(variable) : nullptr;
+            scope; scope = scope->parent) {
+        if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ||
+                !ASR::is_a<ASR::Trait_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+            continue;
+        }
+        for (auto *declaration : trait_declared_associated_types(
+                *ASR::down_cast<ASR::Trait_t>(ASR::down_cast<ASR::symbol_t>(
+                    scope->asr_owner)))) {
+            if (name == symbol_name(declaration)) return declaration;
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
+std::vector<ASR::symbol_t*> trait_declared_associated_types(const ASR::Trait_t &trait)
+{
+    std::vector<ASR::symbol_t*> declarations;
+    if (!trait.m_symtab) return declarations;
+    for (const auto &entry : trait.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*entry.second) && entry.first != trait_itself_name) {
+            declarations.push_back(entry.second);
+        }
+    }
+    return declarations;
+}
+
+bool trait_has_associated_types(const ASR::Trait_t &trait)
+{
+    std::set<const ASR::Trait_t*> visited;
+    std::vector<const ASR::Trait_t*> pending = {&trait};
+    while (!pending.empty()) {
+        const ASR::Trait_t *current = pending.back();
+        pending.pop_back();
+        if (!visited.insert(current).second) continue;
+        if (!trait_declared_associated_types(*current).empty()) return true;
+        for (size_t i = 0; i < current->n_parents; i++) {
+            auto *parent = current->m_parents[i]
+                ? symbol_get_past_external(current->m_parents[i]) : nullptr;
+            if (parent && ASR::is_a<ASR::Trait_t>(*parent)) {
+                pending.push_back(ASR::down_cast<ASR::Trait_t>(parent));
+            }
+        }
+    }
+    return false;
+}
+
+std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *value)
+{
+    auto *type = value ? typed_expr_type(value) : nullptr;
+    if (!type) return {nullptr, nullptr};
+    auto *element = extract_type(type);
+    if (!ASR::is_a<ASR::StructType_t>(*element)) return {element, nullptr};
+    auto *declaration = get_struct_sym_from_struct_expr(value);
+    return {element, declaration ? symbol_get_past_external(declaration) : nullptr};
+}
+
+static bool trait_types_equal_impl(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
+    TraitAssociatedTypes *associated)
 {
     ASR::ttype_t *a = typed_expr_type(left), *b = typed_expr_type(right);
     if (!a || !b) return false;
@@ -6863,6 +6934,17 @@ bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
             is_allocatable(a) != is_allocatable(b) ||
             !trait_shapes_equal(a, b, parameters)) {
         return false;
+    }
+    if (ASR::symbol_t *declaration = associated ? trait_associated_type(left) : nullptr) {
+        auto actual = trait_associated_actual(right);
+        if (!actual.first || (ASR::is_a<ASR::StructType_t>(*actual.first) &&
+                !actual.second)) return false;
+        auto bound = associated->find(declaration);
+        if (bound == associated->end()) {
+            associated->emplace(declaration, actual);
+            return true;
+        }
+        return trait_type_argument_equal(bound->second, actual);
     }
     a = extract_type(a);
     b = extract_type(b);
@@ -6898,6 +6980,19 @@ bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
         if (!trait_length_equal(a_string->m_len, b_string->m_len, parameters)) return false;
     }
     return types_equal(a, b, left, right);
+}
+
+bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters)
+{
+    return trait_types_equal_impl(left, right, parameters, nullptr);
+}
+
+bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
+    TraitAssociatedTypes &associated)
+{
+    return trait_types_equal_impl(left, right, parameters, &associated);
 }
 
 // Whether instance's declaration is generic's with each closed binder replaced
@@ -7100,6 +7195,24 @@ bool trait_requirement_specialization_matches(const ASR::Template_t &requirement
             specialization.m_return_var, types, arguments));
 }
 
+bool type_argument_types_equal(ASR::ttype_t *a, ASR::ttype_t *b)
+{
+    if (!types_equal(a, b, nullptr, nullptr)) return false;
+    if (!ASR::is_a<ASR::String_t>(*a)) return true;
+    // A character type argument is a complete type: its constant length is
+    // part of it.
+    int64_t a_length = -1, b_length = -1;
+    return constant_string_length(a, a_length) && constant_string_length(b, b_length) &&
+        a_length == b_length;
+}
+
+bool constant_string_length(ASR::ttype_t *type, int64_t &length)
+{
+    auto *string = ASR::down_cast<ASR::String_t>(extract_type(type));
+    return string->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+        string->m_len && extract_value(expr_value(string->m_len), length);
+}
+
 bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &left,
         const std::pair<ASR::ttype_t*, ASR::symbol_t*> &right)
 {
@@ -7115,7 +7228,7 @@ bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &l
         return left.second && right.second &&
             symbol_get_past_external(left.second) == symbol_get_past_external(right.second);
     }
-    return types_equal(a, b, nullptr, nullptr);
+    return type_argument_types_equal(a, b);
 }
 
 // The traits constraining a binder in its own scope.
@@ -7671,7 +7784,7 @@ bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
                 return false;
             }
         }
-    } else if (!types_equal(left.m_type, right.m_type, nullptr, nullptr)) {
+    } else if (!type_argument_types_equal(left.m_type, right.m_type)) {
         return false;
     }
     if (left.n_evidence != right.n_evidence) return false;

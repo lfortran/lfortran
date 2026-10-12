@@ -10889,6 +10889,11 @@ bool trait_requirement_specialization_matches(const ASR::Template_t &requirement
 // enclosing generic, one derived type declaration, or equal intrinsic types.
 bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &left,
     const std::pair<ASR::ttype_t*, ASR::symbol_t*> &right);
+// Whether two intrinsic types are the same type argument: equal types and,
+// for character, equal constant lengths.
+bool type_argument_types_equal(ASR::ttype_t *a, ASR::ttype_t *b);
+// The length of a character type when it is a constant expression.
+bool constant_string_length(ASR::ttype_t *type, int64_t &length);
 // Why `requirement` is not `message` with fresh binders, nominally equivalent
 // constraints and a leading receiver; empty when it is.
 std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
@@ -11007,13 +11012,38 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset = 0,
     size_t right_offset = 0);
 
-// `actual` has the type of `required`, where `itself` in `required` is the
-// implementing type: `type_declaration` for a derived type, else `type`.
-bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
-    ASR::symbol_t *type_declaration, ASR::ttype_t *type,
-    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters);
 bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters = {});
+
+// The type, and its declaration when it is a derived type, that a
+// conformance binds to each declared associated type of its trait.
+typedef std::map<ASR::symbol_t*, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+    TraitAssociatedTypes;
+
+// The declaration of the associated type of a trait (`type :: Element`) that
+// a dummy argument or result of one of the trait's messages has, or nullptr.
+ASR::symbol_t *trait_associated_type(ASR::expr_t *value);
+// The associated types a trait declares itself, `type :: Element`: the
+// variables of its scope, whose type is the type parameter of their name.
+std::vector<ASR::symbol_t*> trait_declared_associated_types(const ASR::Trait_t &trait);
+// Whether a trait or one of its ancestors declares an associated type, which
+// makes it usable only as a generic constraint (no runtime views).
+bool trait_has_associated_types(const ASR::Trait_t &trait);
+// `trait_types_equal` where a dummy or result of type `type(Element)` takes
+// the type the actual has: the associated type is bound to it in `associated`
+// at its first use and compared with that binding at every later one.
+bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
+    TraitAssociatedTypes &associated);
+// The type the actual dummy or result `value` binds to an associated type.
+std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *value);
+// `actual` has the type of `required`, where `itself` in `required` is the
+// implementing type: `type_declaration` for a derived type, else `type`. Other
+// types compare as by `trait_types_equal`, with `associated` when given.
+bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
+    ASR::symbol_t *type_declaration, ASR::ttype_t *type,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters,
+    TraitAssociatedTypes *associated = nullptr);
 
 bool trait_bindings_equal(const ASR::trait_binding_t &left,
     const ASR::trait_binding_t &right);
