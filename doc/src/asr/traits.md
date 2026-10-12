@@ -1026,15 +1026,22 @@ constant length: `Vector("John ")` is `Vector{character(len=5)}`, and
 `Vector{character(len=2)}` is another instance.
 
 An instance copies every procedure of its package, whether or not the
-program calls it. Default (not defined) input/output, in any of these copies,
-of a type that it cannot transfer, such as a derived type argument with an
-allocatable or pointer component (`ASRUtils::default_transfer_blocking_component`),
-is therefore diagnosed as not implemented yet where the instance is created,
-even when the procedure is never called. This is a temporary limitation:
+program calls it. The copies do not call defined input/output procedures yet
+(`ASRUtils::defined_input_output_procedure`), and they transfer a derived type
+item by default input/output only for formatted output of a type whose
+components can be transferred (`ASRUtils::default_transfer_blocking_component`).
+Any other transfer of a derived type item in a copy (output of a type with a
+`write(formatted)` procedure or with an allocatable or pointer component,
+input, or unformatted output) is therefore diagnosed as not implemented yet
+where the instance is created, even when the procedure is never called; the
+message tells a needed defined procedure apart from an unavailable default
+transfer. A transfer that semantics resolved to the defined procedure of a
+concrete type in the package itself is kept. This is a temporary limitation:
 whether such a binding should only be rejected when it is used is a separate
 design decision, deferred until the remaining paper examples work. Instances
 of intrinsic types and of derived types whose components can be transferred
-print as usual (`traits_associated_04`).
+print as usual, and so do types whose defined input/output is for another
+transfer (`traits_associated_04`, `traits_associated_05`).
 
 PAPER-D07 lets an implementation take its receiver with `intent(inout)`.
 Such a binding serves direct calls on concrete objects only, under the ordinary

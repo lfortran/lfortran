@@ -2619,8 +2619,8 @@ public:
                 }
             }
         }
-        read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
-        read_write += (formatted) ? "_formatted" : "_unformatted";
+        read_write = defined_input_output_generic(_type == AST::decl_stmtType::Write,
+            formatted);
         if (n_values > 0) {
             Vec<ASR::expr_t*> overload_args;
             overload_args.reserve(al, 2);

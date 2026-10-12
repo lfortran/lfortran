@@ -3212,6 +3212,57 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
     return found;
 }
 
+ASR::symbol_t *defined_input_output_procedure(const std::string &read_write,
+    ASR::symbol_t *type, SymbolTable *curr_scope)
+{
+    type = type ? symbol_get_past_external(type) : nullptr;
+    if (!type || !ASR::is_a<ASR::Struct_t>(*type)) return nullptr;
+    auto *structure = ASR::down_cast<ASR::Struct_t>(type);
+    auto specific = [&](ASR::symbol_t *generic) -> ASR::symbol_t* {
+        generic = generic ? symbol_get_past_external(generic) : nullptr;
+        ASR::symbol_t **procs = nullptr;
+        size_t n_procs = 0;
+        if (generic && ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+            procs = ASR::down_cast<ASR::CustomOperator_t>(generic)->m_procs;
+            n_procs = ASR::down_cast<ASR::CustomOperator_t>(generic)->n_procs;
+        } else if (generic && ASR::is_a<ASR::GenericProcedure_t>(*generic)) {
+            procs = ASR::down_cast<ASR::GenericProcedure_t>(generic)->m_procs;
+            n_procs = ASR::down_cast<ASR::GenericProcedure_t>(generic)->n_procs;
+        }
+        for (size_t i = 0; i < n_procs; i++) {
+            ASR::symbol_t *proc = symbol_get_past_external(procs[i]);
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
+                proc = symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
+            }
+            if (!ASR::is_a<ASR::Function_t>(*proc)) continue;
+            auto *function = ASR::down_cast<ASR::Function_t>(proc);
+            if (function->n_args == 0) continue;
+            ASR::symbol_t *accepted = get_struct_sym_from_struct_expr(function->m_args[0]);
+            accepted = accepted ? symbol_get_past_external(accepted) : nullptr;
+            if (!accepted || !ASR::is_a<ASR::Struct_t>(*accepted)) continue;
+            if (accepted == type || (is_class_type(expr_type(function->m_args[0])) &&
+                    is_parent(ASR::down_cast<ASR::Struct_t>(accepted), structure))) {
+                return proc;
+            }
+        }
+        return nullptr;
+    };
+    if (curr_scope) {
+        if (ASR::symbol_t *proc = specific(curr_scope->resolve_symbol(read_write))) {
+            return proc;
+        }
+    }
+    for (ASR::Struct_t *bound = structure; bound; bound = bound->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(symbol_get_past_external(bound->m_parent))
+            : nullptr) {
+        if (ASR::symbol_t *proc = specific(bound->m_symtab->resolve_symbol(read_write))) {
+            return proc;
+        }
+    }
+    return nullptr;
+}
+
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
@@ -8492,8 +8543,10 @@ bool sealed_dispatch_result_supported(const ASR::Function_t &procedure)
         ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type));
 }
 
-ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration)
+ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration,
+    const std::function<bool(ASR::symbol_t*)> &defined, bool *by_definition)
 {
+    if (by_definition) *by_definition = false;
     std::set<ASR::symbol_t*> searched;
     std::function<ASR::symbol_t*(ASR::symbol_t*)> search =
         [&](ASR::symbol_t *symbol) -> ASR::symbol_t* {
@@ -8514,6 +8567,10 @@ ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration)
                 ASR::ttype_t *element = type_get_past_array(variable->m_type);
                 if (ASR::is_a<ASR::StructType_t>(*element)) {
                     if (is_class_type(element)) return member;
+                    if (defined && defined(variable->m_type_declaration)) {
+                        if (by_definition) *by_definition = true;
+                        return member;
+                    }
                     if (auto *component = search(variable->m_type_declaration)) {
                         return component;
                     }

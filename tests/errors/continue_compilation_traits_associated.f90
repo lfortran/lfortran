@@ -329,3 +329,93 @@ contains
         type(Shelf{Link}) :: links
     end subroutine chain
 end module cc_traits_associated_chain
+
+! A11: an instance does not call the defined input/output procedures of the
+! items it transfers yet, so an item that needs one for the transfer is
+! diagnosed instead of being transferred by default.
+module cc_traits_associated_labels
+    implicit none
+    type :: Label
+        integer :: n = 0
+    contains
+        procedure :: write_label
+        generic :: write(formatted) => write_label
+    end type Label
+    type :: Sleeve
+        integer     :: k = 0
+        type(Label) :: tag
+    end type Sleeve
+contains
+    subroutine write_label(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(Label), intent(in) :: dtv
+        integer, intent(in) :: unit
+        character(*), intent(in) :: iotype
+        integer, intent(in) :: v_list(:)
+        integer, intent(out) :: iostat
+        character(*), intent(inout) :: iomsg
+        write(unit, '(a,i0)', iostat=iostat, iomsg=iomsg) 'label ', dtv%n
+    end subroutine write_label
+end module cc_traits_associated_labels
+
+module cc_traits_associated_labels_user
+    use cc_traits_associated_shelf, only: Shelf
+    use cc_traits_associated_labels, only: Label
+    implicit none
+contains
+    subroutine shelve_labels()
+        type(Shelf{Label}) :: labels
+    end subroutine shelve_labels
+end module cc_traits_associated_labels_user
+
+! A12: a component that needs a defined input/output procedure keeps the
+! default output of the item that contains it from the instance as well.
+module cc_traits_associated_sleeves_user
+    use cc_traits_associated_shelf, only: Shelf
+    use cc_traits_associated_labels, only: Sleeve
+    implicit none
+contains
+    subroutine shelve_sleeves()
+        type(Shelf{Sleeve}) :: sleeves
+    end subroutine shelve_sleeves
+end module cc_traits_associated_sleeves_user
+
+! A13: an instance transfers a derived type item without defined
+! input/output only by formatted output, so input of one is not implemented
+! yet; an instance of an intrinsic type reads as usual.
+module cc_traits_associated_loader
+    implicit none
+    private
+    type, public, sealed :: Loader{U}
+        private
+        type(U) :: item
+    contains
+        initial :: loader_init
+        procedure, pass :: load
+    end type Loader
+contains
+    function loader_init(item) result(res)
+        type(U), intent(in) :: item
+        type(Loader{U})     :: res
+        res%item = item
+    end function loader_init
+
+    subroutine load(self, text)
+        type(Loader{U}), intent(inout) :: self
+        character(*),    intent(in)    :: text
+        read(text, *) self%item
+    end subroutine load
+end module cc_traits_associated_loader
+
+module cc_traits_associated_loader_user
+    use cc_traits_associated_loader, only: Loader
+    implicit none
+    type :: Coordinates
+        integer :: x = 0
+        integer :: y = 0
+    end type Coordinates
+contains
+    subroutine load_all()
+        type(Loader{integer}) :: numbers
+        type(Loader{Coordinates}) :: places
+    end subroutine load_all
+end module cc_traits_associated_loader_user

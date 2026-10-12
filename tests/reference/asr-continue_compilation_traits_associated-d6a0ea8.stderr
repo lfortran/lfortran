@@ -120,14 +120,32 @@ semantic error: runtime trait views are read-only: 'count_bump' implements 'bump
 268 |     call view_bump(c)
     |                    ^ 
 
-semantic error: default input/output of type(bag) in 'show' of the generic type instance shelf{bag} is not implemented yet: component 'a' of bag is allocatable
+semantic error: default input/output of type(bag) for write(formatted) in 'show' of the generic type instance shelf{bag} is not implemented yet: component 'a' of bag is allocatable
    --> tests/errors/continue_compilation_traits_associated.f90:313:9
     |
 313 |         type(Shelf{Bag}) :: bags
     |         ^^^^^^^^^^^^^^^^ 
 
-semantic error: default input/output of type(link) in 'show' of the generic type instance shelf{link} is not implemented yet: component 'next' of link is a pointer
+semantic error: default input/output of type(link) for write(formatted) in 'show' of the generic type instance shelf{link} is not implemented yet: component 'next' of link is a pointer
    --> tests/errors/continue_compilation_traits_associated.f90:329:9
     |
 329 |         type(Shelf{Link}) :: links
     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{label} is not implemented yet
+   --> tests/errors/continue_compilation_traits_associated.f90:366:9
+    |
+366 |         type(Shelf{Label}) :: labels
+    |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{sleeve} is not implemented yet: it transfers component 'tag' of sleeve
+   --> tests/errors/continue_compilation_traits_associated.f90:378:9
+    |
+378 |         type(Shelf{Sleeve}) :: sleeves
+    |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: default input/output of type(coordinates) for read(formatted) in 'load' of the generic type instance loader{coordinates} is not implemented yet
+   --> tests/errors/continue_compilation_traits_associated.f90:419:9
+    |
+419 |         type(Loader{Coordinates}) :: places
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 

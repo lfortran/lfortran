@@ -3680,6 +3680,13 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
+// The specific procedure of the defined input/output generic `read_write`
+// (named as for use_overloaded_file_read_write) that transfers an item of the
+// derived type `type`: of the generic accessible from `curr_scope`, or else of
+// the one bound to `type` or to a type it extends. nullptr when there is none.
+ASR::symbol_t *defined_input_output_procedure(const std::string &read_write,
+    ASR::symbol_t *type, SymbolTable *curr_scope);
+
 void set_intrinsic(ASR::symbol_t* sym);
 
 static inline bool is_pointer(ASR::ttype_t *x) {
@@ -11418,9 +11425,14 @@ std::string get_format_type_code(ASR::ttype_t* type);
 // component types, that keeps an item of the type from default (not defined)
 // input/output: an allocatable or pointer component, or one whose type has no
 // default transfer, such as a polymorphic or procedure component. Without a
-// defined input/output procedure such an item cannot be transferred. nullptr
-// when every component can be transferred.
-ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration);
+// defined input/output procedure such an item cannot be transferred. With
+// `defined`, a component of a derived type for which `defined` holds is
+// transferred by that type's defined input/output procedure instead; it is
+// returned with `*by_definition` set. nullptr when every component can be
+// transferred.
+ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration,
+    const std::function<bool(ASR::symbol_t*)> &defined = nullptr,
+    bool *by_definition = nullptr);
 
 } // namespace ASRUtils
 
