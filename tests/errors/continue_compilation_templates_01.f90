@@ -2528,21 +2528,21 @@ contains
         deferred type :: t
         type(t), intent(in) :: x
         integer :: y
-        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+        y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer(4)`
     end subroutine
 
     template subroutine mul_real_left{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         real :: y
-        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+        y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real(4) * t`
     end subroutine
 
     template subroutine pow_int{t}(x)
         deferred type :: t
         type(t), intent(in) :: x
         integer :: y
-        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+        y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer(4)`
     end subroutine
 end module
 
