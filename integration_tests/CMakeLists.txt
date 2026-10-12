@@ -5774,6 +5774,8 @@ RUN(NAME infer_walrus_array_03 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_struct_01 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_struct_02 LABELS llvm_infer NO_STD_F23)
 RUN(NAME infer_walrus_struct_03 LABELS llvm_infer NO_STD_F23)
+RUN(NAME infer_walrus_struct_04 LABELS llvm llvm_infer NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME infer_walrus_struct_04_oracle LABELS gfortran llvm)
 
 # Type inference scope shadowing
 RUN(NAME infer_walrus_shadow_01 LABELS llvm_infer NO_STD_F23)

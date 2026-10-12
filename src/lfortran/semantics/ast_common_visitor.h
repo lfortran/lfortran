@@ -20909,6 +20909,14 @@ public:
             is_struct = ASR::is_a<ASR::StructType_t>(*inferred_type);
         }
         ASR::symbol_t* type_decl = nullptr;
+        if (ASRUtils::is_array(inferred_type) && ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_array(inferred_type))) {
+            // The elements' derived type, which the variable must name too.
+            type_decl = ASRUtils::get_struct_sym_from_struct_expr(inferred_value);
+            if (type_decl) {
+                type_decl = ASRUtils::import_type_declaration(al, type_decl, current_scope);
+            }
+        }
         if (is_struct) {
             if (ASR::is_a<ASR::StructConstructor_t>(*inferred_value)) {
                 type_decl = ASR::down_cast<ASR::StructConstructor_t>(
