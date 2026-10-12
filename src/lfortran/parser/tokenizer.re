@@ -172,6 +172,17 @@ static bool is_omp_sentinel(const unsigned char *p)
     return !(std::isalnum(c) || c == '_');
 }
 
+// Returns true if the line starting at `p` (after its leading blanks) is a
+// comment line that may appear between continued directive lines: a line
+// starting with `!` that is not a sentinel or conditional compilation line
+// (`!$...`) and not an LFortran pragma (`!LF$`).
+static bool is_omp_comment_line(const unsigned char *p)
+{
+    if (p[0] != '!') return false;
+    if (p[1] == '$') return false;
+    return !(p[1] == 'L' && p[2] == 'F' && p[3] == '$');
+}
+
 int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
         Location &loc, int directive_token)
 {
@@ -186,7 +197,8 @@ int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
     // Free-form continuation: if the last nonblank character of a line is
     // `&`, the directive continues on the next line, which must start with
     // the `!$omp` sentinel, optionally followed by `&`. With the `&` the text
-    // continues right after it, otherwise after the following blanks.
+    // continues right after it, otherwise after the following blanks. Blank
+    // lines and comment lines may appear between the continued lines.
     std::string joined;
     bool continued = false;
     const unsigned char *line_start = tok;
@@ -195,7 +207,15 @@ int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
         while (e > line_start && is_omp_blank(e[-1])) e--;
         if (e == line_start || e[-1] != '&') break;
         const unsigned char *p = cur + 1;
-        while (is_omp_blank(*p)) p++;
+        unsigned int skipped_lines = 0;
+        while (true) {
+            while (is_omp_blank(*p)) p++;
+            if (*p != '\n' && !is_omp_comment_line(p)) break;
+            while (*p != '\n' && *p != '\0') p++;
+            if (*p != '\n') break;
+            p++;
+            skipped_lines++;
+        }
         if (!is_omp_sentinel(p)) break;
         p += 5;
         while (is_omp_blank(*p)) p++;
@@ -210,7 +230,7 @@ int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
         if (*p != '&') joined += ' ';
         line_start = next_start;
         cur = (unsigned char*)eol;
-        line_num++;
+        line_num += skipped_lines + 1;
         continued = true;
     }
     line_num++; cur_line=cur;

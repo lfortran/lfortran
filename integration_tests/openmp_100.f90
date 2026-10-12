@@ -59,5 +59,29 @@ program openmp_100
     !$omp end &
     !$omp parallel
     if (nthreads /= 2) error stop
+
+    ! Blank lines and comment lines between continued directive lines
+    s = 0
+    !$omp parallel do &
+
+    !$omp reduction(+:s)
+    do i = 1, 10
+        s = s + i
+    end do
+    !$omp end parallel do
+    if (s /= 55) error stop
+
+    t = 0
+    !$omp parallel do private(j) &
+    ! a comment line
+
+        ! an indented comment line
+    !$omp& reduction(+:t)
+    do i = 1, 10
+        j = 2*i
+        t = t + j
+    end do
+    !$omp end parallel do
+    if (t /= 110) error stop
     print *, s, t, nthreads
 end program openmp_100
