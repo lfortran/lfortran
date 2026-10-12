@@ -199,7 +199,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         memset(buffers, 0, sizeof(buffers));
 
         for (int i = 0; i < k->n_args; i++) {
-            if (k->arg_is_buffer[i]) {
+            if (k->arg_is_buffer[i] && k->buffer_sizes[i] == 0) {
+                // An array with no elements, or one that is not allocated
+                // and that the kernel does not touch: Metal has no buffer
+                // of no bytes.
+                [encoder setBuffer:nil offset:0 atIndex:i];
+            } else if (k->arg_is_buffer[i]) {
                 // Copy host data into a Metal buffer
                 id<MTLBuffer> buffer = [ctx->device
                     newBufferWithBytes:k->buffer_ptrs[i]
