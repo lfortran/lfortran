@@ -137,6 +137,23 @@ public:
     }
 };
 
+struct Image;
+
+ASR::symbol_t* designator_root(ASR::expr_t *e);
+
+// Where the kernel stores the images it assigns to the elements of a
+// derived-type array argument, for the host to copy them out after the
+// launch: an array of images and an array of flags, one element per
+// element of the argument, and the number of them.
+struct HeapRecord {
+    ASR::symbol_t *argument = nullptr;
+    Image *image = nullptr;
+    ASR::Struct_t *source = nullptr;
+    ASR::symbol_t *images = nullptr;
+    ASR::symbol_t *written = nullptr;
+    ASR::symbol_t *count = nullptr;
+};
+
 // One arena: the arrays of one element type.
 struct Arena {
     std::string tag;
@@ -204,6 +221,46 @@ public:
                 capacity))), arena_declaration(fn.m_symtab, k));
         s.arenas[k] = {array, capacity};
         return s.arenas[k];
+    }
+
+    // The kernel's records, in the order their arguments are added.
+    std::map<ASR::Function_t*, std::vector<HeapRecord>> records;
+
+    // The record of the images `kernel` assigns to elements of its
+    // argument `argument`, of the image type `image_type`.
+    HeapRecord& record(ASR::Function_t &kernel, ASR::symbol_t *argument,
+            Image *image, ASR::symbol_t *image_symbol,
+            ASR::ttype_t *image_type, ASR::Struct_t *source) {
+        for (HeapRecord &r : records[&kernel]) {
+            if (r.argument == argument) return r;
+        }
+        const Location &loc = kernel.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        HeapRecord r;
+        r.argument = argument;
+        r.image = image;
+        r.source = source;
+        std::string name = ASRUtils::symbol_name(argument);
+        r.count = new_local(kernel, "__gpu_heap_out_n_" + name,
+            int_type(al, loc), nullptr);
+        auto array = [&](ASR::ttype_t *element) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = b.i32(1);
+            dim.m_length = ASRUtils::EXPR(ASR::make_Var_t(al, loc, r.count));
+            dims.push_back(al, dim);
+            return ASRUtils::TYPE(ASR::make_Array_t(al, loc, element, dims.p,
+                dims.n, ASR::array_physical_typeType::PointerArray,
+                ASR::memory_spaceType::Global));
+        };
+        r.images = new_local(kernel, "__gpu_heap_out_" + name,
+            array(image_type), image_symbol);
+        r.written = new_local(kernel, "__gpu_heap_written_" + name,
+            array(int_type(al, loc)), nullptr);
+        records[&kernel].push_back(r);
+        return records[&kernel].back();
     }
 
     ASR::expr_t* arena_array(ASR::Function_t &fn, size_t k) {
@@ -411,9 +468,27 @@ public:
         pending_after.clear();
     }
 
+    // The fitting of the components of the kernel arguments the next
+    // launch writes (gpu_offload_component_fit.cpp), which comes before it.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
+        if (m != nullptr && ASR::is_a<ASR::Block_t>(*m) && std::string(
+                ASR::down_cast<ASR::Block_t>(m)->m_name).rfind(
+                    "__gpu_component_fit", 0) == 0) {
+            component_fit = ASR::down_cast<ASR::Block_t>(m);
+        }
+        PassUtils::PassVisitor<HeapLaunches>::visit_BlockCall(x);
+    }
+
 private:
     DeviceHeap &heap;
     std::vector<ASR::stmt_t*> pending_after;
+    ASR::Block_t *component_fit = nullptr;
+    std::map<std::pair<ASR::Function_t*, Image*>, ASR::Function_t*>
+        copy_out_routines;
+
+    ASR::Function_t* copy_out(ASR::Function_t *kernel, Image *img,
+        ASR::Struct_t *source);
 
     ASR::symbol_t* heap_size_function(const Location &loc) {
         const std::string name = "lfortran_gpu_heap_size";
@@ -436,208 +511,6 @@ private:
         return sym;
     }
 };
-
-void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(
-        ASRUtils::symbol_get_past_external(x.m_kernel));
-    const Location &loc = x.base.base.loc;
-    ASRUtils::ASRBuilder b(al, loc);
-    ASR::GpuKernelLaunch_t &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
-    std::vector<ASR::stmt_t*> before;
-    std::vector<ASR::expr_t*> extra_args;
-    std::vector<ASR::stmt_t*> after;
-    std::vector<ASR::stmt_t*> release;
-
-    auto found = heap.symbols.find(kernel);
-    if (found != heap.symbols.end()) {
-        HeapSymbols &kernel_symbols = found->second;
-        ASR::ttype_t *int4 = int_type(al, loc);
-        ASR::ttype_t *int_8 = int_type(al, loc, 8);
-        // The heap is split evenly between the arenas of the launch.
-        ASR::expr_t *bytes = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_heap_bytes", false), int_8,
-            ASR::intentType::Local);
-        Vec<ASR::call_arg_t> no_args;
-        no_args.reserve(al, 1);
-        before.push_back(b.Assignment(bytes, b.Call(heap_size_function(loc),
-            no_args, int_8)));
-        int64_t n_arenas = kernel_symbols.arenas.size();
-        for (auto &a : kernel_symbols.arenas) {
-            const Arena &arena = heap.arenas[a.first];
-            ASR::expr_t *capacity = b.Variable(current_scope,
-                current_scope->get_unique_name("__gpu_heap_cap_" + arena.tag,
-                    false), int4, ASR::intentType::Local);
-            ASR::symbol_t *decl = nullptr;
-            if (arena.type_declaration != nullptr) {
-                decl = current_scope->resolve_symbol(ASRUtils::symbol_name(
-                    arena.type_declaration));
-            }
-            Vec<ASR::dimension_t> deferred;
-            deferred.reserve(al, 1);
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = nullptr;
-            dim.m_length = nullptr;
-            deferred.push_back(al, dim);
-            ASR::expr_t *array = b.Variable(current_scope,
-                current_scope->get_unique_name("__gpu_heap_" + arena.tag,
-                    false),
-                ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                    ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-                        ASRUtils::duplicate_type(al, arena.element),
-                        deferred.p, deferred.n,
-                        ASR::array_physical_typeType::DescriptorArray,
-                        ASR::memory_spaceType::Global)))),
-                ASR::intentType::Local, decl);
-            ASR::expr_t *element_bytes = ASRUtils::EXPR(
-                ASR::make_SizeOfType_t(al, loc,
-                    ASRUtils::duplicate_type(al, arena.element), int_8,
-                    nullptr));
-            ASR::expr_t *elements = b.Div(b.Div(bytes, b.i64(n_arenas)),
-                element_bytes);
-            elements = b.Min(elements, b.i64(2147483647));
-            before.push_back(b.Assignment(capacity, b.i2i_t(elements, int4)));
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t d;
-            d.loc = loc;
-            d.m_start = b.i32(1);
-            d.m_length = capacity;
-            dims.push_back(al, d);
-            before.push_back(b.Allocate(array, dims.p, dims.n));
-            extra_args.push_back(array);
-            extra_args.push_back(capacity);
-            release.push_back(b.Deallocate(array));
-        }
-        ASR::expr_t *state = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_heap_state", false),
-            ASRUtils::symbol_type(kernel_symbols.state),
-            ASR::intentType::Local);
-        for (size_t k = 0; k < heap.arenas.size(); k++) {
-            before.push_back(b.Assignment(
-                b.ArrayItem_01(state, {b.i32(k + 1)}), b.i32(0)));
-        }
-        extra_args.push_back(state);
-    }
-
-    // Every `stop` the kernel reaches records itself in a status buffer
-    // the host reads after the launch, and runs there.
-    GpuDeviceStops stops;
-    GpuDecline decline = gpu_lower_device_stops(al, loc, *kernel,
-        current_scope, stops);
-    if (decline.declined()) {
-        heap.decline(kernel, loc, decline);
-        return;
-    }
-    if (stops.host_status != nullptr) {
-        extra_args.push_back(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-            stops.host_status)));
-        for (ASR::stmt_t *s : stops.before_launch) before.push_back(s);
-        // A thread that stopped ends the program here, as the statement
-        // it reached does on the host, before anything the kernel wrote
-        // is used.
-        for (ASR::stmt_t *s : stops.after_launch) after.push_back(s);
-    }
-    for (ASR::stmt_t *s : release) after.push_back(s);
-
-    if (extra_args.empty() && before.empty() && after.empty()) return;
-    Vec<ASR::call_arg_t> args;
-    args.reserve(al, launch.n_args + extra_args.size());
-    for (size_t i = 0; i < launch.n_args; i++) {
-        args.push_back(al, launch.m_args[i]);
-    }
-    for (ASR::expr_t *e : extra_args) {
-        ASR::call_arg_t arg;
-        arg.loc = loc;
-        arg.m_value = e;
-        args.push_back(al, arg);
-    }
-    launch.m_args = args.p;
-    launch.n_args = args.n;
-    pass_result.reserve(al, before.size() + 1);
-    for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
-    pass_result.push_back(al, &launch.base);
-    pending_after = after;
-}
-
-void DeviceHeap::finalize(const std::vector<ASR::Function_t*> &kernels,
-        const std::vector<ASR::Function_t*> &routines) {
-    // A procedure that calls one that allocates on the heap needs the
-    // arenas that one needs, to pass them on.
-    std::vector<ASR::Function_t*> all = kernels;
-    all.insert(all.end(), routines.begin(), routines.end());
-    for (bool changed = true; changed;) {
-        changed = false;
-        for (ASR::Function_t *fn : all) {
-            for (ASR::Function_t *callee : ASRUtils::get_called_functions(
-                    fn->m_body, fn->n_body)) {
-                auto c = symbols.find(callee);
-                if (c == symbols.end()) continue;
-                std::vector<size_t> needed;
-                for (auto &a : c->second.arenas) needed.push_back(a.first);
-                bool had = symbols.count(fn) > 0;
-                size_t before = had ? symbols[fn].arenas.size() : 0;
-                state(*fn);
-                for (size_t k : needed) arena_symbols(*fn, k);
-                if (!had || symbols[fn].arenas.size() != before) {
-                    changed = true;
-                }
-            }
-        }
-    }
-
-    // The heap state has one element per arena.
-    for (auto &s : symbols) {
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s.second.state);
-        v->m_type = state_type(v->base.base.loc, (int64_t)arenas.size());
-    }
-
-    // Every routine gets its heap symbols as dummy arguments, and every
-    // call to it passes the caller's. Only a routine that device code alone
-    // calls can be given them.
-    std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>> order;
-    for (ASR::Function_t *fn : routines) {
-        if (symbols.count(fn) == 0) continue;
-        if (ASRUtils::get_FunctionType(fn)->m_exec_space !=
-                ASR::exec_spaceType::Device) {
-            decline(kernel_of[fn], fn->base.base.loc, GpuDecline(
-                GpuDeclineReason::HeapArrayUse, "allocated by '" +
-                std::string(fn->m_name) + "', which the host calls too,"));
-            continue;
-        }
-        std::vector<ASR::symbol_t*> dummies = ordered(*fn);
-        for (ASR::symbol_t *s : dummies) {
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-            v->m_intent = ASRUtils::is_array(v->m_type)
-                ? ASR::intentType::InOut : ASR::intentType::In;
-        }
-        append_dummies(al, *fn, dummies);
-        order[fn] = dummies;
-    }
-    for (ASR::Function_t *fn : all) {
-        if (symbols.count(fn) == 0) continue;
-        HeapCallSites call_sites(al, order, *this, *fn);
-        for (size_t i = 0; i < fn->n_body; i++) {
-            call_sites.visit_stmt(*fn->m_body[i]);
-        }
-    }
-    for (ASR::Function_t *kernel : kernels) {
-        if (symbols.count(kernel) == 0) continue;
-        std::vector<ASR::symbol_t*> params = ordered(*kernel);
-        for (ASR::symbol_t *s : params) {
-            ASR::down_cast<ASR::Variable_t>(s)->m_intent =
-                ASR::intentType::InOut;
-        }
-        append_dummies(al, *kernel, params);
-    }
-    launch_kernels(kernels);
-}
-
-void DeviceHeap::launch_kernels(const std::vector<ASR::Function_t*> &) {
-    HeapLaunches launches(al, *this);
-    launches.visit_TranslationUnit(unit);
-}
-
 
 // Whether `var` is a local array of device code whose shape is only known
 // at run time: an allocatable array, or one of an explicit shape that is
@@ -725,8 +598,6 @@ bool arena_element(ASR::Variable_t &var) {
 
 // ---------------------------------------------------------------------
 // Heap types, their images, and the descriptors of heap arrays.
-
-struct Image;
 
 // One component of a heap type as its image holds it.
 struct ImageMember {
@@ -1042,6 +913,18 @@ void initialize_image(Allocator &al, const Location &loc, Image *img,
                 ASR::make_StructInstanceMember_t(al, loc,
                     duplicate_expr(al, x), im.member, type, nullptr)), out,
                 unsupported);
+        } else {
+            // A component with a default initialization has it, as the
+            // value it is a component of does on the host.
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(im.member);
+            ASR::expr_t *value = v->m_symbolic_value
+                ? ASRUtils::expr_value(v->m_symbolic_value) : nullptr;
+            if (value == nullptr || ASRUtils::is_array(v->m_type)) continue;
+            out.push_back(b.Assignment(ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc,
+                    duplicate_expr(al, x), im.member,
+                    ASRUtils::duplicate_type(al, v->m_type), nullptr)),
+                duplicate_expr(al, value)));
         }
     }
 }
@@ -1974,15 +1857,78 @@ private:
             out.push_back(al, b.Assignment(x->m_target, tmp));
             return;
         }
-        if (scalar && types.heap_source_of(x->m_target) != nullptr &&
-                types.image_of(x->m_value) != nullptr) {
-            unsupported = "of the type '" + std::string(types.heap_source_of(
-                x->m_target)->m_name) + "', stored into a value the host "
-                "handed over,";
+        ASR::Struct_t *source = scalar
+            ? types.heap_source_of(x->m_target) : nullptr;
+        Image *value = types.image_of(x->m_value);
+        if (source != nullptr && value != nullptr) {
+            std::vector<ASR::stmt_t*> stored;
+            ASR::expr_t *tmp = image_local(value, loc);
+            stored.push_back(call(routines.copy(kernel, value), x->m_value,
+                tmp, loc));
+            store(x->m_target, tmp, value, source, stored);
+            for (ASR::stmt_t *t : stored) out.push_back(al, t);
             return;
         }
         out.push_back(al, s);
     }
+
+    // Stores the image `value` into the element `target` of a derived-type
+    // array argument of the kernel: into the kernel's record of that
+    // argument, which the host copies into the element after the launch.
+    void store(ASR::expr_t *target, ASR::expr_t *value, Image *img,
+            ASR::Struct_t *source, std::vector<ASR::stmt_t*> &out) {
+        const Location &loc = target->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *element = ASRUtils::get_past_array_physical_cast(target);
+        ASR::symbol_t *argument = nullptr;
+        if (&fn == kernel && ASR::is_a<ASR::ArrayItem_t>(*element)) {
+            argument = variable_of(ASR::down_cast<ASR::ArrayItem_t>(
+                element)->m_v);
+            bool is_argument = false;
+            for (size_t i = 0; i < fn.n_args; i++) {
+                is_argument = is_argument || variable_of(fn.m_args[i]) ==
+                    argument;
+            }
+            if (!is_argument) argument = nullptr;
+        }
+        if (argument == nullptr) {
+            unsupported = "of the type '" + std::string(source->m_name) +
+                "', stored into a value the host handed over other than an "
+                "element of an array argument of the loop,";
+            return;
+        }
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(element);
+        HeapRecord &r = heap.record(fn, argument, img, img->symbol,
+            types.image_type(img), source);
+        heap.state(fn);
+        ASR::expr_t *array = var(argument, loc);
+        ASR::expr_t *position = b.i32(1);
+        ASR::expr_t *stride = nullptr;
+        for (size_t d = 0; d < item->n_args; d++) {
+            ASR::expr_t *sub = replacer.as_int4(duplicate_expr(al,
+                item->m_args[d].m_right), loc);
+            ASR::expr_t *term = b.Sub(sub, ASRUtils::EXPR(
+                ASR::make_ArrayBound_t(al, loc, duplicate_expr(al, array),
+                    b.i32(d + 1), int_type(al, loc),
+                    ASR::arrayboundType::LBound, nullptr)));
+            if (stride != nullptr) term = b.Mul(term, stride);
+            position = b.Add(position, term);
+            ASR::expr_t *n = b.ArraySize(duplicate_expr(al, array),
+                b.i32(d + 1), int_type(al, loc));
+            stride = stride ? b.Mul(stride, n) : n;
+        }
+        out.push_back(b.Assignment(b.ArrayItem_01(var(r.images, loc),
+            {position}), value));
+        out.push_back(b.Assignment(b.ArrayItem_01(var(r.written, loc),
+            {duplicate_expr(al, position)}), b.i32(1)));
+        stored_arguments.insert(argument);
+    }
+
+public:
+    // The arguments of the kernel it stores images into.
+    std::set<ASR::symbol_t*> stored_arguments;
+
+private:
 
     // A value the host handed over is copied into an image for a dummy
     // that is one, and an image in device memory goes through a local of
@@ -2009,14 +1955,21 @@ private:
                     continue;
                 }
                 if (ASR::Struct_t *source = types.heap_source_of(actual)) {
-                    if (d->m_intent != ASR::intentType::In) {
-                        unsupported = "of the type '" +
-                            std::string(source->m_name) + "', stored into a "
-                            "value the host handed over by '" +
-                            std::string(callee->m_name) + "',";
+                    if (d->m_intent == ASR::intentType::In) {
+                        actual = replacer.copied_in(actual, img, source);
                         continue;
                     }
-                    actual = replacer.copied_in(actual, img, source);
+                    // The procedure defines an image of the caller, which
+                    // is stored into the value afterwards.
+                    const Location &loc = actual->base.loc;
+                    ASR::expr_t *tmp = image_local(img, loc);
+                    if (d->m_intent == ASR::intentType::InOut) {
+                        replacer.before.push_back(call(routines.copy_in(
+                            kernel, img, source), duplicate_expr(al, actual),
+                            duplicate_expr(al, tmp), loc));
+                    }
+                    store(actual, duplicate_expr(al, tmp), img, source, after);
+                    actual = tmp;
                     continue;
                 }
                 if (d->m_intent == ASR::intentType::In ||
@@ -2293,6 +2246,73 @@ void remove_statements(Allocator &al, ASR::stmt_t **&body, size_t &n_body,
     n_body = out.n;
 }
 
+// The fitting of the components of the kernel arguments each launch
+// writes (gpu_offload_component_fit.cpp), which comes before the launch.
+class ComponentFits : public ASR::BaseWalkVisitor<ComponentFits> {
+public:
+    std::map<ASR::symbol_t*, ASR::Block_t*> fits;
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
+        if (m != nullptr && ASR::is_a<ASR::Block_t>(*m) && std::string(
+                ASR::down_cast<ASR::Block_t>(m)->m_name).rfind(
+                    "__gpu_component_fit", 0) == 0) {
+            last = ASR::down_cast<ASR::Block_t>(m);
+        }
+        ASR::BaseWalkVisitor<ComponentFits>::visit_BlockCall(x);
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        if (last != nullptr) fits[x.m_kernel] = last;
+        last = nullptr;
+    }
+
+private:
+    ASR::Block_t *last = nullptr;
+};
+
+// The arrays whose components a fitting checks are allocated because their
+// size cannot be told before the launch.
+class UnsizedComponents :
+        public ASRUtils::BlockBodyWalkVisitor<UnsizedComponents> {
+public:
+    std::set<ASR::symbol_t*> arrays;
+
+    void visit_If(const ASR::If_t &x) {
+        if (ASR::is_a<ASR::LogicalNot_t>(*x.m_test) && x.n_body == 1 &&
+                ASR::is_a<ASR::ErrorStop_t>(*x.m_body[0])) {
+            ASR::expr_t *test =
+                ASR::down_cast<ASR::LogicalNot_t>(x.m_test)->m_arg;
+            if (ASR::is_a<ASR::IntrinsicImpureFunction_t>(*test)) {
+                ASR::IntrinsicImpureFunction_t *f =
+                    ASR::down_cast<ASR::IntrinsicImpureFunction_t>(test);
+                if (f->m_impure_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                        f->n_args == 1) {
+                    if (ASR::symbol_t *root = designator_root(f->m_args[0])) {
+                        arrays.insert(root);
+                    }
+                }
+            }
+        }
+        ASRUtils::BlockBodyWalkVisitor<UnsizedComponents>::visit_If(x);
+    }
+};
+
+// A component of an element of one of `arrays`, read or written.
+class ComponentReads : public ASRUtils::BlockBodyWalkVisitor<ComponentReads> {
+public:
+    const std::set<ASR::symbol_t*> &arrays;
+    ASR::symbol_t *found = nullptr;
+    explicit ComponentReads(const std::set<ASR::symbol_t*> &a) : arrays(a) {}
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        ASR::symbol_t *root = designator_root(x.m_v);
+        if (root != nullptr && arrays.count(root)) found = root;
+        ASRUtils::BlockBodyWalkVisitor<ComponentReads>
+            ::visit_StructInstanceMember(x);
+    }
+};
+
 class HeapPass {
 public:
     HeapPass(Allocator &al_, ASR::TranslationUnit_t &unit_,
@@ -2499,6 +2519,33 @@ private:
                             types.heap.insert(st->m_name);
                         }
                     }
+                }
+            }
+        }
+        // A component of an element of an array argument that the loop
+        // gives a size the host cannot tell before the launch is stored
+        // into the element from the heap, after the launch.
+        ComponentFits fits;
+        fits.visit_TranslationUnit(unit);
+        for (auto &f : fits.fits) {
+            UnsizedComponents unsized;
+            for (size_t i = 0; i < f.second->n_body; i++) {
+                unsized.visit_stmt(*f.second->m_body[i]);
+            }
+            for (ASR::symbol_t *array : unsized.arrays) {
+                if (!ASR::is_a<ASR::Variable_t>(*array)) continue;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(array);
+                ASR::Struct_t *st = struct_of(v->m_type,
+                    v->m_type_declaration);
+                if (!types.holds_allocatable(st)) continue;
+                structs.emplace(st->m_name, st);
+                created.insert(st->m_name);
+                types.heap.insert(st->m_name);
+                ASR::symbol_t *kernel = ASRUtils::symbol_get_past_external(
+                    f.first);
+                if (ASR::is_a<ASR::Function_t>(*kernel)) {
+                    type_kernels[st->m_name].insert(
+                        ASR::down_cast<ASR::Function_t>(kernel));
                 }
             }
         }
@@ -2813,6 +2860,21 @@ private:
                 GpuDeclineReason::HeapArrayUse, lowering.unsupported));
             return;
         }
+        // An element the kernel stores an image into gets it after the
+        // launch, so the kernel cannot read what it stored.
+        if (!lowering.stored_arguments.empty()) {
+            ComponentReads reads(lowering.stored_arguments);
+            for (size_t i = 0; i < fn.n_body; i++) {
+                reads.visit_stmt(*fn.m_body[i]);
+            }
+            if (reads.found != nullptr) {
+                heap.decline(kernel, fn.base.base.loc, GpuDecline(
+                    GpuDeclineReason::HeapArrayUse, "stored into '" +
+                    std::string(ASRUtils::symbol_name(reads.found)) +
+                    "', whose components the loop also reads or writes,"));
+                return;
+            }
+        }
         for (ASR::Variable_t *v : vars) {
             v->m_parent_symtab->erase_symbol(v->m_name);
         }
@@ -2880,6 +2942,606 @@ private:
         return n;
     }
 };
+
+// The variable a designator -- a variable, or an element, a section or a
+// component of one -- is rooted at.
+ASR::symbol_t* designator_root(ASR::expr_t *e) {
+    while (e) {
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        } else {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+// Removes from the fitting of the components of `array` the checks that a
+// component whose size the host cannot tell before the launch is
+// allocated: the elements the kernel stores images into get the bounds of
+// the images after the launch.
+void remove_size_checks(Allocator &al, ASR::stmt_t **&body, size_t &n_body,
+        ASR::symbol_t *array) {
+    Vec<ASR::stmt_t*> out;
+    out.reserve(al, n_body);
+    for (size_t i = 0; i < n_body; i++) {
+        ASR::stmt_t *s = body[i];
+        if (ASR::is_a<ASR::If_t>(*s)) {
+            ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+            if (ASR::is_a<ASR::LogicalNot_t>(*x->m_test) && x->n_body == 1 &&
+                    x->n_orelse == 0 &&
+                    ASR::is_a<ASR::ErrorStop_t>(*x->m_body[0])) {
+                ASR::expr_t *test =
+                    ASR::down_cast<ASR::LogicalNot_t>(x->m_test)->m_arg;
+                if (ASR::is_a<ASR::IntrinsicImpureFunction_t>(*test)) {
+                    ASR::IntrinsicImpureFunction_t *f =
+                        ASR::down_cast<ASR::IntrinsicImpureFunction_t>(test);
+                    if (f->m_impure_intrinsic_id == static_cast<int64_t>(
+                            ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                            f->n_args == 1 &&
+                            designator_root(f->m_args[0]) == array) {
+                        continue;
+                    }
+                }
+            }
+            remove_size_checks(al, x->m_body, x->n_body, array);
+            remove_size_checks(al, x->m_orelse, x->n_orelse, array);
+        } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+            ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+            remove_size_checks(al, x->m_body, x->n_body, array);
+        } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+            ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+            if (ASR::is_a<ASR::Block_t>(*m)) {
+                ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(m);
+                remove_size_checks(al, x->m_body, x->n_body, array);
+            }
+        }
+        out.push_back(al, s);
+    }
+    body = out.p;
+    n_body = out.n;
+}
+
+// Assigns an image to a value of its heap type, as an assignment of the
+// whole value does on the host: every allocatable component of the value
+// is deallocated and allocated again with the bounds the image gives it,
+// and its elements are copied from the arenas, which the procedure gets as
+// arguments.
+ASR::Function_t* HeapLaunches::copy_out(ASR::Function_t *kernel, Image *img,
+        ASR::Struct_t *source) {
+    ASR::Function_t *&memo = copy_out_routines[{kernel, img}];
+    if (memo != nullptr) return memo;
+    const Location &loc = img->symbol->base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    ASR::ttype_t *int4 = int_type(al, loc);
+    // The procedure is one of the procedure that launches the kernel, which
+    // sees the declaration of the type wherever it is.
+    SymbolTable *global = current_scope;
+    while (global->asr_owner != nullptr &&
+            global->asr_owner->type == ASR::asrType::symbol &&
+            !ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(
+                global->asr_owner)) &&
+            !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                global->asr_owner))) {
+        global = global->parent;
+    }
+    SymbolTable *symtab = al.make_new<SymbolTable>(global);
+    auto in_scope = [&](ASR::symbol_t *decl) -> ASR::symbol_t* {
+        if (decl == nullptr) return nullptr;
+        ASR::symbol_t *found = symtab->resolve_symbol(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(decl)));
+        return found != nullptr ? found : decl;
+    };
+    std::string name = global->get_unique_name("__gpu_heap_copy_out_" +
+        std::string(source->m_name), false);
+    ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+        ASRUtils::make_Function_t_util(al, loc, symtab, s2c(al, name),
+            nullptr, 0, nullptr, 0, nullptr, 0, nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::deftypeType::Implementation, nullptr,
+            false, false, false, false, false, nullptr, 0, false, false,
+            false, nullptr));
+    global->add_symbol(name, sym);
+    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+    memo = fn;
+    Vec<ASR::expr_t*> args;
+    args.reserve(al, 2 + heap.symbols[kernel].arenas.size());
+    ASR::expr_t *src = b.Variable(symtab, "src",
+        ASRUtils::make_StructType_t_util(al, loc, img->symbol, true),
+        ASR::intentType::In, img->symbol);
+    ASR::expr_t *dst = b.Variable(symtab, "dst",
+        ASRUtils::make_StructType_t_util(al, loc, &source->base, true),
+        ASR::intentType::InOut, in_scope(&source->base));
+    args.push_back(al, src);
+    args.push_back(al, dst);
+    std::map<size_t, ASR::expr_t*> arenas;
+    for (auto &a : heap.symbols[kernel].arenas) {
+        const Arena &arena = heap.arenas[a.first];
+        Vec<ASR::dimension_t> deferred;
+        deferred.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = nullptr;
+        dim.m_length = nullptr;
+        deferred.push_back(al, dim);
+        ASR::expr_t *v = b.Variable(symtab, "heap_" + arena.tag,
+            ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::duplicate_type(al, arena.element), deferred.p,
+                deferred.n, ASR::array_physical_typeType::DescriptorArray,
+                ASR::memory_spaceType::Global)), ASR::intentType::InOut,
+            arena.type_declaration);
+        arenas[a.first] = v;
+        args.push_back(al, v);
+    }
+    fn->m_args = args.p;
+    fn->n_args = args.n;
+    fn->m_function_signature = ASRUtils::TYPE(
+        ASRUtils::make_FunctionType_t_util(al, loc, fn->m_args, fn->n_args,
+            nullptr, ASRUtils::get_FunctionType(fn), symtab));
+    auto member = [&](ASR::expr_t *base, ASR::symbol_t *m) {
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc,
+            duplicate_expr(al, base), m, ASRUtils::duplicate_type(al,
+                ASRUtils::symbol_type(m)), nullptr));
+    };
+    auto call = [&](ASR::Function_t *callee, ASR::expr_t *from,
+            ASR::expr_t *to) {
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 2 + arenas.size());
+        for (ASR::expr_t *e : {from, to}) {
+            ASR::call_arg_t a;
+            a.loc = loc;
+            a.m_value = e;
+            call_args.push_back(al, a);
+        }
+        for (auto &a : arenas) {
+            ASR::call_arg_t c;
+            c.loc = loc;
+            c.m_value = duplicate_expr(al, a.second);
+            call_args.push_back(al, c);
+        }
+        return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+            &callee->base, nullptr, call_args.p, call_args.n, nullptr,
+            nullptr, false));
+    };
+    std::vector<ASR::symbol_t*> source_members;
+    gpu_collect_data_members(source, source_members);
+    std::vector<ASR::stmt_t*> body;
+    for (auto &m : img->members) {
+        ImageMember &im = m.second;
+        ASR::symbol_t *to_member = nullptr;
+        for (ASR::symbol_t *x : source_members) {
+            if (x != nullptr && m.first == ASRUtils::symbol_name(x)) {
+                to_member = x;
+            }
+        }
+        LCOMPILERS_ASSERT(to_member != nullptr);
+        ASR::Variable_t *tv = ASR::down_cast<ASR::Variable_t>(to_member);
+        ASR::expr_t *to = member(dst, to_member);
+        if (im.kind == ImageMember::Kind::Plain) {
+            body.push_back(b.Assignment(to, member(src, im.member)));
+            continue;
+        }
+        if (im.kind == ImageMember::Kind::Image) {
+            body.push_back(call(copy_out(kernel, im.image, struct_of(
+                tv->m_type, tv->m_type_declaration)), member(src, im.member),
+                to));
+            continue;
+        }
+        std::vector<ASR::stmt_t*> copied;
+        size_t rank = im.extent.size();
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, rank);
+        for (size_t d = 0; d < rank; d++) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = member(src, im.lower[d]);
+            dim.m_length = member(src, im.extent[d]);
+            dims.push_back(al, dim);
+        }
+        copied.push_back(b.Allocate(duplicate_expr(al, to), dims.p, dims.n));
+        std::vector<ASR::expr_t*> index;
+        for (size_t d = 0; d < rank; d++) {
+            index.push_back(b.Variable(symtab, symtab->get_unique_name(
+                "i" + std::to_string(d + 1) + "_" + m.first, false), int4,
+                ASR::intentType::Local));
+        }
+        ASR::expr_t *position = b.Add(member(src, im.base), b.i32(1));
+        ASR::expr_t *stride = nullptr;
+        for (size_t d = 0; d < rank; d++) {
+            ASR::expr_t *term = b.Sub(index[d], member(src, im.lower[d]));
+            if (stride != nullptr) term = b.Mul(term, stride);
+            position = b.Add(position, term);
+            ASR::expr_t *n = member(src, im.extent[d]);
+            stride = stride ? b.Mul(stride, n) : n;
+        }
+        ASR::expr_t *from = b.ArrayItem_01(duplicate_expr(al,
+            arenas[im.arena]), {position});
+        ASR::expr_t *element = b.ArrayItem_01(duplicate_expr(al, to), index);
+        ASR::stmt_t *loop = im.image != nullptr
+            ? call(copy_out(kernel, im.image, struct_of(tv->m_type,
+                tv->m_type_declaration)), from, element)
+            : b.Assignment(element, from);
+        for (size_t d = 0; d < rank; d++) {
+            loop = b.DoLoop(index[d], member(src, im.lower[d]),
+                b.Sub(b.Add(member(src, im.lower[d]),
+                    member(src, im.extent[d])), b.i32(1)), {loop});
+        }
+        copied.push_back(loop);
+        Vec<ASR::expr_t*> allocated_args;
+        allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, duplicate_expr(al, to));
+        ASR::expr_t *allocated = ASRUtils::EXPR(
+            ASR::make_IntrinsicImpureFunction_t(al, loc, static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+        body.push_back(b.If(allocated, {b.Deallocate(duplicate_expr(al, to))},
+            {}));
+        body.push_back(b.If(b.GtE(member(src, im.base), b.i32(0)), copied,
+            {}));
+    }
+    Vec<ASR::stmt_t*> v;
+    v.reserve(al, body.size());
+    for (ASR::stmt_t *x : body) v.push_back(al, x);
+    fn->m_body = v.p;
+    fn->n_body = v.n;
+    return fn;
+}
+
+void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(
+        ASRUtils::symbol_get_past_external(x.m_kernel));
+    const Location &loc = x.base.base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    ASR::GpuKernelLaunch_t &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
+    std::vector<ASR::stmt_t*> before;
+    std::vector<ASR::expr_t*> extra_args;
+    std::vector<ASR::stmt_t*> after;
+    std::vector<ASR::stmt_t*> release;
+    std::vector<ASR::expr_t*> arena_args;
+
+    auto found = heap.symbols.find(kernel);
+    if (found != heap.symbols.end()) {
+        HeapSymbols &kernel_symbols = found->second;
+        ASR::ttype_t *int4 = int_type(al, loc);
+        ASR::ttype_t *int_8 = int_type(al, loc, 8);
+        // The heap is split evenly between the arenas of the launch.
+        ASR::expr_t *bytes = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_heap_bytes", false), int_8,
+            ASR::intentType::Local);
+        Vec<ASR::call_arg_t> no_args;
+        no_args.reserve(al, 1);
+        before.push_back(b.Assignment(bytes, b.Call(heap_size_function(loc),
+            no_args, int_8)));
+        int64_t n_arenas = kernel_symbols.arenas.size();
+        for (auto &a : kernel_symbols.arenas) {
+            const Arena &arena = heap.arenas[a.first];
+            ASR::expr_t *capacity = b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_heap_cap_" + arena.tag,
+                    false), int4, ASR::intentType::Local);
+            ASR::symbol_t *decl = nullptr;
+            if (arena.type_declaration != nullptr) {
+                decl = current_scope->resolve_symbol(ASRUtils::symbol_name(
+                    arena.type_declaration));
+            }
+            Vec<ASR::dimension_t> deferred;
+            deferred.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            deferred.push_back(al, dim);
+            ASR::expr_t *array = b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_heap_" + arena.tag,
+                    false),
+                ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                    ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                        ASRUtils::duplicate_type(al, arena.element),
+                        deferred.p, deferred.n,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASR::memory_spaceType::Global)))),
+                ASR::intentType::Local, decl);
+            ASR::expr_t *element_bytes = ASRUtils::EXPR(
+                ASR::make_SizeOfType_t(al, loc,
+                    ASRUtils::duplicate_type(al, arena.element), int_8,
+                    nullptr));
+            ASR::expr_t *elements = b.Div(b.Div(bytes, b.i64(n_arenas)),
+                element_bytes);
+            elements = b.Min(elements, b.i64(2147483647));
+            before.push_back(b.Assignment(capacity, b.i2i_t(elements, int4)));
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t d;
+            d.loc = loc;
+            d.m_start = b.i32(1);
+            d.m_length = capacity;
+            dims.push_back(al, d);
+            before.push_back(b.Allocate(array, dims.p, dims.n));
+            extra_args.push_back(array);
+            extra_args.push_back(capacity);
+            arena_args.push_back(array);
+            release.push_back(b.Deallocate(array));
+        }
+        ASR::expr_t *state = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_heap_state", false),
+            ASRUtils::symbol_type(kernel_symbols.state),
+            ASR::intentType::Local);
+        for (size_t k = 0; k < heap.arenas.size(); k++) {
+            before.push_back(b.Assignment(
+                b.ArrayItem_01(state, {b.i32(k + 1)}), b.i32(0)));
+        }
+        extra_args.push_back(state);
+    }
+
+    // The images the kernel stores into elements of an array argument are
+    // copied into those elements after the launch.
+    std::vector<ASR::stmt_t*> copied_out;
+    for (HeapRecord &r : heap.records[kernel]) {
+        ASR::expr_t *array = nullptr;
+        for (size_t i = 0; i < kernel->n_args && i < launch.n_args; i++) {
+            if (variable_of(kernel->m_args[i]) == r.argument) {
+                array = launch.m_args[i].m_value;
+            }
+        }
+        ASR::symbol_t *array_symbol = variable_of(array);
+        if (array_symbol == nullptr || !ASR::is_a<ASR::Var_t>(
+                *ASRUtils::get_past_array_physical_cast(array))) {
+            heap.decline(kernel, loc, GpuDecline(
+                GpuDeclineReason::HeapArrayUse, "of the type '" +
+                std::string(r.source->m_name) + "', stored into an array "
+                "argument the loop gets other than as a whole variable,"));
+            return;
+        }
+        array = ASRUtils::get_past_array_physical_cast(array);
+        // The host's declaration of the type, which a kernel may have a
+        // copy of.
+        ASR::Struct_t *host_struct = struct_of(ASRUtils::expr_type(array),
+            ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(
+                array_symbol))->m_type_declaration);
+        ASR::ttype_t *int4 = int_type(al, loc);
+        std::string name = ASRUtils::symbol_name(r.argument);
+        ASR::expr_t *count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_heap_out_n_" + name, false),
+            int4, ASR::intentType::Local);
+        auto host_array = [&](const std::string &prefix, ASR::ttype_t *element,
+                ASR::symbol_t *decl) {
+            Vec<ASR::dimension_t> deferred;
+            deferred.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            deferred.push_back(al, dim);
+            return b.Variable(current_scope, current_scope->get_unique_name(
+                prefix + name, false), ASRUtils::TYPE(ASR::make_Allocatable_t(
+                    al, loc, ASRUtils::TYPE(ASR::make_Array_t(al, loc, element,
+                        deferred.p, deferred.n,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASR::memory_spaceType::Global)))),
+                ASR::intentType::Local, decl);
+        };
+        ASR::Variable_t *images = ASR::down_cast<ASR::Variable_t>(r.images);
+        ASR::expr_t *host_images = host_array("__gpu_heap_out_",
+            ASRUtils::duplicate_type(al, ASRUtils::extract_type(
+                images->m_type)), images->m_type_declaration);
+        ASR::expr_t *host_written = host_array("__gpu_heap_written_", int4,
+            nullptr);
+        before.push_back(b.Assignment(count, b.ArraySize(
+            duplicate_expr(al, array), nullptr, int4)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t d;
+        d.loc = loc;
+        d.m_start = b.i32(1);
+        d.m_length = count;
+        dims.push_back(al, d);
+        before.push_back(b.Allocate(host_images, dims.p, dims.n));
+        Vec<ASR::dimension_t> dims2;
+        dims2.reserve(al, 1);
+        dims2.push_back(al, d);
+        before.push_back(b.Allocate(host_written, dims2.p, dims2.n));
+        ASR::expr_t *k = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_heap_k", false), int4,
+            ASR::intentType::Local);
+        before.push_back(b.DoLoop(k, b.i32(1), count, {b.Assignment(
+            b.ArrayItem_01(host_written, {k}), b.i32(0))}));
+        extra_args.push_back(host_images);
+        extra_args.push_back(host_written);
+        extra_args.push_back(count);
+
+        // Every element the kernel stored an image into gets that image, in
+        // array element order: one loop per dimension, the first innermost.
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(array));
+        std::vector<ASR::expr_t*> index;
+        for (size_t i = 0; i < rank; i++) {
+            index.push_back(b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_heap_i", false), int4,
+                ASR::intentType::Local));
+        }
+        ASR::expr_t *position = b.i32(1);
+        ASR::expr_t *stride = nullptr;
+        for (size_t i = 0; i < rank; i++) {
+            ASR::expr_t *term = b.Sub(index[i], ASRUtils::EXPR(
+                ASR::make_ArrayBound_t(al, loc, duplicate_expr(al, array),
+                    b.i32(i + 1), int4, ASR::arrayboundType::LBound,
+                    nullptr)));
+            if (stride != nullptr) term = b.Mul(term, stride);
+            position = b.Add(position, term);
+            ASR::expr_t *n = b.ArraySize(duplicate_expr(al, array),
+                b.i32(i + 1), int4);
+            stride = stride ? b.Mul(stride, n) : n;
+        }
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, 2 + heap.symbols[kernel].arenas.size());
+        auto arg = [&](ASR::expr_t *e) {
+            ASR::call_arg_t a;
+            a.loc = loc;
+            a.m_value = e;
+            args.push_back(al, a);
+        };
+        arg(b.ArrayItem_01(host_images, {position}));
+        arg(b.ArrayItem_01(duplicate_expr(al, array), index));
+        for (ASR::expr_t *arena : arena_args) arg(duplicate_expr(al, arena));
+        ASR::stmt_t *loop = b.If(b.NotEq(b.ArrayItem_01(host_written,
+            {duplicate_expr(al, position)}), b.i32(0)),
+            {ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+                &copy_out(kernel, r.image, host_struct)->base, nullptr,
+                args.p, args.n, nullptr, nullptr, false))}, {});
+        for (size_t i = 0; i < rank; i++) {
+            loop = b.DoLoop(index[i], ASRUtils::EXPR(ASR::make_ArrayBound_t(
+                al, loc, duplicate_expr(al, array), b.i32(i + 1), int4,
+                ASR::arrayboundType::LBound, nullptr)), ASRUtils::EXPR(
+                ASR::make_ArrayBound_t(al, loc, duplicate_expr(al, array),
+                    b.i32(i + 1), int4, ASR::arrayboundType::UBound,
+                    nullptr)), {loop});
+        }
+        copied_out.push_back(loop);
+        copied_out.push_back(b.Deallocate(host_images));
+        copied_out.push_back(b.Deallocate(host_written));
+        // The element gets the bounds of the image, so the size a write
+        // gives it does not have to be known before the launch.
+        if (component_fit != nullptr) {
+            remove_size_checks(al, component_fit->m_body,
+                component_fit->n_body, ASRUtils::symbol_get_past_external(
+                    array_symbol));
+        }
+    }
+
+    // Every `stop` the kernel reaches records itself in a status buffer
+    // the host reads after the launch, and runs there.
+    GpuDeviceStops stops;
+    GpuDecline decline = gpu_lower_device_stops(al, loc, *kernel,
+        current_scope, stops);
+    if (decline.declined()) {
+        heap.decline(kernel, loc, decline);
+        return;
+    }
+    if (stops.host_status != nullptr) {
+        extra_args.push_back(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            stops.host_status)));
+        for (ASR::stmt_t *s : stops.before_launch) before.push_back(s);
+        // A thread that stopped ends the program here, as the statement
+        // it reached does on the host, before anything the kernel wrote
+        // is used.
+        for (ASR::stmt_t *s : stops.after_launch) after.push_back(s);
+    }
+    for (ASR::stmt_t *s : copied_out) after.push_back(s);
+    for (ASR::stmt_t *s : release) after.push_back(s);
+    component_fit = nullptr;
+
+    if (extra_args.empty() && before.empty() && after.empty()) return;
+    Vec<ASR::call_arg_t> args;
+    args.reserve(al, launch.n_args + extra_args.size());
+    for (size_t i = 0; i < launch.n_args; i++) {
+        args.push_back(al, launch.m_args[i]);
+    }
+    for (ASR::expr_t *e : extra_args) {
+        ASR::call_arg_t arg;
+        arg.loc = loc;
+        arg.m_value = e;
+        args.push_back(al, arg);
+    }
+    launch.m_args = args.p;
+    launch.n_args = args.n;
+    pass_result.reserve(al, before.size() + 1);
+    for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
+    pass_result.push_back(al, &launch.base);
+    pending_after = after;
+}
+
+void DeviceHeap::finalize(const std::vector<ASR::Function_t*> &kernels,
+        const std::vector<ASR::Function_t*> &routines) {
+    // A procedure that calls one that allocates on the heap needs the
+    // arenas that one needs, to pass them on.
+    std::vector<ASR::Function_t*> all = kernels;
+    all.insert(all.end(), routines.begin(), routines.end());
+    for (bool changed = true; changed;) {
+        changed = false;
+        for (ASR::Function_t *fn : all) {
+            for (ASR::Function_t *callee : ASRUtils::get_called_functions(
+                    fn->m_body, fn->n_body)) {
+                auto c = symbols.find(callee);
+                if (c == symbols.end()) continue;
+                std::vector<size_t> needed;
+                for (auto &a : c->second.arenas) needed.push_back(a.first);
+                bool had = symbols.count(fn) > 0;
+                size_t before = had ? symbols[fn].arenas.size() : 0;
+                state(*fn);
+                for (size_t k : needed) arena_symbols(*fn, k);
+                if (!had || symbols[fn].arenas.size() != before) {
+                    changed = true;
+                }
+            }
+        }
+    }
+
+    // The heap state has one element per arena.
+    for (auto &s : symbols) {
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s.second.state);
+        v->m_type = state_type(v->base.base.loc, (int64_t)arenas.size());
+    }
+
+    // Every routine gets its heap symbols as dummy arguments, and every
+    // call to it passes the caller's. Only a routine that device code alone
+    // calls can be given them.
+    std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>> order;
+    for (ASR::Function_t *fn : routines) {
+        if (symbols.count(fn) == 0) continue;
+        if (ASRUtils::get_FunctionType(fn)->m_exec_space !=
+                ASR::exec_spaceType::Device) {
+            decline(kernel_of[fn], fn->base.base.loc, GpuDecline(
+                GpuDeclineReason::HeapArrayUse, "allocated by '" +
+                std::string(fn->m_name) + "', which the host calls too,"));
+            continue;
+        }
+        std::vector<ASR::symbol_t*> dummies = ordered(*fn);
+        for (ASR::symbol_t *s : dummies) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            v->m_intent = ASRUtils::is_array(v->m_type)
+                ? ASR::intentType::InOut : ASR::intentType::In;
+        }
+        append_dummies(al, *fn, dummies);
+        order[fn] = dummies;
+    }
+    for (ASR::Function_t *fn : all) {
+        if (symbols.count(fn) == 0) continue;
+        HeapCallSites call_sites(al, order, *this, *fn);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            call_sites.visit_stmt(*fn->m_body[i]);
+        }
+    }
+    for (ASR::Function_t *kernel : kernels) {
+        if (symbols.count(kernel) == 0) continue;
+        std::vector<ASR::symbol_t*> params = ordered(*kernel);
+        for (HeapRecord &r : records[kernel]) {
+            params.push_back(r.images);
+            params.push_back(r.written);
+            params.push_back(r.count);
+        }
+        for (ASR::symbol_t *s : params) {
+            ASR::down_cast<ASR::Variable_t>(s)->m_intent =
+                ASR::intentType::InOut;
+        }
+        append_dummies(al, *kernel, params);
+    }
+    launch_kernels(kernels);
+}
+
+void DeviceHeap::launch_kernels(const std::vector<ASR::Function_t*> &) {
+    HeapLaunches launches(al, *this);
+    launches.visit_TranslationUnit(unit);
+}
+
 
 } // namespace
 
