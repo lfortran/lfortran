@@ -747,6 +747,73 @@ public:
         }
     }
 
+    // The derived type of a value or variable designated by `e`, or nullptr
+    // when it is not known from `e` alone.
+    static ASR::Struct_t* designator_struct(ASR::expr_t *e) {
+        while (e != nullptr) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else {
+                break;
+            }
+        }
+        if (e != nullptr && ASR::is_a<ASR::StructConstructor_t>(*e)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructConstructor_t>(e)->m_dt_sym);
+            return (sym != nullptr && ASR::is_a<ASR::Struct_t>(*sym))
+                ? ASR::down_cast<ASR::Struct_t>(sym) : nullptr;
+        }
+        return declared_struct(e);
+    }
+
+    // Intrinsic assignment copies a value of a derived type only into a
+    // variable of the same type, unless the variable is polymorphic. A value
+    // stored into a variable of another type is read with that type's
+    // layout.
+    void verify_struct_assignment(const Assignment_t &x,
+            ASR::ttype_t *target_type, ASR::ttype_t *value_type) {
+        ASR::ttype_t *value_elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(value_type));
+        ASR::ttype_t *target_elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(target_type));
+        if (!ASR::is_a<ASR::StructType_t>(*value_elem)
+                || ASRUtils::is_class_type(value_elem)) {
+            return;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*target_elem)) {
+            require_with_loc_id(false,
+                "asr.verify.assignment.struct_value_matches_target",
+                "Assignment of a derived-type value to a target of type " +
+                    ASRUtils::get_type_code(target_type),
+                x.m_value->base.loc);
+            return;
+        }
+        if (ASRUtils::is_class_type(target_elem)) {
+            return;
+        }
+        ASR::Struct_t *target_struct = designator_struct(x.m_target);
+        ASR::Struct_t *value_struct = designator_struct(x.m_value);
+        if (target_struct == nullptr || value_struct == nullptr
+                || target_struct == value_struct) {
+            return;
+        }
+        // Two sequence or BIND(C) types of the same name and components are
+        // the same type.
+        bool same_type = std::string(target_struct->m_name) == value_struct->m_name
+            && ASRUtils::is_derived_type_similar(target_struct, value_struct);
+        require_with_loc_id(same_type,
+            "asr.verify.assignment.struct_value_matches_target",
+            "Assignment of a value of derived type '" +
+                std::string(value_struct->m_name) +
+                "' to a target of derived type '" +
+                std::string(target_struct->m_name) + "'",
+            x.m_value->base.loc);
+    }
+
     void visit_Assignment(const Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
         if( ASR::is_a<ASR::Var_t>(*target) ) {
@@ -790,6 +857,10 @@ public:
                     " does not match target type " +
                     ASRUtils::get_type_code(assign_target_type),
                 x.m_value->base.loc);
+        }
+        if (check_external && !diagnostics.has_error() && x.m_overloaded == nullptr
+                && assign_target_type && assign_value_type) {
+            verify_struct_assignment(x, assign_target_type, assign_value_type);
         }
         // it's possible that the target is an external symbol, and during
         // initial deserialization pass, so we don't do the below verification

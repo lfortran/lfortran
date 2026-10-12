@@ -22643,6 +22643,27 @@ public:
         throw SemanticAbort();
     }
 
+    // Whether an implied-do value has the type of the loop's first value, so
+    // that the loop has that type. Two derived types are the same only when
+    // they are the same type: values of a type and its extension, or of two
+    // unrelated types, make the loop a tuple.
+    bool implied_do_value_types_equal(ASR::ttype_t* type, ASR::expr_t* expr,
+            ASR::ttype_t* first_type, ASR::expr_t* first_expr) {
+        if (!ASRUtils::types_equal(type, first_type, expr, first_expr)) {
+            return false;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+            return true;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+        ASR::symbol_t* first_struct_sym = ASRUtils::get_struct_sym_from_struct_expr(first_expr);
+        if (struct_sym == nullptr || first_struct_sym == nullptr) {
+            return true;
+        }
+        return ASRUtils::symbol_get_past_external(struct_sym)
+            == ASRUtils::symbol_get_past_external(first_struct_sym);
+    }
+
     void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -22660,7 +22681,8 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
+                if (!unique_type || !implied_do_value_types_equal(
+                        type_, expr, type, a_values_vec[0])) {
                     unique_type = false;
                 }
             }
@@ -22929,7 +22951,8 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
+                if (!unique_type || !implied_do_value_types_equal(
+                        type_, expr, type, a_values_vec[0])) {
                     unique_type = false;
                 }
             }
