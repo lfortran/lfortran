@@ -1223,10 +1223,9 @@ public:
         r += syn(gr::UnitHeader);
         r.append("implements");
         r += syn();
-        r += " ";
         for (size_t i=0; i<x.n_traits; i++) {
+            r.append(i ? " + " : " ");
             r.append(x.m_traits[i]);
-            if (i < x.n_traits-1) r.append(" + ");
         }
         r += " :: ";
         if (x.m_implementing_type->type == decl_attributeType::AttrType) {

@@ -1,0 +1,49 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:7:5 - 12:1
+   |
+ 7 |        abstract interface :: IConstructable
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |    
+   | ...^ LFortran extension
+
+semantic error: binding procedures to type 'bound' outside the unit that declares it is not implemented yet
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:68:5 - 70:25
+   |
+68 |        implements :: Bound
+   |        ^^^^^^^^^^^^^^^^^^^...
+...
+   |
+70 |        end implements Bound
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate binding 'output' for type 'twice'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:89:9
+   |
+89 |         procedure, pass :: output => second_output
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: static bindings in an implements statement without traits are not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:112:20
+    |
+112 |         procedure, static :: create => create_made
+    |                    ^^^^^^ 
+
+semantic error: an implements statement cannot declare deferred bindings
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:136:33
+    |
+136 |         procedure(open_output), deferred, pass :: output
+    |                                 ^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:60:9
+   |
+60 |     b = make{Bound}(3)
+   |         ^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iprintable' for type 'bound'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:61:30
+   |
+61 |     allocate(printer, source=Bound(4))
+   |                              ^^^^^^^^ 

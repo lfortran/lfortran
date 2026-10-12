@@ -28,6 +28,10 @@ class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
     std::map<SymbolTable*, std::vector<const AST::Implements_t*>>
         pending_trait_implementations;
+    // Implements statements without traits, whose procedures become the
+    // type's own bindings once the declarations of their unit are complete.
+    std::map<SymbolTable*, std::vector<const AST::Implements_t*>>
+        pending_inherent_implements;
     std::map<SymbolTable*, std::vector<ASR::Struct_t*>>
         pending_type_adoptions;
     std::set<SymbolTable*> invalid_type_adoption_scopes;
@@ -876,6 +880,8 @@ public:
             default_storage_save = current_storage_save;
         }
         external_procedures = saved_external_procedures;
+        // While the module is current, as for the bindings of its types.
+        bind_inherent_implements();
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
@@ -1339,6 +1345,7 @@ public:
         }
         handle_save();
         check_runtime_trait_locals();
+        bind_inherent_implements();
         // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
         add_generic_procedures();
         evaluate_postponed_calls_to_genericProcedure();
@@ -5454,10 +5461,7 @@ public:
             trait_error("an implements block must appear in a module or main program",
                 x.base.base.loc);
         }
-        if (x.n_traits == 0) {
-            trait_error("inherent implements blocks are not implemented yet",
-                x.base.base.loc);
-        }
+        if (x.n_traits == 0) check_inherent_implements(x);
         // Initializers of a type declared in this unit overload its
         // constructor, as in its definition. A generic type binds them with
         // its package.
@@ -5466,8 +5470,133 @@ public:
             pending_implements_initializers.push_back({current_scope, to_lower(
                 AST::down_cast<AST::AttrType_t>(x.m_implementing_type)->m_name), &x});
         }
-        pending_trait_implementations[current_scope].push_back(&x);
+        if (x.n_traits == 0) {
+            pending_inherent_implements[current_scope].push_back(&x);
+        } else {
+            pending_trait_implementations[current_scope].push_back(&x);
+        }
         tmp = nullptr;
+    }
+
+    // An implements statement without traits binds initializers and ordinary
+    // methods to a derived type. It acknowledges no trait, so it has no
+    // requirement for a static or operator binding to implement.
+    void check_inherent_implements(const AST::Implements_t &x) {
+        AST::decl_attribute_t *type = x.m_implementing_type;
+        if (AST::is_a<AST::AttrGenericTypeParams_t>(*type)) {
+            trait_error("an implements statement without traits for a generic type "
+                "is not implemented yet", type->base.loc);
+        }
+        if (!AST::is_a<AST::AttrType_t>(*type) ||
+                AST::down_cast<AST::AttrType_t>(type)->m_type != AST::decl_typeType::TypeType ||
+                !AST::down_cast<AST::AttrType_t>(type)->m_name) {
+            trait_error("an implements statement without traits for an intrinsic type "
+                "is not implemented yet", type->base.loc);
+        }
+        for (size_t i = 0; i < x.n_procedures; i++) {
+            AST::procedure_decl_t *procedure = x.m_procedures[i];
+            if (AST::is_a<AST::InitialProcedure_t>(*procedure)) continue;
+            if (AST::is_a<AST::OperatorProcedure_t>(*procedure)) {
+                trait_error("operator bindings in an implements statement without traits "
+                    "are not implemented yet", procedure->base.loc);
+            }
+            if (!AST::is_a<AST::DerivedTypeProc_t>(*procedure)) {
+                trait_error("this binding form in an implements statement without traits "
+                    "is not implemented yet", procedure->base.loc);
+            }
+            auto *declaration = AST::down_cast<AST::DerivedTypeProc_t>(procedure);
+            for (size_t j = 0; j < declaration->n_attr; j++) {
+                AST::decl_attribute_t *attribute = declaration->m_attr[j];
+                if (AST::is_a<AST::AttrPass_t>(*attribute)) continue;
+                if (AST::is_a<AST::SimpleAttribute_t>(*attribute)) {
+                    auto attr = AST::down_cast<AST::SimpleAttribute_t>(attribute)->m_attr;
+                    if (attr == AST::simple_attributeType::AttrNoPass ||
+                            attr == AST::simple_attributeType::AttrPublic) continue;
+                    if (attr == AST::simple_attributeType::AttrDeferred) {
+                        trait_error("an implements statement cannot declare deferred "
+                            "bindings", attribute->base.loc);
+                    }
+                    if (attr == AST::simple_attributeType::AttrStatic) {
+                        trait_error("static bindings in an implements statement without "
+                            "traits are not implemented yet", attribute->base.loc);
+                    }
+                }
+                trait_error("this binding attribute in an implements statement without "
+                    "traits is not implemented yet", attribute->base.loc);
+            }
+            if (declaration->m_name) {
+                trait_error("an implements statement cannot declare deferred bindings",
+                    procedure->base.loc);
+            }
+        }
+    }
+
+    // Each implements statement without traits of this unit binds its
+    // procedures to its type as the type's definition would: its initializers
+    // overload the constructor (register_implements_initializers) and its
+    // methods become type-bound procedures (add_class_procedures). It
+    // establishes no conformance; a trait is implemented only where it is
+    // acknowledged. Called once the declarations of the unit are complete, so
+    // that the statement can precede the type.
+    void bind_inherent_implements() {
+        auto found = pending_inherent_implements.find(current_scope);
+        if (found == pending_inherent_implements.end()) return;
+        auto pending = std::move(found->second);
+        pending_inherent_implements.erase(found);
+        for (const AST::Implements_t *implementation : pending) {
+            try {
+                bind_inherent_implements(*implementation);
+            } catch (const SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
+            }
+        }
+    }
+
+    void bind_inherent_implements(const AST::Implements_t &x) {
+        const Location &loc = x.m_implementing_type->base.loc;
+        std::string name = to_lower(AST::down_cast<AST::AttrType_t>(
+            x.m_implementing_type)->m_name);
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+        ASR::symbol_t *declaration = symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr;
+        if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) {
+            if (!symbol && bare_type_set_member(name, loc)) {
+                trait_error("an implements statement without traits for an intrinsic "
+                    "type is not implemented yet", loc);
+            }
+            trait_error("implements requires a concrete derived or intrinsic type", loc);
+        }
+        if (symbol != declaration || ASRUtils::symbol_parent_symtab(declaration) != current_scope) {
+            trait_error("binding procedures to type '" + name + "' outside the unit "
+                "that declares it is not implemented yet", loc);
+        }
+        if (ASR::down_cast<ASR::Struct_t>(declaration)->m_is_abstract) {
+            trait_error("an implements block cannot target an abstract type",
+                x.base.base.loc);
+        }
+        std::string enclosing = dt_name;
+        dt_name = name;
+        try {
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                if (!AST::is_a<AST::DerivedTypeProc_t>(*x.m_procedures[i])) continue;
+                auto *binding = AST::down_cast<AST::DerivedTypeProc_t>(x.m_procedures[i]);
+                for (size_t j = 0; j < binding->n_symbols; j++) {
+                    auto *use_symbol = AST::down_cast<AST::UseSymbol_t>(binding->m_symbols[j]);
+                    std::string binding_name = to_lower(use_symbol->m_local_rename
+                        ? use_symbol->m_local_rename : use_symbol->m_remote_sym);
+                    auto bindings = class_procedures.find(name);
+                    if (bindings != class_procedures.end() &&
+                            bindings->second.count(binding_name)) {
+                        trait_error("duplicate binding '" + binding_name + "' for type '" +
+                            name + "'", binding->base.base.loc);
+                    }
+                }
+                visit_DerivedTypeProc(*binding);
+            }
+        } catch (const SemanticAbort &) {
+            dt_name = enclosing;
+            throw;
+        }
+        dt_name = enclosing;
     }
 
     // The associated types a conformance infers, and the message whose

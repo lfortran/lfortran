@@ -88,6 +88,39 @@ module overloads the type's constructor in the same way, whether the statement
 precedes or follows the type definition. Parameterized initializer bindings
 remain separate work.
 
+## Binding procedures without traits
+
+An `implements` statement without a trait list binds initializers and
+ordinary methods to a derived type of its unit, as the paper's
+`implements :: MyType` does:
+
+```fortran
+type :: MyType
+    private
+    real :: a
+end type MyType
+
+implements :: MyType
+    initial :: init_by_int, init_by_real
+    procedure, pass :: output
+end implements MyType
+```
+
+Its procedures become the type's own bindings through the same machinery as
+the bindings of its definition: the initializers overload the constructor and
+the methods are ordinary type-bound procedures, so calls, `CLASS(MyType)`
+dispatch, overrides in extensions and module files are those of the type's
+own bindings. The statement may precede or follow the type, and
+a name the type already binds is diagnosed. It acknowledges no trait: a type
+that has every procedure a trait requires still conforms to it only where an
+`implements` statement or attribute names the trait. `pass`, named `pass`,
+`nopass` and `public` bindings are supported. A deferred binding is
+diagnosed; static and operator bindings, other binding forms, intrinsic and
+generic types, and types of other units are not implemented yet in a
+statement without traits. `traits_implements_bindings_01` checks the
+bindings at run time, and `continue_compilation_traits_binding_completion`
+the diagnostics.
+
 ## Initializer and operator requirements
 
 A trait can require an initializer and intrinsic operators of the type that

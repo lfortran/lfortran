@@ -446,6 +446,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_trait_parameter> generic_type_parameter_list
 %type <vec_ast> trait_name_list
 %type <vec_ast> trait_name_spec
+%type <vec_ast> implements_traits
 %type <vec_ast> procedure_list_opt
 %type <vec_ast> instantiate_symbol_list
 %type <vec_ast> instantiate_symbol_list_opt
@@ -741,15 +742,15 @@ trait_decl
     ;
 
 implements_decl
-    : KW_IMPLEMENTS trait_name_spec "::" id sep procedure_list_opt
+    : KW_IMPLEMENTS implements_traits "::" id sep procedure_list_opt
         end_implements id_opt sep {
             $$ = IMPLEMENTS(p.m_a, $2, $4, $6, $8, TRIVIA($5, $9, @$), @$,
                 p.diag); }
-    | KW_IMPLEMENTS trait_name_spec "::" id "{" generic_type_parameter_list "}" sep
+    | KW_IMPLEMENTS implements_traits "::" id "{" generic_type_parameter_list "}" sep
         procedure_list_opt end_implements id_opt sep {
             $$ = IMPLEMENTS_GENERIC(p.m_a, $2, $4, $6, $9, $11,
                 TRIVIA($8, $12, @$), @$, p.diag); }
-    | KW_IMPLEMENTS trait_name_spec "::" implements_intrinsic_type sep procedure_list_opt
+    | KW_IMPLEMENTS implements_traits "::" implements_intrinsic_type sep procedure_list_opt
         end_implements implements_intrinsic_end sep {
             $$ = make_Implements_t(p.m_a, @$, REDUCE_ARGS(p.m_a, $2), $2.size(),
                 down_cast<decl_attribute_t>($4),
@@ -900,6 +901,13 @@ trait_name_list
 trait_name_spec
     : trait_name_list { $$ = $1; }
     | "(" trait_name_list ")" { $$ = $2; }
+    ;
+
+// An implements statement without traits binds procedures to a type without
+// acknowledging any trait.
+implements_traits
+    : trait_name_spec { $$ = $1; }
+    | %empty { LIST_NEW($$); }
     ;
 
 trait_parameter
