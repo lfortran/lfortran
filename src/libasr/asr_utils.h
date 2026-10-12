@@ -1782,6 +1782,23 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
     }
 }
 
+// The scope of the procedure, program, module, ... that `scope` belongs to:
+// `scope` itself, unless it is the scope of a BLOCK or ASSOCIATE construct,
+// which belongs to the procedure, program, ... it is nested in.
+static inline SymbolTable *scope_past_constructs(SymbolTable *scope)
+{
+    while (scope->parent && scope->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*owner) &&
+                !ASR::is_a<ASR::Block_t>(*owner)) {
+            break;
+        }
+        scope = scope->parent;
+    }
+    return scope;
+}
+
 // Returns the `symbol`'s symtab, or nullptr if the symbol has no symtab
 static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 {
