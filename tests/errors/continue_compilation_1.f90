@@ -2440,6 +2440,24 @@ contains
     end subroutine cc1_pcut_defined
 end module cc1_proc_component_undefined_target_mod
 
+! A module procedure defined later and given to a procedure pointer component
+! must match the component's interface, as one defined earlier must.
+module cc1_proc_component_forward_mismatch_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcfm_iface()
+        end subroutine cc1_pcfm_iface
+    end interface
+    type :: cc1_pcfm_t
+        procedure(cc1_pcfm_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+contains
+    integer function cc1_pcfm_f()
+        cc1_pcfm_f = 3
+    end function cc1_pcfm_f
+end module cc1_proc_component_forward_mismatch_mod
+
 ! An internal procedure named like a specific intrinsic function that its host
 ! defines after it is used as the interface is not supported yet.
 subroutine later_internal_procedure_interface_error()

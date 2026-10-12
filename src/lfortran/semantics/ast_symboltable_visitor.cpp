@@ -999,6 +999,7 @@ public:
         }
         pending_proc_placeholders.clear();
         forward_procedure_targets.clear();
+        forward_procedure_target_uses.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
@@ -4872,6 +4873,24 @@ public:
         if (!placeholder_to_real.empty()) {
             PlaceholderVarReplacer replacer(placeholder_to_real);
             replace_placeholder_in_initializers(current_scope, replacer);
+        }
+        // A procedure given to a procedure pointer component before its
+        // definition is checked against the component as the structure
+        // constructor checks a procedure defined earlier. Every mismatch is
+        // reported before compilation stops.
+        bool forward_target_mismatch = false;
+        for (auto &use : forward_procedure_target_uses) {
+            auto it = placeholder_to_real.find(use.placeholder);
+            if (it == placeholder_to_real.end()) continue;
+            ASR::expr_t* target = ASRUtils::EXPR(
+                ASR::make_Var_t(al, use.loc, it->second));
+            if (!procedure_component_value_matches(use.member, target)) {
+                forward_target_mismatch = true;
+            }
+        }
+        forward_procedure_target_uses.clear();
+        if (forward_target_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);

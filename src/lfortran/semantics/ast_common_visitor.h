@@ -2434,6 +2434,15 @@ public:
     // procedure given to a procedure pointer component before its
     // definition, see `declare_forward_procedure_target()`.
     std::set<ASR::symbol_t*> forward_procedure_targets;
+    // Each value of a procedure pointer component that names one of
+    // `forward_procedure_targets`, checked against the component once the
+    // procedure is known.
+    struct ForwardProcedureTargetUse {
+        ASR::symbol_t* placeholder;
+        ASR::Variable_t* member;
+        Location loc;
+    };
+    std::vector<ForwardProcedureTargetUse> forward_procedure_target_uses;
 
     struct PendingProcPtrInit {
         std::string proc_name;
@@ -13877,8 +13886,9 @@ public:
     // `member` is not declared yet, declare it as a placeholder procedure
     // with the component's interface. The module refers to the procedure
     // instead once its procedures are known, see
-    // `resolve_proc_pointer_placeholders()`, and reports a placeholder that
-    // no procedure replaced.
+    // `resolve_proc_pointer_placeholders()`, which checks the procedure
+    // against every component given it, and reports a placeholder that no
+    // procedure replaced.
     void declare_forward_procedure_target(ASR::symbol_t* member,
             AST::expr_t* value) {
         if (is_body_visitor || !in_module || !AST::is_a<AST::Name_t>(*value)
@@ -13887,10 +13897,19 @@ public:
                 || current_scope->parent->parent != nullptr) {
             return;
         }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
         ASR::FunctionType_t* iface = ASRUtils::get_procedure_pointer_component_type(
-            ASR::down_cast<ASR::Variable_t>(member));
+            member_var);
+        if (iface == nullptr) {
+            return;
+        }
         std::string name = to_lower(AST::down_cast<AST::Name_t>(value)->m_id);
-        if (iface == nullptr || current_scope->resolve_symbol(name) != nullptr) {
+        ASR::symbol_t* declared = current_scope->resolve_symbol(name);
+        if (declared != nullptr) {
+            if (forward_procedure_targets.count(declared) > 0) {
+                forward_procedure_target_uses.push_back(
+                    {declared, member_var, value->base.loc});
+            }
             return;
         }
         ASR::FunctionType_t* placeholder_type = ASR::down_cast<ASR::FunctionType_t>(
@@ -13905,6 +13924,36 @@ public:
         current_scope->add_symbol(name, placeholder);
         pending_proc_placeholders.push_back({name, placeholder});
         forward_procedure_targets.insert(placeholder);
+        forward_procedure_target_uses.push_back(
+            {placeholder, member_var, value->base.loc});
+    }
+
+    // Whether the procedure `arg` can be the value of the procedure pointer
+    // component `member_var`, reporting it if not: a function cannot be the
+    // value of a component with a subroutine interface, nor the other way
+    // around.
+    bool procedure_component_value_matches(ASR::Variable_t* member_var,
+            ASR::expr_t* arg) {
+        ASR::FunctionType_t* member_func_type =
+            ASRUtils::get_procedure_pointer_component_type(member_var);
+        ASR::FunctionType_t* arg_func_type =
+            ASRUtils::get_procedure_type_from_expr(arg);
+        if (member_func_type == nullptr || arg_func_type == nullptr) {
+            return true;
+        }
+        bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
+        bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
+        if (member_is_subroutine == arg_is_subroutine) {
+            return true;
+        }
+        diag.add(Diagnostic("type mismatch in structure constructor: value of type "
+            + ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(arg), arg)
+            + " cannot be the value of pointer component '"
+            + std::string(member_var->m_name) + "' of type "
+            + struct_component_type_to_str(member_var),
+            Level::Error, Stage::Semantic, {
+                Label("", {arg->base.loc})}));
+        return false;
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -14344,21 +14393,14 @@ public:
             }
             ASR::expr_t* arg = vals[i].m_value;
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-            ASR::FunctionType_t* member_func_type =
-                ASRUtils::get_procedure_pointer_component_type(member_var);
-            ASR::FunctionType_t* arg_func_type =
-                ASRUtils::get_procedure_type_from_expr(arg);
-            if (member_func_type != nullptr && arg_func_type != nullptr) {
-                bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
-                bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
-                if (member_is_subroutine != arg_is_subroutine) {
-                    diag.add(Diagnostic("type mismatch in structure constructor: value of type "
-                        + ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(arg), arg)
-                        + " cannot be the value of pointer component '"
-                        + std::string(member_var->m_name) + "' of type "
-                        + struct_component_type_to_str(member_var),
-                        Level::Error, Stage::Semantic, {
-                            Label("", {arg->base.loc})}));
+            if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
+                // A procedure defined later is checked once it is known, see
+                // `resolve_proc_pointer_placeholders()`.
+                bool forward_target = ASR::is_a<ASR::Var_t>(*arg)
+                    && forward_procedure_targets.count(
+                        ASR::down_cast<ASR::Var_t>(arg)->m_v) > 0;
+                if (!forward_target
+                        && !procedure_component_value_matches(member_var, arg)) {
                     if (!compiler_options.continue_compilation) {
                         throw SemanticAbort();
                     }
