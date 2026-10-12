@@ -1,8 +1,11 @@
 program implied_do_loops51
 ! An output implied-do loop with values of different types whose loop
 ! variable ends at the largest or smallest value of its kind is expanded
-! at compile time without overflowing. Not run with GFortran, whose loop
-! variable overflows there, so that the loop never ends.
+! at compile time without overflowing. The program is not conforming: the
+! loop variable is incremented past its last value, which its kind cannot
+! represent. It relies on LFortran's compile-time expansion, which never
+! computes that value, so it is not run with GFortran, whose loop variable
+! overflows there, so that the loop never ends.
 implicit none
 type :: pa
     integer :: i
