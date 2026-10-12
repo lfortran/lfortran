@@ -1814,8 +1814,11 @@ public:
 
     void visit_Interface(const AST::Interface_t &x);
     // The modules used in the interface bodies are added to
-    // `module_dependencies`, the dependencies of the enclosing module.
-    void finalize(Allocator &al, SetChar &module_dependencies);
+    // `module_dependencies`, the dependencies of the enclosing module, and
+    // the pointers through which their getters read variables of the BLOCK
+    // to `construct_variable_pointers`.
+    void finalize(Allocator &al, SetChar &module_dependencies,
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers);
 };
 
 template <class Derived>
@@ -2486,6 +2489,9 @@ public:
         Location loc;
     };
     std::vector<ForwardProcedureTargetUse> forward_procedure_target_uses;
+    // The pointers created by create_construct_variable_pointer, each with
+    // the variable of the BLOCK construct it is associated with
+    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> construct_variable_pointers;
 
     struct PendingProcPtrInit {
         std::string proc_name;
@@ -3037,7 +3043,7 @@ public:
     }
 
     std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym,
-            SymbolTable* parent_scope) {
+            ASR::ttype_t* type, SymbolTable* parent_scope) {
         SymbolTable* current_scope_copy = current_scope;
         ASRUtils::ASRBuilder b(al, loc);
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3054,7 +3060,7 @@ public:
             sd.duplicate_symbol(end_sym, current_scope);
             end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
         }
-        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
+        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, type,
                                 ASR::intentType::ReturnVar);
         // populate body
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);
@@ -3107,27 +3113,47 @@ public:
         // construct have the BLOCK as their host, but the backends define no
         // procedures there, so the getter is created in the procedure or
         // program that contains the BLOCK. A variable of the BLOCK is not
-        // visible there; it is referenced directly, as in the other
-        // declarations of the BLOCK, which is the only place the interface
-        // is accessible from.
+        // visible there, so the getter reads it through a pointer of that
+        // procedure or program instead, see construct_variable_pointers.
         SymbolTable* parent_scope = ASRUtils::scope_past_constructs(current_scope->parent);
+        ASR::ttype_t* type = ASRUtils::symbol_type(end_sym);
+        ASR::symbol_t* read_sym = end_sym;
         if (parent_scope != current_scope->parent &&
                 !ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
             SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
             if (symbol_scope != parent_scope &&
                     !ASRUtils::is_parent(symbol_scope, parent_scope)) {
-                return ASRUtils::EXPR(ASR::make_Var_t(al, end_sym->base.loc, end_sym));
+                read_sym = create_construct_variable_pointer(end_sym, parent_scope);
             }
         }
-        std::string func_name = create_getter_function(end_sym->base.loc, end_sym,
-            parent_scope);
+        std::string func_name = create_getter_function(end_sym->base.loc, read_sym,
+            type, parent_scope);
         ASR::symbol_t* getter_func_sym = parent_scope->resolve_symbol(LCompilers::s2c(al,func_name));
         current_function_dependencies.push_back(al,s2c(al, func_name));
 
         ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, getter_func_sym->base.loc,
-                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, current_scope, current_function_dependencies,
+                                getter_func_sym, getter_func_sym, nullptr, 0, type, nullptr, nullptr, current_scope, current_function_dependencies,
                                 compiler_options.implicit_argument_casting));
         return func_call;
+    }
+
+    // Creates in `scope` a pointer through which a procedure of `scope`
+    // reads `variable`, a variable of a BLOCK construct in it. The BLOCK
+    // associates the pointer with `variable` when it is entered.
+    ASR::symbol_t* create_construct_variable_pointer(ASR::symbol_t* variable,
+            SymbolTable* scope) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*variable));
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(variable);
+        ASRUtils::ASRBuilder b(al, variable->base.loc);
+        std::string name = scope->get_unique_name(
+            "__lcompilers_block_" + std::string(v->m_name), false);
+        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+            variable->base.loc, ASRUtils::type_get_past_allocatable_pointer(v->m_type)));
+        ASR::symbol_t* pointer = ASR::down_cast<ASR::Var_t>(
+            b.Variable(scope, name, type, ASR::intentType::Local))->m_v;
+        v->m_target_attr = true;
+        construct_variable_pointers.push_back({pointer, variable});
+        return pointer;
     }
 
     ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end, bool is_argument) {

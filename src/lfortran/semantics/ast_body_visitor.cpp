@@ -414,7 +414,8 @@ public:
             std::unique_ptr<BlockInterfaceVisitor> interfaces
                 = std::move(block_interfaces);
             try {
-                interfaces->finalize(al, current_module_dependencies);
+                interfaces->finalize(al, current_module_dependencies,
+                    construct_variable_pointers);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
@@ -455,6 +456,15 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_items);
+        // The getters of the interface bodies of the BLOCK read its variables
+        // through pointers, which are associated with them on entry.
+        for (auto &[pointer, variable] : construct_variable_pointers) {
+            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                variable->base.loc,
+                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, pointer)),
+                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)))));
+        }
+        construct_variable_pointers.clear();
         transform_stmts(body, x.n_items, x.m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
