@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.struct_constructor.parent_chain_acyclic]: StructConstructor type 'a' has a cyclic parent chain
-   --> tests/asr/verify/struct_constructor_cyclic_parent.asr:167:14
+   --> tests/asr/verify/struct_constructor_cyclic_parent.asr:169:14
     |
-167 |             (StructConstructor
+169 |             (StructConstructor
     |              ^^^^^^^^^^^^^^^^^ failed here

@@ -2,7 +2,7 @@
     "basename": "asr-common_block_variable_not_sequence-40e3fcc",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_variable_not_sequence.asr",
-    "infile_hash": "6afda8a7e9bd7e1d58c92b7e4e7cc2141783f6d6790f4846e7a20332",
+    "infile_hash": "c1d074f9f7c22fd24263ee54134df5345a1013d5c9cfef11e3f42195",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

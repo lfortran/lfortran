@@ -11351,6 +11351,13 @@ public:
             for (const std::string& name : declared_kind_params) {
                 kind_params.push_back(al, s2c(al, name));
             }
+            Vec<char*> len_params_vec;
+            len_params_vec.reserve(al, len_params.size());
+            for (size_t i = 0; i < kind_params.size(); i++) {
+                if (len_params.count(kind_params[i]) > 0) {
+                    len_params_vec.push_back(al, kind_params[i]);
+                }
+            }
 
             // First pass: process only kind/len parameter declarations
             for (size_t i = 0; i < x.n_items; i++) {
@@ -11410,7 +11417,8 @@ public:
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
-                kind_params.p, kind_params.size());
+                kind_params.p, kind_params.size(),
+                len_params_vec.p, len_params_vec.size());
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
@@ -11558,7 +11566,7 @@ public:
             is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
-            nullptr, 0);
+            nullptr, 0, nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -12245,7 +12253,8 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0,
+            pdt_struct->m_len_params, pdt_struct->n_len_params);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -12290,6 +12299,54 @@ public:
         if (is_pointer) type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
         if (is_allocatable) type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
         return type;
+    }
+
+    // Each value of a length type parameter instantiates its own type, but
+    // length type parameters are not part of the type that `same_type_as`
+    // and `extends_type_of` compare, so these are not supported yet for a
+    // declared type that has length type parameters, unless both arguments
+    // are of the same instantiation and not polymorphic.
+    void check_type_inquiry_len_params(const std::string& intrinsic_name,
+            const Vec<ASR::expr_t*>& args) {
+        if (args.size() == 2 && args[0] != nullptr && args[1] != nullptr) {
+            ASR::ttype_t* type0 = ASRUtils::extract_type(ASRUtils::expr_type(args[0]));
+            ASR::ttype_t* type1 = ASRUtils::extract_type(ASRUtils::expr_type(args[1]));
+            if (ASR::is_a<ASR::StructType_t>(*type0) && !ASRUtils::is_class_type(type0)
+                    && ASR::is_a<ASR::StructType_t>(*type1)
+                    && !ASRUtils::is_class_type(type1)) {
+                ASR::symbol_t* sym0 = ASRUtils::get_struct_sym_from_struct_expr(args[0]);
+                ASR::symbol_t* sym1 = ASRUtils::get_struct_sym_from_struct_expr(args[1]);
+                if (sym0 != nullptr && sym1 != nullptr
+                        && ASRUtils::symbol_get_past_external(sym0)
+                            == ASRUtils::symbol_get_past_external(sym1)) {
+                    return;
+                }
+            }
+        }
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] == nullptr || !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(args[i])))) {
+                continue;
+            }
+            ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(args[i]);
+            while (sym != nullptr) {
+                sym = ASRUtils::symbol_get_past_external(sym);
+                if (!ASR::is_a<ASR::Struct_t>(*sym)) {
+                    break;
+                }
+                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(sym);
+                if (struct_t->n_len_params > 0) {
+                    diag.add(Diagnostic(
+                        "`" + intrinsic_name + "` with an argument of a"
+                        " parameterized derived type with length type"
+                        " parameters is not supported yet",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {args[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+                sym = struct_t->m_parent;
+            }
+        }
     }
 
     // The expression of the type parameter `param_name` of the parameterized
@@ -12822,7 +12879,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -13208,7 +13265,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -20668,6 +20725,9 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
+                    }
+                    if (var_name == "same_type_as" || var_name == "extends_type_of") {
+                        check_type_inquiry_len_params(var_name, args);
                     }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);

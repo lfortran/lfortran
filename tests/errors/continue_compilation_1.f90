@@ -2484,3 +2484,20 @@ module cc1_pdt_param_attr_mod
     integer, kind :: cc1_kind_attr = 4  ! {Error} the kind attribute is only allowed in a derived type definition
     integer, len :: cc1_len_attr = 4  ! {Error} the len attribute is only allowed in a derived type definition
 end module cc1_pdt_param_attr_mod
+
+! A length type parameter is not part of the type compared by same_type_as
+! and extends_type_of, which is not supported yet.
+module cc1_pdt_len_type_inquiry_mod
+    implicit none
+    type :: cc1_pdt_len_ti_t(n)
+        integer, len :: n
+        integer :: a(n)
+    end type cc1_pdt_len_ti_t
+contains
+    subroutine cc1_pdt_len_ti_sub()
+        type(cc1_pdt_len_ti_t(3)) :: x
+        type(cc1_pdt_len_ti_t(4)) :: y
+        print *, same_type_as(x, y)  ! {Error} `same_type_as` with an argument of a parameterized derived type with length type parameters is not supported yet
+        print *, extends_type_of(x, y)  ! {Error} `extends_type_of` with an argument of a parameterized derived type with length type parameters is not supported yet
+    end subroutine cc1_pdt_len_ti_sub
+end module cc1_pdt_len_type_inquiry_mod

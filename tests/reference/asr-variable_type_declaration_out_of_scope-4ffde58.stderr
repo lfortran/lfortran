@@ -5,7 +5,7 @@ ASR verify pass error: The symbol table was not found in the scope of `symtab`.
   |                     ^^^^^^ failed here
 
 ASR verify pass error [asr.verify.variable.type_declaration_in_scope]: Variable 'x' declares its type with 'base', which is not in scope
-  --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:48:18
+  --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:49:18
    |
-48 |             "x" (Variable
+49 |             "x" (Variable
    |                  ^^^^^^^^ failed here

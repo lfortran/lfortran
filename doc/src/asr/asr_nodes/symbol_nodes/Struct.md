@@ -12,7 +12,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, identifier* len_params)
 ```
 
 ### Arguments
@@ -33,7 +33,8 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `initializers` | the default initializers of the components, in `members` order. |
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
-| `kind_params` | the names of the kind type parameters of the type. |
+| `kind_params` | the names of the type parameters of a parameterized derived type, in the order of its type parameter list. Only a template has them; each instantiation is a separate Struct whose type parameters have constant values. |
+| `len_params` | the names of the length type parameters of a parameterized derived type, in a template (a subset of `kind_params`) and in each of its instantiations. |
 
 ### Return values
 

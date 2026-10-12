@@ -1449,6 +1449,22 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
         }
+        for (size_t i = 0; i < x.n_len_params; i++) {
+            std::string name = x.m_len_params[i];
+            ASR::symbol_t* param = x.m_symtab->get_symbol(name);
+            require_id(param != nullptr && ASR::is_a<ASR::Variable_t>(*param),
+                "asr.verify.struct.len_param_declared",
+                "length type parameter '" + name + "' of '"
+                + std::string(x.m_name) + "' is not a variable of the type");
+            bool is_type_param = x.n_kind_params == 0;
+            for (size_t j = 0; j < x.n_kind_params && !is_type_param; j++) {
+                is_type_param = name == x.m_kind_params[j];
+            }
+            require_id(is_type_param,
+                "asr.verify.struct.len_param_is_type_param",
+                "length type parameter '" + name + "' of '"
+                + std::string(x.m_name) + "' is not one of its type parameters");
+        }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);

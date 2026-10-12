@@ -30,6 +30,7 @@
               nil
               nil
               []
+              []
             )
             "other" (Struct
               (SymbolTable
@@ -54,6 +55,7 @@
               []
               nil
               nil
+              []
               []
             )
           }

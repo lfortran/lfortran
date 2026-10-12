@@ -197,6 +197,7 @@
                                     ()
                                     8 der_t
                                     []
+                                    []
                                 ),
                             der3_t:
                                 (ExternalSymbol
@@ -424,6 +425,7 @@
                                     ()
                                     ()
                                     []
+                                    []
                                 )
                         })
                     structure_constructor_parent_02_a
@@ -488,6 +490,7 @@
                                     []
                                     ()
                                     4 p_t
+                                    []
                                     []
                                 ),
                             p_t:
@@ -563,6 +566,7 @@
                                     []
                                     ()
                                     6 p_t
+                                    []
                                     []
                                 ),
                             p_t:

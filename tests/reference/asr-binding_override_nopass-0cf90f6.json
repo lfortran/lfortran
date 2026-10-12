@@ -2,12 +2,12 @@
     "basename": "asr-binding_override_nopass-0cf90f6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/binding_override_nopass.asr",
-    "infile_hash": "24d707c96b5031d4659992c5a7b34ca487123d2c962f1eb1a2179644",
+    "infile_hash": "f43bdc7d2695e05a7253e4e7f06f22d1a37c62a19e71b961ac913748",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-binding_override_nopass-0cf90f6.stderr",
-    "stderr_hash": "4cb98c9d923f51fe2bd12c7af92cb7db36e9fc08c74cf4c5d79a9c6b",
+    "stderr_hash": "49840f1934f47bfe59258b87dc99afb4f95826f6e3afdd24adf2ae20",
     "returncode": 2
 }

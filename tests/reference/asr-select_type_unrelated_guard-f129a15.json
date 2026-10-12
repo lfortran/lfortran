@@ -2,12 +2,12 @@
     "basename": "asr-select_type_unrelated_guard-f129a15",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/select_type_unrelated_guard.asr",
-    "infile_hash": "90c6024783cef87bfda6cf7917044698b567470df4a21cc36569fb76",
+    "infile_hash": "116c88c1ae420c66a264ae1b926b5dbc1b2b3ee09c915ba671e8d86f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-select_type_unrelated_guard-f129a15.stderr",
-    "stderr_hash": "6f7c6697053b7ba03da7f7b6e1f7f149fc237298baa53c6168e61a2d",
+    "stderr_hash": "9f6d5acc81c431a76cf702c5c2c74948d56d67123553dab330875a2e",
     "returncode": 2
 }

@@ -154,6 +154,7 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :len_params []
             )
           }
         )

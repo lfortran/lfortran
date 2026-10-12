@@ -261,6 +261,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    []
                                 ),
                             default_class:
                                 (Function
@@ -396,6 +397,7 @@
                                     []
                                     ()
                                     ()
+                                    []
                                     []
                                 )
                         })

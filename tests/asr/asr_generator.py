@@ -469,7 +469,7 @@ def struct(symtab_id, name, methods, parent=None, abstract=False):
         f":members [] :member_functions [] :abi :Source :access :Public "
         f":is_packed false :is_abstract {'true' if abstract else 'false'} "
         f":is_sequence false :initializers [] :alignment nil "
-        f":parent {parent or 'nil'} :kind_params [])"
+        f":parent {parent or 'nil'} :kind_params [] :len_params [])"
     )
 
 
