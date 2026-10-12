@@ -25,4 +25,7 @@ The descriptor is not an executable expression. Existing restriction
 `FunctionCall` nodes represent generic operations, and ordinary typed calls,
 operators, intrinsics, and casts represent concrete ones.
 
+A universal trait's [trait_operation](trait_operation.md) uses the same
+descriptor for its initializer and operator requirements.
+
 See [type_set_requirement](type_set_requirement.md).
