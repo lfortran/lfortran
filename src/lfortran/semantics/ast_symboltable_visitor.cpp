@@ -1113,6 +1113,7 @@ public:
         std::vector<std::string> saved_external_procedures = external_procedures;
         external_procedures.clear();
         generic_procedures.clear();
+        assgn_proc_names_locations.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         
@@ -1207,6 +1208,9 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        // The assignment(=) blocks of the internal procedures are not the program's.
+        std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
+            = assgn_proc_names_locations;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1217,6 +1221,7 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
             try {
                 visit_decl_stmt(*x.m_items[i]);
@@ -1263,6 +1268,11 @@ public:
         pending_proc_placeholders.clear();
         try {
             add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+        try {
+            add_assignment_procedures();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
