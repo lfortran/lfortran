@@ -1,0 +1,5 @@
+tokenizer error: unterminated character literal
+ --> tests/errors/fixed_form_9.f:5:12
+  |
+5 |      +bc"//"de
+  |            ^ not closed before the end of the line

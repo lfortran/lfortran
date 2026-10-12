@@ -40,6 +40,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             asquare:
                                 (Function
@@ -79,6 +80,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -113,6 +115,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -147,6 +150,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             d:
                                                 (Variable
@@ -181,6 +185,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     asquare
@@ -323,6 +328,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -357,6 +363,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             check:
                                 (Function
@@ -396,6 +403,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -420,6 +428,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -444,6 +453,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -468,6 +478,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     check
@@ -649,6 +660,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -673,6 +685,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -697,6 +710,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             k:
                                 (Variable
@@ -721,6 +735,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     array_op_5

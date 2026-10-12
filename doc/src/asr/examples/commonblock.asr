@@ -1,0 +1,222 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "commonblock" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 2
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 1 "common~blk")
+            )
+            "common~blk" (CommonBlock
+              :parent_symtab 1
+              :name "common~blk"
+              :block_name "blk"
+              :link_name "__module_file_common_block_blk_struct_instance_blk"
+              :members [
+                (SymbolRef 1 "n")
+                (SymbolRef 1 "a")
+              ]
+              :associations [
+                (common_association
+                  :variable (SymbolRef 1 "e")
+                  :designator (ArrayItem
+                    :v (Var
+                      :v (SymbolRef 1 "e")
+                    )
+                    :args [
+                      (array_index
+                        :left nil
+                        :right (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :step nil
+                      )
+                    ]
+                    :type (Integer
+                      :kind 4
+                    )
+                    :storage_format :ColMajor
+                    :value nil
+                  )
+                  :anchor (Var
+                    :v (SymbolRef 1 "n")
+                  )
+                )
+              ]
+              :abi :Source
+              :storage :Default
+              :role :Tentative
+            )
+            "e" (Variable
+              :parent_symtab 1
+              :name "e"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 1 "common~blk")
+            )
+            "n" (Variable
+              :parent_symtab 1
+              :name "n"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block (SymbolRef 1 "common~blk")
+            )
+          }
+        )
+        :name "commonblock"
+        :dependencies []
+        :body [
+          (Assignment
+            :target (ArrayItem
+              :v (Var
+                :v (SymbolRef 1 "e")
+              )
+              :args [
+                (array_index
+                  :left nil
+                  :right (IntegerConstant
+                    :n 3
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :step nil
+                )
+              ]
+              :type (Integer
+                :kind 4
+              )
+              :storage_format :ColMajor
+              :value nil
+            )
+            :value (IntegerConstant
+              :n 2
+              :type (Integer
+                :kind 4
+              )
+              :intboz_type :Decimal
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+        :global_init nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)

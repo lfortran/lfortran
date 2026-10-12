@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dlog:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dqk15w:
                                 (Function
@@ -186,6 +188,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -215,6 +218,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f
@@ -270,6 +274,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             f~result:
                                                 (Variable
@@ -294,6 +299,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f~fpcast
@@ -360,6 +366,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             hlgth:
                                 (Variable
@@ -384,6 +391,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dqc25s

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_no_members-87fe399",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_no_members.asr",
+    "infile_hash": "877232ad143f40afc148c6f550aa070121a28313cba3b7f9f9dfde3c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_no_members-87fe399.stderr",
+    "stderr_hash": "3bb0b0f9dcf4cb8953ae962e1f906815ee31034043c76513036af3af",
+    "returncode": 2
+}

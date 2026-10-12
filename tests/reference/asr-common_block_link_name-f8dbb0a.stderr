@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.link_name]: CommonBlock 'common~blk' must have a link name
+  --> tests/asr/verify/common_block_link_name.asr:57:27
+   |
+57 |             "common~blk" (CommonBlock
+   |                           ^^^^^^^^^^^ failed here

@@ -654,6 +654,9 @@ R"(
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
 
+        layout_common_blocks(x);
+        unit_src += declare_common_storage();
+
         std::string unit_src_tmp;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -792,6 +795,10 @@ R"(
             if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
                 std::string unit_src_tmp;
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                // A variable in a common block lives in the block's storage.
+                if (ASRUtils::get_common_block(v) != nullptr) {
+                    continue;
+                }
                 unit_src_tmp = convert_variable_decl(*v);
                 unit_src += unit_src_tmp;
                 if(unit_src_tmp.size() > 0) {
@@ -858,6 +865,9 @@ R"(
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                if (ASRUtils::get_common_block(v) != nullptr) {
+                    continue;
+                }
                 decl += indent1;
                 decl_tmp = convert_variable_decl(*v);
                 decl += decl_tmp;
@@ -1669,6 +1679,37 @@ R"(    // Initialise Numpy
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         CHECK_FAST_C(compiler_options, x)
+        ASR::expr_t *array_base = x.m_v;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*array_base)) {
+            array_base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(array_base)->m_arg;
+        }
+        if (const CommonPlacement *placement = common_placement_of(array_base)) {
+            // An element of an array in a common block is accessed in the
+            // storage of the block, as its other views are, where the array
+            // is in array element order: the first subscript varies fastest.
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(array_base);
+            ASR::dimension_t* m_dims = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(v->m_type, m_dims);
+            std::string index = "0", stride = "1";
+            for (size_t i = 0; i < x.n_args; i++) {
+                this->visit_expr(*x.m_args[i].m_right);
+                std::string subscript = src;
+                std::string lower = "1";
+                if (m_dims[i].m_start) {
+                    this->visit_expr(*m_dims[i].m_start);
+                    lower = src;
+                }
+                index = "(" + index + " + " + stride + " * (" + subscript + " - "
+                    + lower + "))";
+                this->visit_expr(*m_dims[i].m_length);
+                stride = "(" + stride + " * " + src + ")";
+            }
+            int64_t size, alignment;
+            src = "((" + common_access_type_name(common_element_type(*v, size, alignment))
+                + "*)(" + common_address(*placement) + "))[" + index + "]";
+            last_expr_precedence = 2;
+            return;
+        }
         this->visit_expr(*x.m_v);
         std::string array = src;
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);

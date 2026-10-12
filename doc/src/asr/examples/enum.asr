@@ -46,6 +46,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                   "red" (Variable
                     :parent_symtab 2
@@ -83,6 +84,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )
