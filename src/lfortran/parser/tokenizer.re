@@ -26,6 +26,9 @@ void Tokenizer::set_string(const std::string &str)
     string_start = cur;
     cur_line = cur;
     line_num = 1;
+    // The input starts at the beginning of a line, so an integer at the very
+    // start of it is a statement label, just like after a newline.
+    last_token = yytokentype::TK_NEWLINE;
 }
 
 template<int base>
