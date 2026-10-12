@@ -4346,7 +4346,19 @@ public:
         return;
     }
 
+    // Static and operator bindings bind trait requirements, which only an
+    // implements statement does; a type's own bindings use NOPASS and GENERIC.
     void visit_DerivedTypeProc(const AST::DerivedTypeProc_t &x) {
+        for (size_t i = 0; i < x.n_attr; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attr[i]) &&
+                    AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i])->m_attr ==
+                        AST::simple_attributeType::AttrStatic) {
+                diag.semantic_error_label("the static attribute is supported only in "
+                    "implements statements; use nopass for a type-bound procedure "
+                    "without a passed-object argument", {x.m_attr[i]->base.loc}, "");
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+            }
+        }
         for (size_t i = 0; i < x.n_symbols; i++) {
             AST::UseSymbol_t *use_sym = AST::down_cast<AST::UseSymbol_t>(
                 x.m_symbols[i]);
@@ -4398,6 +4410,18 @@ public:
                 }
             }
         }
+    }
+
+    void visit_OperatorProcedure(const AST::OperatorProcedure_t &x) {
+        std::string names;
+        for (size_t i = 0; i < x.n_names; i++) {
+            names += std::string(i ? ", " : "") + x.m_names[i];
+        }
+        diag.semantic_error_label("operator bindings are supported only in implements "
+            "statements; use 'generic :: operator(" +
+            instantiation_intrinsic_op_str(x.m_op) + ") => " + names +
+            "' for a type-bound operator", {x.base.base.loc}, "");
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
     }
 
     void visit_InitialProcedure(const AST::InitialProcedure_t &x) {

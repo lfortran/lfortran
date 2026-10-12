@@ -1194,6 +1194,7 @@ RUN(NAME reduce_03 LABELS  llvm llvm_wasm llvm_wasm_emcc )
 RUN(NAME reserved_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME reserved_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME reserved_03 LABELS gfortran llvm fortran)
+RUN(NAME reserved_04 LABELS gfortran llvm)
 
 RUN(NAME namelist_01 LABELS gfortran llvm fortran)
 RUN(NAME namelist_02 LABELS gfortran llvm fortran)

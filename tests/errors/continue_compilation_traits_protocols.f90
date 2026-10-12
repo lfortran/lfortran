@@ -398,3 +398,79 @@ program continue_compilation_traits_protocols
     i = twice(3)
     print *, i, x
 end program continue_compilation_traits_protocols
+
+! E22: the static attribute outside an implements statement.
+module cc_traits_protocols_type_static
+    implicit none
+    type :: Counter
+        integer :: n = 7
+    contains
+        procedure, static :: show
+    end type Counter
+contains
+    subroutine show(x)
+        class(Counter), intent(in) :: x
+        print *, x%n
+    end subroutine show
+end module cc_traits_protocols_type_static
+
+! E23, E24: operator bindings, static or not, outside an implements
+! statement; a type's own operator is a GENERIC binding.
+module cc_traits_protocols_type_operator
+    implicit none
+    type :: Scaled
+        integer :: n = 7
+    contains
+        procedure, static :: operator(*) => times_scaled
+    end type Scaled
+    type :: Summed
+        integer :: n = 7
+    contains
+        procedure :: operator(+) => plus_summed
+    end type Summed
+    type :: Ordinary
+        integer :: n = 7
+    contains
+        procedure, pass :: times_ordinary
+        generic :: operator(*) => times_ordinary
+    end type Ordinary
+contains
+    function times_scaled(lhs, rhs) result(res)
+        type(Scaled), intent(in) :: lhs, rhs
+        type(Scaled)             :: res
+        res%n = lhs%n * rhs%n
+    end function times_scaled
+    function plus_summed(lhs, rhs) result(res)
+        class(Summed), intent(in) :: lhs, rhs
+        type(Summed)              :: res
+        res%n = lhs%n + rhs%n
+    end function plus_summed
+    function times_ordinary(lhs, rhs) result(res)
+        class(Ordinary), intent(in) :: lhs, rhs
+        type(Ordinary)              :: res
+        res%n = lhs%n * rhs%n
+    end function times_ordinary
+end module cc_traits_protocols_type_operator
+
+! E25: a type adopting a trait binds its operator requirements only in an
+! implements statement (E25 also reports the resulting missing binding).
+module cc_traits_protocols_adopted_operator
+    implicit none
+    abstract interface :: IScale
+        function operator(*)(lhs, rhs) result(res)
+            type(itself), intent(in) :: lhs, rhs
+            type(itself)             :: res
+        end function operator(*)
+    end interface IScale
+    type, sealed, implements(IScale) :: Adopted
+        integer :: n = 7
+    contains
+        procedure, static :: operator(*) => times_adopted
+    end type Adopted
+contains
+    function times_adopted(lhs, rhs) result(res)
+        type(Adopted), intent(in) :: lhs, rhs
+        type(Adopted)             :: res
+        res%n = lhs%n * rhs%n
+    end function times_adopted
+end module cc_traits_protocols_adopted_operator

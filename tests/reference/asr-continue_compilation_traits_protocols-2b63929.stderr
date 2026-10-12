@@ -128,6 +128,40 @@ semantic error: Dummy argument 'x' not defined
 359 |        end subroutine show_ring
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the static attribute is supported only in implements statements; use nopass for a type-bound procedure without a passed-object argument
+   --> tests/errors/continue_compilation_traits_protocols.f90:408:20
+    |
+408 |         procedure, static :: show
+    |                    ^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(*) => times_scaled' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:424:9
+    |
+424 |         procedure, static :: operator(*) => times_scaled
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(+) => plus_summed' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:429:9
+    |
+429 |         procedure :: operator(+) => plus_summed
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(*) => times_adopted' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:468:9
+    |
+468 |         procedure, static :: operator(*) => times_adopted
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'adopted' does not bind operator(*) matching the requirement of trait 'iscale'
+   --> tests/errors/continue_compilation_traits_protocols.f90:465:5 - 469:21
+    |
+465 |        type, sealed, implements(IScale) :: Adopted
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+469 |        end type Adopted
+    | ...^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: ambiguous operator(*) for operands of type t and integer(4): several requirements of the constraints accept them
    --> tests/errors/continue_compilation_traits_protocols.f90:348:13
     |
