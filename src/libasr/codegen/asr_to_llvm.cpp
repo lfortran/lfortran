@@ -117,13 +117,13 @@ static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
  *
  * This function encapsulates all mangling logic in one place:
  * 1. Determines base name (BindC, external interface, or prefixed)
- * 2. Adds parent function prefix if applicable
+ * 2. Adds the host's name as a prefix if applicable
  *
  * @param sym_name Original symbol name from ASR
  * @param ftype Function type information
  * @param compiler_options Compiler options including mangling flags
  * @param mangle_prefix Prefix to add (typically "_lfortran_")
- * @param parent_function Parent function if this is a nested function
+ * @param host Host procedure or program if this is a contained procedure
  * @return Final mangled name to use in LLVM
  */
 static std::string compute_llvm_function_name(
@@ -131,7 +131,7 @@ static std::string compute_llvm_function_name(
     ASR::FunctionType_t* ftype,
     const CompilerOptions& compiler_options,
     const std::string& mangle_prefix,
-    const ASR::Function_t* parent_function
+    const ASR::symbol_t* host
 ) {
     (void)compiler_options;
     bool is_external_interface = is_external_interface_function(ftype);
@@ -161,12 +161,13 @@ static std::string compute_llvm_function_name(
         fn_name = mangle_prefix + sym_name;
     }
 
-    // Add parent function prefix for nested functions
-    if (parent_function != nullptr &&
+    // Qualify a contained procedure with its host's name, so that it does
+    // not clash with a procedure of the same name elsewhere
+    if (host != nullptr &&
         !is_external_interface &&
         ftype->m_abi != ASR::abiType::Intrinsic &&
         !is_bindc) {
-        fn_name = std::string(parent_function->m_name) + "." + fn_name;
+        fn_name = std::string(ASRUtils::symbol_name(host)) + "." + fn_name;
     }
 
     return fn_name;
@@ -675,7 +676,9 @@ public:
     std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint32_t> global_string_allocated;
-    const ASR::Function_t *parent_function = nullptr;
+    // The procedure or program whose contained procedures are being
+    // instantiated
+    const ASR::symbol_t *procedure_host = nullptr;
 
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
         so that we can jump to the head of the loop when we reach a cycle */
@@ -8101,6 +8104,7 @@ public:
         }
 
         // Generate code for nested subroutines and functions first:
+        procedure_host = &x.base;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
@@ -8108,6 +8112,7 @@ public:
                 instantiate_function(*v);
             }
         }
+        procedure_host = nullptr;
         visit_procedures(x);
         llvm_goto_targets.clear();
 
@@ -10283,7 +10288,7 @@ public:
         }
         visit_procedures(x);
         generate_function(x);
-        parent_function = nullptr;
+        procedure_host = nullptr;
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);
@@ -10326,7 +10331,7 @@ public:
             }
             ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
             std::string fn_name = compute_llvm_function_name(
-                sym_name, ftype, compiler_options, mangle_prefix, parent_function
+                sym_name, ftype, compiler_options, mangle_prefix, procedure_host
             );
             if (llvm_symtab_fn_names.find(fn_name) != llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn[h] = llvm_symtab_fn[llvm_symtab_fn_names[fn_name]];
@@ -10374,7 +10379,7 @@ public:
             ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
             std::string fn_name = compute_llvm_function_name(
                 sym_name, ftype, compiler_options,
-                tu_symbol_prefix(x.m_symtab->parent, mangle_prefix, sym_name), parent_function
+                tu_symbol_prefix(x.m_symtab->parent, mangle_prefix, sym_name), procedure_host
             );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
@@ -10434,8 +10439,8 @@ public:
             // Instantiate (pre-declare) all nested interfaces
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
-                    const ASR::Function_t* parent_function_copy = parent_function;
-                    parent_function = &x;
+                    const ASR::symbol_t* procedure_host_copy = procedure_host;
+                    procedure_host = &x.base;
                     ASR::Function_t *v = down_cast<ASR::Function_t>(
                             item.second);
                     // check if item.second is present in x.m_args
@@ -10451,7 +10456,7 @@ public:
                     if (!interface_as_arg) {
                         instantiate_function(*v);
                     }
-                    parent_function = parent_function_copy;
+                    procedure_host = procedure_host_copy;
                 } else if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(item.second)) && is_function_variable(ASRUtils::symbol_get_past_external(item.second)) ) {
                     ASR::Variable_t *v = down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(item.second));
                     bool interface_as_arg = false;
@@ -10567,7 +10572,7 @@ public:
 
     inline void define_function_entry(const ASR::Function_t& x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
-        parent_function = &x;
+        procedure_host = &x.base;
         llvm::Function* F = llvm_symtab_fn[h];
         llvm_goto_targets.clear();
         current_sret_arg = nullptr;

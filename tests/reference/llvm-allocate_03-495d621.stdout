@@ -541,8 +541,8 @@ ifcont14:                                         ; preds = %ifcont12
   %173 = load i32*, i32** %172, align 1
   %174 = getelementptr inbounds i32, i32* %173, i64 %171
   store i32 3, i32* %174, align 1
-  call void @h(%array.3** %c)
-  %175 = call i32 @g(%array.3** %c)
+  call void @allocate_03.h(%array.3** %c)
+  %175 = call i32 @allocate_03.g(%array.3** %c)
   store i32 %175, i32* %r, align 4
   %176 = load %array.3*, %array.3** %c, align 8
   %177 = ptrtoint %array.3* %176 to i64
@@ -997,7 +997,7 @@ Finalize_Variable_c:                              ; preds = %FINALIZE_SYMTABLE_a
   ret i32 0
 }
 
-define void @f(%array.3** %c) {
+define void @allocate_03.f(%array.3** %c) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = load %array.3*, %array.3** %c, align 1
@@ -1363,7 +1363,7 @@ FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 
-define i32 @g(%array.3** %x) {
+define i32 @allocate_03.g(%array.3** %x) {
 .entry:
   %stringFormat_desc31 = alloca %string_descriptor, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8
@@ -1807,7 +1807,7 @@ else:                                             ; preds = %ifcont17
   br label %ifcont19
 
 ifcont19:                                         ; preds = %else, %then18
-  call void @f(%array.3** %x)
+  call void @allocate_03.f(%array.3** %x)
   %266 = alloca i64, align 8
   %267 = load %array.3*, %array.3** %x, align 1
   %268 = ptrtoint %array.3* %267 to i64
@@ -2458,7 +2458,7 @@ FINALIZE_SYMTABLE_g:                              ; preds = %return
   ret i32 %656
 }
 
-define void @h(%array.3** %c) {
+define void @allocate_03.h(%array.3** %c) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
@@ -2542,7 +2542,7 @@ else11:                                           ; preds = %merge_allocated8
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  call void @f(%array.3** %c)
+  call void @allocate_03.f(%array.3** %c)
   %28 = alloca i64, align 8
   %29 = load %array.3*, %array.3** %c, align 1
   %30 = ptrtoint %array.3* %29 to i64
