@@ -70,7 +70,7 @@ program continue_compilation_3
     end type
     type(t), parameter :: cc_param_struct = t(4)
     integer, parameter :: cc_param_arr(3) = [1, 2, 3]
-    type(t) :: y
+    type(t) :: y; type(tbp_ptr_dummy_t) :: tbp_noarg_w
     integer :: merge_i = 4, merge_j = 5
     integer(8) :: merge_k = 8
     integer :: arr_nc(minval(abs(a)))
@@ -210,7 +210,7 @@ program continue_compilation_3
     !DATA on a PARAMETER (named constant) is a semantic error
     data cc_param_struct%xx / 5 /  ! {Error} PARAMETER 'cc_param_struct' shall not appear in a DATA statement
     data (cc_param_arr(i), i=1,3) / 4, 5, 6 /  ! {Error} PARAMETER 'cc_param_arr' shall not appear in a DATA statement
-
+    i = tbp_noarg_w%m  ! Error: type-bound procedure referenced without an argument list
     contains 
     subroutine bpe()
         print *, size(bpe)
@@ -218,3 +218,38 @@ program continue_compilation_3
     end subroutine
         
 end program
+
+module fref_m_13849
+    implicit none
+    type :: s_13849
+        integer, allocatable :: a(:)
+    end type
+contains
+    function mk_13849(i) result(r)
+        integer, intent(in) :: i
+        type(s_13849) :: r
+        allocate(r%a(2))
+        r%a = i
+    end function
+    subroutine test_fref_13849()
+        print *, size(mk_13849(1)%a)
+        print *, mk_13849(1)%a
+    end subroutine
+end module
+
+! An intrinsic numeric operator applied to an operand of a derived type, or of
+! `type(c_ptr)`, for which no operator is defined is an error.
+subroutine cc3_derived_type_intrinsic_binop_error(c)
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr), intent(in) :: c
+    type :: cc3_binop_t
+        integer :: k = 2
+    end type
+    type(cc3_binop_t) :: x, y(3)
+    print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+end subroutine cc3_derived_type_intrinsic_binop_error

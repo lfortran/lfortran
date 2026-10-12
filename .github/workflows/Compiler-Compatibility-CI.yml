@@ -20,6 +20,7 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
@@ -193,10 +194,14 @@ jobs:
             make=4.3
             ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
 
+      # Quick's LLVM 11 compiler is a Debug build with extra checks, while
+      # Exhaustive builds LLVM 11 in Release; separate keys keep them from
+      # overwriting each other's cache.
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}
+          max-size: 1500M
           save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install libunwind
@@ -209,11 +214,21 @@ jobs:
             ./build0.sh
             # Quick's full normal/fast compiler needs the same diagnostic,
             # allocation and assertion checks as the platform Debug builds.
+            # It stays a Debug build (WITH_LFORTRAN_ASSERT, per-pass ASR
+            # verification, no NDEBUG anywhere) but is compiled with -O2:
+            # this compiler runs four full integration passes, and an
+            # optimized compiler makes each pass ~1.6x faster.
             BUILD_TYPE=Release
             CHECK_FLAGS=()
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
                 BUILD_TYPE=Debug
-                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes)
+                # GCC's -Wmismatched-new-delete is a false positive at -O2
+                # for LLVM's `new llvm::GlobalVariable(...)`: GlobalVariable's
+                # operator new forwards to User::operator new(size_t, unsigned),
+                # which GCC cannot match with the cleanup delete.
+                CHECK_FLAGS=(-DWITH_INTERNAL_ALLOC_CHECK=yes
+                    "-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
+                    "-DCMAKE_C_FLAGS_DEBUG=-O2")
                 export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
                 export CXXFLAGS="$CFLAGS"
             fi

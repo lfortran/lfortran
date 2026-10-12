@@ -145,13 +145,72 @@ class RunnerTests(unittest.TestCase):
         runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(runner)
         for smoke in (False, True):
-            with self.subTest(smoke=smoke), patch.object(runner, "run_cmd") as command:
+            with self.subTest(smoke=smoke), \
+                    tempfile.TemporaryDirectory() as build_dir, \
+                    patch.object(runner, "BUILD_DIR", Path(build_dir)), \
+                    patch.object(runner, "run_cmd") as command:
                 runner.run_test("llvm", "lf", smoke=smoke)
                 commands = [call.args[0] for call in command.call_args_list]
                 configure = next(cmd for cmd in commands if " cmake " in cmd)
                 self.assertEqual("-DLFORTRAN_SMOKE=ON" in configure, smoke)
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
+
+    def test_reference_build_dir_keeps_writes_out_of_source(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as build_dir, \
+                patch.object(tester, "OUTPUT_DIR", tester.OUTPUT_DIR):
+            try:
+                tester.use_build_dir(build_dir)
+                build = Path(build_dir).resolve()
+                self.assertEqual(Path(os.getcwd()).resolve(), build)
+                # The x86 tests write an executable named `output`.
+                self.assertEqual(tester.OUTPUT_DIR, "test_output")
+                for name in ("tests", "integration_tests"):
+                    self.assertEqual((build / name).resolve(), ROOT / name)
+                self.assertTrue((build / "tests/../integration_tests").is_dir())
+                out = tester.fixdir(f"{os.getcwd()}/a {ROOT}/tests/b".encode())
+                self.assertEqual(out, b"$DIR/a $DIR/tests/b")
+                # A rerun starts empty: an earlier run's module files must not
+                # be read by a different compiler.
+                (build / "stale.mod").write_text("")
+                tester.use_build_dir(build_dir)
+                self.assertFalse((build / "stale.mod").exists())
+                self.assertEqual((build / "tests").resolve(), ROOT / "tests")
+                # Any other non-empty directory is left alone.
+                other = build / "other"
+                other.mkdir()
+                (other / "keep").write_text("")
+                with self.assertRaises(SystemExit):
+                    tester.use_build_dir(other)
+                self.assertTrue((other / "keep").exists())
+            finally:
+                os.chdir(cwd)
+
+    def test_require_llvm_checks_the_selected_compiler(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        with tempfile.TemporaryDirectory() as bin_dir:
+            compiler = Path(bin_dir) / "lfortran"
+            for version, ok in (("11.1.0", True), ("22.1.0", False),
+                                ("none", False)):
+                with self.subTest(version=version):
+                    compiler.write_text(f"#!/bin/sh\necho 'LLVM: {version}'\n")
+                    compiler.chmod(0o755)
+                    with patch.dict(os.environ, {"PATH": bin_dir}):
+                        if ok:
+                            tester.check_llvm_version("lfortran", 11)
+                        else:
+                            with self.assertRaises(SystemExit):
+                                tester.check_llvm_version("lfortran", 11)
 
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
@@ -267,7 +326,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
         jobs = (
-            ("test_llvm_wasm", "Test LLVM 19 WASM (ubuntu-latest)"),
+            ("test_llvm_wasm", "Test LLVM 19 WASM${{ matrix.suffix }} (ubuntu-latest)"),
             ("test_without_llvm", "Test without LLVM Backend"),
             ("test_mlir", "Test MLIR backend"),
         )
@@ -278,8 +337,32 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn(f"name: Compiler compatibility / {name}\n", body)
             self.assertNotIn("\n    if:", body)
         wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
-        self.assertIn("./run_tests.py -b llvm_wasm llvm_wasm_emcc\n", wasm)
+        self.assertIn("./run_tests.py -b ${{ matrix.backend }}\n", wasm)
         self.assertNotIn("--smoke", wasm)
+
+    def test_llvm_wasm_backends_run_in_parallel_jobs(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
+        matrix = re.findall(r'- backend: (\w+)\n\s+suffix: "([^"]*)"', wasm)
+        self.assertEqual(matrix, [("llvm_wasm", ""), ("llvm_wasm_emcc", " Emscripten")])
+        self.assertIn("fail-fast: false", wasm)
+        # Both jobs build the same compiler, so only one saves the cache.
+        self.assertIn("save: ${{ github.ref == 'refs/heads/main' && matrix.backend == 'llvm_wasm' }}", wasm)
+        unit = wasm.split("      - name: Test unit tests\n", 1)[1].split("\n      - ", 1)[0]
+        self.assertIn("if: matrix.backend == 'llvm_wasm'", unit)
+
+    def test_llvm_wasm_compiler_is_an_optimized_debug_build(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
+        build = wasm.split("      - name: Build Linux ( WASM )\n", 1)[1].split("\n      - ", 1)[0]
+        self.assertIn('export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"', build)
+        self.assertIn("-DCMAKE_BUILD_TYPE=Debug", build)
+        self.assertIn('"-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"', build)
+        self.assertIn('"-DCMAKE_C_FLAGS_DEBUG=-O2"', build)
+        commands = "\n".join(l for l in build.splitlines() if not l.lstrip().startswith("#"))
+        self.assertNotIn("NDEBUG", commands)
+        # -O2 objects must not be mixed with the old -O0 cache.
+        self.assertIn("key: ${{ github.job }}-ubuntu-latest-19-o2\n", wasm)
 
     def test_full_platform_coverage_moves_to_exhaustive_without_changing_builds(self):
         workflows = ROOT / ".github/workflows"
@@ -347,6 +430,7 @@ class WorkflowPolicyTests(unittest.TestCase):
             "Compiler compatibility / Test LLVM 11 (ubuntu-latest)",
             "Compiler compatibility / Test LLVM 23 (ubuntu-latest)",
             "Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)",
+            "Compiler compatibility / Test LLVM 19 WASM Emscripten (ubuntu-latest)",
             "Compiler compatibility / Test without LLVM Backend",
             "Compiler compatibility / Test MLIR backend",
         ])
@@ -409,20 +493,37 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_compiler_caches_are_saved_only_on_main(self):
         # PR and tag caches can only be restored by the same ref; saving them
         # evicts the main caches that every run restores from.
-        save = "save: ${{ github.ref == 'refs/heads/main' }}"
+        # A job may narrow this further (e.g. one matrix entry saves).
+        save = re.compile(r"save: \$\{\{ github\.ref == 'refs/heads/main'( && [^}\n]+)? \}\}\n")
         paths = [*(ROOT / ".github/workflows").glob("*.yml"),
                  *(ROOT / ".github/actions").glob("*/action.yml")]
         steps = 0
         for path in paths:
             for step in path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]:
                 steps += 1
-                self.assertIn(save, step.split("\n\n", 1)[0], path)
+                self.assertRegex(step.split("\n\n", 1)[0] + "\n", save, path)
         self.assertGreaterEqual(steps, 8)
 
     def test_platform_ccache_fits_a_debug_build(self):
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
         step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
         self.assertIn("max-size: 1500M", step)
+
+    def test_only_quick_saves_platform_caches(self):
+        # Quick and Exhaustive build the same platform compilers with the same
+        # keys; two ~1.5 GB copies per platform overflow the 10 GB cache limit.
+        workflows = ROOT / ".github/workflows"
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("save: ${{ github.ref == 'refs/heads/main' && inputs.save-cache == 'true' }}", step)
+        self.assertIn("    default: 'true'\n", action.split("  save-cache:\n", 1)[1].split("\nruns:", 1)[0])
+        for name, saves in (("Quick-Checks-CI.yml", True), ("Exhaustive-Checks-CI.yml", False)):
+            source = (workflows / name).read_text()
+            uses = source.split("uses: ./.github/actions/build-platform\n")[1:]
+            self.assertTrue(uses, name)
+            for use in uses:
+                inputs = use.split("\n\n", 1)[0]
+                self.assertEqual("save-cache: 'false'" not in inputs, saves, name)
 
     def test_superseded_main_caches_are_pruned(self):
         spec = importlib.util.spec_from_file_location(
@@ -474,6 +575,68 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertTrue(cleans)
         for clean in cleans:
             self.assertIn("-e .ccache", clean)
+
+    def test_every_job_has_a_timeout(self):
+        # Without timeout-minutes, a hung job holds a runner for GitHub's
+        # 6-hour default. Jobs calling a reusable workflow cannot set it;
+        # the called workflow's jobs do.
+        for path in (ROOT / ".github/workflows").glob("*.yml"):
+            jobs = path.read_text().split("\njobs:\n", 1)[1]
+            blocks = re.split(r"(?m)^  ([\w-]+):\n", jobs)
+            for index in range(1, len(blocks), 2):
+                name, body = blocks[index:index + 2]
+                with self.subTest(workflow=path.name, job=name):
+                    if re.search(r"(?m)^    uses: ", body):
+                        self.assertNotIn("\n    timeout-minutes:", body)
+                    else:
+                        self.assertRegex(body, r"(?m)^    timeout-minutes: \S")
+
+    def test_headers_do_not_expand_the_version(self):
+        # LFORTRAN_VERSION changes with every commit. Expanding it in a header
+        # changes the preprocessed output of every including file, so compiler
+        # caches miss on every commit. Use it only in .cpp files.
+        headers = [path for path in (ROOT / "src").rglob("*")
+                   if path.suffix in (".h", ".hpp") and path.name != "config.h"]
+        uses = [str(path.relative_to(ROOT)) for path in headers
+                if "LFORTRAN_VERSION" in path.read_text(errors="ignore")]
+        self.assertEqual(uses, [])
+
+    def test_platform_build_path_does_not_depend_on_the_version(self):
+        # The version comes from git describe and changes with every commit;
+        # building under a versioned path makes every compiler cache entry miss.
+        source = (ROOT / "ci/build.sh").read_text()
+        self.assertIn("source_dir=lfortran-src\n", source)
+        self.assertIn('mv "lfortran-$lfortran_version" "$source_dir"\n', source)
+        self.assertIn('cd "$source_dir"\n', source)
+        uses = [line for line in source.splitlines()
+                if "lfortran-$lfortran_version" in line and not line.lstrip().startswith("#")]
+        self.assertEqual(uses, [
+            "tar xzf dist/lfortran-$lfortran_version.tar.gz",
+            'mv "lfortran-$lfortran_version" "$source_dir"',
+        ])
+
+    def test_macos_lfortran_does_not_export_cxx_symbols(self):
+        # dyld coalesces every exported weak symbol at launch; exporting the
+        # ~66,000 weak C++ symbols of a Debug build made each lfortran
+        # invocation spend ~150 ms in dyld. The JIT needs only C symbols.
+        cmake = (ROOT / "src/bin/CMakeLists.txt").read_text()
+        block = cmake.split("if (APPLE)\n    # At every launch dyld", 1)[1].split("\nendif()", 1)[0]
+        self.assertIn('"LINKER:-unexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/unexported_symbols.txt"', block)
+        symbols = (ROOT / "src/bin/unexported_symbols.txt").read_text().splitlines()
+        self.assertEqual([line for line in symbols if line and not line.startswith("#")], ["__Z*"])
+        
+    def test_compatibility_build_variants_have_separate_caches(self):
+        # Quick builds LLVM 11 as Debug with extra checks; Exhaustive builds it
+        # as Release. A shared cache key made each overwrite the other's cache.
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        build = source.split("      - name: Build\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn('if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then\n'
+                      "                BUILD_TYPE=Debug", build)
+        cache = source.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}"
+                      "${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}\n",
+                      cache)
+        self.assertIn("max-size: 1500M", cache)
 
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
@@ -746,6 +909,13 @@ class QuickScriptTests(unittest.TestCase):
                 debug = scope == "quick" and llvm == "11"
                 self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
                 self.assertEqual("-DWITH_INTERNAL_ALLOC_CHECK=yes" in cmake[0], debug)
+                # Quick's LLVM 11 compiler is optimized but still a Debug build:
+                # assertions and per-pass ASR verification stay on, and no
+                # Debug flag defines NDEBUG.
+                self.assertEqual("-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
+                                 in cmake[0], debug)
+                self.assertEqual("-DCMAKE_C_FLAGS_DEBUG=-O2" in cmake[0], debug)
+                self.assertFalse([arg for arg in cmake[0] if "FLAGS_DEBUG" in arg and "NDEBUG" in arg])
                 flags = json.loads(environment_log.read_text().splitlines()[0])
                 expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                             "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
@@ -817,22 +987,64 @@ class QuickScriptTests(unittest.TestCase):
         build = (ROOT / "ci/build.sh").read_text()
         block = build.split('if [[ $WIN == "1" ]]; then # Windows', 1)[1]
         block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\ncmake --build", 1)[0]
-        environment_log = self.directory / "build-environment.jsonl"
-        env = dict(self.env, CI_BUILD_ENV_LOG=str(environment_log),
-                   LFORTRAN_CMAKE_GENERATOR="Ninja", ENABLE_RUNTIME_STACKTRACE="yes")
-        result = subprocess.run(
-            ["bash", "-e"], input=script + "\n" + block,
-            cwd=self.directory, env=env, capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
-        self.assertEqual(len(calls), 1)
-        self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", calls[0])
-        self.assertIn("-DCMAKE_BUILD_TYPE=Debug", calls[0])
         expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                     "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
-        flags = json.loads(environment_log.read_text())
-        self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected))
+        for optimize, cflags, cxxflags in (
+                (None, expected, expected),
+                ("yes", expected + " -O2", expected + " -O2 -Wno-mismatched-new-delete")):
+            with self.subTest(optimize=optimize):
+                self.calls.write_text("")
+                environment_log = self.directory / "build-environment.jsonl"
+                environment_log.unlink(missing_ok=True)
+                env = dict(self.env, CI_BUILD_ENV_LOG=str(environment_log),
+                           LFORTRAN_CMAKE_GENERATOR="Ninja", ENABLE_RUNTIME_STACKTRACE="yes")
+                # The CI job that runs these tests may itself be optimized.
+                env.pop("LFORTRAN_CI_OPTIMIZE", None)
+                if optimize:
+                    env["LFORTRAN_CI_OPTIMIZE"] = optimize
+                result = subprocess.run(
+                    ["bash", "-e"], input=script + "\n" + block,
+                    cwd=self.directory, env=env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
+                self.assertEqual(len(calls), 1)
+                self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", calls[0])
+                # Still a Debug build: assertions and ASR verification stay on.
+                self.assertIn("-DCMAKE_BUILD_TYPE=Debug", calls[0])
+                flags = json.loads(environment_log.read_text())
+                self.assertEqual(flags, {"CFLAGS": cflags, "CXXFLAGS": cxxflags})
+                self.assertNotIn("NDEBUG", cflags + cxxflags)
+
+    def test_only_linux_llvm_21_platform_compiler_is_optimized(self):
+        action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        step = action.split("    - name: Select compiler optimization\n", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("id: optimize\n", step)
+        script = step.split("      run: |\n", 1)[1]
+        cache = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        # -O2 objects get their own cache instead of mixing with -O0 ones.
+        self.assertIn("key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}"
+                      "${{ steps.optimize.outputs.key-suffix }}\n", cache)
+        self.assertLess(action.index("name: Select compiler optimization"),
+                        action.index("uses: hendrikmuhs/ccache-action@main"))
+        for platform, llvm, optimized in (
+                ("ubuntu-latest", "21", True), ("ubuntu-latest", "11", False),
+                ("macos-latest", "11", False), ("windows-2025", "11", False),
+                ("macos-latest", "21", False)):
+            with self.subTest(platform=platform, llvm=llvm):
+                rendered = script.replace("${{ inputs.os }}", platform)
+                rendered = rendered.replace("${{ inputs.llvm-version }}", llvm)
+                env_file = self.directory / "github_env"
+                output_file = self.directory / "github_output"
+                env_file.write_text("")
+                output_file.write_text("")
+                result = subprocess.run(
+                    ["bash", "-e"], input=rendered, cwd=self.directory,
+                    env=dict(self.env, GITHUB_ENV=str(env_file), GITHUB_OUTPUT=str(output_file)),
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(env_file.read_text(), "LFORTRAN_CI_OPTIMIZE=yes\n" if optimized else "")
+                self.assertEqual(output_file.read_text(), "key-suffix=-o2\n" if optimized else "")
 
     def test_build_types_preserve_existing_platform_configuration(self):
         source = (ROOT / "ci/build.sh").read_text()

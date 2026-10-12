@@ -1,0 +1,12 @@
+semantic error: Type mismatch in binary operator, the types must be compatible
+ --> tests/errors/fixed_form_10.f:3:11 - 5:13
+  |
+3 |          s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+5 |         +bcdefg" + 1
+  | ...^^^^^^^^^^^^^ type mismatch (string and integer)
+  |
+5 |      +bcdefg" + 1
+  |                 ^ type mismatch (string and integer)

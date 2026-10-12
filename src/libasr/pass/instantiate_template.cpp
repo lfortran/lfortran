@@ -1278,9 +1278,10 @@ public:
 
     // The interface of a `procedure(iface) ::` entity in the instantiation.
     // A deferred interface of the template stands for its argument, and an
-    // interface declared next to the entity for its copy there. Any other
-    // interface is the same one, which make_Variable_t_util imports into the
-    // new scope when it is not visible from there.
+    // interface declared next to the entity or in the template's
+    // specification part for its copy there. Any other interface is the same
+    // one, which make_Variable_t_util imports into the new scope when it is
+    // not visible from there.
     ASR::symbol_t* instantiate_interface(ASR::Variable_t* x) {
         ASR::symbol_t* iface = x->m_type_declaration;
         if (iface == nullptr) {
@@ -1300,6 +1301,18 @@ public:
                 ASRUtils::symbol_name(iface), iface, diagnostics);
             return t.instantiate();
         }
+        if (owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
+                && ASR::is_a<ASR::Function_t>(*definition)) {
+            // Not instantiated yet, e.g. not named by the ONLY list: instantiate
+            // it in the corresponding scope, like a derived type the entity
+            // uses (see substitute_type).
+            SymbolTable* scope = corresponding_target_scope(
+                ASRUtils::symbol_parent_symtab(definition));
+            std::string new_name = scope->get_unique_name("__asr_" + name, false);
+            SymbolInstantiator t(al, scope, type_subs, symbol_subs, new_name,
+                definition, diagnostics);
+            return t.instantiate();
+        }
         return iface;
     }
 
@@ -1317,6 +1330,45 @@ public:
         ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, &x->base));
         ASR::ttype_t *new_type = substitute_type(var_expr, x->m_type);
         new_type = fix_substituted_array_physical_type(x, new_type);
+
+        ASR::symbol_t* type_decl = nullptr;
+        if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
+            std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr)));
+            if (symbol_subs.find(struct_name) != symbol_subs.end()) {
+               type_decl = symbol_subs[struct_name];
+            } else {
+                type_decl = x->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
+                   && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
+            ASR::TypeParameter_t* param = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::extract_type(x->m_type));
+            type_decl = type_subs[param->m_param].second;
+        } else if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(new_type))) {
+            type_decl = instantiate_interface(x);
+            // The procedure type is that of the interface, as for
+            // `procedure(iface) ::` outside a template, so it refers to the
+            // instantiated types rather than to the template's parameters.
+            ASR::symbol_t* iface = type_decl
+                ? ASRUtils::symbol_get_past_external(type_decl) : nullptr;
+            if (iface && ASR::is_a<ASR::Function_t>(*iface)) {
+                new_type = ASR::down_cast<ASR::Function_t>(iface)->m_function_signature;
+                if (ASR::is_a<ASR::Pointer_t>(*x->m_type)) {
+                    new_type = ASRUtils::make_Pointer_t_util(al,
+                        x->m_type->base.loc, new_type);
+                }
+            }
+        }
+
+        // The initializer can refer to the variable itself, e.g. the mold of
+        // `=> null()`, so the variable is added before it is instantiated.
+        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+            x->base.base.loc, target_scope, s2c(al, x->m_name), nullptr, 0,
+            x->m_intent, nullptr, nullptr, x->m_storage,
+            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
+            x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
+            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
+        target_scope->add_symbol(x->m_name, s);
 
         // The initializer of a named constant may refer to the template's
         // deferred constants, so it goes through the same substitution as
@@ -1351,28 +1403,11 @@ public:
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_type,
             new_symbolic_value, new_value, x->m_name);
 
-        ASR::symbol_t* type_decl = nullptr;
-        if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
-            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
-            std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr)));
-            if (symbol_subs.find(struct_name) != symbol_subs.end()) {
-               type_decl = symbol_subs[struct_name];
-            } else {
-                type_decl = x->m_type_declaration;
-            }
-        } else if (ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
-                   && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
-            ASR::TypeParameter_t* param = ASR::down_cast<ASR::TypeParameter_t>(ASRUtils::extract_type(x->m_type));
-            type_decl = type_subs[param->m_param].second;
-        } else if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(new_type))) {
-            type_decl = instantiate_interface(x);
-        }
-
-        ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
-            x->base.base.loc, target_scope, s2c(al, x->m_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), x->m_intent, new_symbolic_value, new_value, x->m_storage,
-            new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr));
-        target_scope->add_symbol(x->m_name, s);
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+        v->m_symbolic_value = new_symbolic_value;
+        v->m_value = new_value;
+        v->m_dependencies = variable_dependencies_vec.p;
+        v->n_dependencies = variable_dependencies_vec.size();
 
         return s;
     }
@@ -2400,27 +2435,57 @@ public:
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
-    // A call through a generic interface declared in the templated procedure
-    // refers to that generic's instantiation.
-    // Any other generic interface of the template, e.g. one declared in a
-    // template block, is not reachable from the instantiation: the call then
-    // only refers to its resolved specific.
-    ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name) {
+    static bool generic_has_specific(ASR::symbol_t* generic,
+            ASR::symbol_t* specific) {
+        generic = ASRUtils::symbol_get_past_external(generic);
+        ASR::symbol_t** procs;
+        size_t n_procs;
+        if (ASR::is_a<ASR::GenericProcedure_t>(*generic)) {
+            ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+            procs = gp->m_procs;
+            n_procs = gp->n_procs;
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+            ASR::CustomOperator_t* op = ASR::down_cast<ASR::CustomOperator_t>(generic);
+            procs = op->m_procs;
+            n_procs = op->n_procs;
+        } else {
+            return false;
+        }
+        specific = ASRUtils::symbol_get_past_external(specific);
+        for (size_t i = 0; i < n_procs; i++) {
+            if (ASRUtils::symbol_get_past_external(procs[i]) == specific) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A call through a generic interface or a defined operator keeps naming
+    // it, unless it is not visible from the instantiation, as a generic of the
+    // template or one that the template's host module imports. The call then
+    // names the generic of the same name visible from it that has the call's
+    // resolved specific `name`: the instantiation of the template's generic,
+    // or the host's generic imported along with the template. Without one,
+    // e.g. because an only-list omits or renames it, the call only refers to
+    // `name`.
+    ASR::symbol_t* instantiate_original_name(ASR::symbol_t* original_name,
+            ASR::symbol_t* name) {
         if (original_name == nullptr
-                || !ASR::is_a<ASR::GenericProcedure_t>(*original_name)) {
+                || ASRUtils::is_visible_from(original_name, new_scope)) {
             return original_name;
         }
-        SymbolTable* generic_scope = ASRUtils::symbol_parent_symtab(original_name);
-        if (generic_scope == ASRUtils::symbol_symtab(sym)) {
-            ASR::symbol_t* new_original_name = new_scope->get_symbol(
-                ASRUtils::symbol_name(original_name));
-            LCOMPILERS_ASSERT(new_original_name != nullptr);
+        ASR::symbol_t* generic = ASRUtils::symbol_get_past_external(original_name);
+        if (!ASR::is_a<ASR::GenericProcedure_t>(*generic)
+                && !ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+            return original_name;
+        }
+        ASR::symbol_t* new_original_name = new_scope->resolve_symbol(
+            ASRUtils::symbol_name(original_name));
+        if (new_original_name != nullptr
+                && generic_has_specific(new_original_name, name)) {
             return new_original_name;
         }
-        if (SymbolInstantiator::is_in_template(generic_scope)) {
-            return nullptr;
-        }
-        return original_name;
+        return nullptr;
     }
 
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
@@ -2474,7 +2539,7 @@ public:
         // A call made by its own name must keep naming the instantiated
         // procedure, not the template's.
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : instantiate_original_name(x->m_original_name);
+            ? name : instantiate_original_name(x->m_original_name, name);
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), type, value, dt);
     }
@@ -2541,7 +2606,7 @@ public:
         }
 
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
-            ? name : instantiate_original_name(x->m_original_name);
+            ? name : instantiate_original_name(x->m_original_name, name);
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
             original_name, args.p, args.size(), dt, nullptr, false);
     }

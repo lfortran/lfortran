@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -96,6 +97,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -395,6 +397,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log1:
                                                 (Variable
@@ -419,6 +422,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -443,6 +447,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     greater_than_inverse
@@ -547,6 +552,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log1:
                                                 (Variable
@@ -571,6 +577,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -595,6 +602,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     less_than_inverse
@@ -699,6 +707,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log1:
                                                 (Variable
@@ -723,6 +732,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -747,6 +757,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     less_than_overload_use

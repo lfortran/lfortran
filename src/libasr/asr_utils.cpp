@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <limits>
 #include <set>
 #include <unordered_set>
 #include <map>
@@ -778,6 +779,29 @@ bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
 bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
 {
     return is_iso_c_binding_type_symbol(scope, sym, "c_funptr");
+}
+
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t *sym)
+{
+    if (sym == nullptr) {
+        return false;
+    }
+    SymbolTable *tu_scope = ASRUtils::get_tu_symtab(scope);
+    LCOMPILERS_ASSERT(tu_scope != nullptr);
+    ASR::symbol_t *mod = tu_scope->resolve_symbol("iso_fortran_env");
+    if (mod == nullptr) {
+        // iso_fortran_env is not loaded, so team_type cannot be in use
+        return false;
+    }
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*mod));
+    ASR::Module_t *iso_fortran_env = ASR::down_cast<ASR::Module_t>(mod);
+    if (!iso_fortran_env->m_intrinsic) {
+        return false;
+    }
+    ASR::symbol_t *expected = iso_fortran_env->m_symtab->resolve_symbol("team_type");
+    LCOMPILERS_ASSERT(expected != nullptr);
+    return ASRUtils::symbol_get_past_external(sym)
+        == ASRUtils::symbol_get_past_external(expected);
 }
 
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
@@ -1759,6 +1783,102 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
     }
 }
 
+ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
+        int64_t &element_index, int64_t &character_index) {
+    auto constant = [](ASR::expr_t *e, int64_t &n) {
+        ASR::expr_t *value = e ? ASRUtils::expr_value(e) : nullptr;
+        return value != nullptr && ASRUtils::extract_value(value, n);
+    };
+    element_index = 0;
+    character_index = 0;
+    // A substring is given by its first character, the start, which defaults
+    // to 1. Its end, which defaults to the length, and its stride, which is
+    // 1, only have to describe a substring that is not empty.
+    ASR::expr_t *substring = designator;
+    if (ASR::is_a<ASR::StringSection_t>(*designator)) {
+        designator = ASR::down_cast<ASR::StringSection_t>(designator)->m_arg;
+    } else if (ASR::is_a<ASR::StringItem_t>(*designator)) {
+        designator = ASR::down_cast<ASR::StringItem_t>(designator)->m_arg;
+    } else {
+        substring = nullptr;
+    }
+    ASR::ArrayItem_t *element = nullptr;
+    if (ASR::is_a<ASR::ArrayItem_t>(*designator)) {
+        element = ASR::down_cast<ASR::ArrayItem_t>(designator);
+        designator = element->m_v;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*designator)) return nullptr;
+    ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(designator)->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *base = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::ttype_t *type = base->m_type;
+    if (ASRUtils::is_pointer(type) || ASRUtils::is_allocatable(type)) {
+        return nullptr;
+    }
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    if (element != nullptr) {
+        if (element->n_args != n_dims || n_dims == 0) return nullptr;
+        // The arithmetic is done on offsets already known to lie within the
+        // array, so that no bound, however large, can overflow.
+        int64_t stride = 1;
+        for (size_t i = 0; i < n_dims; i++) {
+            const ASR::array_index_t &index = element->m_args[i];
+            int64_t subscript, lower = 1, extent;
+            if (index.m_left != nullptr || index.m_step != nullptr
+                    || !constant(index.m_right, subscript)
+                    || (dims[i].m_start != nullptr
+                        && !constant(dims[i].m_start, lower))
+                    || !constant(dims[i].m_length, extent)
+                    || extent <= 0 || subscript < lower) {
+                return nullptr;
+            }
+            uint64_t offset = static_cast<uint64_t>(subscript)
+                - static_cast<uint64_t>(lower);
+            if (offset >= static_cast<uint64_t>(extent)
+                    || offset > static_cast<uint64_t>(
+                        (std::numeric_limits<int64_t>::max() - element_index)
+                        / stride)) {
+                return nullptr;
+            }
+            element_index += static_cast<int64_t>(offset) * stride;
+            if (i + 1 < n_dims) {
+                if (extent > std::numeric_limits<int64_t>::max() / stride) {
+                    return nullptr;
+                }
+                stride *= extent;
+            }
+        }
+    }
+    if (substring != nullptr) {
+        int64_t length;
+        if (!ASRUtils::is_character(*type)
+                || !constant(ASRUtils::get_string_type(type)->m_len, length)) {
+            return nullptr;
+        }
+        int64_t first = 1, last = length, step = 1;
+        if (ASR::is_a<ASR::StringItem_t>(*substring)) {
+            if (!constant(ASR::down_cast<ASR::StringItem_t>(substring)->m_idx,
+                    first)) {
+                return nullptr;
+            }
+            last = first;
+        } else {
+            ASR::StringSection_t *s = ASR::down_cast<ASR::StringSection_t>(substring);
+            if ((s->m_start != nullptr && !constant(s->m_start, first))
+                    || (s->m_end != nullptr && !constant(s->m_end, last))
+                    || (s->m_step != nullptr && !constant(s->m_step, step))) {
+                return nullptr;
+            }
+        }
+        if (step != 1 || first < 1 || last < first || last > length) {
+            return nullptr;
+        }
+        character_index = first - 1;
+    }
+    return base;
+}
+
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
@@ -2027,6 +2147,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
             member_variable->base.base.loc, member_type));
         }
+        member_type = ASRUtils::import_procedure_type(al, member_type, current_scope);
 
         if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(v_var))) {
             ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(v_var));
@@ -2083,6 +2204,18 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, member_type, value);
     }
+}
+
+// An operand of a deferred type (template type parameter) matches a dummy
+// of a deferred type only if both are the same deferred type.
+static bool deferred_type_operand_matches(ASR::ttype_t* operand,
+        ASR::ttype_t* dummy) {
+    if (!ASR::is_a<ASR::TypeParameter_t>(*operand) ||
+        !ASR::is_a<ASR::TypeParameter_t>(*dummy)) {
+        return true;
+    }
+    return std::string(ASR::down_cast<ASR::TypeParameter_t>(operand)->m_param) ==
+           std::string(ASR::down_cast<ASR::TypeParameter_t>(dummy)->m_param);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -2226,6 +2359,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -2505,6 +2642,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else {
+            return false;
         }
     }
 
@@ -2932,6 +3071,25 @@ bool contains_finalizable_function_reference(ASR::expr_t* expr) {
     return check.found;
 }
 
+class ContainsFunctionReference:
+    public ASR::BaseWalkVisitor<ContainsFunctionReference> {
+public:
+    bool found = false;
+    void visit_FunctionCall(const ASR::FunctionCall_t & /*x*/) {
+        found = true;
+    }
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+bool contains_function_reference(ASR::expr_t* expr) {
+    if (expr == nullptr) {
+        return false;
+    }
+    ContainsFunctionReference check;
+    check.visit_expr(*expr);
+    return check.found;
+}
+
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
     ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expression);
     if (struct_sym == nullptr) {
@@ -3277,6 +3435,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3491,6 +3653,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
                                                (right_arg_type2->type == right_type2->type ||
                                                 ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
+                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
+                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
+                                break;
+                            }
                             // Check StructType compatibility independently for each side
                             if (ASR::is_a<ASR::StructType_t>(*left_type2)
                                 && ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
@@ -3825,13 +3991,32 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
+                // A procedure pointer actual has the type
+                // Pointer(FunctionType); compare its target's signature.
+                ASR::ttype_t *arg1_proc = ASRUtils::type_get_past_pointer(arg1);
 
                 // A procedure declared `external` with no interface (e.g.
                 // `external :: f`) has an unknown signature, so it matches any
                 // explicit interface formal argument.
-                if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
-                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
+                if (ASR::is_a<ASR::FunctionType_t>(*arg1_proc) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
+                    ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1_proc);
                     if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
+                        continue;
+                    }
+                    // A formal procedure with an implicit interface (e.g.
+                    // `external :: f` or `real(8), external :: f`) has no
+                    // argument list to compare. Only its result type may be
+                    // known: a typed formal is a function, so the actual must
+                    // be a function with the same result type.
+                    ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
+                    if (ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
+                        ASR::ttype_t* actual_result = arg1_func_type->m_return_var_type;
+                        ASR::ttype_t* formal_result = arg2_func_type->m_return_var_type;
+                        if (formal_result && (actual_result == nullptr ||
+                                !types_equal(actual_result, formal_result,
+                                    nullptr, nullptr, true))) {
+                            return false;
+                        }
                         continue;
                     }
                 }
@@ -5376,7 +5561,19 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            )
                 );
             }
-            member_types.push_back(al, var->m_type);
+            ASR::ttype_t* member_type = var->m_type;
+            // The signature is shared by every scope that uses the type, so
+            // a procedure component is recorded with the opaque procedure
+            // type: its interface can reference symbols of its own scope.
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(member_type))) {
+                member_type = ASRUtils::make_opaque_procedure_type(al,
+                    member_type->base.loc, nullptr);
+                if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+                    member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                        member_type->base.loc, member_type));
+                }
+            }
+            member_types.push_back(al, member_type);
         }
     }
     return ASRUtils::TYPE(

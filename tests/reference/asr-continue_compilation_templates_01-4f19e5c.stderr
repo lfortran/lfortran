@@ -1568,22 +1568,22 @@ semantic error: DO variable must be integer, not t
 2515 |         do x = 1, 2  ! {Error} DO variable must be integer, not t
      |            ^ 
 
-semantic error: Operator `+` undefined for the types in the expression `t + integer`
+semantic error: Operator `+` undefined for the types in the expression `t + integer(4)`
     --> tests/errors/continue_compilation_templates_01.f90:2531:13
      |
-2531 |         y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer`
+2531 |         y = x + 1  ! {Error} Operator `+` undefined for the types in the expression `t + integer(4)`
      |             ^^^^^ 
 
-semantic error: Operator `*` undefined for the types in the expression `real * t`
+semantic error: Operator `*` undefined for the types in the expression `real(4) * t`
     --> tests/errors/continue_compilation_templates_01.f90:2538:13
      |
-2538 |         y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real * t`
+2538 |         y = 2.0 * x  ! {Error} Operator `*` undefined for the types in the expression `real(4) * t`
      |             ^^^^^^^ 
 
-semantic error: Operator `**` undefined for the types in the expression `t ** integer`
+semantic error: Operator `**` undefined for the types in the expression `t ** integer(4)`
     --> tests/errors/continue_compilation_templates_01.f90:2545:13
      |
-2545 |         y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer`
+2545 |         y = x ** 2  ! {Error} Operator `**` undefined for the types in the expression `t ** integer(4)`
      |             ^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
@@ -1591,3 +1591,51 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |
 2572 |             copy = original  ! {Error} Type mismatch in assignment, the types must be compatible
      |             ^^^^   ^^^^^^^^ type mismatch (original_t and copy_t)
+
+semantic error: Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2668:21
+     |
+2668 |             r = foo(right, right)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+     |                     ^^^^^ 
+
+semantic error: Type mismatch in argument `right`: expected `right_t` but got `left_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2669:27
+     |
+2669 |             r = foo(left, left)  ! {Error} Type mismatch in argument `right`: expected `right_t` but got `left_t`.
+     |                           ^^^^ 
+
+semantic error: Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+    --> tests/errors/continue_compilation_templates_01.f90:2670:21
+     |
+2670 |             r = foo(right, left)  ! {Error} Type mismatch in argument `left`: expected `left_t` but got `right_t`.
+     |                     ^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `b_t + a_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2715:17
+     |
+2715 |             y = y + x  ! {Error} Operator `+` undefined for the types in the expression `b_t + a_t`
+     |                 ^^^^^ 
+
+semantic error: Operator `==` undefined for the types in the expression `b_t == a_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2716:17
+     |
+2716 |             l = y == x  ! {Error} Operator `==` undefined for the types in the expression `b_t == a_t`
+     |                 ^^^^^^ 
+
+semantic error: Left operand must be LOGICAL or LOGICAL array
+    --> tests/errors/continue_compilation_templates_01.f90:2717:17
+     |
+2717 |             l = y .and. x  ! {Error} Left operand must be LOGICAL or LOGICAL array
+     |                 ^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-t`
+    --> tests/errors/continue_compilation_templates_01.f90:2731:13
+     |
+2731 |         y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t`
+     |             ^^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-b_t`
+    --> tests/errors/continue_compilation_templates_01.f90:2753:17
+     |
+2753 |             y = -y  ! {Error} Operator `-` undefined for the type in the expression `-b_t`
+     |                 ^^ 
