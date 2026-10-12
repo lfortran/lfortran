@@ -187,7 +187,9 @@ procedure that matches no requirement are diagnosed. An initializer
 requirement can also be bound to an initializer the type already has: the
 specifics of the generic that overloads its constructor in the unit that
 declares it, which are the `initial ::` bindings of its definition and of the
-implements statements, with or without traits, of that unit. This applies
+implements statements, with or without traits, of that unit. Since these
+bindings are represented like an ordinary generic interface of the type's
+name, the procedures of such an interface in that unit count as well. This applies
 whether the type's `implements` attribute adopts the trait (paper inline-09)
 or a later implements statement acknowledges it, also an empty one in another
 module that only imports the type (paper inline-06). The same signature
