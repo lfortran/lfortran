@@ -513,8 +513,16 @@ public:
             }
             try {
                 visit_ast(*x.m_items[i]);
+                if (t == AST::astType::program_unit) {
+                    // An external procedure has no host to build its generic interfaces.
+                    add_generic_procedures();
+                    evaluate_postponed_calls_to_genericProcedure();
+                }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
+                // Drop what the aborted program unit left pending.
+                generic_procedures.clear();
+                postponed_genericProcedure_calls_vec.clear();
             }
         }
         if (!global_declarations.empty()) {
