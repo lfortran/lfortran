@@ -486,8 +486,10 @@ listing byte for byte, or with recorded adaptations (completed ellipses,
 explicit trait imports, approved errata and initialization) whose reversal
 reproduces the listing's hash. `traits_paper_inline.py` checks this record in
 the normal and fast `test_paper_inline` CTests: declarations are compiled to
-verified ASR and objects, programs are run and checked, and listings that need
-a missing feature are reported with their blocker instead of being compiled.
+verified ASR and objects, and programs are run and checked. All 35 are
+accepted: the driver checks 33, and inline-25 and inline-28 remain accepted
+by `traits_paper_manual_values.f90`. A listing that needed a missing feature
+would be reported with its blocker instead of being compiled.
 The self-checking programs are also `traits_paper_inline_NN` integration
 tests.
 
@@ -1210,7 +1212,8 @@ closed runtime slots of separately compiled modules, except `real(16)`, which
 miscompile `real(16)` operations.
 
 These members are an implementation choice for the open question of what a
-wildcard denotes (TD-17 of the traits decisions), not an approved rule. They
+wildcard denotes (TD-17 of the [decisions record](traits-decisions.md)), not
+an approved rule. They
 are this processor's `INTEGER_KINDS` and `REAL_KINDS`, the same on every
 target, and the complex kinds that LFortran implements: it has no
 `complex(16)`, so `complex(*)` lacks the complex type of `real(16)` that the
@@ -1258,11 +1261,18 @@ the intrinsic module. A module that uses the intrinsic module
 records it under its runtime name, `lfortran_intrinsic_generics`, as its
 dependency, so a client of its modfile loads the same module from the runtime
 without any provider of the program, and every use of it names one module and
-one `INumeric`. The intrinsic module is always the runtime's: a module of the
-program named `lfortran_intrinsic_generics`, usable by that name, is reported
-where a USE would access the intrinsic module instead of standing in for it,
-and an installation without the runtime module reports the intrinsic module
-`generics` as not found. `traits_generics_module_01` to `_03` cover separate
+one `INumeric`. A USE never takes another module for the intrinsic one: a
+module of the program named `lfortran_intrinsic_generics`, usable by that
+name, is reported where a USE would access the intrinsic module instead of
+standing in for it, and an installation without the runtime module reports the
+intrinsic module `generics` as not found. A modfile dependency, however, is
+resolved by name, like that of any module, because modfiles do not record
+module natures: when a translation unit defines a module named
+`lfortran_intrinsic_generics` and also uses a separately compiled module that
+depends on the intrinsic module, that dependency binds to the program's
+module, and only the ASR verification of builds with assertions rejects the
+result. Giving a module of the program the runtime module's name is therefore
+not supported. `traits_generics_module_01` to `_03` cover separate
 compilation, renamed imports, a program's own module `generics` and the USE
 without a nature, and `_04` the `real(16)` member through the same modules
 (not run with LLVM 7 and 8 either);

@@ -256,11 +256,12 @@ specification action, that is, what the paper should say.
   - Intentionally invalid code must receive a located diagnostic.
 - **Implementation status.** At the time of writing, all eight programs,
   including `ocp.f90` (TD-16), and both module-only examples are accepted in
-  this branch. Of the 35 core inline listings, recorded in
-  `integration_tests/traits_paper_inline/provenance.json`, 33 are accepted:
-  `traits_paper_inline.py` checks 31 in normal and fast modes, and
-  `traits_paper_manual_values.f90` accepts inline-25 and inline-28.
-  inline-17 (TD-17) and inline-20 (TD-18) wait for compiler features.
+  this branch, and so are all 35 core inline listings, recorded in
+  `integration_tests/traits_paper_inline/provenance.json`:
+  `traits_paper_inline.py` checks 33 in normal and fast modes, and
+  `traits_paper_manual_values.f90` accepts inline-25 and inline-28. inline-17
+  and inline-20 are accepted with the candidate kind wildcards and `generics`
+  module of TD-17 and TD-18, which remain open questions.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
   TD-32 are candidates for corrections of the paper.
 
@@ -764,7 +765,7 @@ specification action, that is, what the paper should say.
 
 #### TD-17: Kind wildcards
 
-- **Status:** Open question.
+- **Status:** Open question; implementation choice.
 - **What the paper says.** `integer(*) | real(*) | complex(*)` includes all
   integer, real and complex types admitted by the language; `real(*)` means the
   real kinds that "the particular Fortran implementation supports" (lines
@@ -781,10 +782,18 @@ specification action, that is, what the paper should say.
   were: defer full `real(*)` while doing integer and complex wildcards; fix
   `real(10)` support first; defer all wildcards. The maintainer chose none,
   asking to settle runtime polymorphism first (TD-01).
-- **Implementation status.** This branch diagnoses kind wildcards as not
-  implemented yet. They are being implemented as shorthand for the processor's
-  kinds; the candidate list leaves out the interoperability kind `real(10)`.
-  That list has not been approved.
+- **Implementation status.** Implemented, with a member list that is an
+  implementation choice and has not been approved. Semantics expands a
+  wildcard into concrete members, so body checking, module files and runtime
+  dispatch slots treat it like the equivalent explicit union. `integer(*)` and
+  `real(*)` stand for this processor's `INTEGER_KINDS` (1, 2, 4, 8) and
+  `REAL_KINDS` (4, 8, 16) of `ISO_FORTRAN_ENV`, the same on every target, and
+  `complex(*)` for the complex kinds that LFortran implements (4, 8). The
+  interoperability kind `real(10)` (`C_LONG_DOUBLE`) is not one of
+  `REAL_KINDS`, so `real(*)` leaves it out, while declarations and explicit
+  members can still name it. LFortran has no `complex(16)`, so `complex(*)`
+  lacks the complex type of `real(16)`. Logical and character wildcards are
+  not implemented. inline-17 is accepted with this list.
 - **Specification action.** Define the member set of a wildcard, for example as
   the kinds listed in `INTEGER_KINDS`, `REAL_KINDS` and similar constants of
   `ISO_FORTRAN_ENV`, and say whether code checked against a wildcard set must
@@ -792,7 +801,7 @@ specification action, that is, what the paper should say.
 
 #### TD-18: The intrinsic `generics` module
 
-- **Status:** Open question.
+- **Status:** Open question; implementation choice.
 - **What the paper says.** The language "should ideally" supply predefined
   traits in an intrinsic module, "tentatively" called `generics`, possibly
   including `IAnyType`, numeric traits and traits for relational operators;
@@ -802,10 +811,23 @@ specification action, that is, what the paper should say.
   their definitions are not given. For example, `INumeric` appears in the paper
   both as a type set (`integer | real(real64)`, with or without wildcards) and
   as a trait with associated types (`ocp.f90`).
-- **Implementation status.** This branch has no such module, so inline-20 is
-  not yet accepted. A module exporting a type-set `INumeric` with
-  `integer(*) | real(*) | complex(*)` is being implemented as a candidate; its
-  contents have not been approved.
+- **Implementation status.** A candidate module is implemented, and inline-20
+  is accepted with it. Its name, the paper's tentative one, and its contents
+  are an implementation choice that has not been approved: the runtime module
+  `lfortran_intrinsic_generics`, built and installed with the other intrinsic
+  modules, exports only the type set `INumeric`,
+  `integer(*) | real(*) | complex(*)` (TD-17), not the operation trait of the
+  same name of `ocp.f90`, and no `IAnyType` (TD-19). A USE follows the module
+  nature rules of standard Fortran (F2018 14.2.2): `INTRINSIC` accesses the
+  runtime module, `NON_INTRINSIC` only a module of the program, and a USE
+  without a nature the program's module `generics` when one is accessible,
+  otherwise the intrinsic module. Every USE that accesses the intrinsic module
+  records it under one runtime name, so all of them, also in separately
+  compiled modules, see one `INumeric`. Module files record dependencies by
+  name only, though: a program that gives one of its own modules the runtime
+  module's internal name can capture a dependency on the intrinsic module,
+  which only ASR verification in builds with assertions detects
+  ([traits](traits.md) describes this limit).
 - **Specification action.** Fix the module's name and specify its complete
   contents and definitions.
 
@@ -834,6 +856,11 @@ specification action, that is, what the paper should say.
   constructors and input/output; input/output is checked per instance (TD-27).
   The prototype represents `IAnyType` by an unconstrained parameter; it does
   not define a structurally matching empty trait.
+- **Implementation status.** The current rule is implemented. The gap it
+  leaves is not closed: an empty trait that a program declares is still a
+  nominal contract that a type must adopt, so no trait matches every type as
+  the paper describes `IAnyType`, and the candidate `generics` module (TD-18)
+  does not export one.
 - **Specification action.** Define `IAnyType` precisely, the operations
   available on every type parameter, and when they are checked.
 
