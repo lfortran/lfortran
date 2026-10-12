@@ -4656,17 +4656,29 @@ public:
             AST::decl_attribute_t **members, size_t count, std::string name) {
         Vec<ASR::ttype_t*> member_types;
         member_types.reserve(al, count);
+        auto add_member = [&](ASR::ttype_t *type) {
+            for (auto *member : member_types) {
+                if (ASRUtils::types_equal(member, type, nullptr, nullptr)) return;
+            }
+            member_types.push_back(al, type);
+        };
         for (size_t j = 0; j < count; j++) {
             if (!AST::is_a<AST::AttrType_t>(*members[j])) {
                 trait_error("non-numeric type-set members are not implemented yet",
                     members[j]->base.loc);
             }
             auto *attribute = AST::down_cast<AST::AttrType_t>(members[j]);
-            for (size_t k = 0; k < attribute->n_kind; k++) {
-                if (attribute->m_kind[k].m_type == AST::kind_item_typeType::Star) {
-                    trait_error("type-set kind wildcards are not implemented yet",
-                        attribute->m_kind[k].loc);
+            if (auto category = type_set_kind_wildcard(*attribute)) {
+                // `real(*)`, or `real(kind=*)`, is the union of the real
+                // types of every kind that this implementation supports.
+                const Location &loc = attribute->base.base.loc;
+                for (int64_t kind : ASRUtils::supported_kinds(*category)) {
+                    add_member(ASRUtils::TYPE(
+                        *category == ASR::ttypeType::Integer ? ASR::make_Integer_t(al, loc, kind) :
+                        *category == ASR::ttypeType::Real ? ASR::make_Real_t(al, loc, kind) :
+                        ASR::make_Complex_t(al, loc, kind)));
                 }
+                continue;
             }
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 0);
@@ -4680,15 +4692,34 @@ public:
                 trait_error("non-numeric type-set members are not implemented yet",
                     attribute->base.base.loc);
             }
-            bool duplicate = false;
-            for (auto *member : member_types) {
-                if (ASRUtils::types_equal(member, type, nullptr, nullptr)) {
-                    duplicate = true;
-                }
-            }
-            if (!duplicate) member_types.push_back(al, type);
+            add_member(type);
         }
         return member_types;
+    }
+
+    // The numeric type of a type-set member written with a kind wildcard,
+    // `integer(*)`, `real(kind=*)` or `complex(*)`; none without a wildcard.
+    std::optional<ASR::ttypeType> type_set_kind_wildcard(const AST::AttrType_t &member) {
+        const AST::kind_item_t *wildcard = nullptr;
+        for (size_t k = 0; k < member.n_kind; k++) {
+            if (member.m_kind[k].m_type == AST::kind_item_typeType::Star) {
+                wildcard = &member.m_kind[k];
+            }
+        }
+        if (!wildcard) return std::nullopt;
+        if (member.m_type != AST::decl_typeType::TypeInteger &&
+                member.m_type != AST::decl_typeType::TypeReal &&
+                member.m_type != AST::decl_typeType::TypeComplex) {
+            trait_error("non-numeric type-set members are not implemented yet",
+                member.base.base.loc);
+        }
+        if (member.n_kind != 1 || (wildcard->m_id && to_lower(wildcard->m_id) != "kind")) {
+            trait_error("a kind wildcard must be the only type parameter of a "
+                "type-set member, as in 'real(*)' or 'real(kind=*)'", wildcard->loc);
+        }
+        return member.m_type == AST::decl_typeType::TypeInteger ? ASR::ttypeType::Integer :
+            member.m_type == AST::decl_typeType::TypeReal ? ASR::ttypeType::Real :
+            ASR::ttypeType::Complex;
     }
 
     AST::decl_attribute_t *bare_type_set_member(

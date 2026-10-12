@@ -766,9 +766,12 @@ Adding a member changes the trait and requires recompiling its dependents, as
 the proposal accepts for type sets; a stale separately compiled provider is
 diagnosed rather than specialized by a client. Unsupported forms remain
 diagnosed as not implemented: messages mixing closed and open binders, generic
-subroutine messages, type sets with kind wildcards, and member signatures
-outside the runtime slot surface (scalar arguments, read-only assumed-shape
-numeric or logical arrays, and scalar integer, real or logical results).
+subroutine messages, and member signatures outside the runtime slot surface
+(scalar arguments, read-only assumed-shape numeric or logical arrays, and
+scalar integer, real or logical results). A kind wildcard contributes one slot
+per supported kind, so a message over `integer(*) | real(*) | complex(*)` with
+a `type(T)` result is outside the surface because of its complex members,
+while one with an integer result has nine slots.
 `class(INumeric)` remains invalid: a type-set trait is not a runtime view.
 
 `traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
@@ -1169,12 +1172,40 @@ specialized body is copied.
 
 Type-set traits are constraints, not runtime `class(...)` objects, concrete
 `type(...)` union variables, or traits that derived types can manually adopt.
-Kind wildcards, type-set inheritance/composition, and composition
-with nominal constraints remain separate stages.
+Type-set inheritance/composition and composition with nominal constraints
+remain separate stages.
 
 The complete executable examples and concrete GFortran counterparts are
 `integration_tests/traits_numeric_01.f90` through `traits_numeric_05.f90` and
 `traits_numeric_01_oracle.f90` / `traits_numeric_02_oracle.f90`.
+
+### Kind wildcards
+
+A member written with a kind wildcard, `integer(*)`, `real(kind=*)` or
+`complex(*)`, is the union of that type with every kind that this
+implementation supports: the kinds of `ISO_FORTRAN_ENV`'s `INTEGER_KINDS`
+(1, 2, 4, 8) and `REAL_KINDS` (4, 8, 16), and the real kinds that have a
+complex type (4, 8). The proposal's
+
+```fortran
+abstract interface :: INumeric
+    integer(*) | real(*) | complex(*)
+end interface INumeric
+```
+
+therefore has nine members. Semantics expands the wildcards, so the trait
+records only concrete members: in source order, each wildcard in increasing
+kind order, without the members that an earlier one already contributed.
+Modfiles, proofs, specializations and closed runtime slots are those of the
+equivalent explicit union, and the set admits exactly the operations of all
+its members: `x < y` is invalid for it because complex members are not
+ordered. `ASRUtils::supported_kinds` is the one list of these kinds, which
+declarations also check. `real(10)`, the `C_LONG_DOUBLE` kind, is accepted in
+declarations for C interoperability but is not one of `REAL_KINDS`, so
+`real(*)` does not include it; it can still be written as an explicit member.
+Logical and character wildcards, like their explicit members, are not
+implemented. `traits_kind_sets_01` calls every member statically and through
+closed runtime slots of separately compiled modules.
 
 ### Inline finite constraints
 

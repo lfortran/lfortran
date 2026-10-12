@@ -53,7 +53,10 @@ one type, are one requirement of a composed constraint, and one trait does
 not declare both.
 
 An `IntrinsicTypeSet` has no nominal methods or parents in the current slice.
-It admits exactly its listed intrinsic categories and kinds. It is not an
+It admits exactly its listed intrinsic categories and kinds. A kind wildcard
+of the source, such as `real(*)`, is already expanded into one member per
+supported kind (`ASRUtils::supported_kinds`), so `member_types` lists only
+concrete types. It is not an
 ordinary union variable or runtime class, and cannot be manually implemented.
 Its canonical symbol still distinguishes it from a separately declared trait
 with identical member types.

@@ -614,8 +614,9 @@ end module
             {"IValue | integer", false, "unexpected"},
             {"integer |", false, "unexpected"},
             {"IValue + integer", true, "type-set trait composition is not implemented yet"},
-            {"integer(*)", true, "type-set kind wildcards are not implemented yet"},
-            {"real(kind=*)", true, "type-set kind wildcards are not implemented yet"},
+            {"logical(*)", true, "non-numeric type-set members are not implemented yet"},
+            {"integer(len=*)", true, "a kind wildcard must be the only type parameter"},
+            {"real(*, 8)", true, "a kind wildcard must be the only type parameter"},
             {"logical(4)", true, "non-numeric type-set members are not implemented yet"},
             {"tuple(integer, real)", false, "unexpected"}}) {
         Allocator al(64 * 1024);
@@ -639,6 +640,170 @@ end module
         REQUIRE(!error.labels.empty());
         CHECK(!error.labels[0].spans.empty());
     }
+}
+
+static const std::string kind_set_source = R"(
+module kind_sets
+implicit none
+abstract interface :: INumeric
+    integer(*) | real(*) | complex(*)
+end interface INumeric
+abstract interface :: IExplicit
+    integer(1) | integer(2) | integer(4) | integer(8) | real(4) | real(8) | real(16) | complex(4) | complex(8)
+end interface IExplicit
+abstract interface :: IReal
+    real(kind=*)
+end interface IReal
+abstract interface :: IOverlap
+    integer | real(8) | integer(*) | real(*) | real(kind=*)
+end interface IOverlap
+contains
+function total{INumeric :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    integer :: i
+    s = T(0)
+    do i = 1, size(x)
+        s = s + x(i)
+    end do
+end function
+function larger{integer(*) | real(kind=*) :: T}(x, y) result(r)
+    type(T), intent(in) :: x, y
+    type(T) :: r
+    r = x
+    if (y > x) r = y
+end function
+end module
+program kind_sets_client
+use kind_sets, only: total, larger, INumeric
+implicit none
+integer(1) :: small(2), a
+real(16) :: quad(2), b
+complex(4) :: z(2), c
+small = [1_1, 2_1]
+quad = [1.5_16, 2.5_16]
+z(1) = (1.0, 2.0)
+z(2) = (3.0, 4.0)
+a = total(small)
+b = total(quad)
+c = total(z)
+b = larger(quad(1), quad(2))
+a = larger{integer(1)}(small(1), small(2))
+end program
+)";
+
+TEST_CASE("Kind wildcards are type sets of every supported kind") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    using Members = std::vector<std::pair<ASR::ttypeType, int64_t>>;
+    const auto I = ASR::ttypeType::Integer, R = ASR::ttypeType::Real,
+        C = ASR::ttypeType::Complex;
+    const Members all = {{I, 1}, {I, 2}, {I, 4}, {I, 8}, {R, 4}, {R, 8}, {R, 16},
+        {C, 4}, {C, 8}};
+    const Members ordered = {{I, 1}, {I, 2}, {I, 4}, {I, 8}, {R, 4}, {R, 8}, {R, 16}};
+    auto members = [](ASR::symbol_t *symbol) {
+        auto *trait = ASR::down_cast<ASR::Trait_t>(ASRUtils::symbol_get_past_external(symbol));
+        CHECK(trait->m_kind == ASR::IntrinsicTypeSet);
+        Members result;
+        for (size_t i = 0; i < trait->n_member_types; i++) {
+            result.push_back({trait->m_member_types[i]->type,
+                ASRUtils::extract_kind_from_ttype_t(trait->m_member_types[i])});
+        }
+        return result;
+    };
+    ast_ser(kind_set_source);
+    asr_ser(kind_set_source);
+    asr_mod(kind_set_source, "kind_sets");
+
+    Allocator al(1024 * 1024);
+    LCompilers::CompilerOptions options;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::LocationManager lm;
+    auto parsed = LCompilers::LFortran::parse(al, kind_set_source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    auto check = [&](ASR::TranslationUnit_t *unit) {
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+        auto *module = ASR::down_cast<ASR::Module_t>(unit->m_symtab->get_symbol("kind_sets"));
+        auto *scope = module->m_symtab;
+        // The members are in source order, each wildcard in increasing kind
+        // order, without the members that an earlier one already contributed.
+        CHECK(members(scope->get_symbol("inumeric")) == all);
+        CHECK(members(scope->get_symbol("iexplicit")) == all);
+        CHECK(members(scope->get_symbol("ireal")) == Members{{R, 4}, {R, 8}, {R, 16}});
+        CHECK(members(scope->get_symbol("ioverlap")) ==
+            Members{{I, 4}, {R, 8}, {I, 1}, {I, 2}, {I, 8}, {R, 4}, {R, 16}});
+        // Every operation of a body is proved for every member of its set.
+        auto *total = numeric_constraint(module, "total");
+        REQUIRE(total);
+        CHECK(ASRUtils::symbol_get_past_external(total->m_trait) == scope->get_symbol("inumeric"));
+        CHECK(total->n_intrinsic_requirements == 2);
+        for (size_t i = 0; i < total->n_intrinsic_requirements; i++) {
+            CHECK(total->m_intrinsic_requirements[i].n_witnesses == all.size());
+        }
+        auto *larger = numeric_constraint(module, "larger");
+        REQUIRE(larger);
+        CHECK(members(larger->m_trait) == ordered);
+        REQUIRE(larger->n_intrinsic_requirements == 1);
+        CHECK(ASR::is_a<ASR::TypeSetComparison_t>(*larger->m_intrinsic_requirements[0].m_operation));
+        CHECK(larger->m_intrinsic_requirements[0].n_witnesses == ordered.size());
+        auto *client = ASR::down_cast<ASR::Program_t>(
+            unit->m_symtab->get_symbol("kind_sets_client"));
+        CHECK(ASRUtils::symbol_get_past_external(client->m_symtab->get_symbol("inumeric")) ==
+            scope->get_symbol("inumeric"));
+        Members results;
+        std::vector<ASR::symbol_t*> callees;
+        for (size_t i = 0; i < client->n_body; i++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*client->m_body[i])) continue;
+            auto *assignment = ASR::down_cast<ASR::Assignment_t>(client->m_body[i]);
+            if (!ASR::is_a<ASR::FunctionCall_t>(*assignment->m_value)) continue;
+            auto *call = ASR::down_cast<ASR::FunctionCall_t>(assignment->m_value);
+            results.push_back({call->m_type->type, ASRUtils::extract_kind_from_ttype_t(call->m_type)});
+            callees.push_back(ASRUtils::symbol_get_past_external(call->m_name));
+        }
+        CHECK(results == Members{{I, 1}, {R, 16}, {C, 4}, {R, 16}, {I, 1}});
+        REQUIRE(callees.size() == 5);
+        CHECK(std::set<ASR::symbol_t*>(callees.begin(), callees.end()).size() == 5);
+    };
+    check(result.result);
+    LCompilers::SymbolTable symtab(nullptr);
+    auto *copy = ASR::down_cast2<ASR::TranslationUnit_t>(LCompilers::deserialize_asr(
+        al, LCompilers::serialize(*result.result), true, symtab, 0));
+    fix_external_symbols(*copy, symtab);
+    check(copy);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        auto loaded = LCompilers::asr_from_text(al, text, "kind_sets.asr", lm, diagnostics);
+        REQUIRE(loaded.ok);
+        check(loaded.result);
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto printed = LCompilers::LFortran::ast_to_src(*parsed.result);
+    CHECK(printed.find("integer(*) | real(*) | complex(*)") != std::string::npos);
+    auto reparsed = LCompilers::LFortran::parse(al, printed, diagnostics, options);
+    REQUIRE(reparsed.ok);
+    auto rebuilt = LCompilers::LFortran::ast_to_asr(
+        al, *reparsed.result, diagnostics, nullptr, false, options, lm);
+    REQUIRE(rebuilt.ok);
+    check(rebuilt.result);
+    CHECK(LCompilers::asr_to_text(*result.result) == LCompilers::asr_to_text(*rebuilt.result));
+
+    // The verifier keeps an expanded set free of repeated members.
+    auto *overlap = ASR::down_cast<ASR::Trait_t>(ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("kind_sets"))->m_symtab->get_symbol("ioverlap"));
+    ASR::ttype_t *second = overlap->m_member_types[1];
+    overlap->m_member_types[1] = overlap->m_member_types[0];
+    LCompilers::diag::Diagnostics errors;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, errors));
+    REQUIRE(!errors.diagnostics.empty());
+    CHECK(errors.diagnostics.back().code == "asr.verify.trait.unique_member");
+    overlap->m_member_types[1] = second;
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
 }
 
 TEST_CASE("Numeric trait source, binary, text and module roundtrips") {

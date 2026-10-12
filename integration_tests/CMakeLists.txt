@@ -4376,6 +4376,9 @@ RUN(NAME traits_numeric_10 LABELS llvm NO_STD_F23
     EXTRA_ARGS --separate-compilation --verify-all-passes)
 RUN(NAME traits_numeric_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_numeric_02_oracle LABELS gfortran llvm)
+RUN(NAME traits_kind_sets_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_kind_sets_01_contracts.f90 traits_kind_sets_01_providers.f90)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
