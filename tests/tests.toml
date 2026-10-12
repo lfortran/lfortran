@@ -413,10 +413,6 @@ filename = "errors/intent_inout_missing_arg.f90"
 asr_implicit_interface = true
 
 [[test]]
-filename = "errors/generic_typed_external_subroutine_01.f90"
-asr_implicit_interface = true
-
-[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
@@ -3465,6 +3461,11 @@ fixed_form_cc_asr = true
 [[test]]
 filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_implicit_interface.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
 
 [[test]]
 filename = "errors/namelist_implicit_type_01.f90"

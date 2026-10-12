@@ -1,0 +1,5 @@
+semantic error: Arguments do not match for any generic procedure, gen
+  --> tests/errors/continue_compilation_implicit_interface.f90:24:5
+   |
+24 |     call gen(mysub)  ! {Error} Arguments do not match for any generic procedure, gen
+   |     ^^^^^^^^^^^^^^^ 
