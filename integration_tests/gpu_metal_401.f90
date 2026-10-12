@@ -17,12 +17,15 @@ end module
 program gpu_metal_401
   use gpu_metal_401_m
   implicit none
-  real :: s1(3), t
+  real :: s1(3)
   integer :: i
-  do concurrent (i = 1:3) local(t)
-    call total(i, t)
-    call scale(real(i), t)
-    s1(i) = t
+  do concurrent (i = 1:3)
+    block
+      real :: t
+      call total(i, t)
+      call scale(real(i), t)
+      s1(i) = t
+    end block
   end do
   print *, s1
   if (any(s1 /= [2, 6, 12])) error stop
