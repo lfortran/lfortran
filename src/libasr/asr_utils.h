@@ -9248,6 +9248,76 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayCon
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
 }
 
+// The compile-time value of the element `array(indices)`, or nullptr unless
+// `array` has a constant value and every index is a constant subscript
+// within its bounds.
+inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
+        ASR::array_index_t* indices, size_t n_indices) {
+    if (n_indices == 0) {
+        return nullptr;
+    }
+    ASR::expr_t* base_value = ASRUtils::expr_value(array);
+    if (base_value == nullptr &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
+        ASR::StructInstanceMember_t* member_expr =
+            ASR::down_cast<ASR::StructInstanceMember_t>(array);
+        base_value = ASRUtils::get_struct_member_value_from_constant(
+            ASRUtils::expr_value(member_expr->m_v),
+            member_expr->m_m);
+    }
+    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array_constant =
+        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(array), dims);
+    if (n_dims != n_indices) {
+        return nullptr;
+    }
+    int64_t flat_index = 0;
+    int64_t stride = 1;
+    for (size_t i = 0; i < n_indices; i++) {
+        if (indices[i].m_left != nullptr
+                || indices[i].m_step != nullptr
+                || indices[i].m_right == nullptr) {
+            return nullptr;
+        }
+        ASR::expr_t* index_value =
+            ASRUtils::expr_value(indices[i].m_right);
+        if (index_value == nullptr ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+            return nullptr;
+        }
+        int64_t lower_bound = 1;
+        if (dims[i].m_start) {
+            ASR::expr_t* lb_value =
+                ASRUtils::expr_value(dims[i].m_start);
+            if (lb_value &&
+                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                return nullptr;
+            }
+        }
+        int64_t length = 0;
+        if (dims[i].m_length == nullptr ||
+                !ASRUtils::extract_value(dims[i].m_length, length)) {
+            return nullptr;
+        }
+        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+            index_value)->m_n - lower_bound;
+        flat_index += index * stride;
+        stride *= length;
+    }
+    size_t index_unsigned = flat_index;
+    if (flat_index < 0 || index_unsigned >= (size_t)
+            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+        return nullptr;
+    }
+    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+        index_unsigned);
+}
+
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
