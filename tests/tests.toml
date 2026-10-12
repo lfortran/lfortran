@@ -6328,6 +6328,10 @@ filename = "asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/gpu_kernel_launch_component_fit_not_block.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/gpu_atomic_fetch_add_host_code.asr"
 asr = true
 

@@ -489,22 +489,9 @@ public:
         pending_after.clear();
     }
 
-    // The fitting of the components of the kernel arguments the next
-    // launch writes (gpu_offload_component_fit.cpp), which comes before it.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
-        if (m != nullptr && ASR::is_a<ASR::Block_t>(*m) && std::string(
-                ASR::down_cast<ASR::Block_t>(m)->m_name).rfind(
-                    "__gpu_component_fit", 0) == 0) {
-            component_fit = ASR::down_cast<ASR::Block_t>(m);
-        }
-        PassUtils::PassVisitor<HeapLaunches>::visit_BlockCall(x);
-    }
-
 private:
     DeviceHeap &heap;
     std::vector<ASR::stmt_t*> pending_after;
-    ASR::Block_t *component_fit = nullptr;
     std::map<std::pair<ASR::Function_t*, Image*>, ASR::Function_t*>
         copy_out_routines;
     std::map<ASR::Function_t*, GpuDeviceStops> kernel_stops;
@@ -2712,28 +2699,17 @@ void remove_statements(Allocator &al, ASR::stmt_t **&body, size_t &n_body,
 }
 
 // The fitting of the components of the kernel arguments each launch
-// writes (gpu_offload_component_fit.cpp), which comes before the launch.
+// writes (gpu_offload_component_fit.cpp), which the launch names.
 class ComponentFits : public ASR::BaseWalkVisitor<ComponentFits> {
 public:
     std::map<ASR::symbol_t*, ASR::Block_t*> fits;
 
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
-        if (m != nullptr && ASR::is_a<ASR::Block_t>(*m) && std::string(
-                ASR::down_cast<ASR::Block_t>(m)->m_name).rfind(
-                    "__gpu_component_fit", 0) == 0) {
-            last = ASR::down_cast<ASR::Block_t>(m);
-        }
-        ASR::BaseWalkVisitor<ComponentFits>::visit_BlockCall(x);
-    }
-
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-        if (last != nullptr) fits[x.m_kernel] = last;
-        last = nullptr;
+        if (x.m_component_fit != nullptr) {
+            fits[x.m_kernel] = ASR::down_cast<ASR::Block_t>(
+                x.m_component_fit);
+        }
     }
-
-private:
-    ASR::Block_t *last = nullptr;
 };
 
 // The arrays whose components a fitting checks are allocated because their
@@ -4377,7 +4353,9 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         copied_out.push_back(b.Deallocate(host_written));
         // The element gets the bounds of the image, so the size a write
         // gives it does not have to be known before the launch.
-        if (component_fit != nullptr) {
+        if (x.m_component_fit != nullptr) {
+            ASR::Block_t *component_fit = ASR::down_cast<ASR::Block_t>(
+                x.m_component_fit);
             remove_size_checks(al, component_fit->m_body,
                 component_fit->n_body, ASRUtils::symbol_get_past_external(
                     array_symbol));
@@ -4424,7 +4402,6 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
     }
     for (ASR::stmt_t *s : copied_out) after.push_back(s);
     for (ASR::stmt_t *s : release) after.push_back(s);
-    component_fit = nullptr;
 
     if (extra_args.empty() && before.empty() && after.empty()) return;
     Vec<ASR::call_arg_t> args;

@@ -8,7 +8,7 @@ Launches a GPU kernel.
 
 ```text
 GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
-    call_arg* args)
+    call_arg* args, symbol? component_fit)
 ```
 
 ### Arguments
@@ -19,6 +19,7 @@ GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
 | `grid_size` | the number of blocks to launch. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
+| `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
 
 ### Return values
 
@@ -85,6 +86,7 @@ lower is a compile-time error, whatever its reason, whether or not
       )
     )
   ]
+  :component_fit nil
 )
 ```
 

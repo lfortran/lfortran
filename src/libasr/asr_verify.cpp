@@ -3195,6 +3195,10 @@ public:
                 "' must be a function that runs on the device");
         verify_gpu_kernel_launch_signature(x,
             *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        require_id(x.m_component_fit == nullptr ||
+                ASR::is_a<ASR::Block_t>(*x.m_component_fit),
+            "asr.verify.gpu_kernel_launch.component_fit_is_block",
+            "GpuKernelLaunch::m_component_fit must be a Block");
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
