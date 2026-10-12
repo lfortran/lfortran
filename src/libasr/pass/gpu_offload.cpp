@@ -15,6 +15,7 @@
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
@@ -2689,6 +2690,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.p, kernel_body.n,
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
+    gpu_lift_host_association(al,
+        *ASR::down_cast2<ASR::Function_t>(kernel_func));
 
     GpuLaunchPlan plan;
     plan.kernel_func = kernel_func;

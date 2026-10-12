@@ -196,6 +196,12 @@ generates the device source. It never falls back to the CPU:
   loop index is bounded by the extent of its array in that dimension, as a
   section never has more elements there. The local itself keeps the exact
   extent of each allocation.
+* An internal procedure the loop calls reads the variables and named
+  constants of its host by host association, which device code does not
+  have. The kernel's copy of the procedure is given them instead: a named
+  constant becomes a named constant of the procedure, and a variable a dummy
+  argument, which every call hands the variable. A procedure that calls one
+  that is handed a variable is handed it too, to pass it on.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
