@@ -1060,6 +1060,28 @@ semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALEN
 2337 |     equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
      |                     ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
 
+semantic error: dummy procedure 'f' cannot have an elemental interface
+    --> tests/errors/continue_compilation_1.f90:2388:23
+     |
+2388 |     procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
+     |                       ^ 
+
+semantic error: procedure pointer 'fp' cannot have an elemental interface
+    --> tests/errors/continue_compilation_1.f90:2389:32
+     |
+2389 |     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+     |                                ^^ 
+
+semantic error: Dummy argument 'f' not defined
+    --> tests/errors/continue_compilation_1.f90:2385:1 - 2390:50
+     |
+2385 |    subroutine elemental_procedure_interface_error(f)
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+2390 |    end subroutine elemental_procedure_interface_error
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

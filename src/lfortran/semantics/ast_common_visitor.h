@@ -9541,6 +9541,23 @@ public:
                 }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if (sym_type->m_type == AST::decl_typeType::TypeProcedure
+                        && (is_pointer || is_argument)) {
+                    // A procedure pointer or a dummy procedure shall not be
+                    // elemental.
+                    ASR::ttype_t *proc_type = ASRUtils::type_get_past_pointer(type);
+                    if (ASR::is_a<ASR::FunctionType_t>(*proc_type)
+                            && ASR::down_cast<ASR::FunctionType_t>(
+                                proc_type)->m_elemental) {
+                        diag.add(Diagnostic(std::string(is_pointer
+                                ? "procedure pointer '" : "dummy procedure '")
+                            + sym + "' cannot have an elemental interface",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {x.m_syms[i].loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
+                if (sym_type->m_type == AST::decl_typeType::TypeProcedure
                         && !is_pointer && !is_argument && !is_derived_type
                         && !is_external && !is_template && !is_requirement
                         && current_scope->get_symbol(sym) == nullptr

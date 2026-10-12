@@ -2379,3 +2379,12 @@ subroutine block_derived_type_bound_procedure()
         end type
     end block
 end subroutine
+
+! A procedure pointer or a dummy procedure cannot have an elemental interface,
+! such as the interface of a specific intrinsic function.
+subroutine elemental_procedure_interface_error(f)
+    implicit none
+    intrinsic :: sin
+    procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
+    procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+end subroutine elemental_procedure_interface_error
