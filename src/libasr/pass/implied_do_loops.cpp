@@ -1182,16 +1182,48 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         };
         
+        // Loops whose bounds are all integer literals have always been
+        // expanded in full. Bounds that are only folded constants (a named
+        // constant, `size()` of a fixed size array) are often large, and
+        // every expanded item costs compile time and code size, so such
+        // loops are expanded only up to this many items; larger ones keep
+        // the run-time loop.
+        static constexpr size_t max_folded_bounds_expansion = 256;
+
+        static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*idl->m_start) ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_end) ||
+                (idl->m_increment &&
+                 !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_increment))) {
+                return false;
+            }
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i]) &&
+                    !implied_do_loop_has_literal_bounds(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            // The bounds only have to be known at compile time, e.g.
-            // `size(a)` of a fixed size array or a named constant.
+            size_t max_items = implied_do_loop_has_literal_bounds(idl)
+                ? std::numeric_limits<size_t>::max() : max_folded_bounds_expansion;
+            return expand_implied_do_loop_flat(idl, result, max_items);
+        }
+
+        bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl,
+                Vec<ASR::expr_t*>& result, size_t max_items) {
+            // The bounds only have to be integer compile-time constants,
+            // e.g. `size(a)` of a fixed size array or a named constant.
             int64_t start_val = 0, end_val = 0, step_val = 1;
-            if (!ASRUtils::extract_value(ASRUtils::expr_value(idl->m_start), start_val) ||
-                !ASRUtils::extract_value(ASRUtils::expr_value(idl->m_end), end_val)) {
+            if (!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_start), start_val) ||
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_end), end_val)) {
                 return false;
             }
             if (idl->m_increment &&
-                !ASRUtils::extract_value(ASRUtils::expr_value(idl->m_increment), step_val)) {
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_increment), step_val)) {
                 return false;
             }
             
@@ -1212,19 +1244,25 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 for (size_t j = 0; j < idl->n_values; j++) {
                     ASR::expr_t* val = idl->m_values[j];
                     
-                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
-                        ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(val);
-                        if (!expand_implied_do_loop_flat(nested_idl, result)) {
+                    // A nested loop is expanded with this loop's variable
+                    // substituted, both in its values and in its bounds.
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    ASR::expr_t* substituted = duplicator.duplicate_expr(val);
+                    VarSubstituter substituter(al, loop_var_symbol, loop_var_val);
+                    substituter.current_expr = &substituted;
+                    substituter.replace_expr(substituted);
+
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
+                        if (!expand_implied_do_loop_flat(
+                                ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
+                                result, max_items)) {
                             return false;
                         }
                     } else {
-                        ASRUtils::ExprStmtDuplicator duplicator(al);
-                        ASR::expr_t* substituted = duplicator.duplicate_expr(val);
-                        
-                        VarSubstituter substituter(al, loop_var_symbol, loop_var_val);
-                        substituter.current_expr = &substituted;
-                        substituter.replace_expr(substituted);
                         result.push_back(al, substituted);
+                    }
+                    if (result.size() > max_items) {
+                        return false;
                     }
                 }
             }
