@@ -2509,8 +2509,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     return found;
 }
 
-void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* operand,
-    ASR::ttype_t* operand_type, bool& found, Allocator& al, SymbolTable* curr_scope,
+void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand,
+    ASR::ttype_t* operand_type, const std::string& op_name, bool& found, Allocator& al, SymbolTable* curr_scope,
     const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr,
     bool elemental_pass,
@@ -2543,7 +2543,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             if( curr_scope->resolve_symbol(func_name) ) {
                 matched_func_name = func_name;
             } else {
-                std::string mangled_name = func_name + "@~sub";
+                std::string mangled_name = func_name + "@" + op_name;
                 matched_func_name = mangled_name;
             }
             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
@@ -2628,7 +2628,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
     }
 }
 
-bool use_overloaded_unary_minus(ASR::expr_t* operand,
+bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr,
     Allocator &al, const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
@@ -2636,7 +2636,7 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     ASR::ttype_t *operand_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(operand));
     ASR::ttype_t *element_type = ASRUtils::type_get_past_array(operand_type);
-    ASR::symbol_t* sym = curr_scope->resolve_symbol("~sub");
+    ASR::symbol_t* sym = curr_scope->resolve_symbol(op_name);
 
     if (!sym) {
         if (ASR::is_a<ASR::StructType_t>(*element_type)) {
@@ -2644,11 +2644,11 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
                 ASRUtils::get_struct_sym_from_struct_expr(operand));
             if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
-                sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                sym = struct_type_t->m_symtab->resolve_symbol(op_name);
                 while (sym == nullptr && struct_type_t->m_parent != nullptr) {
                     struct_type_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-                    sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                    sym = struct_type_t->m_symtab->resolve_symbol(op_name);
                 }
                 if (sym == nullptr) {
                     return false;
@@ -2657,14 +2657,14 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
                     ASR::make_ExternalSymbol_t(al,
                                                loc,
                                                curr_scope,
-                                               s2c(al, "~sub"),
+                                               s2c(al, op_name),
                                                sym,
                                                struct_type_t->m_name,
                                                nullptr,
                                                0,
-                                               s2c(al, "~sub"),
+                                               s2c(al, op_name),
                                                ASR::accessType::Public));
-                curr_scope->add_symbol("~sub", sym);
+                curr_scope->add_symbol(op_name, sym);
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -2682,11 +2682,11 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             ASRUtils::get_struct_sym_from_struct_expr(operand));
         if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
-            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol(op_name);
             while (struct_sub == nullptr && struct_type_t->m_parent != nullptr) {
                 struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-                struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+                struct_sub = struct_type_t->m_symtab->resolve_symbol(op_name);
             }
             if (struct_sub != nullptr) {
                 ASR::symbol_t* struct_orig = ASRUtils::symbol_get_past_external(struct_sub);
@@ -2705,15 +2705,15 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             switch(proc->type) {
                 case ASR::symbolType::Function: {
-                    process_overloaded_unary_minus_function(proc, operand, operand_type,
+                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
                         found, al, curr_scope, loc, current_function_dependencies,
                         current_module_dependencies, asr, elemental_pass, err);
                     break;
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_minus_function(class_procedure_t->m_proc,
-                        operand, operand_type, found, al, curr_scope, loc,
+                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                        operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
                     break;
@@ -2730,7 +2730,7 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             ASR::symbol_t* proc = struct_gen->m_procs[i];
             switch(proc->type) {
                 case ASR::symbolType::Function: {
-                    process_overloaded_unary_minus_function(proc, operand, operand_type,
+                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
                         found, al, curr_scope, loc, current_function_dependencies,
                         current_module_dependencies, asr, elemental_pass, err);
                     break;
@@ -2738,8 +2738,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t =
                         ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_minus_function(class_procedure_t->m_proc,
-                        operand, operand_type, found, al, curr_scope, loc,
+                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                        operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
                     break;

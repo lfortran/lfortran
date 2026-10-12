@@ -1045,3 +1045,9 @@ semantic error: No matching `operator(-)` found for this operand type
     |
 622 |         y = -x  ! {Error} No matching `operator(-)` found for this operand type
     |             ^^ 
+
+semantic error: No matching `operator(+)` found for this operand type
+   --> tests/errors/continue_compilation_2.f90:636:13
+    |
+636 |         y = +x  ! {Error} No matching `operator(+)` found for this operand type
+    |             ^^ 

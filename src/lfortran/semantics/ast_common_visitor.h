@@ -1305,6 +1305,45 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
     return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc, res_data, type, arr->m_storage_format));
 }
 
+  // The call of the user-defined unary operator `op` (stored as `op_name`)
+  // that applies to `operand`, whose element type is `element_type`;
+  // reports an error if there is none.
+  inline static ASR::expr_t* overloaded_unary_op(Allocator &al,
+          const AST::UnaryOp_t &x, ASR::expr_t *operand,
+          ASR::ttype_t *element_type, const std::string &op,
+          const std::string &op_name, SymbolTable* current_scope,
+          SetChar& current_function_dependencies,
+          SetChar& current_module_dependencies, diag::Diagnostics &diag) {
+    ASR::asr_t *asr = nullptr;
+    if( ASRUtils::use_overloaded_unary_op(operand, op_name,
+        current_scope, asr, al,
+        x.base.base.loc, current_function_dependencies,
+        current_module_dependencies,
+        [&](const std::string &msg, const Location &loc)
+        {
+            diag.add(diag::Diagnostic(
+                msg,
+                Level::Error, Stage::Semantic, {
+                diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }) ) {
+        return ASRUtils::EXPR(asr);
+    }
+    std::string msg = "No matching `operator(" + op + ")` found for this operand type";
+    if (ASR::is_a<ASR::TypeParameter_t>(*element_type)) {
+        msg = "Operator `" + op + "` undefined for the type in the expression `" + op
+            + ASRUtils::type_to_str_fortran_expr(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(operand)), operand)
+            + "`";
+    }
+    diag.add(diag::Diagnostic(
+        msg,
+        Level::Error, Stage::Semantic, {
+        diag::Label("", {x.base.base.loc})}));
+    throw SemanticAbort();
+  }
+
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
                                    ASR::expr_t *&operand, ASR::asr_t *&asr,
                                    SymbolTable* current_scope,
@@ -1312,6 +1351,8 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                                    SetChar& current_module_dependencies, diag::Diagnostics &diag) {
 
     ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
+    ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(operand_type));
     ASR::expr_t *value = nullptr;
     if (x.m_op == AST::unaryopType::UAdd) {
 
@@ -1332,6 +1373,15 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                     asr = ASR::make_RealConstant_t(al, x.base.base.loc, op_value, operand_type);
                 }
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*element_type) ||
+                   ASR::is_a<ASR::TypeParameter_t>(*element_type)) {
+            // A derived type or a deferred type has no intrinsic unary plus;
+            // only a user-defined `operator(+)` applies to it. An elemental
+            // one also applies to each element of an array.
+            asr = (ASR::asr_t*) overloaded_unary_op(al, x, operand,
+                element_type, "+", "~add", current_scope,
+                current_function_dependencies, current_module_dependencies,
+                diag);
         }
         return;
 
@@ -1341,7 +1391,6 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
         // allocatable or pointer attribute of its operand.
         ASR::ttype_t *result_type = ASRUtils::type_get_past_allocatable_pointer(
             operand_type);
-        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(result_type);
 
         if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
@@ -1411,34 +1460,10 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             // A deferred type of a template has no intrinsic negation either;
             // only a user-defined `operator(-)` applies to it. An elemental
             // one also applies to each element of an array.
-            ASR::expr_t* overloaded_uminus = nullptr;
-            if( ASRUtils::use_overloaded_unary_minus(operand,
-                current_scope, asr, al,
-                x.base.base.loc, current_function_dependencies,
-                current_module_dependencies,
-                [&](const std::string &msg, const Location &loc)
-                {
-                    diag.add(diag::Diagnostic(
-                        msg,
-                        Level::Error, Stage::Semantic, {
-                        diag::Label("", {loc})}));
-                    throw SemanticAbort();
-                }) ) {
-                overloaded_uminus = ASRUtils::EXPR(asr);
-            }
-            if (overloaded_uminus == nullptr) {
-                std::string msg = "No matching `operator(-)` found for this operand type";
-                if (ASR::is_a<ASR::TypeParameter_t>(*element_type)) {
-                    msg = "Operator `-` undefined for the type in the expression `-"
-                        + ASRUtils::type_to_str_fortran_expr(result_type, operand)
-                        + "`";
-                }
-                diag.add(diag::Diagnostic(
-                    msg,
-                    Level::Error, Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
+            ASR::expr_t* overloaded_uminus = overloaded_unary_op(al, x,
+                operand, element_type, "-", "~sub", current_scope,
+                current_function_dependencies, current_module_dependencies,
+                diag);
             asr = ASR::make_OverloadedUnaryMinus_t(al, x.base.base.loc,
                 operand, ASRUtils::expr_type(overloaded_uminus),
                 nullptr, overloaded_uminus);
