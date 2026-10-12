@@ -768,7 +768,8 @@ The body of a runtime generic message may only:
 Any other use needs a typed copy, which runtime generic messages do not
 implement yet: a vector subscript, an intrinsic procedure, input/output, a
 dummy of another type such as `class(*)`, an array constructor, an array
-computed by a call (such as an elemental requirement applied to arrays),
+computed by a call, an erased array passed to an elemental procedure (such
+as `x < x(1)` with an elemental requirement, whatever its result type),
 and the bounds of a section. Internal procedures of such a body are not
 implemented yet either. Values of other types are unrestricted, so scalar
 controls, intrinsics and output work as usual, and a client may pass any

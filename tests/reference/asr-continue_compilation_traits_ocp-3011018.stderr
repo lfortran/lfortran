@@ -132,6 +132,15 @@ semantic error: the conformance of type(forwarded) to trait 'iscale' has no runt
 300 |         s = self%inner%sum(x) * x(1)
     |             ~~~~~~~~~~~~~~~~~ not supported in runtime generic messages
 
+semantic error: the conformance of type(counter) to trait 'icount' has no runtime witness: in generic procedure 'count_below', this use of a value of protocol type parameter 't' as an array argument of an elemental procedure is not implemented yet in runtime generic messages
+   --> tests/errors/continue_compilation_traits_ocp.f90:414:13
+    |
+414 |         c = Counter()
+    |             ^^^^^^^^^ 
+    |
+410 |         n = count(x < x(1))
+    |                   ~ not supported in runtime generic messages
+
 semantic error: the conformance of type(later) to trait 'isum' has no runtime witness: in generic procedure 'later_sum', this use of a value of protocol type parameter 't' as input/output is not implemented yet in runtime generic messages
    --> tests/errors/continue_compilation_traits_ocp.f90:373:13
     |

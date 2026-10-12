@@ -4276,6 +4276,8 @@ RUN(NAME traits_protocol_static_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_protocol_static_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_protocol_static_05_provider.f90)
+RUN(NAME traits_protocol_static_06 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_protocol_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_protocol_separate_01_contracts.f90

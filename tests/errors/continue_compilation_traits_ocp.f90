@@ -379,3 +379,38 @@ contains
         print *, s
     end function later_sum
 end module cc_traits_ocp_forward
+
+! E17: an elemental requirement applied to an erased array computes a
+! logical array, which runtime generic messages do not lower either.
+module cc_traits_ocp_elemental_logical
+    implicit none
+    abstract interface :: IOrd
+        initial(n)
+            integer, intent(in) :: n
+        end initial
+        elemental function operator(<)(lhs, rhs) result(b)
+            type(itself), intent(in) :: lhs, rhs
+            logical                  :: b
+        end function operator(<)
+    end interface IOrd
+    abstract interface :: ICount
+        function below_first{IOrd :: T}(x) result(n)
+            type(T), intent(in) :: x(:)
+            integer             :: n
+        end function below_first
+    end interface ICount
+    type, sealed, implements(ICount) :: Counter
+    contains
+        procedure, nopass :: below_first => count_below
+    end type Counter
+contains
+    function count_below{IOrd :: T}(x) result(n)
+        type(T), intent(in) :: x(:)
+        integer             :: n
+        n = count(x < x(1))
+    end function count_below
+    subroutine count_view(c)
+        class(ICount), allocatable, intent(out) :: c
+        c = Counter()
+    end subroutine count_view
+end module cc_traits_ocp_elemental_logical

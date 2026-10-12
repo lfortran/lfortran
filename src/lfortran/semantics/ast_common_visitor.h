@@ -24296,25 +24296,40 @@ public:
                     visit_with(*x.m_args[i], false, "an intrinsic procedure argument");
                 }
             }
-            // A dummy of a type parameter or an erased dummy receives the
-            // value with the binder's dictionary.
-            bool generic_dummy(ASR::symbol_t *callee, size_t i) {
+            // The dummy of a type parameter or the erased dummy that receives
+            // argument `i` of `callee` with the binder's dictionary, or nullptr.
+            ASR::ttype_t *generic_dummy(ASR::symbol_t *callee, size_t i) {
                 callee = callee ? ASRUtils::symbol_get_past_external(callee) : nullptr;
                 if (callee && ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
                     callee = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
                 }
-                if (!callee || !ASR::is_a<ASR::Function_t>(*callee)) return false;
+                if (!callee || !ASR::is_a<ASR::Function_t>(*callee)) return nullptr;
                 auto *procedure = ASR::down_cast<ASR::Function_t>(callee);
-                if (i >= procedure->n_args) return false;
-                auto *element = ASRUtils::extract_type(ASRUtils::expr_type(procedure->m_args[i]));
+                if (i >= procedure->n_args) return nullptr;
+                auto *type = ASRUtils::expr_type(procedure->m_args[i]);
+                auto *element = ASRUtils::extract_type(type);
                 return element && (ASR::is_a<ASR::TypeParameter_t>(*element) ||
-                    ASR::is_a<ASR::TraitErasedType_t>(*element));
+                    ASR::is_a<ASR::TraitErasedType_t>(*element)) ? type : nullptr;
             }
             void visit_call_args(ASR::symbol_t *callee, ASR::call_arg_t *args, size_t n_args) {
                 for (size_t i = 0; i < n_args; i++) {
                     if (!args[i].m_value) continue;
-                    visit_with(*args[i].m_value, generic_dummy(callee, i),
+                    ASR::ttype_t *dummy = generic_dummy(callee, i);
+                    // A dictionary call passes values of its dummy's rank; an
+                    // elemental procedure applied to an erased array would
+                    // need an array lowering of the call.
+                    const char *parameter = erased_parameter(*args[i].m_value);
+                    if (parameter && dummy && ASRUtils::extract_n_dims_from_ttype(dummy) !=
+                            ASRUtils::extract_n_dims_from_ttype(
+                                ASRUtils::expr_type(args[i].m_value))) {
+                        reject(*args[i].m_value, parameter,
+                            ASRUtils::extract_n_dims_from_ttype(dummy) == 0
+                                ? "an array argument of an elemental procedure"
+                                : "an argument of a dummy of another rank");
+                        return;
+                    }
+                    visit_with(*args[i].m_value, dummy != nullptr,
                         "an argument of a dummy without the type parameter");
                 }
             }
