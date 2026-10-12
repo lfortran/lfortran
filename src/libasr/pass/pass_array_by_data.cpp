@@ -331,7 +331,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
             // Including the procedures declared in the BLOCK constructs
-            ASRUtils::for_each_symbol_in_scoping_unit(xx.m_symtab, [&](ASR::symbol_t* sym) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(xx.m_symtab, [&](ASR::symbol_t* sym) {
                 if( ASR::is_a<ASR::Function_t>(*sym) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(sym);
                     std::vector<size_t> arg_indices;

@@ -66,20 +66,20 @@ public:
                 handle_finalizable_result(*x_ptr);
             }
 
-            visit_procedures_of_scoping_unit(x.m_symtab);
+            visit_procedures_in_scope_and_constructs(x.m_symtab);
         }
 
         /* Visit the procedures and procedure variables declared in a
            procedure or program, including in its BLOCK constructs */
-        void visit_procedures_of_scoping_unit(SymbolTable *scope) {
-            ASRUtils::for_each_symbol_in_scoping_unit(scope, [&](ASR::symbol_t *sym) {
+        void visit_procedures_in_scope_and_constructs(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
                 if (ASR::is_a<ASR::Function_t>(*sym)) {
                     this->visit_Function(*down_cast<ASR::Function_t>(sym));
                 } else if (ASR::is_a<ASR::Template_t>(*sym)) {
                     this->visit_Template(*down_cast<ASR::Template_t>(sym));
                 }
             });
-            ASRUtils::for_each_symbol_in_scoping_unit(scope, [&](ASR::symbol_t *sym) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
                 if (ASR::is_a<ASR::Variable_t>(*sym) &&
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(sym)))) {
                     this->visit_Variable(*down_cast<ASR::Variable_t>(sym));
@@ -122,7 +122,7 @@ public:
         }
 
         void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
-            visit_procedures_of_scoping_unit(x.m_symtab);
+            visit_procedures_in_scope_and_constructs(x.m_symtab);
         }
 
         void visit_Module(const ASR::Module_t &x) {
