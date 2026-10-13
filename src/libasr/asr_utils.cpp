@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <algorithm>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -3132,8 +3133,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+        // Non-elemental specifics take precedence over elemental ones.
+        std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
+        std::stable_partition(procs.begin(), procs.end(),
+            [](ASR::symbol_t* p) { return !ASRUtils::is_elemental(p); });
+        for( size_t i = 0; i < procs.size() && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
