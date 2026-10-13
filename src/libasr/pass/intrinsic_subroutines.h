@@ -1401,20 +1401,17 @@ namespace MoveAlloc {
                     { to->base.loc })}));
             return false;
         }
-        if (!ASRUtils::is_assumed_rank_array(ASRUtils::type_get_past_allocatable(from_type)) &&
-                !ASRUtils::is_assumed_rank_array(ASRUtils::type_get_past_allocatable(to_type))) {
-            size_t from_rank = ASRUtils::extract_n_dims_from_ttype(from_type);
-            size_t to_rank = ASRUtils::extract_n_dims_from_ttype(to_type);
-            if (from_rank != to_rank) {
-                diag.add(diag::Diagnostic(
-                    "`from` and `to` arguments of `move_alloc` must have the "
-                    "same rank, but `from` has rank " + std::to_string(from_rank) +
-                    " and `to` has rank " + std::to_string(to_rank),
-                    diag::Level::Error, diag::Stage::Semantic,
-                    {diag::Label("rank " + std::to_string(to_rank),
-                        { to->base.loc })}));
-                return false;
-            }
+        size_t from_rank = ASRUtils::extract_n_dims_from_ttype(from_type);
+        size_t to_rank = ASRUtils::extract_n_dims_from_ttype(to_type);
+        if (from_rank != to_rank) {
+            diag.add(diag::Diagnostic(
+                "`from` and `to` arguments of `move_alloc` must have the "
+                "same rank, but `from` has rank " + std::to_string(from_rank) +
+                " and `to` has rank " + std::to_string(to_rank),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("rank " + std::to_string(to_rank),
+                    { to->base.loc })}));
+            return false;
         }
         return true;
     }
