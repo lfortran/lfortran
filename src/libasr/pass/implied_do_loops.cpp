@@ -784,11 +784,28 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     ASR::expr_t* create_named_array_constant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         std::string name = current_scope->get_unique_name("__libasr_array_constant_");
-        ASR::expr_t* value = &(x->base);
+        // The value of an assignment may be typed as a descriptor array
+        // without a lower bound (e.g. for an allocatable target); a named
+        // constant is a fixed size array with lower bound 1, like one
+        // declared in the source.
+        ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index_type));
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ASRUtils::get_fixed_size_of_array(x->m_type), index_type));
+        dims.push_back(al, dim);
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable(x->m_type), &dims,
+            ASR::array_physical_typeType::FixedSizeArray, true);
+        ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            x->m_n_data, x->m_data, type, x->m_storage_format));
         ASR::symbol_t* constant = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
                 nullptr, 0, ASR::intentType::Local, value, value,
-                ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, x->m_type),
+                ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, type),
                 nullptr, ASR::abiType::Source, ASR::accessType::Public,
                 ASR::presenceType::Required, false));
         current_scope->add_symbol(name, constant);

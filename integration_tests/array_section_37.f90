@@ -16,10 +16,16 @@ subroutine fill(d, e)
     e(1:3) = [7, 8, 9]
 end subroutine
 
+function seq8() result(res)
+    integer(8), allocatable :: res(:)
+    allocate(res(4))
+    res = [1, 2, 3, 4]
+end function
+
 end module
 
 program array_section_37
-use array_section_37_mod, only: holder, fill
+use array_section_37_mod, only: holder, fill, seq8
 implicit none
 real :: a(4, 6), r(3), s(0:2)
 real(8) :: a8(2, 3)
@@ -27,7 +33,7 @@ integer :: k(5), m(3, 3), e(0:3), i
 logical :: l(2, 2), mask(4)
 complex :: z(2)
 character(len=2) :: c(3)
-integer, allocatable :: x(:)
+integer, allocatable :: x(:), y(:)
 real, target :: t(6)
 real, pointer :: p(:)
 type(holder) :: h
@@ -127,6 +133,12 @@ e = 0
 call fill(r, e)
 if (any(r /= [1.5, -1.0, -2.0])) error stop 26
 if (any(e /= [0, 7, 8, 9])) error stop 27
+
+! Allocatable function result, used as a vector subscript
+k = [10, 20, 30, 40, 50]
+allocate(y(5))
+y = [k(seq8()), 60]
+if (any(y /= [10, 20, 30, 40, 60])) error stop 28
 
 print *, "ok"
 end program
