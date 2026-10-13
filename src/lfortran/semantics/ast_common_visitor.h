@@ -1341,6 +1341,7 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
         // allocatable or pointer attribute of its operand.
         ASR::ttype_t *result_type = ASRUtils::type_get_past_allocatable_pointer(
             operand_type);
+        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(result_type);
 
         if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
@@ -1405,10 +1406,11 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     result_type, value);
             return;
-        } else if( ASR::is_a<ASR::StructType_t>(*result_type) ||
-                   ASR::is_a<ASR::TypeParameter_t>(*result_type) ) {
+        } else if( ASR::is_a<ASR::StructType_t>(*element_type) ||
+                   ASR::is_a<ASR::TypeParameter_t>(*element_type) ) {
             // A deferred type of a template has no intrinsic negation either;
-            // only a user-defined `operator(-)` applies to it.
+            // only a user-defined `operator(-)` applies to it. An elemental
+            // one also applies to each element of an array.
             ASR::expr_t* overloaded_uminus = nullptr;
             if( ASRUtils::use_overloaded_unary_minus(operand,
                 current_scope, asr, al,
@@ -1426,7 +1428,7 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             }
             if (overloaded_uminus == nullptr) {
                 std::string msg = "No matching `operator(-)` found for this operand type";
-                if (ASR::is_a<ASR::TypeParameter_t>(*result_type)) {
+                if (ASR::is_a<ASR::TypeParameter_t>(*element_type)) {
                     msg = "Operator `-` undefined for the type in the expression `-"
                         + ASRUtils::type_to_str_fortran_expr(result_type, operand)
                         + "`";
