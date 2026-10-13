@@ -153,6 +153,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-09 | Rejected implicitly importing other modules when compiling a main program, asked for alternatives closer to existing Fortran (accepting a deviation from the paper), asked to file them as an issue, and chose explicit provider `USE` to unblock `printy.f90`. | TD-07 |
 | 2026-10-09 | Every paper example must get a working test; missing boilerplate may be added; design questions must be asked. | TD-04, TD-31 |
 | 2026-10-09 | Supplied the updated proposal sources (commit `5163a026`), whose `traits.tex` is identical to the paper used here. | TD-04, TD-32 |
+| 2026-10-13 | After the prototype milestone, asked for type sets to work for all intrinsic types, excluding in the prototype only derived types as members, and supplied an averaging program over `integer \| real \| complex` whose runtime view returns complex values. | TD-15, TD-34 |
 | 2026-10-13 | Asked to get `intent(inout)` working for trait-object arguments of procedures, expecting more such corner cases because the proposal does not spell them out, and to be asked before any recorded decision changes. | TD-35 |
 
 ## Entries
@@ -786,7 +787,11 @@ specification action, that is, what the paper should say.
   needs genuinely open dispatch, which is required and is now implemented
   (TD-16); "later" in the chosen option refers only to the order of work.
 - **Implementation status.** Implemented; `mixed.f90` and `static.f90` are
-  accepted.
+  accepted. Since 2026-10-13 (TD-34) member slots also return complex
+  results, which the maintainer's averaging program over
+  `integer | real | complex` needs; they use the platform's convention for
+  complex function results, like ordinary calls. Slots of character members
+  are not implemented yet.
 - **Specification action.** State the dispatch semantics of generic methods on
   trait objects (static type argument, dynamic provider) explicitly, and leave
   the mechanism to processors.
@@ -872,8 +877,12 @@ specification action, that is, what the paper should say.
   interoperability kind `real(10)` (`C_LONG_DOUBLE`) is not one of
   `REAL_KINDS`, so `real(*)` leaves it out, while declarations and explicit
   members can still name it. LFortran has no `complex(16)`, so `complex(*)`
-  lacks the complex type of `real(16)`. Logical and character wildcards are
-  not implemented. inline-17 is accepted with this list.
+  lacks the complex type of `real(16)`. Since 2026-10-13 (TD-34),
+  `logical(*)` stands for `LOGICAL_KINDS` (1, 2, 4, 8). In a character member
+  `*` is the length (`character(*)` is `character(len=*)`), and
+  `character(kind=*)` is not implemented: `CHARACTER_KINDS` lists only kind 1,
+  while declarations also accept kind 4, an inconsistency like that of
+  `real(10)`. inline-17 is accepted with this list.
 - **Specification action.** Define the member set of a wildcard, for example as
   the kinds listed in `INTEGER_KINDS`, `REAL_KINDS` and similar constants of
   `ISO_FORTRAN_ENV`, and say whether code checked against a wildcard set must
@@ -983,7 +992,9 @@ specification action, that is, what the paper should say.
 - **Current rule.** A type argument is the complete type including kind and
   constant length: `Vector("John ")` is `Vector{character(len=5)}`, and
   `Vector{character(len=2)}` is another instance. Nonconstant and deferred
-  lengths are diagnosed as a limit of the prototype.
+  lengths are diagnosed as a limit of the prototype. The same identity applies
+  to the character members of type sets (TD-34): `character(len=3)` and
+  `character(len=5)` are different members with different specializations.
 - **Implementation status.** Implemented.
 - **Specification action.** Say whether length (and other) type parameters are
   part of a type argument, and whether assumed or deferred lengths can be type
@@ -1040,10 +1051,20 @@ specification action, that is, what the paper should say.
     set. No paper example implements a message declared with an inline set
     (inline-19 is only a declaration).
   - Generic bodies constrained by a type set are checked against every member.
-    Scalar `+`, `-`, `*`, `/` and comparisons need operands of the same type
-    parameter. `T(x)` is the intrinsic conversion and `size` is available;
-    other intrinsic procedures, unary operators and whole-array arithmetic are
-    not implemented yet.
+    Scalar `+`, `-`, `*`, `/`, comparisons, `.and.`, `.or.`, `.eqv.`, `.neqv.`
+    and `//` need operands of the same type parameter. `T(x)` is the intrinsic
+    conversion (`int`, `real`, `cmplx` or `logical`; character has none) and
+    `size` is available; other intrinsic procedures, unary operators such as
+    `-x` and `.not. x` and whole-array arithmetic are not implemented yet.
+  - The operations of a type set are those intrinsic operations of standard
+    Fortran that every member provides. LFortran accepts `==` and `/=` for
+    logical operands as an extension, but standard Fortran compares logical
+    values with `.eqv.` and `.neqv.`, so logical members have no `==`: generic
+    code checked against a type set stays portable. A value of a type
+    parameter whose members are all logical can be the condition of `IF` and
+    `DO WHILE`. An operation whose result type differs between members and is
+    not the type parameter, such as `//` of character members of different
+    lengths, is not implemented yet.
   - A bare intrinsic-looking name such as `integer` denotes a visible named
     trait if there is one, and otherwise the intrinsic singleton; an explicit
     kind or a union always denotes intrinsic members.
@@ -1052,6 +1073,51 @@ specification action, that is, what the paper should say.
 - **Specification action.** Specify constraint equivalence for generic method
   conformance, the identity of inline type sets, the exact capability set of a
   type set including result types, and composition of type sets.
+
+#### TD-34: Type sets of every intrinsic type
+
+- **Status:** Approved prototype option (scope); implementation choices; open
+  question (character members).
+- **What the paper says.** A type set is a union of types whose operations are
+  the intersection of their members' operations (lines 1760-1802). Its
+  examples have integer, real and complex members, and its wildcards name "all
+  integer, real, and complex types" (lines 1804-1828). Logical and character
+  members, character lengths and derived-type members are not mentioned.
+- **Instruction (2026-10-13).** After the prototype milestone the maintainer
+  asked for type sets to work for all intrinsic types, excluding in the
+  prototype only derived types appearing in type sets. With it came an
+  averaging program over `integer | real | complex`, a variation of
+  `static.f90` whose `class(IAverager)` view returns the member type: it was
+  rejected because closed runtime slots did not return complex results
+  (TD-15).
+- **Current rules (implementation choices, not asked).**
+  - Members can be of any intrinsic category with a supported kind; a
+    derived-type member is diagnosed as not implemented. `logical(*)` is a kind
+    wildcard (TD-17).
+  - The operations are those of TD-23: logical members provide `.and.`,
+    `.or.`, `.eqv.`, `.neqv.`, conditions and `T(x)` from a logical value, but
+    no `==`; character members provide the comparisons and `//`, and no
+    conversion. A set of integer and logical members has no operator at all.
+  - A character member's constant length is part of the member, as for type
+    arguments (TD-21). A member written `character` is `character(len=1)`,
+    as in a declaration. Members of assumed, deferred or nonconstant length,
+    `character(kind=*)`, and closed runtime slots of character members are
+    diagnosed as not implemented.
+- **Open.** Whether a member written `character` should rather admit every
+  length, whether `character(*)` (`character(len=*)`) should be a length
+  wildcard, whose type arguments would each fix a length (TD-21) and which
+  closed runtime slots could not enumerate, and the kinds of
+  `character(kind=*)`. None of these has been decided by the maintainer; the
+  current rules keep the declaration meaning of each spelling and diagnose
+  the rest as limits of the prototype.
+- **Implementation status.** Implemented as described, with complex results of
+  closed runtime slots and of ordinary runtime messages; the maintainer's
+  averaging program runs for both of its averaging methods.
+- **Specification action.** Say which intrinsic types (and whether derived
+  types) can be members, how kind and character length take part in
+  membership, whether there are length wildcards, and that the operations of a
+  type set are the intrinsic operations of the standard, not processor
+  extensions.
 
 ### E. Generic derived types
 
@@ -1311,6 +1377,7 @@ names the entries with the details.
 | OQ-18 | Whether a sealed type can be abstract. A commented-out sentence of the paper source (lines 1515-1517) says it cannot; the prototype rejects the combination. | -- |
 | OQ-19 | Whether the new words are reserved and where they are recognized. | TD-03 |
 | OQ-20 | Which restrictions are normative. `sect:restrictions` states that type sets and traits with associated types are generic constraints only "presently (i.e. in the framework of a prototype implementation of this proposal)" (lines 1977-1983). A specification should separate permanent rules from limits of a first implementation; the temporary limits recorded here must not become implicit prohibitions. | TD-24 to TD-27 |
+| OQ-21 | Logical, character and derived-type members of type sets: character length and kind in membership, length wildcards, and whether processor extensions add operations. | TD-34 |
 
 ## Questions that do not affect the language
 
