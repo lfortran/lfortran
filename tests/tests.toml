@@ -886,6 +886,10 @@ asr = true
 pass = "function_call_in_declaration"
 
 [[test]]
+filename = "../integration_tests/string_array_concat_04.f90"
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
@@ -2889,6 +2893,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/program_06.f90"
+ast_f90 = true
+
+[[test]]
 filename = "use_statement.f90"
 ast = true
 
@@ -3389,6 +3397,10 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/wasm_external_procedure.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 
@@ -3448,6 +3460,14 @@ filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
 [[test]]
 filename = "errors/continue_compilation_operator_interface.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_external_procedure.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_block_interface.f90"
 semantics_only_cc = true
 
 [[test]]
@@ -3691,6 +3711,10 @@ asr = true
 
 [[test]]
 filename = "errors/fixed_form_12.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_13.f"
 ast = true
 
 [[test]]

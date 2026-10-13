@@ -1984,6 +1984,28 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
     return submodules_collector;
 }
 
+bool struct_constant_names_procedure(ASR::expr_t* value) {
+    if (value == nullptr || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+        return false;
+    }
+    ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(value);
+    for (size_t i = 0; i < sc->n_args; i++) {
+        ASR::expr_t* arg = sc->m_args[i].m_value;
+        if (arg == nullptr) {
+            continue;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg) && ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v))) {
+            return true;
+        }
+        if (struct_constant_names_procedure(arg)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member) {
     if (value == nullptr) {
@@ -2206,16 +2228,48 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     }
 }
 
-// An operand of a deferred type (template type parameter) matches a dummy
-// of a deferred type only if both are the same deferred type.
-static bool deferred_type_operand_matches(ASR::ttype_t* operand,
-        ASR::ttype_t* dummy) {
-    if (!ASR::is_a<ASR::TypeParameter_t>(*operand) ||
-        !ASR::is_a<ASR::TypeParameter_t>(*dummy)) {
-        return true;
+// Whether an operand of a defined binary operator can be passed to the
+// matching dummy argument of one specific function of that operator.
+static bool operand_matches_dummy(ASR::expr_t* operand, ASR::expr_t* dummy,
+        bool is_elemental) {
+    ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
+    ASR::ttype_t* dummy_type = ASRUtils::expr_type(dummy);
+    // A class(*) dummy takes an operand of any type and rank.
+    bool any_type = ASRUtils::is_unlimited_polymorphic_type(dummy_type);
+
+    // An allocatable or pointer dummy needs the same attribute on the operand.
+    if ((ASRUtils::is_allocatable(dummy_type) && !ASRUtils::is_allocatable(operand_type)) ||
+        (ASRUtils::is_pointer(dummy_type) && !ASRUtils::is_pointer(operand_type))) {
+        return false;
     }
-    return std::string(ASR::down_cast<ASR::TypeParameter_t>(operand)->m_param) ==
-           std::string(ASR::down_cast<ASR::TypeParameter_t>(dummy)->m_param);
+    operand_type = ASRUtils::type_get_past_allocatable_pointer(operand_type);
+    dummy_type = ASRUtils::type_get_past_allocatable_pointer(dummy_type);
+
+    // Arrays match arrays and scalars match scalars, unless the function is elemental.
+    if (!any_type && !is_elemental &&
+        ASR::is_a<ASR::Array_t>(*operand_type) != ASR::is_a<ASR::Array_t>(*dummy_type)) {
+        return false;
+    }
+    operand_type = ASRUtils::type_get_past_array(operand_type);
+    dummy_type = ASRUtils::type_get_past_array(dummy_type);
+
+    // The element types are of the same category (integer, real, ...).
+    if (!any_type && operand_type->type != dummy_type->type) {
+        return false;
+    }
+
+    // A derived type matches a dummy of the same type or of a type it extends.
+    if (ASR::is_a<ASR::StructType_t>(*operand_type) &&
+        ASR::is_a<ASR::StructType_t>(*dummy_type)) {
+        ASR::Struct_t* operand_struct = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(operand)));
+        ASR::Struct_t* dummy_struct = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(dummy)));
+        return can_pass_derviedtype_arg_to_parameter(operand_struct, dummy_struct);
+    }
+
+    // Any other type is equal, including the kind and the deferred type of a template.
+    return check_equal_type(operand_type, dummy_type, operand, dummy);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -2332,54 +2386,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     bool is_elemental = ASRUtils::is_elemental(proc);
                     std::string matched_func_name = "";
                     if( func->n_args == 2 ) {
-                        ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
-                        ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        bool not_matching = (!ASRUtils::is_allocatable(left_type) && ASRUtils::is_allocatable(left_arg_type)) ||
-                                            (!ASRUtils::is_allocatable(right_type) && ASRUtils::is_allocatable(right_arg_type)) ||
-                                            (!ASRUtils::is_pointer(left_type) && ASRUtils::is_pointer(left_arg_type)) ||
-                                            (!ASRUtils::is_pointer(right_type) && ASRUtils::is_pointer(right_arg_type));
-                                            
-                        ASR::ttype_t* left_type2 = ASRUtils::type_get_past_allocatable_pointer(left_type);
-                        ASR::ttype_t* left_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(left_arg_type);
-                        ASR::ttype_t* right_type2 = ASRUtils::type_get_past_allocatable_pointer(right_type);
-                        ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
-
-                        not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
-                                        (right_arg_type2->type != right_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
-
-                        left_type2 = ASRUtils::type_get_past_array(left_type2);
-                        left_arg_type2 = ASRUtils::type_get_past_array(left_arg_type2);
-                        right_type2 = ASRUtils::type_get_past_array(right_type2);
-                        right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
-
-                        if( !not_matching && ((left_arg_type2->type == left_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
-                                               (right_arg_type2->type == right_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
-                                break;
-                            }
-                            // Check StructType compatibility independently for each side
-                            if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
-                                ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
-                                if (!can_pass_derviedtype_arg_to_parameter(left_struct, left_arg_sym /*param*/)) {
-                                    break;
-                                }
-                            }
-                            if (ASR::is_a<ASR::StructType_t>(*right_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
-                                ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-                                if (!can_pass_derviedtype_arg_to_parameter(right_struct, right_arg_sym /*param*/)) {
-                                    break;
-                                }
-                            }
+                        if (operand_matches_dummy(left, func->m_args[0], is_elemental) &&
+                            operand_matches_dummy(right, func->m_args[1], is_elemental)) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 1);
@@ -2427,12 +2435,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 }
                             }
                             ASR::ttype_t *return_type = nullptr;
-                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args >= 1 &&
-                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                            if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(al,
@@ -2451,7 +2459,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASRUtils::insert_self_arg(al, a_name, call_args1, n_call_args1, self_arg);
                             {
                                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
-                                if (ftype->m_return_var_type) {
+                                // An elemental reference with an array argument
+                                // has the shape of the argument, set above.
+                                if (ftype->m_return_var_type && first_array_arg == nullptr) {
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
@@ -2642,6 +2652,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else {
+            return false;
         }
     }
 
@@ -3404,56 +3416,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     bool is_elemental = ASRUtils::is_elemental(proc);
                     std::string matched_func_name = "";
                     if( func->n_args == 2 ) {
-                        ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
-                        ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        bool not_matching = (!ASRUtils::is_allocatable(left_type) && ASRUtils::is_allocatable(left_arg_type)) ||
-                                            (!ASRUtils::is_allocatable(right_type) && ASRUtils::is_allocatable(right_arg_type)) ||
-                                            (!ASRUtils::is_pointer(left_type) && ASRUtils::is_pointer(left_arg_type)) ||
-                                            (!ASRUtils::is_pointer(right_type) && ASRUtils::is_pointer(right_arg_type));
-                                            
-                        ASR::ttype_t* left_type2 = ASRUtils::type_get_past_allocatable_pointer(left_type);
-                        ASR::ttype_t* left_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(left_arg_type);
-                        ASR::ttype_t* right_type2 = ASRUtils::type_get_past_allocatable_pointer(right_type);
-                        ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
-
-                        // Check for array type
-                        not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
-                                        (right_arg_type2->type != right_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
-
-                        // Get element type and compare
-                        left_type2 = ASRUtils::type_get_past_array(left_type2);
-                        left_arg_type2 = ASRUtils::type_get_past_array(left_arg_type2);
-                        right_type2 = ASRUtils::type_get_past_array(right_type2);
-                        right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
-
-                        if( !not_matching && ((left_arg_type2->type == left_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
-                                               (right_arg_type2->type == right_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
-                                break;
-                            }
-                            // Check StructType compatibility independently for each side
-                            if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
-                                ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0])));
-                                if (!can_pass_derviedtype_arg_to_parameter(left_struct, left_arg_sym)) {
-                                    break;
-                                }
-                            }
-                            if (ASR::is_a<ASR::StructType_t>(*right_type2) &&
-                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
-                                ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-                                if (!can_pass_derviedtype_arg_to_parameter(right_struct, right_arg_sym)) {
-                                    break;
-                                }
-                            }
+                        if (operand_matches_dummy(left, func->m_args[0], is_elemental) &&
+                            operand_matches_dummy(right, func->m_args[1], is_elemental)) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 1);
@@ -3595,7 +3559,6 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             SetChar& current_module_dependencies,
                             const std::function<void(const std::string&, const Location&)> err) {
     ASR::ttype_t* left_type = ASRUtils::expr_type(left);
-    ASR::ttype_t* right_type = ASRUtils::expr_type(right);
     ASR::Struct_t* left_struct = nullptr;
     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(left_type))) {
         left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
@@ -3622,62 +3585,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     bool is_elemental = ASRUtils::is_elemental(proc);
                     std::string matched_func_name = "";
                     if (func->n_args == 2) {
-                        ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
-                        ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        bool not_matching = (!ASRUtils::is_allocatable(left_type) && ASRUtils::is_allocatable(left_arg_type)) ||
-                                            (!ASRUtils::is_allocatable(right_type) && ASRUtils::is_allocatable(right_arg_type)) ||
-                                            (!ASRUtils::is_pointer(left_type) && ASRUtils::is_pointer(left_arg_type)) ||
-                                            (!ASRUtils::is_pointer(right_type) && ASRUtils::is_pointer(right_arg_type));
-
-                        ASR::ttype_t* left_type2 = ASRUtils::type_get_past_allocatable_pointer(left_type);
-                        ASR::ttype_t* left_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(left_arg_type);
-                        ASR::ttype_t* right_type2 = ASRUtils::type_get_past_allocatable_pointer(right_type);
-                        ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
-
-                        // Check for array type
-                        not_matching = not_matching || (!is_elemental &&
-                                       ((left_arg_type2->type != left_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) ||
-                                        (right_arg_type2->type != right_type2->type &&
-                                         !ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))));
-
-                        // Get element type and compare
-                        left_type2 = ASRUtils::type_get_past_array(left_type2);
-                        left_arg_type2 = ASRUtils::type_get_past_array(left_arg_type2);
-                        right_type2 = ASRUtils::type_get_past_array(right_type2);
-                        right_arg_type2 = ASRUtils::type_get_past_array(right_arg_type2);
-
-                        if ( !not_matching && ((left_arg_type2->type == left_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(left_arg_type2)) &&
-                                               (right_arg_type2->type == right_type2->type ||
-                                                ASRUtils::is_unlimited_polymorphic_type(right_arg_type2))) ) {
-                            if (!deferred_type_operand_matches(left_type2, left_arg_type2) ||
-                                !deferred_type_operand_matches(right_type2, right_arg_type2)) {
-                                break;
-                            }
-                            // Check StructType compatibility independently for each side
-                            if (ASR::is_a<ASR::StructType_t>(*left_type2)
-                                && ASR::is_a<ASR::StructType_t>(*left_arg_type2)) {
-                                ASR::Struct_t* left_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(
-                                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(left))));
-                                ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[0]))));
-                                if (!can_pass_derviedtype_arg_to_parameter(left_sym, left_arg_sym)) {
-                                    break;
-                                }
-                            }
-                            if (ASR::is_a<ASR::StructType_t>(*right_type2)
-                                && ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
-                                ASR::Struct_t* right_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(right))));
-                                ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(
-                                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1]))));
-                                if (!can_pass_derviedtype_arg_to_parameter(right_sym, right_arg_sym)) {
-                                    break;
-                                }
-                            }
+                        if (operand_matches_dummy(left, func->m_args[0], is_elemental) &&
+                            operand_matches_dummy(right, func->m_args[1], is_elemental)) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -3696,11 +3605,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     loc);
                             }
                             ASR::ttype_t* return_type = nullptr;
-                            if (ASRUtils::get_FunctionType(func)->m_elemental && func->n_args >= 1
-                                && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value))) {
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                            if (first_array_arg != nullptr) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                    ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                    ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(
@@ -3722,7 +3632,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                             {
                                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
-                                if (ftype->m_return_var_type) {
+                                // An elemental reference with an array argument
+                                // has the shape of the argument, set above.
+                                if (ftype->m_return_var_type && first_array_arg == nullptr) {
                                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
@@ -4163,8 +4075,12 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                         ASRUtils::expr_value(a_arg));
             // kind=16 m_r is a pointer-encoded payload, not a double — skip
             // compile-time folding and let the runtime fptosi handle it.
-            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
-                int64_t v = rc->m_r;
+            // kind=10 m_r is a pointer to the long double bytes, which
+            // real_constant_get_r10 reads.
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
+            if (src_kind != 16) {
+                int64_t v = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
             }
@@ -4178,21 +4094,31 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             // and folding through double would silently truncate. Runtime
             // cast handles it.
             if (src_kind != 16 && dest_kind != 16) {
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_RealConstant_t(al, a_loc, rc->m_r, a_type));
+                // kind=10 m_r is a pointer to the long double bytes, so
+                // read it with real_constant_get_r10 and build a kind=10
+                // result with make_RealConstant_util.
+                double v = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
+                value = ASRUtils::make_RealConstant_util(al, a_loc, v, a_type);
             }
         } else if (a_kind == ASR::cast_kindType::RealToComplex) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
                                   ASRUtils::expr_value(a_arg));
-            if (ASRUtils::extract_kind_from_ttype_t(rc->m_type) != 16) {
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
+            if (src_kind != 16) {
+                double re = src_kind == 10
+                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(
-                            al, a_loc, rc->m_r, 0, a_type));
+                            al, a_loc, re, 0, a_type));
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
             // TODO: Clashes with the pow functions
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            if (dest_kind != 16) {
+            if (dest_kind == 10) {
+                value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                    (long double)int_value, a_type);
+            } else if (dest_kind != 16) {
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
             } else {
                 // int -> real(16) is always exact for int64; build the binary128
@@ -4476,6 +4402,9 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
             } else {
                 result = perform_compare(lf_f128_cmp(lv, rv), 0, op);
             }
+        } else if (ASRUtils::extract_kind_from_ttype_t(lc->m_type) == 10) {
+            result = perform_compare(ASRUtils::real_constant_get_r10(lc),
+                ASRUtils::real_constant_get_r10(rc), op);
         } else {
             result = perform_compare(lc->m_r, rc->m_r, op);
         }

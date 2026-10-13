@@ -1151,8 +1151,12 @@ struct FixedFormRecursiveDescent {
                 push_token_advance(cur, "endtype");
                 tokenize_line(cur);
                 break;
-            } else {
-                lex_declaration(cur);
+            } else if (*cur == '\0') {
+                error(cur, "Expecting terminating symbol for derived type");
+            } else if (!lex_declaration(cur)) {
+                // Other type-body statements, e.g. `sequence`, `contains`
+                // and type-bound `procedure`, `generic` or `final`
+                tokenize_line(cur);
             }
         }
     }
@@ -1181,7 +1185,10 @@ struct FixedFormRecursiveDescent {
         }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
-        if (next_is(cur, "type::")) {
+        // `type, <attr-spec-list> :: name` (e.g. `type, extends(p) :: c`)
+        // is always a derived-type-def: no other statement starts with
+        // `type,`
+        if (next_is(cur, "type::") || next_is(cur, "type,")) {
             lex_derived_type(cur);
             return true;
         }
@@ -1191,9 +1198,6 @@ struct FixedFormRecursiveDescent {
         //    e.g. `TYPE(GT), SAVE :: DAT(10)` (must NOT be routed here)
         //  - a plain identifier that merely starts with "type", e.g.
         //    `TYPEX = 5` (must NOT be routed here)
-        // `TYPE, EXTENDS(parent) :: name` (attr-list form) is not handled
-        // by this check either, matching the pre-existing `type::` check's
-        // scope.
         // A bare derived-type-def statement is exactly `TYPE type-name`
         // with nothing else in the statement, so require a NAME immediately
         // after `type` followed immediately by the end of the statement.

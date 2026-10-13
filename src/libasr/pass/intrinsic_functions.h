@@ -6232,7 +6232,11 @@ namespace StringConcat {
             ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
         if (str_type->m_len) {
-            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+            // Copy the length, so that later rewrites of the returned
+            // expression do not modify the type it was taken from.
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            return b.i2i_t(duplicator.duplicate_expr(str_type->m_len),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         }
         // For deferred-length strings, check if expr is a StringConcat.
         // If so, recursively compute the length to avoid embedding the

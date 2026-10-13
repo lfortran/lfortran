@@ -1,4 +1,3 @@
-#include <fstream>
 #include <set>
 
 #include <lfortran/fortran_evaluator.h>
@@ -158,8 +157,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
-        std::ofstream out("input");
-        out << code;
+        fl.source = code;
         lm.files.push_back(fl);
     }
     diag::Diagnostics diagnostics;
