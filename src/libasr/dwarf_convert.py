@@ -144,12 +144,16 @@ class Parser:
 
         addresses = []
         while self.line.startswith("0x"):
-            address, line, column, file_id = self.line.split()[:4]
+            fields = self.line.split()
+            address, line, column, file_id = fields[:4]
             address = int(address, base=16)
             line = int(line)
             column = int(column)
             file_id = int(file_id)
-            addresses.append([address, line, column, file_id])
+            # The flags follow the numeric columns (ISA, discriminator and, in
+            # newer dumps, op index).
+            end_sequence = "end_sequence" in fields[4:]
+            addresses.append([address, line, column, file_id, end_sequence])
             self.line = self.file.readline()
 
         self.line = self.file.readline()
@@ -158,11 +162,9 @@ class Parser:
         return d
 
 def ast_to_asr(ast):
-    lines = []
-    last_address = -1
     global_filename_id = 0
     global_filenames = []
-    global_addresses = []
+    sequences = []
     for line in ast.lines:
         include_dirs = {}
         for inc in line.include_directories:
@@ -175,12 +177,33 @@ def ast_to_asr(ast):
             filenames[filename.id] = global_filename_id
             global_filenames.append(normalize_to_absolute_path(prefix+filename.filename))
             global_filename_id += 1
-        for address, line_num, column, file_id in line.addresses:
-            filename = global_filenames[filenames[file_id]]
-            assert last_address <= address
-            last_address = address
+        # A line table is a list of sequences. The rows of a sequence have
+        # nondecreasing addresses, and its end_sequence row holds the first
+        # address after it.
+        rows = []
+        for address, line_num, column, file_id, end_sequence in line.addresses:
+            assert not rows or rows[-1][0] <= address
+            rows.append([address, line_num, filenames[file_id]])
+            if end_sequence:
+                sequences.append(rows)
+                rows = []
+        if rows:
+            raise ValueError("A line table row follows the last end_sequence")
+    # The tables, and the sequences of different tables, need not be in
+    # address order: the linker can move code of one compile unit, such as the
+    # `.cold` parts that an optimizing compiler splits off, after the code of
+    # all others. Sequences do not overlap, so ordering them by their first
+    # address puts all rows in address order, as the lookup requires. The
+    # sort is stable, which keeps the order of tables that are in order.
+    sequences.sort(key=lambda rows: rows[0][0])
+    global_addresses = []
+    last_address = -1
+    for rows in sequences:
+        assert last_address <= rows[0][0]
+        last_address = rows[-1][0]
+        for address, line_num, file_index in rows:
             if line_num != 0:
-                global_addresses.append([address, line_num, filenames[file_id]])
+                global_addresses.append([address, line_num, file_index])
     return ASRDebugLines(global_filenames, global_addresses)
 
 

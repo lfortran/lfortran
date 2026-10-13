@@ -456,6 +456,13 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 ${CMAKE_SOURCE_DIR}/tests/asr/test_edn.py
         )
         add_test(
+            NAME test_dwarf_convert
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_dwarf_convert.py
+                --converter ${CMAKE_SOURCE_DIR}/src/libasr/dwarf_convert.py
+                --work-dir ${CMAKE_BINARY_DIR}/tests/output/dwarf_convert
+        )
+        add_test(
             NAME test_asr_llvm_constructor_coverage
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/check_llvm_coverage.py
