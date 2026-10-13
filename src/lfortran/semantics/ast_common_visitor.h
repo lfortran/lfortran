@@ -4515,6 +4515,8 @@ public:
                 && v->m_storage == ASR::storage_typeType::Default) {
             v->m_storage = ASR::storage_typeType::Save;
         }
+        adjust_array_constant_type(al, v->m_value, v->m_type);
+        adjust_array_constant_type(al, v->m_symbolic_value, v->m_type);
         SetChar var_deps_vec;
         var_deps_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v->m_type,
@@ -7887,6 +7889,43 @@ public:
         }
     }
 
+    static void adjust_array_constant_type(Allocator &al, ASR::expr_t* &expr, ASR::ttype_t* target_type) {
+        if (!expr || !ASR::is_a<ASR::ArrayConstant_t>(*expr) || !ASRUtils::is_array(target_type)) {
+            return;
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
+        if (!ASRUtils::is_fixed_size_array(m_dims, n_dims)) {
+            return;
+        }
+        for (size_t i = 0; i < n_dims; i++) {
+            if (m_dims[i].m_start) {
+                int64_t start_val = 0;
+                if (!ASRUtils::extract_value(ASRUtils::expr_value(m_dims[i].m_start), start_val)) {
+                    return;
+                }
+            }
+        }
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(target_type);
+        if (ASRUtils::is_character(*elem_type)) {
+            ASR::String_t* s = ASR::down_cast<ASR::String_t>(elem_type);
+            int len = 0;
+            if (!s->m_len || !ASRUtils::extract_value(ASRUtils::expr_value(s->m_len), len)) {
+                return;
+            }
+        }
+        ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(expr);
+        if (ac->m_type != target_type &&
+            ASRUtils::check_equal_type(elem_type, ASRUtils::extract_type(ac->m_type), nullptr, nullptr, true) &&
+            n_dims == (size_t) ASRUtils::extract_n_dims_from_ttype(ac->m_type) &&
+            ASRUtils::get_fixed_size_of_array(target_type) ==
+            ASRUtils::get_fixed_size_of_array(ac->m_type)) {
+            expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+                al, ac->base.base.loc, ac->m_data,
+                target_type, ac->m_storage_format));
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -8182,6 +8221,8 @@ public:
                                                 }
                                                 v->m_symbolic_value = init_val;
                                                 v->m_value = ASRUtils::expr_value(init_val);
+                                                adjust_array_constant_type(al, v->m_value, v->m_type);
+                                                adjust_array_constant_type(al, v->m_symbolic_value, v->m_type);
                                                 SetChar variable_dependencies_vec;
                                                 variable_dependencies_vec.reserve(al, 1);
                                                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
@@ -11723,6 +11764,9 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     }
+
+                    adjust_array_constant_type(al, variable_added_to_symtab->m_value, variable_added_to_symtab->m_type);
+                    adjust_array_constant_type(al, variable_added_to_symtab->m_symbolic_value, variable_added_to_symtab->m_type);
 
                     if (!is_implicitly_declared) {
                         // An implicit dimension statement can declare array dimensions containing
