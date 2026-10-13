@@ -43,9 +43,10 @@ then omitted. The frontend always sets `false`. The `array_op` pass sets it in
 the loops it creates for an array assignment: for the operand whose bounds
 the loops run over, and for every operand whose shape a preceding
 [DebugCheckArrayBounds](../statement_nodes/DebugCheckArrayBounds.md) compares
-with the target. In the second case the claim holds only because that check
-stops the program on a mismatch, so a backend that honors `in_bounds` must
-also implement `DebugCheckArrayBounds`.
+with the target, or whose extents are compile-time constants equal to those
+of the target (the check is then omitted). With a runtime check the claim
+holds only because that check stops the program on a mismatch, so a backend
+that honors `in_bounds` must also implement `DebugCheckArrayBounds`.
 
 ## Examples
 

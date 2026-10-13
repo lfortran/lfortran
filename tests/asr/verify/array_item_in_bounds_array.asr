@@ -2,7 +2,7 @@
   (SymbolTable
     0
     {
-      "generated" (Program
+      "vs" (Program
         (SymbolTable
           1
           {
@@ -54,29 +54,14 @@
               []
               nil
             )
-          }
-        )
-        "generated"
-        []
-        [
-          (Assignment
-            (ArrayItem
-              (Var
-                (SymbolRef 1 "a")
-              )
-              [
-                (array_index
-                  nil
-                  (IntegerConstant
-                    1
-                    (Integer
-                      4
-                    )
-                    :Decimal
-                  )
-                  nil
-                )
-              ]
+            "idx" (Variable
+              1
+              "idx"
+              []
+              :Local
+              nil
+              nil
+              :Default
               (Array
                 (Integer
                   4
@@ -91,7 +76,59 @@
                       :Decimal
                     )
                     (IntegerConstant
+                      2
+                      (Integer
+                        4
+                      )
+                      :Decimal
+                    )
+                  )
+                ]
+                :FixedSizeArray
+                :Global
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              nil
+            )
+          }
+        )
+        "vs"
+        []
+        [
+          (Assignment
+            (Var
+              (SymbolRef 1 "idx")
+            )
+            (ArrayConstant
+              8
+              #asr/bytes "0100000002000000"
+              (Array
+                (Integer
+                  4
+                )
+                [
+                  (dimension
+                    (IntegerConstant
                       1
+                      (Integer
+                        4
+                      )
+                      :Decimal
+                    )
+                    (IntegerConstant
+                      2
                       (Integer
                         4
                       )
@@ -103,19 +140,69 @@
                 :Global
               )
               :ColMajor
-              nil
-              true
-            )
-            (IntegerConstant
-              7
-              (Integer
-                4
-              )
-              :Decimal
             )
             nil
             false
             false
+          )
+          (Print
+            (StringFormat
+              nil
+              [
+                (ArrayItem
+                  (Var
+                    (SymbolRef 1 "a")
+                  )
+                  [
+                    (array_index
+                      nil
+                      (Var
+                        (SymbolRef 1 "idx")
+                      )
+                      nil
+                    )
+                  ]
+                  (Array
+                    (Integer
+                      4
+                    )
+                    [
+                      (dimension
+                        (IntegerConstant
+                          1
+                          (Integer
+                            4
+                          )
+                          :Decimal
+                        )
+                        (IntegerConstant
+                          2
+                          (Integer
+                            4
+                          )
+                          :Decimal
+                        )
+                      )
+                    ]
+                    :FixedSizeArray
+                    :Global
+                  )
+                  :ColMajor
+                  nil
+                  true
+                )
+              ]
+              :FormatFortran
+              (Allocatable
+                (String
+                  1
+                  nil
+                  :DeferredLength
+                  :DescriptorString
+                )
+              )
+              nil
+            )
           )
         ]
         nil
